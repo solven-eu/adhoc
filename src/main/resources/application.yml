@@ -1,0 +1,7 @@
+spring.application.name: domains
+
+
+# https://stackoverflow.com/questions/30571319/spring-boot-logging-pattern
+# https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot/src/main/resources/org/springframework/boot/logging/logback/defaults.xml#L15C48-L15C67
+logging.pattern.console: "%clr(%d{yyyy-MM-dd'T'HH:mm:ss}){faint} %clr(%5p) [%-16.16thread] %clr(){faint}%clr(%-40.40logger{39}){cyan}|%method\\(%line\\)%clr(:){faint} %m%n%wEx"
+
