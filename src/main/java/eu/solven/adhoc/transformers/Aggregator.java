@@ -14,7 +14,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class Aggregator implements IMeasurator {
+public class Aggregator implements IMeasure {
 	@NonNull
 	String name;
 

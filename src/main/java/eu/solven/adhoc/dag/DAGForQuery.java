@@ -9,7 +9,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
 import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.IMeasurator;
+import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Value;
 
@@ -17,7 +17,7 @@ import lombok.Value;
 @Builder
 public class DAGForQuery {
 
-	DirectedAcyclicGraph<IMeasurator, DefaultEdge> directedGraph;
+	DirectedAcyclicGraph<IMeasure, DefaultEdge> directedGraph;
 	Set<String> queriedMeasures;
 
 	// Aggregators are applied to the input Stream
@@ -56,20 +56,20 @@ public class DAGForQuery {
 		return aggregators;
 	}
 
-	public BreadthFirstIterator<IMeasurator, DefaultEdge> getBreadthFirst() {
-		Set<IMeasurator> queryMeasurators = getQueryMeasurators();
+	public BreadthFirstIterator<IMeasure, DefaultEdge> getBreadthFirst() {
+		Set<IMeasure> queryMeasurators = getQueryMeasurators();
 
 		if (queryMeasurators.size() != queriedMeasures.size()) {
 			throw new IllegalStateException("Some measures are unknown amongst " + queriedMeasures);
 		}
 
-		return new BreadthFirstIterator<IMeasurator, DefaultEdge>(directedGraph, queryMeasurators);
+		return new BreadthFirstIterator<IMeasure, DefaultEdge>(directedGraph, queryMeasurators);
 	}
 
 	/**
-	 * @return the {@link IMeasurator} explicitly requested.
+	 * @return the {@link IMeasure} explicitly requested.
 	 */
-	public Set<IMeasurator> getQueryMeasurators() {
+	public Set<IMeasure> getQueryMeasurators() {
 		return directedGraph.vertexSet()
 				.stream()
 				.filter(m -> queriedMeasures.contains(m.getName()))

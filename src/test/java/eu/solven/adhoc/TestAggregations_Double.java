@@ -22,7 +22,7 @@ import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
-public class TestAggregations_Long {
+public class TestAggregations_Double {
 	EventBus eventBus = new EventBus();
 	AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
 	DAG dag = new DAG(eventBus);
@@ -45,9 +45,9 @@ public class TestAggregations_Long {
 
 		List<Map<String, ?>> rows = new ArrayList<>();
 
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		rows.add(Map.of("k1", 123D));
+		rows.add(Map.of("k2", 234D));
+		rows.add(Map.of("k1", 345D, "k2", 456D));
 
 		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows.stream());
 
@@ -60,7 +60,7 @@ public class TestAggregations_Long {
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
+						Map.of("sumK1K2", 0D + 123 + 234 + 345 + 456));
 	}
 
 	@Test
@@ -76,9 +76,9 @@ public class TestAggregations_Long {
 
 		List<Map<String, ?>> rows = new ArrayList<>();
 
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		rows.add(Map.of("k1", 123D));
+		rows.add(Map.of("k2", 234D));
+		rows.add(Map.of("k1", 345F, "k2", 456F));
 
 		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows.stream());
 
@@ -91,7 +91,7 @@ public class TestAggregations_Long {
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						// "k1", 345, "k2", 456,
-						Map.of("sumK1K2", 0L + 345 + 456));
+						Map.of("sumK1K2", 0D + 345 + 456));
 	}
 
 	@Test
@@ -107,9 +107,9 @@ public class TestAggregations_Long {
 
 		List<Map<String, ?>> rows = new ArrayList<>();
 
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		rows.add(Map.of("k1", 123D));
+		rows.add(Map.of("k2", 234D));
+		rows.add(Map.of("k1", 345F, "k2", 456F));
 
 		ITabularView output = dag.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows.stream());
 
@@ -122,6 +122,6 @@ public class TestAggregations_Long {
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("maxK1K2", 0L + 234 + 456));
+						Map.of("maxK1K2", 0D + 234 + 456));
 	}
 }

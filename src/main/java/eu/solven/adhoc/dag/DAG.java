@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +29,11 @@ import eu.solven.adhoc.aggregations.MaxAggregator;
 import eu.solven.adhoc.aggregations.MaxTransformation;
 import eu.solven.adhoc.aggregations.SumAggregator;
 import eu.solven.adhoc.aggregations.SumTransformation;
+import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.eventbus.MeasuratorIsCompleted;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.AdhocQueryBuilder;
+import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
@@ -35,7 +41,8 @@ import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.CollectingCombinators;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
-import eu.solven.adhoc.transformers.IMeasurator;
+import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,32 +51,56 @@ import lombok.extern.slf4j.Slf4j;
 public class DAG {
 	final EventBus eventBus;
 
-	final Map<String, IMeasurator> nameToMeasurator = new HashMap<>();
+	final Map<String, IMeasure> nameToMeasurator = new HashMap<>();
 
-	public void addMeasure(IMeasurator namedMeasure) {
+	public void addMeasure(IMeasure namedMeasure) {
 		nameToMeasurator.put(namedMeasure.getName(), namedMeasure);
 	}
 
-	public ITabularView execute(Set<String> measures, Stream<Map<String, ?>> stream) {
-		return execute(measures, Set.of(), stream);
+	public ITabularView execute(IAdhocQuery adhocQuery, Stream<Map<String, ?>> stream) {
+		return execute(adhocQuery, Set.of(), stream);
 	}
 
-	public ITabularView execute(Set<String> measures,
+	public static <T> List<T> unionList(List<T> left, List<T> right) {
+		if (left.isEmpty()) {
+			return right;
+		} else if (right.isEmpty()) {
+			return left;
+		}
+
+		List<T> union = new ArrayList<>();
+
+		union.addAll(left);
+		union.addAll(right);
+
+		return union;
+	}
+
+	public static <T> Set<T> unionSet(Set<T> left, Set<T> right) {
+		if (left.isEmpty()) {
+			return right;
+		} else if (right.isEmpty()) {
+			return left;
+		}
+
+		Set<T> union = new LinkedHashSet<>();
+
+		union.addAll(left);
+		union.addAll(right);
+
+		return union;
+	}
+
+	public ITabularView execute(IAdhocQuery adhocQuery,
 			Set<? extends IQueryOption> queryOptions,
 			Stream<Map<String, ?>> stream) {
-		DAGForQuery dagForQuery = prepareDAGForQuery(measures);
+		DAGForQuery dagForQuery = prepareDAGForQuery(
+				adhocQuery.getMeasures().stream().map(ReferencedMeasure::getRef).collect(Collectors.toSet()));
 
 		Map<String, List<Aggregator>> inputColumnToAggregators = new LinkedHashMap<>();
 
 		dagForQuery.getImpliedAggregators().stream().forEach(aggregator -> {
-			inputColumnToAggregators.merge(aggregator.getName(), List.of(aggregator), (l, r) -> {
-				List<Aggregator> union = new ArrayList<>();
-
-				union.addAll(l);
-				union.addAll(r);
-
-				return union;
-			});
+			inputColumnToAggregators.merge(aggregator.getName(), List.of(aggregator), DAG::unionList);
 		});
 
 		AggregatingMeasurators aggregatingMeasurators = new AggregatingMeasurators();
@@ -113,7 +144,7 @@ public class DAG {
 		// We want to traverse the tree from pre-aggregated measures to requested measures
 		Collections.reverse(depthFirstMeasures);
 
-		Set<IMeasurator> queryMeasurators = dagForQuery.getQueryMeasurators();
+		Set<IMeasure> queryMeasurators = dagForQuery.getQueryMeasurators();
 
 		CollectingCombinators collectingCombinators = new CollectingCombinators();
 
@@ -126,7 +157,7 @@ public class DAG {
 					refV.set(o);
 				});
 
-				IMeasurator measurator = nameToMeasurator.get(underlyingM);
+				IMeasure measurator = nameToMeasurator.get(underlyingM);
 				if (measurator instanceof Aggregator aggregator) {
 					aggregatingMeasurators.onValue(aggregator, consumer);
 				} else if (measurator instanceof Combinator combinator) {
@@ -157,7 +188,7 @@ public class DAG {
 
 		MapBasedTabularView mapBasedTabularView = new MapBasedTabularView();
 
-		Iterator<IMeasurator> measuresToReturn;
+		Iterator<IMeasure> measuresToReturn;
 		if (queryOptions.contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
 			measuresToReturn = dagForQuery.getBreadthFirst();
 		} else {
@@ -208,12 +239,12 @@ public class DAG {
 	}
 
 	private DAGForQuery prepareDAGForQuery(Set<String> measures) {
-		DirectedAcyclicGraph<IMeasurator, DefaultEdge> directedGraph = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> directedGraph = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		nameToMeasurator.forEach((name, measurator) -> {
 			directedGraph.addVertex(measurator);
 			if (measurator instanceof Combinator combinator) {
-				List<IMeasurator> namedUnderlyings = combinator.getUnderlyingMeasurators()
+				List<IMeasure> namedUnderlyings = combinator.getUnderlyingMeasurators()
 						.stream()
 						.map(nameToMeasurator::get)
 						.collect(Collectors.toList());
@@ -229,55 +260,81 @@ public class DAG {
 			}
 		});
 
-		// Map<Combinator, List<IMeasurator>> derivedToUnderlying = new HashMap<>();
-		// Set<Aggregator> aggregators = new HashSet<>();
-		//
-		// directedGraph.iterables().vertices().forEach(measurator -> {
-		// if (measurator instanceof Aggregator) {
-		//
-		// }
-		// });
-		//
-		// {
-		// Set<String> measuresToAdd = new HashSet<>(measures);
-		//
-		// while (!measures.isEmpty()) {
-		// Set<String> measuresAboutToAdd = new HashSet<>(measuresToAdd);
-		//
-		// measuresAboutToAdd.removeIf(measure -> derivedToUnderlying.containsKey(nameToMeasurator.get(measure)));
-		// measuresAboutToAdd.removeIf(measure -> aggregators.contains(nameToMeasurator.get(measure)));
-		//
-		// if (measuresAboutToAdd.isEmpty()) {
-		// break;
-		// }
-		//
-		// measuresAboutToAdd.forEach(measure -> {
-		// IMeasurator namedMeasure = nameToMeasurator.get(measure);
-		//
-		// if (namedMeasure == null) {
-		// throw new IllegalStateException(
-		// "Unknown measure: %s amongst %s".formatted(measure, nameToMeasurator.keySet()));
-		// }
-		//
-		// if (namedMeasure instanceof Combinator combinator) {
-		// List<IMeasurator> namedUnderlyings = combinator.getUnderlyingMeasures()
-		// .stream()
-		// .map(nameToMeasurator::get)
-		// .collect(Collectors.toList());
-		// derivedToUnderlying.put(combinator, namedUnderlyings);
-		//
-		// measuresToAdd.addAll(combinator.getUnderlyingMeasures());
-		// } else if (namedMeasure instanceof Aggregator aggregator) {
-		// aggregators.add(aggregator);
-		// } else {
-		// throw new IllegalArgumentException("Arg on %s".formatted(namedMeasure));
-		// }
-		// });
-		// }
-		// }
-
 		DAGForQuery dagForQuery = DAGForQuery.builder().directedGraph(directedGraph).queriedMeasures(measures).build();
 		return dagForQuery;
+	}
+
+	/**
+	 * 
+	 * @param adhocQuery
+	 * @return the Set of {@link IAdhocQuery} to be executed to an underlying Database to be able to execute the
+	 *         {@link DAGForQuery}
+	 */
+	public Set<DatabaseQuery> prepare(IAdhocQuery adhocQuery) {
+		// DAGForQuery dagForQuery = prepareDAGForQuery(
+		// adhocQuery.getMeasures().stream().map(ReferencedMeasure::getRef).collect(Collectors.toSet()));
+
+		// Aggregators expressed the actual query to the underlying DB
+		LinkedList<IAdhocQuery> aggregators = new LinkedList<>();
+		// Collectors are intermediate measures in the DAG
+		LinkedList<IAdhocQuery> collectors = new LinkedList<>();
+
+		collectors.add(adhocQuery);
+
+		while (!collectors.isEmpty()) {
+			IAdhocQuery adhocSubQuery = collectors.poll();
+
+			for (ReferencedMeasure underlyingMeasure : adhocSubQuery.getMeasures()) {
+				String ref = underlyingMeasure.getRef();
+
+				IMeasure measure = nameToMeasurator.get(ref);
+
+				if (measure instanceof Aggregator aggregator) {
+					AdhocQuery subQueryToUnderlyings = AdhocQueryBuilder.edit(adhocSubQuery)
+							.clearMeasures()
+							.addMeasures(aggregator.getName())
+							.build();
+
+					aggregators.add(subQueryToUnderlyings);
+				} else if (measure instanceof Combinator combinator) {
+
+					AdhocQuery subQueryToUnderlyings = AdhocQueryBuilder.edit(adhocSubQuery)
+							.clearMeasures()
+							.addMeasures(combinator.getUnderlyingMeasurators())
+							.build();
+
+					collectors.add(subQueryToUnderlyings);
+				} else {
+					throw new UnsupportedOperationException(measure.toString());
+				}
+			}
+		}
+
+		Map<AdhocQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
+
+		for (IAdhocQuery leafQuery : aggregators) {
+			if (leafQuery.getMeasures().size() != 1) {
+				throw new IllegalStateException("Expected simple aggregators");
+			}
+			ReferencedMeasure leafRefMeasure = leafQuery.getMeasures().iterator().next();
+			IMeasure leafMeasure = nameToMeasurator.get(leafRefMeasure.getRef());
+
+			if (leafMeasure instanceof Aggregator leafAggregator) {
+				AdhocQuery measureless = AdhocQueryBuilder.edit(leafQuery).clearMeasures().build();
+
+				// We could analyze filters, to discard a query filter `k=v` if another query filters `k=v|v2`
+				measurelessToAggregators.merge(measureless, Collections.singleton(leafAggregator), DAG::unionSet);
+			} else {
+				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
+			}
+		}
+
+		return measurelessToAggregators.entrySet().stream().map(e -> {
+			AdhocQuery adhocLeafQuery = e.getKey();
+			Set<Aggregator> leafAggregators = e.getValue();
+			return new DatabaseQuery(adhocLeafQuery::getFilters, adhocLeafQuery::getGroupBys, leafAggregators);
+		}).collect(Collectors.toSet());
+
 	}
 
 }

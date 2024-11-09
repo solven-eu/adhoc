@@ -17,6 +17,7 @@ import eu.solven.adhoc.aggregations.SumAggregator;
 import eu.solven.adhoc.aggregations.SumTransformation;
 import eu.solven.adhoc.dag.DAG;
 import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
+import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
@@ -48,17 +49,14 @@ public class TestQueryOptions {
 		rows.add(Map.of("k2", 234));
 		rows.add(Map.of("k1", 345, "k2", 456));
 
-		ITabularView output =
-				dag.execute(Set.of("sumK1K2"), Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(),
+				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),
+				rows.stream());
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
-		MapBasedTabularView mapBased = new MapBasedTabularView();
-
-		output.acceptScanner((coordinates, values) -> {
-			mapBased.coordinatesToValues.put(coordinates, values);
-		});
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
 				.hasSize(1)

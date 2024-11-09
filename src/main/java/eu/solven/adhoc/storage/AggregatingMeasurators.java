@@ -3,7 +3,7 @@ package eu.solven.adhoc.storage;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.dag.DAG;
 import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.IMeasurator;
+import eu.solven.adhoc.transformers.IMeasure;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
@@ -30,7 +30,7 @@ public class AggregatingMeasurators {
 		}
 	}
 
-	public void onValue(IMeasurator aggregator, ValueConsumer consumer) {
+	public void onValue(IMeasure aggregator, ValueConsumer consumer) {
 		if (measureToAggregateD.containsKey(aggregator)) {
 
 			if (measureToAggregateL.containsKey(aggregator)) {
@@ -51,7 +51,7 @@ public class AggregatingMeasurators {
 		}
 	}
 
-	public long size(IMeasurator aggregator) {
+	public long size(IMeasure aggregator) {
 		long size = 0;
 
 		if (measureToAggregateD.containsKey(aggregator)) {

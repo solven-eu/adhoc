@@ -1,12 +1,12 @@
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.transformers.IMeasurator;
+import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
 @Builder
 public class MeasuratorIsCompleted {
-	IMeasurator measurator;
+	IMeasure measurator;
 	long nbCells;
 }

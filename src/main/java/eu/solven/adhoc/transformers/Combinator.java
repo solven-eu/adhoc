@@ -8,7 +8,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class Combinator implements IMeasurator, IHasUnderlyingMeasures {
+public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
