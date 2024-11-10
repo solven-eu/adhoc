@@ -36,7 +36,7 @@ public class TestQueryOptions {
 	public void testSumOfSum_() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasurators(Arrays.asList("k1", "k2"))
+				.underlyingMeasures(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 

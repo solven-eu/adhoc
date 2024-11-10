@@ -9,8 +9,8 @@ public class MaxTransformation implements ITransformation {
 	final IAggregation agg = new MaxAggregator();
 
 	@Override
-	public Object transform(List<Object> underlyingValues) {
-		return underlyingValues.stream().filter(o -> o != null).reduce(null, agg::aggregate);
+	public Object transform(List<?> underlyingValues) {
+		return underlyingValues.stream().filter(o -> o != null).<Object>map(o -> o).reduce(null, agg::aggregate);
 	}
 
 }

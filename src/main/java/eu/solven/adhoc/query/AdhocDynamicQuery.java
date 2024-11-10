@@ -1,15 +1,15 @@
 package eu.solven.adhoc.query;
 
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IAxesFilter;
 import eu.solven.adhoc.api.v1.IDynamicAdhocQuery;
 import eu.solven.adhoc.api.v1.IHasFilters;
-import eu.solven.adhoc.api.v1.IHasGroupBys;
+import eu.solven.adhoc.api.v1.IHasGroupBy;
 import eu.solven.adhoc.api.v1.IHasRefMeasures;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.EqualsAndHashCode;
@@ -25,23 +25,23 @@ import lombok.EqualsAndHashCode;
 public class AdhocDynamicQuery implements IDynamicAdhocQuery {
 
 	protected final IHasFilters axesFilters;
-	protected final IHasGroupBys axes;
+	protected final IHasGroupBy axes;
 	protected final IHasRefMeasures hasMeasures;
 
-	public AdhocDynamicQuery(IHasFilters hasFilters, IHasGroupBys axes, IHasRefMeasures hasMeasures) {
+	public AdhocDynamicQuery(IHasFilters hasFilters, IHasGroupBy axes, IHasRefMeasures hasMeasures) {
 		this.axesFilters = hasFilters;
 		this.axes = axes;
 		this.hasMeasures = hasMeasures;
 	}
 
 	@Override
-	public IAxesFilter getFilters() {
-		return axesFilters.getFilters();
+	public IAdhocFilter getFilter() {
+		return axesFilters.getFilter();
 	}
 
 	@Override
-	public List<String> getGroupBys() {
-		return axes.getGroupBys();
+	public IAdhocGroupBy getGroupBy() {
+		return axes.getGroupBy();
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class AdhocDynamicQuery implements IDynamicAdhocQuery {
 	public String toString() {
 		// We call the getters to workaround usage of lambda
 		return "SimpleAggregationQuery [axesFilters=" + axesFilters
-				.getFilters() + ", groupBys=" + axes.getGroupBys() + ", hasMeasures=" + hasMeasures.getMeasures() + "]";
+				.getFilter() + ", groupBys=" + axes.getGroupBy() + ", hasMeasures=" + hasMeasures.getMeasures() + "]";
 	}
 
 	@Override

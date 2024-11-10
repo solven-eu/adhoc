@@ -36,7 +36,7 @@ public class TestAggregations_Long {
 	public void testSumOfSum() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasurators(Arrays.asList("k1", "k2"))
+				.underlyingMeasures(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -67,7 +67,7 @@ public class TestAggregations_Long {
 	public void testSumOfMax() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasurators(Arrays.asList("k1", "k2"))
+				.underlyingMeasures(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -98,7 +98,7 @@ public class TestAggregations_Long {
 	public void testMaxOfSum() {
 		dag.addMeasure(Combinator.builder()
 				.name("maxK1K2")
-				.underlyingMeasurators(Arrays.asList("k1", "k2"))
+				.underlyingMeasures(Arrays.asList("k1", "k2"))
 				.transformationKey(MaxTransformation.KEY)
 				.build());
 

@@ -12,5 +12,9 @@ import java.util.stream.Stream;
 public interface ITabularView {
 	Stream<Map<String, ?>> keySet();
 
-	void acceptScanner(RowScanner rowScanner);
+	void acceptScanner(RowScanner<Map<String, ?>> rowScanner);
+
+	static ITabularView empty() {
+		return MapBasedTabularView.empty();
+	}
 }

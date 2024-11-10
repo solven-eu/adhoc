@@ -2,7 +2,7 @@ package eu.solven.adhoc.api.v1.pojo;
 
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAxesFilterAxisEquals;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import lombok.Builder;
@@ -27,8 +27,8 @@ public class AxisEqualsFilter implements IAxesFilterAxisEquals {
 
 		if (filtered == null) {
 			throw new IllegalArgumentException("'filtered' can not be null");
-		} else if (filtered instanceof IAxesFilter) {
-			throw new IllegalArgumentException("'filtered' can not be a: " + IAxesFilter.class.getSimpleName());
+		} else if (filtered instanceof IAdhocFilter) {
+			throw new IllegalArgumentException("'filtered' can not be a: " + IAdhocFilter.class.getSimpleName());
 		}
 	}
 

@@ -10,11 +10,12 @@ import java.util.Map;
  *
  */
 public interface IHasFilters {
+	IHasFilters MATCH_ALL = () -> IAdhocFilter.MATCH_ALL;
 
 	/**
 	 * An empty {@link Map} would match any rows.
 	 * 
 	 * @return the {@link List} of filters. To be interpreted as an OR over AND conditions.
 	 */
-	IAxesFilter getFilters();
+	IAdhocFilter getFilter();
 }

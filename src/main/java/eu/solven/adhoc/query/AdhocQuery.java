@@ -1,10 +1,10 @@
 package eu.solven.adhoc.query;
 
-import java.util.List;
 import java.util.Set;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IAxesFilter;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.Value;
 
@@ -17,8 +17,8 @@ import lombok.Value;
 @Value
 public class AdhocQuery implements IAdhocQuery {
 
-	protected final IAxesFilter filters;
-	protected final List<String> groupBys;
+	protected final IAdhocFilter filter;
+	protected final IAdhocGroupBy groupBy;
 	protected final Set<ReferencedMeasure> measures;
 
 }

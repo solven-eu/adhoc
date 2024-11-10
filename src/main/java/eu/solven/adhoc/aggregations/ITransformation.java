@@ -11,5 +11,5 @@ import eu.solven.adhoc.transformers.Combinator;
  *
  */
 public interface ITransformation {
-	Object transform(List<Object> underlyingValues);
+	Object transform(List<?> underlyingValues);
 }

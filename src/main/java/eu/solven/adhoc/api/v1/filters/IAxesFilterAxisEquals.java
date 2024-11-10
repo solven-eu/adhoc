@@ -2,9 +2,9 @@ package eu.solven.adhoc.api.v1.filters;
 
 import javax.annotation.Nonnull;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 
-public interface IAxesFilterAxisEquals extends IAxesFilter {
+public interface IAxesFilterAxisEquals extends IAdhocFilter {
 
 	@Nonnull
 	String getAxis();

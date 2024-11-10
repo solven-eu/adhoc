@@ -8,7 +8,8 @@ import java.util.List;
  * @author Benoit Lacelle
  *
  */
-public interface IHasGroupBys {
+public interface IHasGroupBy {
+	IHasGroupBy GRAND_TOTAL = () -> IAdhocGroupBy.GRAND_TOTAL;
 
-	List<String> getGroupBys();
+	IAdhocGroupBy getGroupBy();
 }

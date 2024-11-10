@@ -10,4 +10,9 @@ public class AdhocEventsToSfl4j {
 	public void onMeasuratorIsCompleted(MeasuratorIsCompleted event) {
 		log.info("measurator={} is completed with size={}", event.getMeasurator(), event.getNbCells());
 	}
+
+	@Subscribe
+	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
+		log.info("query phase={} is completed", event.getPhase());
+	}
 }

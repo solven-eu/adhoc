@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import lombok.Value;
 
+@Deprecated
 @Value
 public class AggregatingMeasurators {
 

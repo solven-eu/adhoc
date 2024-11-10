@@ -15,8 +15,12 @@ import lombok.Value;
 @Value
 @Builder
 public class Aggregator implements IMeasure {
+	// The name/identifier of the measure
 	@NonNull
 	String name;
+
+	// The name of the underlying aggregated column
+	String columnName;
 
 	@NonNull
 	@Default

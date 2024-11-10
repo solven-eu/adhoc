@@ -2,7 +2,7 @@ package eu.solven.adhoc.api.v1.pojo;
 
 import java.util.List;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAxesFilterAnd;
 import eu.solven.adhoc.api.v1.filters.IAxesFilterOr;
 import lombok.Builder;
@@ -22,7 +22,7 @@ import lombok.extern.jackson.Jacksonized;
 public class AxesFilterOr implements IAxesFilterOr {
 
 	@Singular
-	final List<IAxesFilter> filters;
+	final List<IAdhocFilter> filters;
 
 	@Override
 	public boolean isExclusion() {
@@ -41,7 +41,7 @@ public class AxesFilterOr implements IAxesFilterOr {
 	}
 
 	@Override
-	public List<IAxesFilter> getOr() {
+	public List<IAdhocFilter> getOr() {
 		return filters;
 	}
 

@@ -1,16 +1,15 @@
 package eu.solven.adhoc.query;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IAxesFilter;
 import eu.solven.adhoc.api.v1.IDynamicAdhocQuery;
 import eu.solven.adhoc.api.v1.IHasRefMeasures;
-import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 
 /**
@@ -22,13 +21,13 @@ import eu.solven.adhoc.transformers.ReferencedMeasure;
 public class EmptyAggregationQuery implements IDynamicAdhocQuery {
 
 	@Override
-	public IAxesFilter getFilters() {
-		return new AxesFilterAnd(Collections.emptyList());
+	public IAdhocFilter getFilter() {
+		return IAdhocFilter.MATCH_ALL;
 	}
 
 	@Override
-	public List<String> getGroupBys() {
-		return Collections.emptyList();
+	public IAdhocGroupBy getGroupBy() {
+		return IAdhocGroupBy.GRAND_TOTAL;
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package eu.solven.adhoc.query;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -11,8 +10,8 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IAxesFilter;
 import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
 import eu.solven.adhoc.api.v1.pojo.AxisEqualsFilter;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
@@ -31,12 +30,12 @@ public class AdhocQueryBuilder {
 	protected final Set<String> wildcards = new ConcurrentSkipListSet<>();
 
 	// By default, no filters
-	protected final List<IAxesFilter> andFilters = new CopyOnWriteArrayList<>();
+	protected final List<IAdhocFilter> andFilters = new CopyOnWriteArrayList<>();
 
 	// By default, no aggregation
 	protected final NavigableSet<ReferencedMeasure> measures = new ConcurrentSkipListSet<>();
 
-	public AdhocQueryBuilder addWildcards(String wildcard, String... more) {
+	public AdhocQueryBuilder addGroupby(String wildcard, String... more) {
 		return addWildcards(Lists.asList(wildcard, more));
 	}
 
@@ -46,7 +45,7 @@ public class AdhocQueryBuilder {
 		return this;
 	}
 
-	public AdhocQueryBuilder andFilter(IAxesFilter moreAndFilter) {
+	public AdhocQueryBuilder andFilter(IAdhocFilter moreAndFilter) {
 		// Skipping matchAll is useful on `.edit`
 		if (!moreAndFilter.isMatchAll()) {
 			andFilters.add(moreAndFilter);
@@ -115,7 +114,7 @@ public class AdhocQueryBuilder {
 	// }
 
 	public AdhocQuery build() {
-		AdhocQuery query = new AdhocQuery(new AxesFilterAnd(andFilters), new ArrayList<>(wildcards), measures);
+		AdhocQuery query = new AdhocQuery(new AxesFilterAnd(andFilters), GroupByColumns.of(wildcards), measures);
 
 		return query;
 	}
@@ -163,10 +162,10 @@ public class AdhocQueryBuilder {
 			queryBuilder.addMeasures(wildcard);
 		}
 
-		queryBuilder.andFilter(base.getFilters());
+		queryBuilder.andFilter(base.getFilter());
 
-		for (String wildcard : base.getGroupBys()) {
-			queryBuilder.addWildcards(wildcard);
+		for (String wildcard : base.getGroupBy().getGroupedByColumns()) {
+			queryBuilder.addGroupby(wildcard);
 		}
 
 		return queryBuilder;

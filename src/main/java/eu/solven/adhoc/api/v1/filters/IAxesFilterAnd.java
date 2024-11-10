@@ -2,14 +2,14 @@ package eu.solven.adhoc.api.v1.filters;
 
 import java.util.List;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 
-public interface IAxesFilterAnd extends IAxesFilter {
+public interface IAxesFilterAnd extends IAdhocFilter {
 
 	/**
 	 * Would throw if .isAnd is false
 	 * 
 	 * @return
 	 */
-	List<IAxesFilter> getAnd();
+	List<IAdhocFilter> getAnd();
 }

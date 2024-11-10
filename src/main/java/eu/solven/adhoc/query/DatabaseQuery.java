@@ -1,17 +1,18 @@
 package eu.solven.adhoc.query;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IHasFilters;
-import eu.solven.adhoc.api.v1.IHasGroupBys;
+import eu.solven.adhoc.api.v1.IHasGroupBy;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
 import eu.solven.adhoc.transformers.Aggregator;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Value;
 
 /**
  * A Database query is dedicated to querying external database.
@@ -19,42 +20,44 @@ import lombok.Builder.Default;
  * @author Benoit Lacelle
  *
  */
+@Value
+@AllArgsConstructor
 @Builder
 public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 
 	@Default
-	protected final IHasFilters axesFilters = () -> AxesFilterAnd.MATCH_ALL;
+	protected final IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 
 	@Default
-	protected final IHasGroupBys axes = () -> Collections.emptyList();
+	protected final IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
 	// We query only simple aggregations to external databases
 	@Default
 	protected final Set<Aggregator> aggregators = Collections.emptySet();
 
-	public DatabaseQuery(IHasFilters hasFilters, IHasGroupBys axes, Set<Aggregator> aggregators) {
-		this.axesFilters = hasFilters;
-		this.axes = axes;
+	public DatabaseQuery(IHasFilters hasFilter, IHasGroupBy groupBy, Set<Aggregator> aggregators) {
+		this.filter = hasFilter.getFilter();
+		this.groupBy = groupBy.getGroupBy();
 		this.aggregators = aggregators;
 	}
 
 	@Override
-	public IAxesFilter getFilters() {
-		return axesFilters.getFilters();
+	public IAdhocFilter getFilter() {
+		return filter;
 	}
 
 	@Override
-	public List<String> getGroupBys() {
-		return axes.getGroupBys();
+	public IAdhocGroupBy getGroupBy() {
+		return groupBy;
 	}
 
 	public Set<Aggregator> getAggregators() {
 		return aggregators;
 	}
 
-	@Override
-	public String toString() {
-		// We call the getters to workaround usage of lambda
-		return "SimpleAggregationQuery [axesFilters=" + axesFilters
-				.getFilters() + ", groupBys=" + axes.getGroupBys() + ", aggregators=" + aggregators + "]";
-	}
+	// @Override
+	// public String toString() {
+	// // We call the getters to workaround usage of lambda
+	// return "SimpleAggregationQuery [axesFilters=" + axesFilters
+	// .getFilter() + ", groupBys=" + axes.getGroupBys() + ", aggregators=" + aggregators + "]";
+	// }
 }

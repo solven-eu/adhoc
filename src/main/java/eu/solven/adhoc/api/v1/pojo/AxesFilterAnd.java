@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.api.v1.IAxesFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAxesFilterAnd;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +21,8 @@ import lombok.ToString;
 @RequiredArgsConstructor
 @EqualsAndHashCode
 public class AxesFilterAnd implements IAxesFilterAnd {
-	public static final IAxesFilter MATCH_ALL = new AxesFilterAnd(Collections.emptyList());
 
-	final List<IAxesFilter> filters;
+	final List<IAdhocFilter> filters;
 
 	public static AxesFilterAnd andAxisEqualsFilters(Map<String, ?> filters) {
 		return new AxesFilterAnd(filters.entrySet()
@@ -59,7 +58,7 @@ public class AxesFilterAnd implements IAxesFilterAnd {
 	}
 
 	@Override
-	public List<IAxesFilter> getAnd() {
+	public List<IAdhocFilter> getAnd() {
 		return Collections.unmodifiableList(filters);
 	}
 

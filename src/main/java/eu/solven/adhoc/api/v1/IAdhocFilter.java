@@ -1,10 +1,16 @@
 package eu.solven.adhoc.api.v1;
 
-public interface IAxesFilter {
+import java.util.Collections;
+
+import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
+
+public interface IAdhocFilter {
+	IAdhocFilter MATCH_ALL = new AxesFilterAnd(Collections.emptyList());
+
 	/**
-	 * If true, this {@link IAxesFilter} defines points to exclude.
+	 * If true, this {@link IAdhocFilter} defines points to exclude.
 	 * 
-	 * If false, this {@link IAxesFilter} defines points to include.
+	 * If false, this {@link IAdhocFilter} defines points to include.
 	 * 
 	 * @return
 	 */
