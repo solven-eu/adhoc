@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -340,15 +341,19 @@ public class DAG {
 			return Optional.of(Collections.emptyMap());
 		}
 
-		Map<String, Object> coordinates = new LinkedHashMap<>();
+		NavigableSet<String> groupedByColumns = adhocQuery.getGroupBy().getGroupedByColumns();
 
-		for (Map.Entry<String, ?> entry : input.entrySet()) {
-			if (adhocQuery.getGroupBy().getGroupedByColumns().contains(entry.getKey())) {
-				coordinates.put(entry.getKey(), entry.getValue());
-			} else {
+		Map<String, Object> coordinates = new LinkedHashMap<>(groupedByColumns.size());
+
+		for (String groupBy : groupedByColumns) {
+			Object value = input.get(groupBy);
+
+			if (value == null) {
 				// The input lack a groupBy coordinate: we exclude it
 				return Optional.empty();
 			}
+
+			coordinates.put(groupBy, value);
 		}
 
 		return Optional.of(coordinates);

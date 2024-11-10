@@ -2,9 +2,14 @@ package eu.solven.adhoc.storage;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.pepper.logging.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
@@ -12,8 +17,8 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
 public class MultiTypeStorage<T> {
 
-	Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
-	Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
+	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
+	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
 
 	public void put(T key, Object v) {
 
@@ -49,7 +54,7 @@ public class MultiTypeStorage<T> {
 		}
 	}
 
-	public void scan(RowScanner <T>rowScanner) {
+	public void scan(RowScanner<T> rowScanner) {
 		keySet().forEach(key -> {
 			onValue(key, rowScanner.onKey(key));
 		});
@@ -83,5 +88,22 @@ public class MultiTypeStorage<T> {
 		keySet.addAll(measureToAggregateL.keySet());
 
 		return keySet;
+	}
+
+	@Override
+	public String toString() {
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
+				.add("measureToAggregateD.size()", measureToAggregateD.size())
+				.add("measureToAggregateL.size()", measureToAggregateL.size());
+
+		AtomicInteger index = new AtomicInteger();
+		keySet().stream().limit(5).forEach(key -> {
+
+			onValue(key, AsObjectValueConsumer.consumer(o -> {
+				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));
+			}));
+		});
+
+		return toStringHelper.toString();
 	}
 }

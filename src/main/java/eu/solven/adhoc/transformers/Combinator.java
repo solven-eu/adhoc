@@ -50,10 +50,10 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
 
 		Set<Map<String, ?>> coordinatesManaged = new HashSet<>();
-		
+
 		ITransformation tranformation = DAG.makeCombinator(this);
 
-		for (Map<String, ?> coordinate : underlyings.get(0).getStorage().keySet()) {
+		for (Map<String, ?> coordinate : keySet(underlyings)) {
 			if (!coordinatesManaged.add(coordinate)) {
 				log.trace("{} has already been handled", coordinate);
 			} else {
@@ -67,13 +67,24 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 
 					return refV.get();
 				}).collect(Collectors.toList());
-				
+
 				Object value = tranformation.transform(underlyingVs);
 				output.put(coordinate, value);
 			}
 		}
 
 		return output;
+	}
+
+	private Iterable<Map<String, ?>> keySet(List<CoordinatesToValues> underlyings) {
+
+		Set<Map<String, ?>> keySet = new HashSet<>();
+
+		for (CoordinatesToValues underlying : underlyings) {
+			keySet.addAll(underlying.getStorage().keySet());
+		}
+
+		return keySet;
 	}
 
 }

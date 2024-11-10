@@ -58,9 +58,7 @@ public class TestAggregations_GroupBys {
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456 + 567));
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456 + 567));
 	}
 
 	@Test
@@ -83,8 +81,8 @@ public class TestAggregations_GroupBys {
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 234))
-				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 123 + 345 + 456));
+				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 123 + 345 + 456))
+				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 234 + 567));
 	}
 
 	@Test
@@ -106,8 +104,9 @@ public class TestAggregations_GroupBys {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
-				.hasSize(1)
-				.containsEntry(Map.of("b", "b1"), Map.of("sumK1K2", 0L + 234));
+				.hasSize(2)
+				.containsEntry(Map.of("b", "b1"), Map.of("sumK1K2", 0L + 234))
+				.containsEntry(Map.of("b", "b2"), Map.of("sumK1K2", 0L + 567));
 	}
 
 	@Test
@@ -124,14 +123,14 @@ public class TestAggregations_GroupBys {
 		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").build(), rows.stream());
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
-				.hasSize(1)
-				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 345))
-				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 234));
+				.hasSize(2)
+				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 345 + 456))
+				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 567 + 234));
 	}
 
 	@Test
@@ -148,13 +147,13 @@ public class TestAggregations_GroupBys {
 		ITabularView output = dag.execute(AdhocQueryBuilder.measure("maxK1K2").addGroupby("a").build(), rows.stream());
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 345))
-				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 234));
+				.containsEntry(Map.of("a", "a1"), Map.of("maxK1K2", 0L + 123 + 345))
+				.containsEntry(Map.of("a", "a2"), Map.of("maxK1K2", 0L + 567));
 	}
 }

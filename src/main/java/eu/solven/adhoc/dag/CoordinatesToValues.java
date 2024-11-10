@@ -7,11 +7,13 @@ import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.ValueConsumer;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
 public class CoordinatesToValues {
+	@NonNull
 	@Default
 	MultiTypeStorage<Map<String, ?>> storage = new MultiTypeStorage<>();
 

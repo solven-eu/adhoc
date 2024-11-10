@@ -3,7 +3,11 @@ package eu.solven.adhoc;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.aggregations.MapAggregator;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -59,5 +63,18 @@ public class MapBasedTabularView implements ITabularView {
 
 	public static ITabularView empty() {
 		return MapBasedTabularView.builder().coordinatesToValues(Collections.emptyMap()).build();
+	}
+
+	@Override
+	public String toString() {
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", coordinatesToValues.size());
+
+		AtomicInteger index = new AtomicInteger();
+		coordinatesToValues.entrySet()
+				.stream()
+				.limit(5)
+				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
+
+		return toStringHelper.toString();
 	}
 }
