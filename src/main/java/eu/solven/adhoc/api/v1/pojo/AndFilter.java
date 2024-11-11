@@ -39,7 +39,7 @@ public class AndFilter implements IAndFilter {
 	}
 
 	@Override
-	public boolean isExclusion() {
+	public boolean isNot() {
 		return false;
 	}
 

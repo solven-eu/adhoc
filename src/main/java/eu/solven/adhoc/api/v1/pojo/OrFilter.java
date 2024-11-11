@@ -25,7 +25,7 @@ public class OrFilter implements IOrFilter {
 	final List<IAdhocFilter> filters;
 
 	@Override
-	public boolean isExclusion() {
+	public boolean isNot() {
 		return false;
 	}
 

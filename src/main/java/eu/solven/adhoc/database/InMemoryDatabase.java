@@ -30,6 +30,7 @@ public class InMemoryDatabase implements IAdhocDatabase {
 		return this.stream().filter(row -> {
 			return FilterHelpers.match(dbQuery.getFilter(), row);
 		}).map(row -> {
+			// BEWARE Should we filter not selected columns?
 			Set<String> keysToKeep = new HashSet<>();
 
 			keysToKeep.addAll(dbQuery.getGroupBy().getGroupedByColumns());

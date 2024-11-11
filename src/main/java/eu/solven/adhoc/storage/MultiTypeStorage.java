@@ -18,6 +18,8 @@ import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,8 @@ public class MultiTypeStorage<T> {
 	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
 	@Default
 	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
+	@Default
+	final Object2ObjectMap<T, String> measureToAggregateS = new Object2ObjectOpenHashMap<>();
 
 	public void put(T key, Object v) {
 		if (v instanceof BigDecimal bigDecimal) {
@@ -47,14 +51,18 @@ public class MultiTypeStorage<T> {
 		} else if (v instanceof Long || v instanceof Integer) {
 			long vAsPrimitive = ((Number) v).longValue();
 			measureToAggregateL.put(key, vAsPrimitive);
+		} else if (v instanceof CharSequence) {
+			String vAsString = v.toString();
+			measureToAggregateS.put(key, vAsString);
 		} else {
 			throw new UnsupportedOperationException("Received: %s".formatted(PepperLogHelper.getObjectAndClass(v)));
 		}
 	}
 
 	public void onValue(T key, ValueConsumer consumer) {
-		if (measureToAggregateD.containsKey(key)) {
-
+		if (measureToAggregateS.containsKey(key)) {
+			consumer.onCharsequence(measureToAggregateS.get(key));
+		} else if (measureToAggregateD.containsKey(key)) {
 			if (measureToAggregateL.containsKey(key)) {
 				// both double and long
 				double asDouble = 0D;
@@ -84,6 +92,7 @@ public class MultiTypeStorage<T> {
 
 		size += measureToAggregateD.size();
 		size += measureToAggregateL.size();
+		size += measureToAggregateS.size();
 
 		return size;
 	}
@@ -105,6 +114,7 @@ public class MultiTypeStorage<T> {
 
 		keySet.addAll(measureToAggregateD.keySet());
 		keySet.addAll(measureToAggregateL.keySet());
+		keySet.addAll(measureToAggregateS.keySet());
 
 		return keySet;
 	}
@@ -113,7 +123,8 @@ public class MultiTypeStorage<T> {
 	public String toString() {
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
 				.add("measureToAggregateD.size()", measureToAggregateD.size())
-				.add("measureToAggregateL.size()", measureToAggregateL.size());
+				.add("measureToAggregateL.size()", measureToAggregateL.size())
+				.add("measureToAggregateS.size()", measureToAggregateS.size());
 
 		AtomicInteger index = new AtomicInteger();
 		keySet().stream().limit(5).forEach(key -> {

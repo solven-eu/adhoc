@@ -11,6 +11,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.EqualsFilter;
@@ -87,34 +88,24 @@ public class AdhocQueryBuilder {
 		return this;
 	}
 
-	/**
-	 * Like .addAggregation, but specialized for sums.
-	 * 
-	 * @param axis
-	 *            the axis the aggregate with a SUM.
-	 * @return current builder.
-	 */
-	// public AggregateQueryBuilder sum(String axis) {
-	// return addAggregations(OperatorFactory.sum(axis));
-	// }
-
-	/**
-	 * Like .addAggregation, but specialized for counts.
-	 * 
-	 * @param axis
-	 *            the axis the aggregate with a COUNT.
-	 * @return current builder.
-	 */
-	// public AggregateQueryBuilder count(String axis) {
-	// return addAggregations(OperatorFactory.count(axis));
-	// }
-	//
-	// public AggregateQueryBuilder cellCount(String axis) {
-	// return addAggregations(OperatorFactory.cellCount(axis));
-	// }
-
 	public AdhocQuery build() {
-		AdhocQuery query = new AdhocQuery(new AndFilter(andFilters), GroupByColumns.of(wildcards), measures);
+		IAdhocFilter filter;
+		if (andFilters.isEmpty()) {
+			filter = IAdhocFilter.MATCH_ALL;
+		} else if (andFilters.size() == 1) {
+			filter = andFilters.get(0);
+		} else {
+			filter = new AndFilter(andFilters);
+		}
+
+		IAdhocGroupBy groupBy;
+		if (wildcards.isEmpty()) {
+			groupBy = IAdhocGroupBy.GRAND_TOTAL;
+		} else {
+			groupBy = GroupByColumns.of(wildcards);
+		}
+
+		AdhocQuery query = new AdhocQuery(filter, groupBy, measures);
 
 		return query;
 	}

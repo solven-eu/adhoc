@@ -1,10 +1,12 @@
 package eu.solven.adhoc.api.v1.pojo;
 
 import java.util.Map;
+import java.util.Objects;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IEqualsFilter;
+import eu.solven.adhoc.api.v1.filters.INotFilter;
 import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import eu.solven.pepper.logging.PepperLogHelper;
 
@@ -18,8 +20,12 @@ public class FilterHelpers {
 			IOrFilter orFilter = (IOrFilter) filter;
 			return orFilter.getOr().stream().anyMatch(f -> match(f, input));
 		} else if (filter.isAxisEquals()) {
-			IEqualsFilter orFilter = (IEqualsFilter) filter;
-			return orFilter.getFiltered().equals(input.get(orFilter.getAxis()));
+			IEqualsFilter equalsFilter = (IEqualsFilter) filter;
+			Object value = input.get(equalsFilter.getAxis());
+			return Objects.equals(value, equalsFilter.getFiltered());
+		} else if (filter.isNot()) {
+			INotFilter notFilter = (INotFilter) filter;
+			return !match(notFilter.getNegated(), input);
 		} else {
 			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
 		}

@@ -11,4 +11,5 @@ public interface IEqualsFilter extends IAdhocFilter {
 
 	@Nonnull
 	Object getFiltered();
+
 }

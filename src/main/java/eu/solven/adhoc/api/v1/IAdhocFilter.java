@@ -14,7 +14,9 @@ public interface IAdhocFilter {
 	 * 
 	 * @return
 	 */
-	boolean isExclusion();
+	default boolean isNot() {
+		return false;
+	}
 
 	default boolean isMatchAll() {
 		return false;
@@ -23,7 +25,7 @@ public interface IAdhocFilter {
 	/**
 	 * These are the most simple and primitive filters.
 	 * 
-	 * @return true if this filters an axis for a given value
+	 * @return true if this filters a column for a given value
 	 */
 	default boolean isAxisEquals() {
 		return false;
