@@ -12,6 +12,7 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 - SQLServer. We rely on many concepts from SQLServer to define our own abstractions.
 - Apache Beam. Though [Beam](https://beam.apache.org/) seems less flexible to access intermediate results as intermediate measures.
+- MongoDB [Aggregation Pipeline](https://www.mongodb.com/resources/products/capabilities/aggregation-pipeline).
 - [DAX](https://learn.microsoft.com/en-us/dax/dax-overview) enables complex queries in Microsoft eco-system.
 - [SquashQL](https://www.squashql.io/) is an SQL query-engine for OLAP, with a strong emphasis on its typescript UI.
 

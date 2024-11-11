@@ -1,9 +1,11 @@
 package eu.solven.adhoc.aggregations;
 
+import java.util.Map;
+
 public class StandardTransformationFactory implements ITransformationFactory {
 
 	@Override
-	public ITransformation fromKey(String key) {
+	public ITransformation fromKey(String key, Map<String, ?> options) {
 		return switch (key) {
 		case SumTransformation.KEY: {
 			yield new SumTransformation();
@@ -13,6 +15,9 @@ public class StandardTransformationFactory implements ITransformationFactory {
 		}
 		case DivideTransformation.KEY: {
 			yield new DivideTransformation();
+		}
+		case ExpressionTransformation.KEY: {
+			yield ExpressionTransformation.parse(options);
 		}
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + key);

@@ -37,7 +37,7 @@
             <artifactId>guava</artifactId>
             <version>33.3.1-jre</version>
         </dependency>
-        
+
         <dependency>
             <!-- A lightweight EventBus-->
             <!-- https://github.com/greenrobot/EventBus -->
@@ -64,6 +64,14 @@
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.19.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ezylang</groupId>
+            <artifactId>EvalEx</artifactId>
+            <version>3.4.0</version>
+            <!-- Many projects may not use EvalTranformation-->
+            <optional>true</optional>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->

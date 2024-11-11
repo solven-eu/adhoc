@@ -1,5 +1,7 @@
 package eu.solven.adhoc.aggregations;
 
+import java.util.Map;
+
 /**
  * Provides {@link ITransformation} given their key. This can be extended to provides custom transformations.
  * 
@@ -7,5 +9,5 @@ package eu.solven.adhoc.aggregations;
  *
  */
 public interface ITransformationFactory {
-	ITransformation fromKey(String key);
+	ITransformation fromKey(String key, Map<String, ?> options);
 }

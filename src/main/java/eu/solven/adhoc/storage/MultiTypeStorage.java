@@ -1,5 +1,6 @@
 package eu.solven.adhoc.storage;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -19,8 +20,10 @@ import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.extern.slf4j.Slf4j;
 
 @Builder
+@Slf4j
 public class MultiTypeStorage<T> {
 
 	@Default
@@ -29,6 +32,14 @@ public class MultiTypeStorage<T> {
 	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
 
 	public void put(T key, Object v) {
+		if (v instanceof BigDecimal bigDecimal) {
+			try {
+				v = bigDecimal.longValueExact();
+			} catch (RuntimeException e) {
+				log.trace("Received a BigDecimal which is not an exact long");
+				v = bigDecimal.doubleValue();
+			}
+		}
 
 		if (v instanceof Double || v instanceof Float) {
 			double vAsPrimitive = ((Number) v).doubleValue();
@@ -37,7 +48,7 @@ public class MultiTypeStorage<T> {
 			long vAsPrimitive = ((Number) v).longValue();
 			measureToAggregateL.put(key, vAsPrimitive);
 		} else {
-			throw new UnsupportedOperationException("Received: %s".formatted(v));
+			throw new UnsupportedOperationException("Received: %s".formatted(PepperLogHelper.getObjectAndClass(v)));
 		}
 	}
 

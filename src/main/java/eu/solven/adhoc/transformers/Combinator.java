@@ -1,5 +1,7 @@
 package eu.solven.adhoc.transformers;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,10 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 
 	@NonNull
 	String transformationKey;
+
+	@NonNull
+	@Default
+	Map<String, ?> options = Collections.emptyMap();
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery) {
@@ -52,7 +59,15 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
 
-		ITransformation tranformation = transformationFactory.fromKey(getTransformationKey());
+		ITransformation tranformation;
+		{
+			Map<String, Object> allOptions = new HashMap<>();
+			
+			allOptions.put("underlyingMeasures", underlyingMeasures);
+			allOptions.putAll(options);
+			
+			tranformation = transformationFactory.fromKey(getTransformationKey(), allOptions);
+		}
 
 		for (Map<String, ?> coordinate : keySet(underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
