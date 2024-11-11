@@ -15,4 +15,10 @@ public class AdhocEventsToSfl4j {
 	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
 		log.info("query phase={} is completed", event.getPhase());
 	}
+	
+	@Subscribe
+	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
+		log.info("queryStep={} is evaluating", event.getQueryStep());
+	}
+	
 }

@@ -3,21 +3,24 @@ package eu.solven.adhoc.api.v1.pojo;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.filters.IAxesFilterAxisEquals;
+import eu.solven.adhoc.api.v1.filters.IEqualsFilter;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
 @Jacksonized
-public class AxisEqualsFilter implements IAxesFilterAxisEquals {
+public class EqualsFilter implements IEqualsFilter {
 
+	@NonNull
 	final String axis;
+	@NonNull
 	final Object filtered;
 
-	public AxisEqualsFilter(String axis, Object filtered) {
+	public EqualsFilter(String axis, Object filtered) {
 		if (Set.of(ICountMeasuresConstants.STAR).contains(axis)) {
 			throw new IllegalArgumentException("Invalid axis for filter: " + axis);
 		}

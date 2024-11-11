@@ -3,15 +3,15 @@ package eu.solven.adhoc.api.v1.pojo;
 import java.util.List;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.filters.IAxesFilterAnd;
-import eu.solven.adhoc.api.v1.filters.IAxesFilterOr;
+import eu.solven.adhoc.api.v1.filters.IAndFilter;
+import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Default implementation for {@link IAxesFilterAnd}
+ * Default implementation for {@link IAndFilter}
  * 
  * @author Benoit Lacelle
  *
@@ -19,7 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class AxesFilterOr implements IAxesFilterOr {
+public class OrFilter implements IOrFilter {
 
 	@Singular
 	final List<IAdhocFilter> filters;

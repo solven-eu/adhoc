@@ -25,7 +25,7 @@ import eu.solven.adhoc.transformers.Combinator;
 public class TestAggregations_Double {
 	EventBus eventBus = new EventBus();
 	AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
-	DAG dag = new DAG(eventBus);
+	DAG dag = DAG.builder().eventBus(eventBus).build();
 
 	@BeforeEach
 	public void wireEvents() {

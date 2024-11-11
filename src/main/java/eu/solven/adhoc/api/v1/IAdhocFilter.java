@@ -2,10 +2,10 @@ package eu.solven.adhoc.api.v1;
 
 import java.util.Collections;
 
-import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
 
 public interface IAdhocFilter {
-	IAdhocFilter MATCH_ALL = new AxesFilterAnd(Collections.emptyList());
+	IAdhocFilter MATCH_ALL = new AndFilter(Collections.emptyList());
 
 	/**
 	 * If true, this {@link IAdhocFilter} defines points to exclude.

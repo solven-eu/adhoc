@@ -12,8 +12,8 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
-import eu.solven.adhoc.api.v1.pojo.AxisEqualsFilter;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.api.v1.pojo.EqualsFilter;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 
 /**
@@ -55,7 +55,7 @@ public class AdhocQueryBuilder {
 	}
 
 	public AdhocQueryBuilder addFilter(String key, Object value) {
-		return andFilter(new AxisEqualsFilter(key, value));
+		return andFilter(new EqualsFilter(key, value));
 	}
 
 	public AdhocQueryBuilder addMeasures(Iterable<ReferencedMeasure> moreMeasures) {
@@ -114,7 +114,7 @@ public class AdhocQueryBuilder {
 	// }
 
 	public AdhocQuery build() {
-		AdhocQuery query = new AdhocQuery(new AxesFilterAnd(andFilters), GroupByColumns.of(wildcards), measures);
+		AdhocQuery query = new AdhocQuery(new AndFilter(andFilters), GroupByColumns.of(wildcards), measures);
 
 		return query;
 	}

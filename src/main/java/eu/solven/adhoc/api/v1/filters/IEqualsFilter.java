@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 
-public interface IAxesFilterAxisEquals extends IAdhocFilter {
+public interface IEqualsFilter extends IAdhocFilter {
 
 	@Nonnull
 	String getAxis();

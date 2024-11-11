@@ -4,24 +4,18 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.greenrobot.eventbus.EventBus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.aggregations.SumTransformation;
-import eu.solven.adhoc.dag.DAG;
-import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
 import eu.solven.adhoc.transformers.Combinator;
 
-public class TestAdhocQueryToUnderlyingQuery implements IAdhocTestConstants {
-	EventBus eventBus = new EventBus();
-	AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
-	DAG dag = new DAG(eventBus);
+public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocTestConstants {
 
-	@BeforeEach
-	public void wireEvents() {
-		eventBus.register(toSlf4j);
+	@Override
+	public void feedDb() {
+		// no need for data
 	}
 
 	@Test

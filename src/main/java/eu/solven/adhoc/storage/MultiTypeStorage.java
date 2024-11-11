@@ -1,6 +1,7 @@
 package eu.solven.adhoc.storage;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -11,13 +12,20 @@ import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.pepper.logging.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import lombok.Builder;
+import lombok.Builder.Default;
 
+@Builder
 public class MultiTypeStorage<T> {
 
+	@Default
 	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
+	@Default
 	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
 
 	public void put(T key, Object v) {
@@ -105,5 +113,12 @@ public class MultiTypeStorage<T> {
 		});
 
 		return toStringHelper.toString();
+	}
+
+	public static MultiTypeStorage<Map<String, ?>> empty() {
+		return MultiTypeStorage.<Map<String, ?>>builder()
+				.measureToAggregateD(Object2DoubleMaps.emptyMap())
+				.measureToAggregateL(Object2LongMaps.emptyMap())
+				.build();
 	}
 }

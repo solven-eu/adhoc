@@ -1,5 +1,6 @@
 package eu.solven.adhoc.transformers;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -7,8 +8,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.aggregations.ITransformation;
 import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -20,39 +22,41 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class Combinator implements IMeasure, IHasUnderlyingMeasures {
+public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
 	@NonNull
-	List<String> underlyingMeasures;
+	String underlyingMeasure;
 
 	@NonNull
-	String transformationKey;
+	IAdhocFilter filter;
+
+	@Override
+	public List<String> getUnderlyingMeasures() {
+		return Collections.singletonList(underlyingMeasure);
+	}
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery) {
-		return getUnderlyingMeasures().stream().map(underlyingName -> {
-			return AdhocQueryStep.builder()
-					.filter(adhocSubQuery.getFilter())
-					.groupBy(adhocSubQuery.getGroupBy())
-					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
-					.build();
-		}).toList();
+		AdhocQueryStep step = AdhocQueryStep.builder()
+				.filter(AndFilter.and(adhocSubQuery.getFilter(), filter))
+				.groupBy(adhocSubQuery.getGroupBy())
+				.measure(ReferencedMeasure.builder().ref(underlyingMeasure).build())
+				.build();
+		return Collections.singletonList(step);
 	}
 
 	@Override
 	public CoordinatesToValues produceOutputColumn(ITransformationFactory transformationFactory,
 			List<CoordinatesToValues> underlyings) {
-		if (underlyings.size() != underlyingMeasures.size()) {
-			throw new IllegalArgumentException("underlyingMeasures.size() != underlyings.size()");
+		if (underlyings.size() != 1) {
+			throw new IllegalArgumentException("underlyings.size() != 1");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
-
-		ITransformation tranformation = transformationFactory.fromKey(getTransformationKey());
 
 		for (Map<String, ?> coordinate : keySet(underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
@@ -66,7 +70,7 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 				return refV.get();
 			}).collect(Collectors.toList());
 
-			Object value = tranformation.transform(underlyingVs);
+			Object value = underlyingVs.get(0);
 			output.put(coordinate, value);
 		}
 
@@ -74,6 +78,7 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	private Iterable<Map<String, ?>> keySet(List<CoordinatesToValues> underlyings) {
+
 		Set<Map<String, ?>> keySet = new HashSet<>();
 
 		for (CoordinatesToValues underlying : underlyings) {

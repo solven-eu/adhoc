@@ -5,7 +5,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.api.v1.pojo.AxesFilterAnd;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
 
 public class TestAdhocQueryBuilder {
 	@Test
@@ -22,7 +22,7 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testGrandTotal_filterAndEmpty() {
-		AdhocQuery q = AdhocQueryBuilder.grandTotal().andFilter(AxesFilterAnd.andAxisEqualsFilters(Map.of())).build();
+		AdhocQuery q = AdhocQueryBuilder.grandTotal().andFilter(AndFilter.andAxisEqualsFilters(Map.of())).build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();

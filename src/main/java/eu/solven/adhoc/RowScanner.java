@@ -1,7 +1,5 @@
 package eu.solven.adhoc;
 
-import java.util.Map;
-
 import eu.solven.adhoc.storage.ValueConsumer;
 
 /**
@@ -11,7 +9,7 @@ import eu.solven.adhoc.storage.ValueConsumer;
  *
  */
 public interface RowScanner<T> {
-	void onRow(T coordinates, Map<String, ?> values);
+//	void onRow(T coordinates, Map<String, ?> values);
 
 	ValueConsumer onKey(T coordinates);
 }

@@ -25,15 +25,21 @@ public class MapBasedTabularView implements ITabularView {
 
 		RowScanner<Map<String, ?>> rowScanner = new RowScanner<Map<String, ?>>() {
 
-			@Override
-			public void onRow(Map<String, ?> coordinates, Map<String, ?> values) {
-				newView.coordinatesToValues.put(coordinates, values);
-			}
+			// @Override
+			// public void onRow(Map<String, ?> coordinates, Map<String, ?> values) {
+			// newView.coordinatesToValues.put(coordinates, values);
+			// }
 
 			@Override
 			public ValueConsumer onKey(Map<String, ?> coordinates) {
+				if (newView.coordinatesToValues.containsKey(coordinates)) {
+					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
+				}
+
 				return AsObjectValueConsumer.consumer(o -> {
-					newView.coordinatesToValues.computeIfAbsent(coordinates, k -> new HashMap<>()).put(null, null);
+					Map<String, ?> oAsMap = (Map<String, ?>) o;
+
+					newView.coordinatesToValues.put(coordinates, oAsMap);
 				});
 			}
 		};
@@ -50,7 +56,9 @@ public class MapBasedTabularView implements ITabularView {
 
 	@Override
 	public void acceptScanner(RowScanner<Map<String, ?>> rowScanner) {
-		coordinatesToValues.forEach(rowScanner::onRow);
+		coordinatesToValues.forEach((k, v) -> {
+			rowScanner.onKey(k).onObject(v);
+		});
 	}
 
 	public void append(Map<String, ?> coordinates, Map<String, ?> mToValues) {

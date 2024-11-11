@@ -15,7 +15,7 @@ import lombok.Value;
 public class CoordinatesToValues {
 	@NonNull
 	@Default
-	MultiTypeStorage<Map<String, ?>> storage = new MultiTypeStorage<>();
+	MultiTypeStorage<Map<String, ?>> storage = MultiTypeStorage.<Map<String, ?>>builder().build();
 
 	public static CoordinatesToValues empty() {
 		return CoordinatesToValues.builder().build();

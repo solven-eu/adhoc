@@ -10,7 +10,7 @@ import lombok.Value;
 public class CollectingCombinators<T> {
 
 	@Default
-	MultiTypeStorage<T> storage = new MultiTypeStorage<T>();
+	MultiTypeStorage<T> storage = MultiTypeStorage.<T>builder().build();
 
 	public void contribute(T key, Object v) {
 		storage.put(key, v);

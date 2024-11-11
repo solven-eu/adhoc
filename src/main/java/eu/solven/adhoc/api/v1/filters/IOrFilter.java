@@ -4,7 +4,7 @@ import java.util.List;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 
-public interface IAxesFilterOr extends IAdhocFilter {
+public interface IOrFilter extends IAdhocFilter {
 
 	/**
 	 * Would throw if .isOr is false
