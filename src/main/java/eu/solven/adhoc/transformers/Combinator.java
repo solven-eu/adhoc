@@ -50,6 +50,7 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 
 	@Override
 	public CoordinatesToValues produceOutputColumn(ITransformationFactory transformationFactory,
+			AdhocQueryStep queryStep,
 			List<CoordinatesToValues> underlyings) {
 		if (underlyings.size() != underlyingMeasures.size()) {
 			throw new IllegalArgumentException("underlyingMeasures.size() != underlyings.size()");
@@ -62,11 +63,11 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 		ITransformation tranformation;
 		{
 			Map<String, Object> allOptions = new HashMap<>();
-			
+
 			allOptions.put("underlyingMeasures", underlyingMeasures);
 			allOptions.putAll(options);
-			
-			tranformation = transformationFactory.fromKey(getTransformationKey(), allOptions);
+
+			tranformation = transformationFactory.makeTransformation(getTransformationKey(), allOptions);
 		}
 
 		for (Map<String, ?> coordinate : keySet(underlyings)) {

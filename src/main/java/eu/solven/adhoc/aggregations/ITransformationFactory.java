@@ -9,5 +9,7 @@ import java.util.Map;
  *
  */
 public interface ITransformationFactory {
-	ITransformation fromKey(String key, Map<String, ?> options);
+	ITransformation makeTransformation(String key, Map<String, ?> options);
+
+	IAggregation makeAggregation(String key);
 }

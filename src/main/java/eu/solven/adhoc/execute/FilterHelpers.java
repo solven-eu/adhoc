@@ -1,4 +1,4 @@
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.execute;
 
 import java.util.Map;
 import java.util.Objects;

@@ -40,7 +40,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -63,7 +63,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").build(), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
@@ -87,7 +87,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("b").build(), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("b").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"));
@@ -111,7 +111,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").build(), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
@@ -135,7 +135,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("maxK1K2").addGroupby("a").build(), rows.stream());
+		ITabularView output = dag.execute(AdhocQueryBuilder.measure("maxK1K2").addGroupby("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));

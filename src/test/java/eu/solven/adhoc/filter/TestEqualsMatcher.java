@@ -7,8 +7,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.api.v1.pojo.EqualsFilter;
-import eu.solven.adhoc.api.v1.pojo.FilterHelpers;
 import eu.solven.adhoc.api.v1.pojo.NotFilter;
+import eu.solven.adhoc.execute.FilterHelpers;
 
 public class TestEqualsMatcher {
 	@Test

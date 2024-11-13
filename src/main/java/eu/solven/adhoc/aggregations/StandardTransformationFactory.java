@@ -5,7 +5,7 @@ import java.util.Map;
 public class StandardTransformationFactory implements ITransformationFactory {
 
 	@Override
-	public ITransformation fromKey(String key, Map<String, ?> options) {
+	public ITransformation makeTransformation(String key, Map<String, ?> options) {
 		return switch (key) {
 		case SumTransformation.KEY: {
 			yield new SumTransformation();
@@ -18,6 +18,20 @@ public class StandardTransformationFactory implements ITransformationFactory {
 		}
 		case ExpressionTransformation.KEY: {
 			yield ExpressionTransformation.parse(options);
+		}
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		};
+	}
+
+	@Override
+	public IAggregation makeAggregation(String key) {
+		return switch (key) {
+		case SumAggregator.KEY: {
+			yield new SumAggregator();
+		}
+		case MaxAggregator.KEY: {
+			yield new MaxAggregator();
 		}
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + key);

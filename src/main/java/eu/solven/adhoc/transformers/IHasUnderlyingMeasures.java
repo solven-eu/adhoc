@@ -12,5 +12,6 @@ public interface IHasUnderlyingMeasures {
 	List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery);
 
 	CoordinatesToValues produceOutputColumn(ITransformationFactory transformationFactory,
+			AdhocQueryStep queryStep,
 			List<CoordinatesToValues> underlyings);
 }

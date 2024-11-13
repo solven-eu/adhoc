@@ -38,17 +38,17 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery) {
-		AdhocQueryStep step = AdhocQueryStep.builder()
-				.filter(AndFilter.and(adhocSubQuery.getFilter(), filter))
-				.groupBy(adhocSubQuery.getGroupBy())
+	public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep step) {
+		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
+				.filter(AndFilter.and(step.getFilter(), filter))
 				.measure(ReferencedMeasure.builder().ref(underlyingMeasure).build())
 				.build();
-		return Collections.singletonList(step);
+		return Collections.singletonList(underlyingStep);
 	}
 
 	@Override
 	public CoordinatesToValues produceOutputColumn(ITransformationFactory transformationFactory,
+			AdhocQueryStep queryStep,
 			List<CoordinatesToValues> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");

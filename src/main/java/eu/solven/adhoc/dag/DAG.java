@@ -26,23 +26,20 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.RowScanner;
-import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.ITransformationFactory;
-import eu.solven.adhoc.aggregations.MaxAggregator;
 import eu.solven.adhoc.aggregations.StandardTransformationFactory;
-import eu.solven.adhoc.aggregations.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.api.v1.pojo.FilterHelpers;
 import eu.solven.adhoc.database.IAdhocDatabase;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.MeasuratorIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.storage.AggregatingMeasurators2;
+import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.ValueConsumer;
@@ -56,6 +53,13 @@ import lombok.Builder.Default;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * The set of named {@link IMeasure}. Many of them are {@link IHasUnderlyingMeasures}, which express a
+ * Directed-Acyclic-Graph. The DAG is actually evaluated on a per-query basis.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @RequiredArgsConstructor
 @Slf4j
 @Builder
@@ -71,11 +75,6 @@ public class DAG {
 		nameToMeasure.put(namedMeasure.getName(), namedMeasure);
 
 		return this;
-	}
-
-	@Deprecated
-	public ITabularView execute(IAdhocQuery adhocQuery, Stream<Map<String, ?>> stream) {
-		return execute(adhocQuery, Set.of(), stream);
 	}
 
 	public static <T> List<T> unionList(List<T> left, List<T> right) {
@@ -106,25 +105,6 @@ public class DAG {
 		union.addAll(right);
 
 		return union;
-	}
-
-	@Deprecated
-	public ITabularView execute(IAdhocQuery adhocQuery,
-			Set<? extends IQueryOption> queryOptions,
-			Stream<Map<String, ?>> stream) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates = makeQueryStepsDag(adhocQuery);
-
-		Set<DatabaseQuery> dbQueries = queryStepsDagToDbQueries(fromQueriedToAggregates);
-		if (dbQueries.isEmpty()) {
-			return ITabularView.empty();
-		} else if (dbQueries.size() >= 2) {
-			throw new UnsupportedOperationException("Limitation. Open a GithubTicket. dbQueries.size() > 1");
-		}
-
-		Map<DatabaseQuery, Stream<Map<String, ?>>> dbQueryToSteam = new HashMap<>();
-		dbQueryToSteam.put(dbQueries.iterator().next(), stream);
-
-		return execute(adhocQuery, queryOptions, dbQueryToSteam);
 	}
 
 	private ITabularView execute(IAdhocQuery adhocQuery,
@@ -198,12 +178,6 @@ public class DAG {
 		measuresToReturn.forEachRemaining(step -> {
 			RowScanner<Map<String, ?>> rowScanner = new RowScanner<Map<String, ?>>() {
 
-//				@Override
-//				public void onRow(Map<String, ?> coordinates, Map<String, ?> values) {
-//					// TODO Auto-generated method stub
-//
-//				}
-
 				@Override
 				public ValueConsumer onKey(Map<String, ?> coordinates) {
 					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
@@ -224,7 +198,7 @@ public class DAG {
 			Map<String, Set<Aggregator>> inputColumnToAggregators) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 
-		AggregatingMeasurators2<Map<String, ?>> coordinatesToAggregates =
+		AggregatingMeasurators<Map<String, ?>> coordinatesToAggregates =
 				sinkToAggregates(dbQuery, stream, inputColumnToAggregators);
 
 		dbQuery.getAggregators().forEach(aggregator -> {
@@ -277,8 +251,6 @@ public class DAG {
 			});
 
 			if (measure instanceof IHasUnderlyingMeasures combinator) {
-				queryStepToValues.get(underlyingToStep.get(combinator.getUnderlyingMeasures().get(0)));
-
 				List<CoordinatesToValues> underlyings = combinator.getUnderlyingMeasures()
 						.stream()
 						.map(name -> underlyingToStep.get(name))
@@ -294,7 +266,7 @@ public class DAG {
 						.collect(Collectors.toList());
 
 				CoordinatesToValues coordinatesToValues =
-						combinator.produceOutputColumn(transformationFactory, underlyings);
+						combinator.produceOutputColumn(transformationFactory, queryStep, underlyings);
 
 				eventBus.post(MeasuratorIsCompleted.builder()
 						.measurator(measure)
@@ -326,11 +298,11 @@ public class DAG {
 		return measure;
 	}
 
-	private AggregatingMeasurators2<Map<String, ?>> sinkToAggregates(DatabaseQuery adhocQuery,
+	private AggregatingMeasurators<Map<String, ?>> sinkToAggregates(DatabaseQuery adhocQuery,
 			Stream<Map<String, ?>> stream,
 			Map<String, Set<Aggregator>> inputColumnToAggregators) {
 
-		AggregatingMeasurators2<Map<String, ?>> coordinatesToAgg = new AggregatingMeasurators2<>();
+		AggregatingMeasurators<Map<String, ?>> coordinatesToAgg = new AggregatingMeasurators<>(transformationFactory);
 
 		// Process the underlying stream of data to execute aggregations
 		stream.forEach(input -> {
@@ -374,20 +346,6 @@ public class DAG {
 		return coordinatesToAgg;
 	}
 
-	// private List<Combinator> fromLeafToQueried(DAGForQuery dagForQuery) {
-	// // https://stackoverflow.com/questions/24511052/how-to-convert-an-iterator-to-a-stream
-	// List<Combinator> fromLeafToQueried = StreamSupport
-	// .stream(Spliterators.spliteratorUnknownSize(dagForQuery.getBreadthFirst(), Spliterator.ORDERED), false)
-	// // Skip aggregators as they are evaluated in a separate phase
-	// .filter(Combinator.class::isInstance)
-	// .map(Combinator.class::cast)
-	// .collect(Collectors.toList());
-	//
-	// // We want to traverse the tree from pre-aggregated measures to requested measures
-	// Collections.reverse(fromLeafToQueried);
-	// return fromLeafToQueried;
-	// }
-
 	/**
 	 * 
 	 * @param adhocQuery
@@ -416,46 +374,6 @@ public class DAG {
 
 		return Optional.of(coordinates);
 	}
-
-	public static IAggregation makeAggregation(String aggregationKey) {
-		return switch (aggregationKey) {
-		case SumAggregator.KEY: {
-			yield new SumAggregator();
-		}
-		case MaxAggregator.KEY: {
-			yield new MaxAggregator();
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + aggregationKey);
-		};
-	}
-
-	// This is the DAG of measures relationships, independently of filters and groupBys
-	// private DAGForQuery prepareDAGForQuery(Set<String> measures) {
-	// DirectedAcyclicGraph<IMeasure, DefaultEdge> directedGraph = new DirectedAcyclicGraph<>(DefaultEdge.class);
-	//
-	// nameToMeasure.forEach((name, measurator) -> {
-	// directedGraph.addVertex(measurator);
-	// if (measurator instanceof Combinator combinator) {
-	// List<IMeasure> namedUnderlyings = combinator.getUnderlyingMeasures()
-	// .stream()
-	// .map(nameToMeasure::get)
-	// .collect(Collectors.toList());
-	//
-	// namedUnderlyings.forEach(underlying -> {
-	// directedGraph.addEdge(measurator, underlying);
-	// });
-	//
-	// } else if (measurator instanceof Aggregator) {
-	// log.debug("Aggregator has no underlyings");
-	// } else {
-	// throw new IllegalArgumentException("Arg on %s".formatted(measurator));
-	// }
-	// });
-	//
-	// DAGForQuery dagForQuery = DAGForQuery.builder().directedGraph(directedGraph).queriedMeasures(measures).build();
-	// return dagForQuery;
-	// }
 
 	/**
 	 * 
@@ -502,9 +420,6 @@ public class DAG {
 	private DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> makeQueryStepsDag(IAdhocQuery adhocQuery) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> queryDag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		// Aggregators expressed the actual query to the underlying DB
-		// LinkedList<AdhocQueryStep> aggregators = new LinkedList<>();
-		// Collectors are intermediate measures in the DAG
 		LinkedList<AdhocQueryStep> collectors = new LinkedList<>();
 
 		{
@@ -528,7 +443,7 @@ public class DAG {
 			IMeasure measure = resolveIfRef(adhocSubQuery.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
-				log.debug("Aggregators do not have any underlying measure");
+				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures combinator) {
 
 				for (AdhocQueryStep underlyingStep : combinator.getUnderlyingSteps(adhocSubQuery)) {

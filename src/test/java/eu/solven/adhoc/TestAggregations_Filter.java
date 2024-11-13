@@ -38,7 +38,7 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").build(), rows.stream());
+				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -63,7 +63,7 @@ public class TestAggregations_Filter extends ADagTest {
 
 		ITabularView output =
 				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").addGroupby("a").build(),
-						rows.stream());
+						rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("a", "a1"));
@@ -88,7 +88,7 @@ public class TestAggregations_Filter extends ADagTest {
 
 		ITabularView output =
 				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a2").addGroupby("b").build(),
-						rows.stream());
+						rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"), Map.of("b", "b2"));
@@ -113,7 +113,7 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "none").build(), rows.stream());
+				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "none").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);

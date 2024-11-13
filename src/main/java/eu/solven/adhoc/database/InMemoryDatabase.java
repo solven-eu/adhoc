@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.api.v1.pojo.FilterHelpers;
+import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.DatabaseQuery;
 import lombok.Builder;
 import lombok.Builder.Default;
