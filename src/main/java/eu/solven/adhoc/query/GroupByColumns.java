@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import lombok.Builder;
@@ -40,6 +41,10 @@ public class GroupByColumns implements IAdhocGroupBy {
 
 	public static IAdhocGroupBy of(Collection<String> wildcards) {
 		return GroupByColumns.builder().groupBy(new TreeSet<>(wildcards)).build();
+	}
+
+	public static IAdhocGroupBy of(String wildcard, String... wildcards) {
+		return of(Lists.asList(wildcard, wildcards));
 	}
 
 }

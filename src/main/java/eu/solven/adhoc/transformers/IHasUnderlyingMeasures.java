@@ -7,7 +7,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 
 public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingMeasures();
+	List<String> getUnderlyingNames();
 
 	List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery);
 

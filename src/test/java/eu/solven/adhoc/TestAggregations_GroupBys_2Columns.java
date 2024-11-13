@@ -29,7 +29,7 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest {
 	public void testSumOfSum_groupBy2String() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 

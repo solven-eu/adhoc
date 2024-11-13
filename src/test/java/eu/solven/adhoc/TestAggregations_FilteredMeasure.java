@@ -48,7 +48,7 @@ public class TestAggregations_FilteredMeasure extends ADagTest {
 
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
-						.underlyingMeasures(Arrays.asList("k1", "filterK1onA1"))
+						.underlyingNames(Arrays.asList("k1", "filterK1onA1"))
 						.transformationKey(DivideTransformation.KEY)
 						.build());
 
@@ -87,7 +87,7 @@ public class TestAggregations_FilteredMeasure extends ADagTest {
 
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
-						.underlyingMeasures(Arrays.asList("filterK1onA1", "k1"))
+						.underlyingNames(Arrays.asList("filterK1onA1", "k1"))
 						.transformationKey(DivideTransformation.KEY)
 						.build());
 

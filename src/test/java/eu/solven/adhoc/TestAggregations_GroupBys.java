@@ -33,7 +33,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 	public void testSumOfSum_noGroupBy() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -56,7 +56,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 	public void testSumOfSum_groupBy1String() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -80,7 +80,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 	public void testSumOfSum_groupBy1String_notAlwaysPresent() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -104,7 +104,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 	public void testSumOfMax_groupBy1String() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 
@@ -128,7 +128,7 @@ public class TestAggregations_GroupBys extends ADagTest {
 	public void testMaxOfSum() {
 		dag.addMeasure(Combinator.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(MaxTransformation.KEY)
 				.build());
 

@@ -33,7 +33,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	IAdhocFilter filter;
 
 	@Override
-	public List<String> getUnderlyingMeasures() {
+	public List<String> getUnderlyingNames() {
 		return Collections.singletonList(underlyingMeasure);
 	}
 

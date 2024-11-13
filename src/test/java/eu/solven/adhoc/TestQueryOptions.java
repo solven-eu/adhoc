@@ -31,7 +31,7 @@ public class TestQueryOptions extends ADagTest {
 	public void testSumOfSum_() {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.transformationKey(SumTransformation.KEY)
 				.build());
 

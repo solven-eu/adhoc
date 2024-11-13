@@ -23,12 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class Combinator implements IMeasure, IHasUnderlyingMeasures {
+public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasTransformationKey {
 	@NonNull
 	String name;
 
 	@NonNull
-	List<String> underlyingMeasures;
+	List<String> underlyingNames;
 
 	@NonNull
 	String transformationKey;
@@ -38,8 +38,25 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 	Map<String, ?> options = Collections.emptyMap();
 
 	@Override
+	public Map<String, ?> getTransformationOptions() {
+		return makeAllOptions(this, options);
+	}
+
+	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
+		Map<String, Object> allOptions = new HashMap<>();
+
+		// Default options
+		allOptions.put("underlyingNames", hasUnderlyings.getUnderlyingNames());
+
+		// override with explicit options
+		allOptions.putAll(explicitOptions);
+
+		return allOptions;
+	}
+
+	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep adhocSubQuery) {
-		return getUnderlyingMeasures().stream().map(underlyingName -> {
+		return getUnderlyingNames().stream().map(underlyingName -> {
 			return AdhocQueryStep.builder()
 					.filter(adhocSubQuery.getFilter())
 					.groupBy(adhocSubQuery.getGroupBy())
@@ -52,23 +69,15 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures {
 	public CoordinatesToValues produceOutputColumn(ITransformationFactory transformationFactory,
 			AdhocQueryStep queryStep,
 			List<CoordinatesToValues> underlyings) {
-		if (underlyings.size() != underlyingMeasures.size()) {
-			throw new IllegalArgumentException("underlyingMeasures.size() != underlyings.size()");
+		if (underlyings.size() != underlyingNames.size()) {
+			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
 
-		ITransformation tranformation;
-		{
-			Map<String, Object> allOptions = new HashMap<>();
-
-			allOptions.put("underlyingMeasures", underlyingMeasures);
-			allOptions.putAll(options);
-
-			tranformation = transformationFactory.makeTransformation(getTransformationKey(), allOptions);
-		}
+		ITransformation tranformation = transformationFactory.makeTransformation(this);
 
 		for (Map<String, ?> coordinate : keySet(underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {

@@ -251,7 +251,7 @@ public class DAG {
 			});
 
 			if (measure instanceof IHasUnderlyingMeasures combinator) {
-				List<CoordinatesToValues> underlyings = combinator.getUnderlyingMeasures()
+				List<CoordinatesToValues> underlyings = combinator.getUnderlyingNames()
 						.stream()
 						.map(name -> underlyingToStep.get(name))
 						.map(step -> {
