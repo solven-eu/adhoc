@@ -6,6 +6,9 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -15,10 +18,21 @@ import lombok.Value;
  *
  */
 @Value
+@Builder
 public class AdhocQuery implements IAdhocQuery {
 
-	protected final IAdhocFilter filter;
-	protected final IAdhocGroupBy groupBy;
-	protected final Set<ReferencedMeasure> measures;
+	@NonNull
+	IAdhocFilter filter;
+	@NonNull
+	IAdhocGroupBy groupBy;
+	@NonNull
+	Set<ReferencedMeasure> measures;
+
+	// If true, will print a log of debug information
+	@Default
+	boolean debug = false;
+	// If true, will print details about the query plan
+	@Default
+	boolean explain = false;
 
 }

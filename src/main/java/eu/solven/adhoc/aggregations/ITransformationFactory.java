@@ -20,4 +20,6 @@ public interface ITransformationFactory {
 	ITransformation makeTransformation(String key, Map<String, ?> options);
 
 	IAggregation makeAggregation(String key);
+
+	IDecomposition makeDecomposition(String key, Map<String, ?> decompositionOptions);
 }

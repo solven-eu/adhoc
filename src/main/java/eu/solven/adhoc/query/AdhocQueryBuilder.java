@@ -36,6 +36,9 @@ public class AdhocQueryBuilder {
 	// By default, no aggregation
 	protected final NavigableSet<ReferencedMeasure> measures = new ConcurrentSkipListSet<>();
 
+	boolean debug = false;
+	boolean explain = false;
+
 	public AdhocQueryBuilder addGroupby(String wildcard, String... more) {
 		return addWildcards(Lists.asList(wildcard, more));
 	}
@@ -88,6 +91,16 @@ public class AdhocQueryBuilder {
 		return this;
 	}
 
+	public AdhocQueryBuilder debug(boolean debug) {
+		this.debug = debug;
+		return this;
+	}
+
+	public AdhocQueryBuilder explain(boolean explain) {
+		this.explain = explain;
+		return this;
+	}
+
 	public AdhocQuery build() {
 		IAdhocFilter filter;
 		if (andFilters.isEmpty()) {
@@ -105,7 +118,13 @@ public class AdhocQueryBuilder {
 			groupBy = GroupByColumns.of(wildcards);
 		}
 
-		AdhocQuery query = new AdhocQuery(filter, groupBy, measures);
+		AdhocQuery query = AdhocQuery.builder()
+				.filter(filter)
+				.groupBy(groupBy)
+				.measures(measures)
+				.debug(debug)
+				.explain(explain)
+				.build();
 
 		return query;
 	}
@@ -157,6 +176,11 @@ public class AdhocQueryBuilder {
 
 		for (String wildcard : base.getGroupBy().getGroupedByColumns()) {
 			queryBuilder.addGroupby(wildcard);
+		}
+
+		if (base instanceof AdhocQuery adhocQuery) {
+			queryBuilder.debug = adhocQuery.isDebug();
+			queryBuilder.explain = adhocQuery.isExplain();
 		}
 
 		return queryBuilder;

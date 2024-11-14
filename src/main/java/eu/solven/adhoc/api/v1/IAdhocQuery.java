@@ -8,6 +8,6 @@ package eu.solven.adhoc.api.v1;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocQuery extends IWhereGroupbyAdhocQuery, IHasRefMeasures {
+public interface IAdhocQuery extends IWhereGroupbyAdhocQuery, IHasRefMeasures, IIsExplainable {
 
 }

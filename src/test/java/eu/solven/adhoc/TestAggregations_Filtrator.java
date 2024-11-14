@@ -19,7 +19,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
 
-public class TestAggregations_FilteredMeasure extends ADagTest {
+public class TestAggregations_Filtrator extends ADagTest {
 
 	@Override
 	@BeforeEach

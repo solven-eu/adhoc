@@ -38,4 +38,18 @@ public class StandardTransformationFactory implements ITransformationFactory {
 		};
 	}
 
+	@Override
+	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
+		return switch (key) {
+		case AdhocIdentity.KEY: {
+			yield new AdhocIdentity();
+		}
+		case LinearDecomposition.KEY: {
+			yield new LinearDecomposition(options);
+		}
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		};
+	}
+
 }

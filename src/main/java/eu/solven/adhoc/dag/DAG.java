@@ -211,6 +211,9 @@ public class DAG {
 				storage = MultiTypeStorage.empty();
 			}
 
+			eventBus.post(MeasuratorIsCompleted.builder().measurator(aggregator).nbCells(storage.size()).build());
+			log.debug("dbQuery={} generated a column with size={}", dbQuery, storage.size());
+
 			// The aggregation step is done: the storage is supposed not to be edited: we re-use it in place, to
 			// spare a copy to an immutable container
 			queryStepToValues.put(adhocStep, CoordinatesToValues.builder().storage(storage).build());
@@ -251,10 +254,8 @@ public class DAG {
 			});
 
 			if (measure instanceof IHasUnderlyingMeasures combinator) {
-				List<CoordinatesToValues> underlyings = combinator.getUnderlyingNames()
-						.stream()
-						.map(name -> underlyingToStep.get(name))
-						.map(step -> {
+				List<CoordinatesToValues> underlyings =
+						combinator.getUnderlyingNames().stream().map(name -> underlyingToStep.get(name)).map(step -> {
 							CoordinatesToValues values = queryStepToValues.get(step);
 
 							if (values == null) {
@@ -262,11 +263,10 @@ public class DAG {
 							}
 
 							return values;
-						})
-						.collect(Collectors.toList());
+						}).collect(Collectors.toList());
 
 				CoordinatesToValues coordinatesToValues =
-						combinator.produceOutputColumn(transformationFactory, queryStep, underlyings);
+						combinator.wrapNode(transformationFactory, queryStep).produceOutputColumn(underlyings);
 
 				eventBus.post(MeasuratorIsCompleted.builder()
 						.measurator(measure)
@@ -337,11 +337,11 @@ public class DAG {
 			}
 		});
 
-		inputColumnToAggregators.values().stream().flatMap(c -> c.stream()).forEach(aggregator -> {
-			long size = coordinatesToAgg.size(aggregator);
-
-			eventBus.post(MeasuratorIsCompleted.builder().measurator(aggregator).nbCells(size).build());
-		});
+		// inputColumnToAggregators.values().stream().flatMap(c -> c.stream()).forEach(aggregator -> {
+		// long size = coordinatesToAgg.size(aggregator);
+		//
+		// eventBus.post(MeasuratorIsCompleted.builder().measurator(aggregator).nbCells(size).build());
+		// });
 
 		return coordinatesToAgg;
 	}
@@ -384,12 +384,12 @@ public class DAG {
 	public Set<DatabaseQuery> prepare(IAdhocQuery adhocQuery) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(adhocQuery);
 
-		return queryStepsDagToDbQueries(directedGraph);
+		return queryStepsDagToDbQueries(directedGraph, adhocQuery.isExplain());
 
 	}
 
-	private Set<DatabaseQuery> queryStepsDagToDbQueries(
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph) {
+	private Set<DatabaseQuery> queryStepsDagToDbQueries(DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph,
+			boolean explain) {
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
@@ -409,6 +409,15 @@ public class DAG {
 						throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
 					}
 				});
+
+		if (explain) {
+			new TopologicalOrderIterator<>(directedGraph).forEachRemaining(step -> {
+				Set<DefaultEdge> underlyings = directedGraph.outgoingEdgesOf(step);
+
+				underlyings.forEach(edge -> log
+						.info("[EXPLAIN] {} -> {}", step, Graphs.getOppositeVertex(directedGraph, edge, step)));
+			});
+		}
 
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery adhocLeafQuery = e.getKey();
@@ -446,7 +455,8 @@ public class DAG {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures combinator) {
 
-				for (AdhocQueryStep underlyingStep : combinator.getUnderlyingSteps(adhocSubQuery)) {
+				for (AdhocQueryStep underlyingStep : combinator.wrapNode(transformationFactory, adhocSubQuery)
+						.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
 					IMeasure notRefMeasure = resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();

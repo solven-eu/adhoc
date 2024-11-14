@@ -27,7 +27,7 @@ public class ExpressionTransformation implements ITransformation {
 	@NonNull
 	final String expression;
 	@NonNull
-	final List<String> underlyingMeasures;
+	final List<String> underlyingNames;
 
 	@Override
 	public Object transform(List<?> underlyingValues) {
@@ -37,8 +37,8 @@ public class ExpressionTransformation implements ITransformation {
 		try {
 			Map<String, Object> nameToValue = new HashMap<>();
 
-			for (int i = 0; i < Math.min(underlyingMeasures.size(), underlyingValues.size()); i++) {
-				nameToValue.put(underlyingMeasures.get(i), underlyingValues.get(i));
+			for (int i = 0; i < Math.min(underlyingNames.size(), underlyingValues.size()); i++) {
+				nameToValue.put(underlyingNames.get(i), underlyingValues.get(i));
 			}
 
 			result = exp.withValues(nameToValue).evaluate();
@@ -52,7 +52,7 @@ public class ExpressionTransformation implements ITransformation {
 
 	public static ExpressionTransformation parse(Map<String, ?> options) {
 		String expression = PepperMapHelper.getRequiredString(options, "expression");
-		List<String> underlyingIndexToName = PepperMapHelper.getRequiredAs(options, "underlyingMeasures");
+		List<String> underlyingIndexToName = PepperMapHelper.getRequiredAs(options, "underlyingNames");
 		return new ExpressionTransformation(expression, underlyingIndexToName);
 	}
 

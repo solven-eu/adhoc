@@ -17,7 +17,7 @@ import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 
-public class TestAggregations_GroupByMeasure extends ADagTest {
+public class TestAggregations_Bucketor extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedDb() {
@@ -31,7 +31,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfMaxOfSum_noGroupBy() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -55,7 +55,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfMaxOfSum_groupByA() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
@@ -80,7 +80,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfMaxOfSum_groupByAandB() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a", "b"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
@@ -105,7 +105,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfMaxOfSum_groupByA_bothBucketorAndAdhoc() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
@@ -131,7 +131,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfMaxOfSum_groupByAandBandUnknown() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a", "b", "unknown"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
@@ -154,7 +154,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfSum_filterA1_groupbyA() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
@@ -179,7 +179,7 @@ public class TestAggregations_GroupByMeasure extends ADagTest {
 	public void testSumOfSum_filterA1_groupbyB() {
 		dag.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
-				.underlyingMeasures(Arrays.asList("k1", "k2"))
+				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("b"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
