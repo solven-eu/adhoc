@@ -12,7 +12,7 @@ import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.query.MeasurelessQuery;
-import eu.solven.pepper.collection.PepperMapHelper;
+import eu.solven.pepper.mappath.MapPathGet;
 
 public class LinearDecomposition implements IDecomposition {
 	public static final String KEY = "linear";
@@ -25,18 +25,18 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public Map<Map<String, ?>, Object> decompose(Map<String, ?> coordinate, Object value) {
-		String inputColumn = PepperMapHelper.getRequiredString(options, "input");
+		String inputColumn = MapPathGet.getRequiredString(options, "input");
 
-		Optional<?> optInput = PepperMapHelper.getOptionalAs(coordinate, inputColumn);
+		Optional<?> optInput = MapPathGet.getOptionalAs(coordinate, inputColumn);
 		if (optInput.isEmpty()) {
 			return Map.of(Map.of(), value);
 		}
 
 		Object input = optInput.get();
-		Number min = PepperMapHelper.getRequiredNumber(options, "min");
-		Number max = PepperMapHelper.getRequiredNumber(options, "max");
+		Number min = MapPathGet.getRequiredNumber(options, "min");
+		Number max = MapPathGet.getRequiredNumber(options, "max");
 
-		String outputColumn = PepperMapHelper.getRequiredString(options, "output");
+		String outputColumn = MapPathGet.getRequiredString(options, "output");
 		if (min.equals(input)) {
 			return Collections.singletonMap(Map.of(outputColumn, min), value);
 		} else if (max.equals(input)) {
@@ -94,7 +94,7 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		String outputColumn = PepperMapHelper.getRequiredString(options, "output");
+		String outputColumn = MapPathGet.getRequiredString(options, "output");
 		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch
 			return Collections.singletonList(step);
@@ -105,7 +105,7 @@ public class LinearDecomposition implements IDecomposition {
 		allGroupBys.addAll(step.getGroupBy().getGroupedByColumns());
 		allGroupBys.remove(outputColumn);
 
-		String inputColumn = PepperMapHelper.getRequiredString(options, "input");
+		String inputColumn = MapPathGet.getRequiredString(options, "input");
 		allGroupBys.add(inputColumn);
 
 		return Collections.singletonList(

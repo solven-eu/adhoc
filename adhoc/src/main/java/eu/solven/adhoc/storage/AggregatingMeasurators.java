@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.transformers.Aggregator;
 import lombok.Value;
 
@@ -13,7 +13,7 @@ public class AggregatingMeasurators<T> {
 
 	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
 
-	ITransformationFactory transformationFactory;
+	IOperatorsFactory transformationFactory;
 
 	public void contribute(Aggregator aggregator, T key, Object v) {
 		MultiTypeStorage<T> storage =

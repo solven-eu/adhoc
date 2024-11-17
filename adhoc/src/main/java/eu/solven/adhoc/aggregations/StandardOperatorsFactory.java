@@ -2,22 +2,27 @@ package eu.solven.adhoc.aggregations;
 
 import java.util.Map;
 
-public class StandardTransformationFactory implements ITransformationFactory {
+import eu.solven.adhoc.aggregations.max.MaxAggregator;
+import eu.solven.adhoc.aggregations.max.MaxTransformation;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
+
+public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	@Override
-	public ITransformation makeTransformation(String key, Map<String, ?> options) {
+	public ICombination makeCombination(String key, Map<String, ?> options) {
 		return switch (key) {
-		case SumTransformation.KEY: {
-			yield new SumTransformation();
+		case SumCombination.KEY: {
+			yield new SumCombination();
 		}
 		case MaxTransformation.KEY: {
 			yield new MaxTransformation();
 		}
-		case DivideTransformation.KEY: {
-			yield new DivideTransformation();
+		case DivideCombination.KEY: {
+			yield new DivideCombination();
 		}
-		case ExpressionTransformation.KEY: {
-			yield ExpressionTransformation.parse(options);
+		case ExpressionCombination.KEY: {
+			yield ExpressionCombination.parse(options);
 		}
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + key);

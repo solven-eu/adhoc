@@ -11,8 +11,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.SumAggregator;
-import eu.solven.adhoc.aggregations.SumTransformation;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -32,13 +32,13 @@ public class TestQueryOptions extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(),
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),
 				rows);
 

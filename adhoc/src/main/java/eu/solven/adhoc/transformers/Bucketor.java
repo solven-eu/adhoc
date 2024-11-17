@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
-import eu.solven.adhoc.aggregations.SumAggregator;
-import eu.solven.adhoc.aggregations.SumTransformation;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
@@ -42,7 +42,7 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull
 	@Default
-	String combinatorKey = SumTransformation.KEY;
+	String combinatorKey = SumCombination.KEY;
 
 	@NonNull
 	@Default
@@ -58,7 +58,7 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	}
 	
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(ITransformationFactory transformationFactory,
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory,
 			AdhocQueryStep queryStep) {
 		return new BucketorQueryStep(this, transformationFactory, queryStep);
 	}

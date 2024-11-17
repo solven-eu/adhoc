@@ -3,7 +3,7 @@ package eu.solven.adhoc.measure;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAggregator {

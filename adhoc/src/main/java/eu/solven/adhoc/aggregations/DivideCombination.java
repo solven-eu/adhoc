@@ -3,12 +3,12 @@ package eu.solven.adhoc.aggregations;
 import java.util.List;
 
 // https://learn.microsoft.com/en-us/dax/divide-function-dax
-public class DivideTransformation implements ITransformation {
+public class DivideCombination implements ICombination {
 
 	public static final String KEY = "DIVIDE";
 
 	@Override
-	public Object transform(List<?> underlyingValues) {
+	public Object combine(List<?> underlyingValues) {
 		if (underlyingValues.size() != 2) {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyingValues.size()));
 		}

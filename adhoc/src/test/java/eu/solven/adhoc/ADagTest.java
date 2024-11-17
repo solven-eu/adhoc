@@ -4,13 +4,15 @@ import org.greenrobot.eventbus.EventBus;
 import org.junit.jupiter.api.BeforeEach;
 
 import eu.solven.adhoc.dag.AdhocMeasuresSet;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.database.InMemoryDatabase;
 import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
 
 public abstract class ADagTest {
 	final EventBus eventBus = new EventBus();
 	final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
-	final public AdhocMeasuresSet dag = AdhocMeasuresSet.builder().eventBus(eventBus).build();
+	final public AdhocMeasuresSet dag = AdhocMeasuresSet.builder().build();
+	final public AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measuresSet(dag).build();
 
 	protected final InMemoryDatabase rows = InMemoryDatabase.builder().build();
 

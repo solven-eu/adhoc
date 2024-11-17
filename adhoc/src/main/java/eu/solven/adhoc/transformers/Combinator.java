@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.ICombination;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -16,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasTransformationKey {
+public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
 	@NonNull
 	String name;
 
@@ -26,15 +28,22 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasTransfo
 	@NonNull
 	List<String> underlyingNames;
 
+	/**
+	 * @see ICombination
+	 */
 	@NonNull
-	String transformationKey;
+	@Default
+	String combinationKey = SumCombination.KEY;
 
+	/**
+	 * @see ICombination
+	 */
 	@NonNull
 	@Default
 	Map<String, ?> options = Collections.emptyMap();
 
 	@Override
-	public Map<String, ?> getTransformationOptions() {
+	public Map<String, ?> getCombinationOptions() {
 		return makeAllOptions(this, options);
 	}
 
@@ -51,8 +60,7 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasTransfo
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(ITransformationFactory transformationFactory,
-			AdhocQueryStep step) {
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 

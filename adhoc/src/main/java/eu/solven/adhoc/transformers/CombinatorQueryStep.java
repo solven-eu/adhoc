@@ -11,8 +11,8 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.aggregations.ITransformation;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.ICombination;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.coordinate.NavigableMapComparator;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	final Combinator combinator;
-	final ITransformationFactory transformationFactory;
+	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
@@ -52,7 +52,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
 
-		ITransformation tranformation = transformationFactory.makeTransformation(combinator);
+		ICombination tranformation = transformationFactory.makeTransformation(combinator);
 
 		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(combinator.isDebug(), underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
@@ -66,7 +66,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 				return refV.get();
 			}).collect(Collectors.toList());
 
-			Object value = tranformation.transform(underlyingVs);
+			Object value = tranformation.combine(underlyingVs);
 			output.put(coordinate, value);
 		}
 

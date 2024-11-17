@@ -23,7 +23,11 @@ public class MapComparators {
 	 * @return
 	 */
 	public static <M extends Map> Comparator<M> mapComparator() {
-		return Comparator.comparing(map -> MapComparators.asNavigableMap(map), NavigableMapComparator.INSTANCE);
+		// Various casts are here to help javac doing its job
+		return Comparator.comparing(map -> {
+			NavigableMap asNavigableMap = MapComparators.asNavigableMap((Map) map);
+			return (Map) asNavigableMap;
+		}, (Comparator) NavigableMapComparator.INSTANCE);
 	}
 
 	@SuppressWarnings("unchecked")

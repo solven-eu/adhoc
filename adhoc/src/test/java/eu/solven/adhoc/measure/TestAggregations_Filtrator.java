@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
-import eu.solven.adhoc.aggregations.DivideTransformation;
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.DivideCombination;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQueryBuilder;
@@ -52,14 +52,14 @@ public class TestAggregations_Filtrator extends ADagTest {
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
 						.underlyingNames(Arrays.asList("k1", "filterK1onA1"))
-						.transformationKey(DivideTransformation.KEY)
+						.combinationKey(DivideCombination.KEY)
 						.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQueryBuilder.measure("k1").addMeasures("filterK1onA1").build();
-		ITabularView output = dag.execute(adhocQuery, rows);
+		ITabularView output = aqe.execute(adhocQuery, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -91,14 +91,14 @@ public class TestAggregations_Filtrator extends ADagTest {
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
 						.underlyingNames(Arrays.asList("filterK1onA1", "k1"))
-						.transformationKey(DivideTransformation.KEY)
+						.combinationKey(DivideCombination.KEY)
 						.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQueryBuilder.measure("Ratio_k1_k1witha1").build();
-		ITabularView output = dag.execute(adhocQuery, rows);
+		ITabularView output = aqe.execute(adhocQuery, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());

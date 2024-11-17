@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	final Filtrator filtrator;
-	final ITransformationFactory transformationFactory;
+	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {

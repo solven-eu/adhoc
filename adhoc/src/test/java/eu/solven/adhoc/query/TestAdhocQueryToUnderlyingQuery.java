@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.aggregations.SumTransformation;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.transformers.Combinator;
 
 public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocTestConstants {
@@ -23,13 +23,13 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(k1Sum);
 		dag.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = dag.prepare(AdhocQueryBuilder.measure(k1Sum.getName()).build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName()).build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -44,13 +44,13 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(k1Sum);
 		dag.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = dag.prepare(AdhocQueryBuilder.measure("sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure("sumK1K2").build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -65,13 +65,13 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(k1Sum);
 		dag.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = dag.prepare(AdhocQueryBuilder.measure(k1Sum.getName(), "sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName(), "sumK1K2").build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

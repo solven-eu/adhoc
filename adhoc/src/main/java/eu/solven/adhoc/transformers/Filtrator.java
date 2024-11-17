@@ -3,7 +3,7 @@ package eu.solven.adhoc.transformers;
 import java.util.Collections;
 import java.util.List;
 
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
@@ -34,7 +34,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	}
 	
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(ITransformationFactory transformationFactory,
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory,
 			AdhocQueryStep step) {
 		return new FiltratorQueryStep(this, transformationFactory, step);
 	}

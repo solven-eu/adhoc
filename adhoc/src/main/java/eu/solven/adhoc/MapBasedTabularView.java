@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
-import eu.solven.adhoc.aggregations.MapAggregator;
+import eu.solven.adhoc.aggregations.collection.MapAggregator;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ValueConsumer;
 import lombok.Builder;

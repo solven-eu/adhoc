@@ -1,6 +1,6 @@
 package eu.solven.adhoc.transformers;
 
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

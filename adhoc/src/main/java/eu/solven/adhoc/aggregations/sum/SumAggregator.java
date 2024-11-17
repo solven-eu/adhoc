@@ -1,4 +1,6 @@
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.aggregations.sum;
+
+import eu.solven.adhoc.aggregations.IAggregation;
 
 public class SumAggregator implements IAggregation {
 

@@ -12,8 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.ITransformation;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.ICombination;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 	final Bucketor bucketor;
-	final ITransformationFactory transformationFactory;
+	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
@@ -55,8 +55,8 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		MultiTypeStorage<Map<String, ?>> aggregatingView = MultiTypeStorage.<Map<String, ?>>builder().build();
 
 		IAggregation agg = transformationFactory.makeAggregation(bucketor.getAggregationKey());
-		ITransformation combinator =
-				transformationFactory.makeTransformation(bucketor.getCombinatorKey(), getCombinatorOptions());
+		ICombination combinator =
+				transformationFactory.makeCombination(bucketor.getCombinatorKey(), getCombinatorOptions());
 
 		List<String> underlyingNames = getUnderlyingNames();
 
@@ -72,7 +72,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 				return refV.get();
 			}).collect(Collectors.toList());
 
-			Object value = combinator.transform(underlyingVs);
+			Object value = combinator.combine(underlyingVs);
 
 			if (bucketor.isDebug()) {
 				Map<String, Object> underylingVsAsMap = new TreeMap<>();

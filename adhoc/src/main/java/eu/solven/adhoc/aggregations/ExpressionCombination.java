@@ -9,18 +9,18 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
-import eu.solven.pepper.collection.PepperMapHelper;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Enable expression-based {@link ITransformation}
+ * Enable expression-based {@link ICombination}
  * 
  * @author Benoit Lacelle
  * @see https://github.com/ezylang/EvalEx
  */
 @RequiredArgsConstructor
-public class ExpressionTransformation implements ITransformation {
+public class ExpressionCombination implements ICombination {
 
 	public static final String KEY = "EXPRESSION";
 
@@ -30,7 +30,7 @@ public class ExpressionTransformation implements ITransformation {
 	final List<String> underlyingNames;
 
 	@Override
-	public Object transform(List<?> underlyingValues) {
+	public Object combine(List<?> underlyingValues) {
 		Expression exp = new Expression(expression);
 
 		EvaluationValue result;
@@ -50,10 +50,10 @@ public class ExpressionTransformation implements ITransformation {
 		return result.getValue();
 	}
 
-	public static ExpressionTransformation parse(Map<String, ?> options) {
-		String expression = PepperMapHelper.getRequiredString(options, "expression");
-		List<String> underlyingIndexToName = PepperMapHelper.getRequiredAs(options, "underlyingNames");
-		return new ExpressionTransformation(expression, underlyingIndexToName);
+	public static ExpressionCombination parse(Map<String, ?> options) {
+		String expression = MapPathGet.getRequiredString(options, "expression");
+		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, "underlyingNames");
+		return new ExpressionCombination(expression, underlyingIndexToName);
 	}
 
 }

@@ -9,7 +9,5 @@ import eu.solven.adhoc.storage.ValueConsumer;
  *
  */
 public interface RowScanner<T> {
-//	void onRow(T coordinates, Map<String, ?> values);
-
 	ValueConsumer onKey(T coordinates);
 }

@@ -1,0 +1,13 @@
+# Demonstrate how to setup a larger DAG through a configuration file
+dags:
+  - name: SomeDAG
+    measures:
+    - name: k1
+      type: aggregator
+    - name: k2
+      type: aggregator
+    - name: sum
+      type: combinator
+      underlyings: [k1, k2]
+        
+        

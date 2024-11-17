@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import eu.solven.adhoc.aggregations.AdhocIdentity;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.IDecomposition;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -40,14 +42,23 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String underlyingMeasure;
 
+	/**
+	 * @see IAggregation
+	 */
 	@NonNull
 	@Default
 	String aggregationKey = SumAggregator.KEY;
 
+	/**
+	 * @see IDecomposition
+	 */
 	@NonNull
 	@Default
 	String decompositionKey = AdhocIdentity.KEY;
 
+	/**
+	 * @see IDecomposition
+	 */
 	@NonNull
 	@Default
 	Map<String, ?> decompositionOptions = Collections.emptyMap();
@@ -71,7 +82,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(ITransformationFactory transformationFactory,
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory,
 			AdhocQueryStep adhocSubQuery) {
 		return new DispatchorQueryStep(this, transformationFactory, adhocSubQuery);
 	}

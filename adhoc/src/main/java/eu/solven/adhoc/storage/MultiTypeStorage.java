@@ -11,7 +11,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.pepper.logging.PepperLogHelper;
+import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;

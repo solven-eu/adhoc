@@ -1,4 +1,6 @@
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.aggregations.max;
+
+import eu.solven.adhoc.aggregations.IAggregation;
 
 public class MaxAggregator implements IAggregation {
 

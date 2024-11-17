@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
-import eu.solven.adhoc.aggregations.SumAggregator;
-import eu.solven.adhoc.aggregations.SumTransformation;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -33,13 +33,13 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").build(), rows);
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -56,14 +56,14 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").addGroupby("a").build(), rows);
+				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").addGroupby("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("a", "a1"));
@@ -80,14 +80,14 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a2").addGroupby("b").build(), rows);
+				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a2").addGroupby("b").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"), Map.of("b", "b2"));
@@ -105,13 +105,13 @@ public class TestAggregations_Filter extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(SumTransformation.KEY)
+				.combinationKey(SumCombination.KEY)
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "none").build(), rows);
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "none").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);

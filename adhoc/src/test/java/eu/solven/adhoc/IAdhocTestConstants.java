@@ -1,6 +1,6 @@
 package eu.solven.adhoc;
 
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.transformers.Aggregator;
 
 public interface IAdhocTestConstants {

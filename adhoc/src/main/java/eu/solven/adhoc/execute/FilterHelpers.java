@@ -8,7 +8,7 @@ import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.filters.INotFilter;
 import eu.solven.adhoc.api.v1.filters.IOrFilter;
-import eu.solven.pepper.logging.PepperLogHelper;
+import eu.solven.pepper.core.PepperLogHelper;
 
 public class FilterHelpers {
 

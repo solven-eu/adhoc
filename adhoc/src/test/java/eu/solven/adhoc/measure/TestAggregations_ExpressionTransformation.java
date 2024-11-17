@@ -15,8 +15,8 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
-import eu.solven.adhoc.aggregations.ExpressionTransformation;
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.ExpressionCombination;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -37,14 +37,14 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(ExpressionTransformation.KEY)
+				.combinationKey(ExpressionCombination.KEY)
 				.options(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -61,7 +61,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(ExpressionTransformation.KEY)
+				.combinationKey(ExpressionCombination.KEY)
 				.options(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
@@ -69,7 +69,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2")
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build(), rows);
 
@@ -88,7 +88,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		dag.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
-				.transformationKey(ExpressionTransformation.KEY)
+				.combinationKey(ExpressionCombination.KEY)
 				// https://github.com/ezylang/EvalEx/issues/204
 				// We may process ternary into IF
 				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
@@ -101,7 +101,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("sumK1K2")
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build(), rows);
 

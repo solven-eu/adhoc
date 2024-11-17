@@ -1,8 +1,10 @@
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.aggregations.collection;
 
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.aggregations.IAggregation;
 
 public class UnionListAggregator<K> implements IAggregation {
 

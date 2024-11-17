@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IDecomposition;
-import eu.solven.adhoc.aggregations.ITransformationFactory;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 	final Dispatchor dispatchor;
-	final ITransformationFactory transformationFactory;
+	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {

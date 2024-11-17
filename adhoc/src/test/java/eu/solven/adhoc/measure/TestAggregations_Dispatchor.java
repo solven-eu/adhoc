@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
-import eu.solven.adhoc.aggregations.SumAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Dispatchor;
@@ -35,7 +35,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -60,7 +60,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = dag.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
+		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -88,7 +88,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				dag.execute(AdhocQueryBuilder.measure("0or100").addGroupby("0_or_100").explain(true).build(), rows);
+				aqe.execute(AdhocQueryBuilder.measure("0or100").addGroupby("0_or_100").explain(true).build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("0_or_100", 0), Map.of("0_or_100", 100));
