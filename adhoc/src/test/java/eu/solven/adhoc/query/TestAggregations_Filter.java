@@ -30,14 +30,14 @@ public class TestAggregations_Filter extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterA1() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").build(), rows);
 
@@ -53,14 +53,14 @@ public class TestAggregations_Filter extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyA() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
 				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a1").addGroupby("a").build(), rows);
@@ -77,14 +77,14 @@ public class TestAggregations_Filter extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyB() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
 				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "a2").addGroupby("b").build(), rows);
@@ -102,14 +102,14 @@ public class TestAggregations_Filter extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterMatchNothing() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addFilter("a", "none").build(), rows);
 

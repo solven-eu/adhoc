@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Value;
 
 /**
- * Given an {@link IAdhocQuery} and a {@link AdhocMeasuresSet}, we need to compute each underlying measure at a given
+ * Given an {@link IAdhocQuery} and a {@link AdhocMeasureBag}, we need to compute each underlying measure at a given
  * {@link IWhereGroupbyAdhocQuery}.
  * 
  * @author Benoit Lacelle

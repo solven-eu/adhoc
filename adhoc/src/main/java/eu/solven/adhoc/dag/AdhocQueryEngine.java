@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@Default
-	final AdhocMeasuresSet measuresSet = AdhocMeasuresSet.builder().build();
+	final AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 
 	final EventBus eventBus;
 
@@ -246,8 +246,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		if (measure == null) {
 			throw new IllegalArgumentException("Null input");
 		}
-		
-		return this.measuresSet.resolveIfRef(measure) ;
+
+		return this.measureBag.resolveIfRef(measure);
 	}
 
 	private AggregatingMeasurators<Map<String, ?>> sinkToAggregates(DatabaseQuery adhocQuery,

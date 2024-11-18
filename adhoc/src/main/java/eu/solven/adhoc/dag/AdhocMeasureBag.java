@@ -1,6 +1,12 @@
 package eu.solven.adhoc.dag;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -13,16 +19,12 @@ import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The set of named {@link IMeasure}. Many of them are {@link IHasUnderlyingMeasures}, which express a
  * Directed-Acyclic-Graph. The DAG is actually evaluated on a per-query basis.
+ * 
+ * This may not generate a single-connected DAG, as it may contains unfinished chains of measures.
  * 
  * @author Benoit Lacelle
  *
@@ -30,13 +32,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 @Slf4j
 @Builder
-public class AdhocMeasuresSet {
+public class AdhocMeasureBag {
+	final String name;
 
 	@Default
 	@Getter
 	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
-	public AdhocMeasuresSet addMeasure(IMeasure namedMeasure) {
+	public AdhocMeasureBag addMeasure(IMeasure namedMeasure) {
 		String name = namedMeasure.getName();
 
 		if (nameToMeasure.containsKey(name)) {
@@ -99,16 +102,12 @@ public class AdhocMeasuresSet {
 		return measuresDag;
 	}
 
-	public static AdhocMeasuresSet fromMeasures(List<IMeasure> measures) {
-		AdhocMeasuresSet ams = AdhocMeasuresSet.builder().build();
+	public static AdhocMeasureBag fromMeasures(List<IMeasure> measures) {
+		AdhocMeasureBag ams = AdhocMeasureBag.builder().build();
 
 		measures.forEach(m -> ams.addMeasure(m));
 
 		return ams;
-	}
-
-	public String toString(String format) {
-		ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory().disable(Feature.WRITE_DOC_START_MARKER));
 	}
 
 	// TODO Why doesn't this compile?

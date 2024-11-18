@@ -7,21 +7,32 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
-import org.yaml.snakeyaml.Yaml;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.dag.AdhocMeasuresSet;
+import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.transformers.Filtrator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.NonNull;
 import smile.math.distance.EditDistance;
 
@@ -29,12 +40,12 @@ public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
-	public AdhocMeasuresSet measuresToAMS(Collection<? extends Map<String, ?>> measures) {
+	public AdhocMeasureBag measuresToAMS(Collection<? extends Map<String, ?>> measures) {
 		Map<String, IMeasure> nameToMeasure = measures.stream().flatMap(measure -> {
 			return makeMeasure(measure).stream();
 		}).collect(Collectors.toMap(m -> m.getName(), m -> m));
 
-		AdhocMeasuresSet ame = AdhocMeasuresSet.builder().nameToMeasure(nameToMeasure).build();
+		AdhocMeasureBag ame = AdhocMeasureBag.builder().nameToMeasure(nameToMeasure).build();
 		return ame;
 	}
 
@@ -43,14 +54,14 @@ public class MeasuresSetFromResource {
 	 * @param measure
 	 *            never empty;
 	 * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
-	 *         measures. The explicit measure is always first i nthe output list.
+	 *         measures. The explicit measure is always first in the output list.
 	 */
 	public List<IMeasure> makeMeasure(Map<String, ?> measure) {
 		List<IMeasure> measures = new ArrayList<>();
 
 		String type = getStringParameter(measure, "type");
-		String name =
-				MapPathGet.getOptionalString(measure, "name").orElse("anonymous-" + anonymousIndex.getAndIncrement());
+		Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
+		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
 		IMeasure asMeasure = switch (type) {
 		case "aggregator": {
@@ -74,11 +85,15 @@ public class MeasuresSetFromResource {
 				}
 
 			}).collect(Collectors.toList());
-			yield Combinator.builder().name(name).underlyingNames(underlyingNames).build();
-		}
-		case "filtrator":
 
-		{
+			// optName
+
+			// if (optName.isEmpty()) {
+			// builder.tag("anonymous");
+			// }
+			yield Combinator.forceBuilder().name(name).underlyingNames(underlyingNames).build();
+		}
+		case "filtrator": {
 			Object rawUnderlying = getAnyParameter(measure, "underlying");
 
 			String undelryingName;
@@ -174,12 +189,110 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	public Map<String, ?> loadMapFromResource(Resource resource) throws IOException {
-		Yaml yaml = new Yaml();
-		try (InputStream inputStream = resource.getInputStream()) {
-			Map<String, Object> obj = yaml.load(inputStream);
-
-			return obj;
+	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
+		ObjectMapper objectMapper;
+		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
+			objectMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
+		} else {
+			objectMapper = new ObjectMapper();
 		}
+
+		try (InputStream inputStream = resource.getInputStream()) {
+			AdhocBagOfMeasureBag abmb = new AdhocBagOfMeasureBag();
+			List bags = objectMapper.readValue(inputStream, List.class);
+
+			bags.forEach(bag -> {
+				String name = MapPathGet.getRequiredString(bag, "name");
+				List measures = MapPathGet.getRequiredAs(bag, "measures");
+				abmb.putBag(name, makeBag(measures));
+			});
+
+			return abmb;
+		}
+	}
+
+	private AdhocMeasureBag makeBag(List<Map<String, ?>> rawMeasures) {
+		List<IMeasure> measures = rawMeasures.stream().flatMap(m -> {
+			return makeMeasure(m).stream();
+		}).collect(Collectors.toList());
+
+		return AdhocMeasureBag.fromMeasures(measures);
+	}
+
+	public String asString(String format, AdhocBagOfMeasureBag abmb) {
+		ObjectMapper objectMapper;
+		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
+			objectMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
+		} else {
+			objectMapper = new ObjectMapper();
+		}
+
+		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
+
+		abmb.bagNames().forEach(bagName -> {
+			AdhocMeasureBag ams = abmb.getBag(bagName);
+
+			List<?> asMaps = ams.getNameToMeasure()
+					.values()
+					.stream()
+					.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))
+					.collect(Collectors.toList());
+
+			bagNameToMeasures.add(ImmutableMap.of("name", bagName, "measures", asMaps));
+		});
+
+		try {
+			return objectMapper.writeValueAsString(bagNameToMeasures);
+		} catch (JsonProcessingException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	private static final List<String> sortedKeys =
+			List.of("name", "type", "aggregationKey", "combinationKey", "underlyingNames", "underlyingName");
+	private static final Map<String, Integer> keyToIndex =
+			sortedKeys.stream().collect(Collectors.toMap(s -> s, s -> sortedKeys.indexOf(s)));
+
+	private Map<String, ?> removeUselessProperties(IMeasure m, Map<String, ?> map) {
+		Comparator<String> comparing =
+				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
+		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
+
+		clean.putAll(map);
+
+		if (m instanceof Aggregator a) {
+			clean.put("type", "aggregator");
+			if (a.getAggregationKey().equals(SumAggregator.KEY)) {
+				clean.remove("aggregationKey");
+			}
+			if (a.getColumnName().equals(a.getName())) {
+				clean.remove("columnName");
+			}
+		} else if (m instanceof Combinator c) {
+			clean.put("type", "combinator");
+
+			if (c.getCombinationOptions().get("underlyingNames").equals(c.getUnderlyingNames())) {
+				MapPathRemove.remove(clean, "combinationOptions", "underlyingNames");
+			}
+			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
+				clean.remove("combinationOptions");
+			}
+
+			clean.put("underlyings", clean.remove("underlyingNames"));
+		} else if (m instanceof Filtrator f) {
+			clean.put("type", "filtrator");
+			clean.put("underlying", clean.remove("underlyingName"));
+		} else if (m instanceof Dispatchor d) {
+			clean.put("type", "dispatchor");
+		} else {
+			throw new UnsupportedOperationException("Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(m)));
+		}
+
+		if (m.getTags().isEmpty()) {
+			clean.remove("tags");
+		}
+		// if (m.isDebug()) {
+
+		return clean;
 	}
 }

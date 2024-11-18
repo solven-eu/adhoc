@@ -34,15 +34,15 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 
 	@Test
 	public void testSumOfSum() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
-				.options(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
+				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
 
@@ -58,15 +58,15 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 
 	@Test
 	public void testSumOfSum_oneIsNull_improperFormula() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
-				.options(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
+				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")
@@ -85,20 +85,20 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 
 	@Test
 	public void testSumOfSum_oneIsNull() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
 				// https://github.com/ezylang/EvalEx/issues/204
 				// We may process ternary into IF
 				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
-				.options(ImmutableMap.<String, Object>builder()
+				.combinationOptions(ImmutableMap.<String, Object>builder()
 						.put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
 						.build())
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")

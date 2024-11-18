@@ -32,15 +32,15 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_noGroupBy() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
 
@@ -56,7 +56,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_groupByA() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
@@ -64,8 +64,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
 
@@ -81,7 +81,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_groupByAandB() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a", "b"))
@@ -89,8 +89,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
 
@@ -106,7 +106,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_groupByA_bothBucketorAndAdhoc() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
@@ -114,8 +114,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addGroupby("a").build(), rows);
 
@@ -132,7 +132,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_groupByAandBandUnknown() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a", "b", "unknown"))
@@ -140,8 +140,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
 
@@ -155,7 +155,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyA() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("a"))
@@ -163,8 +163,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addFilter("a", "a1").build(), rows);
 
@@ -180,17 +180,17 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyB() {
-		dag.addMeasure(Bucketor.builder()
+		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.of("b"))
 				.combinatorKey(MaxTransformation.KEY)
 				.aggregationKey(SumAggregator.KEY)
-				.debug(true)
+				.tag("debug")
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addFilter("a", "a2").build(), rows);
 

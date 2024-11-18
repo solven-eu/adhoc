@@ -3,13 +3,13 @@ package eu.solven.adhoc.transformers;
 import java.util.Comparator;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocMeasuresSet;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * This is useful to refer to an existing {@link IMeasure} in the {@link AdhocMeasuresSet}, hence preventing to need to
+ * This is useful to refer to an existing {@link IMeasure} in the {@link AdhocMeasureBag}, hence preventing to need to
  * provide its definition.
  * 
  * @author Benoit Lacelle

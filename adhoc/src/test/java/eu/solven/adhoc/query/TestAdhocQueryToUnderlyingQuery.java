@@ -20,14 +20,14 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 
 	@Test
 	public void testSum() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(k1Sum);
-		dag.addMeasure(k2Sum);
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName()).build());
 
@@ -41,14 +41,14 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 
 	@Test
 	public void testSumOfSum() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(k1Sum);
-		dag.addMeasure(k2Sum);
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure("sumK1K2").build());
 
@@ -62,14 +62,14 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 
 	@Test
 	public void testSum_SumOfSum() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(k1Sum);
-		dag.addMeasure(k2Sum);
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName(), "sumK1K2").build());
 

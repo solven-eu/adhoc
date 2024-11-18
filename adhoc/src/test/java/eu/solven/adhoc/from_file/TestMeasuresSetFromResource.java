@@ -1,25 +1,27 @@
 package eu.solven.adhoc.from_file;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ListAssert;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
-import eu.solven.adhoc.dag.AdhocMeasuresSet;
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
-import eu.solven.pepper.mappath.MapPathGet;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees
 //An `anonymous` measure is a measure which has no name. It leads to more compact but less re-usable trees.
@@ -46,31 +48,47 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testComplexImplicitMeasures() {
-		Map<String, Object> input = Map.of("name",
-				"k",
-				"type",
-				"combinator",
-				"underlyings",
-				List.of(Map.of("name",
-						"k1",
-						"type",
-						"combinator",
-						"underlyings",
-						Arrays.asList(Map.of("name", "k11", "type", "combinator", "underlyings", Arrays.asList("k111")),
-								Map.of("name", "k12", "type", "combinator", "underlyings", Arrays.asList("k121")))),
-						Map.of("name",
-								"k2",
-								"type",
-								"combinator",
-								"underlyings",
-								Arrays.asList(Map
-										.of("name", "k21", "type", "combinator", "underlyings", Arrays.asList("k211")),
-										Map.of("name",
-												"k22",
-												"type",
-												"combinator",
-												"underlyings",
-												Arrays.asList("k221"))))));
+		Map<String, Object> input = ImmutableMap.<String, Object>builder()
+				.put("name", "k")
+				.put("type", "combinator")
+				.put("underlyings",
+						List.of(ImmutableMap.<String, Object>builder()
+								.put("name", "k1")
+								.put("type", "combinator")
+								.put("underlyings",
+										Arrays.asList(
+												Map.of("name",
+														"k11",
+														"type",
+														"combinator",
+														"underlyings",
+														Arrays.asList("k111")),
+												Map.of("name",
+														"k12",
+														"type",
+														"combinator",
+														"underlyings",
+														Arrays.asList("k121"))))
+								.build(),
+								ImmutableMap.<String, Object>builder()
+										.put("name", "k2")
+										.put("type", "combinator")
+										.put("underlyings",
+												Arrays.asList(
+														Map.of("name",
+																"k21",
+																"type",
+																"combinator",
+																"underlyings",
+																Arrays.asList("k211")),
+														Map.of("name",
+																"k22",
+																"type",
+																"combinator",
+																"underlyings",
+																Arrays.asList("k221"))))
+										.build()))
+				.build();
 
 		List<IMeasure> measures = fromResource.makeMeasure(input);
 		// TODO: Should these be defaulted?
@@ -84,7 +102,7 @@ public class TestMeasuresSetFromResource {
 				// The first measure must be the explicit measure
 				.satisfies(m -> Assertions.assertThat(m.getName()).isEqualTo("k"));
 
-		AdhocMeasuresSet ams = AdhocMeasuresSet.fromMeasures(measures);
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(11);
@@ -97,17 +115,16 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
-	public void testAnonymousUnderlyingNode() {
-		Map<String, Object> input = Map.of("name",
-				"k1Byk1k2",
-				"type",
-				"combinator",
-				"combinationKey",
-				"DIVIDE",
-				"underlyings",
-				List.of("k1",
-						// The denominator is anonynous: it does not have as explicit name
-						Map.of("type", "combinator", "underlyings", List.of("k1", "k2"))));
+	public void testAnonymousUnderlyingNode() throws IOException {
+		Map<String, Object> input = ImmutableMap.<String, Object>builder()
+				.put("name", "k1Byk1k2")
+				.put("type", "combinator")
+				.put("combinationKey", "DIVIDE")
+				.put("underlyings",
+						List.of("k1",
+								// The denominator is anonynous: it does not have as explicit name
+								Map.of("type", "combinator", "underlyings", List.of("k1", "k2"))))
+				.build();
 
 		List<IMeasure> measures = fromResource.makeMeasure(input);
 		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", "aggregator")));
@@ -121,7 +138,7 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-1");
 				});
 
-		AdhocMeasuresSet ams = AdhocMeasuresSet.fromMeasures(measures);
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(4);
@@ -131,33 +148,51 @@ public class TestMeasuresSetFromResource {
 				.isInstanceOfSatisfying(Combinator.class, c -> {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-1");
 				});
+
+		{
+			AdhocBagOfMeasureBag bagOfBag = new AdhocBagOfMeasureBag();
+			bagOfBag.putBag("someBagName", ams);
+
+			String amsAsString = fromResource.asString("yml", bagOfBag);
+			Assertions.assertThat(amsAsString).isEqualTo("""
+					- name: "someBagName"
+					  measures:
+					  - name: "k1Byk1k2"
+					    type: "combinator"
+					    combinationKey: "SUM"
+					    underlyings:
+					    - "k1"
+					    - "anonymous-1"
+					  - name: "k1"
+					    type: "aggregator"
+					  - name: "k2"
+					    type: "aggregator"
+					  - name: "anonymous-1"
+					    type: "combinator"
+					    combinationKey: "SUM"
+					    underlyings:
+					    - "k1"
+					    - "k2"
+										""");
+
+			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
+					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
+			Assertions.assertThat(a.size()).isEqualTo(1);
+			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(4);
+		}
 	}
 
 	@Test
 	public void testBasicFile() throws IOException {
-		Map<String, ?> obj = fromResource.loadMapFromResource(new ClassPathResource("dag_example.yml"));
+		AdhocBagOfMeasureBag obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
 
-		Assertions.assertThat(obj).hasSize(1).containsKey("dags").extractingByKey("dags").satisfies(dags -> {
-			Assertions.assertThat(dags)
-					.isInstanceOf(Collection.class)
-					.asInstanceOf(InstanceOfAssertFactories.COLLECTION)
-					.satisfies(dagsCollection -> {
-						Assertions.assertThat(dagsCollection).hasSize(1).element(0).satisfies(dagDetails -> {
-							Assertions.assertThat(dagDetails)
-									.asInstanceOf(InstanceOfAssertFactories.MAP)
-									.satisfies(dagAsMap -> {
-										Collection<Map<String, ?>> measures =
-												MapPathGet.getRequiredAs(dagAsMap, "measures");
+		Assertions.assertThat(obj.size()).isEqualTo(1);
 
-										AdhocMeasuresSet ame = fromResource.measuresToAMS(measures);
+		AdhocMeasureBag bag = obj.getBag("niceBagName");
 
-										DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = ame.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = bag.makeMeasuresDag();
 
-										Assertions.assertThat(jgrapht.vertexSet()).hasSize(5);
-										Assertions.assertThat(jgrapht.edgeSet()).hasSize(5);
-									});
-						});
-					});
-		});
+		Assertions.assertThat(jgrapht.vertexSet()).hasSize(5);
+		Assertions.assertThat(jgrapht.edgeSet()).hasSize(5);
 	}
 }

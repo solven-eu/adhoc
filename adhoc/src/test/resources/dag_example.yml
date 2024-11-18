@@ -1,7 +1,6 @@
 # Demonstrate how to setup a larger DAG through a configuration file
-dags:
-  - name: SomeDAG
-    measures:
+- name: niceBagName
+  measures:
     # Simple aggregator
     - name: k1
       type: aggregator

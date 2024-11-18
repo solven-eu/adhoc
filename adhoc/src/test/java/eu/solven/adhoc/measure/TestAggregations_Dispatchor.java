@@ -29,11 +29,11 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_identity() {
-		dag.addMeasure(
+		amb.addMeasure(
 				Dispatchor.builder().name("0or100").underlyingMeasure("k1").aggregationKey(SumAggregator.KEY).build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
 
@@ -49,7 +49,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_0to100_inputNotRequested() {
-		dag.addMeasure(Dispatchor.builder()
+		amb.addMeasure(Dispatchor.builder()
 				.name("0or100")
 				.underlyingMeasure("k1")
 				.decompositionKey("linear")
@@ -57,8 +57,8 @@ public class TestAggregations_Dispatchor extends ADagTest {
 				.aggregationKey(SumAggregator.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("0or100").build(), rows);
 
@@ -74,18 +74,18 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_0to100() {
-		dag.addMeasure(Dispatchor.builder()
+		amb.addMeasure(Dispatchor.builder()
 				.name("0or100")
 				.underlyingMeasure("k1")
 				// .combinatorKey(MaxTransformation.KEY)
 				.decompositionKey("linear")
 				.decompositionOptions(Map.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))
 				.aggregationKey(SumAggregator.KEY)
-				.debug(true)
+				.tag("debug")
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
 				aqe.execute(AdhocQueryBuilder.measure("0or100").addGroupby("0_or_100").explain(true).build(), rows);

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;
@@ -23,33 +22,30 @@ import lombok.extern.slf4j.Slf4j;
 public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
 	@NonNull
 	String name;
-	
+
 	@Singular
 	Set<String> tags;
-
-	@Default
-	boolean debug = false;
 
 	@NonNull
 	List<String> underlyingNames;
 
-	/**
-	 * @see ICombination
-	 */
+	// /**
+	// * @see ICombination
+	// */
 	@NonNull
 	@Default
 	String combinationKey = SumCombination.KEY;
 
-	/**
-	 * @see ICombination
-	 */
+	// /**
+	// * @see ICombination
+	// */
 	@NonNull
 	@Default
-	Map<String, ?> options = Collections.emptyMap();
+	Map<String, ?> combinationOptions = Collections.emptyMap();
 
 	@Override
 	public Map<String, ?> getCombinationOptions() {
-		return makeAllOptions(this, options);
+		return makeAllOptions(this, combinationOptions);
 	}
 
 	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
@@ -62,6 +58,10 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombina
 		allOptions.putAll(explicitOptions);
 
 		return allOptions;
+	}
+
+	public static CombinatorBuilder forceBuilder() {
+		return Combinator.builder();
 	}
 
 	@Override

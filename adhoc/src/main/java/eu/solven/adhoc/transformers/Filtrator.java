@@ -8,7 +8,6 @@ import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -30,9 +29,6 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	
 	@Singular
 	Set<String> tags;
-
-	@Default
-	boolean debug = false;
 
 	@NonNull
 	String underlyingName;

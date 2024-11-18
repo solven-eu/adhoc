@@ -39,9 +39,6 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@Singular
 	Set<String> tags;
 
-	@Default
-	boolean debug = false;
-
 	// A dispatcher has a single underlying measure, else it would be unclear how/when underlying measures should be
 	// combined
 	@NonNull

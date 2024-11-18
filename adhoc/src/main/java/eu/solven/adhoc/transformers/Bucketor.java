@@ -34,9 +34,6 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	@Singular
 	Set<String> tags;
 
-	@Default
-	boolean debug = false;
-
 	@NonNull
 	List<String> underlyingNames;
 

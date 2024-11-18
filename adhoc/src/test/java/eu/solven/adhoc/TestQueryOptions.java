@@ -29,14 +29,14 @@ public class TestQueryOptions extends ADagTest {
 
 	@Test
 	public void testSumOfSum_() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),

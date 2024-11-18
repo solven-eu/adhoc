@@ -29,14 +29,14 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest {
 
 	@Test
 	public void testSumOfSum_groupBy2String() {
-		dag.addMeasure(Combinator.builder()
+		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyingNames(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		dag.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		dag.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
 				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").addGroupby("b").build(), rows);

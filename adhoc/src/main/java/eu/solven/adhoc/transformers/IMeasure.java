@@ -2,7 +2,9 @@ package eu.solven.adhoc.transformers;
 
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocMeasuresSet;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 
 /**
  * A node in a DAG of measures. Typically an {@link Aggregator} or a {@link Combinator}
@@ -15,7 +17,7 @@ public interface IMeasure {
 
 	/**
 	 * 
-	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link AdhocMeasuresSet}.
+	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link AdhocMeasureBag}.
 	 */
 	String getName();
 
@@ -25,5 +27,11 @@ public interface IMeasure {
 	 * @return the tags applied to this measure.
 	 */
 	Set<String> getTags();
+
+	// JsonIgnore as implied by tags
+	@JsonIgnore
+	default boolean isDebug() {
+		return getTags().contains("debug");
+	}
 
 }
