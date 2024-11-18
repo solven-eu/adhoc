@@ -3,6 +3,7 @@ package eu.solven.adhoc.transformers;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
@@ -13,6 +14,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
+	
+	@Singular
+	Set<String> tags;
 
 	@Default
 	boolean debug = false;

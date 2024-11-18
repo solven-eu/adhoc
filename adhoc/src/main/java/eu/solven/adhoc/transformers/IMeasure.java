@@ -1,5 +1,7 @@
 package eu.solven.adhoc.transformers;
 
+import java.util.Set;
+
 import eu.solven.adhoc.dag.AdhocMeasuresSet;
 
 /**
@@ -16,5 +18,12 @@ public interface IMeasure {
 	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link AdhocMeasuresSet}.
 	 */
 	String getName();
+
+	/**
+	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
+	 * 
+	 * @return the tags applied to this measure.
+	 */
+	Set<String> getTags();
 
 }

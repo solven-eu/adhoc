@@ -1,9 +1,12 @@
 package eu.solven.adhoc.transformers;
 
+import java.util.Set;
+
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -18,6 +21,9 @@ public class Aggregator implements IMeasure {
 	// The name/identifier of the measure
 	@NonNull
 	String name;
+	
+	@Singular
+	Set<String> tags;
 
 	// The name of the underlying aggregated column
 	String columnName;
