@@ -36,7 +36,7 @@
         </dependency>
 
         <dependency>
-            <!-- A lightweight EventBus-->
+            <!-- A lightweight EventBus. Used to transmit debug information, monitoring information, etc-->
             <!-- https://github.com/greenrobot/EventBus -->
             <groupId>org.greenrobot</groupId>
             <artifactId>eventbus-java</artifactId>
@@ -82,17 +82,21 @@
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-core</artifactId>
             <version>3.1.1</version>
+            <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.speiger</groupId>
-            <artifactId>Primitive-Collections</artifactId>
-            <version>0.9.0</version>
-        </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
             <version>8.5.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson-bom.version}</version>
+            <!-- One may need require reading/writing Yaml files-->
+            <optional>true</optional>
         </dependency>
 
         <dependency>

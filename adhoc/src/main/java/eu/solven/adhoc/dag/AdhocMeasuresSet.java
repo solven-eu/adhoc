@@ -1,12 +1,6 @@
 package eu.solven.adhoc.dag;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -16,8 +10,15 @@ import eu.solven.adhoc.transformers.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The set of named {@link IMeasure}. Many of them are {@link IHasUnderlyingMeasures}, which express a
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdhocMeasuresSet {
 
 	@Default
+	@Getter
 	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
 	public AdhocMeasuresSet addMeasure(IMeasure namedMeasure) {
@@ -103,6 +105,10 @@ public class AdhocMeasuresSet {
 		measures.forEach(m -> ams.addMeasure(m));
 
 		return ams;
+	}
+
+	public String toString(String format) {
+		ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory().disable(Feature.WRITE_DOC_START_MARKER));
 	}
 
 	// TODO Why doesn't this compile?

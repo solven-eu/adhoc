@@ -27,6 +27,15 @@ An `AdhocQuery` is similar to a `SELECT ... WHERE ... GROUP BY ...` SQL statemen
 - a set of `filter` clauses.
 - a list of measures, being either aggregated or transformed measures.
 
+```mermaid
+graph TB
+    sum -- haircut --> delta
+    sum -- haircut --> gamma
+    sum.FR -- country=France --> sum
+    ratio.FR --> sum.FR
+    ratio.FR --> sum
+```
+
 ## Database
 
 Adhoc is not a database, it is a query engine. It knows how to execute complex KPI queries, typically defined as complex graph of logics. The leaves of these graphes are simpler measures, to be provided by external databases.
