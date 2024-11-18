@@ -21,12 +21,12 @@ public class TestAndFilter {
 	@Test
 	public void toString_huge() {
 		List<ColumnFilter> filters = IntStream.range(0, 128)
-				.mapToObj(i -> ColumnFilter.builder().column("k").filtered(i).build())
+				.mapToObj(i -> ColumnFilter.builder().column("k").matching(i).build())
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(AndFilter.and(filters).toString())
-				.contains("filtered=0", "filtered=4")
-				.doesNotContain("filtered=5")
+				.contains("matching=0", "matching=4")
+				.doesNotContain("=5")
 				.hasSizeLessThan(256);
 	}
 }

@@ -92,7 +92,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(
-				DatabaseQuery.edit(qK1).filter(ColumnFilter.builder().column("a").filtered("a1").build()).build())
+				DatabaseQuery.edit(qK1).filter(ColumnFilter.builder().column("a").matching("a1").build()).build())
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", "v1"));
@@ -112,7 +112,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
-				.filter(ColumnFilter.builder().column("a").filtered(Set.of("a1", "a2")).build())
+				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.explain(true)
 				.build()).collect(Collectors.toList());
 

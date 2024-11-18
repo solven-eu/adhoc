@@ -18,19 +18,19 @@ public class ColumnFilter implements IColumnFilter {
 	final String column;
 
 	@NonNull
-	final Object filtered;
+	final Object matching;
 
-	public ColumnFilter(String axis, Object filtered) {
+	public ColumnFilter(String axis, Object matching) {
 		// if (Set.of(ICountMeasuresConstants.STAR).contains(axis)) {
 		// throw new IllegalArgumentException("Invalid axis for filter: " + axis);
 		// }
 
 		this.column = axis;
-		this.filtered = filtered;
+		this.matching = matching;
 
-		if (filtered == null) {
+		if (matching == null) {
 			throw new IllegalArgumentException("'filtered' can not be null");
-		} else if (filtered instanceof IAdhocFilter) {
+		} else if (matching instanceof IAdhocFilter) {
 			throw new IllegalArgumentException("'filtered' can not be a: " + IAdhocFilter.class.getSimpleName());
 		}
 	}
@@ -47,21 +47,30 @@ public class ColumnFilter implements IColumnFilter {
 
 	@Override
 	public Object getFiltered() {
-		if (filtered == NULL_MARKER) {
+		if (matching == NULL_MARKER) {
 			return null;
 		} else {
-			return filtered;
+			return matching;
 		}
 	}
 
 	public static class ColumnFilterBuilder {
 		public ColumnFilterBuilder matchNull() {
-			this.filtered = NULL_MARKER;
+			this.matching = NULL_MARKER;
 			return this;
+		}
+
+		public ColumnFilterBuilder matching(Object matching) {
+			if (matching == null) {
+				return matchNull();
+			} else {
+				this.matching = matching;
+				return this;
+			}
 		}
 	}
 
-	public static ColumnFilter isEqualTo(String column, Object filtered ) {
-		return ColumnFilter.builder().column(column).filtered(filtered).build();
+	public static ColumnFilter isEqualTo(String column, Object matching ) {
+		return ColumnFilter.builder().column(column).matching(matching).build();
 	}
 }

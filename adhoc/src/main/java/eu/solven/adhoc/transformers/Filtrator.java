@@ -12,6 +12,13 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link IAdhocFilter}. The
+ * input {@link IAdhocFilter} will be `AND`-ed with the {@link AdhocQueryStep} own {@link IAdhocFilter}.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @Value
 @Builder
 @Slf4j
@@ -23,19 +30,18 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	boolean debug = false;
 
 	@NonNull
-	String underlyingMeasure;
+	String underlyingName;
 
 	@NonNull
 	IAdhocFilter filter;
 
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlyingMeasure);
+		return Collections.singletonList(underlyingName);
 	}
-	
+
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory,
-			AdhocQueryStep step) {
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new FiltratorQueryStep(this, transformationFactory, step);
 	}
 

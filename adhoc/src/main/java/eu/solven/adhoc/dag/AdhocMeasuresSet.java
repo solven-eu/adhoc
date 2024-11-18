@@ -1,5 +1,6 @@
 package eu.solven.adhoc.dag;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -81,7 +82,7 @@ public class AdhocMeasuresSet {
 					IMeasure notRefMeasure = nameToMeasure.get(underlyingName);
 
 					if (notRefMeasure == null) {
-						throw new IllegalArgumentException("`%s` references as unknown measure: `%s`"
+						throw new IllegalArgumentException("`%s` references an unknown measure: `%s`"
 								.formatted(measure.getName(), underlyingName));
 					}
 
@@ -94,6 +95,14 @@ public class AdhocMeasuresSet {
 		});
 
 		return measuresDag;
+	}
+
+	public static AdhocMeasuresSet fromMeasures(List<IMeasure> measures) {
+		AdhocMeasuresSet ams = AdhocMeasuresSet.builder().build();
+
+		measures.forEach(m -> ams.addMeasure(m));
+
+		return ams;
 	}
 
 	// TODO Why doesn't this compile?

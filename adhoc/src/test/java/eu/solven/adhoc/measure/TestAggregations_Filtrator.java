@@ -39,14 +39,14 @@ public class TestAggregations_Filtrator extends ADagTest {
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
-						.underlyingMeasure("k1")
+						.underlyingName("k1")
 						.filter(ColumnFilter.isEqualTo("a", "a1"))
 						.build())
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA2")
-						.underlyingMeasure("k1")
-						.filter(ColumnFilter.builder().column("a").filtered("a2").build())
+						.underlyingName("k1")
+						.filter(ColumnFilter.builder().column("a").matching("a2").build())
 						.build())
 
 				.addMeasure(Combinator.builder()
@@ -78,14 +78,14 @@ public class TestAggregations_Filtrator extends ADagTest {
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
-						.underlyingMeasure("k1")
-						.filter(ColumnFilter.builder().column("a").filtered("a1").build())
+						.underlyingName("k1")
+						.filter(ColumnFilter.builder().column("a").matching("a1").build())
 						.build())
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA2")
-						.underlyingMeasure("k1")
-						.filter(ColumnFilter.builder().column("a").filtered("a2").build())
+						.underlyingName("k1")
+						.filter(ColumnFilter.builder().column("a").matching("a2").build())
 						.build())
 
 				.addMeasure(Combinator.builder()

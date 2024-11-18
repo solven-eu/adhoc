@@ -79,6 +79,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.haifengl</groupId>
+            <artifactId>smile-core</artifactId>
+            <version>3.1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.github.speiger</groupId>
             <artifactId>Primitive-Collections</artifactId>
             <version>0.9.0</version>
