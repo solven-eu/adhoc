@@ -15,7 +15,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.max.MaxTransformation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.query.AdhocQueryBuilder;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
@@ -42,7 +42,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -67,7 +67,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -92,7 +92,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -117,7 +117,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addGroupby("a").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").groupByColumns("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
@@ -143,7 +143,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
@@ -166,7 +166,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addFilter("a", "a1").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a1").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of());
@@ -192,7 +192,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").addFilter("a", "a2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of());

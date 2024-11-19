@@ -39,7 +39,7 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				aqe.execute(AdhocQueryBuilder.measure("sumK1K2").addGroupby("a").addGroupby("b").build(), rows);
+				aqe.execute(AdhocQuery.builder().measure("sumK1K2").groupByColumns("a").groupByColumns("b").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a2", "b", "b2"), Map.of("a", "a2", "b", "b1"));

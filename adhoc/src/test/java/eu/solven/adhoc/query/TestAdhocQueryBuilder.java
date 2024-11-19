@@ -10,11 +10,11 @@ import eu.solven.adhoc.api.v1.pojo.AndFilter;
 public class TestAdhocQueryBuilder {
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery q = AdhocQueryBuilder.grandTotal().build();
+		AdhocQuery q = AdhocQuery.builder().build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getMeasures()).isEmpty();
+		Assertions.assertThat(q.getMeasureRefs()).isEmpty();
 
 		// Make sure the .toString returns actual values, and not the lambda toString
 		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
@@ -22,18 +22,25 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testGrandTotal_filterAndEmpty() {
-		AdhocQuery q = AdhocQueryBuilder.grandTotal().andFilter(AndFilter.andAxisEqualsFilters(Map.of())).build();
+		AdhocQuery q = AdhocQuery.builder().andFilter(AndFilter.andAxisEqualsFilters(Map.of())).build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getMeasures()).isEmpty();
+		Assertions.assertThat(q.getMeasureRefs()).isEmpty();
 	}
 
 	@Test
 	public void testEquals() {
-		AdhocQuery q1 = AdhocQueryBuilder.grandTotal().build();
-		AdhocQuery q2 = AdhocQueryBuilder.grandTotal().build();
+		AdhocQuery q1 = AdhocQuery.builder().build();
+		AdhocQuery q2 = AdhocQuery.builder().build();
 
 		Assertions.assertThat(q1).isEqualTo(q2);
+	}
+
+	@Test
+	public void testAddGroupBy() {
+		AdhocQuery q1 = AdhocQuery.builder().groupByColumns("a", "b").groupByColumns("c", "d").build();
+
+		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("a", "b", "c", "d");
 	}
 }

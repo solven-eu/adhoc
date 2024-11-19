@@ -386,7 +386,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		{
 
-			adhocQuery.getMeasures().stream().map(ref -> resolveIfRef(ref)).forEach(queriedMeasure -> {
+			adhocQuery.getMeasureRefs().stream().map(ref -> resolveIfRef(ref)).forEach(queriedMeasure -> {
 				AdhocQueryStep rootStep = AdhocQueryStep.builder()
 						.filter(adhocQuery.getFilter())
 						.groupBy(adhocQuery.getGroupBy())

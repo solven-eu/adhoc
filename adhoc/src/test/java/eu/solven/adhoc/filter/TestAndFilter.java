@@ -29,4 +29,30 @@ public class TestAndFilter {
 				.doesNotContain("=5")
 				.hasSizeLessThan(256);
 	}
+
+	@Test
+	public void testAndFilters_twoGrandTotal() {
+		IAdhocFilter filterAllAndA = AndFilter.and(IAdhocFilter.MATCH_ALL, IAdhocFilter.MATCH_ALL);
+
+		Assertions.assertThat(filterAllAndA).isEqualTo(IAdhocFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void testAndFilters_oneGrandTotal() {
+		IAdhocFilter filterAllAndA = AndFilter.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"));
+
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
+	}
+
+	@Test
+	public void testAndFilters_oneGrandTotal_TwoCustom() {
+		IAdhocFilter filterAllAndA = AndFilter
+				.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+
+		Assertions.assertThat(filterAllAndA).isInstanceOfSatisfying(AndFilter.class, andF -> {
+			Assertions.assertThat(andF.getAnd())
+					.hasSize(2)
+					.contains(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+		});
+	}
 }

@@ -13,5 +13,5 @@ import eu.solven.adhoc.transformers.ReferencedMeasure;
  */
 public interface IHasRefMeasures {
 
-	Set<ReferencedMeasure> getMeasures();
+	Set<ReferencedMeasure> getMeasureRefs();
 }

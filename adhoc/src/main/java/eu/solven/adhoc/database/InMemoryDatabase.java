@@ -11,13 +11,19 @@ import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.DatabaseQuery;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 
 @Builder
 public class InMemoryDatabase implements IAdhocDatabaseWrapper {
+	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
 
-	public void add(Map<String, Object> row) {
+	@NonNull
+	@Default
+	final PrefixTranscoder transcoder = PrefixTranscoder.builder().build();
+
+	public void add(Map<String, ?> row) {
 		rows.add(row);
 	}
 

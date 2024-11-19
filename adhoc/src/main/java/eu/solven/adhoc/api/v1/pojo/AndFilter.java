@@ -90,7 +90,17 @@ public class AndFilter implements IAndFilter {
 	}
 
 	public static IAdhocFilter and(List<? extends IAdhocFilter> filters) {
-		return AndFilter.builder().filters(filters).build();
+		// Skipping matchAll is useful on `.edit`
+		List<? extends IAdhocFilter> notMatchAll =
+				filters.stream().filter(f -> !f.isMatchAll()).collect(Collectors.toList());
+
+		if (notMatchAll.isEmpty()) {
+			return IAdhocFilter.MATCH_ALL;
+		} else if (notMatchAll.size() == 1) {
+			return notMatchAll.get(0);
+		} else {
+			return AndFilter.builder().filters(notMatchAll).build();
+		}
 	}
 
 }

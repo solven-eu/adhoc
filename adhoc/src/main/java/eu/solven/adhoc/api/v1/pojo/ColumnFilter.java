@@ -21,10 +21,6 @@ public class ColumnFilter implements IColumnFilter {
 	final Object matching;
 
 	public ColumnFilter(String axis, Object matching) {
-		// if (Set.of(ICountMeasuresConstants.STAR).contains(axis)) {
-		// throw new IllegalArgumentException("Invalid axis for filter: " + axis);
-		// }
-
 		this.column = axis;
 		this.matching = matching;
 
@@ -70,7 +66,7 @@ public class ColumnFilter implements IColumnFilter {
 		}
 	}
 
-	public static ColumnFilter isEqualTo(String column, Object matching ) {
+	public static ColumnFilter isEqualTo(String column, Object matching) {
 		return ColumnFilter.builder().column(column).matching(matching).build();
 	}
 }

@@ -18,7 +18,7 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.ExpressionCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.query.AdhocQueryBuilder;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -44,7 +44,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -69,7 +69,8 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build(), rows);
 
@@ -101,7 +102,8 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2")
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build(), rows);
 

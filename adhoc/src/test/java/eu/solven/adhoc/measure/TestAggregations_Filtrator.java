@@ -17,7 +17,6 @@ import eu.solven.adhoc.aggregations.DivideCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
@@ -58,7 +57,7 @@ public class TestAggregations_Filtrator extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		AdhocQuery adhocQuery = AdhocQueryBuilder.measure("k1").addMeasures("filterK1onA1").build();
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k1", "filterK1onA1").build();
 		ITabularView output = aqe.execute(adhocQuery, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
@@ -97,7 +96,7 @@ public class TestAggregations_Filtrator extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		AdhocQuery adhocQuery = AdhocQueryBuilder.measure("Ratio_k1_k1witha1").build();
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("Ratio_k1_k1witha1").build();
 		ITabularView output = aqe.execute(adhocQuery, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());

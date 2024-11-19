@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQueryBuilder;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
@@ -38,7 +38,7 @@ public class TestQueryOptions extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(),
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),
 				rows);
 

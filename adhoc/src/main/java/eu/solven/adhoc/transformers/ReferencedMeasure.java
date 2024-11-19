@@ -39,4 +39,8 @@ public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure
 
 		return Comparator.comparing(ReferencedMeasure::getRef).compare(this, o);
 	}
+
+	public static ReferencedMeasure ref(String name) {
+		return ReferencedMeasure.builder().ref(name).build();
+	}
 }

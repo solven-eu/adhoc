@@ -29,7 +29,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName()).build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQuery.builder().measure(k1Sum.getName()).build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -50,7 +50,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure("sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQuery.builder().measure("sumK1K2").build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -71,7 +71,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocQueryBuilder.measure(k1Sum.getName(), "sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocQuery.builder().measure(k1Sum.getName(), "sumK1K2").build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

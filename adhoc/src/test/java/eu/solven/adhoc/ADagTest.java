@@ -20,7 +20,7 @@ public abstract class ADagTest {
 	final public AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 	final public AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measureBag(amb).build();
 
-	protected final InMemoryDatabase rows = InMemoryDatabase.builder().build();
+	final public InMemoryDatabase rows = InMemoryDatabase.builder().build();
 
 	@BeforeEach
 	public void wireEvents() {

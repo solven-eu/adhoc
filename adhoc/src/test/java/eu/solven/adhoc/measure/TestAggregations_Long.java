@@ -17,7 +17,7 @@ import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.max.MaxTransformation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQueryBuilder;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -41,7 +41,7 @@ public class TestAggregations_Long extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -66,7 +66,7 @@ public class TestAggregations_Long extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("sumK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -91,7 +91,7 @@ public class TestAggregations_Long extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQueryBuilder.measure("maxK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
