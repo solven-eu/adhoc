@@ -29,7 +29,6 @@
                 <module>atoti</module>
             </modules>
         </profile>
-
     </profiles>
 
     <properties>

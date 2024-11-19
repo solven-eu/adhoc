@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.coordinate.NavigableMapComparator;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
@@ -77,10 +78,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 		Set<Map<String, ?>> keySet;
 		if (debug) {
 			// Enforce an iteration order for debugging-purposes
-			Comparator<Map<String, ?>> mapComparator =
-					Comparator.<Map<String, ?>, NavigableMap<String, ?>>comparing(s -> new TreeMap<String, Object>(s),
-							NavigableMapComparator.INSTANCE);
-			keySet = new TreeSet<>(mapComparator);
+			keySet = new TreeSet<>(MapComparators.mapComparator());
 		} else {
 			keySet = new HashSet<>();
 		}

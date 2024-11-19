@@ -26,13 +26,14 @@ import lombok.Value;
 public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 
 	@Default
-	protected IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+    IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 
 	@Default
-	protected IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+	 IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+
 	// We query only simple aggregations to external databases
 	@Default
-	protected Set<Aggregator> aggregators = Collections.emptySet();
+	 Set<Aggregator> aggregators = Collections.emptySet();
 
 	@Default
 	boolean debug = false;
@@ -48,19 +49,6 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 		this.explain = false;
 	}
 
-	@Override
-	public IAdhocFilter getFilter() {
-		return filter;
-	}
-
-	@Override
-	public IAdhocGroupBy getGroupBy() {
-		return groupBy;
-	}
-
-	public Set<Aggregator> getAggregators() {
-		return aggregators;
-	}
 
 	public static DatabaseQueryBuilder edit(DatabaseQuery dq) {
 		return DatabaseQuery.edit((IWhereGroupbyAdhocQuery) dq)
@@ -72,11 +60,4 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	public static DatabaseQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
 		return DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
 	}
-
-	// @Override
-	// public String toString() {
-	// // We call the getters to workaround usage of lambda
-	// return "SimpleAggregationQuery [axesFilters=" + axesFilters
-	// .getFilter() + ", groupBys=" + axes.getGroupBys() + ", aggregators=" + aggregators + "]";
-	// }
 }

@@ -12,7 +12,7 @@
 
     <properties>
         <activepivot.server.version>5.11.16</activepivot.server.version>
-        <apex.version>9.0-SNAPSHOT</apex.version>
+        <apex.version>9.1</apex.version>
     </properties>
 
     <dependencies>

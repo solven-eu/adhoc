@@ -1,5 +1,6 @@
 package eu.solven.adhoc.query;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -53,6 +54,12 @@ public class AdhocQuery implements IAdhocQuery {
 			Lists.asList(firstName, moreNames).forEach(measureName -> {
 				this.measureRef(ReferencedMeasure.ref(measureName));
 			});
+
+			return this;
+		}
+
+		public AdhocQueryBuilder measures(Collection<String> measureNames) {
+			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measureRef);
 
 			return this;
 		}

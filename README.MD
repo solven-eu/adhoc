@@ -8,6 +8,12 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 - The DAG should be easily readable and modifiable but a human, not necessarily a developer.
 - The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUPBY`. 
 
+### About performance
+
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying database. As the slow-part of a full `AdhocQuery` is generally the 
+database pre-aggregation, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables
+this project to remains simpler, given a query is generally slow due to the underlying database.
+
 ## Related Projects
 
 - SQLServer. We rely on many concepts from SQLServer to define our own abstractions.
@@ -45,6 +51,12 @@ Typical database are:
 - CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlDatabase](JooqSqlDatabase).
 - Any SQL database: you should rely on [JooqSqlDatabase](JooqSqlDatabase), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
+
+### Transcoder
+
+Given databases may hold similar data but with different column names. A `IAdhocDatabaseWrapper` enables coding once per database such a mapping.
+
+A default `IAdhocDatabaseWrapper` assumes `IAdhocQuery` columns matches the `IAdhocDatabaseWrapper` columns.
 
 ## Measures 
 

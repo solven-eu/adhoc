@@ -33,7 +33,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	JooqSqlDatabase jooqDb = new JooqSqlDatabase(() -> dbConn, tableName);
+	JooqSqlDatabase jooqDb = JooqSqlDatabase.builder().connectionSupplier(() -> dbConn).tableName(tableName).build();
 
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();

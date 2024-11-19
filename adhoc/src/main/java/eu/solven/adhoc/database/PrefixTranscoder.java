@@ -11,9 +11,23 @@ import lombok.NonNull;
  *
  */
 @Builder
-public class PrefixTranscoder {
+public class PrefixTranscoder implements  IAdhocDatabaseTranscoder{
 	// If empty, it is like the IdentityTranscoder
 	@NonNull
 	@Default
 	String prefix = "";
+
+	@Override
+	public String underlying(String queried) {
+		return prefix + queried;
+	}
+
+	@Override
+	public String queried(String underlying) {
+		if (underlying.startsWith(prefix)) {
+			return underlying.substring(prefix.length());
+		} else {
+			throw new IllegalArgumentException("We received a column not prefixed by %s: %s".formatted(prefix, underlying));
+		}
+	}
 }

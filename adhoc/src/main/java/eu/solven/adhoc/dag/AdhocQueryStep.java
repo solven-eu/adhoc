@@ -6,6 +6,7 @@ import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -18,10 +19,15 @@ import lombok.Value;
 @Value
 @Builder
 public class AdhocQueryStep implements IWhereGroupbyAdhocQuery {
+	@NonNull
+	IMeasure measure;
+	@NonNull
 	IAdhocFilter filter;
+	@NonNull
 	IAdhocGroupBy groupBy;
 
-	IMeasure measure;
+	// This property is transported down to the DatabaseQuery
+	Object custom;
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
 		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());

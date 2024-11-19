@@ -16,6 +16,9 @@ import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A {@link Combinator} is a {@link IMeasure} which combines the underlying measures for current coordinate.
+ */
 @Value
 @Builder
 @Slf4j
@@ -29,16 +32,16 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombina
 	@NonNull
 	List<String> underlyingNames;
 
-	// /**
-	// * @see ICombination
-	// */
+	 /**
+	 * @see eu.solven.adhoc.aggregations.ICombination
+	 */
 	@NonNull
 	@Default
 	String combinationKey = SumCombination.KEY;
 
-	// /**
-	// * @see ICombination
-	// */
+	 /**
+	 * @see eu.solven.adhoc.aggregations.ICombination
+	 */
 	@NonNull
 	@Default
 	Map<String, ?> combinationOptions = Collections.emptyMap();

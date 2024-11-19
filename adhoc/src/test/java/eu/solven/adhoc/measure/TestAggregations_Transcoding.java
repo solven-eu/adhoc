@@ -44,7 +44,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
