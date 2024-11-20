@@ -3,7 +3,6 @@ package eu.solven.adhoc.database;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,10 +10,17 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.api.v1.pojo.EqualsMatcher;
+import eu.solven.adhoc.api.v1.pojo.IValueMatcher;
+import eu.solven.adhoc.api.v1.pojo.InMatcher;
+import eu.solven.adhoc.api.v1.pojo.LikeMatcher;
+import eu.solven.adhoc.api.v1.pojo.NullMatcher;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.SelectConditionStep;
 import org.jooq.SelectFieldOrAsterisk;
@@ -95,18 +101,7 @@ public class JooqSqlDatabase implements IAdhocDatabaseWrapper {
     }
 
     protected Map<String, ?> transcode(Map<String, ?> underlyingMap) {
-        Map<String, Object> transcoded = new HashMap<>();
-
-        underlyingMap.forEach((underlyingKey, v) -> {
-            String queriedKey = transcoder.queried(underlyingKey);
-            Object replaced = transcoded.put(queriedKey, v);
-
-            if (replaced != null && !replaced.equals(v)) {
-                log.warn("Transcoding led to an ambiguity as multiple underlyingKeys has queriedKey={} mapping to values {} and {}", queriedKey, replaced, v);
-            }
-        });
-
-        return transcoded;
+        return AdhocTranscodingHelper.transcode(transcoder, underlyingMap);
     }
 
     protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
@@ -121,22 +116,32 @@ public class JooqSqlDatabase implements IAdhocDatabaseWrapper {
     }
 
     protected Condition toCondition(IAdhocFilter filter) {
-        if (filter.isAxisEquals() && filter instanceof IColumnFilter equalsFilter) {
+        if (filter.isColumnMatcher() && filter instanceof IColumnFilter columnFilter) {
+            IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+            String column = transcoder.underlying(columnFilter.getColumn());
+
             Condition condition;
-            Object filtered = equalsFilter.getFiltered();
-            String column = transcoder.underlying(equalsFilter.getColumn());
-            if (filtered == null) {
-                condition = DSL.condition(DSL.field(column).isNull());
-            } else if (filtered instanceof Collection<?> filteredCollection) {
-                condition = DSL.condition(DSL.field(column).in(filteredCollection));
-//			} else if (filtered instanceof LikeF<?> filteredCollection) {
-//				condition = DSL.condition(DSL.field(column).in(filteredCollection));
-            } else {
-                condition = DSL.condition(DSL.field(column).eq(filtered));
+            final Field<Object> field = DSL.field(column);
+            switch (valueMatcher) {
+                case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
+                case InMatcher inMatcher -> {
+                    Set<?> operands = inMatcher.getOperands();
+
+                    if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
+                        // Please fill a ticket, various such cases could be handled
+                        throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
+                    }
+
+                    condition = DSL.condition(field.in(operands));
+                }
+                case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
+                case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+                default ->
+                        throw new UnsupportedOperationException("Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
             }
             return condition;
         } else {
-            throw new UnsupportedOperationException("Not handled: " + filter);
+            throw new UnsupportedOperationException("Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
         }
     }
 }

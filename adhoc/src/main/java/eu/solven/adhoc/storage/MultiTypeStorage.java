@@ -104,6 +104,9 @@ public class MultiTypeStorage<T> {
 		} else if (v instanceof Long || v instanceof Integer) {
 			long vAsPrimitive = ((Number) v).longValue();
 			measureToAggregateL.mergeLong(key, vAsPrimitive, agg::aggregateLongs);
+		}  else if (v instanceof CharSequence) {
+			String vAsCharSequence = ((CharSequence) v).toString();
+			measureToAggregateS.merge(key, vAsCharSequence, agg::aggregateStrings);
 		} else {
 			throw new UnsupportedOperationException("Received: %s".formatted(v));
 		}

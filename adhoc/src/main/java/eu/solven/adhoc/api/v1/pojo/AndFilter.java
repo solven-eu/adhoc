@@ -34,7 +34,7 @@ public class AndFilter implements IAndFilter {
 	public static AndFilter andAxisEqualsFilters(Map<String, ?> filters) {
 		return new AndFilter(filters.entrySet()
 				.stream()
-				.map(e -> new ColumnFilter(e.getKey(), e.getValue()))
+				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
 				.collect(Collectors.toList()));
 	}
 

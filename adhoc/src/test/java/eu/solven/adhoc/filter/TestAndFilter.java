@@ -20,14 +20,14 @@ public class TestAndFilter {
 
 	@Test
 	public void toString_huge() {
-		List<ColumnFilter> filters = IntStream.range(0, 128)
+		List<ColumnFilter> filters = IntStream.range(0, 256)
 				.mapToObj(i -> ColumnFilter.builder().column("k").matching(i).build())
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(AndFilter.and(filters).toString())
-				.contains("matching=0", "matching=4")
-				.doesNotContain("=5")
-				.hasSizeLessThan(256);
+				.contains("valueMatcher=EqualsMatcher(operand=0)", "valueMatcher=EqualsMatcher(operand=0)")
+				.doesNotContain("7")
+				.hasSizeLessThan(512);
 	}
 
 	@Test

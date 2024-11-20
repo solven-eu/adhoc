@@ -13,6 +13,16 @@ import eu.solven.adhoc.transformers.Combinator;
 public interface IAggregation {
 	Object aggregate(Object left, Object right);
 
+	default String aggregateStrings(String left, String right) {
+		Object aggregated = aggregate(left, right);
+
+		if (aggregated == null) {
+			return null;
+		}
+
+		return aggregated.toString();
+	}
+
 	double aggregateDoubles(double left, double right);
 	
 	long aggregateLongs(long left, long right);

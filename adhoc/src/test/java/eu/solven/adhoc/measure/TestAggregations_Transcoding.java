@@ -75,28 +75,28 @@ public class TestAggregations_Transcoding extends ADagTest {
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").groupByColumns("c").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("c", "c1"), Map.of("c", "c2"));
+		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("c", "v1"), Map.of("c", "v2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("c", "c1"), Map.of("sumK1K2", 0D + 123))
-				.containsEntry(Map.of("c", "c2"), Map.of("sumK1K2", 0D + 234));
+				.containsEntry(Map.of("c", "v1"), Map.of("sumK1K2", 0D + 123))
+				.containsEntry(Map.of("c", "v2"), Map.of("sumK1K2", 0D + 234));
 	}
 
 	@Test
 	public void testFilterGroupBy() {
 		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "c1").groupByColumns("c").build(), rows);
+				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByColumns("c").debug(true).build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("c", "v1"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0D + 123));
+				.containsEntry(Map.of("c", "v1"), Map.of("sumK1K2", 0D + 123));
 	}
 }

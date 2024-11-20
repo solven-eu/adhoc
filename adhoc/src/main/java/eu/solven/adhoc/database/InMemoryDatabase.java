@@ -35,10 +35,14 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
         return rows.stream();
     }
 
+    protected Map<String, ?> transcode(Map<String, ?> underlyingMap) {
+        return AdhocTranscodingHelper.transcode(transcoder, underlyingMap);
+    }
+
     @Override
     public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
         return this.stream().filter(row -> {
-            return FilterHelpers.match(dbQuery.getFilter(), row);
+            return FilterHelpers.match(transcoder, dbQuery.getFilter(), row);
         }).map(row -> {
             // BEWARE Should we filter not selected columns?
             Set<String> keysToKeep = new HashSet<>();
@@ -48,6 +52,6 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
             dbQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(keysToKeep::add);
 
             return row;
-        });
+        }).map(this::transcode);
     }
 }

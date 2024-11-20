@@ -27,7 +27,7 @@ public interface IAdhocFilter {
 	 * 
 	 * @return true if this filters a column for a given value
 	 */
-	default boolean isAxisEquals() {
+	default boolean isColumnMatcher() {
 		return false;
 	}
 

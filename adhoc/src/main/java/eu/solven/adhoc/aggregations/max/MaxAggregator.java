@@ -25,6 +25,15 @@ public class MaxAggregator implements IAggregation {
 	}
 
 	@Override
+	public String aggregateStrings(String left, String right) {
+		if (left.compareTo(right) >= 0) {
+			return left;
+		} else {
+			return right;
+		}
+	}
+
+	@Override
 	public double aggregateDoubles(double left, double right) {
 		return Double.max(left, right);
 	}

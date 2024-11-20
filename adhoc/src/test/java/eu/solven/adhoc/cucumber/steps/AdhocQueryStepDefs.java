@@ -79,6 +79,14 @@ public class AdhocQueryStepDefs {
 
 	@Then("View contains")
 	public void heShouldHaveASuccessResponse(DataTable dataTable) {
+		if (tabularView == null) {
+			if (t == null) {
+				throw new IllegalStateException("Have you executed any query?");
+			} else {
+				throw new IllegalStateException("The query failed", t);
+			}
+		}
+
 		List<Map<String, ?>> coordinates = tabularView.keySet().map(m -> m).collect(Collectors.toList());
 
 		dataTable.asMaps().forEach(expectedMap -> {

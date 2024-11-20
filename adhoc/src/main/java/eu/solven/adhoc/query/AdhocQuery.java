@@ -20,79 +20,91 @@ import lombok.Value;
 
 /**
  * Simple {@link IAdhocQuery}, where the filter is an AND condition.
- * 
- * @author Benoit Lacelle
  *
+ * @author Benoit Lacelle
  */
 @Value
 @Builder
 public class AdhocQuery implements IAdhocQuery {
 
-	@NonNull
-	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-	@NonNull
-	@Default
-	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
-	@Singular
-	Set<ReferencedMeasure> measureRefs;
+    @NonNull
+    @Default
+    IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+    @NonNull
+    @Default
+    IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+    @Singular
+    Set<ReferencedMeasure> measureRefs;
 
-	// If true, will print a log of debug information
-	@Default
-	boolean debug = false;
-	// If true, will print details about the query plan
-	@Default
-	boolean explain = false;
+    // If true, will print a log of debug information
+    @Default
+    boolean debug = false;
+    // If true, will print details about the query plan
+    @Default
+    boolean explain = false;
 
-	@Override
-	public Set<ReferencedMeasure> getMeasureRefs() {
-		return measureRefs;
-	}
+    @Override
+    public Set<ReferencedMeasure> getMeasureRefs() {
+        return measureRefs;
+    }
 
-	public static class AdhocQueryBuilder {
-		public AdhocQueryBuilder measure(String firstName, String... moreNames) {
-			Lists.asList(firstName, moreNames).forEach(measureName -> {
-				this.measureRef(ReferencedMeasure.ref(measureName));
-			});
+    public static class AdhocQueryBuilder {
+        public AdhocQueryBuilder measure(String firstName, String... moreNames) {
+            Lists.asList(firstName, moreNames).forEach(measureName -> {
+                this.measureRef(ReferencedMeasure.ref(measureName));
+            });
 
-			return this;
-		}
+            return this;
+        }
 
-		public AdhocQueryBuilder measures(Collection<String> measureNames) {
-			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measureRef);
+        public AdhocQueryBuilder measures(Collection<String> measureNames) {
+            measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measureRef);
 
-			return this;
-		}
+            return this;
+        }
 
-		public AdhocQueryBuilder andFilter(IAdhocFilter moreAndFilter) {
-			filter(AndFilter.and(build().getFilter(), moreAndFilter));
+        /**
+         * `AND` existing {@link IAdhocFilter} with an {@link eu.solven.adhoc.api.v1.filters.IColumnFilter}
+         *
+         * @param filter
+         * @return the builder
+         */
+        public AdhocQueryBuilder andFilter(IAdhocFilter filter) {
+            filter(AndFilter.and(build().getFilter(), filter));
 
-			return this;
-		}
+            return this;
+        }
 
-		public AdhocQueryBuilder andFilter(String key, Object value) {
-			return andFilter(new ColumnFilter(key, value));
-		}
+        /**
+         * `AND` existing {@link IAdhocFilter} with an {@link eu.solven.adhoc.api.v1.filters.IColumnFilter}
+         *
+         * @param column
+         * @param value
+         * @return the builder
+         */
+        public AdhocQueryBuilder andFilter(String column, Object value) {
+            return andFilter(ColumnFilter.builder().column(column).matching(value).build());
+        }
 
-		public AdhocQueryBuilder groupByColumns(String firstGroupBy, String... moreGroupBys) {
-			Set<String> allGroupByColumns = new TreeSet<>();
+        public AdhocQueryBuilder groupByColumns(String firstGroupBy, String... moreGroupBys) {
+            Set<String> allGroupByColumns = new TreeSet<>();
 
-			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
-			allGroupByColumns.addAll(this.build().getGroupBy().getGroupedByColumns());
-			allGroupByColumns.addAll(Lists.asList(firstGroupBy, moreGroupBys));
+            // https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
+            allGroupByColumns.addAll(this.build().getGroupBy().getGroupedByColumns());
+            allGroupByColumns.addAll(Lists.asList(firstGroupBy, moreGroupBys));
 
-			groupBy(GroupByColumns.of(allGroupByColumns));
+            groupBy(GroupByColumns.of(allGroupByColumns));
 
-			return this;
-		}
-	}
+            return this;
+        }
+    }
 
-	public AdhocQueryBuilder edit(AdhocQuery query) {
-		return AdhocQuery.builder()
-				.debug(query.isDebug())
-				.explain(query.isExplain())
-				.measureRefs(query.getMeasureRefs())
-				.filter(query.getFilter())
-				.groupBy(query.getGroupBy());
-	}
+    public AdhocQueryBuilder edit(AdhocQuery query) {
+        return AdhocQuery.builder()
+                .debug(query.isDebug())
+                .explain(query.isExplain())
+                .measureRefs(query.getMeasureRefs())
+                .filter(query.getFilter())
+                .groupBy(query.getGroupBy());
+    }
 }
