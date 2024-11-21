@@ -22,7 +22,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 	public void testSum() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
@@ -43,7 +43,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 	public void testSumOfSum() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
@@ -64,7 +64,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 	public void testSum_SumOfSum() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 

@@ -16,8 +16,6 @@ import org.springframework.core.io.Resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
@@ -34,6 +32,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.NonNull;
+import org.springframework.util.ClassUtils;
 import smile.math.distance.EditDistance;
 
 public class MeasuresSetFromResource {
@@ -86,12 +85,7 @@ public class MeasuresSetFromResource {
 
 			}).collect(Collectors.toList());
 
-			// optName
-
-			// if (optName.isEmpty()) {
-			// builder.tag("anonymous");
-			// }
-			yield Combinator.forceBuilder().name(name).underlyingNames(underlyingNames).build();
+			yield Combinator.builder().name(name).underlyings(underlyingNames).build();
 		}
 		case "filtrator": {
 			Object rawUnderlying = getAnyParameter(measure, "underlying");
@@ -112,7 +106,7 @@ public class MeasuresSetFromResource {
 
 			Map<String, ?> rawFilter = getMapParameter(measure, "filter");
 
-			yield Filtrator.builder().name(name).underlyingName(undelryingName).filter(toFilter(rawFilter)).build();
+			yield Filtrator.builder().name(name).underlying(undelryingName).filter(toFilter(rawFilter)).build();
 		}
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + type);
@@ -190,12 +184,7 @@ public class MeasuresSetFromResource {
 	}
 
 	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
-		ObjectMapper objectMapper;
-		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
-			objectMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
-		} else {
-			objectMapper = new ObjectMapper();
-		}
+		ObjectMapper objectMapper = makeObjectmapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			AdhocBagOfMeasureBag abmb = new AdhocBagOfMeasureBag();
@@ -220,12 +209,7 @@ public class MeasuresSetFromResource {
 	}
 
 	public String asString(String format, AdhocBagOfMeasureBag abmb) {
-		ObjectMapper objectMapper;
-		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
-			objectMapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
-		} else {
-			objectMapper = new ObjectMapper();
-		}
+		ObjectMapper objectMapper = makeObjectmapper(format);
 
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
 
@@ -246,6 +230,23 @@ public class MeasuresSetFromResource {
 		} catch (JsonProcessingException e) {
 			throw new IllegalArgumentException(e);
 		}
+	}
+
+	private static ObjectMapper makeObjectmapper(String format) {
+		ObjectMapper objectMapper;
+		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
+			String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
+			if (!ClassUtils.isPresent(yamlFactoryClass, null)) {
+				// Adhoc has optional=true, as only a minority of projects uses this library
+				throw new IllegalArgumentException("Do you miss an explicit dependency over `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`");
+			}
+
+			// Use a qualifiedName to enable loading this class even if YAMLGenerator is not on the classPath
+			objectMapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory().disable(com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
+		} else {
+			objectMapper = new ObjectMapper();
+		}
+		return objectMapper;
 	}
 
 	private static final List<String> sortedKeys =

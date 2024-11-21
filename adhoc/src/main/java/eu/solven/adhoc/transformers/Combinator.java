@@ -1,19 +1,29 @@
 package eu.solven.adhoc.transformers;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
+import com.google.common.collect.Lists;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.GroupByColumns;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,16 +31,19 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Value
 @Builder
+@Jacksonized
 @Slf4j
 public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
 	Set<String> tags;
 
 	@NonNull
-	List<String> underlyingNames;
+	@Singular
+	List<String> underlyings;
 
 	 /**
 	 * @see eu.solven.adhoc.aggregations.ICombination
@@ -47,6 +60,11 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombina
 	Map<String, ?> combinationOptions = Collections.emptyMap();
 
 	@Override
+	public List<String> getUnderlyingNames() {
+		return underlyings;
+	}
+
+	@Override
 	public Map<String, ?> getCombinationOptions() {
 		return makeAllOptions(this, combinationOptions);
 	}
@@ -61,10 +79,6 @@ public class Combinator implements IMeasure, IHasUnderlyingMeasures, IHasCombina
 		allOptions.putAll(explicitOptions);
 
 		return allOptions;
-	}
-
-	public static CombinatorBuilder forceBuilder() {
-		return Combinator.builder();
 	}
 
 	@Override

@@ -15,9 +15,333 @@
 
     <packaging>pom</packaging>
 
+    <properties>
+        <spotless.version>2.44.0.BETA4</spotless.version>
+        <cleanthat.version>2.22</cleanthat.version>
+
+        <!-- By default (i.e. in local environments), check for code formatting AFTER trying automatic fixes. -->
+        <!-- We suppose the developper would see the fixed and include them in his commit. -->
+        <!-- In the CI, we check BEFORE automatic fixes as the CI should report early invalid code -->
+        <staticChecks>process-sources</staticChecks>
+    </properties>
+
     <modules>
         <module>adhoc</module>
     </modules>
+
+    <build>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <!-- https://maven.apache.org/plugins/maven-source-plugin/ -->
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <!--https://spotbugs.github.io/spotbugs-maven-plugin/index.html -->
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs.version}</version>
+                    <configuration>
+                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/resources/src/main/resources/style/pepper.spotbugs.xml</excludeFilterFile>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>check</id>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <!-- default phase is verify, which is after tests. -->
+                            <!-- We prefer to run static analysis before tests not to wait -->
+                            <phase>${staticChecks}</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <!-- https://maven.apache.org/plugins/maven-checkstyle-plugin/ -->
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${maven-checkstyle-plugin.version}</version>
+                    <configuration>
+                        <excludes>**/generated/**</excludes>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <!-- more recent than brought by maven plugin -->
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>${checkstyle.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <executions>
+                        <execution>
+                            <id>check</id>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <!-- default phase is verify, which is after tests. We prefer to run static analysis before tests not to wait -->
+                            <phase>${staticChecks}</phase>
+                            <configuration>
+                                <configLocation>${maven.multiModuleProjectDirectory}/resources/src/main/resources/style/pepper.checkstyle.xml</configLocation>
+                                <!--<configLocation>checkstyle/mitrust.checkstyle.xml</configLocation> -->
+                                <consoleOutput>true</consoleOutput>
+                                <failsOnError>true</failsOnError>
+                                <!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
+                                <!-- only with goal checkstyle-aggregate or checkstyle generating a report -->
+                                <!--<linkXRef>false</linkXRef> -->
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <!-- Skip a row by adding '//NOPMD' at the end -->
+                    <!-- http://pmd.sourceforge.net/pmd-4.3.0/suppressing.html -->
+                    <!-- mvn org.apache.maven.plugins:maven-pmd-plugin:check -->
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${maven-pmd-plugin.version}</version>
+                    <configuration>
+                        <!-- <includeTests>true</includeTests> -->
+                        <indentSize>4</indentSize>
+                        <printFailingErrors>true</printFailingErrors>
+
+                        <!-- Code duplication: Lower is better. Default is 100 -->
+                        <minimumTokens>60</minimumTokens>
+
+                        <!-- TODO Decrease to 4, then 3, until 1 -->
+                        <failurePriority>5</failurePriority>
+
+                        <!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
+                        <linkXRef>false</linkXRef>
+
+                        <!-- xml is required to run 'mvn pmd:check' -->
+                        <format>xml</format>
+
+                        <rulesets>
+                            <ruleset>${maven.multiModuleProjectDirectory}/resources/src/main/resources/style/pepper.pmd7.rulesets.xml</ruleset>
+                        </rulesets>
+                        <excludes>
+                            <exclude>**/generated/**</exclude>
+                        </excludes>
+                    </configuration>
+                    <dependencies>
+                        <!-- the orginal version shipped with the plugin, 6.4.0, doesn't handle java11 -->
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-java</artifactId>
+                            <version>${pmd.version}</version>
+                        </dependency>
+                        <!-- Enables rules for XML, including pom.xml -->
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-xml</artifactId>
+                            <version>${pmd.version}</version>
+                        </dependency>
+                        <!-- maven-pmd-plugin relies by default on some version of PMD which -->
+                        <!-- may be incompatible with custom PMD versions -->
+                        <dependency>
+                            <groupId>net.sourceforge.pmd</groupId>
+                            <artifactId>pmd-core</artifactId>
+                            <version>${pmd.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                                <goal>cpd-check</goal>
+                            </goals>
+                            <!-- default phase is verify, which is after tests. We prefer to run static analysis before tests not to wait -->
+                            <phase>${staticChecks}</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <!-- mvn io.github.solven-eu.cleanthat:cleanthat-maven-plugin:cleanthat -->
+                    <groupId>io.github.solven-eu.cleanthat</groupId>
+                    <artifactId>cleanthat-maven-plugin</artifactId>
+                    <version>${cleanthat.version}</version>
+                    <executions>
+                        <execution>
+                            <id>Clean the code</id>
+                            <goals>
+                                <goal>cleanthat</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>Check the code is clean</id>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <phase>${staticChecks}</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <!-- mvn com.diffplug.spotless:spotless-maven-plugin:apply -->
+                    <!-- mvn com.diffplug.spotless:spotless-maven-plugin:check -->
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless.version}</version>
+                    <configuration>
+                        <!-- optional: limit format enforcement to just the files changed by this feature branch -->
+                        <!--ratchetFrom>origin/master</ratchetFrom-->
+                        <formats>
+                            <!-- you can define as many formats as you want, each is independent -->
+                            <format>
+                                <!-- define the files to apply to -->
+                                <includes>
+                                    <include>.gitignore</include>
+                                </includes>
+                                <!-- define the steps to apply to those files -->
+                                <trimTrailingWhitespace />
+                                <endWithNewline />
+                                <indent>
+                                    <tabs>true</tabs>
+                                    <spacesPerTab>4</spacesPerTab>
+                                </indent>
+                            </format>
+                        </formats>
+
+                        <pom>
+                            <includes>
+                                <include>pom.xml</include>
+                            </includes>
+
+                            <!-- https://github.com/diffplug/spotless/tree/main/plugin-maven#sortpom -->
+                            <sortPom>
+                                <!-- We like empty elements, while plugin default configuration would expand them -->
+                                <expandEmptyElements>false</expandEmptyElements>
+
+                                <!-- https://github.com/Ekryd/sortpom/issues/75 -->
+                                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+
+                                <!-- https://github.com/Ekryd/sortpom/wiki/Parameters#for-both-the-sort-and-verify-goal -->
+                                <!-- -1 means '\t' -->
+                                <nrOfIndentSpace>-1</nrOfIndentSpace>
+                            </sortPom>
+                        </pom>
+
+                        <markdown>
+                            <endWithNewline />
+                            <indent>
+                                <tabs>true</tabs>
+                                <spacesPerTab>4</spacesPerTab>
+                            </indent>
+                            <includes>
+                                <include>**/*.md</include>
+                            </includes>
+
+                            <flexmark />
+                        </markdown>
+
+                        <!-- define a language-specific format -->
+                        <java>
+                            <excludes>
+                                <!-- TestCases needs to remains not formatted/cleaned -->
+                                <exclude>**/do_not_format_me/**</exclude>
+                                <!-- `mat` is essentially forked from another repository -->
+                                <exclude>**/mat/**</exclude>
+                            </excludes>
+
+                            <cleanthat>
+                                <sourceJdk>${maven.compiler.source}</sourceJdk>
+                                <version>${cleanthat.version}</version>
+                                <mutators>
+                                    <mutator>SafeAndConsensual</mutator>
+                                    <mutator>SafeButNotConsensual</mutator>
+                                </mutators>
+                                <includeDraft>true</includeDraft>
+                                <excludedMutators>
+                                    <!-- https://github.com/javaparser/javaparser/issues/3930 -->
+                                    <excludedMutator>LambdaReturnsSingleStatement</excludedMutator>
+                                    <!-- Too much instable -->
+                                    <excludedMutator>UseDiamondOperator</excludedMutator>
+                                    <!-- PMD recommends not using `var` -->
+                                    <excludedMutator>LocalVariableTypeInference</excludedMutator>
+                                </excludedMutators>
+                            </cleanthat>
+
+                            <!--							<removeUnusedImports />-->
+                            <importOrder>
+                                <file>${maven.multiModuleProjectDirectory}/resources/src/main/resources/eclipse/eclipse.importorder</file>
+                                <!--order>java,javax,org,com</order-->
+                            </importOrder>
+
+                            <eclipse>
+                                <!--
+                                https://github.com/diffplug/spotless/tree/main/lib-extra/src/main/resources/com/diffplug/spotless/extra/eclipse_jdt_formatter -->
+                                <!-- <version>4.18.0</version>-->
+                                <file>${maven.multiModuleProjectDirectory}/resources/src/main/resources/eclipse/eclipse_java_code_formatter.xml</file>
+                            </eclipse>
+
+                            <licenseHeader>
+                                <!-- https://github.com/diffplug/spotless/issues/1418 -->
+                                <delimiter>(package )|(import )</delimiter>
+                                <file>${maven.multiModuleProjectDirectory}/.cleanthat/spotless.license</file>
+                            </licenseHeader>
+                        </java>
+
+                        <json>
+                            <trimTrailingWhitespace />
+                            <endWithNewline />
+                            <indent>
+                                <tabs>true</tabs>
+                                <spacesPerTab>4</spacesPerTab>
+                            </indent>
+
+                            <includes>
+                                <include>**/*.json</include>
+                            </includes>
+
+                            <gson />
+                        </json>
+                        <!--yaml/-->
+                    </configuration>
+
+                    <executions>
+                        <execution>
+                            <id>applySpotless</id>
+                            <goals>
+                                <goal>apply</goal>
+                            </goals>
+                            <phase>process-sources</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                        <!-- https://maven.apache.org/plugins/maven-source-plugin/usage.html -->
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+    </build>
 
     <profiles>
         <profile>

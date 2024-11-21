@@ -31,14 +31,14 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	Set<String> tags;
 
 	@NonNull
-	String underlyingName;
+	String underlying;
 
 	@NonNull
 	IAdhocFilter filter;
 
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlyingName);
+		return Collections.singletonList(underlying);
 	}
 
 	@Override

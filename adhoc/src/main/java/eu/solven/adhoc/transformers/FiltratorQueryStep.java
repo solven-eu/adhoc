@@ -29,7 +29,7 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
 				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measure(ReferencedMeasure.builder().ref(filtrator.getUnderlyingName()).build())
+				.measure(ReferencedMeasure.builder().ref(filtrator.getUnderlying()).build())
 				.build();
 		return Collections.singletonList(underlyingStep);
 	}

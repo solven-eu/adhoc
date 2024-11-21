@@ -32,7 +32,7 @@ public class TestAggregations_Filter extends ADagTest {
 	public void testSumOfSum_filterA1() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
@@ -55,7 +55,7 @@ public class TestAggregations_Filter extends ADagTest {
 	public void testSumOfSum_filterA1_groupbyA() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
@@ -79,7 +79,7 @@ public class TestAggregations_Filter extends ADagTest {
 	public void testSumOfSum_filterA1_groupbyB() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
@@ -104,7 +104,7 @@ public class TestAggregations_Filter extends ADagTest {
 	public void testSumOfSum_filterMatchNothing() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 

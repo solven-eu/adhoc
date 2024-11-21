@@ -38,19 +38,19 @@ public class TestAggregations_Filtrator extends ADagTest {
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
-						.underlyingName("k1")
+						.underlying("k1")
 						.filter(ColumnFilter.isEqualTo("a", "a1"))
 						.build())
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA2")
-						.underlyingName("k1")
+						.underlying("k1")
 						.filter(ColumnFilter.builder().column("a").matching("a2").build())
 						.build())
 
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
-						.underlyingNames(Arrays.asList("k1", "filterK1onA1"))
+						.underlyings(Arrays.asList("k1", "filterK1onA1"))
 						.combinationKey(DivideCombination.KEY)
 						.build());
 
@@ -77,19 +77,19 @@ public class TestAggregations_Filtrator extends ADagTest {
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
-						.underlyingName("k1")
+						.underlying("k1")
 						.filter(ColumnFilter.builder().column("a").matching("a1").build())
 						.build())
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA2")
-						.underlyingName("k1")
+						.underlying("k1")
 						.filter(ColumnFilter.builder().column("a").matching("a2").build())
 						.build())
 
 				.addMeasure(Combinator.builder()
 						.name("Ratio_k1_k1witha1")
-						.underlyingNames(Arrays.asList("filterK1onA1", "k1"))
+						.underlyings(Arrays.asList("filterK1onA1", "k1"))
 						.combinationKey(DivideCombination.KEY)
 						.build());
 

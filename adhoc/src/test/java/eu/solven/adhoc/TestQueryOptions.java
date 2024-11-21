@@ -31,7 +31,7 @@ public class TestQueryOptions extends ADagTest {
 	public void testSumOfSum_() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 

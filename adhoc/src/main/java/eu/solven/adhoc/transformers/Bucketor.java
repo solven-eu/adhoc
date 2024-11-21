@@ -35,6 +35,7 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	Set<String> tags;
 
 	@NonNull
+	@Singular
 	List<String> underlyingNames;
 
 	@NonNull

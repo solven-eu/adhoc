@@ -1,0 +1,20 @@
+<configuration>
+	<!-- For tests, we want all logs to be published in the console -->
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern><![CDATA[%date %-5level[%thread] %logger{36}|%method\(%line\) - %msg%n]]></pattern>
+		</encoder>
+	</appender>
+	
+	<!-- This logs a lot of useless information -->
+	<logger name="org.springframework.test.context.support.DefaultTestContextBootstrapper" level="WARN"/>
+
+	<!-- JDK leads to many issues with JavAssist, used to transfer ExtendedPluginValues -->
+	<logger name="com.quartetfs.fwk.types.impl.FactoryValue" level="ERROR"/>
+	<!-- Hide WARNs about classes missing JARs during classpath scanning -->
+	<logger name="com.quartetfs.fwk.contributions.impl.ClasspathContributionProvider" level="ERROR"/>
+
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+	</root>
+</configuration>

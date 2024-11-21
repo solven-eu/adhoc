@@ -11,11 +11,11 @@
 package eu.solven.adhoc.atoti;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessorV2;
@@ -29,7 +29,6 @@ import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.types.IExtendedPlugin;
-import com.quartetfs.fwk.types.IExtendedPluginValue;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
@@ -42,7 +41,7 @@ import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
 import eu.solven.adhoc.transformers.IMeasure;
-import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
+@RequiredArgsConstructor
 public class ActivePivotMeasuresToAdhoc {
     public AdhocMeasureBag asBag(IActivePivotDescription desc) {
         AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().build();
@@ -85,10 +84,15 @@ public class ActivePivotMeasuresToAdhoc {
             adhocMeasureSet.addMeasure(aggregatorBuilder.build());
         });
 
+
+        IExtendedPlugin<IPostProcessor> extendedPluginFactory = Registry.getExtendedPlugin(IPostProcessor.class);
+
+        log.info("Known PP keys: {}", extendedPluginFactory.keys());
+
         desc.getMeasuresDescription().getPostProcessorsDescription().forEach(measure -> {
             List<IMeasure> asMeasures = new ArrayList<>();
 
-            FactoryValue<IPostProcessor> ppFactory = Registry.getExtendedPlugin(IPostProcessor.class).valueOf(measure.getPluginKey());
+            FactoryValue<IPostProcessor> ppFactory = extendedPluginFactory.valueOf(measure.getPluginKey());
             if (ppFactory != null) {
                 asMeasures.addAll(onImplementationClass(measure, ppFactory ));
             } else {
@@ -122,7 +126,7 @@ public class ActivePivotMeasuresToAdhoc {
         Properties properties = measure.getProperties();
         List<String> underlyingNames = getUnderlyingNames(properties);
 
-        return List.of( Combinator.builder().name(measure.getName()).underlyingNames(underlyingNames).build());
+        return List.of( Combinator.builder().name(measure.getName()).underlyings(underlyingNames).build());
     }
 
     protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
@@ -132,9 +136,9 @@ public class ActivePivotMeasuresToAdhoc {
         Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName()).combinationKey(measure.getPluginKey());
         if (underlyingNames.isEmpty()) {
             // When there is no explicit underlying measure, Atoti relies on contributors.COUNT
-            combinatorBuilder.underlyingNames(List.of(IMeasureHierarchy.COUNT_ID));
+            combinatorBuilder.underlying(IMeasureHierarchy.COUNT_ID);
         } else {
-            combinatorBuilder.underlyingNames(underlyingNames);
+            combinatorBuilder.underlyings(underlyingNames);
         }
 
         return List.of(combinatorBuilder.build());
@@ -147,12 +151,12 @@ public class ActivePivotMeasuresToAdhoc {
         Filtrator.FiltratorBuilder filtratorBuilder = Filtrator.builder().name(measure.getName());
         if (underlyingNames.isEmpty()) {
             // When there is no explicit underlying measure, Atoti relies on contributors.COUNT
-            filtratorBuilder.underlyingName(IMeasureHierarchy.COUNT_ID);
+            filtratorBuilder.underlying(IMeasureHierarchy.COUNT_ID);
         } else if (underlyingNames.size() >= 2) {
             log.warn("What's the logic when filtering multiple underlying measures?");
-            filtratorBuilder.underlyingName("Multiple measures? : " + underlyingNames.stream().collect(Collectors.joining(",")));
+            filtratorBuilder.underlying("Multiple measures? : " + underlyingNames.stream().collect(Collectors.joining(",")));
         } else {
-            filtratorBuilder.underlyingName(underlyingNames.get(0));
+            filtratorBuilder.underlying(underlyingNames.getFirst());
         }
 
         String[] levels = properties.getProperty(LevelFilteringPostProcessor.LEVELS_PROPERTY, "").split(IPostProcessor.SEPARATOR);
@@ -187,15 +191,14 @@ public class ActivePivotMeasuresToAdhoc {
         return List.of(bucketorBuilder.build());
     }
 
-    private static List<String> getUnderlyingNames(Properties properties ) {
+    public static List<String> getUnderlyingNames(Properties properties ) {
         String key = IPostProcessor.UNDERLYING_MEASURES;
         return getPropertyList(properties, key);
     }
 
-    private static List<String> getPropertyList(Properties properties, String key) {
+    public static List<String> getPropertyList(Properties properties, String key) {
         String underlyingMeasures = properties.getProperty(key, "").trim();
-        List<String> underlyingNames = Arrays.asList(underlyingMeasures.split(IPostProcessor.SEPARATOR));
-        return underlyingNames;
+        return Stream.of(underlyingMeasures.split(IPostProcessor.SEPARATOR)).filter(p -> !Strings.isNullOrEmpty(p)).map(String::strip).toList();
     }
 
     protected void transferProperties(IMeasureMemberDescription nativeMeasure, Consumer<String> addTag) {

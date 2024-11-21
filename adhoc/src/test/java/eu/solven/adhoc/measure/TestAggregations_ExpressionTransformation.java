@@ -36,7 +36,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 	public void testSumOfSum() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
@@ -60,7 +60,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 	public void testSumOfSum_oneIsNull_improperFormula() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
@@ -88,7 +88,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 	public void testSumOfSum_oneIsNull() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
-				.underlyingNames(Arrays.asList("k1", "k2"))
+				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(ExpressionCombination.KEY)
 				// https://github.com/ezylang/EvalEx/issues/204
 				// We may process ternary into IF
