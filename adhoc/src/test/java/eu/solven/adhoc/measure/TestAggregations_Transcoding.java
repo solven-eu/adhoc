@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.measure;
 
 import java.util.Arrays;
@@ -22,7 +44,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
 public class TestAggregations_Transcoding extends ADagTest {
-	final public InMemoryDatabase rows =
+	public final InMemoryDatabase rows =
 			InMemoryDatabase.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
 
 	@Override
@@ -87,8 +109,9 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testFilterGroupBy() {
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByColumns("c").debug(true).build(), rows);
+		ITabularView output = aqe.execute(
+				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByColumns("c").debug(true).build(),
+				rows);
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("c", "v1"));

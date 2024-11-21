@@ -32,9 +32,11 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
@@ -162,12 +164,14 @@ public class ActivePivotMeasuresToAdhoc {
         String[] levels = properties.getProperty(LevelFilteringPostProcessor.LEVELS_PROPERTY, "").split(IPostProcessor.SEPARATOR);
         String[] filters = properties.getProperty(LevelFilteringPostProcessor.CONDITIONS_PROPERTY, "").split(IPostProcessor.SEPARATOR);
 
-        AndFilter.AndFilterBuilder andFilter = AndFilter.builder();
+        // We do not build explicitly an AND filter, as it may be a sub-optimal filter
+        // By chaining AND operations, we may end with a simpler filter (e.g. given a single filter clause)
+        IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
         for (int i = 0 ; i < Math.min(levels.length, filters.length) ; i++) {
-            andFilter.filter(ColumnFilter.isEqualTo(levels[i], filters[i]));
+            filter = AndFilter.and(filter,ColumnFilter.isEqualTo(levels[i], filters[i]) );
         }
 
-        filtratorBuilder.filter(andFilter.build());
+        filtratorBuilder.filter(filter);
 
         return List.of(filtratorBuilder.build());
     }

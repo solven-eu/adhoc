@@ -83,8 +83,7 @@ public class TestActivePivotMeasuresToAdhoc {
 
                 .containsEntry("someLeafMeasure", Bucketor.builder().name("someLeafMeasure").aggregationKey("MAX").combinatorKey(LeafIdentityPostProcessor.TYPE).groupBy(GroupByColumns.of("lvl1", "lvl0")).build())
                 .containsEntry("someLevelFilteringMeasure", Filtrator.builder().name("someLevelFilteringMeasure").underlying("underlying1").filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someStoreName"))).build())
-                .containsEntry("someLeafMeasure", Combinator.builder().name("someLeafMeasure").underlying("underlying1").build())
-                .containsEntry("someStoreLookupMeasure", Combinator.builder().name("someStoreLookupMeasure").underlying("underlying1").build())
+                .containsEntry("someStoreLookupMeasure", Combinator.builder().name("someStoreLookupMeasure").underlying("contributors.COUNT").combinationKey(StoreLookupPostProcessor.PLUGIN_KEY).build())
         ;
     }
 }

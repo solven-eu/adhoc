@@ -1,135 +1,134 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>eu.solven.adhoc</groupId>
-        <artifactId>aggregator</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </parent>
-    <artifactId>adhoc</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>aggregator</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>adhoc</artifactId>
 
-    <properties>
-        <java.version>21</java.version>
-        
-        <cucumber.version>7.14.0</cucumber.version>
-    </properties>
+	<properties>
+		<java.version>21</java.version>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.solven-eu.pepper</groupId>
-            <artifactId>map-path</artifactId>
-            <version>5.0</version>
-        </dependency>
+		<cucumber.version>7.14.0</cucumber.version>
+	</properties>
 
-        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>33.3.1-jre</version>
-        </dependency>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>map-path</artifactId>
+			<version>5.0</version>
+		</dependency>
 
-        <dependency>
-            <!-- A lightweight EventBus. Used to transmit debug information, monitoring information, etc-->
-            <!-- https://github.com/greenrobot/EventBus -->
-            <groupId>org.greenrobot</groupId>
-            <artifactId>eventbus-java</artifactId>
-            <version>3.3.1</version>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>33.3.1-jre</version>
+		</dependency>
 
-        <dependency>
-            <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-core</artifactId>
-            <version>1.5.2</version>
-        </dependency>
+		<dependency>
+			<!-- A lightweight EventBus. Used to transmit debug information, monitoring information, etc-->
+			<!-- https://github.com/greenrobot/EventBus -->
+			<groupId>org.greenrobot</groupId>
+			<artifactId>eventbus-java</artifactId>
+			<version>3.3.1</version>
+		</dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.jooq/jool -->
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jool</artifactId>
-            <version>0.9.15</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.19.13</version>
-        </dependency>
+		<dependency>
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-core</artifactId>
+			<version>1.5.2</version>
+		</dependency>
 
-        <dependency>
-            <groupId>com.ezylang</groupId>
-            <artifactId>EvalEx</artifactId>
-            <version>3.4.0</version>
-            <!-- Many projects may not use EvalTranformation-->
-            <optional>true</optional>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/org.jooq/jool -->
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jool</artifactId>
+			<version>0.9.15</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jooq</artifactId>
+			<version>3.19.13</version>
+		</dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
-        <dependency>
-            <groupId>org.duckdb</groupId>
-            <artifactId>duckdb_jdbc</artifactId>
-            <version>1.1.3</version>
-            <optional>true</optional>
-        </dependency>
+		<dependency>
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>3.4.0</version>
+			<!-- Many projects may not use EvalTranformation-->
+			<optional>true</optional>
+		</dependency>
 
-        <dependency>
-            <groupId>com.github.haifengl</groupId>
-            <artifactId>smile-core</artifactId>
-            <version>3.1.1</version>
-            <optional>true</optional>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
+		<dependency>
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>1.1.3</version>
+			<optional>true</optional>
+		</dependency>
 
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>8.5.15</version>
-        </dependency>
+		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>3.1.1</version>
+			<optional>true</optional>
+		</dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <!-- One may need require reading/writing Yaml files-->
-            <optional>true</optional>
-        </dependency>
+		<dependency>
+			<groupId>it.unimi.dsi</groupId>
+			<artifactId>fastutil</artifactId>
+			<version>8.5.15</version>
+		</dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        
-        <!-- Cucumber -->
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-spring</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit-platform-engine</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+			<!-- One may need require reading/writing Yaml files-->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Cucumber -->
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-java</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-spring</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-junit-platform-engine</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
 </project>

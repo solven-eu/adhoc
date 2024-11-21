@@ -1,28 +1,54 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.database;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 public class AdhocTranscodingHelper {
-    protected AdhocTranscodingHelper() {
-        // hidden
-    }
+	protected AdhocTranscodingHelper() {
+		// hidden
+	}
 
-    public static Map<String, ?> transcode(IAdhocDatabaseTranscoder transcoder, Map<String, ?> underlyingMap) {
-        Map<String, Object> transcoded = new HashMap<>();
+	public static Map<String, ?> transcode(IAdhocDatabaseTranscoder transcoder, Map<String, ?> underlyingMap) {
+		Map<String, Object> transcoded = new HashMap<>();
 
-        underlyingMap.forEach((underlyingKey, v) -> {
-            String queriedKey = transcoder.queried(underlyingKey);
-            Object replaced = transcoded.put(queriedKey, v);
+		underlyingMap.forEach((underlyingKey, v) -> {
+			String queriedKey = transcoder.queried(underlyingKey);
+			Object replaced = transcoded.put(queriedKey, v);
 
-            if (replaced != null && !replaced.equals(v)) {
-                log.warn("Transcoding led to an ambiguity as multiple underlyingKeys has queriedKey={} mapping to values {} and {}", queriedKey, replaced, v);
-            }
-        });
+			if (replaced != null && !replaced.equals(v)) {
+				log.warn(
+						"Transcoding led to an ambiguity as multiple underlyingKeys has queriedKey={} mapping to values {} and {}",
+						queriedKey,
+						replaced,
+						v);
+			}
+		});
 
-        return transcoded;
-    }
+		return transcoded;
+	}
 }
