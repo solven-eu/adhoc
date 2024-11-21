@@ -23,6 +23,7 @@
 package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
+public class Bucketor implements IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
 	@NonNull
 	String name;
 
@@ -67,19 +68,31 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures {
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull
 	@Default
-	String combinatorKey = SumCombination.KEY;
+	String combinationKey = SumCombination.KEY;
 
 	@NonNull
 	@Default
-	Map<String, ?> combinatorOptions = Collections.emptyMap();
+	Map<String, ?> combinationOptions = Collections.emptyMap();
 
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
 
 	@Override
-	public List<String> getUnderlyingNames() {
-		return underlyingNames;
+	public Map<String, ?> getCombinationOptions() {
+		return makeAllOptions(this, combinationOptions);
+	}
+
+	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
+		Map<String, Object> allOptions = new HashMap<>();
+
+		// Default options
+		allOptions.put("underlyingNames", hasUnderlyings.getUnderlyingNames());
+
+		// override with explicit options
+		allOptions.putAll(explicitOptions);
+
+		return allOptions;
 	}
 
 	@Override

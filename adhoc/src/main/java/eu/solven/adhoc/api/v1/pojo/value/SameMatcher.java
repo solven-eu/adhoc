@@ -20,23 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-import java.util.Set;
-
-import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * This demonstrates how one can add custom elements to the {@link eu.solven.adhoc.dag.AdhocQueryStep}.
+ * To be used with {@link ColumnFilter}, for equality-based matchers.
+ * 
+ * @author Benoit Lacelle
+ *
  */
-public class ContextValueAdhocMeasure implements IMeasure {
-	@Override
-	public String getName() {
-		return "";
-	}
+@Value
+@Builder
+@Jacksonized
+public class SameMatcher implements IValueMatcher {
+	@NonNull
+	Object operand;
 
 	@Override
-	public Set<String> getTags() {
-		return Set.of();
+	public boolean match(Object value) {
+		return operand == value;
 	}
 }

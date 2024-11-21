@@ -20,36 +20,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-import java.util.Set;
+import java.util.regex.Pattern;
 
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * To be used with {@link ColumnFilter}, for IN-based matchers.
+ * To be used with {@link ColumnFilter}, for regex-based matchers.
  * 
  * @author Benoit Lacelle
  *
  */
 @Value
 @Builder
-public class InMatcher implements IValueMatcher {
-	@NonNull
-	Set<?> operands;
+@Jacksonized
+public class LikeMatcher implements IValueMatcher {
+	String like;
+
+	public static boolean like(final String likePattern, final CharSequence inputToTest) {
+		Pattern p = asPattern(likePattern);
+		return p.matcher(inputToTest).matches();
+	}
+
+	// https://www.alibabacloud.com/blog/how-to-efficiently-implement-sql-like-syntax-in-java_600079
+	// Is it missing % escaping?
+	public static Pattern asPattern(final String likePattern) {
+		String regexPattern = likePattern.replace("_", ".").replace("%", ".*?");
+		return Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	}
 
 	@Override
 	public boolean match(Object value) {
-		if (operands.contains(value)) {
-			return true;
+		// Are we fine turning `null` into `"null"`?
+		CharSequence asCharSequence;
+		if (value instanceof CharSequence cs) {
+			asCharSequence = cs;
+		} else {
+			// BEWARE Should we require explicit cast, than casting ourselves?
+			asCharSequence = String.valueOf(value);
 		}
-
-		if (operands.stream().anyMatch(operand -> operand instanceof IValueMatcher vm && vm.match(value))) {
-			return true;
-		}
-
-		return false;
+		return LikeMatcher.like(getLike(), asCharSequence);
 	}
 }

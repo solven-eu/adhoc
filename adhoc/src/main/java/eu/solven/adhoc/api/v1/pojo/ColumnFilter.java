@@ -26,6 +26,11 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
+import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.NotValueFilter;
+import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.NonNull;

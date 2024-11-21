@@ -54,7 +54,7 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 		return decomposition.getUnderlyingSteps(step).stream().map(subStep -> {
 			return AdhocQueryStep.edit(subStep)
-					.measure(ReferencedMeasure.builder().ref(dispatchor.getUnderlyingMeasure()).build())
+					.measure(ReferencedMeasure.builder().ref(dispatchor.getUnderlying()).build())
 					.build();
 		}).collect(Collectors.toList());
 
@@ -82,16 +82,14 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
+				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
 				storage.onValue(coordinate, consumer);
 
 				return refV.get();
-			}).collect(Collectors.toList());
+			}).toList();
 
-			Object value = underlyingVs.get(0);
+			Object value = underlyingVs.getFirst();
 
 			if (value != null) {
 				Map<Map<String, ?>, Object> decomposed = decomposition.decompose(coordinate, value);

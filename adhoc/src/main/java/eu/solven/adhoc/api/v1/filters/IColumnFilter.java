@@ -27,7 +27,8 @@ import java.util.Collection;
 import javax.annotation.Nonnull;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.pojo.IValueMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 
 /**
  * Filter along a specific column. Typically for `=` or `IN` matchers.
@@ -51,7 +52,7 @@ public interface IColumnFilter extends IAdhocFilter {
 
 	/**
 	 * The filter could be null, a {@link Collection} for a `IN` clause, a
-	 * {@link eu.solven.adhoc.api.v1.pojo.LikeMatcher}, else it is interpreted as an `=` clause.
+	 * {@link LikeMatcher}, else it is interpreted as an `=` clause.
 	 *
 	 * @return the filtered value.
 	 */

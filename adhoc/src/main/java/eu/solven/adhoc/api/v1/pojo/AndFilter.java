@@ -38,6 +38,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Default implementation for {@link IAndFilter}
@@ -48,6 +49,7 @@ import lombok.Singular;
 @RequiredArgsConstructor
 @EqualsAndHashCode
 @Builder
+@Jacksonized
 public class AndFilter implements IAndFilter {
 
 	@Singular

@@ -251,19 +251,24 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			IMeasure measure = resolveIfRef(queryStep.getMeasure());
 
-			Set<DefaultEdge> underlyingSteps2 = fromAggregatesToQueried.incomingEdgesOf(queryStep);
-			List<AdhocQueryStep> underlyingSteps3 = underlyingSteps2.stream()
+			Set<DefaultEdge> underlyingStepEdges = fromAggregatesToQueried.incomingEdgesOf(queryStep);
+			List<AdhocQueryStep> underlyingSteps = underlyingStepEdges.stream()
 					.map(edge -> Graphs.getOppositeVertex(fromAggregatesToQueried, edge, queryStep))
-					.collect(Collectors.toList());
+					.toList();
 
 			Map<String, AdhocQueryStep> underlyingToStep = new HashMap<>();
-			underlyingSteps3.forEach(step -> {
-				underlyingToStep.put(resolveIfRef(step.getMeasure()).getName(), step);
+			underlyingSteps.forEach(step -> {
+				String underlyingName = resolveIfRef(step.getMeasure()).getName();
+				AdhocQueryStep removed = underlyingToStep.put(underlyingName, step);
+				if (removed != null) {
+					// TODO Is this a legit case for Dispatcher?
+					throw new IllegalArgumentException("Multiple steps for %s".formatted(underlyingName));
+				}
 			});
 
-			if (measure instanceof IHasUnderlyingMeasures combinator) {
+			if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 				List<CoordinatesToValues> underlyings =
-						combinator.getUnderlyingNames().stream().map(name -> underlyingToStep.get(name)).map(step -> {
+						hasUnderlyingMeasures.getUnderlyingNames().stream().map(underlyingToStep::get).map(step -> {
 							CoordinatesToValues values = queryStepToValues.get(step);
 
 							if (values == null) {
@@ -274,7 +279,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						}).collect(Collectors.toList());
 
 				CoordinatesToValues coordinatesToValues =
-						combinator.wrapNode(transformationFactory, queryStep).produceOutputColumn(underlyings);
+						hasUnderlyingMeasures.wrapNode(transformationFactory, queryStep)
+								.produceOutputColumn(underlyings);
 
 				eventBus.post(MeasuratorIsCompleted.builder()
 						.measurator(measure)

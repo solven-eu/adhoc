@@ -20,23 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.api.v1.pojo.value;
 
+import java.util.Set;
+
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * To be used with {@link ColumnFilter}, for IN-based matchers.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @Value
 @Builder
 @Jacksonized
-public class NotValueFilter implements IValueMatcher {
-
+public class InMatcher implements IValueMatcher {
 	@NonNull
-	final IValueMatcher negated;
+	Set<?> operands;
 
 	@Override
 	public boolean match(Object value) {
-		return !negated.match(value);
+		if (operands.contains(value)) {
+			return true;
+		}
+
+		if (operands.stream().anyMatch(operand -> operand instanceof IValueMatcher vm && vm.match(value))) {
+			return true;
+		}
+
+		return false;
 	}
 }

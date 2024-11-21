@@ -78,7 +78,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		IAggregation agg = transformationFactory.makeAggregation(bucketor.getAggregationKey());
 		ICombination combinator =
-				transformationFactory.makeCombination(bucketor.getCombinatorKey(), getCombinatorOptions());
+				transformationFactory.makeCombination(bucketor.getCombinationKey(), getCombinationOptions());
 
 		List<String> underlyingNames = getUnderlyingNames();
 
@@ -104,7 +104,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 				}
 
 				log.info("Combinator={} transformed {} into {} at {}",
-						bucketor.getCombinatorKey(),
+						bucketor.getCombinationKey(),
 						underylingVsAsMap,
 						value,
 						coordinate);
@@ -124,8 +124,8 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
 	}
 
-	private Map<String, ?> getCombinatorOptions() {
-		return Combinator.makeAllOptions(bucketor, bucketor.getCombinatorOptions());
+	private Map<String, ?> getCombinationOptions() {
+		return Combinator.makeAllOptions(bucketor, bucketor.getCombinationOptions());
 	}
 
 	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, Map<String, ?> coordinates) {

@@ -20,26 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.atoti;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.util.ClassUtils;
 
-/**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
- * 
- * @author Benoit Lacelle
- *
- */
-@Value
-@Builder
-public class EqualsMatcher implements IValueMatcher {
-	@NonNull
-	Object operand;
+import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.resource.MeasuresSetFromResource;
 
-	@Override
-	public boolean match(Object value) {
-		return operand == value || operand.equals(value);
+public class TestMeasureSetFromResourceWhenYamlIsMissing {
+	// This is especially useful to ensure our code manages properly when YAMLFactory is not Available
+	@Test
+	public void testYamlFactory() {
+		String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
+
+		// This test is relevant only if YAMLFactory is not available
+		Assertions.assertThat(ClassUtils.isPresent(yamlFactoryClass, null)).isFalse();
+
+		AdhocBagOfMeasureBag emptyBag = new AdhocBagOfMeasureBag();
+
+		Assertions.assertThat(new MeasuresSetFromResource().asString("json", emptyBag)).isEqualTo("[]");
+
+		Assertions
+				.assertThatThrownBy(
+						() -> Assertions.assertThat(new MeasuresSetFromResource().asString("yaml", emptyBag)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml");
 	}
 }

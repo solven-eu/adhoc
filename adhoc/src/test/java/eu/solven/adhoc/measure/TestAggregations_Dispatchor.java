@@ -51,8 +51,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 	@Test
 	public void testSumOfMaxOfSum_identity() {
-		amb.addMeasure(
-				Dispatchor.builder().name("0or100").underlyingMeasure("k1").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Dispatchor.builder().name("0or100").underlying("k1").aggregationKey(SumAggregator.KEY).build());
 
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
@@ -73,7 +72,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 	public void testSumOfMaxOfSum_0to100_inputNotRequested() {
 		amb.addMeasure(Dispatchor.builder()
 				.name("0or100")
-				.underlyingMeasure("k1")
+				.underlying("k1")
 				.decompositionKey("linear")
 				.decompositionOptions(Map.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))
 				.aggregationKey(SumAggregator.KEY)
@@ -98,7 +97,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 	public void testSumOfMaxOfSum_0to100() {
 		amb.addMeasure(Dispatchor.builder()
 				.name("0or100")
-				.underlyingMeasure("k1")
+				.underlying("k1")
 				// .combinatorKey(MaxTransformation.KEY)
 				.decompositionKey("linear")
 				.decompositionOptions(Map.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))

@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,36 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-/**
- * To be used with {@link ColumnFilter}, for null-based matchers.
- * 
- * @author Benoit Lacelle
- *
- */
-@Value
-@Builder
-public class NullMatcher implements IValueMatcher {
-	/**
-	 * This enables managing null not through a null-reference. TODO: Clarify its serialization behavior.
-	 */
-	// private static final Object NULL_MARKER = new Object();
-	//
-	// public static @NonNull Object nullMarker() {
-	// return NULL_MARKER;
-	// }
-
-	public static @NonNull IValueMatcher matchNull() {
-		return NullMatcher.builder().build();
-	}
-
-	@Override
-	public boolean match(Object value) {
-		return value == null;
-	}
+// https://stackoverflow.com/questions/19379863/how-to-deserialize-interface-fields-using-jacksons-objectmapper
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = EqualsMatcher.class, name = "equals"),
+        @JsonSubTypes.Type(value = SameMatcher.class, name = "same"),
+        @JsonSubTypes.Type(value = InMatcher.class, name = "in"),
+        @JsonSubTypes.Type(value = LikeMatcher.class, name = "like"),
+        @JsonSubTypes.Type(value = NotValueFilter.class, name = "not"),
+        @JsonSubTypes.Type(value = NullMatcher.class, name = "null")})
+public interface IValueMatcher {
+    boolean match(Object value);
 }

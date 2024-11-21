@@ -24,6 +24,7 @@ package eu.solven.adhoc.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,17 +48,22 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
+import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.transformers.Filtrator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.pepper.mappath.MapPathPut;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import smile.math.distance.EditDistance;
 
+@Slf4j
 public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
@@ -206,7 +213,7 @@ public class MeasuresSetFromResource {
 	}
 
 	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
-		ObjectMapper objectMapper = makeObjectmapper(format);
+		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			AdhocBagOfMeasureBag abmb = new AdhocBagOfMeasureBag();
@@ -231,7 +238,7 @@ public class MeasuresSetFromResource {
 	}
 
 	public String asString(String format, AdhocBagOfMeasureBag abmb) {
-		ObjectMapper objectMapper = makeObjectmapper(format);
+		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
 
@@ -254,7 +261,9 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	private static ObjectMapper makeObjectmapper(String format) {
+	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
+
+	static ObjectMapper makeObjectMapper(String format) {
 		ObjectMapper objectMapper;
 		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
 			String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
@@ -264,9 +273,20 @@ public class MeasuresSetFromResource {
 						"Do you miss an explicit dependency over `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`");
 			}
 
-			// Use a qualifiedName to enable loading this class even if YAMLGenerator is not on the classPath
-			objectMapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory()
-					.disable(com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
+			String yamlObjectMapperFactoryClass = "eu.solven.adhoc.resource.AdhocYamlObjectMapper";
+			String yamlObjectMapperMethodName = "yamlObjectMapper";
+			try {
+				Method yamlObjectMapper = ReflectionUtils
+						.findMethod(ClassUtils.forName(yamlObjectMapperFactoryClass, null), yamlObjectMapperMethodName);
+				if (yamlObjectMapper == null) {
+					throw new IllegalStateException("Can not find method &s.%s".formatted(yamlObjectMapperFactoryClass,
+							yamlObjectMapperMethodName));
+				}
+				objectMapper = (ObjectMapper) ReflectionUtils.invokeMethod(yamlObjectMapper, null);
+			} catch (ClassNotFoundException e) {
+				// This should have been caught preventively
+				throw new RuntimeException(e);
+			}
 		} else {
 			objectMapper = new ObjectMapper();
 		}
@@ -276,16 +296,25 @@ public class MeasuresSetFromResource {
 	private static final List<String> sortedKeys =
 			List.of("name", "type", "aggregationKey", "combinationKey", "underlyingNames", "underlyingName");
 	private static final Map<String, Integer> keyToIndex =
-			sortedKeys.stream().collect(Collectors.toMap(s -> s, s -> sortedKeys.indexOf(s)));
+			sortedKeys.stream().collect(Collectors.toUnmodifiableMap(s -> s, sortedKeys::indexOf));
 
-	private Map<String, ?> removeUselessProperties(IMeasure m, Map<String, ?> map) {
+	/**
+	 * This is useful to generate human-friendly configuration, not including all implicit configuration.
+	 * 
+	 * @param measure
+	 *            the {@link IMeasure} object
+	 * @param map
+	 *            the initial serialized view of {@link IMeasure}
+	 * @return a stripped version of the {@link Map}, where implied properties are removed.
+	 */
+	protected Map<String, ?> removeUselessProperties(IMeasure measure, Map<String, ?> map) {
 		Comparator<String> comparing =
 				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
 		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
 
 		clean.putAll(map);
 
-		if (m instanceof Aggregator a) {
+		if (measure instanceof Aggregator a) {
 			clean.put("type", "aggregator");
 			if (SumAggregator.KEY.equals(a.getAggregationKey())) {
 				clean.remove("aggregationKey");
@@ -293,7 +322,7 @@ public class MeasuresSetFromResource {
 			if (a.getColumnName().equals(a.getName())) {
 				clean.remove("columnName");
 			}
-		} else if (m instanceof Combinator c) {
+		} else if (measure instanceof Combinator c) {
 			clean.put("type", "combinator");
 
 			if (c.getCombinationOptions().get("underlyingNames").equals(c.getUnderlyingNames())) {
@@ -304,20 +333,37 @@ public class MeasuresSetFromResource {
 			}
 
 			clean.put("underlyings", clean.remove("underlyingNames"));
-		} else if (m instanceof Filtrator f) {
+		} else if (measure instanceof Filtrator f) {
 			clean.put("type", "filtrator");
 			clean.put("underlying", clean.remove("underlyingName"));
-		} else if (m instanceof Dispatchor d) {
+		} else if (measure instanceof Dispatchor d) {
 			clean.put("type", "dispatchor");
+		} else if (measure instanceof Bucketor b) {
+			clean.put("type", "bucketor");
+
+			if (b.getGroupBy() instanceof GroupByColumns byColumns) {
+				MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
+			}
+
+			if (b.getCombinationOptions().get("underlyingNames").equals(b.getUnderlyingNames())) {
+				MapPathRemove.remove(clean, "combinationOptions", "underlyingNames");
+			}
+			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
+				clean.remove("combinationOptions");
+			}
 		} else {
-			throw new UnsupportedOperationException("Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(m)));
+			onUnknownMeastureType(measure);
 		}
 
-		if (m.getTags().isEmpty()) {
+		if (measure.getTags().isEmpty()) {
 			clean.remove("tags");
 		}
-		// if (m.isDebug()) {
 
 		return clean;
+	}
+
+	protected void onUnknownMeastureType(IMeasure measure) {
+		throw new UnsupportedOperationException(
+				"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 	}
 }

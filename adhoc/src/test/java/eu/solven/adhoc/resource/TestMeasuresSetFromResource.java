@@ -20,13 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.from_file;
+package eu.solven.adhoc.resource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -36,11 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.resource.MeasuresSetFromResource;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
@@ -52,11 +54,11 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testFaultInKey_type() {
-		Map<String, Object> input = Map.of("undelryings", List.of("k1", "k2"));
+		Map<String, Object> input = Map.of("underlyings", List.of("k1", "k2"));
 
-		Assertions.assertThatThrownBy(() -> fromResource.getListParameter(input, "underlyings"))
+		Assertions.assertThatThrownBy(() -> fromResource.getListParameter(input, "undelryings"))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Did you meant `undelryings` instead of `underlyings`");
+				.hasMessageContaining("Did you meant `underlyings` instead of `undelryings`");
 	}
 
 	@Test
@@ -195,7 +197,7 @@ public class TestMeasuresSetFromResource {
 					    underlyings:
 					    - "k1"
 					    - "k2"
-										""");
+					""");
 
 			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
@@ -216,5 +218,38 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat(jgrapht.vertexSet()).hasSize(5);
 		Assertions.assertThat(jgrapht.edgeSet()).hasSize(5);
+	}
+
+	@Test
+	public void testRemoveUselessProperties_Bucketor() {
+		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+
+		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.sum_MaxK1K2ByA, Map.class);
+		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.sum_MaxK1K2ByA, rawMap);
+
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(6)
+				.containsEntry("aggregationKey", "SUM")
+				.containsEntry("combinationKey", "MAX")
+				.containsEntry("groupBy", Set.of("a"))
+				.containsEntry("name", "sum_maxK1K2ByA")
+				.containsEntry("type", "bucketor")
+				.containsEntry("underlyingNames", Arrays.asList("k1", "k2"));
+	}
+
+
+	@Test
+	public void testRemoveUselessProperties_Filtrator() {
+		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+
+		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.filterK1onA1, Map.class);
+		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.filterK1onA1, rawMap);
+
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(6)
+				.containsEntry("filter", "a=a1")
+				.containsEntry("name", "filterK1onA1")
+				.containsEntry("type", "filtrator")
+				.containsEntry("underlying", "k1");
 	}
 }

@@ -43,13 +43,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * This {@link IMeasure} will aggregate underlying measure into new coordinates. If multiple input coordinates write in
  * the same output coordinates, the values are aggregated with the configured aggregationKey.
- * 
+ * <p>
  * A typical useCase is to generate a calculated column (e.g. a column which is the first letter of some underlying
  * column), or weigthed dispatching (e.g. input values with a column ranging any float between 0 and 1 should output a
  * column with either 0 or 1).
- * 
+ *
  * @author Benoit Lacelle
- * @see SingleBucketor
  */
 @Value
 @Builder
@@ -61,12 +60,16 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@Singular
 	Set<String> tags;
 
-	// A dispatcher has a single underlying measure, else it would be unclear how/when underlying measures should be
-	// combined
+	// Developer note: if you wish having multiple underlings: either you add a Combinator an underlying to this
+	// Dispatcher. Or make a new Dispatchor implementation. But do not try (for now, until you know it will work) making
+	// a multi-underlyings Dispatchor. It would be complex for Users, and very complex to implement with current
+	// AdhocEngine (e.g. as the adhocQuerySteps would be expanded by decomposition and by underlyings).
 	@NonNull
-	String underlyingMeasure;
+	String underlying;
 
 	/**
+	 * The aggregation used when multiple input contributes into the same output coordinates.
+	 *
 	 * @see IAggregation
 	 */
 	@NonNull
@@ -87,22 +90,9 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@Default
 	Map<String, ?> decompositionOptions = Collections.emptyMap();
 
-	// // Accept a combinator key, to be applied on each groupBy
-	// @NonNull
-	// @Default
-	// String combinatorKey = SumTransformation.KEY;
-	//
-	// @NonNull
-	// @Default
-	// Map<String, ?> combinatorOptions = Collections.emptyMap();
-
-	// @NonNull
-	// @Default
-	// IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
-
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlyingMeasure);
+		return Collections.singletonList(underlying);
 	}
 
 	@Override

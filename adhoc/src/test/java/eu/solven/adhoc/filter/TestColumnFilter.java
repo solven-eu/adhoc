@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -112,5 +114,20 @@ public class TestColumnFilter {
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isTrue();
+	}
+
+	@Test
+	public void testJackson_equals() throws JsonProcessingException {
+		ColumnFilter ksEqualsV = ColumnFilter.isEqualTo("k", "v");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		String asString = objectMapper.writeValueAsString(ksEqualsV);
+		Assertions.assertThat(asString).isEqualTo("""
+				{"type":"column","column":"k","valueMatcher":{"type":"equals","operand":"v"},"nullIfAbsent":true}
+				""".strip());
+		ColumnFilter fromString = objectMapper.readValue(asString, ColumnFilter.class);
+
+		Assertions.assertThat(fromString).isEqualTo(ksEqualsV);
 	}
 }

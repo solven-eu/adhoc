@@ -20,26 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.resource;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 /**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
- * 
- * @author Benoit Lacelle
- *
+ * This is the only class actually referring to {@link YAMLFactory}. This is useful as Jackson YAML databind is an
+ * optional dependency.
  */
-@Value
-@Builder
-public class SameMatcher implements IValueMatcher {
-	@NonNull
-	Object operand;
-
-	@Override
-	public boolean match(Object value) {
-		return operand == value;
+public class AdhocYamlObjectMapper {
+	public static ObjectMapper yamlObjectMapper() {
+		// Use a qualifiedName to enable loading this class even if YAMLGenerator is not on the classPath
+		YAMLFactory yamlFactory = new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+		return new ObjectMapper(yamlFactory);
 	}
 }

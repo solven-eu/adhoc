@@ -20,8 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-public interface IValueMatcher {
-	boolean match(Object value);
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+
+@Value
+@Builder
+@Jacksonized
+public class NotValueFilter implements IValueMatcher {
+
+	@NonNull
+	final IValueMatcher negated;
+
+	@Override
+	public boolean match(Object value) {
+		return !negated.match(value);
+	}
 }

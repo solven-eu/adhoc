@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.NavigableSet;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}, or {@link IHolyCube}.
+ * A {@link List} of columns. Typically used by {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  *

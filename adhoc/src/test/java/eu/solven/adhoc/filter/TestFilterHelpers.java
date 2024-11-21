@@ -29,7 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.api.v1.pojo.LikeMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.execute.FilterHelpers;
 
 public class TestFilterHelpers {
