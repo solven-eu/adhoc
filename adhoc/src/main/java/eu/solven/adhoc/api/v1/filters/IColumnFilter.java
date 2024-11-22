@@ -51,8 +51,8 @@ public interface IColumnFilter extends IAdhocFilter {
 	boolean isNullIfAbsent();
 
 	/**
-	 * The filter could be null, a {@link Collection} for a `IN` clause, a
-	 * {@link LikeMatcher}, else it is interpreted as an `=` clause.
+	 * The filter could be null, a {@link Collection} for a `IN` clause, a {@link LikeMatcher}, else it is interpreted
+	 * as an `=` clause.
 	 *
 	 * @return the filtered value.
 	 */

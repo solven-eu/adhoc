@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
@@ -58,6 +59,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	IAdhocFilter filter;
 
+	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
 		return Collections.singletonList(underlying);

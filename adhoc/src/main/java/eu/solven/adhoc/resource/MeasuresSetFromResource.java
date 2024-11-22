@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -290,6 +291,10 @@ public class MeasuresSetFromResource {
 		} else {
 			objectMapper = new ObjectMapper();
 		}
+
+		// We prefer pretty-printing the output
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
 		return objectMapper;
 	}
 
@@ -331,11 +336,8 @@ public class MeasuresSetFromResource {
 			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
 				clean.remove("combinationOptions");
 			}
-
-			clean.put("underlyings", clean.remove("underlyingNames"));
 		} else if (measure instanceof Filtrator f) {
 			clean.put("type", "filtrator");
-			clean.put("underlying", clean.remove("underlyingName"));
 		} else if (measure instanceof Dispatchor d) {
 			clean.put("type", "dispatchor");
 		} else if (measure instanceof Bucketor b) {
@@ -345,7 +347,7 @@ public class MeasuresSetFromResource {
 				MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
 			}
 
-			if (b.getCombinationOptions().get("underlyingNames").equals(b.getUnderlyingNames())) {
+			if (b.getCombinationOptions().get("underlyingNames").equals(b.getUnderlyings())) {
 				MapPathRemove.remove(clean, "combinationOptions", "underlyingNames");
 			}
 			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {

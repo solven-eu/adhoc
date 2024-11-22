@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
@@ -59,7 +60,7 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures, IHasCombinati
 
 	@NonNull
 	@Singular
-	List<String> underlyingNames;
+	List<String> underlyings;
 
 	@NonNull
 	@Default
@@ -77,6 +78,12 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures, IHasCombinati
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+
+	@JsonIgnore
+	@Override
+	public List<String> getUnderlyingNames() {
+		return getUnderlyings();
+	}
 
 	@Override
 	public Map<String, ?> getCombinationOptions() {

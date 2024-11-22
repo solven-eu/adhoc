@@ -221,6 +221,35 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
+	public void testRemoveUselessProperties_Aggregator() {
+		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+
+		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.k1Sum, Map.class);
+		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1Sum, rawMap);
+
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(2)
+				.containsEntry("name", "k1")
+				.containsEntry("type", "aggregator");
+	}
+
+	@Test
+	public void testRemoveUselessProperties_Combinator() {
+		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+
+		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.k1PlusK2AsExpr, Map.class);
+		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1PlusK2AsExpr, rawMap);
+
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(5)
+				.containsEntry("combinationKey", "EXPRESSION")
+				.containsEntry("combinationOptions", Map.of("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)"))
+				.containsEntry("name", "k1PlusK2AsExpr")
+				.containsEntry("type", "combinator")
+				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
+	}
+
+	@Test
 	public void testRemoveUselessProperties_Bucketor() {
 		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
 
@@ -234,9 +263,8 @@ public class TestMeasuresSetFromResource {
 				.containsEntry("groupBy", Set.of("a"))
 				.containsEntry("name", "sum_maxK1K2ByA")
 				.containsEntry("type", "bucketor")
-				.containsEntry("underlyingNames", Arrays.asList("k1", "k2"));
+				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
 	}
-
 
 	@Test
 	public void testRemoveUselessProperties_Filtrator() {
@@ -246,8 +274,8 @@ public class TestMeasuresSetFromResource {
 		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.filterK1onA1, rawMap);
 
 		Assertions.assertThat((Map) cleaned)
-				.hasSize(6)
-				.containsEntry("filter", "a=a1")
+				.hasSize(4)
+				.containsEntry("filter", ImmutableMap.builder().put("column","a").put("nullIfAbsent",true).put("type","column").put("valueMatcher", Map.of("operand","a1", "type","equals")).build())
 				.containsEntry("name", "filterK1onA1")
 				.containsEntry("type", "filtrator")
 				.containsEntry("underlying", "k1");

@@ -201,7 +201,7 @@ public class ActivePivotMeasuresToAdhoc {
 
 		Bucketor.BucketorBuilder bucketorBuilder = Bucketor.builder()
 				.name(measure.getName())
-				.underlyingNames(underlyingNames)
+				.underlyings(underlyingNames)
 				.combinationKey(measure.getPluginKey())
 				.groupBy(GroupByColumns.of(leafLevels))
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,

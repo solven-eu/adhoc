@@ -54,7 +54,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
-		return bucketor.getUnderlyingNames();
+		return bucketor.getUnderlyings();
 	};
 
 	@Override

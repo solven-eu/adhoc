@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.aggregations.AdhocIdentity;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IDecomposition;
@@ -90,6 +91,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@Default
 	Map<String, ?> decompositionOptions = Collections.emptyMap();
 
+	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
 		return Collections.singletonList(underlying);

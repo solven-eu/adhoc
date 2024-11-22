@@ -24,27 +24,40 @@ package eu.solven.adhoc;
 
 import java.util.Arrays;
 
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.aggregations.ExpressionCombination;
 import eu.solven.adhoc.aggregations.max.MaxTransformation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
+import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
 
 public interface IAdhocTestConstants {
 	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
 	Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
 
-	Filtrator filterK1onA1 = Filtrator.builder()
-			.name("filterK1onA1")
-						.underlying("k1")
-						.filter(ColumnFilter.isEqualTo("a", "a1"))
+	Combinator k1PlusK2AsExpr = Combinator.builder()
+			.name("k1PlusK2AsExpr")
+			.underlyings(Arrays.asList("k1", "k2"))
+			.combinationKey(ExpressionCombination.KEY)
+			// https://github.com/ezylang/EvalEx/issues/204
+			// We may process ternary into IF
+			// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
+			.combinationOptions(ImmutableMap.<String, Object>builder()
+					.put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
+					.build())
 			.build();
+
+	Filtrator filterK1onA1 =
+			Filtrator.builder().name("filterK1onA1").underlying("k1").filter(ColumnFilter.isEqualTo("a", "a1")).build();
 
 	Bucketor sum_MaxK1K2ByA = Bucketor.builder()
 			.name("sum_maxK1K2ByA")
-			.underlyingNames(Arrays.asList("k1", "k2"))
+			.underlyings(Arrays.asList("k1", "k2"))
 			.groupBy(GroupByColumns.of("a"))
 			.combinationKey(MaxTransformation.KEY)
 			.aggregationKey(SumAggregator.KEY)
