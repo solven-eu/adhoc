@@ -20,23 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1.pojo;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.util.comparator.Comparators;
 
-import com.google.common.base.MoreObjects;
-
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.filters.IAndFilter;
-import eu.solven.adhoc.api.v1.filters.IOrFilter;
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.coordinate.ComparableElseClassComparatorV2;
 import lombok.Builder;
-import lombok.Singular;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Default implementation for {@link IAndFilter}
+ * To be used with {@link ColumnFilter}, for comparison-based matchers. This works only on naturally comparable objects
  * 
  * @author Benoit Lacelle
  *
@@ -44,49 +40,32 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class OrFilter implements IOrFilter {
+public class ComparingMatcher implements IValueMatcher {
+	@NonNull
+	Object operand;
 
-	@Singular
-	final List<IAdhocFilter> filters;
+	// else lowerThan
+	boolean greaterThan;
 
-	@Override
-	public boolean isNot() {
-		return false;
-	}
+	// else lowerThan
+	boolean matchIfEqual;
 
-	@Override
-	public boolean isMatchAll() {
-		// An empty OR is considered to match nothing
-		return !filters.isEmpty();
-	}
+	// else lowerThan
+	boolean matchIfNull;
 
 	@Override
-	public boolean isOr() {
-		return true;
-	}
-
-	@Override
-	public List<IAdhocFilter> getOr() {
-		return filters;
-	}
-
-	@Override
-	public String toString() {
-		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
-
-		AtomicInteger index = new AtomicInteger();
-		filters.stream().limit(5).forEach(filter -> {
-			toStringHelper.add("#" + index.getAndIncrement(), filter);
-		});
-
-		return toStringHelper.toString();
-	}
-
-	public static IAdhocFilter or(List<? extends IAdhocFilter> filters) {
-		if (filters.size() == 1) {
-			return filters.getFirst();
+	public boolean match(Object value) {
+		if (value == null) {
+			return matchIfNull;
+		} else if (matchIfEqual && value.equals(operand)) {
+			return true;
 		} else {
-			return OrFilter.builder().filters(filters).build();
+			int compare = ComparableElseClassComparatorV2.doCompare(Comparators.nullsHigh(), value, operand);
+			if (greaterThan) {
+				return compare > 0;
+			} else {
+				return compare < 0;
+			}
 		}
 	}
 }

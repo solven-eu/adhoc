@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.aggregations.AdhocIdentity;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IDecomposition;

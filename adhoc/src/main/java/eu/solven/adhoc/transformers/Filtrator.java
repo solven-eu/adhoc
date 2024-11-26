@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;

@@ -35,13 +35,13 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;

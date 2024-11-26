@@ -23,7 +23,11 @@
 package eu.solven.adhoc.api.v1.pojo;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
@@ -108,10 +112,10 @@ public class ColumnFilter implements IColumnFilter {
 	}
 
 	/**
-	 * If matching is null, prefer
-	 *
 	 * @param column
+	 *            the name of the filtered column.
 	 * @param matching
+	 *            the value expected to be found
 	 * @return true if the column holds the same value as matching (following {@link Object#equals(Object)}) contract.
 	 */
 	public static ColumnFilter isEqualTo(String column, Object matching) {
@@ -128,5 +132,27 @@ public class ColumnFilter implements IColumnFilter {
 		NotValueFilter not =
 				NotValueFilter.builder().negated(EqualsMatcher.builder().operand(matching).build()).build();
 		return ColumnFilter.builder().column(column).matching(not).build();
+	}
+
+	/**
+	 * @param column
+	 * @param first
+	 *            a first argument. If it is a {@link List}, it will be unnested.
+	 * @param more
+	 * @return a {@link ColumnFilter}
+	 */
+	// https://duckdb.org/docs/sql/query_syntax/unnest.html
+	public static ColumnFilter isIn(String column, Object first, Object... more) {
+		List<Object> rawList = Lists.asList(first, more);
+
+		List<Object> expandedList = rawList.stream().flatMap(o -> {
+			if (o instanceof Collection<?> c) {
+				return c.stream();
+			} else {
+				return Stream.of(o);
+			}
+		}).toList();
+
+		return ColumnFilter.builder().column(column).matchIn(expandedList).build();
 	}
 }

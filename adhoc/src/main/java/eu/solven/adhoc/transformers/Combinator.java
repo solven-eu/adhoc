@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;

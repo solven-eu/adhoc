@@ -227,10 +227,7 @@ public class TestMeasuresSetFromResource {
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.k1Sum, Map.class);
 		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1Sum, rawMap);
 
-		Assertions.assertThat((Map) cleaned)
-				.hasSize(2)
-				.containsEntry("name", "k1")
-				.containsEntry("type", "aggregator");
+		Assertions.assertThat((Map) cleaned).hasSize(2).containsEntry("name", "k1").containsEntry("type", "aggregator");
 	}
 
 	@Test
@@ -243,7 +240,8 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(5)
 				.containsEntry("combinationKey", "EXPRESSION")
-				.containsEntry("combinationOptions", Map.of("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)"))
+				.containsEntry("combinationOptions",
+						Map.of("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)"))
 				.containsEntry("name", "k1PlusK2AsExpr")
 				.containsEntry("type", "combinator")
 				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
@@ -275,7 +273,13 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(4)
-				.containsEntry("filter", ImmutableMap.builder().put("column","a").put("nullIfAbsent",true).put("type","column").put("valueMatcher", Map.of("operand","a1", "type","equals")).build())
+				.containsEntry("filter",
+						ImmutableMap.builder()
+								.put("column", "a")
+								.put("nullIfAbsent", true)
+								.put("type", "column")
+								.put("valueMatcher", Map.of("operand", "a1", "type", "equals"))
+								.build())
 				.containsEntry("name", "filterK1onA1")
 				.containsEntry("type", "filtrator")
 				.containsEntry("underlying", "k1");

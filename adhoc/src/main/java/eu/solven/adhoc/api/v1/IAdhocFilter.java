@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.api.v1;
 
-import java.util.Collections;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -39,7 +37,8 @@ import eu.solven.adhoc.api.v1.pojo.OrFilter;
 		@JsonSubTypes.Type(value = NotFilter.class, name = "not"),
 		@JsonSubTypes.Type(value = ColumnFilter.class, name = "column"), })
 public interface IAdhocFilter {
-	IAdhocFilter MATCH_ALL = new AndFilter(Collections.emptyList());
+	IAdhocFilter MATCH_ALL = AndFilter.builder().build();
+	IAdhocFilter MATCH_NONE = OrFilter.builder().build();
 
 	/**
 	 * If true, this {@link IAdhocFilter} defines points to exclude.

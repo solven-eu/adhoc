@@ -35,9 +35,8 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.Singular;
+import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
@@ -46,8 +45,7 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  *
  */
-@RequiredArgsConstructor
-@EqualsAndHashCode
+@Value
 @Builder
 @Jacksonized
 public class AndFilter implements IAndFilter {
@@ -121,7 +119,7 @@ public class AndFilter implements IAndFilter {
 		if (notMatchAll.isEmpty()) {
 			return IAdhocFilter.MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
-			return notMatchAll.get(0);
+			return notMatchAll.getFirst();
 		} else {
 			return AndFilter.builder().filters(notMatchAll).build();
 		}

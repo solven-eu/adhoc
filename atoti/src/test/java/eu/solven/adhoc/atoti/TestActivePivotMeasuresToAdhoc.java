@@ -22,8 +22,18 @@
  */
 package eu.solven.adhoc.atoti;
 
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.Set;
 
+import com.qfs.condition.impl.BaseConditions;
+import com.quartetfs.fwk.filtering.impl.EqualCondition;
+import com.quartetfs.fwk.filtering.impl.FalseCondition;
+import com.quartetfs.fwk.filtering.impl.GreaterEqualCondition;
+import com.quartetfs.fwk.filtering.impl.InCondition;
+import com.quartetfs.fwk.filtering.impl.LowerEqualCondition;
+import com.quartetfs.fwk.filtering.impl.OrCondition;
+import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -94,7 +104,7 @@ public class TestActivePivotMeasuresToAdhoc {
 							.withPluginKey(LevelFilteringPostProcessor.TYPE)
 							.withUnderlyingMeasures("underlying1")
 							.withProperty(LevelFilteringPostProcessor.LEVELS_PROPERTY, "level0,level1")
-							.withProperty(LevelFilteringPostProcessor.CONDITIONS_PROPERTY, "someStoreName")
+							.withProperty(LevelFilteringPostProcessor.CONDITIONS_PROPERTY, Arrays.asList(new EqualCondition("someValue"), new EqualCondition( 123)))
 
 							// Hidden to check we convert it into an adhoc tag
 							.withPostProcessor("someStoreLookupMeasure")
@@ -138,7 +148,7 @@ public class TestActivePivotMeasuresToAdhoc {
 						Filtrator.builder()
 								.name("someLevelFilteringMeasure")
 								.underlying("underlying1")
-								.filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someStoreName")))
+								.filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someValue"),ColumnFilter.isEqualTo("level1", 123)))
 								.build())
 				.containsEntry("someStoreLookupMeasure",
 						Combinator.builder()
@@ -146,5 +156,32 @@ public class TestActivePivotMeasuresToAdhoc {
 								.underlying("contributors.COUNT")
 								.combinationKey(StoreLookupPostProcessor.PLUGIN_KEY)
 								.build());
+	}
+	@Test
+	public void testConditionToFilter_Raw() {
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", "someString")).isEqualTo(ColumnFilter.isEqualTo("someLevel", "someString"));
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", 123)).isEqualTo(ColumnFilter.isEqualTo("someLevel", 123));
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", Arrays.asList("someString", 123))).isEqualTo(ColumnFilter.isIn("someLevel", Arrays.asList("someString", 123)));
+
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", null)).isEqualTo(ColumnFilter.builder().column("someLevel").matchNull().build());
+	}
+
+	@Test
+	public void testConditionToFilter_Conditions() {
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new TrueCondition())).isEqualTo(ColumnFilter.MATCH_ALL);
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new FalseCondition())).isEqualTo(ColumnFilter.MATCH_NONE);
+
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new EqualCondition("someString"))).isEqualTo(ColumnFilter.isEqualTo("someLevel", "someString"));
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new InCondition("someString"))).isEqualTo(ColumnFilter.isIn("someLevel", "someString"));
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new InCondition("someString", 123))).isEqualTo(ColumnFilter.isIn("someLevel", Set.of("someString", 123)));
+
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", new OrCondition(Arrays.asList(new GreaterEqualCondition(123), new LowerEqualCondition(234))))).isEqualTo(ColumnFilter.builder().column("someLevel").matchIn(Set.of("someString", 123)));
+	}
+
+
+	@Test
+	public void testConditionToFilter_DatastoreConditions() {
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", BaseConditions.True())).isEqualTo(ColumnFilter.isEqualTo("someLevel", "TRUE"));
+		Assertions.assertThat(ActivePivotMeasuresToAdhoc.convertToAdhoc("someLevel", BaseConditions.False())).isEqualTo(ColumnFilter.isEqualTo("someLevel", "FALSE"));
 	}
 }
