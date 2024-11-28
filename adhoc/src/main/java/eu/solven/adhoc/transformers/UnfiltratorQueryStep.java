@@ -24,36 +24,60 @@ package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
-	final Filtrator filtrator;
+public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
+	final Unfiltrator unfiltrator;
 	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
-		return filtrator.getUnderlyingNames();
-	};
+		return unfiltrator.getUnderlyingNames();
+	}
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
-				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measure(ReferencedMeasure.builder().ref(filtrator.getUnderlying()).build())
+				.filter(unfilter(step.getFilter()))
+				.measure(ReferencedMeasure.ref(unfiltrator.getUnderlying()))
 				.build();
 		return Collections.singletonList(underlyingStep);
+	}
+
+	private IAdhocFilter unfilter(IAdhocFilter filter) {
+		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
+
+		if (filter instanceof ColumnFilter columnFilter) {
+			boolean columnIsUnfiltered = unfilteredColumns.contains(columnFilter.getColumn());
+			boolean inverse = unfiltrator.isInverse();
+
+			boolean eraseFilter = columnIsUnfiltered ^ inverse;
+
+			if (eraseFilter) {
+				return IAdhocFilter.MATCH_ALL;
+			} else {
+				return filter;
+			}
+		} else if (filter instanceof AndFilter andFilter) {
+			List<IAdhocFilter> unfilteredAnds = andFilter.getAnd().stream().map(f -> unfilter(f)).toList();
+
+			return AndFilter.and(unfilteredAnds);
+		} else {
+			throw new UnsupportedOperationException(
+					"Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case: filter=%s"
+							.formatted(filter));
+		}
 	}
 
 	@Override
@@ -64,29 +88,6 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 			return CoordinatesToValues.empty();
 		}
 
-		CoordinatesToValues output = CoordinatesToValues.builder().build();
-
-		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(debug, underlyings)) {
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
-
-				storage.onValue(coordinate, consumer);
-
-				if (debug) {
-					log.info("[DEBUG] Write {} in {} for m={}", refV.get(), coordinate, filtrator.getName());
-				}
-
-				return refV.get();
-			}).collect(Collectors.toList());
-
-			Object value = underlyingVs.get(0);
-			output.put(coordinate, value);
-		}
-
-		return output;
+		return underlyings.getFirst();
 	}
 }

@@ -27,6 +27,12 @@ import java.util.List;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 
+/**
+ * Most {@link IMeasure} defines underlying nodes. (e.g. given underlyings measures, or different coordinates).
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 public interface IHasUnderlyingQuerySteps {
 	List<AdhocQueryStep> getUnderlyingSteps();
 

@@ -82,6 +82,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		List<String> underlyingNames = getUnderlyingNames();
 
+		boolean debug = bucketor.isDebug() || step.isDebug();
 		for (Map<String, ?> coordinate : keySet(bucketor.isDebug(), underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();
@@ -96,14 +97,15 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 			Object value = combinator.combine(underlyingVs);
 
-			if (bucketor.isDebug()) {
+			if (debug) {
 				Map<String, Object> underylingVsAsMap = new TreeMap<>();
 
 				for (int i = 0; i < underlyingNames.size(); i++) {
 					underylingVsAsMap.put(underlyingNames.get(i), underlyingVs.get(i));
 				}
 
-				log.info("Combinator={} transformed {} into {} at {}",
+				log.info("[DEBUG] m={} Combinator={} transformed {} into {} at {}",
+						bucketor.getName(),
 						bucketor.getCombinationKey(),
 						underylingVsAsMap,
 						value,
@@ -113,8 +115,8 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 			if (value != null) {
 				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), coordinate);
 
-				if (bucketor.isDebug()) {
-					log.info("Contribute {} into {}", value, outputCoordinate);
+				if (debug) {
+					log.info("[DEBUG] {} contribute {} into {}", bucketor.getName(), value, outputCoordinate);
 				}
 
 				aggregatingView.merge(outputCoordinate, value, agg);

@@ -24,6 +24,7 @@ package eu.solven.adhoc.dag;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.graph.DefaultEdge;
@@ -31,9 +32,11 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.resource.MeasuresSetFromResource;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
 import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.transformers.IMeasureBagVisitor;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -80,12 +83,25 @@ public class AdhocMeasureBag {
 			IMeasure resolved = nameToMeasure.get(refName);
 
 			if (resolved == null) {
-				throw new IllegalArgumentException("No measure named: %s".formatted(refName));
+				String minimizing = MeasuresSetFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
+
+				throw new IllegalArgumentException(
+						"No measure named: %s. Did you meant: %s".formatted(refName, minimizing));
 			}
 
 			return resolved;
 		}
 		return measure;
+	}
+
+	public Optional<IMeasure> resolveIfRefOpt(IMeasure measure) {
+		if (measure instanceof ReferencedMeasure ref) {
+			String refName = ref.getRef();
+			IMeasure resolved = nameToMeasure.get(refName);
+
+			return Optional.ofNullable(resolved);
+		}
+		return Optional.of(measure);
 	}
 
 	/**
@@ -130,6 +146,10 @@ public class AdhocMeasureBag {
 		measures.forEach(m -> ams.addMeasure(m));
 
 		return ams;
+	}
+
+	public AdhocMeasureBag acceptMeasureCombinator(IMeasureBagVisitor asCombinator) {
+		return asCombinator.addMeasures(this);
 	}
 
 	// TODO Why doesn't this compile?

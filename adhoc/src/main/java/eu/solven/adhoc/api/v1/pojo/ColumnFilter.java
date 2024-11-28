@@ -79,6 +79,7 @@ public class ColumnFilter implements IColumnFilter {
 
 		public ColumnFilterBuilder matchIn(Collection<?> collection) {
 			// One important edge-case is getting away from java.util.Set which generates NPE on .contains(null)
+			// https://github.com/adoptium/adoptium-support/issues/1186
 			this.valueMatcher = InMatcher.builder().operands(collection.stream().map(o -> {
 				if (o == null) {
 					return NullMatcher.matchNull();

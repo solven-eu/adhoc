@@ -20,20 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.transformers.IMeasure;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@Value
-@Builder
-public class MeasuratorIsCompleted {
-	@NonNull
-	IMeasure measure;
-	long nbCells;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.transformers.Aggregator;
 
-	@NonNull
-	Object source;
+public class TestAdhocQueryStep {
+	@Test
+	public void testDebug() {
+		AdhocQueryStep stepNotDebug = AdhocQueryStep.builder()
+				.measure(Aggregator.sum("c"))
+				.filter(IAdhocFilter.MATCH_ALL)
+				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+				.build();
+		Assertions.assertThat(stepNotDebug.isDebug()).isFalse();
+
+		AdhocQueryStep stepDebug = AdhocQueryStep.edit(stepNotDebug).debug(true).build();
+		Assertions.assertThat(stepDebug.isDebug()).isTrue();
+
+		Assertions.assertThat(stepDebug).isEqualTo(stepNotDebug);
+	}
 }

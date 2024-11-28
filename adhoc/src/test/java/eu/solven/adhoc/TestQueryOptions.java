@@ -50,7 +50,7 @@ public class TestQueryOptions extends ADagTest {
 	}
 
 	@Test
-	public void testSumOfSum_() {
+	public void testReturnUnderlyingMeasures() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
@@ -73,5 +73,20 @@ public class TestQueryOptions extends ADagTest {
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						Map.of("k1", 0L + 123 + 345, "k2", 0L + 234 + 456, "sumK1K2", 0L + 123 + 234 + 345 + 456));
+	}
+
+	@Test
+	public void testUnknownMeasuresAreEmpty() {
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
+
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
+
+		// By default, an exception is thrown
+		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, rows)).isInstanceOf(IllegalArgumentException.class);
+
+		ITabularView output = aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), rows);
+
+		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		Assertions.assertThat(keySet).hasSize(0);
 	}
 }

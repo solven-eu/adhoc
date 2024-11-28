@@ -25,9 +25,12 @@ package eu.solven.adhoc.dag;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.api.v1.IIsDebugable;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -40,13 +43,17 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class AdhocQueryStep implements IWhereGroupbyAdhocQuery {
+@EqualsAndHashCode(exclude = "debug")
+public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable {
 	@NonNull
 	IMeasure measure;
 	@NonNull
 	IAdhocFilter filter;
 	@NonNull
 	IAdhocGroupBy groupBy;
+
+	@Default
+	boolean debug = false;
 
 	// This property is transported down to the DatabaseQuery
 	Object custom;
@@ -56,7 +63,13 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery {
 	}
 
 	public static AdhocQueryStepBuilder edit(IWhereGroupbyAdhocQuery step) {
-		return AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
+		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
+
+		if (step instanceof IIsDebugable debugable) {
+			builder.debug(debugable.isDebug());
+		}
+
+		return builder;
 	}
 
 }

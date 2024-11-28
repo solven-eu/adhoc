@@ -25,6 +25,7 @@ package eu.solven.adhoc.eventbus;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -38,4 +39,7 @@ import lombok.Value;
 @Builder
 public class QueryStepIsEvaluating {
 	AdhocQueryStep queryStep;
+
+	@NonNull
+	Object source;
 }

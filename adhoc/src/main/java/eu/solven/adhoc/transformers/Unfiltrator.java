@@ -22,48 +22,78 @@
  */
 package eu.solven.adhoc.transformers;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
+
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Used to transform an input column into a measure.
+ * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link AdhocQueryStep}.
+ * It is typically useful to make ratios with a parent slice.
  * 
  * @author Benoit Lacelle
  *
  */
 @Value
 @Builder
-public class Aggregator implements IMeasure {
-	// The name/identifier of the measure
+@Slf4j
+public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
 	Set<String> tags;
 
-	// The name of the underlying aggregated column
-	String columnName;
+	@NonNull
+	String underlying;
 
 	@NonNull
-	@Default
-	String aggregationKey = SumAggregator.KEY;
+	@Singular
+	Set<String> unfiltereds;
 
-	public String getColumnName() {
-		if (columnName != null) {
-			return columnName;
-		} else {
-			// The default columnName is the aggregator name
-			return name;
+	// By default, the unfiltered columns are removed from filters. Switch this to true if you wish to unfiltered all
+	// but these columns.
+	@Default
+	boolean inverse = false;
+
+	@JsonIgnore
+	@Override
+	public List<String> getUnderlyingNames() {
+		return Collections.singletonList(underlying);
+	}
+
+	@Override
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+		return new UnfiltratorQueryStep(this, transformationFactory, step);
+	}
+
+	public static class UnfiltratorBuilder {
+		/**
+		 * Use this if you want only given columns to remain filtered.
+		 * 
+		 * @param column
+		 * @param moreColumns
+		 * @return current builder.
+		 */
+		public UnfiltratorBuilder filterOnly(String column, String... moreColumns) {
+			this.unfiltereds(Lists.asList(column, moreColumns));
+
+			this.inverse(true);
+
+			return this;
 		}
 	}
 
-	public static IMeasure sum(String column) {
-		return Aggregator.builder().aggregationKey(SumAggregator.KEY).name(column).build();
-	}
 }

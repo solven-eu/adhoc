@@ -23,10 +23,14 @@
 package eu.solven.adhoc.eventbus;
 
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
 public class AdhocQueryPhaseIsCompleted {
 	String phase;
+
+	@NonNull
+	Object source;
 }

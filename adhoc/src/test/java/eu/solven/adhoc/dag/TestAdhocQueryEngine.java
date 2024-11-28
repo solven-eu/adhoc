@@ -47,7 +47,8 @@ public class TestAdhocQueryEngine {
 		amg.addMeasure(Aggregator.builder().name("n4").build());
 
 		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().keySet()).build();
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates = aqe.makeQueryStepsDag(adhocQuery);
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates =
+				aqe.makeQueryStepsDag(Set.of(), adhocQuery);
 		Map<String, Set<Aggregator>> columnToAggregators = aqe.columnToAggregators(fromQueriedToAggregates);
 
 		Assertions.assertThat(columnToAggregators)

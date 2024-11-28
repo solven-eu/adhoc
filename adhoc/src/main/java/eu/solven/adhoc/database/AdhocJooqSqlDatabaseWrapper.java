@@ -66,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class JooqSqlDatabase implements IAdhocDatabaseWrapper {
+public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 	@Builder.Default
 	@NonNull
 	@Getter

@@ -42,19 +42,23 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Combinator} is a {@link IMeasure} which combines the underlying measures for current coordinate.
+ * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed.
  */
 @Value
 @Builder
 @Jacksonized
 @Slf4j
-public class Combinator implements ICombinator {
+public class Columnator implements ICombinator {
 	@NonNull
 	String name;
 
 	@NonNull
 	@Singular
 	Set<String> tags;
+
+	@NonNull
+	@Singular
+	Set<String> requiredColumns;
 
 	@NonNull
 	@Singular
@@ -99,7 +103,7 @@ public class Combinator implements ICombinator {
 
 	@Override
 	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
-		return new CombinatorQueryStep(this, transformationFactory, step);
+		return new ColumnatorQueryStep(this, transformationFactory, step);
 	}
 
 }

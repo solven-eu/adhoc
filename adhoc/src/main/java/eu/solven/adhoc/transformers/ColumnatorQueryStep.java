@@ -23,51 +23,73 @@
 package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
+import eu.solven.adhoc.api.v1.filters.IColumnFilter;
+import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
-	final Filtrator filtrator;
-	final IOperatorsFactory transformationFactory;
-	final AdhocQueryStep step;
+public class ColumnatorQueryStep extends CombinatorQueryStep {
+	final Columnator columnator;
 
-	public List<String> getUnderlyingNames() {
-		return filtrator.getUnderlyingNames();
-	};
+	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+		super(columnator, transformationFactory, step);
+
+		this.columnator = columnator;
+	}
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
-		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
-				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measure(ReferencedMeasure.builder().ref(filtrator.getUnderlying()).build())
-				.build();
-		return Collections.singletonList(underlyingStep);
+		Optional<String> optMissingColumn =
+				columnator.getRequiredColumns().stream().filter(c -> this.isMissing(c)).findAny();
+
+		if (optMissingColumn.isPresent()) {
+			return Collections.emptyList();
+		}
+
+		return super.getUnderlyingSteps();
+	}
+
+	private boolean isMissing(String c) {
+		return !step.getGroupBy().getGroupedByColumns().contains(c) && !(isMonoSelected(c, step.getFilter()));
+	}
+
+	private boolean isMonoSelected(String column, IAdhocFilter filter) {
+		if (filter.isColumnMatcher() && filter instanceof IColumnFilter columnFilter
+				&& columnFilter.getColumn().equals(column)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
 	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
-		if (underlyings.size() != 1) {
-			throw new IllegalArgumentException("underlyings.size() != 1");
+		if (underlyings.size() != getUnderlyingNames().size()) {
+			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
 		CoordinatesToValues output = CoordinatesToValues.builder().build();
 
-		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(debug, underlyings)) {
+		ICombination tranformation = transformationFactory.makeTransformation(combinator);
+
+		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(combinator.isDebug(), underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();
 				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
@@ -76,17 +98,29 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 
 				storage.onValue(coordinate, consumer);
 
-				if (debug) {
-					log.info("[DEBUG] Write {} in {} for m={}", refV.get(), coordinate, filtrator.getName());
-				}
-
 				return refV.get();
 			}).collect(Collectors.toList());
 
-			Object value = underlyingVs.get(0);
+			Object value = tranformation.combine(underlyingVs);
 			output.put(coordinate, value);
 		}
 
 		return output;
+	}
+
+	public static Iterable<? extends Map<String, ?>> keySet(boolean debug, List<CoordinatesToValues> underlyings) {
+		Set<Map<String, ?>> keySet;
+		if (debug) {
+			// Enforce an iteration order for debugging-purposes
+			keySet = new TreeSet<>(MapComparators.mapComparator());
+		} else {
+			keySet = new HashSet<>();
+		}
+
+		for (CoordinatesToValues underlying : underlyings) {
+			keySet.addAll(underlying.getStorage().keySet());
+		}
+
+		return keySet;
 	}
 }

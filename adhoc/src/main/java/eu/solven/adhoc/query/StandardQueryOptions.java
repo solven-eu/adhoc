@@ -34,5 +34,10 @@ public enum StandardQueryOptions implements IQueryOption {
 	 * computations, but it induces additional RAM consumptions (as these implicitly requested measures can not be
 	 * discarded).
 	 */
-	RETURN_UNDERLYING_MEASURES;
+	RETURN_UNDERLYING_MEASURES,
+
+	/**
+	 * Request for an unknown measure will treat it as if it returned only empty values
+	 */
+	UNKNOWN_MEASURES_ARE_EMPTY;
 }

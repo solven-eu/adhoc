@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.database.JooqSqlDatabase;
+import eu.solven.adhoc.database.AdhocJooqSqlDatabaseWrapper;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.GroupByColumns;
 
@@ -55,7 +55,8 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	JooqSqlDatabase jooqDb = JooqSqlDatabase.builder().connectionSupplier(() -> dbConn).tableName(tableName).build();
+	AdhocJooqSqlDatabaseWrapper jooqDb =
+			AdhocJooqSqlDatabaseWrapper.builder().connectionSupplier(() -> dbConn).tableName(tableName).build();
 
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();

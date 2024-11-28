@@ -23,6 +23,7 @@
 package eu.solven.adhoc.aggregations.max;
 
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 
 public class MaxAggregator implements IAggregation {
 
@@ -35,13 +36,22 @@ public class MaxAggregator implements IAggregation {
 		} else if (r == null) {
 			return l;
 		} else {
-			double leftAsDouble = ((Number) l).doubleValue();
-			double rightAsDouble = ((Number) r).doubleValue();
+			if (l instanceof Number lAsNumber && r instanceof Number rAsNumber) {
+				if (SumAggregator.isLongLike(l) && SumAggregator.isLongLike(r)) {
+					long leftAsLong = lAsNumber.longValue();
+					long rightAsLong = rAsNumber.longValue();
 
-			if (leftAsDouble > rightAsDouble) {
-				return l;
+					return aggregateLongs(leftAsLong, rightAsLong);
+				} else {
+					double leftAsDouble = lAsNumber.doubleValue();
+					double rightAsDouble = rAsNumber.doubleValue();
+
+					return aggregateDoubles(leftAsDouble, rightAsDouble);
+				}
 			} else {
-				return r;
+				String lAsString = l.toString();
+				String rAsString = r.toString();
+				return aggregateStrings(lAsString, rAsString);
 			}
 		}
 	}

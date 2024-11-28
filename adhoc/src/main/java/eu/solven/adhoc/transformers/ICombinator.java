@@ -20,20 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.transformers;
 
-import eu.solven.adhoc.transformers.IMeasure;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+/**
+ * {@link Combinator} has an interface as many {@link IMeasure} has a related simple logic
+ * 
+ * @author Benoit Lacelle
+ * @see Columnator
+ */
+public interface ICombinator extends IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
 
-@Value
-@Builder
-public class MeasuratorIsCompleted {
-	@NonNull
-	IMeasure measure;
-	long nbCells;
-
-	@NonNull
-	Object source;
 }

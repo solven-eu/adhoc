@@ -22,48 +22,52 @@
  */
 package eu.solven.adhoc.transformers;
 
+import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Singular;
+import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.CoordinatesToValues;
 import lombok.Value;
 
 /**
- * Used to transform an input column into a measure.
+ * This is a technical measure, useful for edge-cases (e.g. not throwing when requesting an unknown measure).
  * 
  * @author Benoit Lacelle
  *
  */
 @Value
-@Builder
-public class Aggregator implements IMeasure {
-	// The name/identifier of the measure
-	@NonNull
+public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	String name;
 
-	@Singular
-	Set<String> tags;
-
-	// The name of the underlying aggregated column
-	String columnName;
-
-	@NonNull
-	@Default
-	String aggregationKey = SumAggregator.KEY;
-
-	public String getColumnName() {
-		if (columnName != null) {
-			return columnName;
-		} else {
-			// The default columnName is the aggregator name
-			return name;
-		}
+	@Override
+	public Set<String> getTags() {
+		return Set.of("technical");
 	}
 
-	public static IMeasure sum(String column) {
-		return Aggregator.builder().aggregationKey(SumAggregator.KEY).name(column).build();
+	@Override
+	public List<String> getUnderlyingNames() {
+		return List.of();
 	}
+
+	@Override
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
+		return new IHasUnderlyingQuerySteps() {
+
+			@Override
+			public List<AdhocQueryStep> getUnderlyingSteps() {
+				return List.of();
+			}
+
+			@Override
+			public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+				if (!underlyings.isEmpty()) {
+					throw new UnsupportedOperationException("Should not be called as we do not have any underlyings");
+				}
+				return CoordinatesToValues.empty();
+			}
+
+		};
+	}
+
 }

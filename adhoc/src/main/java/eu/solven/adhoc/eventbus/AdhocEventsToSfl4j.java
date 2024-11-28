@@ -26,21 +26,30 @@ import org.greenrobot.eventbus.Subscribe;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * This logs main steps of the query-engine. It is typically activated by calling `#AdhocQueryBuilder.debug()`.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @Slf4j
 public class AdhocEventsToSfl4j {
 	@Subscribe
 	public void onMeasuratorIsCompleted(MeasuratorIsCompleted event) {
-		log.info("measurator={} is completed with size={}", event.getMeasurator(), event.getNbCells());
+		log.info("size={} for measure={} on completed (source={})",
+				event.getNbCells(),
+				event.getMeasure(),
+				event.getSource());
 	}
 
 	@Subscribe
 	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
-		log.info("query phase={} is completed", event.getPhase());
+		log.info("query phase={} is completed (source={})", event.getPhase(), event.getSource());
 	}
 
 	@Subscribe
 	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
-		log.info("queryStep={} is evaluating", event.getQueryStep());
+		log.info("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
 	}
 
 }

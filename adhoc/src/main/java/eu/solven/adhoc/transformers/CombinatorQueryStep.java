@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
-	final Combinator combinator;
+	final ICombinator combinator;
 	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
@@ -53,11 +53,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlyingName -> {
-			return AdhocQueryStep.builder()
-					.filter(step.getFilter())
-					.groupBy(step.getGroupBy())
-					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
-					.build();
+			return AdhocQueryStep.edit(step).measure(ReferencedMeasure.builder().ref(underlyingName).build()).build();
 		}).toList();
 	}
 
@@ -73,6 +69,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 
 		ICombination tranformation = transformationFactory.makeTransformation(combinator);
 
+		boolean debug = combinator.isDebug() || step.isDebug();
 		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(combinator.isDebug(), underlyings)) {
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();
@@ -86,6 +83,15 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 			}).collect(Collectors.toList());
 
 			Object value = tranformation.combine(underlyingVs);
+
+			if (debug) {
+				log.info("[DEBUG] Write {} (given {}) in {} for {}",
+						value,
+						underlyingVs,
+						coordinate,
+						combinator.getName());
+			}
+
 			output.put(coordinate, value);
 		}
 

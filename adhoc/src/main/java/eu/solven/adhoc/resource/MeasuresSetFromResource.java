@@ -64,6 +64,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import smile.math.distance.EditDistance;
 
+/**
+ * Helps reading and writing {@link AdhocMeasureBag} into resource files.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @Slf4j
 public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
@@ -197,8 +203,7 @@ public class MeasuresSetFromResource {
 		if (map.isEmpty()) {
 			throw new IllegalArgumentException("input map is empty while looking for %s".formatted(key));
 		} else if (e.getMessage().contains("(key not present)")) {
-			String minimizingDistance =
-					map.keySet().stream().min(Comparator.comparing(s -> EditDistance.levenshtein(s, key))).orElse("?");
+			String minimizingDistance = minimizingDistance(map.keySet(), key);
 
 			if (EditDistance.levenshtein(minimizingDistance, key) <= 2) {
 				throw new IllegalArgumentException(
@@ -211,6 +216,18 @@ public class MeasuresSetFromResource {
 		} else {
 			throw e;
 		}
+	}
+
+	/**
+	 * 
+	 * @param options
+	 * @param key
+	 * @return the option minimizing its distance to the requested key.
+	 */
+	public static String minimizingDistance(Collection<String> options, String key) {
+		String minimizingDistance =
+				options.stream().min(Comparator.comparing(s -> EditDistance.levenshtein(s, key))).orElse("?");
+		return minimizingDistance;
 	}
 
 	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {

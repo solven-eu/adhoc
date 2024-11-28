@@ -20,20 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.api.v1;
 
-import eu.solven.adhoc.transformers.IMeasure;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
-@Value
-@Builder
-public class MeasuratorIsCompleted {
-	@NonNull
-	IMeasure measure;
-	long nbCells;
-
-	@NonNull
-	Object source;
+/**
+ * Some components can toggle a debug feature. This will log many information (SLF4J).
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+public interface IIsDebugable {
+	boolean isDebug();
 }
