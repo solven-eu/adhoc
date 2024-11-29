@@ -38,6 +38,14 @@ import eu.solven.pepper.mappath.MapPathGet;
 
 public class LinearDecomposition implements IDecomposition {
 	public static final String KEY = "linear";
+	/**
+	 * The column used as input, expected to be between min and max.
+	 */
+	public static final String K_INPUT = "input";
+	/**
+	 * The column written by this decomposition.
+	 */
+	public static final String K_OUTPUT = "output";
 
 	final Map<String, ?> options;
 
@@ -47,7 +55,7 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public Map<Map<String, ?>, Object> decompose(Map<String, ?> coordinate, Object value) {
-		String inputColumn = MapPathGet.getRequiredString(options, "input");
+		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = MapPathGet.getOptionalAs(coordinate, inputColumn);
 		if (optInput.isEmpty()) {
@@ -58,7 +66,7 @@ public class LinearDecomposition implements IDecomposition {
 		Number min = MapPathGet.getRequiredNumber(options, "min");
 		Number max = MapPathGet.getRequiredNumber(options, "max");
 
-		String outputColumn = MapPathGet.getRequiredString(options, "output");
+		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (min.equals(input)) {
 			return Collections.singletonMap(Map.of(outputColumn, min), value);
 		} else if (max.equals(input)) {
@@ -127,7 +135,7 @@ public class LinearDecomposition implements IDecomposition {
 		allGroupBys.addAll(step.getGroupBy().getGroupedByColumns());
 		allGroupBys.remove(outputColumn);
 
-		String inputColumn = MapPathGet.getRequiredString(options, "input");
+		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(inputColumn);
 
 		return Collections.singletonList(

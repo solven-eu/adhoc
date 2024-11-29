@@ -41,9 +41,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.transformers.Filtrator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 
@@ -58,7 +60,7 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThatThrownBy(() -> fromResource.getListParameter(input, "undelryings"))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Did you meant `underlyings` instead of `undelryings`");
+				.hasMessageContaining("Did you mean `underlyings` instead of `undelryings`");
 	}
 
 	@Test
@@ -71,7 +73,7 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
-	public void testComplexImplicitMeasures() {
+	public void testDeepMeasuresAsUnderlyings() {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k")
 				.put("type", "combinator")
@@ -146,7 +148,7 @@ public class TestMeasuresSetFromResource {
 				.put("combinationKey", "DIVIDE")
 				.put("underlyings",
 						List.of("k1",
-								// The denominator is anonynous: it does not have as explicit name
+								// The denominator definition is anonymous: it does not have as explicit name
 								Map.of("type", "combinator", "underlyings", List.of("k1", "k2"))))
 				.build();
 
@@ -183,7 +185,7 @@ public class TestMeasuresSetFromResource {
 					  measures:
 					  - name: "k1Byk1k2"
 					    type: "combinator"
-					    combinationKey: "SUM"
+					    combinationKey: "DIVIDE"
 					    underlyings:
 					    - "k1"
 					    - "anonymous-1"
@@ -204,6 +206,137 @@ public class TestMeasuresSetFromResource {
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(4);
 		}
+	}
+
+	@Test
+	public void testWithFilter() throws IOException {
+		Map<String, Object> input = ImmutableMap.<String, Object>builder()
+				.put("name", "k1_c=V")
+				.put("type", "filtrator")
+				.put("filter",
+						Map.of("type",
+								"column",
+								"column",
+								"c",
+								"valueMatcher",
+								Map.of("type", "equals", "operand", "someString")))
+				.put("underlying", "k1")
+				.build();
+
+		List<IMeasure> measures = fromResource.makeMeasure(input);
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", "aggregator")));
+
+		ListAssert<IMeasure> assertMeasures = Assertions.assertThat(measures).hasSize(2);
+		assertMeasures.element(0)
+				// The first measure must be the explicit measure
+				.isInstanceOfSatisfying(Filtrator.class, c -> {
+					Assertions.assertThat(c.getName()).isEqualTo("k1_c=V");
+					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1");
+					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.isEqualTo("c", "someString"));
+				});
+
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
+
+		{
+			AdhocBagOfMeasureBag bagOfBag = new AdhocBagOfMeasureBag();
+			bagOfBag.putBag("someBagName", ams);
+
+			String amsAsString = fromResource.asString("yml", bagOfBag);
+			Assertions.assertThat(amsAsString).isEqualTo("""
+					- name: "someBagName"
+					  measures:
+					  - name: "k1_c=V"
+					    type: "filtrator"
+					    filter:
+					      type: "column"
+					      column: "c"
+					      valueMatcher:
+					        type: "equals"
+					        operand: "someString"
+					      nullIfAbsent: true
+					    underlying: "k1"
+					  - name: "k1"
+					    type: "aggregator"
+					""");
+
+			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
+					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
+			Assertions.assertThat(a.size()).isEqualTo(1);
+			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(2);
+		}
+	}
+
+	@Test
+	public void testBucketor() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+
+		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+		measureBag.addMeasure(IAdhocTestConstants.k2Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(3);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(2);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "sum_maxK1K2ByA",
+				  "type" : "bucketor",
+				  "aggregationKey" : "SUM",
+				  "combinationKey" : "MAX",
+				  "groupBy" : [ "a" ],
+				  "underlyings" : [ "k1", "k2" ]
+				}, {
+				  "name" : "k1",
+				  "type" : "aggregator"
+				}, {
+				  "name" : "k2",
+				  "type" : "aggregator"
+				} ]
+				""".strip());
+	}
+
+	@Test
+	public void testDispatchor() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+
+		measureBag.addMeasure(IAdhocTestConstants.dispatchFrom0To100);
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "k1",
+				  "type" : "aggregator"
+				}, {
+				  "name" : "0or100",
+				  "type" : "dispatchor",
+				  "aggregationKey" : "SUM",
+				  "decompositionKey" : "linear",
+				  "decompositionOptions" : {
+				    "input" : "percent",
+				    "min" : 0,
+				    "max" : 100,
+				    "output" : "0_or_100"
+				  },
+				  "underlying" : "k1"
+				} ]
+				""".strip());
 	}
 
 	@Test

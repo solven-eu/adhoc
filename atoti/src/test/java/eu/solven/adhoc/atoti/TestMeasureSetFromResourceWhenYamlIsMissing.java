@@ -40,7 +40,7 @@ public class TestMeasureSetFromResourceWhenYamlIsMissing {
 
 		AdhocBagOfMeasureBag emptyBag = new AdhocBagOfMeasureBag();
 
-		Assertions.assertThat(new MeasuresSetFromResource().asString("json", emptyBag)).isEqualTo("[]");
+		Assertions.assertThat(new MeasuresSetFromResource().asString("json", emptyBag)).isEqualTo("[ ]");
 
 		Assertions
 				.assertThatThrownBy(

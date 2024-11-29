@@ -34,6 +34,7 @@ import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.transformers.Filtrator;
 
 public interface IAdhocTestConstants {
@@ -60,6 +61,15 @@ public interface IAdhocTestConstants {
 			.underlyings(Arrays.asList("k1", "k2"))
 			.groupBy(GroupByColumns.of("a"))
 			.combinationKey(MaxTransformation.KEY)
+			.aggregationKey(SumAggregator.KEY)
+			.build();
+
+	Dispatchor dispatchFrom0To100 = Dispatchor.builder()
+			.name("0or100")
+			.underlying("k1")
+			.decompositionKey("linear")
+			// ImmutableMap for ordering (e.g. useful for serialization tests)
+			.decompositionOptions(ImmutableMap.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))
 			.aggregationKey(SumAggregator.KEY)
 			.build();
 }

@@ -19,7 +19,7 @@
         - type: filtrator
           underlying: k1
           filter:
-            type: match
+            type: column
             column: a
             matching: a1
         - k1

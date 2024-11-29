@@ -46,7 +46,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.GroupByColumns;
@@ -72,99 +72,187 @@ import smile.math.distance.EditDistance;
  */
 @Slf4j
 public class MeasuresSetFromResource {
+
+	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
+
+	private static final List<String> sortedKeys =
+			List.of("name", "type", "aggregationKey", "combinationKey", "underlyingNames", "underlyingName");
+	private static final Map<String, Integer> keyToIndex =
+			sortedKeys.stream().collect(Collectors.toUnmodifiableMap(s -> s, sortedKeys::indexOf));
+
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
 	public AdhocMeasureBag measuresToAMS(Collection<? extends Map<String, ?>> measures) {
 		Map<String, IMeasure> nameToMeasure = measures.stream().flatMap(measure -> {
 			return makeMeasure(measure).stream();
-		}).collect(Collectors.toMap(m -> m.getName(), m -> m));
+		}).collect(Collectors.toMap(IMeasure::getName, m -> m));
 
-		AdhocMeasureBag ame = AdhocMeasureBag.builder().nameToMeasure(nameToMeasure).build();
-		return ame;
+		return AdhocMeasureBag.builder().nameToMeasure(nameToMeasure).build();
 	}
 
 	/**
-	 * 
+     * @param measure never empty;
+     * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
+     * measures. The explicit measure is always first in the output list.
+     */
+    public List<IMeasure> makeMeasure(Map<String, ?> measure) {
+        List<IMeasure> measures = new ArrayList<>();
+
+        String type = getStringParameter(measure, "type");
+        Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
+        String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
+
+        IMeasure asMeasure = switch (type) {
+            case "aggregator": {
+                yield makeAggregator(measure, name);
+            }
+            case "combinator": {
+                yield makeCombinator(measure, measures, name);
+            }
+            case "filtrator": {
+                yield makeFiltrator(measure, measures, name);
+            }
+            case "bucketor": {
+                yield makeBucketor(measure, measures, name);
+            }
+            case "dispatchor": {
+                yield makeDispatchor(measure, measures, name);
+            }
+            default:
+                yield onUnknownType(type, measure, measures, name);
+        };
+
+        // The explicit measure has to be first in the output List
+        measures.add(0, asMeasure);
+
+        return measures;
+    }
+
+	/**
+	 * @param type
 	 * @param measure
-	 *            never empty;
-	 * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
-	 *         measures. The explicit measure is always first in the output list.
+	 * @param measures
+	 * @param name
+	 * @return the default behavior is to throw
 	 */
-	public List<IMeasure> makeMeasure(Map<String, ?> measure) {
-		List<IMeasure> measures = new ArrayList<>();
+	protected IMeasure onUnknownType(String type, Map<String, ?> measure, List<IMeasure> measures, String name) {
+		throw new IllegalArgumentException("Unexpected value: " + type);
+	}
 
-		String type = getStringParameter(measure, "type");
-		Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
-		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
+	protected IMeasure makeDispatchor(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		Object rawUnderlying = getAnyParameter(measure, "underlying");
 
-		IMeasure asMeasure = switch (type) {
-		case "aggregator": {
-			yield Aggregator.builder().name(name).build();
+		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
+
+		Dispatchor.DispatchorBuilder builder = Dispatchor.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlying(underlyingName);
+		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
+
+		String decompositionKey = getStringParameter(measure, "decompositionKey");
+		builder.decompositionKey(decompositionKey);
+
+		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "decompositionOptions")
+				.ifPresent(builder::decompositionOptions);
+
+		return builder.build();
+	}
+
+	protected IMeasure makeBucketor(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		List<?> rawUnderlyings = getListParameter(measure, "underlyings");
+
+		List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
+			return registerMeasuresReturningMainOne(rawUnderlying, measures);
+		}).collect(Collectors.toList());
+
+		Bucketor.BucketorBuilder builder = Bucketor.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlyings(underlyingNames);
+
+		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
+
+		MapPathGet.getOptionalString(measure, "combinationKey").ifPresent(builder::combinationKey);
+		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "combinationOptions").ifPresent(builder::combinationOptions);
+
+		Object rawGroupBy = getAnyParameter(measure, "groupBy");
+		builder.groupBy(toGroupBy(rawGroupBy));
+
+		return builder.build();
+	}
+
+	private @NonNull IAdhocGroupBy toGroupBy(Object rawGroupBy) {
+		if (rawGroupBy instanceof List<?> wildcards) {
+			return GroupByColumns.of(wildcards.stream().map(Object::toString).toList());
+		} else {
+			throw new UnsupportedOperationException(
+					"TODO: manage %s".formatted(PepperLogHelper.getObjectAndClass(rawGroupBy)));
 		}
-		case "combinator": {
-			List<?> rawUnderlyings = getListParameter(measure, "underlyings");
+	}
 
-			List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
-				if (rawUnderlying instanceof String asString) {
-					return asString;
-				} else if (rawUnderlying instanceof Map<?, ?> asMap) {
-					List<IMeasure> underlyingMeasures = makeMeasure((Map) asMap);
+	protected IMeasure makeFiltrator(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		// Filtrator has a single underlying measure
+		Object rawUnderlying = getAnyParameter(measure, "underlying");
 
-					measures.addAll(underlyingMeasures);
+		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
 
-					return underlyingMeasures.getFirst().getName();
-				} else {
-					throw new IllegalArgumentException(
-							"Invalid underying: %s".formatted(PepperLogHelper.getObjectAndClass(rawUnderlying)));
-				}
+		Filtrator.FiltratorBuilder builder = Filtrator.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlying(underlyingName);
 
-			}).collect(Collectors.toList());
+		Map<String, ?> rawFilter = getMapParameter(measure, "filter");
+		builder.filter(toFilter(rawFilter));
 
-			yield Combinator.builder().name(name).underlyings(underlyingNames).build();
+		return builder.build();
+	}
+
+	protected IMeasure makeCombinator(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		List<?> rawUnderlyings = getListParameter(measure, "underlyings");
+
+		List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
+			return registerMeasuresReturningMainOne(rawUnderlying, measures);
+		}).collect(Collectors.toList());
+
+		Combinator.CombinatorBuilder builder = Combinator.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlyings(underlyingNames);
+
+		MapPathGet.getOptionalString(measure, "combinationKey").ifPresent(builder::combinationKey);
+		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "combinationOptions").ifPresent(builder::combinationOptions);
+
+		return builder.build();
+	}
+
+	protected IMeasure makeAggregator(Map<String, ?> measure, String name) {
+		return Aggregator.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.build();
+	}
+
+	private String registerMeasuresReturningMainOne(Object rawUnderlying, List<IMeasure> measures) {
+		if (rawUnderlying instanceof String asString) {
+			return asString;
+		} else if (rawUnderlying instanceof Map<?, ?> asMap) {
+			List<IMeasure> underlyingMeasures = makeMeasure((Map) asMap);
+
+			measures.addAll(underlyingMeasures);
+
+			return underlyingMeasures.getFirst().getName();
+		} else {
+			throw new IllegalArgumentException(
+					"Invalid underlying: %s".formatted(PepperLogHelper.getObjectAndClass(rawUnderlying)));
 		}
-		case "filtrator": {
-			Object rawUnderlying = getAnyParameter(measure, "underlying");
-
-			String undelryingName;
-			if (rawUnderlying instanceof String asString) {
-				undelryingName = asString;
-			} else if (rawUnderlying instanceof Map<?, ?> asMap) {
-				List<IMeasure> underlyingMeasures = makeMeasure((Map) asMap);
-
-				measures.addAll(underlyingMeasures);
-
-				undelryingName = underlyingMeasures.getFirst().getName();
-			} else {
-				throw new IllegalArgumentException(
-						"Invalid underying: %s".formatted(PepperLogHelper.getObjectAndClass(rawUnderlying)));
-			}
-
-			Map<String, ?> rawFilter = getMapParameter(measure, "filter");
-
-			yield Filtrator.builder().name(name).underlying(undelryingName).filter(toFilter(rawFilter)).build();
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + type);
-		};
-
-		// The explicit measure has to be first in the output List
-		measures.add(0, asMeasure);
-
-		return measures;
 	}
 
 	private @NonNull IAdhocFilter toFilter(Map<String, ?> rawFilter) {
-		String type = getStringParameter(rawFilter, "type");
+		ObjectMapper objectMapper = new ObjectMapper();
 
-		return switch (type) {
-		case "match": {
-			yield ColumnFilter.isEqualTo(getStringParameter(rawFilter, "column"),
-					getStringParameter(rawFilter, "matching"));
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + type);
-		};
+		return objectMapper.convertValue(rawFilter, IAdhocFilter.class);
 	}
 
 	private Map<String, ?> getMapParameter(Map<String, ?> map, String key) {
@@ -207,7 +295,7 @@ public class MeasuresSetFromResource {
 
 			if (EditDistance.levenshtein(minimizingDistance, key) <= 2) {
 				throw new IllegalArgumentException(
-						"Did you meant `%s` instead of `%s`".formatted(minimizingDistance, key),
+						"Did you mean `%s` instead of `%s`".formatted(minimizingDistance, key),
 						e);
 			} else {
 				// It seems we're rather missing the input than having a typo
@@ -230,6 +318,16 @@ public class MeasuresSetFromResource {
 		return minimizingDistance;
 	}
 
+	public AdhocMeasureBag loadBagFromResource(String format, Resource resource) throws IOException {
+		ObjectMapper objectMapper = makeObjectMapper(format);
+
+		try (InputStream inputStream = resource.getInputStream()) {
+			List measures = objectMapper.readValue(inputStream, List.class);
+
+			return makeBag(measures);
+		}
+	}
+
 	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
@@ -248,11 +346,26 @@ public class MeasuresSetFromResource {
 	}
 
 	private AdhocMeasureBag makeBag(List<Map<String, ?>> rawMeasures) {
-		List<IMeasure> measures = rawMeasures.stream().flatMap(m -> {
-			return makeMeasure(m).stream();
-		}).collect(Collectors.toList());
+		List<IMeasure> measures =
+				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
 
 		return AdhocMeasureBag.fromMeasures(measures);
+	}
+
+	public String asString(String format, AdhocMeasureBag amb) {
+		ObjectMapper objectMapper = makeObjectMapper(format);
+
+		List<?> asMaps = amb.getNameToMeasure()
+				.values()
+				.stream()
+				.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))
+				.collect(Collectors.toList());
+
+		try {
+			return objectMapper.writeValueAsString(asMaps);
+		} catch (JsonProcessingException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	public String asString(String format, AdhocBagOfMeasureBag abmb) {
@@ -261,9 +374,9 @@ public class MeasuresSetFromResource {
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
 
 		abmb.bagNames().forEach(bagName -> {
-			AdhocMeasureBag ams = abmb.getBag(bagName);
+			AdhocMeasureBag amb = abmb.getBag(bagName);
 
-			List<?> asMaps = ams.getNameToMeasure()
+			List<?> asMaps = amb.getNameToMeasure()
 					.values()
 					.stream()
 					.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))
@@ -278,8 +391,6 @@ public class MeasuresSetFromResource {
 			throw new IllegalArgumentException(e);
 		}
 	}
-
-	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
 
 	static ObjectMapper makeObjectMapper(String format) {
 		ObjectMapper objectMapper;
@@ -315,14 +426,9 @@ public class MeasuresSetFromResource {
 		return objectMapper;
 	}
 
-	private static final List<String> sortedKeys =
-			List.of("name", "type", "aggregationKey", "combinationKey", "underlyingNames", "underlyingName");
-	private static final Map<String, Integer> keyToIndex =
-			sortedKeys.stream().collect(Collectors.toUnmodifiableMap(s -> s, sortedKeys::indexOf));
-
 	/**
 	 * This is useful to generate human-friendly configuration, not including all implicit configuration.
-	 * 
+	 *
 	 * @param measure
 	 *            the {@link IMeasure} object
 	 * @param map
@@ -371,7 +477,7 @@ public class MeasuresSetFromResource {
 				clean.remove("combinationOptions");
 			}
 		} else {
-			onUnknownMeastureType(measure);
+			onUnknownMeasureType(measure);
 		}
 
 		if (measure.getTags().isEmpty()) {
@@ -381,7 +487,7 @@ public class MeasuresSetFromResource {
 		return clean;
 	}
 
-	protected void onUnknownMeastureType(IMeasure measure) {
+	protected void onUnknownMeasureType(IMeasure measure) {
 		throw new UnsupportedOperationException(
 				"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 	}

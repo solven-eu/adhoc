@@ -32,7 +32,9 @@ import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
 import eu.solven.adhoc.database.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FilterHelpers {
 
 	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
@@ -52,8 +54,18 @@ public class FilterHelpers {
 			String underlyingColumn = transcoder.underlying(columnFilter.getColumn());
 			Object value = input.get(underlyingColumn);
 
-			if (value == null && !input.containsKey(underlyingColumn) && !columnFilter.isNullIfAbsent()) {
-				return false;
+			if (value == null) {
+				if (input.containsKey(underlyingColumn)) {
+					log.trace("Key to null-ref");
+				} else {
+					log.trace("Missing key");
+					if (columnFilter.isNullIfAbsent()) {
+						log.trace("Treat absent as null");
+					} else {
+						log.trace("Do not treat absent as null, but as missing hence not acceptable");
+						return false;
+					}
+				}
 			}
 
 			return columnFilter.getValueMatcher().match(value);
