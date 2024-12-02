@@ -120,7 +120,7 @@ public class MultiTypeStorage<T> {
 	}
 
 	public void merge(T key, Object v, IAggregation agg) {
-		if (v instanceof Double || v instanceof Float) {
+		if (v instanceof Double || v instanceof Float || v instanceof BigDecimal) {
 			double vAsPrimitive = ((Number) v).doubleValue();
 			measureToAggregateD.mergeDouble(key, vAsPrimitive, agg::aggregateDoubles);
 		} else if (v instanceof Long || v instanceof Integer) {
@@ -130,7 +130,7 @@ public class MultiTypeStorage<T> {
 			String vAsCharSequence = ((CharSequence) v).toString();
 			measureToAggregateS.merge(key, vAsCharSequence, agg::aggregateStrings);
 		} else {
-			throw new UnsupportedOperationException("Received: %s".formatted(v));
+			throw new UnsupportedOperationException("Received: %s".formatted(PepperLogHelper.getObjectAndClass(v)));
 		}
 	}
 

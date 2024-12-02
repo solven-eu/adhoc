@@ -29,6 +29,8 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IHasFilters;
 import eu.solven.adhoc.api.v1.IHasGroupBy;
+import eu.solven.adhoc.api.v1.IIsDebugable;
+import eu.solven.adhoc.api.v1.IIsExplainable;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
@@ -79,6 +81,15 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	}
 
 	public static DatabaseQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
-		return DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
+		DatabaseQueryBuilder builder = DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
+
+		if (dq instanceof IIsDebugable isDebugable) {
+			builder.debug(isDebugable.isDebug());
+		}
+		if (dq instanceof IIsExplainable isExplainable) {
+			builder.explain(isExplainable.isExplain());
+		}
+
+		return builder;
 	}
 }

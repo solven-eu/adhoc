@@ -44,6 +44,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
 import eu.solven.adhoc.transformers.IMeasure;
@@ -361,6 +362,33 @@ public class TestMeasuresSetFromResource {
 		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1Sum, rawMap);
 
 		Assertions.assertThat((Map) cleaned).hasSize(2).containsEntry("name", "k1").containsEntry("type", "aggregator");
+	}
+
+	@Test
+	public void testRemoveUselessProperties_Aggregator_differentColumnName() throws IOException {
+		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		Aggregator measure = Aggregator.edit(IAdhocTestConstants.k1Sum).columnName("legacyColumnName").build();
+
+		Map<String, ?> rawMap = objectMapper.convertValue(measure, Map.class);
+		Map<String, ?> cleaned = fromResource.removeUselessProperties(measure, rawMap);
+
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(3)
+				.containsEntry("name", "k1")
+				.containsEntry("type", "aggregator")
+				.containsEntry("columnName", "legacyColumnName");
+
+		{
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+
+			measureBag.addMeasure(measure);
+
+			String asString = fromResource.asString("json", measureBag);
+			AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+					new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+			Assertions.assertThat(fromString.getNameToMeasure().get("k1")).isEqualTo(measure);
+		}
 	}
 
 	@Test

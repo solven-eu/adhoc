@@ -20,58 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.dag;
 
-import java.util.Set;
+import org.greenrobot.eventbus.EventBus;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
 
 /**
- * Used to transform an input column into a measure.
- * 
- * @author Benoit Lacelle
- *
+ * Commons patterns used in Adhoc unit-tests
  */
-@Value
-@Builder
-public class Aggregator implements IMeasure {
-	// The name/identifier of the measure
-	@NonNull
-	String name;
-
-	@Singular
-	Set<String> tags;
-
-	// The name of the underlying aggregated column
-	String columnName;
-
-	@NonNull
-	@Default
-	String aggregationKey = SumAggregator.KEY;
-
-	public String getColumnName() {
-		if (columnName != null) {
-			return columnName;
-		} else {
-			// The default columnName is the aggregator name
-			return name;
-		}
+public class AdhocTestHelper {
+	protected AdhocTestHelper() {
+		// hidden
 	}
 
-	public static IMeasure sum(String column) {
-		return Aggregator.builder().aggregationKey(SumAggregator.KEY).name(column).build();
-	}
+	/**
+	 * @return an EventBus with a registered {@link AdhocEventsToSfl4j}
+	 */
+	public static EventBus eventBus() {
+		EventBus eventBus = new EventBus();
 
-	public static AggregatorBuilder edit(Aggregator aggregator) {
-		return Aggregator.builder()
-				.name(aggregator.getName())
-				.tags(aggregator.getTags())
-				.columnName(aggregator.getColumnName())
-				.aggregationKey(aggregator.getAggregationKey());
+		eventBus.register(new AdhocEventsToSfl4j());
+
+		return eventBus;
 	}
 }

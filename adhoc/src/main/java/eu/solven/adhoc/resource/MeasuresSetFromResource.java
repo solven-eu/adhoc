@@ -228,10 +228,13 @@ public class MeasuresSetFromResource {
 	}
 
 	protected IMeasure makeAggregator(Map<String, ?> measure, String name) {
-		return Aggregator.builder()
+		Aggregator.AggregatorBuilder builder = Aggregator.builder()
 				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.build();
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()));
+
+		MapPathGet.getOptionalString(measure, "columnName").ifPresent(builder::columnName);
+
+		return builder.build();
 	}
 
 	private String registerMeasuresReturningMainOne(Object rawUnderlying, List<IMeasure> measures) {

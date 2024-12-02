@@ -39,6 +39,18 @@ import eu.solven.adhoc.transformers.Filtrator;
 
 public interface IAdhocTestConstants {
 	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
+
+	Combinator k1SumSquared = Combinator.builder()
+			.name("k1SumSquared")
+			.underlying(k1Sum.getName())
+			.combinationKey(ExpressionCombination.KEY)
+			// https://github.com/ezylang/EvalEx/issues/204
+			// We may process ternary into IF
+			// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
+			.combinationOptions(
+					ImmutableMap.<String, Object>builder().put("expression", "IF(k1 == null, 0, k1 * k1)").build())
+			.build();
+
 	Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
 
 	Combinator k1PlusK2AsExpr = Combinator.builder()

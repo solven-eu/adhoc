@@ -27,6 +27,10 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Helps transcoding from one column-model to another. Typically as measures may refer to a given set of columns, while
+ * underlying database may have different names for these columns.
+ */
 @Slf4j
 public class AdhocTranscodingHelper {
 	protected AdhocTranscodingHelper() {

@@ -102,4 +102,18 @@ public class Combinator implements ICombinator {
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 
+	// public static class CombinatorBuilder {
+	// /**
+	// * BEWARE this does not enable anonymous/dynamic measure definitions. But only referring to IMeasure not to have
+	// to call {@link IMeasure#getName()}
+	// * @param measure the additional underlyingMeasure.
+	// * @return current builder
+	// */
+	// public CombinatorBuilder underlying(IMeasure measure) {
+	// this.underlying(measure.getName());
+	//
+	// return this;
+	// }
+	// }
+
 }

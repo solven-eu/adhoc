@@ -56,7 +56,6 @@ import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.MeasuratorIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
-import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -360,6 +359,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy
+				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.
+				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
 				int currentOut = nbOut.incrementAndGet();
 				if (adhocQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
 					log.info("We rejected {} as row #{}", input, currentOut);
@@ -372,9 +373,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				}
 			}
 
-			if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
-				return;
-			}
+			// When would we need to filter? As the filter is done by the IAdhocDatabaseWrapper
+			// if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
+			// return;
+			// }
 
 			// Iterate either on input map or on requested measures, depending on map sizes
 			if (columnToAggregators.size() < input.size()) {
@@ -436,13 +438,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	public Set<DatabaseQuery> prepare(Set<? extends IQueryOption> queryOptions, IAdhocQuery adhocQuery) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryOptions, adhocQuery);
 
-		return queryStepsDagToDbQueries(directedGraph, adhocQuery.isExplain());
+		return queryStepsDagToDbQueries(directedGraph, adhocQuery.isExplain(), adhocQuery.isDebug());
 
 	}
 
 	protected Set<DatabaseQuery> queryStepsDagToDbQueries(
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph,
-			boolean explain) {
+			boolean explain,
+			boolean debug) {
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
@@ -469,7 +472,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					}
 				});
 
-		if (explain) {
+		if (explain || debug) {
 			new TopologicalOrderIterator<>(directedGraph).forEachRemaining(step -> {
 				Set<DefaultEdge> underlyings = directedGraph.outgoingEdgesOf(step);
 
@@ -481,7 +484,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery adhocLeafQuery = e.getKey();
 			Set<Aggregator> leafAggregators = e.getValue();
-			return DatabaseQuery.edit(adhocLeafQuery).aggregators(leafAggregators).explain(explain).build();
+			return DatabaseQuery.edit(adhocLeafQuery)
+					.aggregators(leafAggregators)
+					.explain(explain)
+					.debug(debug)
+					.build();
 		}).collect(Collectors.toSet());
 	}
 

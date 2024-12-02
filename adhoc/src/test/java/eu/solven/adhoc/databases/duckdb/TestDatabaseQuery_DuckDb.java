@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.databases.duckdb;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -38,12 +39,24 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.ITabularView;
+import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.database.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.GroupByColumns;
 
 public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
+
+	static {
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+	}
+
 	String tableName = "someTableName";
 
 	private Connection makeFreshInMemoryDb() {
@@ -62,14 +75,13 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	DSLContext dsl = jooqDb.makeDsl();
 
 	@Test
-	public void testTableDoesNotExists() throws SQLException {
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).collect(Collectors.toList()))
-				.isInstanceOf(DataAccessException.class);
+	public void testTableDoesNotExists() {
+		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
-	public void testEmptyDb() throws SQLException {
-		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
+	public void testEmptyDb() {
+		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
 
@@ -77,61 +89,73 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	}
 
 	@Test
-	public void testReturnAll() throws SQLException {
+	public void testReturnAll() {
+		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
+
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+
+		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+	}
+
+	@Test
+	public void test_sumOverVarChar() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
-
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", "someKey"));
+		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
-	public void testReturn_nullableMeasures() throws SQLException {
+	public void testReturn_nullableMeasures() {
 		dsl.createTableIfNotExists(tableName)
-				.column("k1", SQLDataType.VARCHAR)
-				.column("k2", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.column("k2", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("v1").execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values("v2").execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values("v3", "v4").execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
 
-		Assertions.assertThat(dbStream).hasSize(2).contains(Map.of("k1", "v1"), Map.of("k1", "v3"));
+		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
 
 	@Test
-	public void testReturn_nullableColumn_filterEquals() throws SQLException {
+	public void testReturn_nullableColumn_filterEquals() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", "v1").execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", "v2").execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("b"), DSL.field("k1"))
-				.values("a2", "b2", "v3")
+				.values("a2", "b2", 345)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("b"), DSL.field("k1"))
+				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(
-				DatabaseQuery.edit(qK1).filter(ColumnFilter.builder().column("a").matching("a1").build()).build())
-				.collect(Collectors.toList());
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
+				.filter(ColumnFilter.builder().column("a").matching("a1").build())
+				.explain(true)
+				.build()).collect(Collectors.toList());
 
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", "v1"));
+		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
 	}
 
 	@Test
-	public void testReturn_nullableColumn_filterIn() throws SQLException {
+	public void testReturn_nullableColumn_filterIn() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", "v1").execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", "v2").execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("b"), DSL.field("k1"))
-				.values("a2", "b2", "v3")
+				.values("a2", "b2", 345)
 				.execute();
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
@@ -139,20 +163,20 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.explain(true)
 				.build()).collect(Collectors.toList());
 
-		Assertions.assertThat(dbStream).hasSize(2).contains(Map.of("k1", "v1"), Map.of("k1", "v3"));
+		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
 
 	@Test
-	public void testReturn_nullableColumn_groupBy() throws SQLException {
+	public void testReturn_nullableColumn_groupBy() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", "v1").execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", "v2").execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("b"), DSL.field("k1"))
-				.values("a2", "b2", "v3")
+				.values("a2", "b2", 345)
 				.execute();
 
 		List<Map<String, ?>> dbStream =
@@ -161,13 +185,56 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		Assertions.assertThat(dbStream)
 				.hasSize(3)
-				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", "v1")))
+				.anySatisfy(
+						m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", BigDecimal.valueOf(0D + 123))))
 				.anySatisfy(m -> Assertions.assertThat((Map) m)
 						.hasSize(2)
 						// TODO We need an option to handle null with a default value
 						.containsEntry("a", null)
-						.containsEntry("k1", "v2"))
-				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", "v3")));
+						.containsEntry("k1", BigDecimal.valueOf(0D + 234)))
+				.anySatisfy(
+						m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", BigDecimal.valueOf(0D + 345))));
 	}
 
+	@Test
+	public void testFieldWithSpace() {
+		dsl.createTableIfNotExists(tableName)
+				.column("with space", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.name("with space")), DSL.field("k1"))
+				.values("a1", 123)
+				.execute();
+
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
+				.filter(ColumnFilter.builder().column("with space").matching("a1").build())
+				.build()).collect(Collectors.toList());
+
+		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+	}
+
+	@Test
+	public void testWholeQuery() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+		measureBag.addMeasure(k1SumSquared);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		ITabularView result =
+				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.keySet().toList()).containsExactly(Map.of());
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
+	}
 }

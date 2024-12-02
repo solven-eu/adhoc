@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,15 +36,21 @@ import java.util.stream.Stream;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.GroupField;
+import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.SelectConditionStep;
 import org.jooq.SelectFieldOrAsterisk;
+import org.jooq.SelectHavingStep;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultDataType;
 
+import eu.solven.adhoc.aggregations.max.MaxAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
+import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
@@ -95,10 +102,19 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
 
-		SelectConditionStep<Record> sqlQuery =
-				makeDsl().select(selectedFields).from(DSL.name(tableName)).where(dbConditions);
+		Collection<GroupField> groupFields = new ArrayList<>();
 
-		if (dbQuery.isExplain()) {
+		{
+			dbQuery.getGroupBy().getGroupedByColumns().stream().map(transcoder::underlying).distinct().forEach(c -> {
+				Field<?> field = DSL.field(DSL.name(c));
+				groupFields.add(DSL.groupingSets(field));
+			});
+		}
+
+		SelectHavingStep<Record> sqlQuery =
+				makeDsl().select(selectedFields).from(DSL.name(tableName)).where(dbConditions).groupBy(groupFields);
+
+		if (dbQuery.isExplain() || dbQuery.isDebug()) {
 			log.info("[EXPLAIN] SQL to db: `{}`", sqlQuery.getSQL(ParamType.INLINED));
 		}
 
@@ -108,29 +124,62 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 			// We could have a fallback, to filter manually when it is not doable by the DB (or we do not know how to
 			// build the proper filter)
 			return true;
-		}).map(row -> {
+		}).<Map<String, ?>>map(row -> {
 			// In case of manual filters, we may have to hide some some columns, needed by the manual filter, but
 			// unexpected by the output stream
-			return transcode(row);
-		});
+			Map<String, ?> transcoded = transcode(row);
+
+			AtomicBoolean oneIsNotNull = new AtomicBoolean(false);
+			dbQuery.getAggregators().stream().distinct().forEach(a -> {
+				Object aggregated = transcoded.get(a.getName());
+				if (aggregated == null) {
+					// We would receive `a=null` even if there is not a single matching row
+					transcoded.remove(a.getName());
+				} else {
+					oneIsNotNull.set(true);
+				}
+			});
+
+			if (oneIsNotNull.get()) {
+				return transcoded;
+			} else {
+				// There is not a single non-null aggregate: discard the whole Map (including groupedBy columns)
+				return Map.of();
+			}
+
+		})
+				// Filter-out the groups which does not have a single aggregatedValue
+				.filter(m -> !m.isEmpty());
 	}
 
 	private Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
 		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		dbQuery.getAggregators()
-				.stream()
-				.map(Aggregator::getColumnName)
-				.map(transcoder::underlying)
-				.distinct()
-				.forEach(c -> selectedFields.add(DSL.field(c)));
+		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
 
 		dbQuery.getGroupBy()
 				.getGroupedByColumns()
 				.stream()
 				.map(transcoder::underlying)
 				.distinct()
-				.forEach(c -> selectedFields.add(DSL.field(c)));
+				.forEach(c -> selectedFields.add(DSL.field(DSL.name(c))));
 		return selectedFields;
+	}
+
+	private SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
+		String aggregationKey = a.getAggregationKey();
+		String columnName = transcoder.underlying(a.getColumnName());
+		Name namedColumn = DSL.name(columnName);
+
+		if (SumAggregator.KEY.equals(aggregationKey)) {
+			Field<Double> field =
+					DSL.field(namedColumn, DefaultDataType.getDataType(makeDsl().dialect(), Double.class));
+			return DSL.sum(field).as(DSL.name(a.getName()));
+		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
+			Field<?> field = DSL.field(namedColumn);
+			return DSL.max(field).as(DSL.name(a.getName()));
+		} else {
+			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
+		}
 	}
 
 	protected Map<String, ?> transcode(Map<String, ?> underlyingMap) {
@@ -141,7 +190,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
-				.map(c -> DSL.field(c).isNotNull())
+				.map(c -> DSL.field(DSL.name(c)).isNotNull())
 				.collect(Collectors.toList());
 
 		return DSL.or(oneNotNullConditions);
@@ -157,7 +206,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 			String column = transcoder.underlying(columnFilter.getColumn());
 
 			Condition condition;
-			final Field<Object> field = DSL.field(column);
+			final Field<Object> field = DSL.field(DSL.name(column));
 			switch (valueMatcher) {
 			case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
 			case InMatcher inMatcher -> {
@@ -172,6 +221,25 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 			}
 			case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
 			case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+			case ComparingMatcher comparingMatcher -> {
+				Object operand = comparingMatcher.getOperand();
+
+				Condition jooqCondition;
+				if (comparingMatcher.isGreaterThan()) {
+					if (comparingMatcher.isMatchIfEqual()) {
+						jooqCondition = field.greaterOrEqual(operand);
+					} else {
+						jooqCondition = field.greaterThan(operand);
+					}
+				} else {
+					if (comparingMatcher.isMatchIfEqual()) {
+						jooqCondition = field.lessOrEqual(operand);
+					} else {
+						jooqCondition = field.lessThan(operand);
+					}
+				}
+				condition = DSL.condition(jooqCondition);
+			}
 			default -> throw new UnsupportedOperationException(
 					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 			}
