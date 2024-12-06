@@ -23,42 +23,19 @@
 package eu.solven.adhoc.database;
 
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.GroupField;
-import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.SelectFieldOrAsterisk;
-import org.jooq.SelectHavingStep;
+import org.jooq.ResultQuery;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
-import org.jooq.impl.DefaultDataType;
 
-import eu.solven.adhoc.aggregations.max.MaxAggregator;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.filters.IAndFilter;
-import eu.solven.adhoc.api.v1.filters.IColumnFilter;
-import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
 import eu.solven.adhoc.query.DatabaseQuery;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -85,168 +62,97 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 	@NonNull
 	final String tableName;
 
+	public DSLContext makeDsl() {
+		return DSL.using(connectionSupplier.get());
+	}
+
+	protected Map<String, ?> transcodeFromDb(IAdhocDatabaseReverseTranscoder transcodingContext,
+			Map<String, ?> underlyingMap) {
+		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
+	}
+
 	@Override
 	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
-		Collection<Condition> dbConditions = new ArrayList<>();
+		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
-		dbConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
+		DSLContext dslContext = makeDsl();
 
-		IAdhocFilter filter = dbQuery.getFilter();
-		if (!filter.isMatchAll()) {
-			if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-				andFilter.getAnd().stream().map(this::toCondition).forEach(dbConditions::add);
-			} else {
-				dbConditions.add(toCondition(filter));
-			}
-		}
+		AdhocJooqSqlDatabaseStreamOpener streamOpener = makeTranscodedStreamOpener(transcodingContext, dslContext);
 
-		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
-
-		Collection<GroupField> groupFields = new ArrayList<>();
-
-		{
-			dbQuery.getGroupBy().getGroupedByColumns().stream().map(transcoder::underlying).distinct().forEach(c -> {
-				Field<?> field = DSL.field(DSL.name(c));
-				groupFields.add(DSL.groupingSets(field));
-			});
-		}
-
-		SelectHavingStep<Record> sqlQuery =
-				makeDsl().select(selectedFields).from(DSL.name(tableName)).where(dbConditions).groupBy(groupFields);
+		ResultQuery<Record> resultQuery = streamOpener.prepareQuery(dbQuery);
 
 		if (dbQuery.isExplain() || dbQuery.isDebug()) {
-			log.info("[EXPLAIN] SQL to db: `{}`", sqlQuery.getSQL(ParamType.INLINED));
+			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
+		}
+		if (dbQuery.isDebug()) {
+			// "column_name",
+			// "column_type",
+			// "null",
+			// "key",
+			// "default",
+			// "extra"
+			Map<Object, Object> columnNameToType =
+					makeDsl().fetchStream("DESCRIBE FROM %s".formatted(DSL.name(tableName)))
+							.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
+
+			log.info("[DEBUG] {}", columnNameToType);
 		}
 
-		Stream<Map<String, ?>> dbStream = sqlQuery.stream().map(Record::intoMap);
+		Stream<Map<String, ?>> dbStream = resultQuery.stream().map(Record::intoMap);
 
 		return dbStream.filter(row -> {
 			// We could have a fallback, to filter manually when it is not doable by the DB (or we do not know how to
 			// build the proper filter)
 			return true;
-		}).<Map<String, ?>>map(row -> {
-			// In case of manual filters, we may have to hide some some columns, needed by the manual filter, but
-			// unexpected by the output stream
-			Map<String, ?> transcoded = transcode(row);
-
-			AtomicBoolean oneIsNotNull = new AtomicBoolean(false);
-			dbQuery.getAggregators().stream().distinct().forEach(a -> {
-				Object aggregated = transcoded.get(a.getName());
-				if (aggregated == null) {
-					// We would receive `a=null` even if there is not a single matching row
-					transcoded.remove(a.getName());
+		}).<Map<String, ?>>map(notTranscoded -> {
+			Map<String, Object> aggregatorValues = new LinkedHashMap<>();
+			dbQuery.getAggregators().forEach(a -> {
+				String aggregatorName = a.getName();
+				Object aggregatedValue = notTranscoded.remove(aggregatorName);
+				if (aggregatedValue == null) {
+					// SQL groupBy returns `a=null` even if there is not a single matching row
+					notTranscoded.remove(aggregatorName);
 				} else {
-					oneIsNotNull.set(true);
+					aggregatorValues.put(aggregatorName, aggregatedValue);
 				}
 			});
 
-			if (oneIsNotNull.get()) {
-				return transcoded;
-			} else {
+			if (aggregatorValues.isEmpty()) {
 				// There is not a single non-null aggregate: discard the whole Map (including groupedBy columns)
 				return Map.of();
-			}
+			} else {
+				// In case of manual filters, we may have to hide some some columns, needed by the manual filter, but
+				// unexpected by the output stream
 
+				// We transcode only groupBy columns, as an aggregator may have a name matching an underlying column
+				Map<String, ?> transcoded = transcodeFromDb(transcodingContext, notTranscoded);
+
+				// ImmutableMap does not accept null value. How should we handle missing value i ngroupBy, when returned
+				// as null by DB?
+				// return ImmutableMap.<String, Object>builderWithExpectedSize(transcoded.size() +
+				// aggregatorValues.size())
+				// .putAll(transcoded)
+				// .putAll(aggregatorValues)
+				// .build();
+
+				Map<String, Object> merged = new LinkedHashMap<>();
+
+				merged.putAll(transcoded);
+				merged.putAll(aggregatorValues);
+				return merged;
+			}
 		})
 				// Filter-out the groups which does not have a single aggregatedValue
 				.filter(m -> !m.isEmpty());
 	}
 
-	private Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
-		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
-
-		dbQuery.getGroupBy()
-				.getGroupedByColumns()
-				.stream()
-				.map(transcoder::underlying)
-				.distinct()
-				.forEach(c -> selectedFields.add(DSL.field(DSL.name(c))));
-		return selectedFields;
+	private AdhocJooqSqlDatabaseStreamOpener makeTranscodedStreamOpener(TranscodingContext transcodingContext,
+			DSLContext dslContext) {
+		return AdhocJooqSqlDatabaseStreamOpener.builder()
+				.transcoder(transcodingContext)
+				.tableName(tableName)
+				.dslContext(dslContext)
+				.build();
 	}
 
-	private SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
-		String aggregationKey = a.getAggregationKey();
-		String columnName = transcoder.underlying(a.getColumnName());
-		Name namedColumn = DSL.name(columnName);
-
-		if (SumAggregator.KEY.equals(aggregationKey)) {
-			Field<Double> field =
-					DSL.field(namedColumn, DefaultDataType.getDataType(makeDsl().dialect(), Double.class));
-			return DSL.sum(field).as(DSL.name(a.getName()));
-		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
-			Field<?> field = DSL.field(namedColumn);
-			return DSL.max(field).as(DSL.name(a.getName()));
-		} else {
-			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
-		}
-	}
-
-	protected Map<String, ?> transcode(Map<String, ?> underlyingMap) {
-		return AdhocTranscodingHelper.transcode(transcoder, underlyingMap);
-	}
-
-	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
-		// We're interested in a row if at least one measure is not null
-		List<Condition> oneNotNullConditions = aggregators.stream()
-				.map(Aggregator::getColumnName)
-				.map(c -> DSL.field(DSL.name(c)).isNotNull())
-				.collect(Collectors.toList());
-
-		return DSL.or(oneNotNullConditions);
-	}
-
-	public DSLContext makeDsl() {
-		return DSL.using(connectionSupplier.get());
-	}
-
-	protected Condition toCondition(IAdhocFilter filter) {
-		if (filter.isColumnMatcher() && filter instanceof IColumnFilter columnFilter) {
-			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-			String column = transcoder.underlying(columnFilter.getColumn());
-
-			Condition condition;
-			final Field<Object> field = DSL.field(DSL.name(column));
-			switch (valueMatcher) {
-			case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
-			case InMatcher inMatcher -> {
-				Set<?> operands = inMatcher.getOperands();
-
-				if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
-					// Please fill a ticket, various such cases could be handled
-					throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
-				}
-
-				condition = DSL.condition(field.in(operands));
-			}
-			case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
-			case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
-			case ComparingMatcher comparingMatcher -> {
-				Object operand = comparingMatcher.getOperand();
-
-				Condition jooqCondition;
-				if (comparingMatcher.isGreaterThan()) {
-					if (comparingMatcher.isMatchIfEqual()) {
-						jooqCondition = field.greaterOrEqual(operand);
-					} else {
-						jooqCondition = field.greaterThan(operand);
-					}
-				} else {
-					if (comparingMatcher.isMatchIfEqual()) {
-						jooqCondition = field.lessOrEqual(operand);
-					} else {
-						jooqCondition = field.lessThan(operand);
-					}
-				}
-				condition = DSL.condition(jooqCondition);
-			}
-			default -> throw new UnsupportedOperationException(
-					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-			}
-			return condition;
-		} else {
-			throw new UnsupportedOperationException(
-					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-		}
-	}
 }

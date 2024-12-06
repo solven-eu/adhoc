@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.database;
 
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -33,7 +35,7 @@ import lombok.NonNull;
  *
  */
 @Builder
-public class PrefixTranscoder implements IAdhocDatabaseTranscoder {
+public class PrefixTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
 	// If empty, it is like the IdentityTranscoder
 	@NonNull
 	@Default
@@ -45,9 +47,10 @@ public class PrefixTranscoder implements IAdhocDatabaseTranscoder {
 	}
 
 	@Override
-	public String queried(String underlying) {
+	public Set<String> queried(String underlying) {
 		if (underlying.startsWith(prefix)) {
-			return underlying.substring(prefix.length());
+			String queried = underlying.substring(prefix.length());
+			return Set.of(queried);
 		} else {
 			throw new IllegalArgumentException(
 					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));

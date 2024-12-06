@@ -27,7 +27,7 @@ import java.util.Arrays;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.ExpressionCombination;
-import eu.solven.adhoc.aggregations.max.MaxTransformation;
+import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.GroupByColumns;
@@ -72,7 +72,7 @@ public interface IAdhocTestConstants {
 			.name("sum_maxK1K2ByA")
 			.underlyings(Arrays.asList("k1", "k2"))
 			.groupBy(GroupByColumns.of("a"))
-			.combinationKey(MaxTransformation.KEY)
+			.combinationKey(MaxCombination.KEY)
 			.aggregationKey(SumAggregator.KEY)
 			.build();
 

@@ -237,4 +237,84 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
 	}
+
+	// https://stackoverflow.com/questions/361747/what-does-the-symbol-do-in-sql
+	@Test
+	public void testAdhocQuery_FilterA1_groupByB_columnWithAtSymbol() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a@a@a", SQLDataType.VARCHAR)
+				.column("b@b@b", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName),
+				DSL.field(DSL.name("a@a@a")),
+				DSL.field(DSL.name("b@b@b")),
+				DSL.field("k1")).values("a1", "b1", 123).execute();
+		dsl.insertInto(DSL.table(tableName),
+				DSL.field(DSL.name("a@a@a")),
+				DSL.field(DSL.name("b@b@b")),
+				DSL.field("k1")).values("a2", "b2", 234).execute();
+		dsl.insertInto(DSL.table(tableName),
+				DSL.field(DSL.name("a@a@a")),
+				DSL.field(DSL.name("b@b@b")),
+				DSL.field("k1")).values("a1", "b2", 345).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+		measureBag.addMeasure(k1SumSquared);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		ITabularView result = aqe.execute(AdhocQuery.builder()
+				.measure(k1SumSquared.getName())
+				.andFilter("a@a@a", "a1")
+				.groupByColumns("b@b@b")
+				.debug(true)
+				.build(), jooqDb);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
+				.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));
+	}
+
+	@Test
+	public void testFilterUnknownColumn() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		Assertions.assertThatThrownBy(() -> aqe.execute(
+				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("b", "a1").debug(true).build(),
+				jooqDb)).isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	public void testGroupByUnknownColumn() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		Assertions.assertThatThrownBy(() -> aqe
+				.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByColumns("b").debug(true).build(), jooqDb))
+				.isInstanceOf(DataAccessException.class);
+	}
 }

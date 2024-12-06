@@ -86,7 +86,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@NonNull
 	@Default
-	final IOperatorsFactory transformationFactory = new StandardOperatorsFactory();
+	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
 	final AdhocMeasureBag measureBag;
@@ -308,8 +308,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						}).collect(Collectors.toList());
 
 				CoordinatesToValues coordinatesToValues =
-						hasUnderlyingMeasures.wrapNode(transformationFactory, queryStep)
-								.produceOutputColumn(underlyings);
+						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep).produceOutputColumn(underlyings);
 
 				eventBus.post(MeasuratorIsCompleted.builder()
 						.measure(measure)
@@ -348,7 +347,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			Stream<Map<String, ?>> stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<Map<String, ?>> coordinatesToAgg = new AggregatingMeasurators<>(transformationFactory);
+		AggregatingMeasurators<Map<String, ?>> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
 
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
@@ -523,7 +522,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures combinator) {
-				for (AdhocQueryStep underlyingStep : combinator.wrapNode(transformationFactory, adhocSubQuery)
+				for (AdhocQueryStep underlyingStep : combinator.wrapNode(operatorsFactory, adhocSubQuery)
 						.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
 					IMeasure notRefMeasure = resolveIfRef(underlyingStep.getMeasure());

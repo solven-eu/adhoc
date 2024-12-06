@@ -42,7 +42,7 @@ import lombok.Value;
  * A Database query is dedicated to querying external database.
  * 
  * @author Benoit Lacelle
- *
+ * @see eu.solven.adhoc.database.IAdhocDatabaseTranscoder
  */
 @Value
 @AllArgsConstructor

@@ -36,7 +36,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
-import eu.solven.adhoc.aggregations.max.MaxTransformation;
+import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -107,7 +107,7 @@ public class TestAggregations_Long extends ADagTest {
 		amb.addMeasure(Combinator.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(MaxTransformation.KEY)
+				.combinationKey(MaxCombination.KEY)
 				.build());
 
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());

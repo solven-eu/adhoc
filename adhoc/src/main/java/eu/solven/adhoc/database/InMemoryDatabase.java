@@ -24,6 +24,7 @@ package eu.solven.adhoc.database;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +36,13 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A simple {@link IAdhocDatabaseWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not
+ * execute groupBys, nor it handles calculated columns (over SQL expressions).
+ */
+@Slf4j
 @Builder
 public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 
@@ -56,23 +63,36 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 		return rows.stream();
 	}
 
-	protected Map<String, ?> transcode(Map<String, ?> underlyingMap) {
-		return AdhocTranscodingHelper.transcode(transcoder, underlyingMap);
+	protected Map<String, ?> transcodeFromDb(IAdhocDatabaseReverseTranscoder transcodingContext,
+			Map<String, ?> underlyingMap) {
+		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
 	}
 
 	@Override
 	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
+		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
+
+		Set<String> queriedColumns = new HashSet<>();
+		queriedColumns.addAll(dbQuery.getGroupBy().getGroupedByColumns());
+		dbQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(queriedColumns::add);
+
+		Set<String> underlyingColumns = new HashSet<>();
+		queriedColumns.forEach(keyToKeep -> {
+			// We need to call `transcodingContext.underlying` to register the reverse mapping
+			String underlying = transcodingContext.underlying(keyToKeep);
+			log.debug("{} -> {}", keyToKeep, underlying);
+			underlyingColumns.add(underlying);
+		});
+
 		return this.stream().filter(row -> {
-			return FilterHelpers.match(transcoder, dbQuery.getFilter(), row);
+			return FilterHelpers.match(transcodingContext, dbQuery.getFilter(), row);
 		}).map(row -> {
-			// BEWARE Should we filter not selected columns?
-			Set<String> keysToKeep = new HashSet<>();
+			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);
 
-			keysToKeep.addAll(dbQuery.getGroupBy().getGroupedByColumns());
+			// Discard the column not expressed by the dbQuery
+			withSelectedColumns.keySet().retainAll(underlyingColumns);
 
-			dbQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(keysToKeep::add);
-
-			return row;
-		}).map(this::transcode);
+			return withSelectedColumns;
+		}).map(row -> transcodeFromDb(transcodingContext, row));
 	}
 }

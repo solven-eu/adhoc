@@ -22,31 +22,26 @@
  */
 package eu.solven.adhoc.database;
 
-/**
- * Holds the logic mapping from the columns names in {@link eu.solven.adhoc.api.v1.IAdhocQuery} and columnNames in
- * {@link IAdhocDatabaseWrapper}.
- * <p>
- * This enables re-using a {@link eu.solven.adhoc.dag.AdhocMeasureBag} for different {@link IAdhocDatabaseWrapper}.
- *
- * @see TranscodingContext
- * @see IAdhocDatabaseReverseTranscoder
- *
- */
-public interface IAdhocDatabaseTranscoder {
-	/**
-	 *
-	 * @param queried
-	 *            a column name typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
-	 * @return the equivalent underlying column name, typically used by the database. If null, it means the column maps
-	 *         to itself.
-	 */
-	String underlying(String queried);
+import java.util.Map;
 
-	/**
-	 *
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the equivalent queried column name, typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
-	 */
-	// String queried(String underlying);
+import lombok.Builder;
+import lombok.Singular;
+
+/**
+ * An {@link IAdhocDatabaseTranscoder} based on a (not-necessarily bijective) mapping.
+ */
+@Builder
+public class MapDatabaseTranscoder implements IAdhocDatabaseTranscoder {
+	@Singular
+	final Map<String, String> queriedToUnderlyings;
+
+	@Override
+	public String underlying(String queried) {
+		return queriedToUnderlyings.get(queried);
+	}
+
+	// @Override
+	// public String queried(String underlying) {
+	// return queriedToUnderlying.inverse().get(underlying);
+	// }
 }

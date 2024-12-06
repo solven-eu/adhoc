@@ -25,6 +25,7 @@ package eu.solven.adhoc.dag;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.api.v1.IHasCustomMarker;
 import eu.solven.adhoc.api.v1.IIsDebugable;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.transformers.IMeasure;
@@ -44,7 +45,7 @@ import lombok.Value;
 @Value
 @Builder
 @EqualsAndHashCode(exclude = "debug")
-public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable {
+public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IHasCustomMarker {
 	@NonNull
 	IMeasure measure;
 	@NonNull
@@ -56,7 +57,7 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable {
 	boolean debug = false;
 
 	// This property is transported down to the DatabaseQuery
-	Object custom;
+	Object customMarker;
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
 		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());

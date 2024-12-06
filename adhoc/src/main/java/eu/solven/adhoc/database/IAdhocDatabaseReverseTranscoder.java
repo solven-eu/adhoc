@@ -22,31 +22,18 @@
  */
 package eu.solven.adhoc.database;
 
+import java.util.Set;
+
 /**
- * Holds the logic mapping from the columns names in {@link eu.solven.adhoc.api.v1.IAdhocQuery} and columnNames in
- * {@link IAdhocDatabaseWrapper}.
- * <p>
- * This enables re-using a {@link eu.solven.adhoc.dag.AdhocMeasureBag} for different {@link IAdhocDatabaseWrapper}.
- *
- * @see TranscodingContext
- * @see IAdhocDatabaseReverseTranscoder
- *
+ * This reverse the use of {@link IAdhocDatabaseTranscoder}. It is useful to materialize ony the columns which has been
+ * effectively queried.
  */
-public interface IAdhocDatabaseTranscoder {
-	/**
-	 *
-	 * @param queried
-	 *            a column name typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
-	 * @return the equivalent underlying column name, typically used by the database. If null, it means the column maps
-	 *         to itself.
-	 */
-	String underlying(String queried);
+public interface IAdhocDatabaseReverseTranscoder {
 
 	/**
-	 *
 	 * @param underlying
 	 *            a column name typically used by the database.
-	 * @return the equivalent queried column name, typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
+	 * @return the queried columns which were mapping to given underlying.
 	 */
-	// String queried(String underlying);
+	Set<String> queried(String underlying);
 }

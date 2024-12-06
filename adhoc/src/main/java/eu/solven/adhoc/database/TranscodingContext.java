@@ -24,19 +24,42 @@ package eu.solven.adhoc.database;
 
 import java.util.Set;
 
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocDatabaseWrapper}. Then, the transcoding
- * is the identity.
+ * Given an {@link IAdhocDatabaseTranscoder}, this will remember how each column has been transcoded. It serves multiple
+ * purposes. The first one is not to require {@link IAdhocDatabaseTranscoder} to express a bi-directional mapping. The
+ * second main purpose is the reverse mapping may be ambiguous, when multiple queries columns could be served by the
+ * same underlying column.
  */
-public class IdentityTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+@Builder
+@Slf4j
+public class TranscodingContext implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
+
+	@Builder.Default
+	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
+
 	@Override
 	public String underlying(String queried) {
-		return queried;
+		String underlyingColumn = transcoder.underlying(queried);
+		if (underlyingColumn == null) {
+			underlyingColumn = queried;
+		}
+
+		if (underlyingToQueried.put(underlyingColumn, queried)) {
+			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
+		}
+
+		return underlyingColumn;
 	}
 
 	@Override
 	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
+		return underlyingToQueried.get(underlying);
 	}
 }

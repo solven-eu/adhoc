@@ -25,7 +25,7 @@ package eu.solven.adhoc.aggregations;
 import java.util.Map;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
-import eu.solven.adhoc.aggregations.max.MaxTransformation;
+import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 
@@ -37,8 +37,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case SumCombination.KEY: {
 			yield new SumCombination();
 		}
-		case MaxTransformation.KEY: {
-			yield new MaxTransformation();
+		case MaxCombination.KEY: {
+			yield new MaxCombination();
 		}
 		case DivideCombination.KEY: {
 			yield new DivideCombination();

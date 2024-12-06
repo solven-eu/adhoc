@@ -24,6 +24,7 @@ package eu.solven.adhoc.database;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,22 +38,37 @@ public class AdhocTranscodingHelper {
 		// hidden
 	}
 
-	public static Map<String, ?> transcode(IAdhocDatabaseTranscoder transcoder, Map<String, ?> underlyingMap) {
+	public static Map<String, ?> transcode(IAdhocDatabaseReverseTranscoder reverseTranscoder,
+			Map<String, ?> underlyingMap) {
 		Map<String, Object> transcoded = new HashMap<>();
 
 		underlyingMap.forEach((underlyingKey, v) -> {
-			String queriedKey = transcoder.queried(underlyingKey);
-			Object replaced = transcoded.put(queriedKey, v);
+			Set<String> queriedKeys = reverseTranscoder.queried(underlyingKey);
 
-			if (replaced != null && !replaced.equals(v)) {
-				log.warn(
-						"Transcoding led to an ambiguity as multiple underlyingKeys has queriedKey={} mapping to values {} and {}",
-						queriedKey,
-						replaced,
-						v);
+			if (queriedKeys.isEmpty()) {
+				// This output column was not requested, but it has been received. The DB returns unexpected columns?
+				String queriedKey = underlyingKey;
+				insertTranscoded(v, queriedKey, transcoded);
+			} else {
+				queriedKeys.forEach(queriedKey -> {
+					insertTranscoded(v, queriedKey, transcoded);
+				});
 			}
 		});
 
 		return transcoded;
+	}
+
+	private static void insertTranscoded(Object v, String queriedKey, Map<String, Object> transcoded) {
+		Object replaced = transcoded.put(queriedKey, v);
+
+		if (replaced != null && !replaced.equals(v)) {
+			// BEWARE Should we drop a static method as this may be customized?
+			log.warn(
+					"Transcoding led to an ambiguity as multiple underlyingKeys has queriedKey={} mapping to values {} and {}",
+					queriedKey,
+					replaced,
+					v);
+		}
 	}
 }

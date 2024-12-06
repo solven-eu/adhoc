@@ -22,31 +22,15 @@
  */
 package eu.solven.adhoc.api.v1;
 
-import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
-
-import eu.solven.adhoc.transformers.ReferencedMeasure;
-
 /**
- * A aggregation query. It is configured by:
- * 
- * - a filtering condition - axes along which the result is sliced - aggregations accumulating some measures
+ * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
+ * {@link eu.solven.adhoc.dag.AdhocQueryStep}.
+ *
+ * For instance, in ActivePivot/Atoti, this could be an IContextValues
  * 
  * @author Benoit Lacelle
  *
  */
-@Deprecated(since = "Unclear use of Lambda for properties")
-public interface IDynamicAdhocQuery extends IWhereGroupbyAdhocQuery, IHasRefMeasures {
-
-	/**
-	 * 
-	 * @param hasAggregations
-	 * @return a new {@link IAdhocQuery} based on input {@link IHasRefMeasures}
-	 */
-	IDynamicAdhocQuery addAggregations(IHasRefMeasures hasAggregations);
-
-	default IDynamicAdhocQuery addAggregations(ReferencedMeasure first, ReferencedMeasure... rest) {
-		return addAggregations(() -> Lists.asList(first, rest).stream().collect(Collectors.toSet()));
-	}
+public interface IHasCustomMarker {
+	Object getCustomMarker();
 }

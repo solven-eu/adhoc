@@ -28,7 +28,10 @@ import java.util.Objects;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.ICombination;
 
-public class MaxTransformation implements ICombination {
+/**
+ * Return the maximum amongst the underlying values.
+ */
+public class MaxCombination implements ICombination {
 
 	public static final String KEY = "MAX";
 

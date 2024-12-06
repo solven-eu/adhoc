@@ -212,10 +212,9 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)));
 	}
 
-
 	// https://stackoverflow.com/questions/361747/what-does-the-symbol-do-in-sql
 	@Test
-	public void testAdhocQuery_FilterA1_groupByB_columnWithArobas() {
+	public void testAdhocQuery_FilterA1_groupByB_columnWithAtSymbol() {
 		dsl.execute("""
 				CREATE TABLE someTableName AS
 					SELECT 'a1' AS "a@a@a", 'b1' AS "b@b@b", 123 AS k1 UNION ALL
@@ -232,9 +231,12 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		AdhocQueryEngine aqe =
 				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
 
-		ITabularView result = aqe.execute(
-				AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a@a@a", "a1").groupByColumns("b@b@b").debug(true).build(),
-				jooqDb);
+		ITabularView result = aqe.execute(AdhocQuery.builder()
+				.measure(k1SumSquared.getName())
+				.andFilter("a@a@a", "a1")
+				.groupByColumns("b@b@b")
+				.debug(true)
+				.build(), jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
