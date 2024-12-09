@@ -62,7 +62,7 @@ import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
@@ -318,7 +318,7 @@ public class ActivePivotMeasuresToAdhoc {
 				.name(measure.getName())
 				.underlyings(underlyingNames)
 				.combinationKey(measure.getPluginKey())
-				.groupBy(GroupByColumns.of(leafLevels))
+				.groupBy(GroupByColumns.named(leafLevels))
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregator.KEY));
 

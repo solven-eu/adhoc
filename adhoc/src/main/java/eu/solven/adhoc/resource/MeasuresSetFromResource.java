@@ -49,7 +49,8 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
@@ -92,42 +93,43 @@ public class MeasuresSetFromResource {
 	}
 
 	/**
-     * @param measure never empty;
-     * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
-     * measures. The explicit measure is always first in the output list.
-     */
-    public List<IMeasure> makeMeasure(Map<String, ?> measure) {
-        List<IMeasure> measures = new ArrayList<>();
+	 * @param measure
+	 *            never empty;
+	 * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
+	 *         measures. The explicit measure is always first in the output list.
+	 */
+	public List<IMeasure> makeMeasure(Map<String, ?> measure) {
+		List<IMeasure> measures = new ArrayList<>();
 
-        String type = getStringParameter(measure, "type");
-        Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
-        String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
+		String type = getStringParameter(measure, "type");
+		Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
+		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
-        IMeasure asMeasure = switch (type) {
-            case "aggregator": {
-                yield makeAggregator(measure, name);
-            }
-            case "combinator": {
-                yield makeCombinator(measure, measures, name);
-            }
-            case "filtrator": {
-                yield makeFiltrator(measure, measures, name);
-            }
-            case "bucketor": {
-                yield makeBucketor(measure, measures, name);
-            }
-            case "dispatchor": {
-                yield makeDispatchor(measure, measures, name);
-            }
-            default:
-                yield onUnknownType(type, measure, measures, name);
-        };
+		IMeasure asMeasure = switch (type) {
+		case "aggregator": {
+			yield makeAggregator(measure, name);
+		}
+		case "combinator": {
+			yield makeCombinator(measure, measures, name);
+		}
+		case "filtrator": {
+			yield makeFiltrator(measure, measures, name);
+		}
+		case "bucketor": {
+			yield makeBucketor(measure, measures, name);
+		}
+		case "dispatchor": {
+			yield makeDispatchor(measure, measures, name);
+		}
+		default:
+			yield onUnknownType(type, measure, measures, name);
+		};
 
-        // The explicit measure has to be first in the output List
-        measures.add(0, asMeasure);
+		// The explicit measure has to be first in the output List
+		measures.add(0, asMeasure);
 
-        return measures;
-    }
+		return measures;
+	}
 
 	/**
 	 * @param type
@@ -185,7 +187,15 @@ public class MeasuresSetFromResource {
 
 	private @NonNull IAdhocGroupBy toGroupBy(Object rawGroupBy) {
 		if (rawGroupBy instanceof List<?> wildcards) {
-			return GroupByColumns.of(wildcards.stream().map(Object::toString).toList());
+			List<ReferencedColumn> adhocColumns = wildcards.stream().map(columnDefinition -> {
+				if (columnDefinition instanceof String asString) {
+					return ReferencedColumn.ref(asString);
+				} else {
+					// CalculatedColumn
+					throw new UnsupportedOperationException("TODO");
+				}
+			}).toList();
+			return GroupByColumns.of(adhocColumns);
 		} else {
 			throw new UnsupportedOperationException(
 					"TODO: manage %s".formatted(PepperLogHelper.getObjectAndClass(rawGroupBy)));

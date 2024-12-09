@@ -24,6 +24,7 @@ package eu.solven.adhoc.database;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,9 +34,13 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.GroupField;
 import org.jooq.Name;
+import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SelectFieldOrAsterisk;
+import org.jooq.SelectHavingStep;
+import org.jooq.SortField;
+import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 
@@ -50,7 +55,10 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
+import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -92,30 +100,81 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 		}
 
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
+		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
 
-		Collection<GroupField> groupFields = new ArrayList<>();
+		SelectHavingStep<Record> select =
+				dslContext.select(selectedFields).from(DSL.name(tableName)).where(dbConditions).groupBy(groupFields);
 
-		{
-			dbQuery.getGroupBy().getGroupedByColumns().stream().map(transcoder::underlying).distinct().forEach(c -> {
-				Field<?> field = DSL.field(DSL.name(c));
-				groupFields.add(DSL.groupingSets(field));
-			});
+		ResultQuery<Record> resultQuery;
+		if (dbQuery.getTopClause().isPresent()) {
+			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(dbQuery);
+
+			resultQuery = select.orderBy(optOrderFields).limit(dbQuery.getTopClause().getLimit());
+		} else {
+			resultQuery = select;
 		}
 
-		return dslContext.select(selectedFields).from(DSL.name(tableName)).where(dbConditions).groupBy(groupFields);
+		if (dbQuery.isExplain() || dbQuery.isDebug()) {
+			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
+		}
+
+		return resultQuery;
 	}
 
 	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
 		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
 
-		dbQuery.getGroupBy()
-				.getGroupedByColumns()
-				.stream()
-				.map(transcoder::underlying)
-				.distinct()
-				.forEach(c -> selectedFields.add(DSL.field(DSL.name(c))));
+		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+			Field<Object> field = columnAsField(column);
+			selectedFields.add(field);
+		});
 		return selectedFields;
+	}
+
+	protected Field<Object> columnAsField(IAdhocColumn column) {
+		String columnName = column.getColumn();
+		String transcodedName = transcoder.underlying(columnName);
+		Field<Object> field;
+
+		if (column instanceof IHasSqlExpression hasSql) {
+			// TODO How could we transcode column referred by the SQL?
+			// Should we add named columns from transcoder?
+			String sql = hasSql.getSql();
+			field = DSL.field(sql).as(columnName);
+		} else {
+			field = DSL.field(DSL.name(transcodedName)).as(columnName);
+		}
+		return field;
+	}
+
+	protected Collection<GroupField> makeGroupingFields(DatabaseQuery dbQuery) {
+		Collection<Field<Object>> groupedFields = new ArrayList<>();
+
+		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+			Field<Object> field = columnAsField(column);
+			groupedFields.add(field);
+		});
+
+		return Collections.singleton(DSL.groupingSets(groupedFields));
+	}
+
+	private List<? extends OrderField<?>> getOptionalOrders(DatabaseQuery dbQuery) {
+		AdhocTopClause topClause = dbQuery.getTopClause();
+		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
+			Field<Object> field = columnAsField(c);
+
+			SortField<Object> desc;
+			if (topClause.isDesc()) {
+				desc = field.desc();
+			} else {
+				desc = field.asc();
+			}
+
+			return desc;
+		}).toList();
+
+		return columns;
 	}
 
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
@@ -195,4 +254,5 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
 	}
+
 }

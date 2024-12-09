@@ -20,26 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.database.sql;
 
 import java.sql.Connection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultDataType;
 
+import eu.solven.adhoc.aggregations.max.MaxAggregator;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.database.AdhocJooqSqlDatabaseStreamOpener;
+import eu.solven.adhoc.database.AdhocTranscodingHelper;
+import eu.solven.adhoc.database.IAdhocDatabaseReverseTranscoder;
+import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IdentityTranscoder;
+import eu.solven.adhoc.database.TranscodingContext;
 import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.transformers.Aggregator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -47,8 +60,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@RequiredArgsConstructor
-@Builder
+// @RequiredArgsConstructor
+@SuperBuilder
 @Slf4j
 public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 	@Builder.Default
@@ -57,13 +70,13 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
 
 	@NonNull
-	final Supplier<Connection> connectionSupplier;
+	DSLSupplier dslSupplier;
 
 	@NonNull
 	final String tableName;
 
 	public DSLContext makeDsl() {
-		return DSL.using(connectionSupplier.get());
+		return dslSupplier.getDSLContext();
 	}
 
 	protected Map<String, ?> transcodeFromDb(IAdhocDatabaseReverseTranscoder transcodingContext,
@@ -85,20 +98,10 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
 		}
 		if (dbQuery.isDebug()) {
-			// "column_name",
-			// "column_type",
-			// "null",
-			// "key",
-			// "default",
-			// "extra"
-			Map<Object, Object> columnNameToType =
-					makeDsl().fetchStream("DESCRIBE FROM %s".formatted(DSL.name(tableName)))
-							.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
-
-			log.info("[DEBUG] {}", columnNameToType);
+			debugResultQuery();
 		}
 
-		Stream<Map<String, ?>> dbStream = resultQuery.stream().map(Record::intoMap);
+		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
 
 		return dbStream.filter(row -> {
 			// We could have a fallback, to filter manually when it is not doable by the DB (or we do not know how to
@@ -146,6 +149,19 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 				.filter(m -> !m.isEmpty());
 	}
 
+	protected void debugResultQuery() {
+		// "column_name",
+		// "column_type",
+		// "null",
+		// "key",
+		// "default",
+		// "extra"
+		Map<Object, Object> columnNameToType = makeDsl().fetchStream("DESCRIBE FROM %s".formatted(DSL.name(tableName)))
+				.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
+
+		log.info("[DEBUG] {}", columnNameToType);
+	}
+
 	private AdhocJooqSqlDatabaseStreamOpener makeTranscodedStreamOpener(TranscodingContext transcodingContext,
 			DSLContext dslContext) {
 		return AdhocJooqSqlDatabaseStreamOpener.builder()
@@ -155,4 +171,24 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 				.build();
 	}
 
+	protected Stream<Map<String, ?>> toMapStream(ResultQuery<Record> sqlQuery) {
+		return sqlQuery.stream().map(Record::intoMap);
+	}
+
+	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
+		String aggregationKey = a.getAggregationKey();
+		String columnName = transcoder.underlying(a.getColumnName());
+		Name namedColumn = DSL.name(columnName);
+
+		if (SumAggregator.KEY.equals(aggregationKey)) {
+			Field<Double> field =
+					DSL.field(namedColumn, DefaultDataType.getDataType(makeDsl().dialect(), Double.class));
+			return DSL.sum(field).as(DSL.name(a.getName()));
+		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
+			Field<?> field = DSL.field(namedColumn);
+			return DSL.max(field).as(DSL.name(a.getName()));
+		} else {
+			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
+		}
+	}
 }

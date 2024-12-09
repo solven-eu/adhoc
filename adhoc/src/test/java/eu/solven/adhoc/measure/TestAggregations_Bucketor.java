@@ -38,7 +38,7 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 
@@ -81,7 +81,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("a"))
+				.groupBy(GroupByColumns.named("a"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -106,7 +106,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("a", "b"))
+				.groupBy(GroupByColumns.named("a", "b"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -131,7 +131,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2ByA")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("a"))
+				.groupBy(GroupByColumns.named("a"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -157,7 +157,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("a", "b", "unknown"))
+				.groupBy(GroupByColumns.named("a", "b", "unknown"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -180,7 +180,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("a"))
+				.groupBy(GroupByColumns.named("a"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.build());
@@ -205,7 +205,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.of("b"))
+				.groupBy(GroupByColumns.named("b"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregator.KEY)
 				.tag("debug")

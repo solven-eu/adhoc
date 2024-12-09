@@ -51,7 +51,7 @@ import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
@@ -145,7 +145,7 @@ public class TestActivePivotMeasuresToAdhoc {
 								.name("someLeafMeasure")
 								.aggregationKey("MAX")
 								.combinationKey(LeafIdentityPostProcessor.TYPE)
-								.groupBy(GroupByColumns.of("lvl1", "lvl0"))
+								.groupBy(GroupByColumns.named("lvl1", "lvl0"))
 								.build())
 				.containsEntry("someLevelFilteringMeasure",
 						Filtrator.builder()

@@ -23,8 +23,9 @@
 package eu.solven.adhoc.api.v1;
 
 import java.util.Collections;
-import java.util.NavigableSet;
+import java.util.NavigableMap;
 
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import lombok.ToString;
 
 @ToString
@@ -36,8 +37,8 @@ public class GrandTotal implements IAdhocGroupBy {
 	}
 
 	@Override
-	public NavigableSet<String> getGroupedByColumns() {
-		return Collections.emptyNavigableSet();
+	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+		return Collections.emptyNavigableMap();
 	}
 
 }

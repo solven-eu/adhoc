@@ -32,8 +32,10 @@ import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.query.GroupByColumns;
 import eu.solven.adhoc.query.MeasurelessQuery;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.pepper.mappath.MapPathGet;
 
 public class LinearDecomposition implements IDecomposition {
@@ -131,12 +133,12 @@ public class LinearDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<String> allGroupBys = new HashSet<>();
-		allGroupBys.addAll(step.getGroupBy().getGroupedByColumns());
-		allGroupBys.remove(outputColumn);
+		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
+		allGroupBys.removeIf(c -> c.getColumn().equals(outputColumn));
 
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
-		allGroupBys.add(inputColumn);
+		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
 		return Collections.singletonList(
 				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(GroupByColumns.of(allGroupBys)).build());

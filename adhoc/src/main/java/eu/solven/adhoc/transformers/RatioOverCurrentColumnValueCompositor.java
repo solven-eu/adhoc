@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import eu.solven.adhoc.aggregations.DivideCombination;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * This defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures. The intermediate
@@ -50,7 +50,7 @@ public class RatioOverCurrentColumnValueCompositor {
 				.addMeasure(Bucketor.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
-						.groupBy(GroupByColumns.of(column))
+						.groupBy(GroupByColumns.named(column))
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this filters only country

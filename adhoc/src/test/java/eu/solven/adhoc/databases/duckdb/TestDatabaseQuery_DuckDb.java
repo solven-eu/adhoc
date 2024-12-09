@@ -45,10 +45,11 @@ import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
@@ -68,8 +69,10 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqSqlDatabaseWrapper jooqDb =
-			AdhocJooqSqlDatabaseWrapper.builder().connectionSupplier(() -> dbConn).tableName(tableName).build();
+	AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
+			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+			.tableName(tableName)
+			.build();
 
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();
@@ -180,7 +183,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream =
-				jooqDb.openDbStream(DatabaseQuery.edit(qK1).groupBy(GroupByColumns.of("a")).build())
+				jooqDb.openDbStream(DatabaseQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build())
 						.collect(Collectors.toList());
 
 		Assertions.assertThat(dbStream)

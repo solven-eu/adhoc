@@ -20,45 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.database.sql;
 
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
+import java.sql.Connection;
+import java.util.function.Supplier;
 
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+
+import lombok.NonNull;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}.
+ * Helps building a proper {@link DSLContext}, typically to {@link AdhocJooqSqlDatabaseWrapper}.
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocGroupBy {
-	IAdhocGroupBy GRAND_TOTAL = new GrandTotal();
+public interface DSLSupplier {
+	DSLContext getDSLContext();
 
-	/**
-	 * If true, there is not a single groupBy
-	 * 
-	 * @return
-	 */
-	default boolean isGrandTotal() {
-		return getGroupedByColumns().isEmpty();
+	static DSLSupplier fromConnection(Supplier<Connection> connectionSupplier) {
+		return () -> DSL.using(connectionSupplier.get());
 	}
 
-	/**
-	 * Some of these columns may not be actual underlying columns, but computed given some logic. Consider using
-	 * {@link #getNameToColumn()}.
-	 * 
-	 * @return the name of the groupBy when the input and output columns are identical.
-	 */
-	default NavigableSet<String> getGroupedByColumns() {
-		return getNameToColumn().navigableKeySet();
+	static @NonNull DSLSupplier fromDialect(SQLDialect sqlDialect) {
+		return () -> DSL.using(sqlDialect);
 	}
-
-	/**
-	 * 
-	 * @return the mapping from the groupedBy column to the definition of given column.
-	 */
-	NavigableMap<String, IAdhocColumn> getNameToColumn();
 }

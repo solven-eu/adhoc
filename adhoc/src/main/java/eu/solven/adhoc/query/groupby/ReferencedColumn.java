@@ -20,45 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.query.groupby;
 
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import lombok.Builder;
+import lombok.Value;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}.
+ * A simple column, explicitly referred.
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocGroupBy {
-	IAdhocGroupBy GRAND_TOTAL = new GrandTotal();
+@Builder
+@Value
+public class ReferencedColumn implements IAdhocColumn {
+	String column;
 
-	/**
-	 * If true, there is not a single groupBy
-	 * 
-	 * @return
-	 */
-	default boolean isGrandTotal() {
-		return getGroupedByColumns().isEmpty();
+	@Override
+	public String getColumn() {
+		return column;
 	}
 
-	/**
-	 * Some of these columns may not be actual underlying columns, but computed given some logic. Consider using
-	 * {@link #getNameToColumn()}.
-	 * 
-	 * @return the name of the groupBy when the input and output columns are identical.
-	 */
-	default NavigableSet<String> getGroupedByColumns() {
-		return getNameToColumn().navigableKeySet();
+	public static ReferencedColumn ref(String column) {
+		return ReferencedColumn.builder().column(column).build();
 	}
-
-	/**
-	 * 
-	 * @return the mapping from the groupedBy column to the definition of given column.
-	 */
-	NavigableMap<String, IAdhocColumn> getNameToColumn();
 }

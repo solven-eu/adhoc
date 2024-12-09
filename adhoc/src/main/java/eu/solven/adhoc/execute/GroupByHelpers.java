@@ -22,25 +22,26 @@
  */
 package eu.solven.adhoc.execute;
 
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import lombok.NonNull;
 
 public class GroupByHelpers {
 
 	public static IAdhocGroupBy union(IAdhocGroupBy left, @NonNull IAdhocGroupBy right) {
-		NavigableSet<String> union = new TreeSet<>();
+		Set<IAdhocColumn> union = new HashSet<>();
 
-		union.addAll(left.getGroupedByColumns());
-		union.addAll(right.getGroupedByColumns());
+		union.addAll(left.getNameToColumn().values());
+		union.addAll(right.getNameToColumn().values());
 
 		if (union.isEmpty()) {
 			return GroupByColumns.GRAND_TOTAL;
 		} else {
-			return GroupByColumns.builder().groupBy(union).build();
+			return GroupByColumns.of(union);
 		}
 	}
 

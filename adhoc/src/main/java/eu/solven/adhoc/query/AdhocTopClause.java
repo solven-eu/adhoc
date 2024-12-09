@@ -20,45 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.query;
 
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
 
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Singular;
+import lombok.Value;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}.
+ * Used by {@link DatabaseQuery} to restrict ourselves to the top results.
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocGroupBy {
-	IAdhocGroupBy GRAND_TOTAL = new GrandTotal();
+@Value
+@Builder
+public class AdhocTopClause {
 
-	/**
-	 * If true, there is not a single groupBy
-	 * 
-	 * @return
-	 */
-	default boolean isGrandTotal() {
-		return getGroupedByColumns().isEmpty();
+	public static final AdhocTopClause NO_LIMIT = AdhocTopClause.builder().build();
+
+	// If negative, do not apply any limit/top
+	// https://stackoverflow.com/questions/5668540/difference-between-top-and-limit-keyword-in-sql
+	private static final int NO_TOP = -1;
+
+	@Singular
+	final List<IAdhocColumn> columns;
+
+	@Default
+	final int limit = NO_TOP;
+	@Default
+	final boolean desc = true;
+
+	public boolean isPresent() {
+		return !columns.isEmpty();
 	}
-
-	/**
-	 * Some of these columns may not be actual underlying columns, but computed given some logic. Consider using
-	 * {@link #getNameToColumn()}.
-	 * 
-	 * @return the name of the groupBy when the input and output columns are identical.
-	 */
-	default NavigableSet<String> getGroupedByColumns() {
-		return getNameToColumn().navigableKeySet();
-	}
-
-	/**
-	 * 
-	 * @return the mapping from the groupedBy column to the definition of given column.
-	 */
-	NavigableMap<String, IAdhocColumn> getNameToColumn();
 }

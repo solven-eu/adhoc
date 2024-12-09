@@ -39,9 +39,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.database.AdhocJooqSqlDatabaseWrapper;
 import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
 import eu.solven.adhoc.database.MapDatabaseTranscoder;
+import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 
@@ -75,7 +76,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 				MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
 		AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
-				.connectionSupplier(() -> dbConn)
+				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 				.tableName(tableName)
 				.transcoder(transcoder)
 				.build();
@@ -106,7 +107,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
 		AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
-				.connectionSupplier(() -> dbConn)
+				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 				.tableName(tableName)
 				.transcoder(transcoder)
 				.build();
@@ -139,7 +140,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 				.build();
 
 		AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
-				.connectionSupplier(() -> dbConn)
+				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 				.tableName(tableName)
 				.transcoder(transcoder)
 				.build();

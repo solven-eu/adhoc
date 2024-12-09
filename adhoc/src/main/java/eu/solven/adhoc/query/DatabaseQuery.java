@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query;
 
-import java.util.Collections;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
@@ -36,6 +35,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -56,8 +56,11 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
 
 	// We query only simple aggregations to external databases
+	@Singular
+	Set<Aggregator> aggregators;
+
 	@Default
-	Set<Aggregator> aggregators = Collections.emptySet();
+	AdhocTopClause topClause = AdhocTopClause.NO_LIMIT;
 
 	@Default
 	boolean debug = false;
@@ -71,6 +74,7 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 
 		this.debug = false;
 		this.explain = false;
+		this.topClause = AdhocTopClause.NO_LIMIT;
 	}
 
 	public static DatabaseQueryBuilder edit(DatabaseQuery dq) {

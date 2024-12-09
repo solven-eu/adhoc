@@ -63,7 +63,7 @@ public class Aggregator implements IMeasure {
 		}
 	}
 
-	public static IMeasure sum(String column) {
+	public static Aggregator sum(String column) {
 		return Aggregator.builder().aggregationKey(SumAggregator.KEY).name(column).build();
 	}
 

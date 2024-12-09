@@ -30,7 +30,7 @@ import eu.solven.adhoc.aggregations.ExpressionCombination;
 import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.query.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
@@ -71,7 +71,7 @@ public interface IAdhocTestConstants {
 	Bucketor sum_MaxK1K2ByA = Bucketor.builder()
 			.name("sum_maxK1K2ByA")
 			.underlyings(Arrays.asList("k1", "k2"))
-			.groupBy(GroupByColumns.of("a"))
+			.groupBy(GroupByColumns.named("a"))
 			.combinationKey(MaxCombination.KEY)
 			.aggregationKey(SumAggregator.KEY)
 			.build();

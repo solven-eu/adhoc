@@ -23,8 +23,8 @@
 package eu.solven.adhoc.query;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.google.common.collect.Lists;
 
@@ -33,6 +33,9 @@ import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -109,11 +112,14 @@ public class AdhocQuery implements IAdhocQuery {
 		}
 
 		public AdhocQueryBuilder groupByColumns(String firstGroupBy, String... moreGroupBys) {
-			Set<String> allGroupByColumns = new TreeSet<>();
+			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
 
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
-			allGroupByColumns.addAll(this.build().getGroupBy().getGroupedByColumns());
-			allGroupByColumns.addAll(Lists.asList(firstGroupBy, moreGroupBys));
+			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());
+			Lists.asList(firstGroupBy, moreGroupBys)
+					.stream()
+					.map(c -> ReferencedColumn.ref(c))
+					.forEach(allGroupByColumns::add);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
 
