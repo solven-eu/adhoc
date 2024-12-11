@@ -24,6 +24,7 @@ package eu.solven.adhoc.dag;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -352,6 +353,16 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
+		Set<String> relevantColumns = new HashSet<>();
+		// We may receive raw columns,to be aggregated by ourselves
+		relevantColumns.addAll(columnToAggregators.keySet());
+		// We may also receive pre-aggregated columns
+		columnToAggregators.values()
+				.stream()
+				.flatMap(c -> c.stream())
+				.map(a -> a.getName())
+				.forEach(relevantColumns::add);
+
 		// Process the underlying stream of data to execute aggregations
 		stream.forEach(input -> {
 			Optional<Map<String, ?>> optCoordinates = makeCoordinate(adhocQuery, input);
@@ -377,27 +388,39 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// return;
 			// }
 
-			// Iterate either on input map or on requested measures, depending on map sizes
-			if (columnToAggregators.size() < input.size()) {
-				columnToAggregators.forEach((aggName, aggs) -> {
-					if (input.containsKey(aggName)) {
-						Object v = input.get(aggName);
+			for (String aggregatedColumn : relevantColumns) {
+				if (input.containsKey(aggregatedColumn)) {
+					// We received a row contributing to an aggregate: the DB does not provide aggregates (e.g.
+					// InMemoryDb)
+					Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
+
+					Object v = input.get(aggregatedColumn);
+
+					if (aggs == null) {
+						// DB has done the aggregation for us
+						Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
+
+						optAgg.ifPresent(agg -> {
+							coordinatesToAgg.contribute(agg, optCoordinates.get(), v);
+						});
+					} else {
 
 						aggs.forEach(agg -> coordinatesToAgg.contribute(agg, optCoordinates.get(), v));
 					}
-				});
-			} else {
-				input.forEach((k, v) -> {
-					if (columnToAggregators.containsKey(k)) {
-						Set<Aggregator> aggs = columnToAggregators.get(k);
-
-						aggs.forEach(agg -> coordinatesToAgg.contribute(agg, optCoordinates.get(), v));
-					}
-				});
+				}
 			}
 		});
 
 		return coordinatesToAgg;
+
+	}
+
+	private Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators, String aggregatorName) {
+		return columnToAggregators.values()
+				.stream()
+				.flatMap(c -> c.stream())
+				.filter(a -> a.getName().equals(aggregatorName))
+				.findAny();
 	}
 
 	/**

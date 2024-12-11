@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
@@ -50,6 +51,7 @@ import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
@@ -269,18 +271,35 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocQueryEngine aqe =
 				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
 
-		ITabularView result = aqe.execute(AdhocQuery.builder()
-				.measure(k1SumSquared.getName())
-				.andFilter("a@a@a", "a1")
-				.groupByColumns("b@b@b")
-				.debug(true)
-				.build(), jooqDb);
-		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+		{
+			ITabularView result = aqe.execute(AdhocQuery.builder()
+					.measure(k1Sum.getName())
+					.andFilter("a@a@a", "a1")
+					.groupByColumns("b@b@b")
+					.debug(true)
+					.build(), jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
-				.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));
+			Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1Sum.getName(), 0D + 123))
+					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1Sum.getName(), 0D + 345));
+		}
+
+		{
+			ITabularView result = aqe.execute(AdhocQuery.builder()
+					.measure(k1SumSquared.getName())
+					.andFilter("a@a@a", "a1")
+					.groupByColumns("b@b@b")
+					.debug(true)
+					.build(), jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
+					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));
+		}
 	}
 
 	@Test
@@ -319,5 +338,32 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		Assertions.assertThatThrownBy(() -> aqe
 				.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByColumns("b").debug(true).build(), jooqDb))
 				.isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	public void testAggregatorHasDifferentColumnName() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+
+		Aggregator kSumOverk1 =
+				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregator.KEY).build();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(kSumOverk1);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		ITabularView result =
+				aqe.execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build(), jooqDb);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.keySet().toList()).containsExactly(Map.of());
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(kSumOverk1.getName(), 0D + 123 + 234));
 	}
 }

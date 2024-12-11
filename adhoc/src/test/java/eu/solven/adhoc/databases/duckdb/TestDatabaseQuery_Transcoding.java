@@ -38,11 +38,17 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.ITabularView;
+import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
 import eu.solven.adhoc.database.MapDatabaseTranscoder;
 import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
 import eu.solven.adhoc.database.sql.DSLSupplier;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 
@@ -186,6 +192,39 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 							BigDecimal.valueOf(0D + 456),
 							"k4",
 							BigDecimal.valueOf(0D + 123)));
+		}
+	}
+
+	@Test
+	public void testAdhocQuery() {
+		// Let's say k1 and k2 rely on the single k DB column
+		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
+
+		AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
+				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+				.tableName(tableName)
+				.transcoder(transcoder)
+				.build();
+		DSLContext dsl = jooqDb.makeDsl();
+
+		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
+
+		{
+			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).debug(true).build();
+
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			measureBag.addMeasure(k1Sum);
+
+			AdhocQueryEngine aqe =
+					AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+			ITabularView result = aqe.execute(query, jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.hasSize(1)
+					.containsEntry(Map.of(), Map.of("k1", 0D + 123));
 		}
 	}
 }
