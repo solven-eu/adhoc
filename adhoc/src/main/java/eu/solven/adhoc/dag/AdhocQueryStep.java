@@ -66,8 +66,8 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 	public static AdhocQueryStepBuilder edit(IWhereGroupbyAdhocQuery step) {
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
-		if (step instanceof IIsDebugable debugable) {
-			builder.debug(debugable.isDebug());
+		if (step instanceof IIsDebugable debuggable) {
+			builder.debug(debuggable.isDebug());
 		}
 
 		return builder;

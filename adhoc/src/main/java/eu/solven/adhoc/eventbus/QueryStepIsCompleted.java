@@ -22,16 +22,20 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
+ */
 @Value
 @Builder
-public class MeasuratorIsCompleted {
+public class QueryStepIsCompleted {
 	@NonNull
-	IMeasure measure;
+	AdhocQueryStep querystep;
+
 	long nbCells;
 
 	@NonNull

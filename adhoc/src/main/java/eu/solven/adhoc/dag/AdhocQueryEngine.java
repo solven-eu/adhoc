@@ -55,7 +55,7 @@ import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
-import eu.solven.adhoc.eventbus.MeasuratorIsCompleted;
+import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
@@ -234,7 +234,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			AggregatingMeasurators<Map<String, ?>> coordinatesToAggregates) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
-			AdhocQueryStep adhocStep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
+			AdhocQueryStep querystep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
 
 			MultiTypeStorage<Map<String, ?>> storage = coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
@@ -244,12 +244,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			}
 
 			eventBus.post(
-					MeasuratorIsCompleted.builder().measure(aggregator).nbCells(storage.size()).source(this).build());
+					QueryStepIsCompleted.builder().querystep(querystep).nbCells(storage.size()).source(this).build());
 			log.debug("dbQuery={} generated a column with size={}", dbQuery, storage.size());
 
 			// The aggregation step is done: the storage is supposed not to be edited: we re-use it in place, to
 			// spare a copy to an immutable container
-			queryStepToValues.put(adhocStep, CoordinatesToValues.builder().storage(storage).build());
+			queryStepToValues.put(querystep, CoordinatesToValues.builder().storage(storage).build());
 		});
 		return queryStepToValues;
 	}
@@ -311,8 +311,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				CoordinatesToValues coordinatesToValues =
 						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep).produceOutputColumn(underlyings);
 
-				eventBus.post(MeasuratorIsCompleted.builder()
-						.measure(measure)
+				eventBus.post(QueryStepIsCompleted.builder()
+						.querystep(queryStep)
 						.nbCells(coordinatesToValues.getStorage().size())
 						.source(this)
 						.build());
@@ -454,8 +454,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	/**
 	 * @param queryOptions
 	 * @param adhocQuery
-	 * @return the Set of {@link IAdhocQuery} to be executed to an underlying Database to be able to execute the
-	 *         {@link DAGForQuery}
+	 * @return the Set of {@link DatabaseQuery} to be executed.
 	 */
 	public Set<DatabaseQuery> prepare(Set<? extends IQueryOption> queryOptions, IAdhocQuery adhocQuery) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryOptions, adhocQuery);
@@ -473,7 +472,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
 		directedGraph.vertexSet()
 				.stream()
-				.filter(step -> directedGraph.outgoingEdgesOf(step).size() == 0)
+				.filter(step -> directedGraph.outgoingEdgesOf(step).isEmpty())
 				.forEach(step -> {
 					IMeasure leafMeasure = resolveIfRef(step.getMeasure());
 

@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.databases.gcp.bigquery;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,13 +30,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
-import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
-import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.google.bigquery.AdhocGoogleBigQueryDatabaseWrapper;
 import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -47,7 +43,9 @@ import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.transformers.Aggregator;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestDatabaseGoogleBigQuery {
 
 	static {
@@ -55,24 +53,15 @@ public class TestDatabaseGoogleBigQuery {
 		System.setProperty("org.jooq.no-logo", "true");
 	}
 
-	String tableName = "someTableName";
-
-	private Connection makeFreshInMemoryDb() {
+	@BeforeAll
+	public static void assumeCredentialsAreAvailable() {
 		try {
-			return DriverManager.getConnection("jdbc:duckdb:");
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
+			BigQueryOptions.getDefaultInstance().getProjectId();
+		} catch (IllegalArgumentException e) {
+			log.warn("Lacking GCP credentials", e);
+			Assumptions.assumeTrue(false, e.getMessage());
 		}
 	}
-
-	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
-			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-			.tableName(tableName)
-			.build();
-
-	// DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = jooqDb.makeDsl();
 
 	// @Test
 	// public void testTableDoesNotExists() {
@@ -91,7 +80,7 @@ public class TestDatabaseGoogleBigQuery {
 	@Test
 	public void testPublicDataset() {
 		// TODO This assume you have local credentials to this project
-		// How to to this in a public project?
+		// How to CI over a Google public dataset, without leaking credentials?
 		String projectId = "adhoc-testoverpublicdatasets";
 
 		BigQueryOptions bigQueryOptions = BigQueryOptions.newBuilder().setProjectId(projectId).build();

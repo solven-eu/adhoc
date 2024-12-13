@@ -25,6 +25,9 @@ package eu.solven.adhoc.aggregations.max;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 
+/**
+ * Keep the highest value amongst encountered values
+ */
 public class MaxAggregator implements IAggregation {
 
 	public static final String KEY = "MAX";

@@ -35,10 +35,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocEventsToSfl4j {
 	@Subscribe
-	public void onMeasuratorIsCompleted(MeasuratorIsCompleted event) {
-		log.info("size={} for measure={} on completed (source={})",
+	public void onMeasuratorIsCompleted(QueryStepIsCompleted event) {
+		log.info("size={} for queryStep={} on completed (source={})",
 				event.getNbCells(),
-				event.getMeasure(),
+				event.getQuerystep(),
 				event.getSource());
 	}
 
