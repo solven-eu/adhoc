@@ -156,6 +156,13 @@
 			<artifactId>junit-platform-suite</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>unittest</artifactId>
+			<version>5.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>

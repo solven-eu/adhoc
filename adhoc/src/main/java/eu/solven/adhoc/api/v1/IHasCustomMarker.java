@@ -22,15 +22,17 @@
  */
 package eu.solven.adhoc.api.v1;
 
+import java.util.Optional;
+
 /**
  * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
  * {@link eu.solven.adhoc.dag.AdhocQueryStep}.
  *
- * For instance, in ActivePivot/Atoti, this could be an IContextValues
+ * For instance, in ActivePivot/Atoti, this could be an IContextValue.
  * 
  * @author Benoit Lacelle
  *
  */
 public interface IHasCustomMarker {
-	Object getCustomMarker();
+	Optional<?> getCustomMarker();
 }

@@ -28,14 +28,21 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * This logs main steps of the query-engine. It is typically activated by calling `#AdhocQueryBuilder.debug()`.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
 @Slf4j
 public class AdhocEventsToSfl4j {
+	/**
+	 * An {@link eu.solven.adhoc.query.AdhocQuery} is resolved through a DAG of
+	 * {@link eu.solven.adhoc.dag.AdhocQueryStep}. This will log when an {@link eu.solven.adhoc.dag.AdhocQueryStep} is
+	 * completed.
+	 * 
+	 * @param event
+	 */
 	@Subscribe
-	public void onMeasuratorIsCompleted(QueryStepIsCompleted event) {
+	public void onQueryStepIsCompleted(QueryStepIsCompleted event) {
 		log.info("size={} for queryStep={} on completed (source={})",
 				event.getNbCells(),
 				event.getQuerystep(),

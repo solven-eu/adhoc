@@ -32,6 +32,7 @@ import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,7 +71,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 				return filter;
 			}
 		} else if (filter instanceof AndFilter andFilter) {
-			List<IAdhocFilter> unfilteredAnds = andFilter.getAnd().stream().map(f -> unfilter(f)).toList();
+			List<IAdhocFilter> unfilteredAnds = andFilter.getAnd().stream().map(this::unfilter).toList();
 
 			return AndFilter.and(unfilteredAnds);
 		} else {
@@ -81,7 +82,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		} else if (underlyings.isEmpty()) {

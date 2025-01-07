@@ -26,12 +26,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +47,9 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 
 	public List<String> getUnderlyingNames() {
 		return filtrator.getUnderlyingNames();
-	};
+	}
+
+	;
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
@@ -57,36 +61,45 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
-		if (underlyings.size() != 1) {
-			throw new IllegalArgumentException("underlyings.size() != 1");
-		} else if (underlyings.isEmpty()) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
+		} else if (underlyings.size() != 1) {
+			throw new IllegalArgumentException("underlyings.size() != 1");
 		}
 
-		CoordinatesToValues output = CoordinatesToValues.builder().build();
+		ICoordinatesToValues output = makeCoordinateToValues();
 
 		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(debug, underlyings)) {
+		for (Map<String, ?> coordinate : ColumnatorQueryStep.keySet(debug, underlyings)) {
+			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+					.slice(AdhocSliceAsMap.fromMap(coordinate))
+					.queryStep(step)
+					.build();
+
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();
 				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
 					refV.set(o);
 				});
 
-				storage.onValue(coordinate, consumer);
+				storage.onValue(slice, consumer);
 
 				if (debug) {
 					log.info("[DEBUG] Write {} in {} for m={}", refV.get(), coordinate, filtrator.getName());
 				}
 
 				return refV.get();
-			}).collect(Collectors.toList());
+			}).toList();
 
-			Object value = underlyingVs.get(0);
+			Object value = underlyingVs.getFirst();
 			output.put(coordinate, value);
 		}
 
 		return output;
+	}
+
+	protected ICoordinatesToValues makeCoordinateToValues() {
+		return CoordinatesToValues.builder().build();
 	}
 }

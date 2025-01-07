@@ -20,44 +20,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.slice;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
-import lombok.Value;
+import com.google.common.collect.ImmutableMap;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
- * 
- * @param <T>
+ * A simple {@link IAdhocSlice} based on a {@link Map}
  */
-@Value
-public class AggregatingMeasurators<T> {
+public class AdhocSliceAsMap implements IAdhocSlice {
+	final Map<String, ?> asMap;
 
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
+	public AdhocSliceAsMap(Map<String, ?> asMap) {
+		this.asMap = asMap;
 
-	IOperatorsFactory transformationFactory;
-
-	public void contribute(Aggregator aggregator, T key, Object v) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
-
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
-
-		storage.merge(key, v);
+		if (asMap.containsValue(null)) {
+			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
+		}
 	}
 
-	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
-		if (storage == null) {
-			return 0L;
-		} else {
-			return storage.size();
+	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
+		return new AdhocSliceAsMap(asMap);
+	}
+
+	@Override
+	public Set<String> getColumns() {
+		return asMap.keySet();
+	}
+
+	@Override
+	public Object getFilter(String column) {
+		Object filter = asMap.get(column);
+
+		if (filter == null) {
+			if (asMap.containsKey(column)) {
+				// BEWARE Should this be a legit case, handling NULL specifically?
+				throw new IllegalStateException("%s is sliced with null".formatted(column));
+			} else {
+				throw new IllegalArgumentException("%s is not a sliced column".formatted(column));
+			}
 		}
+
+		return filter;
+	}
+
+	@Override
+	public Map<String, ?> getCoordinates() {
+		return ImmutableMap.copyOf(asMap);
 	}
 }

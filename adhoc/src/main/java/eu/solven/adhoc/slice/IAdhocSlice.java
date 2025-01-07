@@ -20,44 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.slice;
 
-import java.util.HashMap;
 import java.util.Map;
-
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
-import lombok.Value;
+import java.util.Set;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
- * 
- * @param <T>
+ * A slice expresses the axes along which que query is filtered.
  */
-@Value
-public class AggregatingMeasurators<T> {
+public interface IAdhocSlice {
+	/**
+	 * The columns for which a filter is expressed
+	 */
+	Set<String> getColumns();
 
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
+	Object getFilter(String column);
 
-	IOperatorsFactory transformationFactory;
-
-	public void contribute(Aggregator aggregator, T key, Object v) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
-
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
-
-		storage.merge(key, v);
-	}
-
-	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
-		if (storage == null) {
-			return 0L;
-		} else {
-			return storage.size();
-		}
-	}
+	// BEWARE This usage is unclear, and may be a flawed design
+	Map<String, ?> getCoordinates();
 }

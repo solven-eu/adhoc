@@ -224,7 +224,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of(), Map.of("k1", 0D + 123));
+					.containsEntry(Map.of(), Map.of("k1", 0L + 123));
 		}
 	}
 }

@@ -23,12 +23,9 @@
 package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -36,9 +33,12 @@ import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
-import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
+import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,49 +78,48 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
-		CoordinatesToValues output = CoordinatesToValues.builder().build();
+		ICoordinatesToValues output = makeCoordinateToValues();
 
-		ICombination tranformation = transformationFactory.makeTransformation(combinator);
+		ICombination transformation = transformationFactory.makeTransformation(combinator);
 
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
-
-				storage.onValue(coordinate, consumer);
-
-				return refV.get();
-			}).collect(Collectors.toList());
-
-			Object value = tranformation.combine(underlyingVs);
-			output.put(coordinate, value);
+		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+					.slice(AdhocSliceAsMap.fromMap(rawSlice))
+					.queryStep(step)
+					.build();
+			onSlice(underlyings, slice, transformation, output);
 		}
 
 		return output;
 	}
 
-	public static Iterable<? extends Map<String, ?>> keySet(boolean debug, List<CoordinatesToValues> underlyings) {
-		Set<Map<String, ?>> keySet;
-		if (debug) {
-			// Enforce an iteration order for debugging-purposes
-			keySet = new TreeSet<>(MapComparators.mapComparator());
-		} else {
-			keySet = new HashSet<>();
-		}
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			IAdhocSliceWithCustom slice,
+			ICombination transformation,
+			ICoordinatesToValues output) {
+		List<Object> underlyingVs = underlyings.stream().map(storage -> {
+			AtomicReference<Object> refV = new AtomicReference<>();
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
+				refV.set(o);
+			});
 
-		for (CoordinatesToValues underlying : underlyings) {
-			keySet.addAll(underlying.getStorage().keySet());
-		}
+			storage.onValue(slice, consumer);
 
-		return keySet;
+			return refV.get();
+		}).collect(Collectors.toList());
+
+		Object value = transformation.combine(slice, underlyingVs);
+		output.put(slice.getCoordinates(), value);
+	}
+
+	protected ICoordinatesToValues makeCoordinateToValues() {
+		return CoordinatesToValues.builder().build();
 	}
 }

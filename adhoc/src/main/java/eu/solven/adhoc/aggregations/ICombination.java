@@ -24,14 +24,36 @@ package eu.solven.adhoc.aggregations;
 
 import java.util.List;
 
+import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
 import eu.solven.adhoc.transformers.Combinator;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
 public interface ICombination {
-	Object combine(List<?> underlyingValues);
+
+	/**
+	 *
+	 * @param slice
+	 * @param underlyingValues
+	 *            the underlying measures values for current slice.
+	 * @return the combined result at given given coordinate.
+	 */
+	default Object combine(IAdhocSliceWithCustom slice, List<?> underlyingValues) {
+		// The simplest logic does not rely on the coordinates
+		return combine(underlyingValues);
+	}
+
+	/**
+	 *
+	 * @param underlyingValues
+	 *            the underlying measures values for current slice.
+	 * @return the combined result at given given coordinate.
+	 */
+	default Object combine(List<?> underlyingValues) {
+		throw new UnsupportedOperationException("Complex implementations requires the slice to be provided");
+	}
 }

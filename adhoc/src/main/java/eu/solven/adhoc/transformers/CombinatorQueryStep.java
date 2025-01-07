@@ -35,6 +35,10 @@ import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
+import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,47 +62,65 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
-		CoordinatesToValues output = CoordinatesToValues.builder().build();
+		ICoordinatesToValues output = makeCoordinateToValues();
 
 		ICombination tranformation = transformationFactory.makeTransformation(combinator);
 
 		boolean debug = combinator.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
-
-				storage.onValue(coordinate, consumer);
-
-				return refV.get();
-			}).collect(Collectors.toList());
-
-			Object value = tranformation.combine(underlyingVs);
-
-			if (debug) {
-				log.info("[DEBUG] Write {} (given {}) in {} for {}",
-						value,
-						underlyingVs,
-						coordinate,
-						combinator.getName());
-			}
-
-			output.put(coordinate, value);
+		for (Map<String, ?> rawSlice : CombinatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+					.slice(AdhocSliceAsMap.fromMap(rawSlice))
+					.queryStep(step)
+					.build();
+			onSlice(underlyings, slice, tranformation, debug, output);
 		}
 
 		return output;
 	}
 
-	public static Iterable<? extends Map<String, ?>> keySet(boolean debug, List<CoordinatesToValues> underlyings) {
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			IAdhocSliceWithCustom slice,
+			ICombination combination,
+			boolean debug,
+			ICoordinatesToValues output) {
+		List<Object> underlyingVs = underlyings.stream().map(storage -> {
+			AtomicReference<Object> refV = new AtomicReference<>();
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+
+			storage.onValue(slice, consumer);
+
+			return refV.get();
+		}).collect(Collectors.toList());
+
+		Object value = combination.combine(slice, underlyingVs);
+
+		if (debug) {
+			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
+		}
+
+		output.put(slice.getCoordinates(), value);
+	}
+
+	protected ICoordinatesToValues makeCoordinateToValues() {
+		return CoordinatesToValues.builder().build();
+	}
+
+	/**
+	 *
+	 * @param debug
+	 *            if true, the output set is ordered. This can be quite slow on large sets.
+	 * @param underlyings
+	 * @return the union-Set of slices
+	 */
+	public static Iterable<? extends Map<String, ?>> keySet(boolean debug,
+			List<? extends ICoordinatesToValues> underlyings) {
 		Set<Map<String, ?>> keySet;
 		if (debug) {
 			// Enforce an iteration order for debugging-purposes
@@ -107,8 +129,8 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 			keySet = new HashSet<>();
 		}
 
-		for (CoordinatesToValues underlying : underlyings) {
-			keySet.addAll(underlying.getStorage().keySet());
+		for (ICoordinatesToValues underlying : underlyings) {
+			keySet.addAll(underlying.keySet());
 		}
 
 		return keySet;

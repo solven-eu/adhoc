@@ -20,44 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.slice;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
-import lombok.Value;
+import eu.solven.adhoc.dag.AdhocQueryStep;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
- * 
- * @param <T>
+ * An {@link IAdhocSlice} combined with an {@link AdhocQueryStep}. It is useful to provide more contact to
+ * {@link eu.solven.adhoc.transformers.IMeasure}.
  */
-@Value
-public class AggregatingMeasurators<T> {
-
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
-
-	IOperatorsFactory transformationFactory;
-
-	public void contribute(Aggregator aggregator, T key, Object v) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
-
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
-
-		storage.merge(key, v);
-	}
-
-	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
-		if (storage == null) {
-			return 0L;
-		} else {
-			return storage.size();
-		}
-	}
+public interface IAdhocSliceWithCustom extends IAdhocSlice {
+	AdhocQueryStep getQueryStep();
 }

@@ -102,7 +102,7 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.keySet().toList())
 				.containsExactly(Map.of("first_letter", "a"), Map.of("first_letter", "q"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of("first_letter", "a"), Map.of(k1Sum.getName(), 123D))
-				.containsEntry(Map.of("first_letter", "q"), Map.of(k1Sum.getName(), 234D));
+				.containsEntry(Map.of("first_letter", "a"), Map.of(k1Sum.getName(), 123L))
+				.containsEntry(Map.of("first_letter", "q"), Map.of(k1Sum.getName(), 234L));
 	}
 }

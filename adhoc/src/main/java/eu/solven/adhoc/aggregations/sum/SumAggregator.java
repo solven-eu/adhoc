@@ -22,8 +22,19 @@
  */
 package eu.solven.adhoc.aggregations.sum;
 
-import eu.solven.adhoc.aggregations.IAggregation;
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import eu.solven.adhoc.aggregations.IAggregation;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
+ */
+// https://learn.microsoft.com/en-us/dax/sum-function-dax
+@Slf4j
 public class SumAggregator implements IAggregation {
 
 	public static final String KEY = "SUM";
@@ -31,14 +42,44 @@ public class SumAggregator implements IAggregation {
 	@Override
 	public Object aggregate(Object l, Object r) {
 		if (l == null) {
-			return r;
+			return onlyOne(r);
 		} else if (r == null) {
-			return l;
+			return onlyOne(l);
 		} else if (isLongLike(l) && isLongLike(r)) {
-			return ((Number) l).longValue() + ((Number) r).longValue();
+			return aggregateLongs(asLong(l), asLong(r));
+		} else if (isDoubleLike(l) && isDoubleLike(r)) {
+			return aggregateDoubles(asDouble(l), asDouble(r));
 		} else {
-			return ((Number) l).doubleValue() + ((Number) r).doubleValue();
+			return aggregateObjects(l, r);
 		}
+	}
+
+	protected Object onlyOne(Object r) {
+		if (r == null) {
+			return null;
+		} else if (isDoubleLike(r)) {
+			return r;
+		} else if (r instanceof Collection<?> asCollection) {
+			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+		} else {
+			// Wrap into a Set, so this aggregate function return either a long/double, or a String
+			return r.toString();
+		}
+	}
+
+	protected Object aggregateObjects(Object l, Object r) {
+		// Fallback by concatenating Strings
+		String concatenated = l.toString() + r.toString();
+
+		if (concatenated.length() >= 16 * 1024) {
+			// If this were a real use-case, we should probably rely on a dedicated optimized IAggregation
+			throw new IllegalStateException("Aggregation led to a too-large (length=%s) String: %s"
+					.formatted(concatenated.length(), concatenated));
+		} else if (concatenated.length() >= 1024) {
+			log.warn("Aggregation led to a large String: {}", concatenated);
+		}
+
+		return concatenated;
 	}
 
 	@Override
@@ -52,6 +93,36 @@ public class SumAggregator implements IAggregation {
 	}
 
 	public static boolean isLongLike(Object o) {
-		return Integer.class.isInstance(o) || Long.class.isInstance(o);
+		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
+			return true;
+		} else if (o instanceof BigDecimal bigDecimal) {
+			try {
+				long asLong = bigDecimal.longValueExact();
+				log.trace("This is a long: {}", bigDecimal);
+				return true;
+			} catch (IllegalArgumentException e) {
+				log.trace("This is not a long: {}", bigDecimal, e);
+			}
+			return false;
+		} else {
+			return false;
+		}
+	}
+
+	public static long asLong(Object o) {
+		return ((Number) o).longValue();
+	}
+
+	/**
+	 *
+	 * @param o
+	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
+	 */
+	public static boolean isDoubleLike(Object o) {
+		return Number.class.isInstance(o);
+	}
+
+	public static double asDouble(Object o) {
+		return ((Number) o).doubleValue();
 	}
 }

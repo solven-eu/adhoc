@@ -23,8 +23,10 @@
 package eu.solven.adhoc.dag;
 
 import java.util.Map;
+import java.util.Set;
 
 import eu.solven.adhoc.RowScanner;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.ValueConsumer;
 import lombok.Builder;
@@ -32,9 +34,12 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * This is a simple way to storage the value for a {@link java.util.Set} of {@link IAdhocSlice}.
+ */
 @Value
 @Builder
-public class CoordinatesToValues {
+public class CoordinatesToValues implements ICoordinatesToValues {
 	@NonNull
 	@Default
 	MultiTypeStorage<Map<String, ?>> storage = MultiTypeStorage.<Map<String, ?>>builder().build();
@@ -43,14 +48,21 @@ public class CoordinatesToValues {
 		return CoordinatesToValues.builder().build();
 	}
 
-	public void onValue(Map<String, ?> coordinate, ValueConsumer consumer) {
-		storage.onValue(coordinate, consumer);
+	@Override
+	public void onValue(IAdhocSlice slice, ValueConsumer consumer) {
+		storage.onValue(slice.getCoordinates(), consumer);
+	}
+
+	@Override
+	public Set<Map<String, ?>> keySet() {
+		return getStorage().keySet();
 	}
 
 	public void put(Map<String, ?> coordinate, Object value) {
 		storage.put(coordinate, value);
 	}
 
+	@Override
 	public void scan(RowScanner<Map<String, ?>> rowScanner) {
 		storage.scan(rowScanner);
 	}

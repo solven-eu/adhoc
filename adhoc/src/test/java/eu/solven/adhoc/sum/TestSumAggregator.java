@@ -22,25 +22,122 @@
  */
 package eu.solven.adhoc.sum;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.pepper.unittest.ILogDisabler;
+import eu.solven.pepper.unittest.PepperTestHelper;
 
 public class TestSumAggregator {
-	SumAggregator a = new SumAggregator();
+	SumAggregator aggregator = new SumAggregator();
+
+	@Test
+	public void isLongLike() {
+		Assertions.assertThat(SumAggregator.isLongLike(123)).isTrue();
+		Assertions.assertThat(SumAggregator.isLongLike(123L)).isTrue();
+
+		Assertions.assertThat(SumAggregator.isLongLike(123.4F)).isFalse();
+		Assertions.assertThat(SumAggregator.isLongLike(123.4D)).isFalse();
+
+		Assertions.assertThat(SumAggregator.isLongLike("someString")).isFalse();
+		Assertions.assertThat(SumAggregator.isLongLike(LocalDate.now())).isFalse();
+
+		// Float without decimal
+		Assertions.assertThat(SumAggregator.isLongLike(123F)).isFalse();
+		Assertions.assertThat(SumAggregator.isLongLike(123D)).isFalse();
+	}
+
+	@Test
+	public void isDoubleLike() {
+		Assertions.assertThat(SumAggregator.isDoubleLike(123)).isTrue();
+		Assertions.assertThat(SumAggregator.isDoubleLike(123L)).isTrue();
+
+		Assertions.assertThat(SumAggregator.isDoubleLike(123.4F)).isTrue();
+		Assertions.assertThat(SumAggregator.isDoubleLike(123.4D)).isTrue();
+
+		Assertions.assertThat(SumAggregator.isDoubleLike("someString")).isFalse();
+		Assertions.assertThat(SumAggregator.isDoubleLike(LocalDate.now())).isFalse();
+
+		// Float without decimal
+		Assertions.assertThat(SumAggregator.isDoubleLike(123F)).isTrue();
+		Assertions.assertThat(SumAggregator.isDoubleLike(123D)).isTrue();
+	}
+
+	@Test
+	public void testStrings() {
+		Assertions.assertThat(aggregator.aggregate("someLongString_0", "someLongString_1"))
+				.isEqualTo("someLongString_0someLongString_1");
+	}
+
+	@Test
+	public void testBigString() {
+		String aggregated = "initial";
+
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregator.class)) {
+			for (int i = 0; i < 256; i++) {
+				aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
+			}
+		}
+
+		Assertions.assertThat(aggregated)
+				.startsWith("initialsomeLongString_0someLongString_1someLongString_2some")
+				.endsWith("someLongString_255")
+				.hasSize(4505);
+	}
+
+	@Test
+	public void testHugeString() {
+		Assertions.assertThatThrownBy(() -> {
+			String aggregated = "initial";
+
+			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregator.class)) {
+				for (int i = 0; i < 16 * 1024; i++) {
+					aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
+				}
+			}
+		}).isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void testIntAndInt() {
+		Assertions.assertThat(aggregator.aggregate(123, 234)).isEqualTo(0L + 123 + 234);
+	}
+
+	@Test
+	public void testIntAndLong() {
+		Assertions.assertThat(aggregator.aggregate(123, 234L)).isEqualTo(0L + 123 + 234);
+	}
+
+	@Test
+	public void testIntAndFloat() {
+		Assertions.assertThat(aggregator.aggregate(123, 234.567D)).isEqualTo(0D + 123 + 234.567);
+	}
+
+	@Test
+	public void testIntAndString() {
+		Assertions.assertThat(aggregator.aggregate(123, "234")).isEqualTo("123234");
+	}
 
 	@Test
 	public void testSum_objects() {
-		Assertions.assertThat(a.aggregate(null, null)).isEqualTo(null);
-		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
-		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+		Assertions.assertThat(aggregator.aggregate(null, null)).isEqualTo(null);
+		Assertions.assertThat(aggregator.aggregate(null, 1.2D)).isEqualTo(1.2D);
+		Assertions.assertThat(aggregator.aggregate(1.2D, null)).isEqualTo(1.2D);
 	}
 
 	@Test
 	public void testSum_doubles() {
-		Assertions.assertThat(a.aggregateDoubles(Double.NaN, 1.2D)).isNaN();
-		Assertions.assertThat(a.aggregateDoubles(1.2D, Double.NaN)).isNaN();
-		Assertions.assertThat(a.aggregateDoubles(Double.NaN, Double.NaN)).isNaN();
+		Assertions.assertThat(aggregator.aggregateDoubles(Double.NaN, 1.2D)).isNaN();
+		Assertions.assertThat(aggregator.aggregateDoubles(1.2D, Double.NaN)).isNaN();
+		Assertions.assertThat(aggregator.aggregateDoubles(Double.NaN, Double.NaN)).isNaN();
+	}
+
+	@Test
+	public void testSum_bigDecimal() {
+		Assertions.assertThat(aggregator.aggregate(123, BigDecimal.valueOf(234L))).isEqualTo(0L + 123 + 234);
 	}
 }

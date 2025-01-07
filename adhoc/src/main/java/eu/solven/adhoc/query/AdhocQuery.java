@@ -24,6 +24,7 @@ package eu.solven.adhoc.query;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
@@ -31,6 +32,7 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.api.v1.IHasCustomMarker;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -50,7 +52,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class AdhocQuery implements IAdhocQuery {
+public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 
 	@NonNull
 	@Default
@@ -60,6 +62,11 @@ public class AdhocQuery implements IAdhocQuery {
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
 	@Singular
 	Set<ReferencedMeasure> measureRefs;
+
+	// This property is transported down to the DatabaseQuery
+	@Default
+	@NonNull
+	Optional<?> customMarker = Optional.empty();
 
 	// If true, will print a log of debug information
 	@Default

@@ -120,7 +120,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		Map<String, Set<Aggregator>> inputColumnToAggregators = columnToAggregators(fromQueriedToAggregates);
 
-		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new LinkedHashMap<>();
+		Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
 		dbQueryToSteam.forEach((dbQuery, stream) -> {
@@ -182,7 +182,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected MapBasedTabularView toTabularView(Set<? extends IQueryOption> queryOptions,
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
-			Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder().build();
 
 		Iterator<AdhocQueryStep> stepsToReturn;
@@ -210,7 +210,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				}
 			};
 
-			CoordinatesToValues coordinatesToValues = queryStepToValues.get(step);
+			ICoordinatesToValues coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
@@ -234,7 +234,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			AggregatingMeasurators<Map<String, ?>> coordinatesToAggregates) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
-			AdhocQueryStep querystep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
+			AdhocQueryStep queryStep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
 
 			MultiTypeStorage<Map<String, ?>> storage = coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
@@ -244,18 +244,18 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			}
 
 			eventBus.post(
-					QueryStepIsCompleted.builder().querystep(querystep).nbCells(storage.size()).source(this).build());
+					QueryStepIsCompleted.builder().querystep(queryStep).nbCells(storage.size()).source(this).build());
 			log.debug("dbQuery={} generated a column with size={}", dbQuery, storage.size());
 
 			// The aggregation step is done: the storage is supposed not to be edited: we re-use it in place, to
 			// spare a copy to an immutable container
-			queryStepToValues.put(querystep, CoordinatesToValues.builder().storage(storage).build());
+			queryStepToValues.put(queryStep, CoordinatesToValues.builder().storage(storage).build());
 		});
 		return queryStepToValues;
 	}
 
 	protected void walkDagUpToQueriedMeasures(DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
-			Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried =
 				new EdgeReversedGraph<>(fromQueriedToAggregates);
@@ -297,9 +297,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// This may happen on a Columnator which is missing a required column
 				return;
 			} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				List<CoordinatesToValues> underlyings =
+				List<ICoordinatesToValues> underlyings =
 						hasUnderlyingMeasures.getUnderlyingNames().stream().map(underlyingToStep::get).map(step -> {
-							CoordinatesToValues values = queryStepToValues.get(step);
+							ICoordinatesToValues values = queryStepToValues.get(step);
 
 							if (values == null) {
 								throw new IllegalStateException("The DAG missed step=%s".formatted(step));
@@ -308,12 +308,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 							return values;
 						}).collect(Collectors.toList());
 
-				CoordinatesToValues coordinatesToValues =
+				ICoordinatesToValues coordinatesToValues =
 						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep).produceOutputColumn(underlyings);
 
 				eventBus.post(QueryStepIsCompleted.builder()
 						.querystep(queryStep)
-						.nbCells(coordinatesToValues.getStorage().size())
+						.nbCells(coordinatesToValues.keySet().size())
 						.source(this)
 						.build());
 
@@ -404,7 +404,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 							coordinatesToAgg.contribute(agg, optCoordinates.get(), v);
 						});
 					} else {
-
+						// The DB provides the column raw value, and not an aggregated value
+						// So we aggregate row values ourselves
 						aggs.forEach(agg -> coordinatesToAgg.contribute(agg, optCoordinates.get(), v));
 					}
 				}
@@ -527,6 +528,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						.filter(adhocQuery.getFilter())
 						.groupBy(adhocQuery.getGroupBy())
 						.measure(queriedMeasure)
+						.customMarker(adhocQuery.getCustomMarker())
 						.debug(adhocQuery.isDebug())
 						.build();
 

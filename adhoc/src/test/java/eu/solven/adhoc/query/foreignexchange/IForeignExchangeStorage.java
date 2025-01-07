@@ -20,44 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.query.foreignexchange;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDate;
 
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
+import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
- * 
- * @param <T>
+ * Abstract the storage/querying of ForeignExchange from an external service.
  */
-@Value
-public class AggregatingMeasurators<T> {
+public interface IForeignExchangeStorage {
 
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
+	/**
+	 *
+	 * @param fxKey
+	 * @return a double if we have a proper fxRate, else a String detailing the issue
+	 */
+	Object getFX(FXKey fxKey);
 
-	IOperatorsFactory transformationFactory;
+	@Value
+	@Builder(toBuilder = true)
+	class FXKey {
+		@Builder.Default
+		@NonNull
+		LocalDate asOf = LocalDate.now();
 
-	public void contribute(Aggregator aggregator, T key, Object v) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
+		@NonNull
+		String fromCcy;
 
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
+		@NonNull
+		String toCcy;
 
-		storage.merge(key, v);
-	}
-
-	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
-		if (storage == null) {
-			return 0L;
-		} else {
-			return storage.size();
+		public FXKey inverse() {
+			return FXKey.builder().asOf(getAsOf()).fromCcy(getToCcy()).toCcy(getFromCcy()).build();
 		}
 	}
+
 }

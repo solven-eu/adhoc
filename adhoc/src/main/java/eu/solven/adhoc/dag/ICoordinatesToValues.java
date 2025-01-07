@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.dag;
 
-public interface ValueConsumer {
+import java.util.Map;
+import java.util.Set;
 
-	void onLong(long l);
+import eu.solven.adhoc.RowScanner;
+import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.storage.ValueConsumer;
 
-	void onDouble(double d);
+public interface ICoordinatesToValues {
+	Set<Map<String, ?>> keySet();
 
-	void onCharsequence(CharSequence charSequence);
+	void put(Map<String, ?> coordinate, Object value);
 
-	void onObject(Object object);
+	void onValue(IAdhocSlice slice, ValueConsumer consumer);
+
+	void scan(RowScanner<Map<String, ?>> rowScanner);
 }

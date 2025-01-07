@@ -28,6 +28,7 @@ import java.util.Set;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
 import lombok.Value;
 
 /**
@@ -60,7 +61,7 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 			}
 
 			@Override
-			public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+			public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 				if (!underlyings.isEmpty()) {
 					throw new UnsupportedOperationException("Should not be called as we do not have any underlyings");
 				}

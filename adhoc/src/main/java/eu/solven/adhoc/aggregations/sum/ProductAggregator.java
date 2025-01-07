@@ -20,44 +20,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
-
-import java.util.HashMap;
-import java.util.Map;
+package eu.solven.adhoc.aggregations.sum;
 
 import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
-import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
- * 
- * @param <T>
+ * A `PRODUCT` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
  */
-@Value
-public class AggregatingMeasurators<T> {
+// https://learn.microsoft.com/en-us/dax/product-function-dax
+@Slf4j
+public class ProductAggregator implements IAggregation {
 
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
+	public static final String KEY = "PRODUCT";
 
-	IOperatorsFactory transformationFactory;
-
-	public void contribute(Aggregator aggregator, T key, Object v) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
-
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
-
-		storage.merge(key, v);
+	@Override
+	public Object aggregate(Object l, Object r) {
+		if (l == null) {
+			return r;
+		} else if (r == null) {
+			return l;
+		} else if (SumAggregator.isLongLike(l) && SumAggregator.isLongLike(r)) {
+			return aggregateLongs(asLong(l), asLong(r));
+		} else if (SumAggregator.isDoubleLike(l) && SumAggregator.isDoubleLike(r)) {
+			return aggregateDoubles(asDouble(l), asDouble(r));
+		} else {
+			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)".formatted(KEY, l, r));
+		}
 	}
 
-	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
-		if (storage == null) {
-			return 0L;
-		} else {
-			return storage.size();
-		}
+	@Override
+	public double aggregateDoubles(double left, double right) {
+		return left * right;
+	}
+
+	@Override
+	public long aggregateLongs(long left, long right) {
+		return left * right;
+	}
+
+	public static long asLong(Object o) {
+		return ((Number) o).longValue();
+	}
+
+	public static double asDouble(Object o) {
+		return ((Number) o).doubleValue();
 	}
 }

@@ -32,6 +32,9 @@ import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +49,9 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
-	};
+	}
+
+	;
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
@@ -66,44 +71,58 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		} else if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("A dispatchor expects a single underlying");
 		}
 
-		MultiTypeStorage<Map<String, ?>> aggregatingView = MultiTypeStorage.<Map<String, ?>>builder().build();
-
 		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
+
+		MultiTypeStorage<Map<String, ?>> aggregatingView =
+				MultiTypeStorage.<Map<String, ?>>builder().aggregation(agg).build();
 
 		IDecomposition decomposition = makeDecomposition();
 
-		for (Map<String, ?> coordinate : BucketorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+		for (Map<String, ?> coordinates : ColumnatorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+					.slice(AdhocSliceAsMap.fromMap(coordinates))
+					.queryStep(step)
+					.build();
 
-				storage.onValue(coordinate, consumer);
-
-				return refV.get();
-			}).toList();
-
-			Object value = underlyingVs.getFirst();
-
-			if (value != null) {
-				Map<Map<String, ?>, Object> decomposed = decomposition.decompose(coordinate, value);
-
-				decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
-					if (dispatchor.isDebug()) {
-						log.info("Contribute {} into {}", fragmentValue, fragmentCoordinate);
-					}
-
-					aggregatingView.merge(fragmentCoordinate, fragmentValue, agg);
-				});
-			}
+			onSlice(underlyings, coordinates, slice, decomposition, aggregatingView);
 		}
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
+	}
+
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			Map<String, ?> coordinate,
+			AdhocSliceAsMapWithCustom slice,
+			IDecomposition decomposition,
+			MultiTypeStorage<Map<String, ?>> aggregatingView) {
+		List<Object> underlyingVs = underlyings.stream().map(storage -> {
+			AtomicReference<Object> refV = new AtomicReference<>();
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+
+			storage.onValue(slice, consumer);
+
+			return refV.get();
+		}).toList();
+
+		Object value = underlyingVs.getFirst();
+
+		if (value != null) {
+			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(coordinate, value);
+
+			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
+				if (dispatchor.isDebug()) {
+					log.info("Contribute {} into {}", fragmentValue, fragmentCoordinate);
+				}
+
+				aggregatingView.merge(fragmentCoordinate, fragmentValue);
+			});
+		}
 	}
 }

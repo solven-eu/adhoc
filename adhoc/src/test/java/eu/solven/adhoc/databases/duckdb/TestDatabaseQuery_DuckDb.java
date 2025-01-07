@@ -282,8 +282,8 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 			Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1Sum.getName(), 0D + 123))
-					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1Sum.getName(), 0D + 345));
+					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1Sum.getName(), 0L + 345));
 		}
 
 		{
@@ -364,6 +364,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		Assertions.assertThat(mapBased.keySet().toList()).containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(kSumOverk1.getName(), 0D + 123 + 234));
+				.containsEntry(Map.of(), Map.of(kSumOverk1.getName(), 0L + 123 + 234));
 	}
 }

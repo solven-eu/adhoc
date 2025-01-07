@@ -22,61 +22,77 @@
  */
 package eu.solven.adhoc.aggregations;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	@Override
-	public ICombination makeCombination(String key, Map<String, ?> options) {
-		return switch (key) {
-		case SumCombination.KEY: {
-			yield new SumCombination();
-		}
-		case MaxCombination.KEY: {
-			yield new MaxCombination();
-		}
-		case DivideCombination.KEY: {
-			yield new DivideCombination();
-		}
-		case ExpressionCombination.KEY: {
-			yield ExpressionCombination.parse(options);
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		};
-	}
+    public ICombination makeCombination(String key, Map<String, ?> options) {
+        return switch (key) {
+            case SumCombination.KEY: {
+                yield new SumCombination();
+            }
+            case MaxCombination.KEY: {
+                yield new MaxCombination();
+            }
+            case DivideCombination.KEY: {
+                yield new DivideCombination();
+            }
+            case ExpressionCombination.KEY: {
+                yield ExpressionCombination.parse(options);
+            }
+            default:
+                throw new IllegalArgumentException("Unexpected value: " + key);
+        };
+    }
 
 	@Override
-	public IAggregation makeAggregation(String key) {
-		return switch (key) {
-		case SumAggregator.KEY: {
-			yield new SumAggregator();
-		}
-		case MaxAggregator.KEY: {
-			yield new MaxAggregator();
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		};
-	}
+    public IAggregation makeAggregation(String key) {
+        return switch (key) {
+            case SumAggregator.KEY: {
+                yield new SumAggregator();
+            }
+            case MaxAggregator.KEY: {
+                yield new MaxAggregator();
+            }
+            default:
+                Class<? extends IAggregation> asClass;
+                try {
+                    asClass = (Class<? extends IAggregation>) Class.forName(key);
+
+                } catch (ClassNotFoundException e) {
+                    log.trace("No class matches %s".formatted(key));
+                    throw new IllegalArgumentException("Unexpected value: " + key);
+                }
+
+                try {
+                    yield asClass.getConstructor().newInstance();
+                } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+        };
+    }
 
 	@Override
-	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-		return switch (key) {
-		case AdhocIdentity.KEY: {
-			yield new AdhocIdentity();
-		}
-		case LinearDecomposition.KEY: {
-			yield new LinearDecomposition(options);
-		}
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		};
-	}
+    public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
+        return switch (key) {
+            case AdhocIdentity.KEY: {
+                yield new AdhocIdentity();
+            }
+            case LinearDecomposition.KEY: {
+                yield new LinearDecomposition(options);
+            }
+            default:
+                throw new IllegalArgumentException("Unexpected value: " + key);
+        };
+    }
 
 }

@@ -60,8 +60,8 @@ public class MaxAggregator implements IAggregation {
 	}
 
 	@Override
-	public String aggregateStrings(String left, String right) {
-		if (left.compareTo(right) >= 0) {
+	public CharSequence aggregateStrings(CharSequence left, CharSequence right) {
+		if (CharSequence.compare(left, right) >= 0) {
 			return left;
 		} else {
 			return right;

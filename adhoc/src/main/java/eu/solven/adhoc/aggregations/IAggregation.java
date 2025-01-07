@@ -35,14 +35,18 @@ import eu.solven.adhoc.transformers.Combinator;
 public interface IAggregation {
 	Object aggregate(Object left, Object right);
 
-	default String aggregateStrings(String left, String right) {
+	default CharSequence aggregateStrings(CharSequence left, CharSequence right) {
 		Object aggregated = aggregate(left, right);
 
 		if (aggregated == null) {
 			return null;
 		}
 
-		return aggregated.toString();
+		if (aggregated instanceof CharSequence aggregatedCharSequence) {
+			return aggregatedCharSequence;
+		} else {
+			return aggregated.toString();
+		}
 	}
 
 	double aggregateDoubles(double left, double right);

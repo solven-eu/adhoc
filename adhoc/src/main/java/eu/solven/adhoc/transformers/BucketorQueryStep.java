@@ -40,7 +40,11 @@ import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.execute.GroupByHelpers;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
+import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import lombok.RequiredArgsConstructor;
@@ -69,72 +73,85 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public CoordinatesToValues produceOutputColumn(List<CoordinatesToValues> underlyings) {
+	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
-		MultiTypeStorage<Map<String, ?>> aggregatingView = MultiTypeStorage.<Map<String, ?>>builder().build();
-
 		IAggregation agg = transformationFactory.makeAggregation(bucketor.getAggregationKey());
+
+		MultiTypeStorage<Map<String, ?>> aggregatingView =
+				MultiTypeStorage.<Map<String, ?>>builder().aggregation(agg).build();
+
 		ICombination combinator =
 				transformationFactory.makeCombination(bucketor.getCombinationKey(), getCombinationOptions());
 
 		List<String> underlyingNames = getUnderlyingNames();
 
 		boolean debug = bucketor.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : keySet(bucketor.isDebug(), underlyings)) {
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
-
-				storage.onValue(coordinate, consumer);
-
-				return refV.get();
-			}).collect(Collectors.toList());
-
-			Object value = combinator.combine(underlyingVs);
-
-			if (debug) {
-				Map<String, Object> underylingVsAsMap = new TreeMap<>();
-
-				for (int i = 0; i < underlyingNames.size(); i++) {
-					underylingVsAsMap.put(underlyingNames.get(i), underlyingVs.get(i));
-				}
-
-				log.info("[DEBUG] m={} Combinator={} transformed {} into {} at {}",
-						bucketor.getName(),
-						bucketor.getCombinationKey(),
-						underylingVsAsMap,
-						value,
-						coordinate);
-			}
-
-			if (value != null) {
-				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), coordinate);
-
-				if (debug) {
-					log.info("[DEBUG] {} contribute {} into {}", bucketor.getName(), value, outputCoordinate);
-				}
-
-				aggregatingView.merge(outputCoordinate, value, agg);
-			}
+		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(bucketor.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+					.slice(AdhocSliceAsMap.fromMap(rawSlice))
+					.queryStep(step)
+					.build();
+			onSlice(underlyings, slice, combinator, debug, underlyingNames, aggregatingView);
 		}
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
+	}
+
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			IAdhocSliceWithCustom slice,
+			ICombination combinator,
+			boolean debug,
+			List<String> underlyingNames,
+			MultiTypeStorage<Map<String, ?>> aggregatingView) {
+		List<Object> underlyingVs = underlyings.stream().map(storage -> {
+			AtomicReference<Object> refV = new AtomicReference<>();
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+
+			storage.onValue(slice, consumer);
+
+			return refV.get();
+		}).collect(Collectors.toList());
+
+		Object value = combinator.combine(slice, underlyingVs);
+
+		if (debug) {
+			Map<String, Object> underylingVsAsMap = new TreeMap<>();
+
+			for (int i = 0; i < underlyingNames.size(); i++) {
+				underylingVsAsMap.put(underlyingNames.get(i), underlyingVs.get(i));
+			}
+
+			log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
+					bucketor.getName(),
+					bucketor.getCombinationKey(),
+					underylingVsAsMap,
+					value,
+					slice);
+		}
+
+		if (value != null) {
+			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice);
+
+			if (debug) {
+				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
+			}
+
+			aggregatingView.merge(outputCoordinate, value);
+		}
 	}
 
 	private Map<String, ?> getCombinationOptions() {
 		return Combinator.makeAllOptions(bucketor, bucketor.getCombinationOptions());
 	}
 
-	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, Map<String, ?> coordinates) {
+	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithCustom slice) {
 		Map<String, Object> queryCoordinates = new HashMap<>();
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
-			Object value = coordinates.get(groupBy);
+			Object value = slice.getFilter(groupBy);
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
@@ -145,16 +162,6 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		});
 
 		return queryCoordinates;
-	}
-
-	public static Iterable<? extends Map<String, ?>> keySet(boolean debug, List<CoordinatesToValues> underlyings) {
-		Set<Map<String, ?>> keySet = newSet(debug);
-
-		for (CoordinatesToValues underlying : underlyings) {
-			keySet.addAll(underlying.getStorage().keySet());
-		}
-
-		return keySet;
 	}
 
 	public static Set<Map<String, ?>> newSet(boolean debug) {

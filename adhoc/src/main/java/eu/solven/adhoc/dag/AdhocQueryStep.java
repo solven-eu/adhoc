@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Optional;
+
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
@@ -57,7 +59,9 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 	boolean debug = false;
 
 	// This property is transported down to the DatabaseQuery
-	Object customMarker;
+	@Default
+	@NonNull
+	Optional<?> customMarker = Optional.empty();
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
 		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());

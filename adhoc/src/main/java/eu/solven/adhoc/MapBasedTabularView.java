@@ -49,11 +49,6 @@ public class MapBasedTabularView implements ITabularView {
 
 		RowScanner<Map<String, ?>> rowScanner = new RowScanner<Map<String, ?>>() {
 
-			// @Override
-			// public void onRow(Map<String, ?> coordinates, Map<String, ?> values) {
-			// newView.coordinatesToValues.put(coordinates, values);
-			// }
-
 			@Override
 			public ValueConsumer onKey(Map<String, ?> coordinates) {
 				if (newView.coordinatesToValues.containsKey(coordinates)) {
@@ -86,11 +81,7 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public void append(Map<String, ?> coordinates, Map<String, ?> mToValues) {
-		// if (coordinatesToValues.containsKey(coordinates)) {
-		// throw new IllegalArgumentException("There is already some values for " + coordinates);
-		// }
 		coordinatesToValues.merge(coordinates, mToValues, new MapAggregator<String, Object>()::aggregate);
-
 	}
 
 	public static ITabularView empty() {

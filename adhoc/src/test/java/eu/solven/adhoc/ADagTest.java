@@ -37,8 +37,8 @@ import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
  *
  */
 public abstract class ADagTest {
-	final EventBus eventBus = new EventBus();
-	final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
+	public final EventBus eventBus = new EventBus();
+	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measureBag(amb).build();
 
