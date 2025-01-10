@@ -71,7 +71,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 				return filter;
 			}
 		} else if (filter instanceof AndFilter andFilter) {
-			List<IAdhocFilter> unfilteredAnds = andFilter.getAnd().stream().map(this::unfilter).toList();
+			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands().stream().map(this::unfilter).toList();
 
 			return AndFilter.and(unfilteredAnds);
 		} else {

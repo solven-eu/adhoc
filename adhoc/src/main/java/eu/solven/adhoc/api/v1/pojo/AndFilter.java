@@ -87,7 +87,7 @@ public class AndFilter implements IAndFilter {
 	}
 
 	@Override
-	public List<IAdhocFilter> getAnd() {
+	public List<IAdhocFilter> getOperands() {
 		return Collections.unmodifiableList(filters);
 	}
 

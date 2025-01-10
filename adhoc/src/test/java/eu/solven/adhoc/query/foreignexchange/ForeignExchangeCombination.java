@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.sum.ProductAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class ForeignExchangeCombination implements ICombination {
 	}
 
 	@Override
-	public Object combine(IAdhocSliceWithCustom slice, List<?> underlyingValues) {
+	public Object combine(IAdhocSliceWithStep slice, List<?> underlyingValues) {
 		Object beforeFx = underlyingValues.getFirst();
 
 		if (!SumAggregator.isDoubleLike(beforeFx)) {
@@ -61,7 +61,7 @@ public class ForeignExchangeCombination implements ICombination {
 		}
 
 		// The ccy of the input value is determined by the slice providing the value
-		String ccyFrom = slice.getFilter("ccyFrom").toString();
+		String ccyFrom = slice.getRawFilter("ccyFrom").toString();
 
 		// The ccy of the output value is determined dynamically
 		String ccyTo = getCcyTo(slice);
@@ -79,10 +79,14 @@ public class ForeignExchangeCombination implements ICombination {
 			return fxRate;
 		}
 
-		return new ProductAggregator().aggregate(beforeFx, fxRate);
+		return getProductAggregator().aggregate(beforeFx, fxRate);
 	}
 
-	private static String getCcyTo(IAdhocSliceWithCustom slice) {
+	protected ProductAggregator getProductAggregator() {
+		return new ProductAggregator();
+	}
+
+	protected String getCcyTo(IAdhocSliceWithStep slice) {
 		// First, we consider a ccyTo configured as a custommarker: these are configurable dynamically by the user
 		Optional<?> optCustomMarker = slice.getQueryStep().getCustomMarker();
 		if (optCustomMarker.isPresent()) {
@@ -113,7 +117,7 @@ public class ForeignExchangeCombination implements ICombination {
 		return getDefaultCcyTo();
 	}
 
-	private static String getDefaultCcyTo() {
+	protected String getDefaultCcyTo() {
 		return "EUR";
 	}
 }

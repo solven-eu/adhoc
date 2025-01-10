@@ -26,12 +26,13 @@ import java.util.List;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 
-public interface IAndFilter extends IAdhocFilter {
+public interface IAndFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
 
 	/**
 	 * Would throw if .isAnd is false
-	 * 
+	 *
 	 * @return
 	 */
-	List<IAdhocFilter> getAnd();
+	@Override
+	List<IAdhocFilter> getOperands();
 }

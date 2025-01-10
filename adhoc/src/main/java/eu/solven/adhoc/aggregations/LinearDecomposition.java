@@ -36,8 +36,15 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.pepper.mappath.MapPathGet;
 
+/**
+ * This is an example {@link IDecomposition}, which takes the value in the input column, and split the underlying
+ * measure intosome min and max value to the output column.
+ * <p>
+ * For instance, given v=200 on input=13 with min=0 and max=100, we write 26 into output=0 and 174 into output=100.
+ */
 public class LinearDecomposition implements IDecomposition {
 	public static final String KEY = "linear";
 	/**
@@ -56,10 +63,10 @@ public class LinearDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(Map<String, ?> coordinate, Object value) {
+	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
-		Optional<?> optInput = MapPathGet.getOptionalAs(coordinate, inputColumn);
+		Optional<?> optInput = slice.optFilter(inputColumn);
 		if (optInput.isEmpty()) {
 			return Map.of(Map.of(), value);
 		}
@@ -83,7 +90,7 @@ public class LinearDecomposition implements IDecomposition {
 		}
 	}
 
-	private Object scale(Number min, Number max, Object input, Object value) {
+	protected Object scale(Number min, Number max, Object input, Object value) {
 		if (input instanceof Number inputAsNumber) {
 			if (inputAsNumber.doubleValue() <= min.doubleValue()) {
 				// input is min, so we return nothing from value
@@ -106,7 +113,7 @@ public class LinearDecomposition implements IDecomposition {
 		}
 	}
 
-	private Object scaleComplement(Number min, Number max, Object input, Object value) {
+	protected Object scaleComplement(Number min, Number max, Object input, Object value) {
 		Object scaled = scale(min, max, input, value);
 
 		if (scaled instanceof Double scaledAsNumber) {
@@ -126,7 +133,7 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		String outputColumn = MapPathGet.getRequiredString(options, "output");
+		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch
 			return Collections.singletonList(step);

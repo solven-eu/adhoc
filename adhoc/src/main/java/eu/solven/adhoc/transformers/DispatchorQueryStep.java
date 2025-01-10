@@ -30,11 +30,12 @@ import java.util.stream.Collectors;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import lombok.RequiredArgsConstructor;
@@ -51,13 +52,17 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 		return dispatchor.getUnderlyingNames();
 	}
 
-	;
-
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		IDecomposition decomposition = makeDecomposition();
 
-		return decomposition.getUnderlyingSteps(step).stream().map(subStep -> {
+		List<IWhereGroupbyAdhocQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
+
+		if (step.isDebug()) {
+			log.info("[DEBUG] {} underlyingSteps given step={}", measurelessSteps, step);
+		}
+
+		return measurelessSteps.stream().map(subStep -> {
 			return AdhocQueryStep.edit(subStep)
 					.measure(ReferencedMeasure.builder().ref(dispatchor.getUnderlying()).build())
 					.build();
@@ -86,20 +91,19 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 		IDecomposition decomposition = makeDecomposition();
 
 		for (Map<String, ?> coordinates : ColumnatorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder()
 					.slice(AdhocSliceAsMap.fromMap(coordinates))
 					.queryStep(step)
 					.build();
 
-			onSlice(underlyings, coordinates, slice, decomposition, aggregatingView);
+			onSlice(underlyings, slice, decomposition, aggregatingView);
 		}
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
-			Map<String, ?> coordinate,
-			AdhocSliceAsMapWithCustom slice,
+			AdhocSliceAsMapWithStep slice,
 			IDecomposition decomposition,
 			MultiTypeStorage<Map<String, ?>> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
@@ -114,11 +118,11 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 		Object value = underlyingVs.getFirst();
 
 		if (value != null) {
-			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(coordinate, value);
+			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice, value);
 
 			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
 				if (dispatchor.isDebug()) {
-					log.info("Contribute {} into {}", fragmentValue, fragmentCoordinate);
+					log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 				}
 
 				aggregatingView.merge(fragmentCoordinate, fragmentValue);

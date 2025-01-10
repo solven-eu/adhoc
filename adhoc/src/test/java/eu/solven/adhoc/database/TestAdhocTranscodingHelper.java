@@ -20,17 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.databases;
+package eu.solven.adhoc.database;
 
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.database.AdhocTranscodingHelper;
-import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.MapDatabaseTranscoder;
-import eu.solven.adhoc.database.TranscodingContext;
 
 public class TestAdhocTranscodingHelper {
 	@Test

@@ -47,8 +47,8 @@ import lombok.extern.slf4j.Slf4j;
  * This {@link IMeasure} will aggregate underlying measure, evaluated at buckets defined by a {@link IAdhocGroupBy}, and
  * aggregated through an {@link IAggregation}.
  *
- * A typical use-case is the Foreign-Exchange convertion, as we need to apply underlying measures depending on current
- * current.
+ * A typical use-case is the Foreign-Exchange conversion, as we need to evaluate underlying measures on a per-currency
+ * basis.
  * 
  * @author Benoit Lacelle
  */

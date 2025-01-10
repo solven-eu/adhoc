@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.aggregations.many_to_many;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 
-public class AdhocIdentity implements IDecomposition {
-	public static final String KEY = "identity";
+public interface IManyToManyDefinition {
+	/**
+	 * @param group
+	 * @return the elements being part of given group
+	 */
+	Set<Object> getElements(Object group);
 
-	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
-		return Collections.singletonMap(Map.of(), value);
-	}
+	/**
+	 * @param element
+	 * @return the groups including given element
+	 */
+	Set<Object> getGroups(Object element);
 
-	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return Collections.singletonList(step);
-	}
-
+	/**
+	 *
+	 * @param groupMatcher
+	 * @return the elements which group is matched
+	 */
+	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
 }

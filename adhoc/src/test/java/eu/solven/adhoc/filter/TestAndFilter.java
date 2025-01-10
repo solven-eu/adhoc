@@ -72,9 +72,27 @@ public class TestAndFilter {
 				.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 
 		Assertions.assertThat(filterAllAndA).isInstanceOfSatisfying(AndFilter.class, andF -> {
-			Assertions.assertThat(andF.getAnd())
+			Assertions.assertThat(andF.getOperands())
 					.hasSize(2)
 					.contains(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 		});
+	}
+
+	@Test
+	public void testMultipleSameColumn_equalsAndIn() {
+		IAdhocFilter filterA1andInA12 =
+				AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isIn("a", "a1", "a2"));
+
+		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a1")`
+		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
+	}
+
+	@Test
+	public void testMultipleSameColumn_InAndIn() {
+		IAdhocFilter filterA1andInA12 =
+				AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
+
+		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a2")`
+		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
 	}
 }

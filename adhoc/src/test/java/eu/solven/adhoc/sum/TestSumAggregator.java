@@ -49,6 +49,9 @@ public class TestSumAggregator {
 		// Float without decimal
 		Assertions.assertThat(SumAggregator.isLongLike(123F)).isFalse();
 		Assertions.assertThat(SumAggregator.isLongLike(123D)).isFalse();
+
+		Assertions.assertThat(SumAggregator.isLongLike(BigDecimal.valueOf(123))).isTrue();
+		Assertions.assertThat(SumAggregator.isLongLike(BigDecimal.valueOf(123.456))).isFalse();
 	}
 
 	@Test
@@ -65,6 +68,9 @@ public class TestSumAggregator {
 		// Float without decimal
 		Assertions.assertThat(SumAggregator.isDoubleLike(123F)).isTrue();
 		Assertions.assertThat(SumAggregator.isDoubleLike(123D)).isTrue();
+
+		Assertions.assertThat(SumAggregator.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
+		Assertions.assertThat(SumAggregator.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();
 	}
 
 	@Test

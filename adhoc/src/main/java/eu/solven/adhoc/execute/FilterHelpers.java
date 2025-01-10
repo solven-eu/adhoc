@@ -44,11 +44,11 @@ public class FilterHelpers {
 	public static boolean match(IAdhocDatabaseTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
 		if (filter.isAnd()) {
 			IAndFilter andFilter = (IAndFilter) filter;
-			return andFilter.getAnd().stream().allMatch(f -> match(f, input));
+			return andFilter.getOperands().stream().allMatch(f -> match(f, input));
 		} else if (filter.isOr()) {
 			IOrFilter orFilter = (IOrFilter) filter;
-			return orFilter.getOr().stream().anyMatch(f -> match(f, input));
-		} else if (filter.isColumnMatcher()) {
+			return orFilter.getOperands().stream().anyMatch(f -> match(f, input));
+		} else if (filter.isColumnFilter()) {
 			IColumnFilter columnFilter = (IColumnFilter) filter;
 
 			String underlyingColumn = transcoder.underlying(columnFilter.getColumn());

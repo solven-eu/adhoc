@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.aggregations;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,17 +29,17 @@ import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
 
-public class AdhocIdentity implements IDecomposition {
-	public static final String KEY = "identity";
-
+/**
+ * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
+ */
+public class CustomDecomposition implements IDecomposition {
 	@Override
 	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
-		return Collections.singletonMap(Map.of(), value);
+		return Map.of();
 	}
 
 	@Override
 	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return Collections.singletonList(step);
+		return List.of();
 	}
-
 }

@@ -33,7 +33,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +72,7 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 
 		boolean debug = filtrator.isDebug() || step.isDebug();
 		for (Map<String, ?> coordinate : ColumnatorQueryStep.keySet(debug, underlyings)) {
-			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder()
 					.slice(AdhocSliceAsMap.fromMap(coordinate))
 					.queryStep(step)
 					.build();

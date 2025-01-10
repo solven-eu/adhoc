@@ -41,12 +41,4 @@ public interface IAdhocDatabaseTranscoder {
 	 *         to itself.
 	 */
 	String underlying(String queried);
-
-	/**
-	 *
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the equivalent queried column name, typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
-	 */
-	// String queried(String underlying);
 }

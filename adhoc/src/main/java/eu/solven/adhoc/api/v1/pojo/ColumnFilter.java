@@ -24,11 +24,13 @@ package eu.solven.adhoc.api.v1.pojo;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
@@ -62,7 +64,7 @@ public class ColumnFilter implements IColumnFilter {
 	}
 
 	@Override
-	public boolean isColumnMatcher() {
+	public boolean isColumnFilter() {
 		return true;
 	}
 
@@ -72,6 +74,11 @@ public class ColumnFilter implements IColumnFilter {
 	}
 
 	public static class ColumnFilterBuilder {
+		/**
+		 * Used when we want this to match cases where the column is null
+		 * 
+		 * @return
+		 */
 		public ColumnFilterBuilder matchNull() {
 			this.valueMatcher = NullMatcher.matchNull();
 			return this;
@@ -80,13 +87,14 @@ public class ColumnFilter implements IColumnFilter {
 		public ColumnFilterBuilder matchIn(Collection<?> collection) {
 			// One important edge-case is getting away from java.util.Set which generates NPE on .contains(null)
 			// https://github.com/adoptium/adoptium-support/issues/1186
-			this.valueMatcher = InMatcher.builder().operands(collection.stream().map(o -> {
+			Set<Object> operands = collection.stream().map(o -> {
 				if (o == null) {
 					return NullMatcher.matchNull();
 				} else {
 					return o;
 				}
-			}).collect(Collectors.toSet())).build();
+			}).collect(Collectors.toSet());
+			this.valueMatcher = InMatcher.builder().operands(operands).build();
 			return this;
 		}
 
@@ -143,7 +151,7 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return a {@link ColumnFilter}
 	 */
 	// https://duckdb.org/docs/sql/query_syntax/unnest.html
-	public static ColumnFilter isIn(String column, Object first, Object... more) {
+	public static IAdhocFilter isIn(String column, Object first, Object... more) {
 		List<Object> rawList = Lists.asList(first, more);
 
 		List<Object> expandedList = rawList.stream().flatMap(o -> {
@@ -154,6 +162,10 @@ public class ColumnFilter implements IColumnFilter {
 			}
 		}).toList();
 
-		return ColumnFilter.builder().column(column).matchIn(expandedList).build();
+		if (expandedList.isEmpty()) {
+			return IAdhocFilter.MATCH_NONE;
+		} else {
+			return ColumnFilter.builder().column(column).matchIn(expandedList).build();
+		}
 	}
 }

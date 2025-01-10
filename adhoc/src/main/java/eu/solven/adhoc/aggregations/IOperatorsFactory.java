@@ -28,9 +28,8 @@ import eu.solven.adhoc.transformers.IHasCombinationKey;
 
 /**
  * Provides {@link ICombination} given their key. This can be extended to provides custom transformations.
- * 
- * @author Benoit Lacelle
  *
+ * @author Benoit Lacelle
  */
 public interface IOperatorsFactory {
 
@@ -40,7 +39,22 @@ public interface IOperatorsFactory {
 
 	ICombination makeCombination(String key, Map<String, ?> options);
 
-	IAggregation makeAggregation(String key);
+	/**
+	 * @param key
+	 * @param options
+	 * @return an instance of IAggregation matching given key
+	 */
+	IAggregation makeAggregation(String key, Map<String, ?> options);
+
+	/**
+	 * Use empty options by default, as most IAggregation are not configurable.
+	 *
+	 * @param key
+	 * @return an instance of IAggregation matching given key
+	 */
+	default IAggregation makeAggregation(String key) {
+		return makeAggregation(key, Map.of());
+	}
 
 	IDecomposition makeDecomposition(String key, Map<String, ?> decompositionOptions);
 }

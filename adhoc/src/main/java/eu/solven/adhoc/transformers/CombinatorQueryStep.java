@@ -37,8 +37,8 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
-import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,10 +75,8 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 
 		boolean debug = combinator.isDebug() || step.isDebug();
 		for (Map<String, ?> rawSlice : CombinatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
-					.slice(AdhocSliceAsMap.fromMap(rawSlice))
-					.queryStep(step)
-					.build();
+			AdhocSliceAsMapWithStep slice =
+					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
 			onSlice(underlyings, slice, tranformation, debug, output);
 		}
 
@@ -86,7 +84,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
-			IAdhocSliceWithCustom slice,
+			IAdhocSliceWithStep slice,
 			ICombination combination,
 			boolean debug,
 			ICoordinatesToValues output) {

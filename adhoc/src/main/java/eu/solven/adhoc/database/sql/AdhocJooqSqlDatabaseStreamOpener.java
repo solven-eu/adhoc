@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.database.sql;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,12 +49,15 @@ import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
+import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
+import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.TranscodingContext;
 import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
@@ -93,7 +96,7 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 		IAdhocFilter filter = dbQuery.getFilter();
 		if (!filter.isMatchAll()) {
 			if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-				andFilter.getAnd().stream().map(this::toCondition).forEach(dbConditions::add);
+				andFilter.getOperands().stream().map(this::toCondition).forEach(dbConditions::add);
 			} else {
 				dbConditions.add(toCondition(filter));
 			}
@@ -198,7 +201,7 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
-				.map(c -> transcoder.underlying(c))
+				.map(transcoder::underlying)
 				.map(c -> DSL.field(DSL.name(c)).isNotNull())
 				.collect(Collectors.toList());
 
@@ -206,53 +209,65 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 	}
 
 	protected Condition toCondition(IAdhocFilter filter) {
-		if (filter.isColumnMatcher() && filter instanceof IColumnFilter columnFilter) {
-			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-			String column = transcoder.underlying(columnFilter.getColumn());
-
-			Condition condition;
-			final Field<Object> field = DSL.field(DSL.name(column));
-			switch (valueMatcher) {
-			case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
-			case InMatcher inMatcher -> {
-				Set<?> operands = inMatcher.getOperands();
-
-				if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
-					// Please fill a ticket, various such cases could be handled
-					throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
-				}
-
-				condition = DSL.condition(field.in(operands));
-			}
-			case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
-			case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
-			case ComparingMatcher comparingMatcher -> {
-				Object operand = comparingMatcher.getOperand();
-
-				Condition jooqCondition;
-				if (comparingMatcher.isGreaterThan()) {
-					if (comparingMatcher.isMatchIfEqual()) {
-						jooqCondition = field.greaterOrEqual(operand);
-					} else {
-						jooqCondition = field.greaterThan(operand);
-					}
-				} else {
-					if (comparingMatcher.isMatchIfEqual()) {
-						jooqCondition = field.lessOrEqual(operand);
-					} else {
-						jooqCondition = field.lessThan(operand);
-					}
-				}
-				condition = DSL.condition(jooqCondition);
-			}
-			default -> throw new UnsupportedOperationException(
-					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-			}
-			return condition;
+		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			return toCondition(columnFilter);
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			List<IAdhocFilter> operands = andFilter.getOperands();
+			List<Condition> conditions = operands.stream().map(this::toCondition).collect(Collectors.toList());
+			return DSL.and(conditions);
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			List<IAdhocFilter> operands = orFilter.getOperands();
+			List<Condition> conditions = operands.stream().map(this::toCondition).collect(Collectors.toList());
+			return DSL.or(conditions);
 		} else {
 			throw new UnsupportedOperationException(
 					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
+	}
+
+	protected Condition toCondition(IColumnFilter columnFilter) {
+		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+		String column = transcoder.underlying(columnFilter.getColumn());
+
+		Condition condition;
+		final Field<Object> field = DSL.field(DSL.name(column));
+		switch (valueMatcher) {
+		case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
+		case InMatcher inMatcher -> {
+			Set<?> operands = inMatcher.getOperands();
+
+			if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
+				// Please fill a ticket, various such cases could be handled
+				throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
+			}
+
+			condition = DSL.condition(field.in(operands));
+		}
+		case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
+		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+		case ComparingMatcher comparingMatcher -> {
+			Object operand = comparingMatcher.getOperand();
+
+			Condition jooqCondition;
+			if (comparingMatcher.isGreaterThan()) {
+				if (comparingMatcher.isMatchIfEqual()) {
+					jooqCondition = field.greaterOrEqual(operand);
+				} else {
+					jooqCondition = field.greaterThan(operand);
+				}
+			} else {
+				if (comparingMatcher.isMatchIfEqual()) {
+					jooqCondition = field.lessOrEqual(operand);
+				} else {
+					jooqCondition = field.lessThan(operand);
+				}
+			}
+			condition = DSL.condition(jooqCondition);
+		}
+		default -> throw new UnsupportedOperationException(
+				"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
+		}
+		return condition;
 	}
 
 }

@@ -43,8 +43,8 @@ import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.execute.GroupByHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
-import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import lombok.RequiredArgsConstructor;
@@ -90,10 +90,8 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		boolean debug = bucketor.isDebug() || step.isDebug();
 		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(bucketor.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
-					.slice(AdhocSliceAsMap.fromMap(rawSlice))
-					.queryStep(step)
-					.build();
+			AdhocSliceAsMapWithStep slice =
+					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
 			onSlice(underlyings, slice, combinator, debug, underlyingNames, aggregatingView);
 		}
 
@@ -101,7 +99,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
-			IAdhocSliceWithCustom slice,
+			IAdhocSliceWithStep slice,
 			ICombination combinator,
 			boolean debug,
 			List<String> underlyingNames,
@@ -147,11 +145,11 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		return Combinator.makeAllOptions(bucketor, bucketor.getCombinationOptions());
 	}
 
-	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithCustom slice) {
+	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithStep slice) {
 		Map<String, Object> queryCoordinates = new HashMap<>();
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
-			Object value = slice.getFilter(groupBy);
+			Object value = slice.getRawFilter(groupBy);
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?

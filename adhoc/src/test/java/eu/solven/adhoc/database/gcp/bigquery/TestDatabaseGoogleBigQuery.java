@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.databases.gcp.bigquery;
+package eu.solven.adhoc.database.gcp.bigquery;
 
 import java.util.ArrayList;
 import java.util.Collections;

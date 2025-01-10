@@ -22,5 +22,65 @@
  */
 package eu.solven.adhoc.slice;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 public class TestAdhocSlice {
+	@Test
+	public void testRequireFilter_String() {
+		IAdhocSlice slice = AdhocSliceAsMap.fromMap(Map.of("k", "v"));
+
+		Assertions.assertThat(slice.getColumns()).containsExactly("k");
+
+		{
+			Assertions.assertThat(slice.getRawFilter("k")).isEqualTo("v");
+			Assertions.assertThat(slice.getFilter("k", Object.class)).isEqualTo("v");
+			Assertions.assertThat(slice.getFilter("k", String.class)).isEqualTo("v");
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(slice.optFilter("k")).contains("v");
+		}
+
+		{
+			Assertions.assertThatThrownBy(() -> slice.getRawFilter("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Object.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(slice.optFilter("k2")).isEmpty();
+		}
+	}
+
+	@Test
+	public void testRequireFilter_Collection() {
+		IAdhocSlice slice = AdhocSliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
+
+		Assertions.assertThat(slice.getColumns()).containsExactly("k");
+
+		{
+			Assertions.assertThat(slice.getRawFilter("k")).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getFilter("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getFilter("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getFilter("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k", String.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(slice.optFilter("k")).contains(Arrays.asList("v1", "v2"));
+		}
+
+		{
+			Assertions.assertThatThrownBy(() -> slice.getRawFilter("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Object.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(slice.optFilter("k2")).isEmpty();
+		}
+	}
 }

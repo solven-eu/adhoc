@@ -22,8 +22,12 @@
  */
 package eu.solven.adhoc.slice;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import eu.solven.pepper.core.PepperLogHelper;
 
 /**
  * A slice expresses the axes along which que query is filtered.
@@ -34,8 +38,47 @@ public interface IAdhocSlice {
 	 */
 	Set<String> getColumns();
 
-	Object getFilter(String column);
+	/**
+	 *
+	 * @param column
+	 * @return the filtered coordinate, only if the column is actually filtered. It may be a Collection if the column is
+	 *         filtered along multiple values.
+	 */
+	default Object getRawFilter(String column) {
+		return optFilter(column)
+				.orElseThrow(() -> new IllegalArgumentException("%s is not a sliced column".formatted(column)));
+	}
+
+	/**
+	 *
+	 * @param column
+	 * @param clazz
+	 * @return the filtered coordinate on given column. Unless clazz accept {@link java.util.Collection}, this would
+	 *         match only on simple (single value) filters.
+	 * @param <T>
+	 */
+	default <T> T getFilter(String column, Class<? extends T> clazz) {
+		Object filter = getRawFilter(column);
+
+		if (clazz.isInstance(filter)) {
+			return clazz.cast(filter);
+		} else {
+			throw new IllegalArgumentException("column=%s is missing or with unexpected type: %s (expected class=%s)"
+					.formatted(column, PepperLogHelper.getObjectAndClass(filter), clazz));
+		}
+	}
+
+	Optional<Object> optFilter(String column);
 
 	// BEWARE This usage is unclear, and may be a flawed design
-	Map<String, ?> getCoordinates();
+	@Deprecated
+	default Map<String, ?> getCoordinates() {
+		Map<String, Object> asMap = new LinkedHashMap<>();
+
+		getColumns().forEach(column -> {
+			asMap.put(column, getFilter(column, Object.class));
+		});
+
+		return asMap;
+	}
 }

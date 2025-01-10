@@ -40,7 +40,6 @@ import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.database.AdhocJooqSqlDatabaseStreamOpener;
 import eu.solven.adhoc.database.AdhocTranscodingHelper;
 import eu.solven.adhoc.database.IAdhocDatabaseReverseTranscoder;
 import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;

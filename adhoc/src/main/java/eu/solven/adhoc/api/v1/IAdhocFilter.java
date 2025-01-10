@@ -63,7 +63,7 @@ public interface IAdhocFilter {
 	 * @return true if this filters a column for a given value
 	 */
 	@JsonIgnore
-	default boolean isColumnMatcher() {
+	default boolean isColumnFilter() {
 		return false;
 	}
 

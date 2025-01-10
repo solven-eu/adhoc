@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,26 @@
  */
 package eu.solven.adhoc.aggregations;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 
-public class AdhocIdentity implements IDecomposition {
-	public static final String KEY = "identity";
+public class TestCustomOperatorsFactory {
+	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
 
-	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
-		return Collections.singletonMap(Map.of(), value);
+	@Test
+	public void testAggregation_custom() {
+		IAggregation aggregation = factory.makeAggregation("CUSTOM");
+
+		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
 	}
 
-	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return Collections.singletonList(step);
+	@Test
+	public void testAggregation_fallback() {
+		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY);
+
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
 	}
 
 }

@@ -20,27 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.slice;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import lombok.Builder;
+import lombok.NonNull;
 
-public class AdhocIdentity implements IDecomposition {
-	public static final String KEY = "identity";
+/**
+ * A simple {@link IAdhocSlice} based on a {@link Map}
+ */
+@Builder
+public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
+	@NonNull
+	final IAdhocSlice slice;
+
+	@NonNull
+	final AdhocQueryStep queryStep;
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
-		return Collections.singletonMap(Map.of(), value);
+	public @NonNull AdhocQueryStep getQueryStep() {
+		return queryStep;
 	}
 
 	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return Collections.singletonList(step);
+	public Set<String> getColumns() {
+		return slice.getColumns();
 	}
 
+	@Override
+	public Optional<Object> optFilter(String column) {
+		return slice.optFilter(column);
+	}
 }

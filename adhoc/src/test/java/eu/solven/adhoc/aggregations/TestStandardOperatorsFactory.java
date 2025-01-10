@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.slice;
+package eu.solven.adhoc.aggregations;
 
 import java.util.Map;
-import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import lombok.Builder;
-import lombok.NonNull;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A simple {@link IAdhocSlice} based on a {@link Map}
- */
-@Builder
-public class AdhocSliceAsMapWithCustom implements IAdhocSliceWithCustom {
-	@NonNull
-	final IAdhocSlice slice;
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
 
-	@NonNull
-	final AdhocQueryStep queryStep;
+public class TestStandardOperatorsFactory {
+	StandardOperatorsFactory factory = new StandardOperatorsFactory();
 
-	@Override
-	public @NonNull AdhocQueryStep getQueryStep() {
-		return queryStep;
+	@Test
+	public void testAggregation_byKey() {
+		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY, Map.of());
+
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
 	}
 
-	@Override
-	public Set<String> getColumns() {
-		return slice.getColumns();
+	@Test
+	public void testAggregation_byClassQualifiedName() {
+		IAggregation aggregation = factory.makeAggregation(CustomAggregation.class.getName());
+
+		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
 	}
 
-	@Override
-	public Object getFilter(String column) {
-		return slice.getFilter(column);
-	}
-
-	@Override
-	public Map<String, ?> getCoordinates() {
-		return slice.getCoordinates();
+	@Test
+	public void testAggregation_unknownKey() {
+		Assertions.assertThatThrownBy(() -> factory.makeAggregation("someUnknownKey"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("someUnknownKey");
 	}
 }

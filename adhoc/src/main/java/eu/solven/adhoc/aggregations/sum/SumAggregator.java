@@ -100,7 +100,7 @@ public class SumAggregator implements IAggregation {
 				long asLong = bigDecimal.longValueExact();
 				log.trace("This is a long: {}", bigDecimal);
 				return true;
-			} catch (IllegalArgumentException e) {
+			} catch (ArithmeticException e) {
 				log.trace("This is not a long: {}", bigDecimal, e);
 			}
 			return false;

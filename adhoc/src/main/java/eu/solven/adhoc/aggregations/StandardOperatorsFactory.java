@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.aggregations;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
@@ -50,12 +51,30 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
                 yield ExpressionCombination.parse(options);
             }
             default:
-                throw new IllegalArgumentException("Unexpected value: " + key);
+                yield defaultCombination(key, options);
         };
     }
 
+	protected ICombination defaultCombination(String key, Map<String, ?> options) {
+		Class<? extends ICombination> asClass;
+		try {
+			asClass = (Class<? extends ICombination>) Class.forName(key);
+
+		} catch (ClassNotFoundException e) {
+			log.trace("No class matches %s".formatted(key));
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		}
+
+		try {
+			return asClass.getConstructor(Map.class).newInstance(options);
+		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
+				| NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Override
-    public IAggregation makeAggregation(String key) {
+    public IAggregation makeAggregation(String key, Map<String, ?> options) {
         return switch (key) {
             case SumAggregator.KEY: {
                 yield new SumAggregator();
@@ -64,22 +83,33 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
                 yield new MaxAggregator();
             }
             default:
-                Class<? extends IAggregation> asClass;
-                try {
-                    asClass = (Class<? extends IAggregation>) Class.forName(key);
-
-                } catch (ClassNotFoundException e) {
-                    log.trace("No class matches %s".formatted(key));
-                    throw new IllegalArgumentException("Unexpected value: " + key);
-                }
-
-                try {
-                    yield asClass.getConstructor().newInstance();
-                } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
+                yield defaultAggregation(key, options);
         };
     }
+
+	protected IAggregation defaultAggregation(String key, Map<String, ?> options) {
+		Class<? extends IAggregation> asClass;
+		try {
+			asClass = (Class<? extends IAggregation>) Class.forName(key);
+
+		} catch (ClassNotFoundException e) {
+			log.trace("No class matches %s".formatted(key));
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		}
+
+		try {
+			try {
+				Constructor<? extends IAggregation> constructorWithOptions = asClass.getConstructor(Map.class);
+				return constructorWithOptions.newInstance(options);
+			} catch (NoSuchMethodException e) {
+				Constructor<? extends IAggregation> constructorWithNothing = asClass.getConstructor();
+				return constructorWithNothing.newInstance();
+			}
+		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
+				| NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
     public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
@@ -91,8 +121,26 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
                 yield new LinearDecomposition(options);
             }
             default:
-                throw new IllegalArgumentException("Unexpected value: " + key);
+                yield defaultDecomposition(key, options);
         };
     }
+
+	protected IDecomposition defaultDecomposition(String key, Map<String, ?> options) {
+		Class<? extends IDecomposition> asClass;
+		try {
+			asClass = (Class<? extends IDecomposition>) Class.forName(key);
+
+		} catch (ClassNotFoundException e) {
+			log.trace("No class matches %s".formatted(key));
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		}
+
+		try {
+			return asClass.getConstructor(Map.class).newInstance(options);
+		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
+				| NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 }

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.slice;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -33,16 +34,19 @@ import com.google.common.collect.ImmutableMap;
 public class AdhocSliceAsMap implements IAdhocSlice {
 	final Map<String, ?> asMap;
 
-	public AdhocSliceAsMap(Map<String, ?> asMap) {
+	protected AdhocSliceAsMap(Map<String, ?> asMap) {
 		this.asMap = asMap;
-
-		if (asMap.containsValue(null)) {
-			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
-		}
 	}
 
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		return new AdhocSliceAsMap(asMap);
+		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
+		Map<String, ?> safeMap = ImmutableMap.copyOf(asMap);
+
+		if (safeMap.containsValue(null)) {
+			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
+		}
+
+		return new AdhocSliceAsMap(safeMap);
 	}
 
 	@Override
@@ -51,19 +55,20 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Object getFilter(String column) {
+	public Optional<Object> optFilter(String column) {
 		Object filter = asMap.get(column);
 
 		if (filter == null) {
 			if (asMap.containsKey(column)) {
 				// BEWARE Should this be a legit case, handling NULL specifically?
-				throw new IllegalStateException("%s is sliced with null".formatted(column));
+				throw new IllegalStateException("%s is sliced with NULL".formatted(column));
 			} else {
-				throw new IllegalArgumentException("%s is not a sliced column".formatted(column));
+				// throw new IllegalStateException("%s is sliced with null".formatted(column));
+				return Optional.empty();
 			}
 		}
 
-		return filter;
+		return Optional.of(filter);
 	}
 
 	@Override

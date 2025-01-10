@@ -27,12 +27,17 @@ import java.util.Map;
 
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.slice.IAdhocSlice;
 
+/**
+ * Used for {@link eu.solven.adhoc.transformers.IMeasure} which generates/contributes into multiple slices given an
+ * underlying slice. It may be used for rebucketing (e.g. `123 on 0.2` may be decomposed into `123*0.2 into 0 and
+ * 123*0.8 into 1.0`).
+ */
 public interface IDecomposition {
-	Map<Map<String, ?>, Object> decompose(Map<String, ?> coordinate, Object value);
+	Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value);
 
 	/**
-	 * 
 	 * @param step
 	 * @return the columns which MAY be written by decompositions.
 	 */

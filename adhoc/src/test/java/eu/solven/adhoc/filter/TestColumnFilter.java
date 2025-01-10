@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.NotFilter;
 import eu.solven.adhoc.execute.FilterHelpers;
@@ -120,7 +121,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testIsIn_single() {
-		ColumnFilter kIsNull = ColumnFilter.isIn("k", "v");
+		IAdhocFilter kIsNull = ColumnFilter.isIn("k", "v");
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Map<String, Object> explicitNull = new HashMap<>();
@@ -133,7 +134,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testIsIn_list() {
-		ColumnFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
+		IAdhocFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Map<String, Object> explicitNull = new HashMap<>();
@@ -157,5 +158,12 @@ public class TestColumnFilter {
 		ColumnFilter fromString = objectMapper.readValue(asString, ColumnFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(ksEqualsV);
+	}
+
+	@Test
+	public void testInEmpty() throws JsonProcessingException {
+		IAdhocFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
+
+		Assertions.assertThat(ksEqualsV).isEqualTo(IAdhocFilter.MATCH_NONE);
 	}
 }

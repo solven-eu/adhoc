@@ -37,8 +37,8 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithCustom;
-import eu.solven.adhoc.slice.IAdhocSliceWithCustom;
+import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,7 +69,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	private boolean isMonoSelected(String column, IAdhocFilter filter) {
-		if (filter.isColumnMatcher() && filter instanceof IColumnFilter columnFilter
+		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter
 				&& columnFilter.getColumn().equals(column)) {
 			return true;
 		}
@@ -90,10 +90,8 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		ICombination transformation = transformationFactory.makeTransformation(combinator);
 
 		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithCustom slice = AdhocSliceAsMapWithCustom.builder()
-					.slice(AdhocSliceAsMap.fromMap(rawSlice))
-					.queryStep(step)
-					.build();
+			AdhocSliceAsMapWithStep slice =
+					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
 			onSlice(underlyings, slice, transformation, output);
 		}
 
@@ -101,14 +99,12 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
-			IAdhocSliceWithCustom slice,
+			IAdhocSliceWithStep slice,
 			ICombination transformation,
 			ICoordinatesToValues output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-				refV.set(o);
-			});
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
 			storage.onValue(slice, consumer);
 
@@ -116,6 +112,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		}).collect(Collectors.toList());
 
 		Object value = transformation.combine(slice, underlyingVs);
+
 		output.put(slice.getCoordinates(), value);
 	}
 
