@@ -78,7 +78,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class AdhocJooqSqlDatabaseStreamOpener {
+public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseStreamOpener {
 	@NonNull
 	final IAdhocDatabaseTranscoder transcoder;
 
@@ -88,6 +88,7 @@ public class AdhocJooqSqlDatabaseStreamOpener {
 	@NonNull
 	DSLContext dslContext;
 
+	@Override
 	public ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery) {
 		Collection<Condition> dbConditions = new ArrayList<>();
 

@@ -30,12 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
+import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
@@ -44,7 +46,7 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,7 +91,7 @@ public class ManyToManyDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.optFilter(elementColumn);
@@ -104,7 +106,7 @@ public class ManyToManyDecomposition implements IDecomposition {
 			throw new UnsupportedOperationException("TODO Handle element being a Collection");
 		}
 
-		Set<Object> groups = getGroups(element);
+		Set<Object> groups = getGroups(slice, element);
 
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
@@ -124,8 +126,48 @@ public class ManyToManyDecomposition implements IDecomposition {
 		return output;
 	}
 
-	protected Set<Object> getGroups(Object element) {
-		return manyToManyDefinition.getGroups(element);
+	protected Set<Object> getGroups(IAdhocSliceWithStep slice, Object element) {
+		Set<Object> groupsMayBeFilteredOut = manyToManyDefinition.getGroups(element);
+
+		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+
+		IAdhocFilter filter = slice.getQueryStep().getFilter();
+
+		Set<Object> matchingGroups = groupsMayBeFilteredOut.stream().filter(groupCandidate -> {
+			return doFilter(groupColumn, groupCandidate, filter);
+		}).collect(Collectors.toSet());
+
+		log.debug("Element={} led to accepted groups={}", element, matchingGroups);
+
+		return matchingGroups;
+	}
+
+	protected boolean doFilter(String groupColumn, Object groupCandidate, IAdhocFilter filter) {
+		if (filter.isMatchAll()) {
+			return true;
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			if (!columnFilter.getColumn().equals(groupColumn)) {
+				// The group column is not filtered: accept this group as it is not rejected
+				// e.g. we filter color=pink: it should not reject countryGroup=G8
+				return true;
+			} else {
+				boolean match = columnFilter.getValueMatcher().match(groupCandidate);
+
+				log.debug("{} is matched", groupCandidate);
+
+				return match;
+			}
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands()
+					.stream()
+					.allMatch(subFilter -> doFilter(groupColumn, groupCandidate, subFilter));
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands()
+					.stream()
+					.anyMatch(subFilter -> doFilter(groupColumn, groupCandidate, subFilter));
+		} else {
+			throw new UnsupportedOperationException("%s is not managed".formatted(filter));
+		}
 	}
 
 	/**

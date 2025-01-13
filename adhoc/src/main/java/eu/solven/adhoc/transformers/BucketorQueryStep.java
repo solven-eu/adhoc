@@ -22,14 +22,10 @@
  */
 package eu.solven.adhoc.transformers;
 
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -37,7 +33,6 @@ import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
@@ -59,17 +54,24 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 	public List<String> getUnderlyingNames() {
 		return bucketor.getUnderlyings();
-	};
+	}
+
+	;
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
+			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy());
 			AdhocQueryStep object = AdhocQueryStep.edit(step)
-					.groupBy(GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy()))
+					.groupBy(groupBy)
 					.measure(ReferencedMeasure.builder().ref(underlying).build())
 					.build();
 			return object;
 		}).collect(Collectors.toList());
+	}
+
+	protected boolean isDebug() {
+		return bucketor.isDebug() || step.isDebug();
 	}
 
 	@Override
@@ -88,11 +90,10 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		List<String> underlyingNames = getUnderlyingNames();
 
-		boolean debug = bucketor.isDebug() || step.isDebug();
-		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(bucketor.isDebug(), underlyings)) {
+		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(isDebug(), underlyings)) {
 			AdhocSliceAsMapWithStep slice =
 					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
-			onSlice(underlyings, slice, combinator, debug, underlyingNames, aggregatingView);
+			onSlice(underlyings, slice, combinator, underlyingNames, aggregatingView);
 		}
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
@@ -101,7 +102,6 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combinator,
-			boolean debug,
 			List<String> underlyingNames,
 			MultiTypeStorage<Map<String, ?>> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
@@ -115,7 +115,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		Object value = combinator.combine(slice, underlyingVs);
 
-		if (debug) {
+		if (isDebug()) {
 			Map<String, Object> underylingVsAsMap = new TreeMap<>();
 
 			for (int i = 0; i < underlyingNames.size(); i++) {
@@ -133,7 +133,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		if (value != null) {
 			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice);
 
-			if (debug) {
+			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
@@ -141,11 +141,11 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		}
 	}
 
-	private Map<String, ?> getCombinationOptions() {
+	protected Map<String, ?> getCombinationOptions() {
 		return Combinator.makeAllOptions(bucketor, bucketor.getCombinationOptions());
 	}
 
-	private Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithStep slice) {
+	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithStep slice) {
 		Map<String, Object> queryCoordinates = new HashMap<>();
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
@@ -160,17 +160,5 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		});
 
 		return queryCoordinates;
-	}
-
-	public static Set<Map<String, ?>> newSet(boolean debug) {
-		Set<Map<String, ?>> keySet;
-		if (debug) {
-			// Enforce an iteration order for debugging-purposes
-			Comparator<Map<String, ?>> mapComparator = MapComparators.mapComparator();
-			keySet = new TreeSet<>(mapComparator);
-		} else {
-			keySet = new HashSet<>();
-		}
-		return keySet;
 	}
 }

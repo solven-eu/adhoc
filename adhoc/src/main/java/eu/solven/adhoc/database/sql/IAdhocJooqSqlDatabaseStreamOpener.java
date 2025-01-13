@@ -20,26 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.database.sql;
 
-import java.util.List;
-import java.util.Map;
+import org.jooq.Record;
+import org.jooq.ResultQuery;
 
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.query.DatabaseQuery;
 
-/**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
- */
-public class CustomDecomposition implements IDecomposition {
-	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
-		return Map.of();
-	}
-
-	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return List.of();
-	}
+public interface IAdhocJooqSqlDatabaseStreamOpener {
+	ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery);
 }

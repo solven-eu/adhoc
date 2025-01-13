@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.NotFilter;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.execute.FilterHelpers;
 
 public class TestColumnFilter {
@@ -165,5 +166,16 @@ public class TestColumnFilter {
 		IAdhocFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
 
 		Assertions.assertThat(ksEqualsV).isEqualTo(IAdhocFilter.MATCH_NONE);
+	}
+
+	@Test
+	public void testLikeMatcher() throws JsonProcessingException {
+		IAdhocFilter ksEqualsV =
+				ColumnFilter.builder().column("a").matching(LikeMatcher.builder().like("prefix%").build()).build();
+
+		Assertions.assertThat(ksEqualsV.isColumnFilter()).isTrue();
+		Assertions.assertThat(ksEqualsV).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
+			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(LikeMatcher.builder().like("prefix%").build());
+		});
 	}
 }

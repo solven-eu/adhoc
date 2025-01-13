@@ -36,7 +36,7 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**
@@ -63,7 +63,7 @@ public class LinearDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.optFilter(inputColumn);

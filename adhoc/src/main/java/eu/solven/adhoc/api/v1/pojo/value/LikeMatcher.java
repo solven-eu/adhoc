@@ -31,7 +31,7 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * To be used with {@link ColumnFilter}, for regex-based matchers.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -46,6 +46,11 @@ public class LikeMatcher implements IValueMatcher {
 		return p.matcher(inputToTest).matches();
 	}
 
+	/**
+	 *
+	 * @param likePattern
+	 * @return the {@link Pattern} equivalent to this LIKE expression
+	 */
 	// https://www.alibabacloud.com/blog/how-to-efficiently-implement-sql-like-syntax-in-java_600079
 	// Is it missing % escaping?
 	public static Pattern asPattern(final String likePattern) {

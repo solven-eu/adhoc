@@ -22,14 +22,18 @@
  */
 package eu.solven.adhoc.transformers;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
@@ -38,6 +42,7 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -120,13 +125,45 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 		if (value != null) {
 			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice, value);
 
+			Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
+
 			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
 				if (dispatchor.isDebug()) {
 					log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 				}
 
-				aggregatingView.merge(fragmentCoordinate, fragmentValue);
+				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice, fragmentCoordinate);
+
+				if (outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
+					aggregatingView.merge(outputCoordinate, fragmentValue);
+				} else {
+					log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
+				}
 			});
 		}
+	}
+
+	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy queryGroupBy,
+			AdhocSliceAsMapWithStep slice,
+			Map<String, ?> fragmentCoordinate) {
+		Map<String, Object> queryCoordinates = new HashMap<>();
+
+		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
+			// BEWARE it is legal only to get groupColumns from the fragment coordinate
+			Object value = fragmentCoordinate.get(groupBy);
+
+			if (value == null) {
+				value = slice.getRawFilter(groupBy);
+			}
+
+			if (value == null) {
+				// Should we accept null a coordinate, e.g. to handle input partial Maps?
+				throw new IllegalStateException("A coordinate-value can not be null");
+			}
+
+			queryCoordinates.put(groupBy, value);
+		});
+
+		return queryCoordinates;
 	}
 }

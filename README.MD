@@ -96,3 +96,21 @@ In Analysis-Services, [Many-to-Many](https://github.com/MicrosoftDocs/bi-shared-
 For instance, in a flatten `GeographicalZone` column (e.g. having flattened a hierarchical `Region->Country->City`), a single `Paris` fact would contribute into `Paris`, `France` and `Europe`.
 
 This can be achieved in Adhoc with a `Dispatchor`.
+
+A full example is visible in `TestManyToManyAdhocQuery`.
+
+# Limitations
+
+## Visual filters
+
+Sometimes, one wants to filter the visible members along some columns, without filtering the actual query. Typically, one may want
+to query the ratio `France/Europe` by filtering the `France` country, without restricting `Europe` to `France`-only. For now, this can not be easily done.
+
+The underlying issue is that one mah have a column filtering `Country-with_firstLetterIsForG`. Assuming we have a measure returning `currentCountry/Europe`
+where `currentCountry` is the country on the `Country` column, if we filter `Country-with_firstLetterIsForG=true` in the query, should we show
+`France/(France+Germany)` or `France/Europe`?
+
+## Potential solutions/designs
+
+1. We may introduce a special `groupBy`, where we would express we groupBy `country` but only showing `Country-with_firstLetterIsForG=true`
+1. We may introduce a special `filter`, stating that `Country-with_firstLetterIsForG=true` is a `Visual` filter. It resomates with https://learn.microsoft.com/en-us/sql/mdx/visualtotals-mdx?view=sql-server-ver16

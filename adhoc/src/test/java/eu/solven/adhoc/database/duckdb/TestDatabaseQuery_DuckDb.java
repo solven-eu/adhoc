@@ -43,6 +43,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
@@ -365,5 +366,31 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.keySet().toList()).containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(kSumOverk1.getName(), 0L + 123 + 234));
+	}
+
+	@Test
+	public void testLikeColumnMatcher() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		ITabularView result = aqe.execute(AdhocQuery.builder()
+				.measure(k1Sum.getName())
+				.andFilter("a", LikeMatcher.builder().like("a1%").build())
+				.build(), jooqDb);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
 	}
 }

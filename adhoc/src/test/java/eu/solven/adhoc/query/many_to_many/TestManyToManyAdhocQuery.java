@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.many_to_many;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -218,5 +219,76 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
+	}
+
+	@Test
+	public void test_GroupByElement_FilterOneGroup() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure(dispatchedMeasure)
+				.groupByColumns(cElement)
+				.andFilter(cGroup, "G8")
+				.build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(cElement, "FR"), Map.of(dispatchedMeasure, 0L + 123));
+	}
+
+	@Test
+	public void test_GroupByElement_FilterMultipleGroups() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure(dispatchedMeasure)
+				.groupByColumns(cElement)
+				.andFilter(cGroup, Set.of("G8", "G20"))
+				.build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of(cElement, "FR"), Map.of(dispatchedMeasure, 0L + 123))
+				.containsEntry(Map.of(cElement, "CH"), Map.of(dispatchedMeasure, 0L + 234));
+	}
+
+	@Test
+	public void test_GroupByGroup_FilterOneElement() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure(dispatchedMeasure)
+				.groupByColumns(cGroup)
+				.andFilter(cElement, "FR")
+				.build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of(cGroup, "G8"), Map.of(dispatchedMeasure, 0L + 123))
+				.containsEntry(Map.of(cGroup, "G20"), Map.of(dispatchedMeasure, 0L + 123));
+	}
+
+	@Test
+	public void test_GroupByGroup_FilterMultipleElements() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure(dispatchedMeasure)
+				.groupByColumns(cGroup)
+				.andFilter(cElement, Set.of("FR", "CH"))
+				.build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of(cGroup, "G8"), Map.of(dispatchedMeasure, 0L + 123))
+				.containsEntry(Map.of(cGroup, "G20"), Map.of(dispatchedMeasure, 0L + 123 + 234));
 	}
 }

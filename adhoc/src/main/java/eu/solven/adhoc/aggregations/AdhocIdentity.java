@@ -28,13 +28,13 @@ import java.util.Map;
 
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 
 public class AdhocIdentity implements IDecomposition {
 	public static final String KEY = "identity";
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSlice slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		return Collections.singletonMap(Map.of(), value);
 	}
 

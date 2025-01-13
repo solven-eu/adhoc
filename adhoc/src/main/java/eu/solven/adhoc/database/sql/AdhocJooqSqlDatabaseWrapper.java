@@ -89,7 +89,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 
 		DSLContext dslContext = makeDsl();
 
-		AdhocJooqSqlDatabaseStreamOpener streamOpener = makeTranscodedStreamOpener(transcodingContext, dslContext);
+		IAdhocJooqSqlDatabaseStreamOpener streamOpener = makeTranscodedStreamOpener(transcodingContext, dslContext);
 
 		ResultQuery<Record> resultQuery = streamOpener.prepareQuery(dbQuery);
 
@@ -161,7 +161,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 		log.info("[DEBUG] {}", columnNameToType);
 	}
 
-	private AdhocJooqSqlDatabaseStreamOpener makeTranscodedStreamOpener(TranscodingContext transcodingContext,
+	protected IAdhocJooqSqlDatabaseStreamOpener makeTranscodedStreamOpener(TranscodingContext transcodingContext,
 			DSLContext dslContext) {
 		return AdhocJooqSqlDatabaseStreamOpener.builder()
 				.transcoder(transcodingContext)
