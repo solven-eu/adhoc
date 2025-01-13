@@ -37,6 +37,7 @@ import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -64,7 +65,7 @@ public class TestQueryOptions extends ADagTest {
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),
 				rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -86,7 +87,7 @@ public class TestQueryOptions extends ADagTest {
 
 		ITabularView output = aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
 	}
 }

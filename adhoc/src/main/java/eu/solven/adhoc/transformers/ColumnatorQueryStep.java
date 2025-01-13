@@ -24,7 +24,6 @@ package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -89,9 +88,8 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		ICombination transformation = transformationFactory.makeTransformation(combinator);
 
-		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
+		for (AdhocSliceAsMap rawSlice : ColumnatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(underlyings, slice, transformation, output);
 		}
 
@@ -113,9 +111,10 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		Object value = transformation.combine(slice, underlyingVs);
 
-		output.put(slice.getCoordinates(), value);
+		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 
+	@Override
 	protected ICoordinatesToValues makeCoordinateToValues() {
 		return CoordinatesToValues.builder().build();
 	}

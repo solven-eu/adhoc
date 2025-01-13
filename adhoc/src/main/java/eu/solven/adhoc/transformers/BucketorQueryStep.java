@@ -82,17 +82,16 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		IAggregation agg = transformationFactory.makeAggregation(bucketor.getAggregationKey());
 
-		MultiTypeStorage<Map<String, ?>> aggregatingView =
-				MultiTypeStorage.<Map<String, ?>>builder().aggregation(agg).build();
+		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
+				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
 		ICombination combinator =
 				transformationFactory.makeCombination(bucketor.getCombinationKey(), getCombinationOptions());
 
 		List<String> underlyingNames = getUnderlyingNames();
 
-		for (Map<String, ?> rawSlice : ColumnatorQueryStep.keySet(isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
+		for (AdhocSliceAsMap rawSlice : ColumnatorQueryStep.keySet(isDebug(), underlyings)) {
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(underlyings, slice, combinator, underlyingNames, aggregatingView);
 		}
 
@@ -103,12 +102,12 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 			IAdhocSliceWithStep slice,
 			ICombination combinator,
 			List<String> underlyingNames,
-			MultiTypeStorage<Map<String, ?>> aggregatingView) {
+			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice, consumer);
+			storage.onValue(slice.getAdhocSliceAsMap(), consumer);
 
 			return refV.get();
 		}).collect(Collectors.toList());
@@ -137,7 +136,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
-			aggregatingView.merge(outputCoordinate, value);
+			aggregatingView.merge(AdhocSliceAsMap.fromMap(outputCoordinate), value);
 		}
 	}
 

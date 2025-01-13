@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.RowScanner;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.ValueConsumer;
@@ -42,7 +42,7 @@ import lombok.Value;
 public class CoordinatesToValues implements ICoordinatesToValues {
 	@NonNull
 	@Default
-	MultiTypeStorage<Map<String, ?>> storage = MultiTypeStorage.<Map<String, ?>>builder().build();
+	MultiTypeStorage<AdhocSliceAsMap> storage = MultiTypeStorage.<AdhocSliceAsMap>builder().build();
 
 	public static CoordinatesToValues empty() {
 		return CoordinatesToValues.builder().build();
@@ -50,20 +50,21 @@ public class CoordinatesToValues implements ICoordinatesToValues {
 
 	@Override
 	public void onValue(IAdhocSlice slice, ValueConsumer consumer) {
-		storage.onValue(slice.getCoordinates(), consumer);
+		storage.onValue(slice.getAdhocSliceAsMap(), consumer);
 	}
 
 	@Override
-	public Set<Map<String, ?>> keySet() {
+	public Set<AdhocSliceAsMap> keySet() {
 		return getStorage().keySet();
 	}
 
-	public void put(Map<String, ?> coordinate, Object value) {
+	@Override
+	public void put(AdhocSliceAsMap coordinate, Object value) {
 		storage.put(coordinate, value);
 	}
 
 	@Override
-	public void scan(RowScanner<Map<String, ?>> rowScanner) {
+	public void scan(RowScanner<AdhocSliceAsMap> rowScanner) {
 		storage.scan(rowScanner);
 	}
 }

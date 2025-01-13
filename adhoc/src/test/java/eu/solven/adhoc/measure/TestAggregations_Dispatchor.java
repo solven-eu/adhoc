@@ -36,6 +36,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Dispatchor;
 
@@ -58,7 +59,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("0or100").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -83,7 +84,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("0or100").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -111,7 +112,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		ITabularView output = aqe
 				.execute(AdhocQuery.builder().measure("0or100").groupByColumns("0_or_100").explain(true).build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("0_or_100", 0), Map.of("0_or_100", 100));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc;
 
-import java.util.Map;
 import java.util.stream.Stream;
+
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 /**
  * Storage for static data (i.e. not Live data).
@@ -32,9 +33,9 @@ import java.util.stream.Stream;
  *
  */
 public interface ITabularView {
-	Stream<Map<String, ?>> keySet();
+	Stream<AdhocSliceAsMap> keySet();
 
-	void acceptScanner(RowScanner<Map<String, ?>> rowScanner);
+	void acceptScanner(RowScanner<AdhocSliceAsMap> rowScanner);
 
 	static ITabularView empty() {
 		return MapBasedTabularView.empty();

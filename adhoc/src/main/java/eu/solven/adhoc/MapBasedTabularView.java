@@ -32,6 +32,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.aggregations.collection.MapAggregator;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ValueConsumer;
 import lombok.Builder;
@@ -47,10 +48,10 @@ public class MapBasedTabularView implements ITabularView {
 	public static MapBasedTabularView load(ITabularView output) {
 		MapBasedTabularView newView = MapBasedTabularView.builder().build();
 
-		RowScanner<Map<String, ?>> rowScanner = new RowScanner<Map<String, ?>>() {
+		RowScanner<AdhocSliceAsMap> rowScanner = new RowScanner<AdhocSliceAsMap>() {
 
 			@Override
-			public ValueConsumer onKey(Map<String, ?> coordinates) {
+			public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
 				if (newView.coordinatesToValues.containsKey(coordinates)) {
 					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
 				}
@@ -58,7 +59,7 @@ public class MapBasedTabularView implements ITabularView {
 				return AsObjectValueConsumer.consumer(o -> {
 					Map<String, ?> oAsMap = (Map<String, ?>) o;
 
-					newView.coordinatesToValues.put(coordinates, oAsMap);
+					newView.coordinatesToValues.put(coordinates.getCoordinates(), oAsMap);
 				});
 			}
 		};
@@ -69,19 +70,20 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public Stream<Map<String, ?>> keySet() {
-		return coordinatesToValues.keySet().stream();
+	public Stream<AdhocSliceAsMap> keySet() {
+		return coordinatesToValues.keySet().stream().map(m -> AdhocSliceAsMap.fromMap(m));
 	}
 
 	@Override
-	public void acceptScanner(RowScanner<Map<String, ?>> rowScanner) {
+	public void acceptScanner(RowScanner<AdhocSliceAsMap> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
-			rowScanner.onKey(k).onObject(v);
+			rowScanner.onKey(AdhocSliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
-	public void append(Map<String, ?> coordinates, Map<String, ?> mToValues) {
-		coordinatesToValues.merge(coordinates, mToValues, new MapAggregator<String, Object>()::aggregate);
+	public void append(AdhocSliceAsMap coordinates, Map<String, ?> mToValues) {
+		coordinatesToValues
+				.merge(coordinates.getCoordinates(), mToValues, new MapAggregator<String, Object>()::aggregate);
 	}
 
 	public static ITabularView empty() {

@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.transformers;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
@@ -74,9 +74,8 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 		ICombination tranformation = transformationFactory.makeTransformation(combinator);
 
 		boolean debug = combinator.isDebug() || step.isDebug();
-		for (Map<String, ?> rawSlice : CombinatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(AdhocSliceAsMap.fromMap(rawSlice)).queryStep(step).build();
+		for (AdhocSliceAsMap rawSlice : CombinatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(underlyings, slice, tranformation, debug, output);
 		}
 
@@ -103,7 +102,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
-		output.put(slice.getCoordinates(), value);
+		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 
 	protected ICoordinatesToValues makeCoordinateToValues() {
@@ -117,12 +116,13 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	 * @param underlyings
 	 * @return the union-Set of slices
 	 */
-	public static Iterable<? extends Map<String, ?>> keySet(boolean debug,
+	public static Iterable<? extends AdhocSliceAsMap> keySet(boolean debug,
 			List<? extends ICoordinatesToValues> underlyings) {
-		Set<Map<String, ?>> keySet;
+		Set<AdhocSliceAsMap> keySet;
 		if (debug) {
 			// Enforce an iteration order for debugging-purposes
-			keySet = new TreeSet<>(MapComparators.mapComparator());
+			keySet = new TreeSet<>(
+					Comparator.comparing(simpleSlice -> simpleSlice.getCoordinates(), MapComparators.mapComparator()));
 		} else {
 			keySet = new HashSet<>();
 		}

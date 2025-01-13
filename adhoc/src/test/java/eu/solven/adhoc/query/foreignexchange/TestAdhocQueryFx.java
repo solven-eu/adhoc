@@ -46,6 +46,7 @@ import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Bucketor;
 import lombok.NonNull;
 
@@ -68,19 +69,19 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
-        return new StandardOperatorsFactory() {
-            @Override
-            public ICombination makeCombination(String key, Map<String, ?> options) {
-                return switch (key) {
-                    case ForeignExchangeCombination.KEY: {
-                        yield new ForeignExchangeCombination(fxStorage);
-                    }
-                    default:
-                        yield super.makeCombination(key, options);
-                };
-            }
-        };
-    }
+		return new StandardOperatorsFactory() {
+			@Override
+			public ICombination makeCombination(String key, Map<String, ?> options) {
+				return switch (key) {
+				case ForeignExchangeCombination.KEY: {
+					yield new ForeignExchangeCombination(fxStorage);
+				}
+				default:
+					yield super.makeCombination(key, options);
+				};
+			}
+		};
+	}
 
 	@Override
 	@BeforeEach
@@ -108,7 +109,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("k1.USD").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -127,7 +128,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("k1.USD").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -150,7 +151,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		ITabularView output =
 				aqe.execute(AdhocQuery.builder().measure("k1.USD").customMarker(Optional.of("XYZ")).build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -176,7 +177,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				aqe.execute(AdhocQuery.builder().measure("k1.USD").customMarker(Optional.of("JPY")).debug(true).build(),
 						rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

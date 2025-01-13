@@ -61,6 +61,7 @@ import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
@@ -198,10 +199,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 
 		stepsToReturn.forEachRemaining(step -> {
-			RowScanner<Map<String, ?>> rowScanner = new RowScanner<Map<String, ?>>() {
+			RowScanner<AdhocSliceAsMap> rowScanner = new RowScanner<AdhocSliceAsMap>() {
 
 				@Override
-				public ValueConsumer onKey(Map<String, ?> coordinates) {
+				public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
 					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
 						mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o));
 					});
@@ -224,19 +225,20 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			Stream<Map<String, ?>> stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<Map<String, ?>> coordinatesToAggregates =
+		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
 				sinkToAggregates(dbQuery, stream, columnToAggregators);
 
 		return toImmutableChunks(dbQuery, coordinatesToAggregates);
 	}
 
 	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(DatabaseQuery dbQuery,
-			AggregatingMeasurators<Map<String, ?>> coordinatesToAggregates) {
+			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
 
-			MultiTypeStorage<Map<String, ?>> storage = coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
+			MultiTypeStorage<AdhocSliceAsMap> storage =
+					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
 			if (storage == null) {
 				// Typically happens when a filter reject completely one of the underlying measure
@@ -344,11 +346,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	protected AggregatingMeasurators<Map<String, ?>> sinkToAggregates(DatabaseQuery adhocQuery,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(DatabaseQuery adhocQuery,
 			Stream<Map<String, ?>> stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<Map<String, ?>> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
+		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
 
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
@@ -401,12 +403,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
 
 						optAgg.ifPresent(agg -> {
-							coordinatesToAgg.contribute(agg, optCoordinates.get(), v);
+							coordinatesToAgg.contribute(agg, AdhocSliceAsMap.fromMap(optCoordinates.get()), v);
 						});
 					} else {
 						// The DB provides the column raw value, and not an aggregated value
 						// So we aggregate row values ourselves
-						aggs.forEach(agg -> coordinatesToAgg.contribute(agg, optCoordinates.get(), v));
+						aggs.forEach(agg -> coordinatesToAgg
+								.contribute(agg, AdhocSliceAsMap.fromMap(optCoordinates.get()), v));
 					}
 				}
 			}

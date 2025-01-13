@@ -50,6 +50,7 @@ import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 
@@ -156,7 +157,8 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().toList()).containsExactly(Map.of());
+		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+				.containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
 	}
@@ -183,7 +185,8 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("a", "a1"), Map.of("a", "a2"));
+		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+				.contains(Map.of("a", "a1"), Map.of("a", "a2"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
 				.containsEntry(Map.of("a", "a2"), Map.of(k1SumSquared.getName(), (long) Math.pow(234, 2)));
@@ -211,7 +214,7 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of());
+		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList()).contains(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)));
 	}
@@ -243,7 +246,8 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				.build(), jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().toList()).contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
+		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+				.contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
 				.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));

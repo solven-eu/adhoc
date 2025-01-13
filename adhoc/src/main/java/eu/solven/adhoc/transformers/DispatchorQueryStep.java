@@ -90,16 +90,14 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
 
-		MultiTypeStorage<Map<String, ?>> aggregatingView =
-				MultiTypeStorage.<Map<String, ?>>builder().aggregation(agg).build();
+		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
+				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
 		IDecomposition decomposition = makeDecomposition();
 
-		for (Map<String, ?> coordinates : ColumnatorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder()
-					.slice(AdhocSliceAsMap.fromMap(coordinates))
-					.queryStep(step)
-					.build();
+		for (AdhocSliceAsMap coordinates : ColumnatorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
+			AdhocSliceAsMapWithStep slice =
+					AdhocSliceAsMapWithStep.builder().slice(coordinates).queryStep(step).build();
 
 			onSlice(underlyings, slice, decomposition, aggregatingView);
 		}
@@ -110,7 +108,7 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
 			AdhocSliceAsMapWithStep slice,
 			IDecomposition decomposition,
-			MultiTypeStorage<Map<String, ?>> aggregatingView) {
+			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
@@ -135,7 +133,7 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice, fragmentCoordinate);
 
 				if (outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
-					aggregatingView.merge(outputCoordinate, fragmentValue);
+					aggregatingView.merge(AdhocSliceAsMap.fromMap(outputCoordinate), fragmentValue);
 				} else {
 					log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
 				}

@@ -55,4 +55,10 @@ public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
 	public Optional<Object> optFilter(String column) {
 		return slice.optFilter(column);
 	}
+
+	@Override
+	public AdhocSliceAsMap getAdhocSliceAsMap() {
+		return AdhocSliceAsMap.fromMap(slice.getCoordinates());
+	}
+
 }

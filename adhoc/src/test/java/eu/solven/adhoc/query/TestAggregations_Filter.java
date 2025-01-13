@@ -37,6 +37,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -63,7 +64,7 @@ public class TestAggregations_Filter extends ADagTest {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -88,7 +89,7 @@ public class TestAggregations_Filter extends ADagTest {
 				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByColumns("a").build(),
 						rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("a", "a1"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -113,7 +114,7 @@ public class TestAggregations_Filter extends ADagTest {
 				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByColumns("b").build(),
 						rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"), Map.of("b", "b2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -137,7 +138,7 @@ public class TestAggregations_Filter extends ADagTest {
 
 		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "none").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

@@ -22,19 +22,19 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.RowScanner;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ValueConsumer;
 
 public interface ICoordinatesToValues {
-	Set<Map<String, ?>> keySet();
+	Set<AdhocSliceAsMap> keySet();
 
-	void put(Map<String, ?> coordinate, Object value);
+	void put(AdhocSliceAsMap coordinate, Object value);
 
 	void onValue(IAdhocSlice slice, ValueConsumer consumer);
 
-	void scan(RowScanner<Map<String, ?>> rowScanner);
+	void scan(RowScanner<AdhocSliceAsMap> rowScanner);
 }

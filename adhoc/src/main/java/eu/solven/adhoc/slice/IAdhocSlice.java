@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.slice;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +31,7 @@ import java.util.Set;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * A slice expresses the axes along which que query is filtered.
+ * A slice expresses the axes along which a query is filtered.
  */
 public interface IAdhocSlice {
 	/**
@@ -41,8 +42,8 @@ public interface IAdhocSlice {
 	/**
 	 *
 	 * @param column
-	 * @return the filtered coordinate, only if the column is actually filtered. It may be a Collection if the column is
-	 *         filtered along multiple values.
+	 * @return the filtered coordinate, only if the column is actually filtered. It may be a {@link Collection} if the
+	 *         column is filtered along multiple values.
 	 */
 	default Object getRawFilter(String column) {
 		return optFilter(column)
@@ -68,11 +69,16 @@ public interface IAdhocSlice {
 		}
 	}
 
+	/**
+	 * 
+	 * @param column
+	 * @return the {@link Optional} filtered value along given column.
+	 */
 	Optional<Object> optFilter(String column);
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
-	default Map<String, ?> getCoordinates() {
+	default Map<String, Object> getCoordinates() {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		getColumns().forEach(column -> {
@@ -81,4 +87,6 @@ public interface IAdhocSlice {
 
 		return asMap;
 	}
+
+	AdhocSliceAsMap getAdhocSliceAsMap();
 }

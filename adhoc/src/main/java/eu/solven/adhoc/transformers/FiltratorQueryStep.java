@@ -24,7 +24,6 @@ package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
@@ -71,11 +70,8 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 		ICoordinatesToValues output = makeCoordinateToValues();
 
 		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (Map<String, ?> coordinate : ColumnatorQueryStep.keySet(debug, underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder()
-					.slice(AdhocSliceAsMap.fromMap(coordinate))
-					.queryStep(step)
-					.build();
+		for (AdhocSliceAsMap coordinate : ColumnatorQueryStep.keySet(debug, underlyings)) {
+			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(coordinate).queryStep(step).build();
 
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {
 				AtomicReference<Object> refV = new AtomicReference<>();

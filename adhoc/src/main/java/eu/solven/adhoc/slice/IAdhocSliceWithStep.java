@@ -30,4 +30,5 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
  */
 public interface IAdhocSliceWithStep extends IAdhocSlice {
 	AdhocQueryStep getQueryStep();
+
 }

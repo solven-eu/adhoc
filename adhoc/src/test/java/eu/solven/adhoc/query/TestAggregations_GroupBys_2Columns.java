@@ -36,6 +36,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -63,7 +64,7 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest {
 		ITabularView output = aqe
 				.execute(AdhocQuery.builder().measure("sumK1K2").groupByColumns("a").groupByColumns("b").build(), rows);
 
-		List<Map<String, ?>> keySet = output.keySet().collect(Collectors.toList());
+		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a2", "b", "b2"), Map.of("a", "a2", "b", "b1"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

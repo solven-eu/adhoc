@@ -22,15 +22,19 @@
  */
 package eu.solven.adhoc.slice;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 
+import lombok.EqualsAndHashCode;
+
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
+@EqualsAndHashCode
 public class AdhocSliceAsMap implements IAdhocSlice {
 	final Map<String, ?> asMap;
 
@@ -38,12 +42,16 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		this.asMap = asMap;
 	}
 
-	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
+	public static AdhocSliceAsMap fromMap(Map<String, ?> asMap) {
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
 		Map<String, ?> safeMap = ImmutableMap.copyOf(asMap);
 
 		if (safeMap.containsValue(null)) {
+			// BEWARE Should this be a legit case, handling NULL specifically?
 			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
+		} else if (safeMap.values().stream().anyMatch(o -> o instanceof Collection<?>)) {
+			throw new IllegalArgumentException(
+					"A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap));
 		}
 
 		return new AdhocSliceAsMap(safeMap);
@@ -56,23 +64,16 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 
 	@Override
 	public Optional<Object> optFilter(String column) {
-		Object filter = asMap.get(column);
-
-		if (filter == null) {
-			if (asMap.containsKey(column)) {
-				// BEWARE Should this be a legit case, handling NULL specifically?
-				throw new IllegalStateException("%s is sliced with NULL".formatted(column));
-			} else {
-				// throw new IllegalStateException("%s is sliced with null".formatted(column));
-				return Optional.empty();
-			}
-		}
-
-		return Optional.of(filter);
+		return Optional.ofNullable(asMap.get(column));
 	}
 
 	@Override
-	public Map<String, ?> getCoordinates() {
+	public Map<String, Object> getCoordinates() {
 		return ImmutableMap.copyOf(asMap);
+	}
+
+	@Override
+	public AdhocSliceAsMap getAdhocSliceAsMap() {
+		return this;
 	}
 }

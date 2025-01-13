@@ -23,7 +23,6 @@
 package eu.solven.adhoc.storage;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -287,8 +286,8 @@ public class MultiTypeStorage<T> {
 	/**
 	 * @return an empty and immutable MultiTypeStorage
 	 */
-	public static MultiTypeStorage<Map<String, ?>> empty() {
-		return MultiTypeStorage.<Map<String, ?>>builder()
+	public static <T> MultiTypeStorage<T> empty() {
+		return MultiTypeStorage.<T>builder()
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
 				.build();

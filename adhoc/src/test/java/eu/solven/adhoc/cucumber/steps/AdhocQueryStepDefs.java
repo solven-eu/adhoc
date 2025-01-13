@@ -109,7 +109,8 @@ public class AdhocQueryStepDefs {
 			}
 		}
 
-		List<Map<String, ?>> coordinates = tabularView.keySet().map(m -> m).collect(Collectors.toList());
+		List<Map<String, ?>> coordinates =
+				tabularView.keySet().map(m -> m.getCoordinates()).collect(Collectors.toList());
 
 		dataTable.asMaps().forEach(expectedMap -> {
 			Assertions.assertThat(coordinates).contains(expectedMap);
