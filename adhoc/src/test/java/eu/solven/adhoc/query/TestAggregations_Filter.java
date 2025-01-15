@@ -85,9 +85,8 @@ public class TestAggregations_Filter extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByColumns("a").build(),
-						rows);
+		ITabularView output = aqe
+				.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("a", "a1"));
@@ -110,9 +109,8 @@ public class TestAggregations_Filter extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByColumns("b").build(),
-						rows);
+		ITabularView output = aqe
+				.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"), Map.of("b", "b2"));

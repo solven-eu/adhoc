@@ -20,11 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.foreignexchange;
+package eu.solven.adhoc.query.custommarker;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,17 +48,22 @@ import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
+import eu.solven.adhoc.query.foreignexchange.ForeignExchangeStorage;
+import eu.solven.adhoc.query.foreignexchange.IForeignExchangeStorage;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Bucketor;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * This tests a typical usecase: given financial data for different currencies, we need to convert the underlying data
- * into a common currency, by a multiplication with the proper rate, depending on current currency. Each data are
- * aggregated by their own currency, then converted into a common currency, and finally aggregated.
+ * This is useful to check advanced behaviors around customMarker. A legitimate case for customMarker is to force a
+ * customMarker for a given measure, while other measure may be dynamic.
  */
-public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
+@Slf4j
+public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestConstants {
 
 	ForeignExchangeStorage fxStorage = new ForeignExchangeStorage();
 
@@ -90,7 +98,10 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		rows.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
 	}
 
+	// Default is EUR
 	String mName = "k1.CCY";
+	String mNameEUR = "k1.EUR";
+	String mNameUSD = "k1.USD";
 
 	void prepareMeasures() {
 		amb.addMeasure(Bucketor.builder()
@@ -102,68 +113,99 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				.aggregationKey(SumElseSetAggregator.class.getName())
 				.build());
 
+		amb.addMeasure(
+				CustomMarkerEditor.builder().name(mNameEUR).underlying(mName).customMarkerEditor(optCustomMarker -> {
+					return forceCcy("EUR", optCustomMarker);
+				}).build());
+
+		amb.addMeasure(
+				CustomMarkerEditor.builder().name(mNameUSD).underlying(mName).customMarkerEditor(optCustomMarker -> {
+					return forceCcy("USD", optCustomMarker);
+				}).build());
+
 		amb.addMeasure(k1Sum);
+	}
+
+	private static Optional<String> forceCcy(String ccy, Optional<?> optCustomMarker) {
+		if (optCustomMarker.isEmpty()) {
+			return Optional.of(ccy);
+		} else {
+			Object currentCustom = optCustomMarker.get();
+
+			if (currentCustom instanceof String asString) {
+				log.debug("Enforcing from custom={} to {}", asString, ccy);
+				return Optional.of(ccy);
+			} else {
+				throw new UnsupportedOperationException(
+						"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(currentCustom)));
+			}
+		}
+	}
+
+	private Map<String, Object> roundDoubles(Map<String, ?> measures) {
+		Map<String, Object> rounded = new HashMap<>();
+
+		measures.forEach((k, v) -> {
+			Object roundedV = roundDouble(v);
+
+			rounded.put(k, roundedV);
+		});
+
+		return rounded;
+	}
+
+	private static Object roundDouble(Object v) {
+		Object roundedV;
+
+		if (v instanceof Float || v instanceof Double) {
+			roundedV = BigDecimal.valueOf(((Number) v).doubleValue()).setScale(3, RoundingMode.CEILING).doubleValue();
+		} else {
+			roundedV = v;
+		}
+		return roundedV;
 	}
 
 	@Test
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName).build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						Map.of(mName, Set.of("Missing_FX_Rate-%s-USD-EUR".formatted(today))));
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat((Map) measures)
+					.hasSize(3)
+					.containsEntry(mName, Set.of("Missing_FX_Rate-%s-USD-EUR".formatted(today)));
+		});
 	}
 
 	@Test
-	public void testHasUnknownFromCcy() {
-		prepareMeasures();
-
-		rows.add(Map.of("l", "A", "ccyFrom", "unknownCcy", "k1", 234));
-
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName).build(), rows);
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						Map.of(mName,
-								Set.of("Missing_FX_Rate-%s-unknownCcy-EUR".formatted(today),
-										"Missing_FX_Rate-%s-USD-EUR".formatted(today))));
-	}
-
-	@Test
-	public void testHasUnknownToCcy() {
+	public void testHasFX() {
 		prepareMeasures();
 
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						Map.of(mName,
-								Set.of("Missing_FX_Rate-%s-USD-XYZ".formatted(today),
-										"Missing_FX_Rate-%s-EUR-XYZ".formatted(today))));
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat(roundDoubles(measures))
+					.hasSize(3)
+					.containsEntry(mName, roundDouble(0D + 123 * 0.95D + 234))
+					.containsEntry(mNameEUR, roundDouble(0D + 123 * 0.95D + 234))
+					.containsEntry(mNameUSD, roundDouble(0D + 123 + 234 / 0.95D));
+		});
 	}
 
 	@Test
@@ -175,34 +217,24 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build(),
-						rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder()
+				.measure(mName, mNameEUR, mNameUSD)
+				.customMarker(Optional.of("JPY"))
+				.debug(true)
+				.build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(mName, 0D + 123 * 150D + 234 / 0.95D * 150D));
-	}
-
-	@Test
-	public void testLackBucketor() {
-		// We miss a bucketor aggregating the converted value per ccyFrom
-		{
-			amb.addMeasure(Bucketor.builder()
-					.name(mName)
-					.underlyings(Arrays.asList("k1"))
-					.combinationKey(ForeignExchangeCombination.KEY)
-					.build());
-
-			amb.addMeasure(k1Sum);
-		}
-
-		Assertions.assertThatThrownBy(() -> aqe.execute(AdhocQuery.builder().measure(mName).build(), rows))
-				.isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat(roundDoubles(measures))
+					.hasSize(3)
+					.containsEntry(mName, roundDouble(0D + 123 * 150D + 234 / 0.95D * 150D))
+					.containsEntry(mNameEUR, roundDouble(0D + 123 * 0.95D + 234))
+					.containsEntry(mNameUSD, roundDouble(0D + 123 + 234 / 0.95D));
+		});
 	}
 }

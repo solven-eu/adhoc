@@ -100,7 +100,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Test
 	public void testWildcardCountry() {
 		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d_country=current_valid").groupByColumns("country").debug(true).build();
+				AdhocQuery.builder().measure("d_country=current_valid").groupByAlso("country").debug(true).build();
 		ITabularView output = aqe.execute(adhocQuery, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -134,7 +134,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testWildcardCountry_Paris() {
 		AdhocQuery adhocQuery = AdhocQuery.builder()
 				.measure("d_country=current_valid")
-				.groupByColumns("country")
+				.groupByAlso("country")
 				.andFilter("city", "Paris")
 				.debug(true)
 				.build();

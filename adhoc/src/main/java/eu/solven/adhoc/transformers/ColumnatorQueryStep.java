@@ -88,7 +88,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		ICombination transformation = transformationFactory.makeTransformation(combinator);
 
-		for (AdhocSliceAsMap rawSlice : ColumnatorQueryStep.keySet(combinator.isDebug(), underlyings)) {
+		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(combinator.isDebug(), underlyings)) {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(underlyings, slice, transformation, output);
 		}

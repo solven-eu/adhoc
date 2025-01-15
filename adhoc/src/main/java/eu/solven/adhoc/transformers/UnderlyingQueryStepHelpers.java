@@ -20,31 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations.many_to_many;
+package eu.solven.adhoc.transformers;
 
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.coordinate.MapComparators;
+import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
-public interface IManyToManyDefinition {
-	/**
-	 * @param group
-	 * @return the elements being part of given group
-	 */
-	// Set<Object> getElements(Object group);
-
-	/**
-	 * @param element
-	 * @return the groups including given element
-	 */
-	Set<Object> getGroups(Object element);
+public class UnderlyingQueryStepHelpers {
+	protected UnderlyingQueryStepHelpers() {
+		// hidden
+	}
 
 	/**
-	 *
-	 * @param groupMatcher
-	 * @return the elements which group is matched
+	 * @param debug
+	 *            if true, the output set is ordered. This can be quite slow on large sets.
+	 * @param underlyings
+	 * @return the union-Set of slices
 	 */
-	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
+	public static Iterable<? extends AdhocSliceAsMap> distinctSlices(boolean debug,
+			List<? extends ICoordinatesToValues> underlyings) {
+		Set<AdhocSliceAsMap> keySet;
+		if (debug) {
+			// Enforce an iteration order for debugging-purposes
+			keySet = new TreeSet<>(
+					Comparator.comparing(simpleSlice -> simpleSlice.getCoordinates(), MapComparators.mapComparator()));
+		} else {
+			keySet = new HashSet<>();
+		}
 
-	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
+		for (ICoordinatesToValues underlying : underlyings) {
+			keySet.addAll(underlying.keySet());
+		}
+
+		return keySet;
+	}
 }

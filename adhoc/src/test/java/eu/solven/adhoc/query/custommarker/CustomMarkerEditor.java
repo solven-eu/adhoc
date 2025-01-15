@@ -20,34 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.query.custommarker;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
+import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link AdhocQueryStep}.
- * It is typically useful to make ratios with a parent slice.
- *
- * @author Benoit Lacelle
+ * A {@link CustomMarkerEditor} is a {@link IMeasure} which combines the underlying measures for current coordinate.
  */
 @Value
 @Builder
+@Jacksonized
 @Slf4j
-public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
+public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
@@ -59,13 +61,8 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	String underlying;
 
 	@NonNull
-	@Singular
-	Set<String> unfiltereds;
-
-	// By default, the unfiltered columns are removed from filters. Switch this to true if you wish to unfiltered all
-	// but these columns.
 	@Default
-	boolean inverse = false;
+	ICustomMarkerEditor customMarkerEditor = optCustomMarker -> optCustomMarker;
 
 	@JsonIgnore
 	@Override
@@ -75,24 +72,14 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 
 	@Override
 	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
-		return new UnfiltratorQueryStep(this, step);
+		return new CustomMarkerEditorQueryStep(this, step);
 	}
 
-	public static class UnfiltratorBuilder {
-		/**
-		 * Use this if you want only given columns to remain filtered.
-		 *
-		 * @param column
-		 * @param moreColumns
-		 * @return current builder.
-		 */
-		public UnfiltratorBuilder filterOnly(String column, String... moreColumns) {
-			this.unfiltereds(Lists.asList(column, moreColumns));
-
-			this.inverse(true);
-
-			return this;
-		}
+	/**
+	 * @param customMarker
+	 * @return a new customMarker
+	 */
+	public Optional<?> editCustomMarker(Optional<?> customMarker) {
+		return customMarkerEditor.editCustomMarker(customMarker);
 	}
-
 }

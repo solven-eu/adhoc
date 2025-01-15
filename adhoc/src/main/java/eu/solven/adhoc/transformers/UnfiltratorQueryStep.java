@@ -26,12 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	final Unfiltrator unfiltrator;
-	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
@@ -85,8 +82,6 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");
-		} else if (underlyings.isEmpty()) {
-			return CoordinatesToValues.empty();
 		}
 
 		return underlyings.getFirst();

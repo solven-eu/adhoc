@@ -278,7 +278,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 			ITabularView result = aqe.execute(AdhocQuery.builder()
 					.measure(k1Sum.getName())
 					.andFilter("a@a@a", "a1")
-					.groupByColumns("b@b@b")
+					.groupByAlso("b@b@b")
 					.debug(true)
 					.build(), jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -294,7 +294,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 			ITabularView result = aqe.execute(AdhocQuery.builder()
 					.measure(k1SumSquared.getName())
 					.andFilter("a@a@a", "a1")
-					.groupByColumns("b@b@b")
+					.groupByAlso("b@b@b")
 					.debug(true)
 					.build(), jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -341,7 +341,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
 
 		Assertions.assertThatThrownBy(() -> aqe
-				.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByColumns("b").debug(true).build(), jooqDb))
+				.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build(), jooqDb))
 				.isInstanceOf(DataAccessException.class);
 	}
 

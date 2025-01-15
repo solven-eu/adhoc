@@ -20,14 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-import eu.solven.adhoc.aggregations.ICombination;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
@@ -35,69 +32,66 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
+import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.transformers.ReferencedMeasure;
+import eu.solven.adhoc.transformers.UnderlyingQueryStepHelpers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
-	final ICombinator combinator;
-	final IOperatorsFactory transformationFactory;
+public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
+	final CustomMarkerEditor customMarkerEditor;
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
-		return combinator.getUnderlyingNames();
+		return customMarkerEditor.getUnderlyingNames();
 	}
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return AdhocQueryStep.edit(step)
-					// Change the requested measureName to the underlying measureName
 					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
+					.customMarker(customMarkerEditor.editCustomMarker(step.getCustomMarker()))
 					.build();
 		}).toList();
 	}
 
 	@Override
 	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
-		if (underlyings.size() != getUnderlyingNames().size()) {
-			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
-		} else if (underlyings.isEmpty()) {
-			return CoordinatesToValues.empty();
+		if (underlyings.size() != 1) {
+			throw new IllegalArgumentException("underlyingNames.size() != 1");
 		}
 
 		ICoordinatesToValues output = makeCoordinateToValues();
 
-		ICombination tranformation = transformationFactory.makeTransformation(combinator);
+		boolean debug = customMarkerEditor.isDebug() || step.isDebug();
 
-		boolean debug = combinator.isDebug() || step.isDebug();
-		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(combinator.isDebug(), underlyings)) {
+		ICoordinatesToValues singleUnderlying = underlyings.getFirst();
+
+		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
+				underlyings)) {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
-			onSlice(underlyings, slice, tranformation, debug, output);
+			onSlice(singleUnderlying, slice, debug, output);
 		}
 
 		return output;
 	}
 
-	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void onSlice(ICoordinatesToValues underlying,
 			IAdhocSliceWithStep slice,
-			ICombination combination,
 			boolean debug,
 			ICoordinatesToValues output) {
-		List<Object> underlyingVs = underlyings.stream().map(storage -> {
-			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+		AtomicReference<Object> refV = new AtomicReference<>();
+		AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice, consumer);
+		underlying.onValue(slice, consumer);
 
-			return refV.get();
-		}).collect(Collectors.toList());
-
-		Object value = combination.combine(slice, underlyingVs);
+		Object value = refV.get();
 
 		if (debug) {
-			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
+			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
 
 		output.put(slice.getAdhocSliceAsMap(), value);
@@ -106,5 +100,4 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 	protected ICoordinatesToValues makeCoordinateToValues() {
 		return CoordinatesToValues.builder().build();
 	}
-
 }

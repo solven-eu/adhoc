@@ -56,8 +56,6 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		return bucketor.getUnderlyings();
 	}
 
-	;
-
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
@@ -90,7 +88,7 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 
 		List<String> underlyingNames = getUnderlyingNames();
 
-		for (AdhocSliceAsMap rawSlice : ColumnatorQueryStep.keySet(isDebug(), underlyings)) {
+		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings)) {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(underlyings, slice, combinator, underlyingNames, aggregatingView);
 		}

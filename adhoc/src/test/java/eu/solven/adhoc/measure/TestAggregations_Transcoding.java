@@ -95,7 +95,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testGroupBy() {
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").groupByColumns("c").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("c").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("c", "v1"), Map.of("c", "v2"));
@@ -111,7 +111,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 	@Test
 	public void testFilterGroupBy() {
 		ITabularView output = aqe.execute(
-				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByColumns("c").debug(true).build(),
+				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").debug(true).build(),
 				rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());

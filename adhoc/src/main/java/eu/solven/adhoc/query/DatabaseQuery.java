@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.query;
 
+import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IHasFilters;
-import eu.solven.adhoc.api.v1.IHasGroupBy;
+import eu.solven.adhoc.api.v1.IHasCustomMarker;
 import eu.solven.adhoc.api.v1.IIsDebugable;
 import eu.solven.adhoc.api.v1.IIsExplainable;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
@@ -35,6 +35,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -47,7 +48,7 @@ import lombok.Value;
 @Value
 @AllArgsConstructor
 @Builder
-public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
+public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
@@ -59,6 +60,11 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	@Singular
 	Set<Aggregator> aggregators;
 
+	// This property is transported down to the DatabaseQuery
+	@Default
+	@NonNull
+	Optional<?> customMarker = Optional.empty();
+
 	@Default
 	AdhocTopClause topClause = AdhocTopClause.NO_LIMIT;
 
@@ -67,19 +73,8 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	@Default
 	boolean explain = false;
 
-	public DatabaseQuery(IHasFilters hasFilter, IHasGroupBy groupBy, Set<Aggregator> aggregators) {
-		this.filter = hasFilter.getFilter();
-		this.groupBy = groupBy.getGroupBy();
-		this.aggregators = aggregators;
-
-		this.debug = false;
-		this.explain = false;
-		this.topClause = AdhocTopClause.NO_LIMIT;
-	}
-
 	public static DatabaseQueryBuilder edit(DatabaseQuery dq) {
-		return DatabaseQuery.edit((IWhereGroupbyAdhocQuery) dq)
-				.aggregators(dq.getAggregators())
+		return edit((IWhereGroupbyAdhocQuery) dq).aggregators(dq.getAggregators())
 				.debug(dq.isDebug())
 				.explain(dq.isExplain());
 	}
@@ -87,6 +82,9 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery {
 	public static DatabaseQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
 		DatabaseQueryBuilder builder = DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
 
+		if (dq instanceof IHasCustomMarker hasCustomMarker) {
+			builder.customMarker(hasCustomMarker.getCustomMarker());
+		}
 		if (dq instanceof IIsDebugable isDebugable) {
 			builder.debug(isDebugable.isDebug());
 		}

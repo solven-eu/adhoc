@@ -25,6 +25,7 @@ package eu.solven.adhoc.api.v1.pojo;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -115,6 +116,11 @@ public class ColumnFilter implements IColumnFilter {
 				throw new IllegalArgumentException("Can not use a columnFilter as valueFilter: %s"
 						.formatted(PepperLogHelper.getObjectAndClass(matching)));
 			} else {
+				if (matching instanceof Pattern) {
+					// May happen due to sick API in LikeMatcher
+					throw new IllegalArgumentException(
+							"Invalid matching: %s".formatted(PepperLogHelper.getObjectAndClass(matching)));
+				}
 				return matchEquals(matching);
 			}
 		}

@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
@@ -40,6 +41,7 @@ import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.filters.IOrFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -129,17 +131,40 @@ public class ManyToManyDecomposition implements IDecomposition {
 	protected Set<Object> getGroups(IAdhocSliceWithStep slice, Object element) {
 		Set<Object> groupsMayBeFilteredOut = manyToManyDefinition.getGroups(element);
 
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
-
 		IAdhocFilter filter = slice.getQueryStep().getFilter();
 
-		Set<Object> matchingGroups = groupsMayBeFilteredOut.stream().filter(groupCandidate -> {
-			return doFilter(groupColumn, groupCandidate, filter);
-		}).collect(Collectors.toSet());
+		Set<String> queryMatchingGroups = getQueryMatchingGroups(slice, filter);
+
+		Set<Object> matchingGroups;
+
+		// Sets.intersection will iterate over the first Set: we observe it is faster the consider the smaller Set first
+		if (groupsMayBeFilteredOut.size() < queryMatchingGroups.size()) {
+			matchingGroups = Sets.intersection(groupsMayBeFilteredOut, queryMatchingGroups);
+		} else {
+			matchingGroups =
+					Sets.intersection(Collections.unmodifiableSet(queryMatchingGroups), groupsMayBeFilteredOut);
+		}
 
 		log.debug("Element={} led to accepted groups={}", element, matchingGroups);
 
 		return matchingGroups;
+	}
+
+	private Set<String> getQueryMatchingGroups(IAdhocSliceWithStep slice, IAdhocFilter filter) {
+		Map<Object, Object> queryStepCache = slice.getQueryStep().getCache();
+
+		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
+		// want to filter all groups for each element
+		Set<String> queryMatchingGroups = (Set<String>) queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
+			return getQueryMatchingGroupsNoCache(filter);
+		});
+		return queryMatchingGroups;
+	}
+
+	private Set<?> getQueryMatchingGroupsNoCache(IAdhocFilter filter) {
+		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+
+		return manyToManyDefinition.getMatchingGroups(group -> doFilter(groupColumn, group, filter));
 	}
 
 	protected boolean doFilter(String groupColumn, Object groupCandidate, IAdhocFilter filter) {
@@ -190,8 +215,11 @@ public class ManyToManyDecomposition implements IDecomposition {
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
-			return Collections.singletonList(
-					MeasurelessQuery.builder().filter(underlyingFilter).groupBy(step.getGroupBy()).build());
+			return Collections.singletonList(MeasurelessQuery.builder()
+					.filter(underlyingFilter)
+					.groupBy(step.getGroupBy())
+					.customMarker(step.getCustomMarker())
+					.build());
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -206,11 +234,14 @@ public class ManyToManyDecomposition implements IDecomposition {
 		// TODO If we filter some group, we should propagate as filtering some element
 		// step.getFilter().
 
-		return Collections.singletonList(
-				MeasurelessQuery.builder().filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
+		return Collections.singletonList(MeasurelessQuery.builder()
+				.filter(underlyingFilter)
+				.groupBy(GroupByColumns.of(allGroupBys))
+				.customMarker(step.getCustomMarker())
+				.build());
 	}
 
-	private IAdhocFilter convertGroupsToElementsFilter(String groupColumn,
+	protected IAdhocFilter convertGroupsToElementsFilter(String groupColumn,
 			String elementColumn,
 			IAdhocFilter requestedFilter) {
 		IAdhocFilter underlyingFilter;
@@ -235,13 +266,13 @@ public class ManyToManyDecomposition implements IDecomposition {
 					.toList();
 
 			underlyingFilter = AndFilter.and(elementsFilters);
-		} else if (requestedFilter.isOr() && requestedFilter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> elementsFilters = andFilter.getOperands()
+		} else if (requestedFilter.isOr() && requestedFilter instanceof IOrFilter orFilter) {
+			List<IAdhocFilter> elementsFilters = orFilter.getOperands()
 					.stream()
 					.map(a -> convertGroupsToElementsFilter(groupColumn, elementColumn, a))
 					.toList();
 
-			underlyingFilter = AndFilter.and(elementsFilters);
+			underlyingFilter = OrFilter.or(elementsFilters);
 		} else {
 			throw new UnsupportedOperationException("TODO handle requestedFilter=%s".formatted(requestedFilter));
 		}

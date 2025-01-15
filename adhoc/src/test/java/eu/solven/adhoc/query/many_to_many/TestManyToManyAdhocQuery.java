@@ -126,7 +126,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testCountryWithMultipleGroups() {
+	public void testGrandTotal_filterElementWithMultipleGroups() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -143,7 +143,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testCountryWithSingleGroups() {
+	public void testGrandTotal_filterElementWithSingleGroups() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -160,7 +160,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testCountryWithNoGroup() {
+	public void testGrandTotal_elementWithNoGroup() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -177,7 +177,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testGroupWithMultipleCountry() {
+	public void testGrandTotal_filterGroupWithMultipleElements() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -194,7 +194,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testGroupWithSingleCountry() {
+	public void testGrandTotal_filterGroupWithSingleElement() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -211,7 +211,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
-	public void testGroupWithNoCountry() {
+	public void testGrandTotal_filterGroupWithNoElement() {
 		prepareMeasures();
 
 		ITabularView output =
@@ -226,11 +226,9 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	public void test_GroupByElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqe.execute(AdhocQuery.builder()
-				.measure(dispatchedMeasure)
-				.groupByColumns(cElement)
-				.andFilter(cGroup, "G8")
-				.build(), rows);
+		ITabularView output = aqe.execute(
+				AdhocQuery.builder().measure(dispatchedMeasure).groupByAlso(cElement).andFilter(cGroup, "G8").build(),
+				rows);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -245,7 +243,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 		ITabularView output = aqe.execute(AdhocQuery.builder()
 				.measure(dispatchedMeasure)
-				.groupByColumns(cElement)
+				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of("G8", "G20"))
 				.build(), rows);
 
@@ -258,14 +256,27 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	}
 
 	@Test
+	public void test_GroupByGroup_noFilter() {
+		prepareMeasures();
+
+		ITabularView output =
+				aqe.execute(AdhocQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of(cGroup, "G8"), Map.of(dispatchedMeasure, 0L + 123))
+				.containsEntry(Map.of(cGroup, "G20"), Map.of(dispatchedMeasure, 0L + 123 + 234));
+	}
+
+	@Test
 	public void test_GroupByGroup_FilterOneElement() {
 		prepareMeasures();
 
-		ITabularView output = aqe.execute(AdhocQuery.builder()
-				.measure(dispatchedMeasure)
-				.groupByColumns(cGroup)
-				.andFilter(cElement, "FR")
-				.build(), rows);
+		ITabularView output = aqe.execute(
+				AdhocQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).andFilter(cElement, "FR").build(),
+				rows);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -281,7 +292,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 		ITabularView output = aqe.execute(AdhocQuery.builder()
 				.measure(dispatchedMeasure)
-				.groupByColumns(cGroup)
+				.groupByAlso(cGroup)
 				.andFilter(cElement, Set.of("FR", "CH"))
 				.build(), rows);
 
@@ -291,5 +302,62 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 				.hasSize(2)
 				.containsEntry(Map.of(cGroup, "G8"), Map.of(dispatchedMeasure, 0L + 123))
 				.containsEntry(Map.of(cGroup, "G20"), Map.of(dispatchedMeasure, 0L + 123 + 234));
+	}
+
+	@Test
+	public void test_NoGroupBy_FilterOneElement() {
+		prepareMeasures();
+
+		ITabularView output =
+				aqe.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "FR").build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123));
+	}
+
+	@Test
+	public void test_NoGroupBy_FilterMultipleElements() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(
+				AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElement, Set.of("FR", "CH")).build(),
+				rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123 + 234));
+	}
+
+	@Test
+	public void test_NoGroupBy_FilterOneGroup() {
+		prepareMeasures();
+
+		ITabularView output =
+				aqe.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G8").build(), rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123));
+	}
+
+	@Test
+	public void test_NoGroupBy_FilterMultipleGroups() {
+		prepareMeasures();
+
+		ITabularView output = aqe.execute(
+				AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, Set.of("G8", "G20")).build(),
+				rows);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123 + 234));
 	}
 }

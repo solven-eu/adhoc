@@ -87,7 +87,7 @@ public class ForeignExchangeCombination implements ICombination {
 	}
 
 	protected String getCcyTo(IAdhocSliceWithStep slice) {
-		// First, we consider a ccyTo configured as a custommarker: these are configurable dynamically by the user
+		// First, we consider a ccyTo configured as a customMarker: these are configurable dynamically by the user
 		Optional<?> optCustomMarker = slice.getQueryStep().getCustomMarker();
 		if (optCustomMarker.isPresent()) {
 			Object customMarker = optCustomMarker.get();
@@ -106,6 +106,8 @@ public class ForeignExchangeCombination implements ICombination {
 				.results()
 				.map(MatchResult::group)
 				.distinct()
+				// `CCY` is the default measure suffix: it should not match as a given ccy
+				.filter(ccy -> !"CCY".equals(ccy))
 				.toList();
 		if (candidates.size() == 1) {
 			return candidates.getFirst();

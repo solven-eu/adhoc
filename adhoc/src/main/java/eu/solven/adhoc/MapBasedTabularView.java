@@ -23,8 +23,8 @@
 package eu.solven.adhoc;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -32,6 +32,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.aggregations.collection.MapAggregator;
+import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ValueConsumer;
@@ -39,11 +40,14 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 
+/**
+ * A simple {@link ITabularView} based on a {@link TreeMap}. it is especially useful for debugging purposes.
+ */
 @Builder
 public class MapBasedTabularView implements ITabularView {
 	@Default
 	@Getter
-	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new HashMap<>();
+	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
 
 	public static MapBasedTabularView load(ITabularView output) {
 		MapBasedTabularView newView = MapBasedTabularView.builder().build();
@@ -52,14 +56,16 @@ public class MapBasedTabularView implements ITabularView {
 
 			@Override
 			public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
-				if (newView.coordinatesToValues.containsKey(coordinates)) {
+				Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
+
+				if (newView.coordinatesToValues.containsKey(coordinatesAsMap)) {
 					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
 				}
 
 				return AsObjectValueConsumer.consumer(o -> {
 					Map<String, ?> oAsMap = (Map<String, ?>) o;
 
-					newView.coordinatesToValues.put(coordinates.getCoordinates(), oAsMap);
+					newView.coordinatesToValues.put(coordinatesAsMap, oAsMap);
 				});
 			}
 		};
@@ -71,7 +77,7 @@ public class MapBasedTabularView implements ITabularView {
 
 	@Override
 	public Stream<AdhocSliceAsMap> keySet() {
-		return coordinatesToValues.keySet().stream().map(m -> AdhocSliceAsMap.fromMap(m));
+		return coordinatesToValues.keySet().stream().map(AdhocSliceAsMap::fromMap);
 	}
 
 	@Override

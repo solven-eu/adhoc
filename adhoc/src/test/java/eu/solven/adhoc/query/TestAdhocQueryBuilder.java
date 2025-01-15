@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestAdhocQueryBuilder {
 	@Test
@@ -61,8 +62,15 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testAddGroupBy() {
-		AdhocQuery q1 = AdhocQuery.builder().groupByColumns("a", "b").groupByColumns("c", "d").build();
+		AdhocQuery q1 = AdhocQuery.builder().groupByAlso("a", "b").groupByAlso("c", "d").build();
 
 		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("a", "b", "c", "d");
+	}
+
+	@Test
+	public void testResetGroupBy() {
+		AdhocQuery q1 = AdhocQuery.builder().groupByAlso("a", "b").groupBy(GroupByColumns.named("c", "d")).build();
+
+		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("c", "d");
 	}
 }

@@ -20,31 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations.many_to_many;
+package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Set;
 
+import eu.solven.adhoc.aggregations.many_to_many.IManyToManyDefinition;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
-public interface IManyToManyDefinition {
-	/**
-	 * @param group
-	 * @return the elements being part of given group
-	 */
-	// Set<Object> getElements(Object group);
+@Builder
+@Slf4j
+public class ManyToManyDynamicDefinition implements IManyToManyDefinition {
+	@NonNull
+	final IManyToManyElementToGroups elementToGroups;
+	@NonNull
+	final IManyToManyGroupToElements groupToElements;
 
-	/**
-	 * @param element
-	 * @return the groups including given element
-	 */
-	Set<Object> getGroups(Object element);
+	@Override
+	public Set<Object> getGroups(Object element) {
+		return elementToGroups.getGroups(element);
+	}
 
-	/**
-	 *
-	 * @param groupMatcher
-	 * @return the elements which group is matched
-	 */
-	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
+	@Override
+	public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.getElementsMatchingGroups(groupMatcher);
+	}
 
-	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
+	@Override
+	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.getMatchingGroups(groupMatcher);
+	}
+
+	// @Override
+	// public Set<Object> getElements(Object group) {
+	// return groupToElements.get(group);
+	// }
+	//
+	// public void putElementToGroup(Object element, Object group) {
+	// elementToGroups.put(element, group);
+	// groupToElements.put(group, element);
+	// }
 }

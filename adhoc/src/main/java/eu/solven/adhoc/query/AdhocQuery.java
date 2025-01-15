@@ -118,7 +118,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 			return andFilter(ColumnFilter.builder().column(column).matching(value).build());
 		}
 
-		public AdhocQueryBuilder groupByColumns(String firstGroupBy, String... moreGroupBys) {
+		public AdhocQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
 			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
 
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder

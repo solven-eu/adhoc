@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
@@ -35,6 +37,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.Value;
 
 /**
@@ -46,7 +49,15 @@ import lombok.Value;
  */
 @Value
 @Builder
-@EqualsAndHashCode(exclude = "debug")
+@EqualsAndHashCode(exclude = {
+		// being debug or not should not prevent 2 querySteps to be considered equals in some hashStructure
+		// This could lead to unexpected debug/notDebug
+		"debug",
+		// cache is typically used for performance improvments: it should not impact any hashStructure
+		"cache" })
+@ToString(exclude = {
+		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
+		"cache" })
 public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IHasCustomMarker {
 	@NonNull
 	IMeasure measure;
@@ -63,6 +74,9 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 	@NonNull
 	Optional<?> customMarker = Optional.empty();
 
+	// Used to store transient information, like slow-to-evaluate informations
+	Map<Object, Object> cache = new ConcurrentHashMap<>();
+
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
 		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());
 	}
@@ -72,6 +86,9 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 
 		if (step instanceof IIsDebugable debuggable) {
 			builder.debug(debuggable.isDebug());
+		}
+		if (step instanceof IHasCustomMarker hasCustomMarker) {
+			builder.customMarker(hasCustomMarker.getCustomMarker());
 		}
 
 		return builder;

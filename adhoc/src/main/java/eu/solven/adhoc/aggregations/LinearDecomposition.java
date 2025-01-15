@@ -147,8 +147,11 @@ public class LinearDecomposition implements IDecomposition {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
-		return Collections.singletonList(
-				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(GroupByColumns.of(allGroupBys)).build());
+		return Collections.singletonList(MeasurelessQuery.builder()
+				.filter(step.getFilter())
+				.groupBy(GroupByColumns.of(allGroupBys))
+				.customMarker(step.getCustomMarker())
+				.build());
 	}
 
 }

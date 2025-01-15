@@ -180,9 +180,9 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		AdhocQueryEngine aqe =
 				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
 
-		ITabularView result = aqe.execute(
-				AdhocQuery.builder().measure(k1SumSquared.getName()).groupByColumns("a").debug(true).build(),
-				jooqDb);
+		ITabularView result =
+				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).groupByAlso("a").debug(true).build(),
+						jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -241,7 +241,7 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		ITabularView result = aqe.execute(AdhocQuery.builder()
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
-				.groupByColumns("b@b@b")
+				.groupByAlso("b@b@b")
 				.debug(true)
 				.build(), jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

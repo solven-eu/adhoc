@@ -95,14 +95,27 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 		IDecomposition decomposition = makeDecomposition();
 
-		for (AdhocSliceAsMap coordinates : ColumnatorQueryStep.keySet(dispatchor.isDebug(), underlyings)) {
+		int slicesDone = 0;
+		Iterable<? extends AdhocSliceAsMap> distinctSlices =
+				UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
+		for (AdhocSliceAsMap coordinates : distinctSlices) {
 			AdhocSliceAsMapWithStep slice =
 					AdhocSliceAsMapWithStep.builder().slice(coordinates).queryStep(step).build();
 
 			onSlice(underlyings, slice, decomposition, aggregatingView);
+
+			if (Integer.bitCount(++slicesDone) == 1) {
+				if (true || step.isDebug()) {
+					log.info("[DEBUG] Done processing {} slices", slicesDone);
+				}
+			}
 		}
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
+	}
+
+	protected boolean isDebug() {
+		return dispatchor.isDebug() || step.isDebug();
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
@@ -126,14 +139,21 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 			Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
 
 			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
-				if (dispatchor.isDebug()) {
+				if (isDebug()) {
 					log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 				}
 
 				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice, fragmentCoordinate);
 
 				if (outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
-					aggregatingView.merge(AdhocSliceAsMap.fromMap(outputCoordinate), fragmentValue);
+					AdhocSliceAsMap coordinateAsSlice = AdhocSliceAsMap.fromMap(outputCoordinate);
+					aggregatingView.merge(coordinateAsSlice, fragmentValue);
+
+					if (isDebug()) {
+						aggregatingView.onValue(coordinateAsSlice, AsObjectValueConsumer.consumer(o -> {
+							log.info("[DEBUG] slice={} has been merged into agg={}", fragmentCoordinate, o);
+						}));
+					}
 				} else {
 					log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
 				}

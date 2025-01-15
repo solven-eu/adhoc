@@ -24,6 +24,8 @@ package eu.solven.adhoc.aggregations.many_to_many;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -42,14 +44,15 @@ public class ManyToManyInMemoryDefinition implements IManyToManyDefinition {
 		return elementToGroups.get(element);
 	}
 
+	protected Stream<Object> streamMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.keySet().stream().filter(groupMatcher::match);
+	}
+
 	@Override
 	public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
 		Set<Object> elementsMatchingGroups = new LinkedHashSet<>();
 
-		groupToElements.keySet()
-				.stream()
-				.filter(groupMatcher::match)
-				.forEach(group -> elementsMatchingGroups.addAll(groupToElements.get(group)));
+		streamMatchingGroups(groupMatcher).forEach(group -> elementsMatchingGroups.addAll(groupToElements.get(group)));
 
 		log.debug("Mapped groupMatcher={} to #elements={} (elements={})",
 				groupMatcher,
@@ -60,9 +63,14 @@ public class ManyToManyInMemoryDefinition implements IManyToManyDefinition {
 	}
 
 	@Override
-	public Set<Object> getElements(Object group) {
-		return groupToElements.get(group);
+	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
+		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
 	}
+
+	// @Override
+	// public Set<Object> getElements(Object group) {
+	// return groupToElements.get(group);
+	// }
 
 	public void putElementToGroup(Object element, Object group) {
 		elementToGroups.put(element, group);

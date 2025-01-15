@@ -70,7 +70,7 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 		ICoordinatesToValues output = makeCoordinateToValues();
 
 		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (AdhocSliceAsMap coordinate : ColumnatorQueryStep.keySet(debug, underlyings)) {
+		for (AdhocSliceAsMap coordinate : UnderlyingQueryStepHelpers.distinctSlices(debug, underlyings)) {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(coordinate).queryStep(step).build();
 
 			List<Object> underlyingVs = underlyings.stream().map(storage -> {

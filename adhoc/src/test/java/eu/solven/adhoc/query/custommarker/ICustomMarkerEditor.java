@@ -20,31 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations.many_to_many;
+package eu.solven.adhoc.query.custommarker;
 
-import java.util.Set;
+import java.util.Optional;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
-
-public interface IManyToManyDefinition {
-	/**
-	 * @param group
-	 * @return the elements being part of given group
-	 */
-	// Set<Object> getElements(Object group);
+/**
+ * Wraps the logic consisting of editing some customMarker. It is especially useful when some customMarker must not be
+ * edited by a user for a given measure.
+ */
+public interface ICustomMarkerEditor {
 
 	/**
-	 * @param element
-	 * @return the groups including given element
+	 * @param customMarker
+	 * @return a new customMarker
 	 */
-	Set<Object> getGroups(Object element);
-
-	/**
-	 *
-	 * @param groupMatcher
-	 * @return the elements which group is matched
-	 */
-	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
-
-	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
+	Optional<?> editCustomMarker(Optional<?> customMarker);
 }

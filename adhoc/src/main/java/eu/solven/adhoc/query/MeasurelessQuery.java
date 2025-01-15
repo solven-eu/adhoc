@@ -22,27 +22,39 @@
  */
 package eu.solven.adhoc.query;
 
+import java.util.Optional;
+
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Simple {@link IAdhocQuery}, where the filter is an AND condition.
- * 
- * @author Benoit Lacelle
+ * Typically used to group aggregators together, given they are associated to the same filter, groupBy, etc clauses.
  *
+ * @author Benoit Lacelle
  */
 @Value
 @Builder
 public class MeasurelessQuery implements IWhereGroupbyAdhocQuery {
 
+	@NonNull
 	IAdhocFilter filter;
+
+	@NonNull
 	IAdhocGroupBy groupBy;
 
-	public static MeasurelessQuery of(IWhereGroupbyAdhocQuery q) {
-		return MeasurelessQuery.builder().filter(q.getFilter()).groupBy(q.getGroupBy()).build();
+	@NonNull
+	Optional<?> customMarker;
+
+	public static MeasurelessQuery of(AdhocQueryStep q) {
+		MeasurelessQueryBuilder builder = MeasurelessQuery.builder()
+				.filter(q.getFilter())
+				.groupBy(q.getGroupBy())
+				.customMarker(q.getCustomMarker());
+		return builder.build();
 	}
 }

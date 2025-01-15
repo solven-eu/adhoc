@@ -140,7 +140,7 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByColumns("a").build(), rows);
+		ITabularView output = aqe.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build(), rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));

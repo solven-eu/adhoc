@@ -34,6 +34,7 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -271,6 +272,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			if (queryStepToValues.containsKey(queryStep)) {
 				// This typically happens on aggregator measures, as they are fed in a previous step
+				// Here, we want to process a measure once its underlying steps are completed
 				return;
 			} else if (queryStep.getMeasure() instanceof Aggregator a) {
 				throw new IllegalStateException("Missing values for %s".formatted(a));
@@ -352,9 +354,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
 
-		AtomicInteger nbIn = new AtomicInteger();
-		AtomicInteger nbOut = new AtomicInteger();
-
 		Set<String> relevantColumns = new HashSet<>();
 		// We may receive raw columns,to be aggregated by ourselves
 		relevantColumns.addAll(columnToAggregators.keySet());
@@ -365,9 +364,28 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.map(a -> a.getName())
 				.forEach(relevantColumns::add);
 
+		// TODO We'd like to log on the last row, to have the number if row actually streamed
+		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(adhocQuery);
+
 		// Process the underlying stream of data to execute aggregations
 		stream.forEach(input -> {
-			Optional<Map<String, ?>> optCoordinates = makeCoordinate(adhocQuery, input);
+			forEachStreamedRow(adhocQuery,
+					columnToAggregators,
+					input,
+					peekOnCoordinate,
+					relevantColumns,
+					coordinatesToAgg);
+		});
+
+		return coordinatesToAgg;
+
+	}
+
+	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(DatabaseQuery adhocQuery) {
+		AtomicInteger nbIn = new AtomicInteger();
+		AtomicInteger nbOut = new AtomicInteger();
+
+		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
 
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy
@@ -377,49 +395,63 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				if (adhocQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
 					log.info("We rejected {} as row #{}", input, currentOut);
 				}
-				return;
 			} else {
 				int currentIn = nbIn.incrementAndGet();
 				if (adhocQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
 					log.info("We accepted {} as row #{}", input, currentIn);
 				}
 			}
-
-			// When would we need to filter? As the filter is done by the IAdhocDatabaseWrapper
-			// if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
-			// return;
-			// }
-
-			for (String aggregatedColumn : relevantColumns) {
-				if (input.containsKey(aggregatedColumn)) {
-					// We received a row contributing to an aggregate: the DB does not provide aggregates (e.g.
-					// InMemoryDb)
-					Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
-
-					Object v = input.get(aggregatedColumn);
-
-					if (aggs == null) {
-						// DB has done the aggregation for us
-						Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
-
-						optAgg.ifPresent(agg -> {
-							coordinatesToAgg.contribute(agg, AdhocSliceAsMap.fromMap(optCoordinates.get()), v);
-						});
-					} else {
-						// The DB provides the column raw value, and not an aggregated value
-						// So we aggregate row values ourselves
-						aggs.forEach(agg -> coordinatesToAgg
-								.contribute(agg, AdhocSliceAsMap.fromMap(optCoordinates.get()), v));
-					}
-				}
-			}
-		});
-
-		return coordinatesToAgg;
-
+		};
+		return peekOnCoordinate;
 	}
 
-	private Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators, String aggregatorName) {
+	protected void forEachStreamedRow(DatabaseQuery adhocQuery,
+			Map<String, Set<Aggregator>> columnToAggregators,
+			Map<String, ?> input,
+			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
+			Set<String> relevantColumns,
+			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
+		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(adhocQuery, input);
+
+		peekOnCoordinate.accept(input, optCoordinates);
+
+		if (optCoordinates.isEmpty()) {
+			return;
+		}
+
+		// When would we need to filter? As the filter is done by the IAdhocDatabaseWrapper
+		// if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
+		// return;
+		// }
+
+		AdhocSliceAsMap coordinates = optCoordinates.get();
+
+		for (String aggregatedColumn : relevantColumns) {
+			if (input.containsKey(aggregatedColumn)) {
+				// We received a row contributing to an aggregate: the DB does not provide aggregates (e.g.
+				// InMemoryDb)
+				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
+
+				Object v = input.get(aggregatedColumn);
+
+				if (aggs == null) {
+					// DB has done the aggregation for us
+					Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
+
+					optAgg.ifPresent(agg -> {
+						coordinatesToAgg.contribute(agg, coordinates, v);
+					});
+				} else {
+					// The DB provides the column raw value, and not an aggregated value
+					// So we aggregate row values ourselves
+					aggs.forEach(agg -> coordinatesToAgg.contribute(agg, coordinates, v));
+				}
+			}
+		}
+	}
+
+	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
+			String aggregatorName) {
 		return columnToAggregators.values()
 				.stream()
 				.flatMap(c -> c.stream())
@@ -432,9 +464,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param input
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<Map<String, ?>> makeCoordinate(IWhereGroupbyAdhocQuery adhocQuery, Map<String, ?> input) {
+	protected Optional<AdhocSliceAsMap> makeCoordinate(IWhereGroupbyAdhocQuery adhocQuery, Map<String, ?> input) {
 		if (adhocQuery.getGroupBy().isGrandTotal()) {
-			return Optional.of(Collections.emptyMap());
+			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
 		}
 
 		NavigableSet<String> groupedByColumns = adhocQuery.getGroupBy().getGroupedByColumns();
@@ -452,7 +484,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			coordinates.put(groupBy, value);
 		}
 
-		return Optional.of(coordinates);
+		return Optional.of(AdhocSliceAsMap.fromMap(coordinates));
 	}
 
 	/**
@@ -513,6 +545,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					.aggregators(leafAggregators)
 					.explain(explain)
 					.debug(debug)
+					.customMarker(adhocLeafQuery.getCustomMarker())
 					.build();
 		}).collect(Collectors.toSet());
 	}

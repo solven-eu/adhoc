@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Optional;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -43,5 +45,19 @@ public class TestAdhocQueryStep {
 		Assertions.assertThat(stepDebug.isDebug()).isTrue();
 
 		Assertions.assertThat(stepDebug).isEqualTo(stepNotDebug);
+	}
+
+	@Test
+	public void testCustomMarker() {
+		AdhocQueryStep stepHasCustom = AdhocQueryStep.builder()
+				.measure(Aggregator.sum("c"))
+				.filter(IAdhocFilter.MATCH_ALL)
+				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+				.customMarker(Optional.of("someCustomMarker"))
+				.build();
+		Assertions.assertThat((Optional) stepHasCustom.getCustomMarker()).contains("someCustomMarker");
+
+		AdhocQueryStep editKeepCustom = AdhocQueryStep.edit(stepHasCustom).build();
+		Assertions.assertThat((Optional) editKeepCustom.getCustomMarker()).contains("someCustomMarker");
 	}
 }
