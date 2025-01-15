@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Kumite Homepage" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="/" />
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.css" />
+    <!-- https://icons.getbootstrap.com/ -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <title>Kumite Contests</title>
+</head>
+<body>
+<!-- https://vuejs.org/guide/quick-start -->
+<!-- https://github.com/vuejs/router/issues/694 -->
+<!-- // https://github.com/vuejs/pinia/issues/2205 -->
+<!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/crossorigin -->
+<!-- https://github.com/WICG/import-maps/issues/76 -->
+<!-- https://github.com/jsdelivr/jsdelivr/issues/18038 -->
+<script type="importmap" crossorigin="anonymous">
+    {
+        "imports": {
+            "vue": "https://unpkg.com/vue@3.5.6/dist/vue.esm-browser.js",
+            "vue-router": "https://unpkg.com/vue-router@4.4.3/dist/vue-router.esm-browser.js",
+            "@vue/devtools-api": "https://unpkg.com/@vue/devtools-api@6.2.1/lib/esm/index.js",
+            "pinia": "https://unpkg.com/pinia@2.2.2/dist/pinia.esm-browser.js",
+            "vue-demi": "https://cdn.jsdelivr.net/npm/vue-demi/lib/v3/index.mjs",
+            "bootstrap": "/webjars/bootstrap/js/bootstrap.esm.js",
+            "@popperjs/core": "https://unpkg.com/@popperjs/core@2.11.8/dist/esm/index.js"
+        }
+    }
+</script>
+<div id="app">
+    <KumiteApp />
+</div>
+
+<script type="module">
+    import { createApp, ref } from "vue";
+    // https://router.vuejs.org/guide/essentials/history-mode
+    import { createRouter, createWebHistory } from "vue-router";
+    // https://pinia.vuejs.org/getting-started.html
+    import { createPinia } from "pinia";
+
+    import KumiteApp from "./ui/js/kumite-app.js";
+    import HelloView from "./ui/js/hello.js";
+    import KumiteAccount from "./ui/js/kumite-account.js";
+    import KumiteMe from "./ui/js/kumite-account-me.js";
+    import KumitePlayer from "./ui/js/kumite-player.js";
+    import KumiteGames from "./ui/js/kumite-games.js";
+    import KumiteGame from "./ui/js/kumite-game.js";
+    import KumiteContestForm from "./ui/js/kumite-contest-form.js";
+    import KumiteSearchContests from "./ui/js/kumite-search-contests.js";
+    import KumiteContest from "./ui/js/kumite-contest.js";
+    import KumiteBoardOverview from "./ui/js/kumite-board-overview.js";
+    import KumiteBoardPlay from "./ui/js/kumite-board-play.js";
+    import KumiteSearch from "./ui/js/kumite-search.js";
+    import Login from "./ui/js/login.js";
+    import LoginBasic from "./ui/js/login-basic.js";
+    import AboutView from "./ui/js/about.js";
+
+    // Some routes prefix are forbidden as they would match API
+    // It includes `/ui`, `/api`
+    const routes = [
+        { path: "/", component: HelloView },
+        { path: "/server_info", component: AdhocServerInfo },
+        { path: "/query/:queryId", component: AdhocQuery },
+    ];
+
+    const router = createRouter({
+        history: createWebHistory(),
+        routes,
+    });
+
+    const pinia = createPinia();
+
+    // https://router.vuejs.org/guide/
+    createApp(KumiteApp)
+        .use(router)
+        // https://pinia.vuejs.org/getting-started.html
+        .use(pinia)
+        .mount("#app");
+</script>
+<!-- This demonstrate how we can inject properties into source files, to be rendered without any API/Javascript-->
+<!-- https://stackoverflow.com/questions/39099295/make-div-stick-to-bottom-of-page -->
+<div style="position: fixed; bottom: 0; width: 100%; text-align: right; z-index: -1">
+    <a href="https://github.com/solven-eu/kumite/commit/@git.commit.id.abbrev@" target="_blank">
+        <img src="./ui/img/github-mark.svg" alt="Github" width="32" height="32" />
+    </a>
+</div>
+</body>
+</html>

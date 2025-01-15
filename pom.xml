@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.3.4</version>
+		<version>3.4.1</version>
 		<relativePath />
 		<!-- lookup parent from repository -->
 	</parent>
@@ -214,6 +214,14 @@
 			<id>activeviam</id>
 			<modules>
 				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- mvn clean install -Pjs -->
+			<!-- JS user-interface is WIP, and broken most of the time -->
+			<id>js</id>
+			<modules>
+				<module>ui-web</module>
 			</modules>
 		</profile>
 	</profiles>

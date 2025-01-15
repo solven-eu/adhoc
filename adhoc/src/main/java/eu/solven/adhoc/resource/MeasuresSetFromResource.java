@@ -63,7 +63,6 @@ import eu.solven.pepper.mappath.MapPathPut;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import smile.math.distance.EditDistance;
 
 /**
  * Helps reading and writing {@link AdhocMeasureBag} into resource files.
@@ -306,7 +305,7 @@ public class MeasuresSetFromResource {
 		} else if (e.getMessage().contains("(key not present)")) {
 			String minimizingDistance = minimizingDistance(map.keySet(), key);
 
-			if (EditDistance.levenshtein(minimizingDistance, key) <= 2) {
+			if (SmileEditDistance.levenshtein(minimizingDistance, key) <= 2) {
 				throw new IllegalArgumentException(
 						"Did you mean `%s` instead of `%s`".formatted(minimizingDistance, key),
 						e);
@@ -327,7 +326,7 @@ public class MeasuresSetFromResource {
 	 */
 	public static String minimizingDistance(Collection<String> options, String key) {
 		String minimizingDistance =
-				options.stream().min(Comparator.comparing(s -> EditDistance.levenshtein(s, key))).orElse("?");
+				options.stream().min(Comparator.comparing(s -> SmileEditDistance.levenshtein(s, key))).orElse("?");
 		return minimizingDistance;
 	}
 

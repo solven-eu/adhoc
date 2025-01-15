@@ -23,6 +23,9 @@
 package eu.solven.adhoc.api.v1.pojo.value;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.base.MoreObjects;
 
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import lombok.Builder;
@@ -54,5 +57,17 @@ public class InMatcher implements IValueMatcher {
 		}
 
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
+
+		AtomicInteger index = new AtomicInteger();
+		operands.stream().limit(128).forEach(filter -> {
+			toStringHelper.add("#" + index.getAndIncrement(), filter);
+		});
+
+		return toStringHelper.toString();
 	}
 }
