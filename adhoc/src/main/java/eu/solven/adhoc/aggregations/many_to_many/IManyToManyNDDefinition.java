@@ -22,29 +22,32 @@
  */
 package eu.solven.adhoc.aggregations.many_to_many;
 
+import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 
-public interface IManyToManyDefinition {
+/**
+ * Advanced many2many relies on a multiple input columns, and value matchers.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+public interface IManyToManyNDDefinition {
 	/**
-	 * @param group
-	 * @return the elements being part of given group
-	 */
-	// Set<Object> getElements(Object group);
-
-	/**
-	 * @param element
+	 * @param groupMatcher
+	 *            an {@link IValueMatcher} restricting valid groups. useful for performance considerations.
+	 * @param columnToElement
 	 * @return the groups including given element
 	 */
-	Set<Object> getGroups(Object element);
+	Set<Object> getGroups(IValueMatcher groupMatcher, Map<String, ?> columnToElement);
 
 	/**
 	 *
 	 * @param groupMatcher
 	 * @return the elements which group is matched
 	 */
-	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
+	Set<Map<String, IValueMatcher>> getElementsMatchingGroups(IValueMatcher groupMatcher);
 
 	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
 }

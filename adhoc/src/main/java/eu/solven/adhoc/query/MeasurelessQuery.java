@@ -50,11 +50,10 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery {
 	@NonNull
 	Optional<?> customMarker;
 
-	public static MeasurelessQuery of(AdhocQueryStep q) {
-		MeasurelessQueryBuilder builder = MeasurelessQuery.builder()
-				.filter(q.getFilter())
-				.groupBy(q.getGroupBy())
-				.customMarker(q.getCustomMarker());
-		return builder.build();
+	public static MeasurelessQueryBuilder edit(AdhocQueryStep step) {
+		return MeasurelessQuery.builder()
+				.filter(step.getFilter())
+				.groupBy(step.getGroupBy())
+				.customMarker(step.getCustomMarker());
 	}
 }

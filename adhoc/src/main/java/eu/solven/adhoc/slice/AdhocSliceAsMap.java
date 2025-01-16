@@ -23,6 +23,7 @@
 package eu.solven.adhoc.slice;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -75,5 +76,17 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 	@Override
 	public AdhocSliceAsMap getAdhocSliceAsMap() {
 		return this;
+	}
+
+	@Override
+	public Map<String, ?> optFilters(Set<String> columns) {
+		// Keep requested columns ordering
+		Map<String, Object> filters = new LinkedHashMap<>();
+
+		columns.forEach(column -> {
+			optFilter(column).ifPresent(filter -> filters.put(column, filter));
+		});
+
+		return filters;
 	}
 }

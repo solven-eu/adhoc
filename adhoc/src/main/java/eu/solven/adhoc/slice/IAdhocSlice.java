@@ -76,6 +76,8 @@ public interface IAdhocSlice {
 	 */
 	Optional<Object> optFilter(String column);
 
+	Map<String, ?> optFilters(Set<String> columns);
+
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
 	default Map<String, Object> getCoordinates() {

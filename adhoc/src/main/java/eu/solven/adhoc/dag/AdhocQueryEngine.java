@@ -71,6 +71,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Columnator;
 import eu.solven.adhoc.transformers.EmptyMeasure;
 import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
+import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -513,7 +514,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					IMeasure leafMeasure = resolveIfRef(step.getMeasure());
 
 					if (leafMeasure instanceof Aggregator leafAggregator) {
-						MeasurelessQuery measureless = MeasurelessQuery.of(step);
+						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
 
 						// We could analyze filters, to discard a query filter `k=v` if another query filters `k=v|v2`
 						measurelessToAggregators.merge(measureless,
@@ -581,9 +582,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
-			} else if (measure instanceof IHasUnderlyingMeasures combinator) {
-				for (AdhocQueryStep underlyingStep : combinator.wrapNode(operatorsFactory, adhocSubQuery)
-						.getUnderlyingSteps()) {
+			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
+				IHasUnderlyingQuerySteps wrappedQueryStep =
+						measureWithUnderlyings.wrapNode(operatorsFactory, adhocSubQuery);
+				for (AdhocQueryStep underlyingStep : wrappedQueryStep.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
 					IMeasure notRefMeasure = resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();

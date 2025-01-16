@@ -20,46 +20,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.many_to_many;
+package eu.solven.adhoc.aggregations.many_to_many;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.aggregations.many_to_many.IManyToManyDefinition;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
-import lombok.Builder;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-@Builder
+/**
+ * 
+ * @author Benoit Lacelle
+ *
+ */
 @Slf4j
-public class ManyToManyDynamicDefinition implements IManyToManyDefinition {
-	@NonNull
-	final IManyToManyElementToGroups elementToGroups;
-	@NonNull
-	final IManyToManyGroupToElements groupToElements;
+public class ManyToMany1DInMemoryDefinition implements IManyToMany1DDefinition {
+	final SetMultimap<Object, Object> groupToElements =
+			MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
+	final SetMultimap<Object, Object> elementToGroups =
+			MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
 
 	@Override
 	public Set<Object> getGroups(Object element) {
-		return elementToGroups.getGroups(element);
+		return elementToGroups.get(element);
+	}
+
+	protected Stream<Object> streamMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.keySet().stream().filter(groupMatcher::match);
 	}
 
 	@Override
 	public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
-		return groupToElements.getElementsMatchingGroups(groupMatcher);
+		Set<Object> elementsMatchingGroups = new LinkedHashSet<>();
+
+		streamMatchingGroups(groupMatcher).forEach(group -> elementsMatchingGroups.addAll(groupToElements.get(group)));
+
+		log.debug("Mapped groupMatcher={} to #elements={} (elements={})",
+				groupMatcher,
+				elementsMatchingGroups.size(),
+				elementsMatchingGroups);
+
+		return elementsMatchingGroups;
 	}
 
 	@Override
 	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
-		return groupToElements.getMatchingGroups(groupMatcher);
+		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
 	}
 
 	// @Override
 	// public Set<Object> getElements(Object group) {
 	// return groupToElements.get(group);
 	// }
-	//
-	// public void putElementToGroup(Object element, Object group) {
-	// elementToGroups.put(element, group);
-	// groupToElements.put(group, element);
-	// }
+
+	public void putElementToGroup(Object element, Object group) {
+		elementToGroups.put(element, group);
+		groupToElements.put(group, element);
+	}
 }

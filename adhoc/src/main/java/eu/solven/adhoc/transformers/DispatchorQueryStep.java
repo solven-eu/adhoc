@@ -105,7 +105,7 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 			onSlice(underlyings, slice, decomposition, aggregatingView);
 
 			if (Integer.bitCount(++slicesDone) == 1) {
-				if (true || step.isDebug()) {
+				if (true || isDebug()) {
 					log.info("[DEBUG] Done processing {} slices", slicesDone);
 				}
 			}

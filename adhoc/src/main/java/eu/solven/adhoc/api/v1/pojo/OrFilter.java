@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.api.v1.pojo;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -82,9 +83,9 @@ public class OrFilter implements IOrFilter {
 		return toStringHelper.toString();
 	}
 
-	public static IAdhocFilter or(List<? extends IAdhocFilter> filters) {
+	public static IAdhocFilter or(Collection<? extends IAdhocFilter> filters) {
 		if (filters.size() == 1) {
-			return filters.getFirst();
+			return filters.iterator().next();
 		} else {
 			return OrFilter.builder().filters(filters).build();
 		}

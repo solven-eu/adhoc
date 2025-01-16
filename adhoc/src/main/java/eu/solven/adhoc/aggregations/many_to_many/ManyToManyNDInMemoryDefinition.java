@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.aggregations.many_to_many;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,14 +36,28 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ManyToManyInMemoryDefinition implements IManyToManyDefinition {
-	final SetMultimap<Object, Object> groupToElements =
-			MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
-	final SetMultimap<Object, Object> elementToGroups =
+public class ManyToManyNDInMemoryDefinition implements IManyToManyNDDefinition {
+	final SetMultimap<Object, Map<String, IValueMatcher>> groupToElements =
 			MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
 
-	public Set<Object> getGroups(Object element) {
-		return elementToGroups.get(element);
+	// final SetMultimap<Map<String, ?>, Object> elementToGroups =
+	// MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
+
+	@Override
+	public Set<Object> getGroups(IValueMatcher groupMatcher, Map<String, ?> columnToElement) {
+		return groupToElements.asMap().entrySet().stream().filter(e -> groupMatcher.match(e.getKey())).filter(e -> {
+			Collection<Map<String, IValueMatcher>> matchers = e.getValue();
+
+			return matchers.stream().anyMatch(matcher -> doElementMatch(matcher, columnToElement));
+		}).map(e -> e.getKey()).collect(Collectors.toSet());
+	}
+
+	protected boolean doElementMatch(Map<String, IValueMatcher> matcher, Map<String, ?> columnToElement) {
+		return matcher.entrySet().stream().allMatch(e -> {
+			String column = e.getKey();
+			Object value = columnToElement.get(column);
+			return e.getValue().match(value);
+		});
 	}
 
 	protected Stream<Object> streamMatchingGroups(IValueMatcher groupMatcher) {
@@ -49,8 +65,8 @@ public class ManyToManyInMemoryDefinition implements IManyToManyDefinition {
 	}
 
 	@Override
-	public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
-		Set<Object> elementsMatchingGroups = new LinkedHashSet<>();
+	public Set<Map<String, IValueMatcher>> getElementsMatchingGroups(IValueMatcher groupMatcher) {
+		Set<Map<String, IValueMatcher>> elementsMatchingGroups = new LinkedHashSet<>();
 
 		streamMatchingGroups(groupMatcher).forEach(group -> elementsMatchingGroups.addAll(groupToElements.get(group)));
 
@@ -67,13 +83,13 @@ public class ManyToManyInMemoryDefinition implements IManyToManyDefinition {
 		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
 	}
 
-	// @Override
-	// public Set<Object> getElements(Object group) {
-	// return groupToElements.get(group);
-	// }
-
-	public void putElementToGroup(Object element, Object group) {
-		elementToGroups.put(element, group);
-		groupToElements.put(group, element);
+	public void putElementToGroup(Map<String, IValueMatcher> element, Object rawGroup) {
+		if (rawGroup instanceof Collection<?> groups) {
+			groups.forEach(group -> putElementToGroup(element, group));
+		} else {
+			// elementToGroups.put(element, rawGroup);
+			groupToElements.put(rawGroup, element);
+		}
 	}
+
 }

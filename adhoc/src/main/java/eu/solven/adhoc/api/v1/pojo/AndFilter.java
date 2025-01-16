@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -52,13 +53,6 @@ public class AndFilter implements IAndFilter {
 
 	@Singular
 	final List<IAdhocFilter> filters;
-
-	public static AndFilter andAxisEqualsFilters(Map<String, ?> filters) {
-		return new AndFilter(filters.entrySet()
-				.stream()
-				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
-				.collect(Collectors.toList()));
-	}
 
 	@Override
 	public boolean isNot() {
@@ -123,6 +117,20 @@ public class AndFilter implements IAndFilter {
 		} else {
 			return AndFilter.builder().filters(notMatchAll).build();
 		}
+	}
+
+	public static IAdhocFilter and(Map<String, IValueMatcher> filters) {
+		return and(filters.entrySet()
+				.stream()
+				.map(e -> ColumnFilter.builder().column(e.getKey()).valueMatcher(e.getValue()).build())
+				.collect(Collectors.toList()));
+	}
+
+	public static IAdhocFilter andAxisEqualsFilters(Map<String, ?> filters) {
+		return and(filters.entrySet()
+				.stream()
+				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
+				.collect(Collectors.toList()));
 	}
 
 }

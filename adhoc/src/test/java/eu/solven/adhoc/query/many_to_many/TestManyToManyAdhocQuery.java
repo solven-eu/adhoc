@@ -41,18 +41,17 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
-import eu.solven.adhoc.aggregations.many_to_many.IManyToManyDefinition;
-import eu.solven.adhoc.aggregations.many_to_many.ManyToManyDecomposition;
-import eu.solven.adhoc.aggregations.many_to_many.ManyToManyInMemoryDefinition;
+import eu.solven.adhoc.aggregations.many_to_many.IManyToMany1DDefinition;
+import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DDecomposition;
+import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DInMemoryDefinition;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
-import lombok.NonNull;
 
 public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestConstants {
 
-	ManyToManyInMemoryDefinition manyToManyDefinition = new ManyToManyInMemoryDefinition();
+	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder()
 			.eventBus(eventBus)
@@ -60,21 +59,21 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 			.operatorsFactory(makeOperatorsFactory(manyToManyDefinition))
 			.build();
 
-	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToManyDefinition manyToManyDefinition) {
+	IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
-        return new StandardOperatorsFactory() {
-            @Override
-            public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-                if (ManyToManyDecomposition.KEY.equals(key) || key.equals(ManyToManyDecomposition.class.getName())) {
-                    return new ManyToManyDecomposition(options, manyToManyDefinition);
-                }
-                return switch (key) {
-                    default:
-                        yield super.makeDecomposition(key, options);
-                };
-            }
-        };
-    }
+		return new StandardOperatorsFactory() {
+			@Override
+			public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
+				if (ManyToMany1DDecomposition.KEY.equals(key) || key.equals(ManyToMany1DDecomposition.class.getName())) {
+					return new ManyToMany1DDecomposition(options, manyToManyDefinition);
+				}
+				return switch (key) {
+				default:
+					yield super.makeDecomposition(key, options);
+				};
+			}
+		};
+	}
 
 	final String dispatchedMeasure = "k1.dispatched";
 
@@ -95,14 +94,14 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 	void prepareMeasures() {
 		Map<String, Object> options = ImmutableMap.<String, Object>builder()
-				.put(ManyToManyDecomposition.K_INPUT, cElement)
-				.put(ManyToManyDecomposition.K_OUTPUT, cGroup)
+				.put(ManyToMany1DDecomposition.K_INPUT, cElement)
+				.put(ManyToMany1DDecomposition.K_OUTPUT, cGroup)
 				.build();
 
 		amb.addMeasure(Dispatchor.builder()
 				.name(dispatchedMeasure)
 				.underlying("k1")
-				.decompositionKey(ManyToManyDecomposition.class.getName())
+				.decompositionKey(ManyToMany1DDecomposition.class.getName())
 				.decompositionOptions(options)
 				.build());
 

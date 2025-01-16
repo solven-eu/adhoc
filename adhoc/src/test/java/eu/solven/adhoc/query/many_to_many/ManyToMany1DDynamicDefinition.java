@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,52 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.slice;
+package eu.solven.adhoc.query.many_to_many;
 
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.aggregations.many_to_many.IManyToMany1DDefinition;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}
+ * A {@link IManyToMany1DDefinition} based on external interfaces, enabling dynamic execution (e.g. fetching from a
+ * database, or computing on-the-fly).
+ * 
+ * @author Benoit Lacelle
+ *
  */
 @Builder
-@ToString
-public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
+@Slf4j
+public class ManyToMany1DDynamicDefinition implements IManyToMany1DDefinition {
 	@NonNull
-	final IAdhocSlice slice;
-
+	final IManyToManyElementToGroups elementToGroups;
 	@NonNull
-	final AdhocQueryStep queryStep;
+	final IManyToManyGroupToElements groupToElements;
 
 	@Override
-	public @NonNull AdhocQueryStep getQueryStep() {
-		return queryStep;
+	public Set<Object> getGroups(Object element) {
+		return elementToGroups.getGroups(element);
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		return slice.getColumns();
+	public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.getElementsMatchingGroups(groupMatcher);
 	}
 
 	@Override
-	public Optional<Object> optFilter(String column) {
-		return slice.optFilter(column);
+	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.getMatchingGroups(groupMatcher);
 	}
-
-	@Override
-	public AdhocSliceAsMap getAdhocSliceAsMap() {
-		return AdhocSliceAsMap.fromMap(slice.getCoordinates());
-	}
-
-	@Override
-	public Map<String, ?> optFilters(Set<String> columns) {
-		return slice.optFilters(columns);
-	}
-
 }

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,52 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.slice;
+package eu.solven.adhoc.aggregations.many_to_many;
 
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.ToString;
+import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}
+ * Simplest many2many relies on a single input columns, and equals matching.
+ * 
+ * @author Benoit Lacelle
+ *
  */
-@Builder
-@ToString
-public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
-	@NonNull
-	final IAdhocSlice slice;
+public interface IManyToMany1DDefinition {
+	/**
+	 * @param element
+	 * @return the groups including given element
+	 */
+	Set<Object> getGroups(Object element);
 
-	@NonNull
-	final AdhocQueryStep queryStep;
+	/**
+	 *
+	 * @param groupMatcher
+	 * @return the elements which group is matched
+	 */
+	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
 
-	@Override
-	public @NonNull AdhocQueryStep getQueryStep() {
-		return queryStep;
-	}
-
-	@Override
-	public Set<String> getColumns() {
-		return slice.getColumns();
-	}
-
-	@Override
-	public Optional<Object> optFilter(String column) {
-		return slice.optFilter(column);
-	}
-
-	@Override
-	public AdhocSliceAsMap getAdhocSliceAsMap() {
-		return AdhocSliceAsMap.fromMap(slice.getCoordinates());
-	}
-
-	@Override
-	public Map<String, ?> optFilters(Set<String> columns) {
-		return slice.optFilters(columns);
-	}
-
+	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
 }
