@@ -24,8 +24,6 @@ package eu.solven.adhoc.database.duckdb;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
+import org.jooq.Name;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
@@ -49,6 +48,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
 import eu.solven.adhoc.database.sql.DSLSupplier;
+import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -62,17 +62,9 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-logo", "true");
 	}
 
-	String tableName = "someTableName";
+	Name tableName = DSL.name("someTableName");
 
-	private Connection makeFreshInMemoryDb() {
-		try {
-			return DriverManager.getConnection("jdbc:duckdb:");
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	Connection dbConn = makeFreshInMemoryDb();
+	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 	AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
 			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 			.tableName(tableName)

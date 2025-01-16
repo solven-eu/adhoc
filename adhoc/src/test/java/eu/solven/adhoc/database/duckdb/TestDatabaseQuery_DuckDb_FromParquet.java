@@ -36,6 +36,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		Connection dbConn = makeFreshInMemoryDb();
 		jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
 				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-				.tableName(tableName)
+				.tableName(DSL.name(tableName))
 				.build();
 
 		dsl = jooqDb.makeDsl();

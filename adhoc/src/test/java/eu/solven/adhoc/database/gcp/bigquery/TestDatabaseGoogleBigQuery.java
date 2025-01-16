@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,7 @@ public class TestDatabaseGoogleBigQuery {
 
 		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = AdhocGoogleBigQueryDatabaseWrapper.builder()
 				.bigQueryOptions(bigQueryOptions)
-				.tableName("bigquery-public-data.stackoverflow.posts_questions")
+				.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 				.build();
 
 		List<Map<String, ?>> rows = bgDbWrapper.openDbStream(DatabaseQuery.builder()

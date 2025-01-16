@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
+import org.jooq.Name;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-logo", "true");
 	}
 
-	String tableName = "someTableName";
+	Name tableName = DSL.name("someTableName");
 
 	private Connection makeFreshInMemoryDb() {
 		try {

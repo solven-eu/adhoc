@@ -82,8 +82,9 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 	@NonNull
 	final IAdhocDatabaseTranscoder transcoder;
 
+	// BEWARE Should we enable table as SQL or TableLike?
 	@NonNull
-	final String tableName;
+	final Name tableName;
 
 	@NonNull
 	DSLContext dslContext;
@@ -107,7 +108,7 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
 
 		SelectHavingStep<Record> select =
-				dslContext.select(selectedFields).from(DSL.name(tableName)).where(dbConditions).groupBy(groupFields);
+				dslContext.select(selectedFields).from(tableName).where(dbConditions).groupBy(groupFields);
 
 		ResultQuery<Record> resultQuery;
 		if (dbQuery.getTopClause().isPresent()) {

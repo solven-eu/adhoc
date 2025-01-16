@@ -58,7 +58,7 @@ public class SimpleAdhocBigQueryApp {
 		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = AdhocGoogleBigQueryDatabaseWrapper.builder()
 				.bigQueryOptions(bigQueryOptions)
 				.dslSupplier(DSLSupplier.fromDialect(SQLDialect.CUBRID))
-				.tableName("bigquery-public-data.stackoverflow.posts_questions")
+				.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 				.build();
 
 		// bgDbWrapper.openDbStream(DatabaseQuery.builder().aggregators(null))

@@ -25,6 +25,7 @@ package eu.solven.adhoc.database.sql;
 import org.assertj.core.api.Assertions;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -42,7 +43,7 @@ public class TestAdhocJooqSqlDatabaseStreamOpener {
 	}
 
 	AdhocJooqSqlDatabaseStreamOpener streamOpener = new AdhocJooqSqlDatabaseStreamOpener(new IdentityTranscoder(),
-			"someTableName",
+			DSL.name("someTableName"),
 			Mockito.mock(DSLContext.class));
 
 	@Test

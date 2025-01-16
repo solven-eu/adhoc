@@ -72,7 +72,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 	DSLSupplier dslSupplier;
 
 	@NonNull
-	final String tableName;
+	final Name tableName;
 
 	public DSLContext makeDsl() {
 		return dslSupplier.getDSLContext();
@@ -155,7 +155,7 @@ public class AdhocJooqSqlDatabaseWrapper implements IAdhocDatabaseWrapper {
 		// "key",
 		// "default",
 		// "extra"
-		Map<Object, Object> columnNameToType = makeDsl().fetchStream("DESCRIBE FROM %s".formatted(DSL.name(tableName)))
+		Map<Object, Object> columnNameToType = makeDsl().fetchStream("DESCRIBE FROM %s".formatted(tableName))
 				.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
 
 		log.info("[DEBUG] {}", columnNameToType);
