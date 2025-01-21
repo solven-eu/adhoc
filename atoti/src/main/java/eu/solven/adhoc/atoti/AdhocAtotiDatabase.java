@@ -40,9 +40,9 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
-import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
-import eu.solven.adhoc.database.IdentityTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.DatabaseQuery;
 import lombok.Builder;
 import lombok.Getter;

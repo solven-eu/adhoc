@@ -40,6 +40,7 @@ import org.jooq.ResultQuery;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectHavingStep;
 import org.jooq.SortField;
+import org.jooq.TableLike;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
@@ -56,8 +57,8 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
-import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.TranscodingContext;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
@@ -78,13 +79,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseStreamOpener {
+public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFactory {
 	@NonNull
 	final IAdhocDatabaseTranscoder transcoder;
 
 	// BEWARE Should we enable table as SQL or TableLike?
 	@NonNull
-	final Name tableName;
+	final TableLike<?> table;
 
 	@NonNull
 	DSLContext dslContext;
@@ -108,7 +109,7 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
 
 		SelectHavingStep<Record> select =
-				dslContext.select(selectedFields).from(tableName).where(dbConditions).groupBy(groupFields);
+				dslContext.select(selectedFields).from(table).where(dbConditions).groupBy(groupFields);
 
 		ResultQuery<Record> resultQuery;
 		if (dbQuery.getTopClause().isPresent()) {
@@ -148,9 +149,26 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 			String sql = hasSql.getSql();
 			field = DSL.field(sql).as(columnName);
 		} else {
-			field = DSL.field(DSL.name(transcodedName)).as(columnName);
+			Field<Object> unaliasedField = DSL.field(name(transcodedName));
+
+			if (transcodedName.equals(columnName)) {
+				field = unaliasedField;
+			} else {
+				field = unaliasedField.as(name(columnName));
+			}
 		}
 		return field;
+	}
+
+	protected Name name(String name) {
+		// BEWARE it is unclear what's the proper way of quoting
+		// `unquotedName` is useful to handle input columns referencing (e.g. joined) tables as in
+		// `tableName.columnName`, while `quoted` would treat `tableName.columnName` as a columnName
+
+		// Split by dot as we expect a regular use of `.` to reference joined tables
+		String[] namesWithoutDot = name.split("\\.");
+
+		return DSL.quotedName(namesWithoutDot);
 	}
 
 	protected Collection<GroupField> makeGroupingFields(DatabaseQuery dbQuery) {
@@ -185,15 +203,15 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
 		String aggregationKey = a.getAggregationKey();
 		String columnName = transcoder.underlying(a.getColumnName());
-		Name namedColumn = DSL.name(columnName);
+		Name namedColumn = name(columnName);
 
 		if (SumAggregator.KEY.equals(aggregationKey)) {
 			Field<Double> field =
 					DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
-			return DSL.sum(field).as(DSL.name(a.getName()));
+			return DSL.sum(field).as(name(a.getName()));
 		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
 			Field<?> field = DSL.field(namedColumn);
-			return DSL.max(field).as(DSL.name(a.getName()));
+			return DSL.max(field).as(name(a.getName()));
 		} else {
 			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 		}
@@ -204,7 +222,7 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
 				.map(transcoder::underlying)
-				.map(c -> DSL.field(DSL.name(c)).isNotNull())
+				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
 
 		return DSL.or(oneNotNullConditions);
@@ -232,7 +250,7 @@ public class AdhocJooqSqlDatabaseStreamOpener implements IAdhocJooqSqlDatabaseSt
 		String column = transcoder.underlying(columnFilter.getColumn());
 
 		Condition condition;
-		final Field<Object> field = DSL.field(DSL.name(column));
+		final Field<Object> field = DSL.field(name(column));
 		switch (valueMatcher) {
 		case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
 		case InMatcher inMatcher -> {

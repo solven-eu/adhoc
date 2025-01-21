@@ -20,34 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.holymolap.measures.operator;
+package eu.solven.adhoc.database.transcoder;
 
-import eu.solven.holymolap.stable.v1.IDoubleBinaryOperator;
+import java.util.Set;
+
+import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 
 /**
- * Sum over {@link Double}, excluding NaN
- * 
- * @author Benoit Lacelle
- *
+ * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
+ * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocDatabaseWrapper}. Then, the transcoding
+ * is the identity.
  */
-public class SafeSumDoubleBinaryOperator implements IDoubleBinaryOperator {
-
+public class IdentityTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
 	@Override
-	public double applyAsDouble(double left, double right) {
-		if (Double.isNaN(left)) {
-			if (Double.isNaN(right)) {
-				return neutralAsDouble();
-			} else {
-				return right;
-			}
-		} else if (Double.isNaN(right)) {
-			return left;
-		}
-		return left + right;
+	public String underlying(String queried) {
+		return queried;
 	}
 
 	@Override
-	public double neutralAsDouble() {
-		return 0D;
+	public Set<String> queried(String underlying) {
+		return Set.of(underlying);
 	}
 }

@@ -29,8 +29,8 @@ import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.filters.INotFilter;
 import eu.solven.adhoc.api.v1.filters.IOrFilter;
-import eu.solven.adhoc.database.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.IdentityTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 

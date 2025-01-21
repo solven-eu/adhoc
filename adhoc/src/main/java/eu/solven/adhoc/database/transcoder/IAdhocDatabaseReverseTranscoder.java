@@ -20,23 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.database.transcoder;
 
 import java.util.Set;
 
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocDatabaseWrapper}. Then, the transcoding
- * is the identity.
+ * This reverse the use of {@link IAdhocDatabaseTranscoder}. It is useful to materialize ony the columns which has been
+ * effectively queried.
  */
-public class IdentityTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+public interface IAdhocDatabaseReverseTranscoder {
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
-	}
+	/**
+	 * @param underlying
+	 *            a column name typically used by the database.
+	 * @return the queried columns which were mapping to given underlying.
+	 */
+	Set<String> queried(String underlying);
 }

@@ -38,7 +38,7 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.database.InMemoryDatabase;
-import eu.solven.adhoc.database.PrefixTranscoder;
+import eu.solven.adhoc.database.transcoder.PrefixTranscoder;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;

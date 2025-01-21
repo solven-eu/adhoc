@@ -30,6 +30,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseReverseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.execute.FilterHelpers;
 import eu.solven.adhoc.query.DatabaseQuery;
 import lombok.Builder;

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.database;
 
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
 

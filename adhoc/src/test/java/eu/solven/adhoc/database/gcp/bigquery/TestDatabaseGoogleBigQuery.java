@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
+import eu.solven.adhoc.google.bigquery.AdhocBigQueryDatabaseWrapperParameters;
 import eu.solven.adhoc.google.bigquery.AdhocGoogleBigQueryDatabaseWrapper;
 import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -86,10 +87,11 @@ public class TestDatabaseGoogleBigQuery {
 
 		BigQueryOptions bigQueryOptions = BigQueryOptions.newBuilder().setProjectId(projectId).build();
 
-		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = AdhocGoogleBigQueryDatabaseWrapper.builder()
+		AdhocBigQueryDatabaseWrapperParameters dbParameters = AdhocBigQueryDatabaseWrapperParameters
+				.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 				.bigQueryOptions(bigQueryOptions)
-				.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 				.build();
+		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = new AdhocGoogleBigQueryDatabaseWrapper(dbParameters);
 
 		List<Map<String, ?>> rows = bgDbWrapper.openDbStream(DatabaseQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))

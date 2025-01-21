@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
-import org.jooq.Name;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
@@ -46,7 +45,8 @@ import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -62,13 +62,13 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-logo", "true");
 	}
 
-	Name tableName = DSL.name("someTableName");
+	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqSqlDatabaseWrapper jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
+	AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
 			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 			.tableName(tableName)
-			.build();
+			.build());
 
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();

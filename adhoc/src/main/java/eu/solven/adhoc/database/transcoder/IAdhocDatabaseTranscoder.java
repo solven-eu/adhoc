@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.database.transcoder;
+
+import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 
 /**
  * Holds the logic mapping from the columns names in {@link eu.solven.adhoc.api.v1.IAdhocQuery} and columnNames in

@@ -35,11 +35,6 @@ import eu.solven.adhoc.query.DatabaseQuery;
  *
  */
 public interface IAdhocDatabaseWrapper {
-	/**
-	 *
-	 * @return the {@link IAdhocDatabaseTranscoder} used by this wrapper.
-	 */
-	IAdhocDatabaseTranscoder getTranscoder();
 
 	Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery);
 

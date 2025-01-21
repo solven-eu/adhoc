@@ -36,7 +36,6 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
-import org.jooq.impl.DSL;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,8 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -64,7 +64,7 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 	DSLContext dsl;
-	AdhocJooqSqlDatabaseWrapper jooqDb;
+	AdhocJooqDatabaseWrapper jooqDb;
 
 	@BeforeEach
 	public void initParquetFiles() throws IOException {
@@ -73,10 +73,10 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 
 		Connection dbConn = makeFreshInMemoryDb();
-		jooqDb = AdhocJooqSqlDatabaseWrapper.builder()
+		jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
 				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-				.tableName(DSL.name(tableName))
-				.build();
+				.tableName(tableName)
+				.build());
 
 		dsl = jooqDb.makeDsl();
 	}

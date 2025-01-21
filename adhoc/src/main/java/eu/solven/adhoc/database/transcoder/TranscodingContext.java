@@ -20,40 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.database.transcoder;
 
 import java.util.Set;
 
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
- * 
- * @author Benoit Lacelle
- *
+ * Given an {@link IAdhocDatabaseTranscoder}, this will remember how each column has been transcoded. It serves multiple
+ * purposes. The first one is not to require {@link IAdhocDatabaseTranscoder} to express a bi-directional mapping. The
+ * second main purpose is the reverse mapping may be ambiguous, when multiple queries columns could be served by the
+ * same underlying column.
  */
 @Builder
-public class PrefixTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
-	// If empty, it is like the IdentityTranscoder
-	@NonNull
-	@Default
-	String prefix = "";
+@Slf4j
+public class TranscodingContext implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
+
+	@Builder.Default
+	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
 	public String underlying(String queried) {
-		return prefix + queried;
+		String underlyingColumn = transcoder.underlying(queried);
+		if (underlyingColumn == null) {
+			underlyingColumn = queried;
+		}
+
+		if (underlyingToQueried.put(underlyingColumn, queried)) {
+			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
+		}
+
+		return underlyingColumn;
 	}
 
 	@Override
 	public Set<String> queried(String underlying) {
-		if (underlying.startsWith(prefix)) {
-			String queried = underlying.substring(prefix.length());
-			return Set.of(queried);
-		} else {
-			throw new IllegalArgumentException(
-					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
-		}
+		return underlyingToQueried.get(underlying);
 	}
 }

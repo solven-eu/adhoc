@@ -20,54 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.holymolap.measures.operator;
+package eu.solven.adhoc.database.transcoder;
 
-import eu.solven.holymolap.stable.v1.IDoubleBinaryOperator;
-import eu.solven.holymolap.stable.v1.ILongBinaryOperator;
+import java.util.Set;
+
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
- * Sum over {@link Long}
+ * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
  * 
  * @author Benoit Lacelle
  *
  */
-public class SumLongBinaryOperator implements ILongBinaryOperator, IDoubleBinaryOperator {
+@Builder
+public class PrefixTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+	// If empty, it is like the IdentityTranscoder
+	@NonNull
+	@Default
+	String prefix = "";
 
 	@Override
-	public long applyAsLong(long left, long right) {
-		return left + right;
+	public String underlying(String queried) {
+		return prefix + queried;
 	}
 
 	@Override
-	public long neutralAsLong() {
-		return 0L;
-	}
-
-	@Override
-	public double applyAsDouble(double left, double right) {
-		return left + right;
-	}
-
-	@Override
-	public double neutralAsDouble() {
-		return 0D;
-	}
-
-	@Override
-	public Object apply(Object left, Object right) {
-		if (left instanceof Integer && right instanceof Integer) {
-			return ILongBinaryOperator.super.apply(left, right);
-		} else if (left instanceof Long && right instanceof Long) {
-			return ILongBinaryOperator.super.apply(left, right);
+	public Set<String> queried(String underlying) {
+		if (underlying.startsWith(prefix)) {
+			String queried = underlying.substring(prefix.length());
+			return Set.of(queried);
 		} else {
-			// Default to double behavior
-			return IDoubleBinaryOperator.super.apply(left, right);
+			throw new IllegalArgumentException(
+					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
 		}
 	}
-
-	@Override
-	public Object neutral() {
-		return neutralAsLong();
-	}
-
 }

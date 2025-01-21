@@ -28,12 +28,9 @@ import java.util.stream.Stream;
 
 import org.jooq.Record;
 import org.jooq.ResultQuery;
-import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
-import org.jooq.impl.DSL;
 
 import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.Job;
@@ -45,9 +42,7 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.database.sql.AdhocJooqSqlDatabaseWrapper;
-import lombok.Builder.Default;
-import lombok.experimental.SuperBuilder;
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,27 +50,19 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@SuperBuilder
 @Slf4j
-public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqSqlDatabaseWrapper {
+public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqDatabaseWrapper {
 
-	@Default
-	final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
+	final AdhocBigQueryDatabaseWrapperParameters dbParameters;
 
-	// TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
-	@Default
-	final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
+	public AdhocGoogleBigQueryDatabaseWrapper(AdhocBigQueryDatabaseWrapperParameters dbParameters) {
+		super(dbParameters.getBase());
+
+		this.dbParameters = dbParameters;
+	}
 
 	@Override
 	protected Stream<Map<String, ?>> toMapStream(ResultQuery<Record> sqlQuery) {
-		// SelectLimitPercentStep<Record2<Object, Object>> dsl = makeDsl()
-		// .select(DSL.field("CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING))").as("url"),
-		// DSL.field("view_count"))
-		// .from(DSL.table("bigquery-public-data.stackoverflow.posts_questions"))
-		// .where(DSL.field("tags").like("%google-bigquery%"))
-		// .orderBy(DSL.field("view_count").desc())
-		// .limit(10);
-
 		String sql = sqlQuery.getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
@@ -84,23 +71,9 @@ public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqSqlDatabaseWrap
 				.setUseLegacySql(false)
 				.build();
 
-		BigQuery bigquery = bigQueryOptions.getService();
+		BigQuery bigquery = dbParameters.getBigQueryOptions().getService();
 
-		String projectId = "";
-		//
-		// QueryJobConfiguration queryConfig = QueryJobConfiguration
-		// .newBuilder("SELECT CONCAT('https://stackoverflow.com/questions/', "
-		// + "CAST(id as STRING)) as url, view_count "
-		// + "FROM `bigquery-public-data.stackoverflow.posts_questions` "
-		// + "WHERE tags like '%google-bigquery%' "
-		// + "ORDER BY view_count DESC "
-		// + "LIMIT 10")
-		// // Use standard SQL syntax for queries.
-		// // See: https://cloud.google.com/bigquery/sql-reference/
-		// .setUseLegacySql(false)
-		// .build();
-
-		JobId jobId = JobId.newBuilder().setProject(bigQueryOptions.getProjectId()).build();
+		JobId jobId = JobId.newBuilder().setProject(dbParameters.getBigQueryOptions().getProjectId()).build();
 		Job queryJob = bigquery.create(JobInfo.newBuilder(queryConfig).setJobId(jobId).build());
 
 		// Wait for the query to complete.
@@ -174,11 +147,5 @@ public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqSqlDatabaseWrap
 	protected void debugResultQuery() {
 		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
 		log.info("[DEBUG] TODO Google BigQuery");
-	}
-
-	public static AdhocGoogleBigQueryDatabaseWrapperBuilder<?, ?> builder() {
-		return new AdhocGoogleBigQueryDatabaseWrapperBuilderImpl()
-				// Google BigQuery seems not very far from MySQL
-				.dslSupplier(() -> DSL.using(SQLDialect.MYSQL));
 	}
 }

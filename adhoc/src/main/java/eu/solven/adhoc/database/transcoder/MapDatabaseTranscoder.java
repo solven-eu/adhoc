@@ -20,25 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.holymolap.measures.operator;
+package eu.solven.adhoc.database.transcoder;
 
-import eu.solven.holymolap.stable.v1.IDoubleBinaryOperator;
+import java.util.Map;
+
+import lombok.Builder;
+import lombok.Singular;
 
 /**
- * Sum over {@link Double}
- * 
- * @author Benoit Lacelle
- *
+ * An {@link IAdhocDatabaseTranscoder} based on a (not-necessarily bijective) mapping.
  */
-public class SumDoubleBinaryOperator implements IDoubleBinaryOperator {
+@Builder
+public class MapDatabaseTranscoder implements IAdhocDatabaseTranscoder {
+	@Singular
+	final Map<String, String> queriedToUnderlyings;
 
 	@Override
-	public double applyAsDouble(double left, double right) {
-		return left + right;
+	public String underlying(String queried) {
+		return queriedToUnderlyings.get(queried);
 	}
 
-	@Override
-	public double neutralAsDouble() {
-		return 0D;
-	}
+	// @Override
+	// public String queried(String underlying) {
+	// return queriedToUnderlying.inverse().get(underlying);
+	// }
 }

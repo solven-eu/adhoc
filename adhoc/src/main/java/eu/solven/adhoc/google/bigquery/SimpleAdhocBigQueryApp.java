@@ -38,6 +38,7 @@ import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
 
+import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,11 +56,14 @@ public class SimpleAdhocBigQueryApp {
 				// .setCredentials(credentials)
 				.build();
 
-		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = AdhocGoogleBigQueryDatabaseWrapper.builder()
+		AdhocBigQueryDatabaseWrapperParameters dbParameters = AdhocBigQueryDatabaseWrapperParameters.builder()
 				.bigQueryOptions(bigQueryOptions)
-				.dslSupplier(DSLSupplier.fromDialect(SQLDialect.CUBRID))
-				.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
+				.base(AdhocJooqDatabaseWrapperParameters.builder()
+						.dslSupplier(DSLSupplier.fromDialect(SQLDialect.CUBRID))
+						.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
+						.build())
 				.build();
+		AdhocGoogleBigQueryDatabaseWrapper bgDbWrapper = new AdhocGoogleBigQueryDatabaseWrapper(dbParameters);
 
 		// bgDbWrapper.openDbStream(DatabaseQuery.builder().aggregators(null))
 

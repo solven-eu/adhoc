@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.OrFilter;
-import eu.solven.adhoc.database.IdentityTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 
 public class TestAdhocJooqSqlDatabaseStreamOpener {
 	static {
@@ -42,8 +42,8 @@ public class TestAdhocJooqSqlDatabaseStreamOpener {
 		System.setProperty("org.jooq.no-logo", "true");
 	}
 
-	AdhocJooqSqlDatabaseStreamOpener streamOpener = new AdhocJooqSqlDatabaseStreamOpener(new IdentityTranscoder(),
-			DSL.name("someTableName"),
+	AdhocJooqSqlDatabaseQueryFactory streamOpener = new AdhocJooqSqlDatabaseQueryFactory(new IdentityTranscoder(),
+			DSL.table(DSL.name("someTableName")),
 			Mockito.mock(DSLContext.class));
 
 	@Test

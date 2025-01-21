@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,46 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.holymolap.stable.v1;
+package eu.solven.adhoc.database.sql;
 
-import java.util.function.DoubleBinaryOperator;
+import org.jooq.Name;
+import org.jooq.TableLike;
+import org.jooq.impl.DSL;
 
-/**
- * Represents an operation upon two {@code double}-valued operands, producing a {@code double}-valued result.
- */
-public interface IDoubleBinaryOperator extends DoubleBinaryOperator, IBinaryOperator {
-	/**
-	 * 
-	 * @return the value of an empty aggregate, or a row with no value for the aggregated column.
-	 */
-	double neutralAsDouble();
+import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Value;
 
-	/**
-	 * Applies this operator to the given operands.
-	 *
-	 * @param left
-	 *            the first operand
-	 * @param right
-	 *            the second operand
-	 * @return the operator result
-	 */
-	@Override
-	double applyAsDouble(double left, double right);
+@Value
+@Builder
+public class AdhocJooqDatabaseWrapperParameters {
 
-	@Override
-	@Deprecated
-	default Object neutral() {
-		return neutralAsDouble();
-	}
+	@Builder.Default
+	@NonNull
+	@Getter
+	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
 
-	@Override
-	@Deprecated
-	default Object apply(Object left, Object right) {
-		if (left == null) {
-			return right;
-		} else if (right == null) {
-			return left;
+	@NonNull
+	DSLSupplier dslSupplier;
+
+	@NonNull
+	final TableLike<?> table;
+
+	public static class AdhocJooqDatabaseWrapperParametersBuilder {
+		public AdhocJooqDatabaseWrapperParametersBuilder tableName(String tableName) {
+			this.tableName(DSL.quotedName(tableName));
+
+			return this;
 		}
-		return applyAsDouble((((Number) left).doubleValue()), (((Number) right).doubleValue()));
+
+		public AdhocJooqDatabaseWrapperParametersBuilder tableName(Name tableName) {
+			this.table(DSL.table(tableName));
+
+			return this;
+		}
 	}
 }
