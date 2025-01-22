@@ -36,21 +36,16 @@ import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.ResultQuery;
-import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectJoinStep;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
 import org.jooq.impl.DSL;
-import org.jooq.impl.DefaultDataType;
 
-import eu.solven.adhoc.aggregations.max.MaxAggregator;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.database.transcoder.IAdhocDatabaseReverseTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.DatabaseQuery;
-import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +76,7 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 
 		DSLContext dslContext = makeDsl();
 
-		IAdhocJooqDatabaseQueryFactory streamOpener = makeTranscodedStreamOpener(transcodingContext, dslContext);
+		IAdhocJooqDatabaseQueryFactory streamOpener = makeQueryFactory(transcodingContext, dslContext);
 
 		ResultQuery<Record> resultQuery = streamOpener.prepareQuery(dbQuery);
 
@@ -89,7 +84,7 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
 		}
 		if (dbQuery.isDebug()) {
-			debugResultQuery();
+			debugResultQuery(resultQuery);
 		}
 
 		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
@@ -140,9 +135,13 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 				.filter(m -> !m.isEmpty());
 	}
 
-	protected void debugResultQuery() {
-		try {
+	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
+		DSLContext dslContext = makeDsl();
 
+		// This would fail in case of complex `from` expression, like one with JOINs
+		SelectJoinStep<Record1<Object>> query =
+				dslContext.select(DSL.field(DSL.unquotedName("DESCRIBE"))).from(dbParameters.getTable());
+		try {
 			// "column_name",
 			// "column_type",
 			// "null",
@@ -150,24 +149,24 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 			// "default",
 			// "extra"
 
-			// This would fail in case of complex `from` expression, like one with JOINs
-			SelectJoinStep<Record1<Object>> query = this.dbParameters.getDslSupplier()
-					.getDSLContext()
-					.select(DSL.field(DSL.unquotedName("DESCRIBE")))
-					.from(dbParameters.getTable());
-			Map<Object, Object> columnNameToType = makeDsl().fetchStream(query)
+			Map<Object, Object> columnNameToType = dslContext.fetchStream(query)
 					.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
 
 			log.info("[DEBUG] {}", columnNameToType);
 
+			// https://stackoverflow.com/questions/76908078/how-to-check-if-a-query-is-valid-or-not-using-jooq
+			String plan = dslContext.explain(resultQuery).plan();
+
+			log.info("[DEBUG] Query plan: {}", plan);
+
 		} catch (RuntimeException e) {
-			log.debug("[DEBUG] Issue executing debug-query: {}", e);
+			log.debug("[DEBUG] Issue executing debug-query: {}", query, e);
 		}
 	}
 
-	protected IAdhocJooqDatabaseQueryFactory makeTranscodedStreamOpener(TranscodingContext transcodingContext,
+	protected IAdhocJooqDatabaseQueryFactory makeQueryFactory(TranscodingContext transcodingContext,
 			DSLContext dslContext) {
-		return AdhocJooqSqlDatabaseQueryFactory.builder()
+		return AdhocJooqDatabaseQueryFactory.builder()
 				.transcoder(transcodingContext)
 				.table(dbParameters.getTable())
 				.dslContext(dslContext)
@@ -197,23 +196,7 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 	}
 
 	protected String toQualifiedName(Field<?> field) {
-		return Stream.of(field.getQualifiedName().parts()).map(part -> part.first()).collect(Collectors.joining("."));
+		return Stream.of(field.getQualifiedName().parts()).map(Name::first).collect(Collectors.joining("."));
 	}
 
-	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
-		String aggregationKey = a.getAggregationKey();
-		String columnName = dbParameters.getTranscoder().underlying(a.getColumnName());
-		Name namedColumn = DSL.name(columnName);
-
-		if (SumAggregator.KEY.equals(aggregationKey)) {
-			Field<Double> field =
-					DSL.field(namedColumn, DefaultDataType.getDataType(makeDsl().dialect(), Double.class));
-			return DSL.sum(field).as(DSL.name(a.getName()));
-		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
-			Field<?> field = DSL.field(namedColumn);
-			return DSL.max(field).as(DSL.name(a.getName()));
-		} else {
-			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
-		}
-	}
 }

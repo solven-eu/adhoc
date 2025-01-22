@@ -43,10 +43,12 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
-public class TestAdhocJooqSqlDatabaseWrapper implements IAdhocTestConstants {
+public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
 	}
 
 	@Test

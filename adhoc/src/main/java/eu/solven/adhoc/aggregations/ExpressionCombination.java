@@ -31,6 +31,7 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
+import eu.solven.adhoc.transformers.IHasCombinationKey;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +75,7 @@ public class ExpressionCombination implements ICombination {
 
 	public static ExpressionCombination parse(Map<String, ?> options) {
 		String expression = MapPathGet.getRequiredString(options, "expression");
-		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, "underlyingNames");
+		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 		return new ExpressionCombination(expression, underlyingIndexToName);
 	}
 

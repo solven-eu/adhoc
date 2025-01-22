@@ -23,7 +23,6 @@
 package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,23 +81,6 @@ public class Columnator implements ICombinator {
 	@Override
 	public List<String> getUnderlyingNames() {
 		return underlyings;
-	}
-
-	@Override
-	public Map<String, ?> getCombinationOptions() {
-		return makeAllOptions(this, combinationOptions);
-	}
-
-	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
-		Map<String, Object> allOptions = new HashMap<>();
-
-		// Default options
-		allOptions.put("underlyingNames", hasUnderlyings.getUnderlyingNames());
-
-		// override with explicit options
-		allOptions.putAll(explicitOptions);
-
-		return allOptions;
 	}
 
 	@Override

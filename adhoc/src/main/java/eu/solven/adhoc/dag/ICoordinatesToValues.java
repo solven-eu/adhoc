@@ -29,10 +29,8 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ValueConsumer;
 
-public interface ICoordinatesToValues {
+public interface ICoordinatesToValues extends ICoordinatesAndValueConsumer {
 	Set<AdhocSliceAsMap> keySet();
-
-	void put(AdhocSliceAsMap coordinate, Object value);
 
 	void onValue(IAdhocSlice slice, ValueConsumer consumer);
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.measure;
 
 import java.util.List;
+import java.util.Map;
 
-/**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}, or {@link IHolyCube}.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IHasGroupBy {
-	IAdhocGroupBy getGroupBy();
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.transformers.Bucketor;
+import eu.solven.adhoc.transformers.Combinator;
+
+public class TestCombinator {
+	@Test
+	public void testOptions_bucketor() {
+		Bucketor measure = Bucketor.builder()
+				.name("measureName")
+				.combinationOptions(Map.of("k", "v"))
+				.groupBy(GroupByColumns.named("c"))
+				.build();
+		Map<String, ?> allOptions = Combinator.makeAllOptions(measure, Map.of("k2", "v2"));
+
+		Assertions.assertThat(Map.<String, Object>copyOf(allOptions))
+				.hasSize(4)
+				.containsEntry("k2", "v2")
+				.containsEntry("underlyingNames", List.of())
+				// .containsEntry("groupByColumns", Set.of("c"))
+				.containsEntry("measure", measure);
+
+		// This checks there is no StackOverFlow on .toString, which is possible as we may set `measure==this` in
+		// `.makeAllOptions`
+		Assertions.assertThat(measure.toString()).contains("measure");
+	}
 }

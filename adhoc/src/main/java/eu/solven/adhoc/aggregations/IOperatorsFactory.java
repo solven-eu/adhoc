@@ -24,7 +24,8 @@ package eu.solven.adhoc.aggregations;
 
 import java.util.Map;
 
-import eu.solven.adhoc.transformers.IHasCombinationKey;
+import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.transformers.ICombineUnderlyingMeasures;
 
 /**
  * Provides {@link ICombination} given their key. This can be extended to provides custom transformations.
@@ -33,8 +34,10 @@ import eu.solven.adhoc.transformers.IHasCombinationKey;
  */
 public interface IOperatorsFactory {
 
-	default ICombination makeTransformation(IHasCombinationKey hasTransformationKey) {
-		return makeCombination(hasTransformationKey.getCombinationKey(), hasTransformationKey.getCombinationOptions());
+	default ICombination makeCombination(ICombineUnderlyingMeasures hasCombinationKey) {
+		Map<String, ?> allOptions =
+				Combinator.makeAllOptions(hasCombinationKey, hasCombinationKey.getCombinationOptions());
+		return makeCombination(hasCombinationKey.getCombinationKey(), allOptions);
 	}
 
 	ICombination makeCombination(String key, Map<String, ?> options);

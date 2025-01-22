@@ -23,7 +23,6 @@
 package eu.solven.adhoc.transformers;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +34,7 @@ import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.api.v1.IHasGroupBy;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class Bucketor implements IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
+public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasGroupBy {
 	@NonNull
 	String name;
 
@@ -87,23 +87,6 @@ public class Bucketor implements IMeasure, IHasUnderlyingMeasures, IHasCombinati
 	@Override
 	public List<String> getUnderlyingNames() {
 		return getUnderlyings();
-	}
-
-	@Override
-	public Map<String, ?> getCombinationOptions() {
-		return makeAllOptions(this, combinationOptions);
-	}
-
-	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
-		Map<String, Object> allOptions = new HashMap<>();
-
-		// Default options
-		allOptions.put("underlyingNames", hasUnderlyings.getUnderlyingNames());
-
-		// override with explicit options
-		allOptions.putAll(explicitOptions);
-
-		return allOptions;
 	}
 
 	@Override

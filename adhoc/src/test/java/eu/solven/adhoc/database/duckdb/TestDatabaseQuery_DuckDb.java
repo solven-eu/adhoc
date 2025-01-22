@@ -60,6 +60,8 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
 	}
 
 	String tableName = "someTableName";
@@ -389,5 +391,31 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
+	}
+
+	@Test
+	public void testUnknownColumn_filter() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		Assertions.assertThatThrownBy(() -> {
+			aqe.execute(AdhocQuery.builder()
+					.measure(k1Sum.getName())
+					// .groupByAlso("unknownColumn")
+					.andFilter("unknownColumn", "someValue")
+					.debug(true)
+					.build(), jooqDb);
+		})
+				.isInstanceOf(DataAccessException.class)
+				.hasMessageContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}
 }

@@ -20,16 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.api.v1.pojo.value;
 
-import java.util.List;
+import java.util.Collection;
+
+import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}, or {@link IHolyCube}.
+ * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IHasGroupBy {
-	IAdhocGroupBy getGroupBy();
+@Value
+@Builder
+@Jacksonized
+public class AndMatcher implements IValueMatcher {
+	@NonNull
+	Collection<IValueMatcher> operands;
+
+	@Override
+	public boolean match(Object value) {
+		return operands.stream().allMatch(operand -> operand.match(value));
+	}
 }

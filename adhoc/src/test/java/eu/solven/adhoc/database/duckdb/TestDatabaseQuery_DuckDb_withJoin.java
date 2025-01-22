@@ -68,9 +68,9 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 
 	Table<Record> fromClause = DSL.table(DSL.name(factTable))
 			.as("f")
-			.join(DSL.table(DSL.name(joinedTable)).as("p"))
+			.leftJoin(DSL.table(DSL.name(joinedTable)).as("p"))
 			.using(DSL.field("productId"))
-			.join(DSL.table(DSL.name(joinedFurtherTable)).as("c"))
+			.leftJoin(DSL.table(DSL.name(joinedFurtherTable)).as("c"))
 			.using(DSL.field("countryId"));
 
 	private Connection makeFreshInMemoryDb() {
@@ -112,6 +112,7 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	}
 
 	private void insertData() {
+		// Carot is fully joined
 		dsl.insertInto(DSL.table(factTable), DSL.field("k1"), DSL.field("productId")).values(123, "carot").execute();
 		dsl.insertInto(DSL.table(joinedTable), DSL.field("productId"), DSL.field("productName"), DSL.field("countryId"))
 				.values("carot", "Carotte", "FRA")
@@ -119,6 +120,9 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(joinedFurtherTable), DSL.field("countryId"), DSL.field("countryName"))
 				.values("FRA", "France")
 				.execute();
+
+		// Banana is not joined
+		dsl.insertInto(DSL.table(factTable), DSL.field("k1"), DSL.field("productId")).values(234, "banana").execute();
 	}
 
 	@Test
@@ -147,7 +151,7 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 
 			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList()).contains(Map.of());
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 234));
 		}
 	}
 
@@ -163,8 +167,9 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
 
 		{
-			ITabularView result =
-					aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(), jooqDb);
+			ITabularView result = aqe.execute(
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
+					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -175,7 +180,7 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	}
 
 	@Test
-	public void testByJoined() {
+	public void testByJoinedField() {
 		initTables();
 		insertData();
 
@@ -195,6 +200,78 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					.contains(Map.of("p.productName", "Carotte"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("p.productName", "Carotte"), Map.of(k1Sum.getName(), 0L + 123));
+		}
+	}
+
+	@Test
+	public void testByJoinedKey_qualifiedByFrom() {
+		initTables();
+		insertData();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		{
+			ITabularView result = aqe.execute(
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
+					jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+					.contains(Map.of("f.productId", "carot"));
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("f.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+		}
+	}
+
+	@Test
+	public void testByJoinedKey_qualifiedByTo() {
+		initTables();
+		insertData();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		{
+			ITabularView result = aqe.execute(
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
+					jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+					.contains(Map.of("p.productId", "carot"));
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("p.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+		}
+	}
+
+	@Test
+	public void testByJoinedKey_notQualified() {
+		initTables();
+		insertData();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		{
+			ITabularView result = aqe.execute(
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
+					jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+					.contains(Map.of("productId", "carot"));
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
 		}
 	}
 

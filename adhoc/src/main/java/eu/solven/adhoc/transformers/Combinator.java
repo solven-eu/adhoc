@@ -32,6 +32,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.api.v1.IHasGroupBy;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -80,16 +82,29 @@ public class Combinator implements ICombinator {
 		return underlyings;
 	}
 
-	@Override
-	public Map<String, ?> getCombinationOptions() {
-		return makeAllOptions(this, combinationOptions);
-	}
-
+	/**
+	 *
+	 * @param hasUnderlyings
+	 *            the parent IHasUnderlyingMeasures generating a Combinator needed these options
+	 * @param explicitOptions
+	 *            some options provided explicitly
+	 * @return
+	 */
 	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
 		Map<String, Object> allOptions = new HashMap<>();
 
 		// Default options
-		allOptions.put("underlyingNames", hasUnderlyings.getUnderlyingNames());
+		// Enable visibility to the Combinator of the name of the received values
+		allOptions.put(IHasCombinationKey.KEY_UNDERLYING_NAMES, hasUnderlyings.getUnderlyingNames());
+
+		// TODO Should we provide the Set of columns guaranteed to be available in the slice?
+		// It seemed simpled to provide the whole measure for now
+		if (hasUnderlyings instanceof IHasGroupBy hasGroupBy) {
+			IAdhocGroupBy groupBy = hasGroupBy.getGroupBy();
+			allOptions.put(IHasCombinationKey.KEY_GROUPBY_COLUMNS, groupBy.getGroupedByColumns());
+		}
+
+		allOptions.put(IHasCombinationKey.KEY_MEASURE, hasUnderlyings);
 
 		// override with explicit options
 		allOptions.putAll(explicitOptions);

@@ -24,10 +24,12 @@ package eu.solven.adhoc.database.sql;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.Condition;
-import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.ResultQuery;
+import org.jooq.SQLDialect;
+import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -35,16 +37,20 @@ import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.transformers.Aggregator;
 
-public class TestAdhocJooqSqlDatabaseStreamOpener {
+public class TestAdhocJooqDatabaseQueryFactory {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqSqlDatabaseQueryFactory streamOpener = new AdhocJooqSqlDatabaseQueryFactory(new IdentityTranscoder(),
+	AdhocJooqDatabaseQueryFactory streamOpener = new AdhocJooqDatabaseQueryFactory(new IdentityTranscoder(),
 			DSL.table(DSL.name("someTableName")),
-			Mockito.mock(DSLContext.class));
+			DSL.using(SQLDialect.DUCKDB));
 
 	@Test
 	public void testToCondition_ColumnEquals() {
@@ -79,6 +85,27 @@ public class TestAdhocJooqSqlDatabaseStreamOpener {
 				  "k1" = 'v1'
 				  or "k2" = 'v2'
 				)
+				""".trim());
+	}
+
+	@Test
+	public void testGrandTotal() {
+		ResultQuery<Record> condition = streamOpener
+				.prepareQuery(DatabaseQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k" from "someTableName" where "k" is not null
+				""".trim());
+	}
+
+	@Test
+	public void testMeasureNameWithDot() {
+		ResultQuery<Record> condition = streamOpener.prepareQuery(DatabaseQuery.builder()
+				.aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build())
+				.build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null
 				""".trim());
 	}
 }

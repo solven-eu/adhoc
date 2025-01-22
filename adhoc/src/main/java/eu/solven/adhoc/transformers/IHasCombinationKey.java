@@ -24,7 +24,13 @@ package eu.solven.adhoc.transformers;
 
 import java.util.Map;
 
+/**
+ * Anything which may require a configured {@link Combinator}
+ */
 public interface IHasCombinationKey {
+	String KEY_UNDERLYING_NAMES = "underlyingNames";
+	String KEY_GROUPBY_COLUMNS = "groupByColumns";
+	String KEY_MEASURE = "measure";
 
 	String getCombinationKey();
 

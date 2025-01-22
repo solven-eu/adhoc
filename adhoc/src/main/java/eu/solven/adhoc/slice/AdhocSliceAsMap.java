@@ -31,11 +31,13 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
 @EqualsAndHashCode
+@ToString
 public class AdhocSliceAsMap implements IAdhocSlice {
 	final Map<String, ?> asMap;
 

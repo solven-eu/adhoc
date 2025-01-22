@@ -58,6 +58,17 @@ Given databases may hold similar data but with different column names. A `IAdhoc
 
 A default `IAdhocDatabaseWrapper` assumes `IAdhocQuery` columns matches the `IAdhocDatabaseWrapper` columns.
 
+In case of a table with `JOIN`s, one would often encounter ambiguities when querying a field. For instance when:
+- querying a field used in a JOIN definition: the same name may appear in multiple tables
+- querying joined tables with `*`, but tables have conflicting field names.
+
+In such a case, one can resolve ambiguities by resolving them in a `IAdhocDatabaseWrapper`. For instance:
+```java
+MapDatabaseTranscoder.builder()
+    .queriedToUnderlying("someColumn", "someTable.someColumn")
+    .build()
+```
+
 ## Measures 
 
 A measure can be:
@@ -113,4 +124,36 @@ where `currentCountry` is the country on the `Country` column, if we filter `Cou
 ## Potential solutions/designs
 
 1. We may introduce a special `groupBy`, where we would express we groupBy `country` but only showing `Country-with_firstLetterIsForG=true`
-1. We may introduce a special `filter`, stating that `Country-with_firstLetterIsForG=true` is a `Visual` filter. It resomates with https://learn.microsoft.com/en-us/sql/mdx/visualtotals-mdx?view=sql-server-ver16
+2. We may introduce a special `filter`, stating that `Country-with_firstLetterIsForG=true` is a `Visual` filter. It resonates with https://learn.microsoft.com/en-us/sql/mdx/visualtotals-mdx?view=sql-server-ver16
+
+# Debug / Investigations
+
+Typical errors with Adhoc are :
+- Issue referencing underlying Database columns
+- Unexpected data returned by underlying Database
+
+Tools to investigate these issues are:
+- Enable `debug` in your query: `AdhocQuery.builder()[...].debug(true).build()`
+- Enable `explain` in your query: `AdhocQuery.builder()[...].explain(true).build()`
+
+## Debug vs Explain
+
+Debug will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
+
+Explain will provide additional information about the on-going query. It will typically log the query executed to the underlying database.
+
+# Databases
+
+# SQL with JooQ
+
+SQL integration is provided with the help of JooQ. To query a complex star/snowflake schema (i.e. with many/deep joins), one should provide a `TableLike` expressing these `JOIN`s.
+
+For instance:
+```java
+Table<Record> fromClause = DSL.table(DSL.name(factTable))
+        .as("f")
+        .join(DSL.table(DSL.name(joinedTable)).as("p"))
+        .using(DSL.field("productId"))
+        .join(DSL.table(DSL.name(joinedFurtherTable)).as("c"))
+        .using(DSL.field("countryId"));
+```

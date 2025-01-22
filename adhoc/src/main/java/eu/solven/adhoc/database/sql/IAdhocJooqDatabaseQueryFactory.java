@@ -27,6 +27,9 @@ import org.jooq.ResultQuery;
 
 import eu.solven.adhoc.query.DatabaseQuery;
 
+/**
+ * Converts a {@link DatabaseQuery} into a sql {@link ResultQuery}
+ */
 public interface IAdhocJooqDatabaseQueryFactory {
 	ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery);
 }

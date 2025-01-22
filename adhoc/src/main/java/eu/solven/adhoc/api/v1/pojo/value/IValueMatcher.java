@@ -32,7 +32,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = InMatcher.class, name = "in"),
 		@JsonSubTypes.Type(value = LikeMatcher.class, name = "like"),
 		@JsonSubTypes.Type(value = NotValueFilter.class, name = "not"),
-		@JsonSubTypes.Type(value = NullMatcher.class, name = "null") })
+		@JsonSubTypes.Type(value = NullMatcher.class, name = "null"),
+		@JsonSubTypes.Type(value = AndMatcher.class, name = "and"),
+		@JsonSubTypes.Type(value = OrMatcher.class, name = "or") })
 public interface IValueMatcher {
 	boolean match(Object value);
 }

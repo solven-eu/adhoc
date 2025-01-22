@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jooq.AggregateFunction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -37,8 +38,10 @@ import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.SelectConnectByStep;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectHavingStep;
+import org.jooq.SelectJoinStep;
 import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.conf.ParamType;
@@ -79,7 +82,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFactory {
+public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFactory {
 	@NonNull
 	final IAdhocDatabaseTranscoder transcoder;
 
@@ -92,32 +95,38 @@ public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQuery
 
 	@Override
 	public ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery) {
-		Collection<Condition> dbConditions = new ArrayList<>();
+		// `SELECT ...`
+		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
 
-		dbConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
+		// `FROM ...`
+		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
 
-		IAdhocFilter filter = dbQuery.getFilter();
-		if (!filter.isMatchAll()) {
-			if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-				andFilter.getOperands().stream().map(this::toCondition).forEach(dbConditions::add);
-			} else {
-				dbConditions.add(toCondition(filter));
-			}
+		// `WHERE ...`
+		Collection<Condition> dbAndConditions = toConditions(dbQuery);
+		SelectConnectByStep<Record> selectFromWhere;
+		if (dbAndConditions.isEmpty()) {
+			selectFromWhere = selectFrom;
+		} else {
+			selectFromWhere = selectFrom.where(dbAndConditions);
 		}
 
-		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
+		// `GROUP BY ...`
 		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
+		SelectHavingStep<Record> selectFromWhereGroupBy;
+		if (groupFields.isEmpty()) {
+			selectFromWhereGroupBy = selectFromWhere;
+		} else {
+			selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
+		}
 
-		SelectHavingStep<Record> select =
-				dslContext.select(selectedFields).from(table).where(dbConditions).groupBy(groupFields);
-
+		// `ORDER BY ...`
 		ResultQuery<Record> resultQuery;
 		if (dbQuery.getTopClause().isPresent()) {
 			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(dbQuery);
 
-			resultQuery = select.orderBy(optOrderFields).limit(dbQuery.getTopClause().getLimit());
+			resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(dbQuery.getTopClause().getLimit());
 		} else {
-			resultQuery = select;
+			resultQuery = selectFromWhereGroupBy;
 		}
 
 		if (dbQuery.isExplain() || dbQuery.isDebug()) {
@@ -125,6 +134,22 @@ public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQuery
 		}
 
 		return resultQuery;
+	}
+
+	protected Collection<Condition> toConditions(DatabaseQuery dbQuery) {
+		Collection<Condition> dbAndConditions = new ArrayList<>();
+
+		dbAndConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
+
+		IAdhocFilter filter = dbQuery.getFilter();
+		if (!filter.isMatchAll()) {
+			if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+				andFilter.getOperands().stream().map(this::toCondition).forEach(dbAndConditions::add);
+			} else {
+				dbAndConditions.add(toCondition(filter));
+			}
+		}
+		return dbAndConditions;
 	}
 
 	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
@@ -179,6 +204,10 @@ public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQuery
 			groupedFields.add(field);
 		});
 
+		if (groupedFields.isEmpty()) {
+			return Collections.emptyList();
+		}
+
 		return Collections.singleton(DSL.groupingSets(groupedFields));
 	}
 
@@ -205,16 +234,21 @@ public class AdhocJooqSqlDatabaseQueryFactory implements IAdhocJooqDatabaseQuery
 		String columnName = transcoder.underlying(a.getColumnName());
 		Name namedColumn = name(columnName);
 
+		AggregateFunction<?> sqlAggFunction;
 		if (SumAggregator.KEY.equals(aggregationKey)) {
+			// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in dialect
+			// DEFAULT`
 			Field<Double> field =
 					DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
-			return DSL.sum(field).as(name(a.getName()));
+
+			sqlAggFunction = DSL.sum(field);
 		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
 			Field<?> field = DSL.field(namedColumn);
-			return DSL.max(field).as(name(a.getName()));
+			sqlAggFunction = DSL.max(field);
 		} else {
 			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 		}
+		return sqlAggFunction.as(a.getName());
 	}
 
 	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {

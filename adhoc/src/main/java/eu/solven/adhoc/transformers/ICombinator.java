@@ -28,6 +28,6 @@ package eu.solven.adhoc.transformers;
  * @author Benoit Lacelle
  * @see Columnator
  */
-public interface ICombinator extends IMeasure, IHasUnderlyingMeasures, IHasCombinationKey {
+public interface ICombinator extends IMeasure, ICombineUnderlyingMeasures {
 
 }

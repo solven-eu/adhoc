@@ -35,22 +35,29 @@ import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.execute.GroupByHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
+public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	final Bucketor bucketor;
 	final IOperatorsFactory transformationFactory;
+	@Getter
 	final AdhocQueryStep step;
+
+	@Override
+	protected IMeasure getMeasure() {
+		return bucketor;
+	}
 
 	public List<String> getUnderlyingNames() {
 		return bucketor.getUnderlyings();
@@ -68,39 +75,37 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 		}).collect(Collectors.toList());
 	}
 
-	protected boolean isDebug() {
-		return bucketor.isDebug() || step.isDebug();
-	}
-
 	@Override
 	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
 		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
-		IAggregation agg = transformationFactory.makeAggregation(bucketor.getAggregationKey());
+		IAggregation agg = getMakeAggregation();
 
 		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
 				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
-		ICombination combinator =
-				transformationFactory.makeCombination(bucketor.getCombinationKey(), getCombinationOptions());
+		ICombination combinator = makeCombination();
 
-		List<String> underlyingNames = getUnderlyingNames();
-
-		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
-			onSlice(underlyings, slice, combinator, underlyingNames, aggregatingView);
-		}
+		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
 	}
 
+	private IAggregation getMakeAggregation() {
+		return transformationFactory.makeAggregation(bucketor.getAggregationKey());
+	}
+
+	private ICombination makeCombination() {
+		return transformationFactory.makeCombination(bucketor);
+	}
+
+	@Override
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combinator,
-			List<String> underlyingNames,
-			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
+			ICoordinatesAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
@@ -110,9 +115,15 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 			return refV.get();
 		}).collect(Collectors.toList());
 
-		Object value = combinator.combine(slice, underlyingVs);
+		Object value;
+		try {
+			value = combinator.combine(slice, underlyingVs);
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException("Issue combining values=%s in slice=%s".formatted(underlyingVs, slice));
+		}
 
 		if (isDebug()) {
+			List<String> underlyingNames = getUnderlyingNames();
 			Map<String, Object> underylingVsAsMap = new TreeMap<>();
 
 			for (int i = 0; i < underlyingNames.size(); i++) {
@@ -134,12 +145,8 @@ public class BucketorQueryStep implements IHasUnderlyingQuerySteps {
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
-			aggregatingView.merge(AdhocSliceAsMap.fromMap(outputCoordinate), value);
+			output.put(AdhocSliceAsMap.fromMap(outputCoordinate), value);
 		}
-	}
-
-	protected Map<String, ?> getCombinationOptions() {
-		return Combinator.makeAllOptions(bucketor, bucketor.getCombinationOptions());
 	}
 
 	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithStep slice) {

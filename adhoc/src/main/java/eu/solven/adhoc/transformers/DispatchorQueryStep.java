@@ -31,27 +31,37 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
+public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	final Dispatchor dispatchor;
 	final IOperatorsFactory transformationFactory;
+	@Getter
 	final AdhocQueryStep step;
+
+	@Override
+	protected IMeasure getMeasure() {
+		return dispatchor;
+	}
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
@@ -75,9 +85,18 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 	}
 
-	private IDecomposition makeDecomposition() {
+	protected IDecomposition makeDecomposition() {
 		return transformationFactory.makeDecomposition(dispatchor.getDecompositionKey(),
 				dispatchor.getDecompositionOptions());
+	}
+
+	@Override
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			IAdhocSliceWithStep slice,
+			ICombination combination,
+			ICoordinatesAndValueConsumer output) {
+		throw new UnsupportedOperationException(
+				"Unclear how to refactor IDispator in AHasUnderlyingQuerySteps.onSlice");
 	}
 
 	@Override
@@ -95,27 +114,9 @@ public class DispatchorQueryStep implements IHasUnderlyingQuerySteps {
 
 		IDecomposition decomposition = makeDecomposition();
 
-		int slicesDone = 0;
-		Iterable<? extends AdhocSliceAsMap> distinctSlices =
-				UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
-		for (AdhocSliceAsMap coordinates : distinctSlices) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(coordinates).queryStep(step).build();
-
-			onSlice(underlyings, slice, decomposition, aggregatingView);
-
-			if (Integer.bitCount(++slicesDone) == 1) {
-				if (true || isDebug()) {
-					log.info("[DEBUG] Done processing {} slices", slicesDone);
-				}
-			}
-		}
+		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, aggregatingView));
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
-	}
-
-	protected boolean isDebug() {
-		return dispatchor.isDebug() || step.isDebug();
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,

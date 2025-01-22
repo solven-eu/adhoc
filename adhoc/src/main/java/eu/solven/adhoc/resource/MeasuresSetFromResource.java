@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,6 +57,7 @@ import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.transformers.Filtrator;
+import eu.solven.adhoc.transformers.IHasCombinationKey;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -75,8 +77,12 @@ public class MeasuresSetFromResource {
 
 	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
 
-	private static final List<String> sortedKeys =
-			List.of("name", "type", "aggregationKey", "combinationKey", "underlyingNames", "underlyingName");
+	private static final List<String> sortedKeys = List.of("name",
+			"type",
+			"aggregationKey",
+			"combinationKey",
+			IHasCombinationKey.KEY_UNDERLYING_NAMES,
+			"underlyingName");
 	private static final Map<String, Integer> keyToIndex =
 			sortedKeys.stream().collect(Collectors.toUnmodifiableMap(s -> s, sortedKeys::indexOf));
 
@@ -411,7 +417,7 @@ public class MeasuresSetFromResource {
 			if (!ClassUtils.isPresent(yamlFactoryClass, null)) {
 				// Adhoc has optional=true, as only a minority of projects uses this library
 				throw new IllegalArgumentException(
-						"Do you miss an explicit dependency over `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`");
+						"Do you miss an explicit dependency over `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`?");
 			}
 
 			String yamlObjectMapperFactoryClass = "eu.solven.adhoc.resource.AdhocYamlObjectMapper";
@@ -420,7 +426,7 @@ public class MeasuresSetFromResource {
 				Method yamlObjectMapper = ReflectionUtils
 						.findMethod(ClassUtils.forName(yamlObjectMapperFactoryClass, null), yamlObjectMapperMethodName);
 				if (yamlObjectMapper == null) {
-					throw new IllegalStateException("Can not find method &s.%s".formatted(yamlObjectMapperFactoryClass,
+					throw new IllegalStateException("Can not find method %s.%s".formatted(yamlObjectMapperFactoryClass,
 							yamlObjectMapperMethodName));
 				}
 				objectMapper = (ObjectMapper) ReflectionUtils.invokeMethod(yamlObjectMapper, null);
@@ -465,8 +471,10 @@ public class MeasuresSetFromResource {
 		} else if (measure instanceof Combinator c) {
 			clean.put("type", "combinator");
 
-			if (c.getCombinationOptions().get("underlyingNames").equals(c.getUnderlyingNames())) {
-				MapPathRemove.remove(clean, "combinationOptions", "underlyingNames");
+			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
+			if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
+					c.getUnderlyingNames())) {
+				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_UNDERLYING_NAMES);
 			}
 			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
 				clean.remove("combinationOptions");
@@ -479,11 +487,18 @@ public class MeasuresSetFromResource {
 			clean.put("type", "bucketor");
 
 			if (b.getGroupBy() instanceof GroupByColumns byColumns) {
+				// We replace Jackson representation by a simple List of String
 				MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
 			}
 
-			if (b.getCombinationOptions().get("underlyingNames").equals(b.getUnderlyings())) {
-				MapPathRemove.remove(clean, "combinationOptions", "underlyingNames");
+			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
+			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
+					b.getUnderlyingNames())) {
+				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_UNDERLYING_NAMES);
+			}
+			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_GROUPBY_COLUMNS),
+					b.getGroupBy().getGroupedByColumns())) {
+				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_GROUPBY_COLUMNS);
 			}
 			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
 				clean.remove("combinationOptions");

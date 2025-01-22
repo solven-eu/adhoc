@@ -46,8 +46,8 @@ public interface IAdhocSlice {
 	 *         column is filtered along multiple values.
 	 */
 	default Object getRawFilter(String column) {
-		return optFilter(column)
-				.orElseThrow(() -> new IllegalArgumentException("%s is not a sliced column".formatted(column)));
+		return optFilter(column).orElseThrow(() -> new IllegalArgumentException(
+				"%s is not a sliced column amongst %s".formatted(column, getColumns())));
 	}
 
 	/**

@@ -144,7 +144,7 @@ public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqDatabaseWrapper
 	// }
 
 	@Override
-	protected void debugResultQuery() {
+	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
 		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
 		log.info("[DEBUG] TODO Google BigQuery");
 	}

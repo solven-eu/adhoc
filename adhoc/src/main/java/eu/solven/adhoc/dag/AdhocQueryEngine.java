@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -361,8 +362,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// We may also receive pre-aggregated columns
 		columnToAggregators.values()
 				.stream()
-				.flatMap(c -> c.stream())
-				.map(a -> a.getName())
+				.flatMap(Collection::stream)
+				.map(Aggregator::getName)
 				.forEach(relevantColumns::add);
 
 		// TODO We'd like to log on the last row, to have the number if row actually streamed

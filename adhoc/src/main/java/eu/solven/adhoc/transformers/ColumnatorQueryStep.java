@@ -34,9 +34,8 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.extern.slf4j.Slf4j;
@@ -53,8 +52,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
-		Optional<String> optMissingColumn =
-				columnator.getRequiredColumns().stream().filter(c -> this.isMissing(c)).findAny();
+		Optional<String> optMissingColumn = columnator.getRequiredColumns().stream().filter(this::isMissing).findAny();
 
 		if (optMissingColumn.isPresent()) {
 			return Collections.emptyList();
@@ -86,20 +84,18 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		ICoordinatesToValues output = makeCoordinateToValues();
 
-		ICombination transformation = transformationFactory.makeTransformation(combinator);
+		ICombination transformation = transformationFactory.makeCombination(combinator);
 
-		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
-			onSlice(underlyings, slice, transformation, output);
-		}
+		forEachDistinctSlice(underlyings, transformation, output);
 
 		return output;
 	}
 
+	@Override
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
 			IAdhocSliceWithStep slice,
-			ICombination transformation,
-			ICoordinatesToValues output) {
+			ICombination combination,
+			ICoordinatesAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
@@ -109,13 +105,8 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			return refV.get();
 		}).collect(Collectors.toList());
 
-		Object value = transformation.combine(slice, underlyingVs);
+		Object value = combination.combine(slice, underlyingVs);
 
 		output.put(slice.getAdhocSliceAsMap(), value);
-	}
-
-	@Override
-	protected ICoordinatesToValues makeCoordinateToValues() {
-		return CoordinatesToValues.builder().build();
 	}
 }

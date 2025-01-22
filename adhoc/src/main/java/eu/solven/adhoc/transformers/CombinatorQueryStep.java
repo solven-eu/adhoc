@@ -30,20 +30,26 @@ import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
+public class CombinatorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	final ICombinator combinator;
 	final IOperatorsFactory transformationFactory;
+	@Getter
 	final AdhocQueryStep step;
+
+	@Override
+	protected IMeasure getMeasure() {
+		return combinator;
+	}
 
 	public List<String> getUnderlyingNames() {
 		return combinator.getUnderlyingNames();
@@ -69,22 +75,18 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 
 		ICoordinatesToValues output = makeCoordinateToValues();
 
-		ICombination tranformation = transformationFactory.makeTransformation(combinator);
+		ICombination transformation = transformationFactory.makeCombination(combinator);
 
-		boolean debug = combinator.isDebug() || step.isDebug();
-		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(combinator.isDebug(), underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
-			onSlice(underlyings, slice, tranformation, debug, output);
-		}
+		forEachDistinctSlice(underlyings, transformation, output);
 
 		return output;
 	}
 
+	@Override
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
-			boolean debug,
-			ICoordinatesToValues output) {
+			ICoordinatesAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
@@ -96,7 +98,7 @@ public class CombinatorQueryStep implements IHasUnderlyingQuerySteps {
 
 		Object value = combination.combine(slice, underlyingVs);
 
-		if (debug) {
+		if (isDebug()) {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
