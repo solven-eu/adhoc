@@ -24,6 +24,8 @@ package eu.solven.adhoc.api.v1.filters;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 
 public interface IOrFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
@@ -34,5 +36,8 @@ public interface IOrFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
 	 * @return
 	 */
 	@Override
+	// This is a logical field, but not a constraint at serialization as some IAndFilter ay be more dynamic than given a
+	// List of operands
+	@JsonIgnore
 	List<IAdhocFilter> getOperands();
 }

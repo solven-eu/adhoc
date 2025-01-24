@@ -268,11 +268,11 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 					andFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
 
 			underlyingFilter = AndFilter.and(elementsFilters);
-		} else if (requestedFilter.isOr() && requestedFilter instanceof IAndFilter andFilter) {
+		} else if (requestedFilter.isOr() && requestedFilter instanceof IOrFilter orFilter) {
 			List<IAdhocFilter> elementsFilters =
-					andFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
+					orFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
 
-			underlyingFilter = AndFilter.and(elementsFilters);
+			underlyingFilter = OrFilter.or(elementsFilters);
 		} else {
 			throw new UnsupportedOperationException("TODO handle requestedFilter=%s".formatted(requestedFilter));
 		}

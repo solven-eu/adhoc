@@ -62,17 +62,7 @@ public class AndFilter implements IAndFilter {
 	@Override
 	public boolean isMatchAll() {
 		// An empty AND is considered to match everything
-		boolean empty = filters.isEmpty();
-
-		if (empty) {
-			return true;
-		}
-
-		if (filters.size() == 1 && filters.get(0).isMatchAll()) {
-			return true;
-		}
-
-		return false;
+		return filters.isEmpty();
 	}
 
 	@Override
@@ -106,6 +96,10 @@ public class AndFilter implements IAndFilter {
 	}
 
 	public static IAdhocFilter and(List<? extends IAdhocFilter> filters) {
+		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
+			return MATCH_NONE;
+		}
+
 		// Skipping matchAll is useful on `.edit`
 		List<? extends IAdhocFilter> notMatchAll =
 				filters.stream().filter(f -> !f.isMatchAll()).collect(Collectors.toList());

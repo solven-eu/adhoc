@@ -40,7 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link AdhocQueryStep}.
- * It is typically useful to make ratios with a parent slice.
+ * By removing a filter, we request underlying measures with a wider slice. It is typically useful to make ratios with a
+ * parent slice.
  *
  * @author Benoit Lacelle
  */

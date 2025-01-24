@@ -52,8 +52,21 @@ public interface IAdhocFilter {
 		return false;
 	}
 
+	/**
+	 *
+	 * @return true if this matcher matches everything
+	 */
 	@JsonIgnore
 	default boolean isMatchAll() {
+		return false;
+	}
+
+	/**
+	 *
+	 * @return true if this matcher does not match anything
+	 */
+	@JsonIgnore
+	default boolean isMatchNone() {
 		return false;
 	}
 

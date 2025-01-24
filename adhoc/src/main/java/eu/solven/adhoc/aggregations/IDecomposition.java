@@ -33,8 +33,17 @@ import eu.solven.adhoc.slice.IAdhocSliceWithStep;
  * Used for {@link eu.solven.adhoc.transformers.IMeasure} which generates/contributes into multiple slices given an
  * underlying slice. It may be used for rebucketing (e.g. `123 on 0.2` may be decomposed into `123*0.2 into 0 and
  * 123*0.8 into 1.0`).
+ *
+ * Also used for many2many: each input element is decomposed into its target groups.
  */
 public interface IDecomposition {
+	/**
+	 *
+	 * @param slice
+	 *            an element/underlying slice
+	 * @param value
+	 * @return the target/pillars/groups slices
+	 */
 	Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value);
 
 	/**

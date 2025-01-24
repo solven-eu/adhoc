@@ -190,8 +190,7 @@ public class TestActivePivotMeasuresToAdhoc {
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", "someString"));
 		Assertions.assertThat(converter.convertToAdhoc("someLevel", new InCondition("someString")))
 				.isEqualTo(ColumnFilter.isIn("someLevel", "someString"));
-		Assertions
-				.assertThat(converter.convertToAdhoc("someLevel", new InCondition("someString", 123)))
+		Assertions.assertThat(converter.convertToAdhoc("someLevel", new InCondition("someString", 123)))
 				.isEqualTo(ColumnFilter.isIn("someLevel", Set.of("someString", 123)));
 
 		Assertions

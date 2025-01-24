@@ -25,6 +25,7 @@ package eu.solven.adhoc.api.v1.pojo;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
@@ -56,9 +57,9 @@ public class OrFilter implements IOrFilter {
 	}
 
 	@Override
-	public boolean isMatchAll() {
+	public boolean isMatchNone() {
 		// An empty OR is considered to match nothing
-		return !filters.isEmpty();
+		return filters.isEmpty();
 	}
 
 	@Override
@@ -73,6 +74,10 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public String toString() {
+		if (isMatchNone()) {
+			return "matchNone";
+		}
+
 		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
 
 		AtomicInteger index = new AtomicInteger();
@@ -84,10 +89,19 @@ public class OrFilter implements IOrFilter {
 	}
 
 	public static IAdhocFilter or(Collection<? extends IAdhocFilter> filters) {
-		if (filters.size() == 1) {
-			return filters.iterator().next();
+		if (filters.stream().anyMatch(IAdhocFilter::isMatchAll)) {
+			return MATCH_ALL;
+		}
+
+		List<? extends IAdhocFilter> notMatchNone =
+				filters.stream().filter(f -> !f.isMatchNone()).collect(Collectors.toList());
+
+		if (notMatchNone.isEmpty()) {
+			return MATCH_NONE;
+		} else if (notMatchNone.size() == 1) {
+			return notMatchNone.getFirst();
 		} else {
-			return OrFilter.builder().filters(filters).build();
+			return OrFilter.builder().filters(notMatchNone).build();
 		}
 	}
 

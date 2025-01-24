@@ -34,6 +34,8 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * A simple {@link IManyToMany1DDefinition} which is based on {@link SetMultimap}. This is typically used by unittests,
+ * or simple/small/config-based manytomany.
  * 
  * @author Benoit Lacelle
  *
