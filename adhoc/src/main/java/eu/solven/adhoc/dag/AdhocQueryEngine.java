@@ -94,7 +94,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
-	final AdhocMeasureBag measureBag;
+	final IAdhocMeasureBag measureBag;
 
 	@NonNull
 	final EventBus eventBus;

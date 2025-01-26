@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @Builder
-public class AdhocMeasureBag {
+public class AdhocMeasureBag implements IAdhocMeasureBag {
 	final String name;
 
 	@Default
@@ -77,6 +77,7 @@ public class AdhocMeasureBag {
 		return this;
 	}
 
+	@Override
 	public IMeasure resolveIfRef(IMeasure measure) {
 		if (measure instanceof ReferencedMeasure ref) {
 			String refName = ref.getRef();
@@ -94,6 +95,7 @@ public class AdhocMeasureBag {
 		return measure;
 	}
 
+	@Override
 	public Optional<IMeasure> resolveIfRefOpt(IMeasure measure) {
 		if (measure instanceof ReferencedMeasure ref) {
 			String refName = ref.getRef();

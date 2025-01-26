@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>aggregator</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>calcite</artifactId>
+
+	<properties>
+		<java.version>21</java.version>
+
+		<calcite.version>1.38.0</calcite.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.calcite</groupId>
+			<artifactId>calcite-core</artifactId>
+			<version>${calcite.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.calcite</groupId>
+			<artifactId>calcite-linq4j</artifactId>
+			<version>${calcite.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>sqlline</groupId>
+			<artifactId>sqlline</artifactId>
+			<version>1.12.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.calcite</groupId>
+			<artifactId>calcite-testkit</artifactId>
+			<version>${calcite.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>

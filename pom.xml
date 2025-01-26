@@ -17,6 +17,7 @@
 
 	<modules>
 		<module>adhoc</module>
+		<module>calcite</module>
 	</modules>
 
 	<properties>

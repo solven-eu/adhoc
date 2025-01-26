@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.calcite.csv;
+
+import java.lang.reflect.Method;
+import java.util.List;
+
+import org.apache.calcite.linq4j.tree.Types;
+
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.query.AdhocQuery;
 
 /**
- * Various standard/not-exotic options for querying.
- * 
- * @author Benoit Lacelle
- *
+ * Builtin methods in the MongoDB adapter.
  */
-public enum StandardQueryOptions implements IQueryOption {
-	/**
-	 * All underlying measures are kept in the output result. This is relevant as it does not induces additional
-	 * computations, but it induces additional RAM consumptions (as these implicitly requested measures can not be
-	 * discarded).
-	 */
-	RETURN_UNDERLYING_MEASURES,
+public enum MongoMethod {
+	// MONGO_QUERYABLE_FIND(MongoTable.MongoQueryable.class, "find", String.class, String.class, List.class),
+	MONGO_QUERYABLE_AGGREGATE(MongoTable.MongoQueryable.class, "aggregate", List.class, AdhocQuery.class);
 
-	/**
-	 * Request for an unknown measure will treat it as if it returned only empty values.
-	 * 
-	 * It is useful when a measure bag may refer another measure which may be missing for any reason.
-	 */
-	UNKNOWN_MEASURES_ARE_EMPTY;
+	@SuppressWarnings("ImmutableEnumChecker")
+	public final Method method;
+
+	public static final ImmutableMap<Method, MongoMethod> MAP;
+
+	static {
+		final ImmutableMap.Builder<Method, MongoMethod> builder = ImmutableMap.builder();
+		for (MongoMethod value : MongoMethod.values()) {
+			builder.put(value.method, value);
+		}
+		MAP = builder.build();
+	}
+
+	MongoMethod(Class clazz, String methodName, Class... argumentTypes) {
+		this.method = Types.lookupMethod(clazz, methodName, argumentTypes);
+	}
 }

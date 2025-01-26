@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.dag;
 
 /**
- * Various standard/not-exotic options for querying.
+ * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
  * 
  * @author Benoit Lacelle
  *
  */
-public enum StandardQueryOptions implements IQueryOption {
-	/**
-	 * All underlying measures are kept in the output result. This is relevant as it does not induces additional
-	 * computations, but it induces additional RAM consumptions (as these implicitly requested measures can not be
-	 * discarded).
-	 */
-	RETURN_UNDERLYING_MEASURES,
+public interface IAdhocCubeWrapper {
 
-	/**
-	 * Request for an unknown measure will treat it as if it returned only empty values.
-	 * 
-	 * It is useful when a measure bag may refer another measure which may be missing for any reason.
-	 */
-	UNKNOWN_MEASURES_ARE_EMPTY;
 }
