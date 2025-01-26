@@ -29,9 +29,10 @@ import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.greenrobot.eventbus.EventBus;
 
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.AdhocCube;
+import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
 
 /**
  * Factory that creates a {@link AdhocSchema}.
@@ -55,8 +56,10 @@ public class AdhocSchemaFactory implements SchemaFactory {
 		AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measureBag(amb).build();
 
-		AdhocCube
-		
-		return new AdhocSchema(aqe);
+		IAdhocDatabaseWrapper adw = null;
+
+		AdhocCubeWrapper aqw = new AdhocCubeWrapper(aqe, adw);
+
+		return new AdhocSchema(aqw);
 	}
 }

@@ -45,6 +45,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import eu.solven.adhoc.calcite.csv.AdhocSchema;
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.database.InMemoryDatabase;
@@ -108,7 +109,7 @@ public class MongoAdapterTest implements SchemaFactory {
 		// doc.put("binaryData", new BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
 		// datatypes.insertOne(doc);
 
-		schema = new AdhocSchema(aqe);
+		schema = new AdhocSchema(new AdhocCubeWrapper(aqe, rows));
 	}
 
 	// private static void populate(MongoCollection<Document> collection, URL resource) throws IOException {

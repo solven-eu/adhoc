@@ -43,11 +43,9 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.Util;
 
 import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.dag.IAdhocCubeWrapper;
 import eu.solven.adhoc.query.AdhocQuery;
 
 /**
@@ -55,19 +53,18 @@ import eu.solven.adhoc.query.AdhocQuery;
  */
 public class MongoTable extends AbstractQueryableTable implements TranslatableTable {
 	// private final String collectionName;
-	final AdhocQueryEngine aqe;
-	final IAdhocDatabaseWrapper db;
+	final IAdhocCubeWrapper aqw;
 
 	/** Creates a MongoTable. */
-	MongoTable(IAdhocCubeWrapper acw) {
+	MongoTable(IAdhocCubeWrapper aqw) {
 		super(Object[].class);
 		// this.collectionName = collectionName;
-		this.aqe = aqe;
+		this.aqw = aqw;
 	}
 
 	@Override
 	public String toString() {
-		return "AdhocTable {" + aqe + "}";
+		return "AdhocTable {" + aqw + "}";
 	}
 
 	@Override
@@ -153,12 +150,10 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 			public Enumerator<Object> enumerator() {
 				final Iterator<Map<String, ?>> resultIterator;
 				try {
-					ITabularView result = aqe.execute(adhocQuery, null);
+					ITabularView result = aqw.execute(adhocQuery);
 					resultIterator = null; // mongoDb.getCollection(collectionName).aggregate(list).iterator();
 				} catch (Exception e) {
-					throw new RuntimeException(
-							"While running MongoDB query " + Util.toString(adhocQuery, "[", ",\n", "]"),
-							e);
+					throw new RuntimeException("While running MongoDB query " + adhocQuery, e);
 				}
 				return new MongoEnumerator(resultIterator, getter);
 			}
@@ -207,7 +202,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 					// getMongoDb(),
 					fields,
 					adhocQuery);
-			return null;
+			// return null;
 		}
 
 		/**

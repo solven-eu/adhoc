@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
+import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.query.AdhocQuery;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -35,4 +37,9 @@ import lombok.RequiredArgsConstructor;
 public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final IAdhocQueryEngine aqe;
 	final IAdhocDatabaseWrapper adw;
+
+	@Override
+	public ITabularView execute(AdhocQuery adhocQuery) {
+		return aqe.execute(adhocQuery, adw);
+	}
 }

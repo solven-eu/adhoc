@@ -23,6 +23,7 @@
 package eu.solven.adhoc.calcite.csv;
 
 import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -99,13 +100,11 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		final Expression table =
 				list.append("table", mongoImplementor.table.getExpression(MongoTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
-		// final Expression ops = list.append("ops", constantArrayList(opList, String.class));
+		final Expression ops = list.append("ops",
+				constantArrayList(Arrays.asList(mongoImplementor.adhocQueryBuilder.build()), String.class));
 
 		Expression enumerable = list.append("enumerable",
-				Expressions.call(table,
-						MongoMethod.MONGO_QUERYABLE_AGGREGATE.method,
-						fields,
-						mongoImplementor.adhocQueryBuilder.build()));
+				Expressions.call(table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, ops));
 		// Hook.QUERY_PLAN.run(opList);
 		list.add(Expressions.return_(null, enumerable));
 		return implementor.result(physType, list.toBlock());

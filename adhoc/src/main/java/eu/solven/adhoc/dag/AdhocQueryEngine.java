@@ -99,10 +99,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@NonNull
 	final EventBus eventBus;
 
-	public ITabularView execute(IAdhocQuery adhocQuery, IAdhocDatabaseWrapper db) {
-		return execute(adhocQuery, Set.of(), db);
-	}
-
+	@Override
 	public ITabularView execute(IAdhocQuery adhocQuery,
 			Set<? extends IQueryOption> queryOptions,
 			IAdhocDatabaseWrapper db) {

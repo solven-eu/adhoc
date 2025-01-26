@@ -22,6 +22,19 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Set;
+
+import eu.solven.adhoc.ITabularView;
+import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.query.IQueryOption;
+
 public interface IAdhocQueryEngine {
+
+	default ITabularView execute(IAdhocQuery adhocQuery, IAdhocDatabaseWrapper db) {
+		return execute(adhocQuery, Set.of(), db);
+	}
+
+	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions, IAdhocDatabaseWrapper db);
 
 }

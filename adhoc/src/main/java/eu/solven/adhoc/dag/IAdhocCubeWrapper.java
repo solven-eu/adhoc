@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
+import eu.solven.adhoc.ITabularView;
+import eu.solven.adhoc.query.AdhocQuery;
+
 /**
  * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
  * 
@@ -29,5 +32,7 @@ package eu.solven.adhoc.dag;
  *
  */
 public interface IAdhocCubeWrapper {
+
+	ITabularView execute(AdhocQuery adhocQuery);
 
 }
