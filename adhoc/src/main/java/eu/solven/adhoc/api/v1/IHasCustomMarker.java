@@ -34,5 +34,16 @@ import java.util.Optional;
  *
  */
 public interface IHasCustomMarker {
-	Optional<?> getCustomMarker();
+	// friendly with Jackson
+	Object getCustomMarker();
+
+	default Optional<?> optCustomMarker() {
+		Object customMarker = getCustomMarker();
+
+		if (customMarker instanceof Optional<?> opt) {
+			// This is useful to prevent Optional<Optional<?>>
+			return opt;
+		}
+		return Optional.ofNullable(customMarker);
+	}
 }

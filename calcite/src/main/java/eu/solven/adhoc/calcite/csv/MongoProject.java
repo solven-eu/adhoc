@@ -24,6 +24,7 @@ package eu.solven.adhoc.calcite.csv;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
@@ -88,13 +89,21 @@ public class MongoProject extends Project implements MongoRel {
 		for (Pair<RexNode, String> pair : getNamedProjects()) {
 			final String name = pair.right;
 			final String expr = pair.left.accept(translator);
-			items.add(expr.equals("'$" + name + "'") ? MongoRules.maybeQuote(name) + ": 1"
-					: MongoRules.maybeQuote(name) + ": " + expr);
+			boolean isSimple = expr.toLowerCase(Locale.US).equals(("'$" + name + "'").toLowerCase(Locale.US));
+
+			if (isSimple) {
+				implementor.adhocQueryBuilder.groupByAlso(name);
+				// items.add(isSimple ? MongoRules.maybeQuote(name) + ": 1" : MongoRules.maybeQuote(name) + ": " +
+				// expr);
+			} else {
+				throw new UnsupportedOperationException("Issue with %s %s".formatted(name, expr));
+			}
+
 		}
-		final String findString = Util.toString(items, "{", ", ", "}");
-		final String aggregateString = "{$project: " + findString + "}";
-		final Pair<String, String> op = Pair.of(findString, aggregateString);
-		// implementor.add(op.left, op.right);
-		throw new UnsupportedOperationException("TODO");
+		// final String findString = Util.toString(items, "{", ", ", "}");
+		// final String aggregateString = "{$project: " + findString + "}";
+		// final Pair<String, String> op = Pair.of(findString, aggregateString);
+		// // implementor.add(op.left, op.right);
+		// throw new UnsupportedOperationException("TODO");
 	}
 }

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -44,7 +45,11 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.sql.type.SqlTypeName;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.solven.adhoc.ITabularView;
+import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.dag.IAdhocCubeWrapper;
 import eu.solven.adhoc.query.AdhocQuery;
 
@@ -106,14 +111,17 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 	// String projectJson,
 	// List<Map.Entry<String, Class>> fields) {
 	// final MongoCollection collection = mongoDb.getCollection(collectionName);
-	// final Bson filter = filterJson == null ? null : BsonDocument.parse(filterJson);
-	// final Bson project = projectJson == null ? null : BsonDocument.parse(projectJson);
+	// final Bson filter = filterJson == null ? null :
+	// BsonDocument.parse(filterJson);
+	// final Bson project = projectJson == null ? null :
+	// BsonDocument.parse(projectJson);
 	// final Function1<Document, Object> getter = MongoEnumerator.getter(fields);
 	// return new AbstractEnumerable<Object>() {
 	// @Override
 	// public Enumerator<Object> enumerator() {
 	// @SuppressWarnings("unchecked")
-	// final FindIterable<Document> cursor = collection.find(filter).projection(project);
+	// final FindIterable<Document> cursor =
+	// collection.find(filter).projection(project);
 	// return new MongoEnumerator(cursor.iterator(), getter);
 	// }
 	// };
@@ -139,7 +147,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 	private Enumerable<Object> aggregate(
 			// final MongoDatabase mongoDb,
 			final List<Map.Entry<String, Class>> fields,
-			final AdhocQuery adhocQuery) {
+			final IAdhocQuery adhocQuery) {
 		final List<Object> list = new ArrayList<>();
 		// for (String operation : operations) {
 		// list.add(BsonDocument.parse(operation));
@@ -148,10 +156,15 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		return new AbstractEnumerable<Object>() {
 			@Override
 			public Enumerator<Object> enumerator() {
-				final Iterator<Map<String, ?>> resultIterator;
+				final Iterator<? extends Map<String, ?>> resultIterator;
 				try {
 					ITabularView result = aqw.execute(adhocQuery);
-					resultIterator = null; // mongoDb.getCollection(collectionName).aggregate(list).iterator();
+
+					resultIterator = result.keySet().map(slice -> {
+						return slice.getCoordinates();
+					}).iterator();
+
+					// mongoDb.getCollection(collectionName).aggregate(list).iterator();
 				} catch (Exception e) {
 					throw new RuntimeException("While running MongoDB query " + adhocQuery, e);
 				}
@@ -175,7 +188,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		@Override
 		public Enumerator<T> enumerator() {
 			// noinspection unchecked
-			// final Enumerable<T> enumerable = (Enumerable<T>) getTable().find(getMongoDb(), null, null, null);
+			// final Enumerable<T> enumerable = (Enumerable<T>)
+			// getTable().find(getMongoDb(), null, null, null);
 			// return enumerable.enumerator();
 			return null;
 		}
@@ -197,11 +211,19 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		 * @see org.apache.calcite.adapter.mongodb.MongoMethod#MONGO_QUERYABLE_AGGREGATE
 		 */
 		@SuppressWarnings("UnusedDeclaration")
-		public Enumerable<Object> aggregate(List<Map.Entry<String, Class>> fields, AdhocQuery adhocQuery) {
+		public Enumerable<Object> aggregate(List<Map.Entry<String, Class>> fields, List adhocQuery) {
+			Object rawQuery = adhocQuery.get(0);
+
+			IAdhocQuery q;
+			try {
+				q = new ObjectMapper().readValue(rawQuery.toString(), AdhocQuery.class);
+			} catch (JsonProcessingException e) {
+				throw new UncheckedIOException(e);
+			}
 			return getTable().aggregate(
 					// getMongoDb(),
 					fields,
-					adhocQuery);
+					q);
 			// return null;
 		}
 

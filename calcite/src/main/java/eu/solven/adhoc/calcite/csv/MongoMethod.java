@@ -29,14 +29,13 @@ import org.apache.calcite.linq4j.tree.Types;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.AdhocQuery;
-
 /**
  * Builtin methods in the MongoDB adapter.
  */
 public enum MongoMethod {
-	// MONGO_QUERYABLE_FIND(MongoTable.MongoQueryable.class, "find", String.class, String.class, List.class),
-	MONGO_QUERYABLE_AGGREGATE(MongoTable.MongoQueryable.class, "aggregate", List.class, AdhocQuery.class);
+	// MONGO_QUERYABLE_FIND(MongoTable.MongoQueryable.class, "find", String.class,
+	// String.class, List.class),
+	MONGO_QUERYABLE_AGGREGATE(MongoTable.MongoQueryable.class, "aggregate", List.class, List.class);
 
 	@SuppressWarnings("ImmutableEnumChecker")
 	public final Method method;

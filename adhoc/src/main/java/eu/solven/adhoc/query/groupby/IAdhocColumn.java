@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.query.groupby;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 
 /**
@@ -30,6 +33,8 @@ import eu.solven.adhoc.api.v1.IAdhocGroupBy;
  * @author Benoit Lacelle
  *
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
 public interface IAdhocColumn {
 	/**
 	 * @return the name of given column.

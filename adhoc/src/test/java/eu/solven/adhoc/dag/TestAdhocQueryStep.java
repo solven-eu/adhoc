@@ -55,9 +55,9 @@ public class TestAdhocQueryStep {
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.customMarker(Optional.of("someCustomMarker"))
 				.build();
-		Assertions.assertThat((Optional) stepHasCustom.getCustomMarker()).contains("someCustomMarker");
+		Assertions.assertThat((Optional) stepHasCustom.optCustomMarker()).contains("someCustomMarker");
 
 		AdhocQueryStep editKeepCustom = AdhocQueryStep.edit(stepHasCustom).build();
-		Assertions.assertThat((Optional) editKeepCustom.getCustomMarker()).contains("someCustomMarker");
+		Assertions.assertThat((Optional) editKeepCustom.optCustomMarker()).contains("someCustomMarker");
 	}
 }

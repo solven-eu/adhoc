@@ -23,7 +23,6 @@
 package eu.solven.adhoc.dag;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
@@ -71,8 +70,7 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 
 	// This property is transported down to the DatabaseQuery
 	@Default
-	@NonNull
-	Optional<?> customMarker = Optional.empty();
+	Object customMarker = null;
 
 	// Used to store transient information, like slow-to-evaluate informations
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
@@ -88,7 +86,7 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 			builder.debug(debuggable.isDebug());
 		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
-			builder.customMarker(hasCustomMarker.getCustomMarker());
+			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}
 
 		return builder;

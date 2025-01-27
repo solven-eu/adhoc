@@ -141,7 +141,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			});
 		}
 
-		// We're done with the input stream: the DB can be shutdown, we could answer the query
+		// We're done with the input stream: the DB can be shutdown, we could answer the
+		// query
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregates").source(this).build());
 
 		walkDagUpToQueriedMeasures(fromQueriedToAggregates, queryStepToValues);
@@ -240,7 +241,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
 			if (storage == null) {
-				// Typically happens when a filter reject completely one of the underlying measure
+				// Typically happens when a filter reject completely one of the underlying
+				// measure
 				storage = MultiTypeStorage.empty();
 			}
 
@@ -248,7 +250,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					QueryStepIsCompleted.builder().querystep(queryStep).nbCells(storage.size()).source(this).build());
 			log.debug("dbQuery={} generated a column with size={}", dbQuery, storage.size());
 
-			// The aggregation step is done: the storage is supposed not to be edited: we re-use it in place, to
+			// The aggregation step is done: the storage is supposed not to be edited: we
+			// re-use it in place, to
 			// spare a copy to an immutable container
 			queryStepToValues.put(queryStep, CoordinatesToValues.builder().storage(storage).build());
 		});
@@ -262,14 +265,16 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				new EdgeReversedGraph<>(fromQueriedToAggregates);
 
 		// https://en.wikipedia.org/wiki/Topological_sorting
-		// TopologicalOrder guarantees processing a vertex after dependent vertices are done.
+		// TopologicalOrder guarantees processing a vertex after dependent vertices are
+		// done.
 		TopologicalOrderIterator<AdhocQueryStep, DefaultEdge> graphIterator =
 				new TopologicalOrderIterator<>(fromAggregatesToQueried);
 
 		graphIterator.forEachRemaining(queryStep -> {
 
 			if (queryStepToValues.containsKey(queryStep)) {
-				// This typically happens on aggregator measures, as they are fed in a previous step
+				// This typically happens on aggregator measures, as they are fed in a previous
+				// step
 				// Here, we want to process a measure once its underlying steps are completed
 				return;
 			} else if (queryStep.getMeasure() instanceof Aggregator a) {
@@ -362,7 +367,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.map(Aggregator::getName)
 				.forEach(relevantColumns::add);
 
-		// TODO We'd like to log on the last row, to have the number if row actually streamed
+		// TODO We'd like to log on the last row, to have the number if row actually
+		// streamed
 		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(adhocQuery);
 
 		// Process the underlying stream of data to execute aggregations
@@ -417,7 +423,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			return;
 		}
 
-		// When would we need to filter? As the filter is done by the IAdhocDatabaseWrapper
+		// When would we need to filter? As the filter is done by the
+		// IAdhocDatabaseWrapper
 		// if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
 		// return;
 		// }
@@ -426,7 +433,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		for (String aggregatedColumn : relevantColumns) {
 			if (input.containsKey(aggregatedColumn)) {
-				// We received a row contributing to an aggregate: the DB does not provide aggregates (e.g.
+				// We received a row contributing to an aggregate: the DB does not provide
+				// aggregates (e.g.
 				// InMemoryDb)
 				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
 
@@ -513,7 +521,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					if (leafMeasure instanceof Aggregator leafAggregator) {
 						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
 
-						// We could analyze filters, to discard a query filter `k=v` if another query filters `k=v|v2`
+						// We could analyze filters, to discard a query filter `k=v` if another query
+						// filters `k=v|v2`
 						measurelessToAggregators.merge(measureless,
 								Collections.singleton(leafAggregator),
 								UnionSetAggregator::unionSet);
@@ -554,16 +563,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(adhocQuery);
 
 		// Add explicitly requested steps
-		{
-			if (adhocQuery.getMeasureRefs().isEmpty()) {
-				IMeasure countAsterisk = defaultMeasure();
-				queryStepsDagBuilder.addRoot(countAsterisk);
-			} else {
-				adhocQuery.getMeasureRefs()
-						.stream()
-						.map(ref -> resolveIfRef(queryOptions, ref))
-						.forEach(queryStepsDagBuilder::addRoot);
-			}
+		if (adhocQuery.getMeasureRefs().isEmpty()) {
+			IMeasure countAsterisk = defaultMeasure();
+			queryStepsDagBuilder.addRoot(countAsterisk);
+		} else {
+			adhocQuery.getMeasureRefs()
+					.stream()
+					.map(ref -> resolveIfRef(queryOptions, ref))
+					.forEach(queryStepsDagBuilder::addRoot);
 		}
 
 		// Add implicitly requested steps
@@ -602,7 +609,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 */
 	protected IMeasure defaultMeasure() {
 		return Aggregator.builder().name("COUNT_ASTERISK").aggregationKey("COUNT").columnName("*").build();
-		// return Aggregator.builder().name("CONSTANT_1").aggregationKey("COUNT").columnName("*").build();
+		// return
+		// Aggregator.builder().name("CONSTANT_1").aggregationKey("COUNT").columnName("*").build();
 	}
 
 	protected QueryStepsDagsBuilder makeQueryStepsDagsBuilder(IAdhocQuery adhocQuery) {

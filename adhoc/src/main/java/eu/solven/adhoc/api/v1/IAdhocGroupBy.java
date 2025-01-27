@@ -26,6 +26,11 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 
 /**
@@ -34,14 +39,17 @@ import eu.solven.adhoc.query.groupby.IAdhocColumn;
  * @author Benoit Lacelle
  *
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({ @JsonSubTypes.Type(value = GroupByColumns.class, name = "columns"), })
 public interface IAdhocGroupBy {
-	IAdhocGroupBy GRAND_TOTAL = new GrandTotal();
+	IAdhocGroupBy GRAND_TOTAL = GroupByColumns.grandTotal();
 
 	/**
 	 * If true, there is not a single groupBy
 	 * 
 	 * @return
 	 */
+	@JsonIgnore
 	default boolean isGrandTotal() {
 		return getGroupedByColumns().isEmpty();
 	}
@@ -52,6 +60,7 @@ public interface IAdhocGroupBy {
 	 * 
 	 * @return the name of the groupBy when the input and output columns are identical.
 	 */
+	@JsonIgnore
 	default NavigableSet<String> getGroupedByColumns() {
 		return getNameToColumn().navigableKeySet();
 	}

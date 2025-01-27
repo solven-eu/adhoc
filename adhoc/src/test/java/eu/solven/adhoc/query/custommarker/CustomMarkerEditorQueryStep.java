@@ -53,7 +53,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return AdhocQueryStep.edit(step)
 					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
-					.customMarker(customMarkerEditor.editCustomMarker(step.getCustomMarker()))
+					.customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()))
 					.build();
 		}).toList();
 	}

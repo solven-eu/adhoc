@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.query;
 
-import java.util.Optional;
-
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
@@ -47,8 +45,7 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery {
 	@NonNull
 	IAdhocGroupBy groupBy;
 
-	@NonNull
-	Optional<?> customMarker;
+	Object customMarker;
 
 	public static MeasurelessQueryBuilder edit(AdhocQueryStep step) {
 		return MeasurelessQuery.builder()

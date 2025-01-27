@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.groupby;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * A simple column, explicitly referred.
@@ -33,6 +34,7 @@ import lombok.Value;
  */
 @Builder
 @Value
+@Jacksonized
 public class ReferencedColumn implements IAdhocColumn {
 	String column;
 

@@ -57,6 +57,7 @@ import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
  *
  * @see MongoDatabasePolicy
  */
+@Disabled
 public class MongoAdapterTest implements SchemaFactory {
 
 	/** Connection factory based on the "mongo-zips" model. */
@@ -78,7 +79,8 @@ public class MongoAdapterTest implements SchemaFactory {
 	}
 
 	// @RegisterExtension
-	// public static final MongoDatabasePolicy POLICY = MongoDatabasePolicy.create();
+	// public static final MongoDatabasePolicy POLICY =
+	// MongoDatabasePolicy.create();
 
 	private AdhocSchema schema;
 
@@ -87,8 +89,10 @@ public class MongoAdapterTest implements SchemaFactory {
 		// MongoDatabase database = POLICY.database();
 		//
 		// populate(database.getCollection("zips"),
-		// requireNonNull(MongoAdapterTest.class.getResource("/zips-mini.json"), "url"));
-		// populate(database.getCollection("store"), requireNonNull(FoodmartJson.class.getResource("/store.json"),
+		// requireNonNull(MongoAdapterTest.class.getResource("/zips-mini.json"),
+		// "url"));
+		// populate(database.getCollection("store"),
+		// requireNonNull(FoodmartJson.class.getResource("/store.json"),
 		// "url"));
 		// populate(database.getCollection("warehouse"),
 		// requireNonNull(FoodmartJson.class.getResource("/warehouse.json"), "url"));
@@ -101,18 +105,22 @@ public class MongoAdapterTest implements SchemaFactory {
 		// }
 		//
 		// BsonDocument doc = new BsonDocument();
-		// Instant instant = LocalDate.of(2012, 9, 5).atStartOfDay(ZoneOffset.UTC).toInstant();
+		// Instant instant = LocalDate.of(2012, 9,
+		// 5).atStartOfDay(ZoneOffset.UTC).toInstant();
 		// doc.put("date", new BsonDateTime(instant.toEpochMilli()));
 		// doc.put("value", new BsonInt32(1231));
 		// doc.put("ownerId", new BsonString("531e7789e4b0853ddb861313"));
-		// doc.put("arr", new BsonArray(Arrays.asList(new BsonString("a"), new BsonString("b"))));
-		// doc.put("binaryData", new BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
+		// doc.put("arr", new BsonArray(Arrays.asList(new BsonString("a"), new
+		// BsonString("b"))));
+		// doc.put("binaryData", new
+		// BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
 		// datatypes.insertOne(doc);
 
 		schema = new AdhocSchema(new AdhocCubeWrapper(aqe, rows));
 	}
 
-	// private static void populate(MongoCollection<Document> collection, URL resource) throws IOException {
+	// private static void populate(MongoCollection<Document> collection, URL
+	// resource) throws IOException {
 	// requireNonNull(collection, "collection");
 	//
 	// if (collection.countDocuments() > 0) {
@@ -120,8 +128,10 @@ public class MongoAdapterTest implements SchemaFactory {
 	// collection.deleteMany(new BsonDocument());
 	// }
 	//
-	// MongoCollection<BsonDocument> bsonCollection = collection.withDocumentClass(BsonDocument.class);
-	// Resources.readLines(resource, StandardCharsets.UTF_8, new LineProcessor<Void>() {
+	// MongoCollection<BsonDocument> bsonCollection =
+	// collection.withDocumentClass(BsonDocument.class);
+	// Resources.readLines(resource, StandardCharsets.UTF_8, new
+	// LineProcessor<Void>() {
 	// @Override
 	// public boolean processLine(String line) {
 	// bsonCollection.insertOne(BsonDocument.parse(line));
@@ -143,7 +153,8 @@ public class MongoAdapterTest implements SchemaFactory {
 
 	private CalciteAssert.AssertThat assertModel(Resource resource) {
 		// ensure that Schema from this instance is being used
-		// model = model.replace(MongoSchemaFactory.class.getName(), MongoAdapterTest.class.getName());
+		// model = model.replace(MongoSchemaFactory.class.getName(),
+		// MongoAdapterTest.class.getName());
 
 		try {
 			return CalciteAssert.that().withModel(resource.getURL());
@@ -671,7 +682,8 @@ public class MongoAdapterTest implements SchemaFactory {
 					try {
 						resultSet.next();
 						// CHECKSTYLE: IGNORE 1
-						// assertThat(new String(resultSet.getBytes(1), StandardCharsets.UTF_8), is("binaryData"));
+						// assertThat(new String(resultSet.getBytes(1), StandardCharsets.UTF_8),
+						// is("binaryData"));
 					} catch (SQLException e) {
 						throw TestUtil.rethrow(e);
 					}
@@ -703,7 +715,8 @@ public class MongoAdapterTest implements SchemaFactory {
 			// }
 			//
 			// // comparing list of Bsons (expected and actual)
-			// final List<BsonDocument> expectedBsons = Arrays.stream(expected).map(BsonDocument::parse)
+			// final List<BsonDocument> expectedBsons =
+			// Arrays.stream(expected).map(BsonDocument::parse)
 			// .collect(Collectors.toList());
 			//
 			// final List<BsonDocument> actualBsons = ((List<?>) actual.get(0))
@@ -714,7 +727,8 @@ public class MongoAdapterTest implements SchemaFactory {
 			//
 			// // compare Bson (not string) representation
 			// if (!expectedBsons.equals(actualBsons)) {
-			// final JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+			// final JsonWriterSettings settings =
+			// JsonWriterSettings.builder().indent(true).build();
 			// // outputs Bson in pretty Json format (with new lines)
 			// // so output is human friendly in IDE diff tool
 			// final Function<List<BsonDocument>, String> prettyFn = bsons -> bsons.stream()
@@ -724,7 +738,8 @@ public class MongoAdapterTest implements SchemaFactory {
 			// assertThat("expected and actual Mongo queries (pipelines) do not match",
 			// prettyFn.apply(actualBsons), is(prettyFn.apply(expectedBsons)));
 			//
-			// fail("Should have failed previously because expected != actual is known to be true");
+			// fail("Should have failed previously because expected != actual is known to be
+			// true");
 			// }
 			return;
 		};

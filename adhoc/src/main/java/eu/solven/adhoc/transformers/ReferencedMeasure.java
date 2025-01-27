@@ -25,6 +25,8 @@ package eu.solven.adhoc.transformers;
 import java.util.Comparator;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import lombok.Builder;
 import lombok.Value;
@@ -44,11 +46,13 @@ public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure
 	String ref;
 
 	@Override
+	@JsonIgnore
 	public String getName() {
 		return "ref-" + getRef();
 	}
 
 	@Override
+	@JsonIgnore
 	public Set<String> getTags() {
 		return Set.of("reference");
 	}

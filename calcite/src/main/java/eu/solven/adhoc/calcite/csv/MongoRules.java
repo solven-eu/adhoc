@@ -201,32 +201,32 @@ public class MongoRules {
 					return strings.get(0) + "[" + strings.get(1) + "]";
 				}
 			}
-			if (call.getOperator() == SqlStdOperatorTable.CASE) {
-				StringBuilder sb = new StringBuilder();
-				StringBuilder finish = new StringBuilder();
-				// case(a, b, c) -> $cond:[a, b, c]
-				// case(a, b, c, d) -> $cond:[a, b, $cond:[c, d, null]]
-				// case(a, b, c, d, e) -> $cond:[a, b, $cond:[c, d, e]]
-				for (int i = 0; i < strings.size(); i += 2) {
-					sb.append("{$cond:[");
-					finish.append("]}");
-
-					sb.append(strings.get(i));
-					sb.append(',');
-					sb.append(strings.get(i + 1));
-					sb.append(',');
-					if (i == strings.size() - 3) {
-						sb.append(strings.get(i + 2));
-						break;
-					}
-					if (i == strings.size() - 2) {
-						sb.append("null");
-						break;
-					}
-				}
-				sb.append(finish);
-				return sb.toString();
-			}
+			// if (call.getOperator() == SqlStdOperatorTable.CASE) {
+			// StringBuilder sb = new StringBuilder();
+			// StringBuilder finish = new StringBuilder();
+			// // case(a, b, c) -> $cond:[a, b, c]
+			// // case(a, b, c, d) -> $cond:[a, b, $cond:[c, d, null]]
+			// // case(a, b, c, d, e) -> $cond:[a, b, $cond:[c, d, e]]
+			// for (int i = 0; i < strings.size(); i += 2) {
+			// sb.append("{$cond:[");
+			// finish.append("]}");
+			//
+			// sb.append(strings.get(i));
+			// sb.append(',');
+			// sb.append(strings.get(i + 1));
+			// sb.append(',');
+			// if (i == strings.size() - 3) {
+			// sb.append(strings.get(i + 2));
+			// break;
+			// }
+			// if (i == strings.size() - 2) {
+			// sb.append("null");
+			// break;
+			// }
+			// }
+			// sb.append(finish);
+			// return sb.toString();
+			// }
 			throw new IllegalArgumentException(
 					"Translation of " + call.toString() + " is not supported by MongoProject");
 		}

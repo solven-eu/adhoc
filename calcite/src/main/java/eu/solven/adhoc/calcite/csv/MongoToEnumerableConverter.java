@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
+import java.io.UncheckedIOException;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,11 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import eu.solven.adhoc.query.AdhocQuery;
 
 /**
  * Relational expression representing a scan of a table in a Mongo data source.
@@ -100,8 +106,15 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		final Expression table =
 				list.append("table", mongoImplementor.table.getExpression(MongoTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
-		final Expression ops = list.append("ops",
-				constantArrayList(Arrays.asList(mongoImplementor.adhocQueryBuilder.build()), String.class));
+		AdhocQuery adhocQuery = mongoImplementor.adhocQueryBuilder.build();
+		String queryAsString;
+		try {
+			queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);
+		} catch (JsonProcessingException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		final Expression ops = list.append("ops", constantArrayList(Arrays.asList(queryAsString), Object.class));
 
 		Expression enumerable = list.append("enumerable",
 				Expressions.call(table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, ops));

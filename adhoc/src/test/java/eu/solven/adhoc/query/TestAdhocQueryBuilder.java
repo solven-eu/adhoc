@@ -27,6 +27,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -72,5 +75,27 @@ public class TestAdhocQueryBuilder {
 		AdhocQuery q1 = AdhocQuery.builder().groupByAlso("a", "b").groupBy(GroupByColumns.named("c", "d")).build();
 
 		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("c", "d");
+	}
+
+	@Test
+	public void testJackson_empty() throws JsonProcessingException {
+		AdhocQuery q1 = AdhocQuery.builder().build();
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		String asString = objectMapper.writeValueAsString(q1);
+		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
+
+		Assertions.assertThat(fromString).isEqualTo(q1);
+	}
+
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		AdhocQuery q1 = AdhocQuery.builder().measure("k1").andFilter("c1", "v1").groupByAlso("a").build();
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		String asString = objectMapper.writeValueAsString(q1);
+		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
+
+		Assertions.assertThat(fromString).isEqualTo(q1);
 	}
 }

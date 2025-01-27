@@ -43,7 +43,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Enumerator that reads from a MongoDB collection. */
 class MongoEnumerator implements Enumerator<Object> {
-	private final Iterator<Map<String, ?>> cursor;
+	private final Iterator<? extends Map<String, ?>> cursor;
 	private final Function1<Map<String, ?>, Object> getter;
 	private @Nullable Object current;
 
@@ -55,7 +55,7 @@ class MongoEnumerator implements Enumerator<Object> {
 	 * @param getter
 	 *            Converts an object into a list of fields
 	 */
-	MongoEnumerator(Iterator<Map<String, ?>> cursor, Function1<Map<String, ?>, Object> getter) {
+	MongoEnumerator(Iterator<? extends Map<String, ?>> cursor, Function1<Map<String, ?>, Object> getter) {
 		this.cursor = cursor;
 		this.getter = getter;
 	}

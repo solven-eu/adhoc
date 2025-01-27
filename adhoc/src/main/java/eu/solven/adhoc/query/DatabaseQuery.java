@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query;
 
-import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
@@ -35,7 +34,6 @@ import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
-import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -62,8 +60,7 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker 
 
 	// This property is transported down to the DatabaseQuery
 	@Default
-	@NonNull
-	Optional<?> customMarker = Optional.empty();
+	Object customMarker = null;
 
 	@Default
 	AdhocTopClause topClause = AdhocTopClause.NO_LIMIT;
@@ -83,7 +80,7 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker 
 		DatabaseQueryBuilder builder = DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
 
 		if (dq instanceof IHasCustomMarker hasCustomMarker) {
-			builder.customMarker(hasCustomMarker.getCustomMarker());
+			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}
 		if (dq instanceof IIsDebugable isDebugable) {
 			builder.debug(isDebugable.isDebug());

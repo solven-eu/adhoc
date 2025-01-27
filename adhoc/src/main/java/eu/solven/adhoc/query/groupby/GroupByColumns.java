@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.groupby;
 
 import java.util.Collection;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +37,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -46,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Value
 @Builder
+@Jacksonized
 @Slf4j
 public class GroupByColumns implements IAdhocGroupBy {
 	@Default
@@ -99,6 +102,12 @@ public class GroupByColumns implements IAdhocGroupBy {
 	}
 
 	public static class GroupByColumnsBuilder {
+		/**
+		 * 
+		 * @param column
+		 *            ad additional column to groupBy
+		 * @return the mutated builder
+		 */
 		public GroupByColumnsBuilder column(IAdhocColumn column) {
 			NavigableMap<String, IAdhocColumn> currentColumns = this.build().getNameToColumn();
 
@@ -109,6 +118,14 @@ public class GroupByColumns implements IAdhocGroupBy {
 
 			return this;
 		}
+	}
+
+	/**
+	 * 
+	 * @return grandTotal as there is no wildcard column.
+	 */
+	public static IAdhocGroupBy grandTotal() {
+		return GroupByColumns.named(Set.of());
 	}
 
 }

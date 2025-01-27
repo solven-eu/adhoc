@@ -87,8 +87,9 @@ public class ForeignExchangeCombination implements ICombination {
 	}
 
 	protected String getCcyTo(IAdhocSliceWithStep slice) {
-		// First, we consider a ccyTo configured as a customMarker: these are configurable dynamically by the user
-		Optional<?> optCustomMarker = slice.getQueryStep().getCustomMarker();
+		// First, we consider a ccyTo configured as a customMarker: these are
+		// configurable dynamically by the user
+		Optional<?> optCustomMarker = slice.getQueryStep().optCustomMarker();
 		if (optCustomMarker.isPresent()) {
 			Object customMarker = optCustomMarker.get();
 

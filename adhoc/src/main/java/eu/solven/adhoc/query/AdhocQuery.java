@@ -44,6 +44,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Simple {@link IAdhocQuery}, where the filter is an AND condition.
@@ -52,6 +53,7 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Jacksonized
 public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 
 	@NonNull
@@ -64,9 +66,9 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	Set<ReferencedMeasure> measureRefs;
 
 	// This property is transported down to the DatabaseQuery
+	// Not an Optional as JDK consider Optional are good only as return value
 	@Default
-	@NonNull
-	Optional<?> customMarker = Optional.empty();
+	Object customMarker = null;
 
 	// If true, will print a log of debug information
 	@Default
@@ -74,6 +76,10 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	// If true, will print details about the query plan
 	@Default
 	boolean explain = false;
+
+	public Optional<?> optCustomMaker() {
+		return Optional.ofNullable(customMarker);
+	}
 
 	@Override
 	public Set<ReferencedMeasure> getMeasureRefs() {
