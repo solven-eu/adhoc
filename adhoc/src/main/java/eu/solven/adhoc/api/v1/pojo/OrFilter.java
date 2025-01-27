@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
@@ -93,8 +94,13 @@ public class OrFilter implements IOrFilter {
 			return MATCH_ALL;
 		}
 
-		List<? extends IAdhocFilter> notMatchNone =
-				filters.stream().filter(f -> !f.isMatchNone()).collect(Collectors.toList());
+		List<? extends IAdhocFilter> notMatchNone = filters.stream().filter(f -> !f.isMatchNone()).flatMap(operand -> {
+			if (operand instanceof IOrFilter operandIsOr) {
+				return operandIsOr.getOperands().stream();
+			} else {
+				return Stream.of(operand);
+			}
+		}).collect(Collectors.toList());
 
 		if (notMatchNone.isEmpty()) {
 			return MATCH_NONE;

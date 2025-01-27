@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -42,7 +43,7 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * Default implementation for {@link IAndFilter}
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -101,8 +102,13 @@ public class AndFilter implements IAndFilter {
 		}
 
 		// Skipping matchAll is useful on `.edit`
-		List<? extends IAdhocFilter> notMatchAll =
-				filters.stream().filter(f -> !f.isMatchAll()).collect(Collectors.toList());
+		List<? extends IAdhocFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
+			if (operand instanceof IAndFilter operandIsAnd) {
+				return operandIsAnd.getOperands().stream();
+			} else {
+				return Stream.of(operand);
+			}
+		}).collect(Collectors.toList());
 
 		if (notMatchAll.isEmpty()) {
 			return IAdhocFilter.MATCH_ALL;

@@ -153,4 +153,15 @@ public class TestOrFilter {
 
 		Assertions.assertThat(fromString).isEqualTo(filter);
 	}
+
+	@Test
+	public void testChained() {
+		IAdhocFilter a1 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"));
+		IAdhocFilter a1Andb2 = OrFilter.or(a1, ColumnFilter.isEqualTo("b", "b2"));
+		IAdhocFilter a1Andb2AndC3 = OrFilter.or(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));
+
+		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
+			Assertions.assertThat(orFilter.getOperands()).hasSize(3);
+		});
+	}
 }

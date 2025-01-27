@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-// import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.is;
 // import static org.hamcrest.CoreMatchers.isA;
 // import static org.hamcrest.CoreMatchers.nullValue;
 // import static org.hamcrest.MatcherAssert.assertThat;

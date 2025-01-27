@@ -31,10 +31,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
-import autovalue.shaded.com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
