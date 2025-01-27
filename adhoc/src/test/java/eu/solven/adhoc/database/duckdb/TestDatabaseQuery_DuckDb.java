@@ -418,4 +418,30 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.isInstanceOf(DataAccessException.class)
 				.hasMessageContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}
+
+	@Test
+	public void testDistinct() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
+		AdhocQueryEngine aqe =
+				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result = aqe.execute(AdhocQuery.builder().groupByAlso("a").build(), jooqDb);
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("a", "a1"), Map.of("COUNT_ASTERISK", 2L))
+				.containsEntry(Map.of("a", "a2"), Map.of("COUNT_ASTERISK", 1L));
+	}
 }

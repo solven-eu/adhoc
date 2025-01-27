@@ -44,6 +44,7 @@ import org.jooq.SelectHavingStep;
 import org.jooq.SelectJoinStep;
 import org.jooq.SortField;
 import org.jooq.TableLike;
+import org.jooq.True;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
@@ -72,6 +73,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import max.CountAggregator;
 
 /**
  * This is especially important to make sure all calls to {@link IAdhocDatabaseTranscoder} relies on a
@@ -103,6 +105,9 @@ public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFac
 
 		// `WHERE ...`
 		Collection<Condition> dbAndConditions = toConditions(dbQuery);
+		// Typically happens on `COUNT(*)`
+		dbAndConditions.removeIf(c -> c instanceof True);
+
 		SelectConnectByStep<Record> selectFromWhere;
 		if (dbAndConditions.isEmpty()) {
 			selectFromWhere = selectFrom;
@@ -149,6 +154,7 @@ public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFac
 				dbAndConditions.add(toCondition(filter));
 			}
 		}
+
 		return dbAndConditions;
 	}
 
@@ -189,6 +195,11 @@ public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFac
 		// BEWARE it is unclear what's the proper way of quoting
 		// `unquotedName` is useful to handle input columns referencing (e.g. joined) tables as in
 		// `tableName.columnName`, while `quoted` would treat `tableName.columnName` as a columnName
+
+		if (CountAggregator.ASTERISK.equals(name)) {
+			// Typically on `COUNT(*)`
+			return DSL.unquotedName(name);
+		}
 
 		// Split by dot as we expect a regular use of `.` to reference joined tables
 		String[] namesWithoutDot = name.split("\\.");
@@ -245,6 +256,9 @@ public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFac
 		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
 			Field<?> field = DSL.field(namedColumn);
 			sqlAggFunction = DSL.max(field);
+		} else if (CountAggregator.KEY.equals(aggregationKey)) {
+			Field<?> field = DSL.field(namedColumn);
+			sqlAggFunction = DSL.count(field);
 		} else {
 			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 		}
@@ -255,9 +269,15 @@ public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFac
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
+				.filter(columnName -> !CountAggregator.ASTERISK.equals(columnName))
 				.map(transcoder::underlying)
 				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
+
+		if (oneNotNullConditions.isEmpty()) {
+			// Typically happens when the only measure is `COUNT(*)`
+			return DSL.trueCondition();
+		}
 
 		return DSL.or(oneNotNullConditions);
 	}

@@ -71,14 +71,11 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 
 	@Override
 	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
-		TranscodingContext transcodingContext =
-				TranscodingContext.builder().transcoder(dbParameters.getTranscoder()).build();
+		TranscodingContext transcodingContext = openTranscodingContext();
 
-		DSLContext dslContext = makeDsl();
+		IAdhocJooqDatabaseQueryFactory queryFactory = makeQueryFactory(transcodingContext);
 
-		IAdhocJooqDatabaseQueryFactory streamOpener = makeQueryFactory(transcodingContext, dslContext);
-
-		ResultQuery<Record> resultQuery = streamOpener.prepareQuery(dbQuery);
+		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(dbQuery);
 
 		if (dbQuery.isExplain() || dbQuery.isDebug()) {
 			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
@@ -133,6 +130,17 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 		})
 				// Filter-out the groups which does not have a single aggregatedValue
 				.filter(m -> !m.isEmpty());
+	}
+
+	private IAdhocJooqDatabaseQueryFactory makeQueryFactory(TranscodingContext transcodingContext) {
+		DSLContext dslContext = makeDsl();
+
+		IAdhocJooqDatabaseQueryFactory queryFactory = makeQueryFactory(transcodingContext, dslContext);
+		return queryFactory;
+	}
+
+	private TranscodingContext openTranscodingContext() {
+		return TranscodingContext.builder().transcoder(dbParameters.getTranscoder()).build();
 	}
 
 	protected void debugResultQuery(ResultQuery<Record> resultQuery) {

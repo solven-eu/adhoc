@@ -31,6 +31,7 @@ import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import lombok.extern.slf4j.Slf4j;
+import max.CountAggregator;
 
 @Slf4j
 public class StandardOperatorsFactory implements IOperatorsFactory {
@@ -79,9 +80,12 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
             case SumAggregator.KEY: {
                 yield new SumAggregator();
             }
-            case MaxAggregator.KEY: {
-                yield new MaxAggregator();
-            }
+			case MaxAggregator.KEY: {
+				yield new MaxAggregator();
+			}
+			case CountAggregator.KEY: {
+				yield new CountAggregator();
+			}
             default:
                 yield defaultAggregation(key, options);
         };

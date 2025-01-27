@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -552,29 +551,24 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	protected DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> makeQueryStepsDag(
 			Set<? extends IQueryOption> queryOptions,
 			IAdhocQuery adhocQuery) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> queryDag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(adhocQuery);
 
-		LinkedList<AdhocQueryStep> collectors = new LinkedList<>();
-
+		// Add explicitly requested steps
 		{
-
-			adhocQuery.getMeasureRefs().stream().map(ref -> resolveIfRef(queryOptions, ref)).forEach(queriedMeasure -> {
-				AdhocQueryStep rootStep = AdhocQueryStep.builder()
-						.filter(adhocQuery.getFilter())
-						.groupBy(adhocQuery.getGroupBy())
-						.measure(queriedMeasure)
-						.customMarker(adhocQuery.getCustomMarker())
-						.debug(adhocQuery.isDebug())
-						.build();
-
-				queryDag.addVertex(rootStep);
-				collectors.add(rootStep);
-			});
-
+			if (adhocQuery.getMeasureRefs().isEmpty()) {
+				IMeasure countAsterisk = defaultMeasure();
+				queryStepsDagBuilder.addRoot(countAsterisk);
+			} else {
+				adhocQuery.getMeasureRefs()
+						.stream()
+						.map(ref -> resolveIfRef(queryOptions, ref))
+						.forEach(queryStepsDagBuilder::addRoot);
+			}
 		}
 
-		while (!collectors.isEmpty()) {
-			AdhocQueryStep adhocSubQuery = collectors.poll();
+		// Add implicitly requested steps
+		while (queryStepsDagBuilder.hasLeftovers()) {
+			AdhocQueryStep adhocSubQuery = queryStepsDagBuilder.pollLeftover();
 
 			IMeasure measure = resolveIfRef(adhocSubQuery.getMeasure());
 
@@ -588,23 +582,31 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					IMeasure notRefMeasure = resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 
-					queryDag.addVertex(underlyingStep);
-					queryDag.addEdge(adhocSubQuery, underlyingStep);
-
-					collectors.add(underlyingStep);
+					queryStepsDagBuilder.addEdge(adhocSubQuery, underlyingStep);
 				}
 			} else {
 				throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(measure).toString());
 			}
 		}
 
-		queryDag.vertexSet().forEach(step -> {
-			if (step.getMeasure() instanceof ReferencedMeasure) {
-				throw new IllegalStateException("The DAG must not rely on ReferencedMeasure");
-			}
-		});
+		queryStepsDagBuilder.sanityChecks();
 
-		return queryDag;
+		return queryStepsDagBuilder.getQueryDag();
+	}
+
+	// Not a single measure is selected: we are doing a DISTINCT query
+
+	/**
+	 *
+	 * @return te measure to be considered if not measure is provided to the query
+	 */
+	protected IMeasure defaultMeasure() {
+		return Aggregator.builder().name("COUNT_ASTERISK").aggregationKey("COUNT").columnName("*").build();
+		// return Aggregator.builder().name("CONSTANT_1").aggregationKey("COUNT").columnName("*").build();
+	}
+
+	protected QueryStepsDagsBuilder makeQueryStepsDagsBuilder(IAdhocQuery adhocQuery) {
+		return new QueryStepsDagsBuilder(adhocQuery);
 	}
 
 }

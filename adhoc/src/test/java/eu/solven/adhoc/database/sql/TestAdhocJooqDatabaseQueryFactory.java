@@ -39,6 +39,7 @@ import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.transformers.Aggregator;
+import max.CountAggregator;
 
 public class TestAdhocJooqDatabaseQueryFactory {
 	static {
@@ -106,6 +107,21 @@ public class TestAdhocJooqDatabaseQueryFactory {
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null
+				""".trim());
+	}
+
+	@Test
+	public void testCountAsterisk() {
+		ResultQuery<Record> condition = streamOpener.prepareQuery(DatabaseQuery.builder()
+				.aggregator(Aggregator.builder()
+						.name("countStar")
+						.columnName(CountAggregator.ASTERISK)
+						.aggregationKey(CountAggregator.KEY)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select count(*) "countStar" from "someTableName"
 				""".trim());
 	}
 }
