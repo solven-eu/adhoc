@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helps reading and writing {@link AdhocMeasureBag} into resource files.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -77,8 +78,10 @@ public class MeasuresSetFromResource {
 
 	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
 
+	public static final String KEY_TYPE = "type";
+
 	private static final List<String> sortedKeys = List.of("name",
-			"type",
+			KEY_TYPE,
 			"aggregationKey",
 			"combinationKey",
 			IHasCombinationKey.KEY_UNDERLYING_NAMES,
@@ -98,53 +101,73 @@ public class MeasuresSetFromResource {
 	}
 
 	/**
-	 * @param measure
-	 *            never empty;
-	 * @return a {@link List} of measures. There may be multiple measure if the explicit measure defines underlying
-	 *         measures. The explicit measure is always first in the output list.
-	 */
-	public List<IMeasure> makeMeasure(Map<String, ?> measure) {
-		List<IMeasure> measures = new ArrayList<>();
+     * @param measureAsMap
+     *            The measure as read from some configuration file. Typically produced with Jackson.
+     * @return a {@link List} of measures. There may be multiple measureAsMap if the explicit measureAsMap defines underlying
+     *         measures. The explicit measureAsMap is always first in the output list.
+     */
+    public List<IMeasure> makeMeasure(Map<String, ?> measureAsMap) {
+        List<IMeasure> measures = new ArrayList<>();
 
-		String type = getStringParameter(measure, "type");
-		Optional<String> optName = MapPathGet.getOptionalString(measure, "name");
-		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
+        String type = getStringParameter(measureAsMap, KEY_TYPE);
+        Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, "name");
+        String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
-		IMeasure asMeasure = switch (type) {
-		case "aggregator": {
-			yield makeAggregator(measure, name);
-		}
-		case "combinator": {
-			yield makeCombinator(measure, measures, name);
-		}
-		case "filtrator": {
-			yield makeFiltrator(measure, measures, name);
-		}
-		case "bucketor": {
-			yield makeBucketor(measure, measures, name);
-		}
-		case "dispatchor": {
-			yield makeDispatchor(measure, measures, name);
-		}
-		default:
-			yield onUnknownType(type, measure, measures, name);
-		};
+        IMeasure asMeasure = switch (type) {
+            case "aggregator": {
+                yield makeAggregator(measureAsMap, name);
+            }
+            case "combinator": {
+                yield makeCombinator(measureAsMap, measures, name);
+            }
+            case "filtrator": {
+                yield makeFiltrator(measureAsMap, measures, name);
+            }
+            case "bucketor": {
+                yield makeBucketor(measureAsMap, measures, name);
+            }
+            case "dispatchor": {
+                yield makeDispatchor(measureAsMap, measures, name);
+            }
+            default:
+                yield onUnknownType(type, measureAsMap, measures, name);
+        };
 
-		// The explicit measure has to be first in the output List
-		measures.add(0, asMeasure);
+        // The explicit measureAsMap has to be first in the output List
+        measures.addFirst(asMeasure);
 
-		return measures;
-	}
+        return measures;
+    }
 
 	/**
 	 * @param type
-	 * @param measure
+	 * @param measureAsMap
 	 * @param measures
 	 * @param name
 	 * @return the default behavior is to throw
 	 */
-	protected IMeasure onUnknownType(String type, Map<String, ?> measure, List<IMeasure> measures, String name) {
-		throw new IllegalArgumentException("Unexpected value: " + type);
+	protected IMeasure onUnknownType(String type, Map<String, ?> measureAsMap, List<IMeasure> measures, String name) {
+		Class<? extends IMeasure> clazz;
+		try {
+			clazz = (Class<? extends IMeasure>) Class.forName(type);
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Issue loading %s".formatted(type), e);
+		}
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/4486787/jackson-with-json-unrecognized-field-not-marked-as-ignorable
+		// objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+		try {
+			measureAsMap = new LinkedHashMap<>(measureAsMap);
+			measureAsMap.remove(KEY_TYPE);
+
+			IMeasure measure = objectMapper.convertValue(measureAsMap, clazz);
+
+			return measure;
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException("Unexpected value: " + type, e);
+		}
 	}
 
 	protected IMeasure makeDispatchor(Map<String, ?> measure, List<IMeasure> measures, String name) {
@@ -325,7 +348,7 @@ public class MeasuresSetFromResource {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param options
 	 * @param key
 	 * @return the option minimizing its distance to the requested key.
@@ -454,6 +477,12 @@ public class MeasuresSetFromResource {
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
 	protected Map<String, ?> removeUselessProperties(IMeasure measure, Map<String, ?> map) {
+		if (map.containsKey(KEY_TYPE)) {
+			// This may happen with custom IMeasure with a `.getType()`
+			throw new IllegalStateException(
+					"`type` is a reserved getter for IMeasure. Can not handle: %s".formatted(map));
+		}
+
 		Comparator<String> comparing =
 				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
 		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
@@ -461,7 +490,7 @@ public class MeasuresSetFromResource {
 		clean.putAll(map);
 
 		if (measure instanceof Aggregator a) {
-			clean.put("type", "aggregator");
+			clean.put(KEY_TYPE, "aggregator");
 			if (SumAggregator.KEY.equals(a.getAggregationKey())) {
 				clean.remove("aggregationKey");
 			}
@@ -469,7 +498,7 @@ public class MeasuresSetFromResource {
 				clean.remove("columnName");
 			}
 		} else if (measure instanceof Combinator c) {
-			clean.put("type", "combinator");
+			clean.put(KEY_TYPE, "combinator");
 
 			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
@@ -480,11 +509,11 @@ public class MeasuresSetFromResource {
 				clean.remove("combinationOptions");
 			}
 		} else if (measure instanceof Filtrator f) {
-			clean.put("type", "filtrator");
+			clean.put(KEY_TYPE, "filtrator");
 		} else if (measure instanceof Dispatchor d) {
-			clean.put("type", "dispatchor");
+			clean.put(KEY_TYPE, "dispatchor");
 		} else if (measure instanceof Bucketor b) {
-			clean.put("type", "bucketor");
+			clean.put(KEY_TYPE, "bucketor");
 
 			if (b.getGroupBy() instanceof GroupByColumns byColumns) {
 				// We replace Jackson representation by a simple List of String
@@ -504,7 +533,7 @@ public class MeasuresSetFromResource {
 				clean.remove("combinationOptions");
 			}
 		} else {
-			onUnknownMeasureType(measure);
+			onUnknownMeasureType(measure, clean);
 		}
 
 		if (measure.getTags().isEmpty()) {
@@ -514,8 +543,9 @@ public class MeasuresSetFromResource {
 		return clean;
 	}
 
-	protected void onUnknownMeasureType(IMeasure measure) {
-		throw new UnsupportedOperationException(
-				"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(measure)));
+	protected void onUnknownMeasureType(IMeasure measure, Map<String, Object> asMap) {
+		log.warn("Unknown measureType: {}", measure);
+
+		asMap.put(KEY_TYPE, measure.getClass().getName());
 	}
 }

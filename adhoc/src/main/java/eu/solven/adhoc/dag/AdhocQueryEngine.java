@@ -483,14 +483,28 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			Object value = input.get(groupBy);
 
 			if (value == null) {
-				// The input lack a groupBy coordinate: we exclude it
-				return Optional.empty();
+				if (input.containsKey(groupBy)) {
+					// We received an explicit null
+					// Typically happens on a failed LEFT JOIN
+					value = valueOnNull(groupBy);
+				} else {
+					// The input lack a groupBy coordinate: we exclude it
+					// TODO What's a legitimate case leading to this?
+					return Optional.empty();
+				}
 			}
 
 			coordinates.put(groupBy, value);
 		}
 
 		return Optional.of(AdhocSliceAsMap.fromMap(coordinates));
+	}
+
+	/**
+	 * The value to inject in place of a NULL. Returning a null-reference is not supported.
+	 */
+	protected Object valueOnNull(String groupBy) {
+		return "NULL";
 	}
 
 	/**

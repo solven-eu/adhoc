@@ -36,6 +36,7 @@ import com.activeviam.copper.CopperRegistrations;
 import com.activeviam.copper.pivot.pp.LeafIdentityPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
+import com.google.common.collect.ImmutableMap;
 import com.qfs.condition.impl.BaseConditions;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
@@ -159,6 +160,10 @@ public class TestActivePivotMeasuresToAdhoc {
 								.name("someStoreLookupMeasure")
 								.underlying("contributors.COUNT")
 								.combinationKey(StoreLookupPostProcessor.PLUGIN_KEY)
+								.combinationOptions(ImmutableMap.<String, Object>builder()
+										.put("storeName", "someStoreName")
+										.put("fields", "field0,field1")
+										.build())
 								.build());
 	}
 

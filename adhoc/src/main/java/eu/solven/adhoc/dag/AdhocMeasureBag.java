@@ -110,7 +110,6 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	 * This is the DAG of measure. It is a simplistic view of the measures graph, as it may not reflect the impacts of
 	 * {@link IMeasure} requesting underlying measures with custom {@link IAdhocFilter} or {@link IAdhocGroupBy}.
 	 * 
-	 * @param adhocQuery
 	 * @return
 	 */
 	public DirectedAcyclicGraph<IMeasure, DefaultEdge> makeMeasuresDag() {

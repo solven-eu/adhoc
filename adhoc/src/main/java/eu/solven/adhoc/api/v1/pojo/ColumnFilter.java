@@ -55,7 +55,9 @@ public class ColumnFilter implements IColumnFilter {
 	@NonNull
 	final IValueMatcher valueMatcher;
 
-	// if the tested input is null, we return this flag
+	// If the input lacks the column, should we behave as if containing an explicit null, or return false.
+	// This flag does not have an effect on all IValueMatcher, but only on matchers which may returns true on null.
+	// For instance, it is noop for EqualsMatcher, which accepts only a non-null operand.
 	@Builder.Default
 	final boolean nullIfAbsent = true;
 
@@ -74,10 +76,18 @@ public class ColumnFilter implements IColumnFilter {
 		return valueMatcher;
 	}
 
+	public String toString() {
+		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+			return "%s=%s".formatted(column, equalsMatcher.getOperand());
+		} else {
+			return "%s matches `%s`".formatted(column, valueMatcher);
+		}
+	}
+
 	public static class ColumnFilterBuilder {
 		/**
 		 * Used when we want this to match cases where the column is null
-		 * 
+		 *
 		 * @return
 		 */
 		public ColumnFilterBuilder matchNull() {

@@ -23,7 +23,9 @@
 package eu.solven.adhoc.atoti;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -83,6 +85,7 @@ public class ActivePivotMeasuresToAdhoc {
 	public AdhocMeasureBag asBag(IActivePivotDescription desc) {
 		AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().build();
 
+		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
 		desc.getMeasuresDescription().getNativeMeasures().forEach(nativeMeasure -> {
 			String aggregationKey;
 			if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
@@ -102,6 +105,7 @@ public class ActivePivotMeasuresToAdhoc {
 			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
 		});
 
+		// Add (pre-)aggregated measures.
 		desc.getMeasuresDescription().getAggregatedMeasuresDescription().forEach(preAggregatedMeasure -> {
 			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
 					.name(preAggregatedMeasure.getName())
@@ -151,11 +155,15 @@ public class ActivePivotMeasuresToAdhoc {
 		}
 	}
 
+	/**
+	 * Generally over-ridden on a per-project basis
+	 * 
+	 * @param measure
+	 * @return
+	 */
 	protected List<IMeasure> onAdvancedPostProcessor(IPostProcessorDescription measure) {
-		Properties properties = measure.getProperties();
-		List<String> underlyingNames = getUnderlyingNames(properties);
-
-		return List.of(Combinator.builder().name(measure.getName()).underlyings(underlyingNames).build());
+		log.warn("Measure={} may not be properly converted as it is an advancedPostProcessor", measure.getName());
+		return onBasicPostProcessor(measure);
 	}
 
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
@@ -170,6 +178,15 @@ public class ActivePivotMeasuresToAdhoc {
 		} else {
 			combinatorBuilder.underlyings(underlyingNames);
 		}
+
+		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
+
+		combinatorBuilder.combinationOptions(combinatorOptions);
 
 		return List.of(combinatorBuilder.build());
 	}
@@ -338,9 +355,10 @@ public class ActivePivotMeasuresToAdhoc {
 	}
 
 	public static List<String> getPropertyList(Properties properties, String key) {
-		String underlyingMeasures = properties.getProperty(key, "").trim();
-		return Stream.of(underlyingMeasures.split(IPostProcessor.SEPARATOR))
+		String propertyAsString = properties.getProperty(key, "").trim();
+		return Stream.of(propertyAsString.split(IPostProcessor.SEPARATOR))
 				.filter(p -> !Strings.isNullOrEmpty(p))
+				// We strip, as these are usually syntactic sugar in XML-files
 				.map(String::strip)
 				.toList();
 	}

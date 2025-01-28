@@ -341,6 +341,32 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
+	public void testCustomMeasure() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+
+		measureBag.addMeasure(new CustomMeasureForResource());
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "k1",
+				  "type" : "aggregator"
+				}, {
+				  "type" : "eu.solven.adhoc.resource.CustomMeasureForResource",
+				  "underlyingNames" : [ ]
+				} ]
+				""".strip());
+	}
+
+	@Test
 	public void testBasicFile() throws IOException {
 		AdhocBagOfMeasureBag obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
 

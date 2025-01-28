@@ -52,6 +52,8 @@ public class TestColumnFilter {
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+
+		Assertions.assertThat(kIsNull.toString()).isEqualTo("");
 	}
 
 	@Test

@@ -92,7 +92,9 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 
 	@Test
 	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList())
+				.isInstanceOf(DataAccessException.class)
+				.hasMessageContaining("Table with name someFactTable does not exist!");
 	}
 
 	private void initTables() {
@@ -172,10 +174,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("productId", "carot"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("productId", "banana"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 
@@ -196,10 +198,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("p.productName", "Carotte"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("p.productName", "Carotte"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("p.productName", "Carotte"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("p.productName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 
@@ -220,10 +222,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("f.productId", "carot"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("f.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("f.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("f.productId", "banana"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 
@@ -244,10 +246,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("p.productId", "carot"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("p.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("p.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("p.productId", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 
@@ -268,10 +270,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("productId", "carot"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("productId", "carot"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("productId", "banana"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 
@@ -292,10 +294,10 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("c.countryName", "France"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of("c.countryName", "France"), Map.of(k1Sum.getName(), 0L + 123));
+					.containsEntry(Map.of("c.countryName", "France"), Map.of(k1Sum.getName(), 0L + 123))
+					.containsEntry(Map.of("c.countryName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.hasSize(2);
 		}
 	}
 }
