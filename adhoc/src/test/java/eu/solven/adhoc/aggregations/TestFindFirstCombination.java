@@ -35,7 +35,7 @@ public class TestFindFirstCombination {
 	@Test
 	public void testEmpty() {
 		Assertions.assertThat(combination.combine(Arrays.asList())).isNull();
-		Assertions.assertThat(combination.combine(Arrays.asList(new Object[]{null}))).isNull();
+		Assertions.assertThat(combination.combine(Arrays.asList(new Object[] { null }))).isNull();
 	}
 
 	@Test

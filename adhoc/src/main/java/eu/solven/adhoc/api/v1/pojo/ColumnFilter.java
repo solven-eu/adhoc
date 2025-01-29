@@ -80,7 +80,12 @@ public class ColumnFilter implements IColumnFilter {
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
 			return "%s=%s".formatted(column, equalsMatcher.getOperand());
 		} else {
-			return "%s matches `%s`".formatted(column, valueMatcher);
+			if (valueMatcher.match(null)) {
+				return "%s matches `%s` (nullIfAbsent=%s)".formatted(column, valueMatcher, nullIfAbsent);
+			} else {
+				// null being not matched, there is no point in logging about `nullIfAbsent`
+				return "%s matches `%s`".formatted(column, valueMatcher);
+			}
 		}
 	}
 

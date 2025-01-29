@@ -41,19 +41,30 @@ import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.execute.FilterHelpers;
 
 public class TestColumnFilter {
+
+	/**
+	 *
+	 * @param key
+	 * @param value
+	 * @return a {@link Map} with given entry, accepting null key and value
+	 */
+	private static Map<String, Object> mapOfMayBeNull(String key, Object value) {
+		Map<String, Object> explicitNull = new HashMap<>();
+		explicitNull.put(key, value);
+		return explicitNull;
+	}
+
 	@Test
 	public void testMatchNull() {
 		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matchNull().build();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isTrue();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isTrue();
+		Assertions.assertThat(FilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
 
-		Assertions.assertThat(kIsNull.toString()).isEqualTo("");
+		Assertions.assertThat(kIsNull.toString()).isEqualTo("k matches `NullMatcher()` (nullIfAbsent=true)");
 	}
 
 	@Test
@@ -61,9 +72,7 @@ public class TestColumnFilter {
 		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matchNull().nullIfAbsent(false).build();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isTrue();
+		Assertions.assertThat(FilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
@@ -71,42 +80,38 @@ public class TestColumnFilter {
 
 	@Test
 	public void testMatchNotNull() {
-		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matchNull().build();
-		NotFilter kIsNotNull = NotFilter.builder().negated(kIsNull).build();
+		ColumnFilter filterToNegate = ColumnFilter.builder().column("k").matchNull().build();
+		NotFilter filter = NotFilter.builder().negated(filterToNegate).build();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNotNull, Map.of())).isFalse();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNotNull, explicitNull)).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of())).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNotNull, Map.of("k", "v"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filterToNegate, Map.of("k", "v2"))).isFalse();
 	}
 
 	@Test
 	public void testJavaUtilSetOf() {
-		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matching(Set.of("v")).build();
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Set.of("v")).build();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of())).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v2"))).isFalse();
+
+		Assertions.assertThat(filter.toString()).isEqualTo("k matches `InMatcher{size=1, #0=v}`");
 	}
 
 	@Test
 	public void testCollectionsWithNull() {
-		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matching(Arrays.asList(null, "v")).build();
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Arrays.asList(null, "v")).build();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isTrue();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of())).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filter, mapOfMayBeNull("k", null))).isTrue();
 
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v2"))).isFalse();
 	}
 
 	@Test
@@ -114,9 +119,7 @@ public class TestColumnFilter {
 		ColumnFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isTrue();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isTrue();
+		Assertions.assertThat(FilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isTrue();
@@ -127,9 +130,7 @@ public class TestColumnFilter {
 		IAdhocFilter kIsNull = ColumnFilter.isIn("k", "v");
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isFalse();
+		Assertions.assertThat(FilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
@@ -140,9 +141,7 @@ public class TestColumnFilter {
 		IAdhocFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of())).isFalse();
-		Map<String, Object> explicitNull = new HashMap<>();
-		explicitNull.put("k", null);
-		Assertions.assertThat(FilterHelpers.match(kIsNull, explicitNull)).isFalse();
+		Assertions.assertThat(FilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
 
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
 		Assertions.assertThat(FilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();

@@ -54,7 +54,7 @@ public class TestAndFilter {
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(AndFilter.and(filters).toString())
-				.contains("valueMatcher=EqualsMatcher(operand=0)", "valueMatcher=EqualsMatcher(operand=0)")
+				.contains("#0=k=0", "#1=k=1")
 				.doesNotContain("7")
 				.hasSizeLessThan(512);
 	}

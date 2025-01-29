@@ -157,3 +157,8 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
         .join(DSL.table(DSL.name(joinedFurtherTable)).as("c"))
         .using(DSL.field("countryId"));
 ```
+
+# Roadmap
+
+- Converge IAdhocFilter with AdhocQueryStep
+- Enable visual-filter, e.g. `groupBy(country in ['FR', 'UK']` which is not the same as `WHERE country in ['FR', 'UK']` especially on a measure like `/ Europe`

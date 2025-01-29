@@ -72,7 +72,7 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IH
 	@Default
 	Object customMarker = null;
 
-	// Used to store transient information, like slow-to-evaluate informations
+	// Used to store transient information, like slow-to-evaluate information
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
