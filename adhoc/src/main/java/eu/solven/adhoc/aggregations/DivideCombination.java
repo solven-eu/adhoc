@@ -35,12 +35,17 @@ public class DivideCombination implements ICombination {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyingValues.size()));
 		}
 
-		if (underlyingValues.get(0) instanceof Number numerator) {
+		Object rawNumerator = underlyingValues.get(0);
+		if (rawNumerator instanceof Number numerator) {
 			if (underlyingValues.get(1) instanceof Number denominator) {
 				return numerator.doubleValue() / denominator.doubleValue();
 			} else {
 				return Double.NaN;
 			}
+		} else if (rawNumerator == null) {
+			// We assimilate null to 0D: 0D / anything is 0D
+			// BEWARE We may want a special behavior if denominator is also 0
+			return 0D;
 		} else {
 			return Double.NaN;
 		}

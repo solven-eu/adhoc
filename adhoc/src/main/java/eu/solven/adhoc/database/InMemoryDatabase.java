@@ -74,7 +74,7 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 	}
 
 	@Override
-	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
 		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Set<String> queriedColumns = new HashSet<>();
@@ -89,7 +89,7 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 			underlyingColumns.add(underlying);
 		});
 
-		return this.stream().filter(row -> {
+		return new SuppliedRowsStream(() -> this.stream().filter(row -> {
 			return FilterHelpers.match(transcodingContext, dbQuery.getFilter(), row);
 		}).map(row -> {
 			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);
@@ -98,6 +98,6 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 			withSelectedColumns.keySet().retainAll(underlyingColumns);
 
 			return withSelectedColumns;
-		}).map(row -> transcodeFromDb(transcodingContext, row));
+		}).map(row -> transcodeFromDb(transcodingContext, row)));
 	}
 }

@@ -29,7 +29,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -101,13 +100,13 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 
 		{
 			DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 			Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 		}
 
 		{
 			DatabaseQuery qK1K2 = DatabaseQuery.builder().aggregators(Set.of(k1Sum, k2Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
 			Assertions.assertThat(dbStream)
 					.hasSize(1)
 					.contains(Map.of("k1", BigDecimal.valueOf(0D + 123), "k2", BigDecimal.valueOf(0D + 123)));
@@ -132,7 +131,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 
 			// We request both k1 and k, which are the same in DB
 			DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum, kSum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 			Assertions.assertThat(dbStream)
 					.hasSize(1)
 					.contains(Map.of("k1", BigDecimal.valueOf(0D + 123), "k", BigDecimal.valueOf(0D + 123)));
@@ -164,13 +163,13 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 
 		{
 			DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 			Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 234)));
 		}
 
 		{
 			DatabaseQuery qK1K2 = DatabaseQuery.builder().aggregators(Set.of(k1Sum, k2Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
 			Assertions.assertThat(dbStream)
 					.hasSize(1)
 					.contains(Map.of("k1", BigDecimal.valueOf(0D + 234), "k2", BigDecimal.valueOf(0D + 345)));
@@ -181,7 +180,7 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregator.KEY).build();
 
 			DatabaseQuery qK1K2 = DatabaseQuery.builder().aggregators(Set.of(k1Sum, k2Sum, k3Sum, k4Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).collect(Collectors.toList());
+			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
 			Assertions.assertThat(dbStream)
 					.hasSize(1)
 					.contains(Map.of("k1",

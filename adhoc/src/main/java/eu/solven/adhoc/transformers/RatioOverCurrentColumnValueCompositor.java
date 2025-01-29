@@ -29,11 +29,13 @@ import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
- * This defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures. The intermediate
- * measures are necessarily anonymous (really?).
- * 
- * @author Benoit Lacelle
+ * Technically-wise, this defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures.
+ * The intermediate measures are necessarily anonymous (really?). In other words, it demonstrates how a pattern of
+ * measures can be applied multiple times without duplication.
+ * <p>
+ * Functionally-wise, this evaluates the ratio
  *
+ * @author Benoit Lacelle
  */
 public class RatioOverCurrentColumnValueCompositor {
 	public AdhocMeasureBag addTo(AdhocMeasureBag measureBag, String column, String underlying) {
@@ -53,20 +55,24 @@ public class RatioOverCurrentColumnValueCompositor {
 						.groupBy(GroupByColumns.named(column))
 						.build())
 
-				// Filter the specific country: if we were filtering color=red, this filters only country
+				// Filter the specific country: if we were filtering `country=FR&color=red`, this filters only
+				// `country=FR`
 				.addMeasure(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
 						.filterOnly(column)
 						.build())
 
+				// Computes the actual ratio from current slice (e.g. `country=FR&color=red`) over the parent slice
+				// (e.g. `country=FR`)
 				.addMeasure(Combinator.builder()
 						.name(ratioMeasureName)
 						.underlyings(Arrays.asList(sliceMeasureName, wholeMeasureName))
 						.combinationKey(DivideCombination.KEY)
 						.build())
 
-				// Ensure given column is expressed
+				// Ensure given column is expressed: if column is not expressed, we would not compute the ratio over the
+				// missing column (we may also want to always return 1).
 				.addMeasure(Columnator.builder()
 						.name(validMeasureName)
 						.underlying(ratioMeasureName)

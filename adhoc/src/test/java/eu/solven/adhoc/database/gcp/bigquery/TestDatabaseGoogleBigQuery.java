@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.impl.DSL;
@@ -101,7 +100,7 @@ public class TestDatabaseGoogleBigQuery {
 						.build()))
 				.topClause(AdhocTopClause.builder().column(ReferencedColumn.ref("view_count")).limit(10).build())
 				.debug(true)
-				.build()).collect(Collectors.toList());
+				.build()).toList();
 
 		Assertions.assertThat(rows).hasSize(10);
 

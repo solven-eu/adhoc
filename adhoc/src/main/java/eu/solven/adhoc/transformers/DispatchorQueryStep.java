@@ -73,15 +73,14 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 
 		List<IWhereGroupbyAdhocQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
 
-		if (step.isDebug()) {
+		if (isDebug()) {
 			log.info("[DEBUG] {} underlyingSteps given step={}", measurelessSteps, step);
 		}
 
-		return measurelessSteps.stream().map(subStep -> {
-			return AdhocQueryStep.edit(subStep)
-					.measure(ReferencedMeasure.builder().ref(dispatchor.getUnderlying()).build())
-					.build();
-		}).collect(Collectors.toList());
+		ReferencedMeasure refToUnderlying = ReferencedMeasure.builder().ref(dispatchor.getUnderlying()).build();
+		return measurelessSteps.stream()
+				.map(subStep -> AdhocQueryStep.edit(subStep).measure(refToUnderlying).build())
+				.collect(Collectors.toList());
 
 	}
 

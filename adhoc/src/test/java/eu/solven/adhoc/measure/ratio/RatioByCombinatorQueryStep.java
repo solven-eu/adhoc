@@ -20,28 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.measure.ratio;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
+import eu.solven.adhoc.transformers.AHasUnderlyingQuerySteps;
+import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
-	final ICombinator combinator;
+public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
+	final RatioByCombinator combinator;
 	final IOperatorsFactory transformationFactory;
 	@Getter
 	final AdhocQueryStep step;
@@ -57,20 +62,27 @@ public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
-		return getUnderlyingNames().stream().map(underlyingName -> {
-			return AdhocQueryStep.edit(step)
-					// Change the requested measureName to the underlying measureName
-					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
-					.build();
-		}).toList();
+		String underlying = combinator.getUnderlying();
+
+		AdhocQueryStep numerator = AdhocQueryStep.edit(step)
+				// Change the requested measureName to the underlying measureName
+				.measure(ReferencedMeasure.builder().ref(underlying).build())
+				.filter(AndFilter.and(step.getFilter(), combinator.getNumeratorFilter()))
+				.build();
+
+		AdhocQueryStep denominator = AdhocQueryStep.edit(step)
+				// Change the requested measureName to the underlying measureName
+				.measure(ReferencedMeasure.builder().ref(underlying).build())
+				.filter(AndFilter.and(step.getFilter(), combinator.getDenominatorFilter()))
+				.build();
+
+		return Arrays.asList(numerator, denominator);
 	}
 
 	@Override
 	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
-		if (underlyings.size() != getUnderlyingNames().size()) {
-			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
-		} else if (underlyings.isEmpty()) {
-			return CoordinatesToValues.empty();
+		if (underlyings.size() != 2) {
+			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
 		ICoordinatesToValues output = makeCoordinateToValues();

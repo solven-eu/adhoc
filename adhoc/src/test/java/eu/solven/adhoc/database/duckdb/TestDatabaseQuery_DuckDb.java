@@ -27,7 +27,6 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -84,7 +83,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 	public void testEmptyDb() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 
 		Assertions.assertThat(dbStream).isEmpty();
 	}
@@ -94,7 +93,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}
@@ -117,7 +116,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 
 		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
@@ -141,7 +140,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching("a1").build())
 				.explain(true)
-				.build()).collect(Collectors.toList());
+				.build()).toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
 	}
@@ -162,7 +161,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.explain(true)
-				.build()).collect(Collectors.toList());
+				.build()).toList();
 
 		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
@@ -181,8 +180,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream =
-				jooqDb.openDbStream(DatabaseQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build())
-						.collect(Collectors.toList());
+				jooqDb.openDbStream(DatabaseQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
 		Assertions.assertThat(dbStream)
 				.hasSize(3)
@@ -209,7 +207,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("with space").matching("a1").build())
-				.build()).collect(Collectors.toList());
+				.build()).toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}

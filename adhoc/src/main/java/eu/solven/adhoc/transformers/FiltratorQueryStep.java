@@ -48,8 +48,6 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 		return filtrator.getUnderlyingNames();
 	}
 
-	;
-
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A {@link List} of filters. Typically used by {@link IAdhocQuery}, or {@link IExclusionFilter}.
+ * A {@link List} of filters. Typically used by {@link IAdhocQuery}, or {@link eu.solven.adhoc.api.v1.pojo.NotFilter}.
  * 
  * @author Benoit Lacelle
  *

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.aggregations;
 
-import java.util.List;
+import java.util.Arrays;
 
-/**
- * An {@link IWhereGroupbyAdhocQuery} is view of a query, not expressing its measures.
- *
- * @author Benoit Lacelle
- */
-public interface IWhereGroupbyAdhocQuery extends IHasFilters, IHasGroupBy {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	/**
-	 * The filter of current query. A filter refers to the condition for the data to be included. An AND over an empty
-	 * {@link List} means the whole data has to be included. Exclusions can be done through
-	 * {@link eu.solven.adhoc.api.v1.pojo.NotFilter}
-	 *
-	 * @return a list of filters (to be interpreted as an OR over AND simple conditions).
-	 */
-	@Override
-	IAdhocFilter getFilter();
+public class TestDivideCombination {
+	@Test
+	public void testSimpleCases() {
+		DivideCombination combination = new DivideCombination();
 
-	/**
-	 * The columns amongst which the result has to be ventilated/sliced.
-	 *
-	 * @return a Set of columns
-	 */
-	@Override
-	IAdhocGroupBy getGroupBy();
+		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList()))
+				.isInstanceOf(IllegalArgumentException.class);
+
+		Assertions.assertThat(combination.combine(Arrays.asList(12, 24))).isEqualTo(0.5D);
+		Assertions.assertThat(combination.combine(Arrays.asList(12D, 24D))).isEqualTo(0.5D);
+
+		Assertions.assertThat(combination.combine(Arrays.asList(null, 234D))).isEqualTo(0.0D);
+		Assertions.assertThat(combination.combine(Arrays.asList(132, null))).isEqualTo(Double.NaN);
+
+		Assertions.assertThat(combination.combine(Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
+
+		Assertions.assertThat(combination.combine(Arrays.asList(12, 0))).isEqualTo(Double.POSITIVE_INFINITY);
+	}
 }

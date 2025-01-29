@@ -24,6 +24,8 @@ package eu.solven.adhoc.query;
 
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.api.v1.IHasCustomMarker;
+import eu.solven.adhoc.api.v1.IIsDebugable;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import lombok.Builder;
@@ -37,7 +39,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class MeasurelessQuery implements IWhereGroupbyAdhocQuery {
+public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsDebugable {
 
 	@NonNull
 	IAdhocFilter filter;
@@ -47,10 +49,16 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery {
 
 	Object customMarker;
 
+	// This is part of hashcodeEquals
+	// It means we may have a different queryPlan when a subset of querySteps are debuggable
+	@Builder.Default
+	boolean debug = false;
+
 	public static MeasurelessQueryBuilder edit(AdhocQueryStep step) {
 		return MeasurelessQuery.builder()
 				.filter(step.getFilter())
 				.groupBy(step.getGroupBy())
-				.customMarker(step.getCustomMarker());
+				.customMarker(step.getCustomMarker())
+				.debug(step.isDebug());
 	}
 }

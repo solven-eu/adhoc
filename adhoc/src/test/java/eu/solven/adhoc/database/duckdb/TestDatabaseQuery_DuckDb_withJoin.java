@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -131,7 +130,7 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	public void testEmptyDb() {
 		initTables();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).collect(Collectors.toList());
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
 
 		Assertions.assertThat(dbStream).isEmpty();
 	}

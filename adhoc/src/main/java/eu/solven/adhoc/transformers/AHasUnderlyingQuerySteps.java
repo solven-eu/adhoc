@@ -44,10 +44,6 @@ public abstract class AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySte
 
 	protected abstract IMeasure getMeasure();
 
-	// public List<String> getUnderlyingNames() {
-	// return getMeasure().getUnderlyingNames();
-	// }
-
 	protected abstract AdhocQueryStep getStep();
 
 	protected boolean isDebug() {

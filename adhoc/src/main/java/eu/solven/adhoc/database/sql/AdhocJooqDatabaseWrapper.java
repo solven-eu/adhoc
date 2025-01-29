@@ -42,6 +42,8 @@ import org.jooq.exception.InvalidResultException;
 import org.jooq.impl.DSL;
 
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IRowsStream;
+import eu.solven.adhoc.database.SuppliedRowsStream;
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.database.transcoder.IAdhocDatabaseReverseTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
@@ -70,7 +72,7 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 	}
 
 	@Override
-	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocJooqDatabaseQueryFactory queryFactory = makeQueryFactory(transcodingContext);
@@ -86,6 +88,12 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 
 		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
 
+		return new SuppliedRowsStream(() -> cleanStream(dbQuery, dbStream, transcodingContext));
+	}
+
+	private Stream<Map<String, ?>> cleanStream(DatabaseQuery dbQuery,
+			Stream<Map<String, ?>> dbStream,
+			TranscodingContext transcodingContext) {
 		return dbStream.filter(row -> {
 			// We could have a fallback, to filter manually when it is not doable by the DB (or we do not know how to
 			// build the proper filter)

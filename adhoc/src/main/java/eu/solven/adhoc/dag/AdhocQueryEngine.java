@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.greenrobot.eventbus.EventBus;
 import org.jgrapht.Graphs;
@@ -55,6 +54,7 @@ import eu.solven.adhoc.aggregations.collection.UnionSetAggregator;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
@@ -104,7 +104,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			IAdhocDatabaseWrapper db) {
 		Set<DatabaseQuery> prepared = prepare(queryOptions, adhocQuery);
 
-		Map<DatabaseQuery, Stream<Map<String, ?>>> dbQueryToStream = new HashMap<>();
+		Map<DatabaseQuery, IRowsStream> dbQueryToStream = new HashMap<>();
 		for (DatabaseQuery dbQuery : prepared) {
 			dbQueryToStream.put(dbQuery, db.openDbStream(dbQuery));
 		}
@@ -114,7 +114,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected ITabularView execute(IAdhocQuery adhocQuery,
 			Set<? extends IQueryOption> queryOptions,
-			Map<DatabaseQuery, Stream<Map<String, ?>>> dbQueryToSteam) {
+			Map<DatabaseQuery, IRowsStream> dbQueryToSteam) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates =
 				makeQueryStepsDag(queryOptions, adhocQuery);
 
@@ -222,7 +222,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(DatabaseQuery dbQuery,
-			Stream<Map<String, ?>> stream,
+			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
@@ -290,33 +290,34 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					.map(edge -> Graphs.getOppositeVertex(fromAggregatesToQueried, edge, queryStep))
 					.toList();
 
-			Map<String, AdhocQueryStep> underlyingToStep = new HashMap<>();
-			underlyingSteps.forEach(step -> {
-				String underlyingName = resolveIfRef(step.getMeasure()).getName();
-				AdhocQueryStep removed = underlyingToStep.put(underlyingName, step);
-				if (removed != null) {
-					// TODO Is this a legit case for Dispatcher?
-					throw new IllegalArgumentException("Multiple steps for %s".formatted(underlyingName));
-				}
-			});
+			// Map<String, AdhocQueryStep> underlyingToStep = new HashMap<>();
+			// underlyingSteps.forEach(step -> {
+			// String underlyingName = resolveIfRef(step.getMeasure()).getName();
+			// AdhocQueryStep removed = underlyingToStep.put(underlyingName, step);
+			// if (removed != null) {
+			// // TODO Is this a legit case for Dispatcher?
+			// throw new IllegalArgumentException("Multiple steps for %s".formatted(underlyingName));
+			// }
+			// });
 
 			if (underlyingSteps.isEmpty()) {
 				// This may happen on a Columnator which is missing a required column
 				return;
 			} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				List<ICoordinatesToValues> underlyings =
-						hasUnderlyingMeasures.getUnderlyingNames().stream().map(underlyingToStep::get).map(step -> {
-							ICoordinatesToValues values = queryStepToValues.get(step);
+				List<ICoordinatesToValues> underlyings = underlyingSteps.stream().map(underlyingStep -> {
+					ICoordinatesToValues values = queryStepToValues.get(underlyingStep);
 
-							if (values == null) {
-								throw new IllegalStateException("The DAG missed step=%s".formatted(step));
-							}
+					if (values == null) {
+						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+					}
 
-							return values;
-						}).collect(Collectors.toList());
+					return values;
+				}).toList();
 
-				ICoordinatesToValues coordinatesToValues =
-						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep).produceOutputColumn(underlyings);
+				// BEWARE It looks weird we have to call again `.wrapNode`
+				IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
+						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+				ICoordinatesToValues coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
 
 				eventBus.post(QueryStepIsCompleted.builder()
 						.querystep(queryStep)
@@ -352,7 +353,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(DatabaseQuery adhocQuery,
-			Stream<Map<String, ?>> stream,
+			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
@@ -372,7 +373,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(adhocQuery);
 
 		// Process the underlying stream of data to execute aggregations
-		stream.forEach(input -> {
+		stream.asMap().forEach(input -> {
 			forEachStreamedRow(adhocQuery,
 					columnToAggregators,
 					input,
@@ -487,6 +488,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
 					value = valueOnNull(groupBy);
+
+					assert value != null : "`null` is not a legal column value";
 				} else {
 					// The input lack a groupBy coordinate: we exclude it
 					// TODO What's a legitimate case leading to this?
@@ -502,8 +505,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	/**
 	 * The value to inject in place of a NULL. Returning a null-reference is not supported.
+	 *
+	 * @param column
+	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
 	 */
-	protected Object valueOnNull(String groupBy) {
+	protected Object valueOnNull(String column) {
 		return "NULL";
 	}
 

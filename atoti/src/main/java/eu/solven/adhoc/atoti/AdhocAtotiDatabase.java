@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
@@ -41,6 +40,8 @@ import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IRowsStream;
+import eu.solven.adhoc.database.SuppliedRowsStream;
 import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -64,7 +65,7 @@ public class AdhocAtotiDatabase implements IAdhocDatabaseWrapper {
 	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
-	public Stream<Map<String, ?>> openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
 		IActivePivotVersion ap = apManager.getActivePivots().get(inferPivotId(dbQuery)).getHead();
 
 		String pivotId = ap.getId();
@@ -92,7 +93,7 @@ public class AdhocAtotiDatabase implements IAdhocDatabaseWrapper {
 			return true;
 		});
 
-		return asList.stream();
+		return new SuppliedRowsStream(asList::stream);
 	}
 
 	private Map<String, ?> asMap(DatabaseQuery dbQuery, ICellSet result, int locationIndex) {

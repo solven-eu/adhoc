@@ -144,7 +144,7 @@ Explain will provide additional information about the on-going query. It will ty
 
 # Databases
 
-# SQL with JooQ
+## SQL with JooQ
 
 SQL integration is provided with the help of JooQ. To query a complex star/snowflake schema (i.e. with many/deep joins), one should provide a `TableLike` expressing these `JOIN`s.
 
@@ -158,7 +158,11 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
         .using(DSL.field("countryId"));
 ```
 
-# Roadmap
+## Handling null (e.g. from failed JOINs)
 
-- Converge IAdhocFilter with AdhocQueryStep
+
+# Roadmap / Limitations to lift soon
+
+- Converge `IAdhocFilter` (filtering the data available to the query) with `IAdhocSlice.getRawFilter` (expressing the `filters` of current slice).
 - Enable visual-filter, e.g. `groupBy(country in ['FR', 'UK']` which is not the same as `WHERE country in ['FR', 'UK']` especially on a measure like `/ Europe`
+- Make it simple to extract a column single equalsFilter from a potentially complex `IAdhocFilter`

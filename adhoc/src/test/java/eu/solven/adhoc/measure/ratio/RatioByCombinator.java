@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.measure.ratio;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,25 +31,24 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IHasGroupBy;
+import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.transformers.ICombinator;
+import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Combinator} is a {@link IMeasure} which combines the underlying measures for current coordinate.
+ * Demonstrate how to do a complex ratio through a single Combinator. This will consider the underlying measure, and do
+ * the ratio after applying different filters to the numerator and denominator.
+ *
+ * @author Benoit Lacelle
  */
 @Value
 @Builder
-@Jacksonized
-@Slf4j
-public class Combinator implements ICombinator {
+public class RatioByCombinator implements ICombinator {
 	@NonNull
 	String name;
 
@@ -59,61 +57,38 @@ public class Combinator implements ICombinator {
 	Set<String> tags;
 
 	@NonNull
-	@Singular
-	List<String> underlyings;
+	String underlying;
+
+	@NonNull
+	@Builder.Default
+	IAdhocFilter numeratorFilter = IAdhocFilter.MATCH_ALL;
+
+	@NonNull
+	@Builder.Default
+	IAdhocFilter denominatorFilter = IAdhocFilter.MATCH_ALL;
 
 	/**
 	 * @see eu.solven.adhoc.aggregations.ICombination
 	 */
 	@NonNull
-	@Default
+	@Builder.Default
 	String combinationKey = SumCombination.KEY;
 
 	/**
 	 * @see eu.solven.adhoc.aggregations.ICombination
 	 */
 	@NonNull
-	@Default
+	@Builder.Default
 	Map<String, ?> combinationOptions = Collections.emptyMap();
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return underlyings;
-	}
-
-	/**
-	 *
-	 * @param hasUnderlyings
-	 *            the parent IHasUnderlyingMeasures generating a Combinator needed these options
-	 * @param explicitOptions
-	 *            some options provided explicitly
-	 * @return
-	 */
-	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
-		Map<String, Object> allOptions = new HashMap<>();
-
-		// Default options
-		// Enable visibility to the Combinator of the name of the received values
-		allOptions.put(IHasCombinationKey.KEY_UNDERLYING_NAMES, hasUnderlyings.getUnderlyingNames());
-
-		// TODO Should we provide the Set of columns guaranteed to be available in the slice?
-		// It seemed simpled to provide the whole measure for now
-		if (hasUnderlyings instanceof IHasGroupBy hasGroupBy) {
-			IAdhocGroupBy groupBy = hasGroupBy.getGroupBy();
-			allOptions.put(IHasCombinationKey.KEY_GROUPBY_COLUMNS, groupBy.getGroupedByColumns());
-		}
-
-		allOptions.put(IHasCombinationKey.KEY_MEASURE, hasUnderlyings);
-
-		// override with explicit options
-		allOptions.putAll(explicitOptions);
-
-		return allOptions;
+		return Collections.singletonList(underlying);
 	}
 
 	@Override
 	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
-		return new CombinatorQueryStep(this, transformationFactory, step);
+		return new RatioByCombinatorQueryStep(this, transformationFactory, step);
 	}
 }

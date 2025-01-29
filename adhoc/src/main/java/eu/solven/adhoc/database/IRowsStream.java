@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.api.v1;
+package eu.solven.adhoc.database;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
- * An {@link IWhereGroupbyAdhocQuery} is view of a query, not expressing its measures.
+ * Holds a resource to a stream of data, typically given a {@link eu.solven.adhoc.query.DatabaseQuery}
  *
  * @author Benoit Lacelle
  */
-public interface IWhereGroupbyAdhocQuery extends IHasFilters, IHasGroupBy {
+public interface IRowsStream extends AutoCloseable {
+	Stream<Map<String, ?>> asMap();
 
 	/**
-	 * The filter of current query. A filter refers to the condition for the data to be included. An AND over an empty
-	 * {@link List} means the whole data has to be included. Exclusions can be done through
-	 * {@link eu.solven.adhoc.api.v1.pojo.NotFilter}
-	 *
-	 * @return a list of filters (to be interpreted as an OR over AND simple conditions).
+	 * @deprecated Used for unitTests
+	 * @return the stream collected into a List
 	 */
-	@Override
-	IAdhocFilter getFilter();
-
-	/**
-	 * The columns amongst which the result has to be ventilated/sliced.
-	 *
-	 * @return a Set of columns
-	 */
-	@Override
-	IAdhocGroupBy getGroupBy();
+	@Deprecated
+	default List<Map<String, ?>> toList() {
+		return asMap().toList();
+	}
 }
