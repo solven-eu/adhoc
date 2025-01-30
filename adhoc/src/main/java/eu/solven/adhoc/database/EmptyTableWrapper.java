@@ -20,47 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.database;
 
-import java.util.Set;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
-import eu.solven.adhoc.query.IQueryOption;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import eu.solven.adhoc.query.DatabaseQuery;
 
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link AdhocMeasureBag} and a {@link IAdhocDatabaseWrapper}.
+ * {@link IAdhocDatabaseWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
+ * known (e.g. when one has to switch the underlying table depending on some queried filter).
  *
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-public class AdhocCubeWrapper implements IAdhocCubeWrapper {
-	@NonNull
-	final IAdhocQueryEngine engine;
-	@NonNull
-	final IAdhocMeasureBag measures;
-	@NonNull
-	final IAdhocDatabaseWrapper table;
-
+public class EmptyTableWrapper implements IAdhocDatabaseWrapper {
 	@Override
-	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(query, options, measures, table);
-	}
-
-	/**
-	 * Typically useful when the {@link IAdhocDatabaseWrapper} has to be changed, but the other parameters must be kept.
-	 * 
-	 * @param template
-	 *            some template
-	 * @return
-	 */
-	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
-		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
+	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
+		return new SuppliedRowsStream(Stream::empty);
 	}
 }

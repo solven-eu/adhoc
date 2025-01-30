@@ -52,6 +52,8 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+
 	@Test
 	public void testTableIsFunctionCall() throws IOException, SQLException {
 		// Duplicated from TestDatabaseQuery_DuckDb_FromParquet
@@ -83,9 +85,8 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 			{
 				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 				measureBag.addMeasure(k1Sum);
-
-				AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-				AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(jooqDb).aqe(aqe).measureBag(measureBag).build();
+				AdhocCubeWrapper aqw =
+						AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).measures(measureBag).build();
 
 				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);

@@ -22,45 +22,12 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Set;
-
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
-import eu.solven.adhoc.query.IQueryOption;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link AdhocMeasureBag} and a {@link IAdhocDatabaseWrapper}.
+ * Abstract the EventBus to which Adhoc events are published
  *
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-public class AdhocCubeWrapper implements IAdhocCubeWrapper {
-	@NonNull
-	final IAdhocQueryEngine engine;
-	@NonNull
-	final IAdhocMeasureBag measures;
-	@NonNull
-	final IAdhocDatabaseWrapper table;
-
-	@Override
-	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(query, options, measures, table);
-	}
-
-	/**
-	 * Typically useful when the {@link IAdhocDatabaseWrapper} has to be changed, but the other parameters must be kept.
-	 * 
-	 * @param template
-	 *            some template
-	 * @return
-	 */
-	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
-		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
-	}
+@FunctionalInterface
+public interface IAdhocEventBus {
+	void post(Object event);
 }

@@ -116,7 +116,7 @@ public class MongoAdapterTest implements SchemaFactory {
 		// BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
 		// datatypes.insertOne(doc);
 
-		schema = new AdhocSchema(AdhocCubeWrapper.builder().aqe(aqe).measureBag(amb).adw(rows).build());
+		schema = new AdhocSchema(AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(rows).build());
 	}
 
 	// private static void populate(MongoCollection<Document> collection, URL

@@ -48,7 +48,7 @@ import eu.solven.adhoc.transformers.Combinator;
 public class TestAggregations_Transcoding extends ADagTest {
 	public final InMemoryDatabase rows =
 			InMemoryDatabase.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	@Override
 	@BeforeEach

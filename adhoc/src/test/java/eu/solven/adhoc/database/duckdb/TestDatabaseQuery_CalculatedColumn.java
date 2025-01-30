@@ -23,8 +23,6 @@
 package eu.solven.adhoc.database.duckdb;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +41,7 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
 import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
+import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
@@ -58,17 +57,11 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+
 	String tableName = "someTableName";
 
-	private Connection makeFreshInMemoryDb() {
-		try {
-			return DriverManager.getConnection("jdbc:duckdb:");
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	Connection dbConn = makeFreshInMemoryDb();
+	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 	AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
 			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 			.tableName(tableName)
@@ -88,8 +81,6 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result =
 				aqe.execute(

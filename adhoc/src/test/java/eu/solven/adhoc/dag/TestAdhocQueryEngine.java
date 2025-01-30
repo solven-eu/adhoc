@@ -37,7 +37,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocQueryEngine {
 	AdhocMeasureBag amg = AdhocMeasureBag.builder().build();
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()).build();
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()::post).build();
 
 	@Test
 	public void testColumnToAggregationKeys() {

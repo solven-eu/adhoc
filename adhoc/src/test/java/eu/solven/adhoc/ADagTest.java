@@ -41,10 +41,10 @@ public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).build();
+	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryDatabase rows = InMemoryDatabase.builder().build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	@BeforeEach
 	public void wireEvents() {
@@ -54,5 +54,12 @@ public abstract class ADagTest {
 	// `@BeforeEach` has to be duplicated on each implementation
 	// @BeforeEach
 	public abstract void feedDb();
+
+	/**
+	 * Typically used to edit the operatorsFactory
+	 */
+	public AdhocQueryEngine.AdhocQueryEngineBuilder editEngine() {
+		return AdhocQueryEngine.edit(aqe);
+	}
 
 }

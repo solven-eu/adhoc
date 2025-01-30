@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import org.greenrobot.eventbus.EventBus;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -93,7 +92,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
-	final EventBus eventBus;
+	final IAdhocEventBus eventBus;
 
 	@Override
 	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocDatabaseWrapper db) {
@@ -609,4 +608,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return new QueryStepsDagsBuilder(adhocQuery);
 	}
 
+	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {
+		return AdhocQueryEngine.builder().operatorsFactory(engine.operatorsFactory).eventBus(engine.eventBus);
+	}
 }

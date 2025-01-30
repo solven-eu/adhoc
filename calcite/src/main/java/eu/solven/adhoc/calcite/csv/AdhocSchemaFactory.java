@@ -58,7 +58,7 @@ public class AdhocSchemaFactory implements SchemaFactory {
 
 		IAdhocDatabaseWrapper adw = null;
 
-		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().aqe(aqe).measureBag(amb).adw(adw).build();
+		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(adw).build();
 
 		return new AdhocSchema(aqw);
 	}

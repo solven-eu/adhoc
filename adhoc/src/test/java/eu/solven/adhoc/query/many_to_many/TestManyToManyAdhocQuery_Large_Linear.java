@@ -129,11 +129,9 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 		}
 	}
 
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder()
-			.eventBus(eventBus)
-			.operatorsFactory(makeOperatorsFactory(manyToManyDefinition))
-			.build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
+	public final AdhocQueryEngine aqe =
+			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 

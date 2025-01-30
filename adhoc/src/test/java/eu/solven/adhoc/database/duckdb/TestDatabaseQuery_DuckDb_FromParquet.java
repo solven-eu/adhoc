@@ -62,6 +62,8 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+
 	Path tmpParquetPath;
 	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
 
@@ -153,8 +155,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-
 		ITabularView result = aqe
 				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -178,8 +178,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result =
 				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).groupByAlso("a").debug(true).build(),
@@ -208,8 +206,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-
 		ITabularView result = aqe.execute(
 				AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").debug(true).build(),
 				measureBag,
@@ -236,8 +232,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result = aqe.execute(AdhocQuery.builder()
 				.measure(k1SumSquared.getName())

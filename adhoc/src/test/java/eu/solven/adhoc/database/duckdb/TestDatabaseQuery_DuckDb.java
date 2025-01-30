@@ -61,6 +61,8 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+
 	String tableName = "someTableName";
 
 	AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
@@ -222,8 +224,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-
 		ITabularView result = aqe
 				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -258,8 +258,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(AdhocQuery.builder()
@@ -305,8 +303,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-
 		Assertions.assertThatThrownBy(() -> aqe.execute(
 				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("b", "a1").debug(true).build(),
 				measureBag,
@@ -323,8 +319,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		Assertions.assertThatThrownBy(
 				() -> aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build(),
@@ -347,8 +341,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(kSumOverk1);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result =
 				aqe.execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build(), measureBag, jooqDb);
@@ -373,8 +365,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
-
 		ITabularView result = aqe.execute(AdhocQuery.builder()
 				.measure(k1Sum.getName())
 				.andFilter("a", LikeMatcher.builder().like("a1%").build())
@@ -395,8 +385,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		Assertions.assertThatThrownBy(() -> {
 			aqe.execute(AdhocQuery.builder()
@@ -422,8 +410,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result = aqe.execute(AdhocQuery.builder().groupByAlso("a").build(), measureBag, jooqDb);
