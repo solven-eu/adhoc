@@ -144,7 +144,7 @@ Measures defines a Directed-Acyclic-Graph, where leaves are aggregated measures 
 
 ## Node granularity
 
-Measures are evaluated for a coordinate, defined by the `groupBy` and the `filter` of its parent node. The root node have they `groupBy` and `filter` defined by the AdhocQuery.
+Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of its parent node. The root node have they `groupBy` and `filter` defined by the AdhocQuery.
 
 - Combinator neither change the `groupBy` nor the `filter`.
 - Filtrator adds a `filter`, AND-ed with node own `filter`.

@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.IDoubleAggregation;
+import eu.solven.adhoc.aggregations.ILongAggregation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumAggregator implements IAggregation {
+public class SumAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "SUM";
 

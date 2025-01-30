@@ -41,12 +41,12 @@ import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
-import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.transcoder.MapDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.database.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -70,8 +70,8 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 
-	private AdhocJooqDatabaseWrapper makeJooqDb(IAdhocDatabaseTranscoder transcoder) {
-		AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+	private AdhocJooqTableWrapper makeJooqDb(IAdhocTableTranscoder transcoder) {
+		AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
 				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 				.tableName(tableName)
 				.transcoder(transcoder)
@@ -82,10 +82,10 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 	@Test
 	public void testDifferentQueriedSameUnderlying() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocDatabaseTranscoder transcoder =
-				MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
+		IAdhocTableTranscoder transcoder =
+				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		AdhocJooqDatabaseWrapper jooqDb = makeJooqDb(transcoder);
+		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
 		DSLContext dsl = jooqDb.makeDsl();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -110,9 +110,9 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 	@Test
 	public void testOverlap() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocJooqDatabaseWrapper jooqDb = makeJooqDb(transcoder);
+		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
 		DSLContext dsl = jooqDb.makeDsl();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -134,14 +134,14 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 	@Test
 	public void testCycle() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder()
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
 				.queriedToUnderlying("k1", "k2")
 				.queriedToUnderlying("k2", "k3")
 				.queriedToUnderlying("k3", "k4")
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		AdhocJooqDatabaseWrapper jooqDb = makeJooqDb(transcoder);
+		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
 		DSLContext dsl = jooqDb.makeDsl();
 
 		dsl.createTableIfNotExists(tableName)
@@ -190,9 +190,9 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 	@Test
 	public void testAdhocQuery() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocJooqDatabaseWrapper jooqDb = makeJooqDb(transcoder);
+		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
 		DSLContext dsl = jooqDb.makeDsl();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();

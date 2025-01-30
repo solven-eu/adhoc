@@ -54,14 +54,6 @@ public class MongoTableScan extends TableScan implements MongoRel {
 	/**
 	 * Creates a MongoTableScan.
 	 *
-	 * @param cluster
-	 *            Cluster
-	 * @param traitSet
-	 *            Traits
-	 * @param table
-	 *            Table
-	 * @param mongoTable
-	 *            MongoDB table
 	 * @param projectRowType
 	 *            Fields and types to project; null to project raw row
 	 */

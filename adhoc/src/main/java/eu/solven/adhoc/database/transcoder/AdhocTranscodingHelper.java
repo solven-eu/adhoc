@@ -38,7 +38,7 @@ public class AdhocTranscodingHelper {
 		// hidden
 	}
 
-	public static Map<String, ?> transcode(IAdhocDatabaseReverseTranscoder reverseTranscoder,
+	public static Map<String, ?> transcode(IAdhocTableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
 		Map<String, Object> transcoded = new HashMap<>();
 

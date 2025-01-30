@@ -20,40 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.database.sql;
 
-import java.util.Collections;
-import java.util.Map;
+import org.jooq.Name;
+import org.jooq.TableLike;
+import org.jooq.impl.DSL;
 
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.AbstractSchema;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Value;
 
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+@Value
+@Builder
+public class AdhocJooqTableWrapperParameters {
 
-/**
- * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
- */
-public class AdhocSchema extends AbstractSchema {
+	@Builder.Default
+	@NonNull
+	@Getter
+	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
-	final IAdhocCubeWrapper aqe;
+	@NonNull
+	DSLSupplier dslSupplier;
 
-	@Override
-	public boolean isMutable() {
-		// Adhoc enables only queries to its own underlying database
-		return false;
-	}
+	@NonNull
+	final TableLike<?> table;
 
-	/**
-	 * Creates a CSV schema.
-	 *
-	 * @param aqe
-	 */
-	public AdhocSchema(IAdhocCubeWrapper aqe) {
-		this.aqe = aqe;
-	}
+	public static class AdhocJooqTableWrapperParametersBuilder {
+		public AdhocJooqTableWrapperParametersBuilder tableName(String tableName) {
+			this.tableName(DSL.quotedName(tableName));
 
-	@Override
-	protected Map<String, Table> getTableMap() {
-		return Collections.singletonMap("toto", new MongoTable(aqe));
+			return this;
+		}
+
+		public AdhocJooqTableWrapperParametersBuilder tableName(Name tableName) {
+			this.table(DSL.table(tableName));
+
+			return this;
+		}
 	}
 }

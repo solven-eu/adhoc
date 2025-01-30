@@ -63,11 +63,11 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
-			AdhocJooqDatabaseWrapperParameters dbParameters = AdhocJooqDatabaseWrapperParameters.builder()
+			AdhocJooqTableWrapperParameters dbParameters = AdhocJooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.tableName(DSL.unquotedName(tableExpression))
 					.build();
-			AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(dbParameters);
+			AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(dbParameters);
 
 			DSLContext dsl = jooqDb.makeDsl();
 

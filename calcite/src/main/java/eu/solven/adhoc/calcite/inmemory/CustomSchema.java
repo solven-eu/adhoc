@@ -20,45 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.sql;
+package eu.solven.adhoc.calcite.inmemory;
 
-import org.jooq.Name;
-import org.jooq.TableLike;
-import org.jooq.impl.DSL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Value;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.impl.AbstractSchema;
 
-@Value
-@Builder
-public class AdhocJooqDatabaseWrapperParameters {
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-	@Builder.Default
-	@NonNull
-	@Getter
-	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
+public class CustomSchema extends AbstractSchema {
 
-	@NonNull
-	DSLSupplier dslSupplier;
+	private static final ObjectMapper mapper = new ObjectMapper();
 
-	@NonNull
-	final TableLike<?> table;
+	private static final Map<Object, ObjectNode> employees = new HashMap<>();
 
-	public static class AdhocJooqDatabaseWrapperParametersBuilder {
-		public AdhocJooqDatabaseWrapperParametersBuilder tableName(String tableName) {
-			this.tableName(DSL.quotedName(tableName));
+	static {
+		employees.put(1L, mapper.createObjectNode().put("name", "john").put("age", 30));
+		employees.put(2L, mapper.createObjectNode().put("name", "jane").put("age", 25));
+		employees.put(3L, mapper.createObjectNode().put("name", "cole").put("age", 50));
+	}
 
-			return this;
-		}
-
-		public AdhocJooqDatabaseWrapperParametersBuilder tableName(Name tableName) {
-			this.table(DSL.table(tableName));
-
-			return this;
-		}
+	@Override
+	protected Map<String, Table> getTableMap() {
+		return Collections.singletonMap("employees", new CustomTable(employees));
 	}
 }

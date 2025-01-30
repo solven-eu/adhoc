@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.sql;
+package eu.solven.adhoc.database.transcoder;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
-
-import eu.solven.adhoc.query.DatabaseQuery;
+import java.util.Set;
 
 /**
- * Converts a {@link DatabaseQuery} into a sql {@link ResultQuery}
+ * This reverse the use of {@link IAdhocTableTranscoder}. It is useful to materialize only the columns which has been
+ * effectively queried.
  */
-public interface IAdhocJooqDatabaseQueryFactory {
-	ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery);
+public interface IAdhocTableReverseTranscoder {
+
+	/**
+	 * @param underlying
+	 *            a column name typically used by the database.
+	 * @return the queried columns which were mapping to given underlying.
+	 */
+	Set<String> queried(String underlying);
 }

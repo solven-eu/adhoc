@@ -52,7 +52,7 @@ import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.collection.UnionSetAggregator;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -95,12 +95,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IAdhocEventBus eventBus;
 
 	@Override
-	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocDatabaseWrapper db) {
+	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
 		Set<DatabaseQuery> prepared = prepare(queryWithContext);
 
 		Map<DatabaseQuery, IRowsStream> dbQueryToStream = new HashMap<>();
 		for (DatabaseQuery dbQuery : prepared) {
-			dbQueryToStream.put(dbQuery, db.openDbStream(dbQuery));
+			dbQueryToStream.put(dbQuery, table.openDbStream(dbQuery));
 		}
 
 		return execute(queryWithContext, dbQueryToStream);

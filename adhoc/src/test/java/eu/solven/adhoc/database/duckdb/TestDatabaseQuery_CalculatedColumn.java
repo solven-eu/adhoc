@@ -38,8 +38,8 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
-import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -62,7 +62,7 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
 			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 			.tableName(tableName)
 			.build());

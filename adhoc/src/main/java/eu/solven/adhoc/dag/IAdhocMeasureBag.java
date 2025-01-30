@@ -22,14 +22,37 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.transformers.ReferencedMeasure;
 
+/**
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IAdhocMeasureBag {
 
+	/**
+	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}
+	 * 
+	 * @param measure
+	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
+	 */
 	IMeasure resolveIfRef(IMeasure measure);
 
+	/**
+	 * 
+	 * @param measure
+	 *            a measure, possibly a {@link ReferencedMeasure}.
+	 * @return the optional plain {@link IMeasure}
+	 */
 	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
+
+	Map<String, IMeasure> getNameToMeasure();
 
 }

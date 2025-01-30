@@ -182,7 +182,8 @@ public class MongoRules {
 		public String visitCall(RexCall call) {
 			String name = isItem(call);
 			if (name != null) {
-				return "'$" + name + "'";
+				// return "'$" + name + "'";
+				return name;
 			}
 			final List<String> strings = visitList(call.operands);
 			if (call.getKind() == SqlKind.CAST) {

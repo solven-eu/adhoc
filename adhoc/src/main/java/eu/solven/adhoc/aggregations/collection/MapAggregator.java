@@ -54,13 +54,13 @@ public class MapAggregator<K, V> implements IAggregation {
 		}
 	}
 
-	@Override
-	public double aggregateDoubles(double left, double right) {
-		throw new UnsupportedOperationException("Can not %s on doubles".formatted(KEY));
-	}
+	// @Override
+	// public double aggregateDoubles(double left, double right) {
+	// throw new UnsupportedOperationException("Can not %s on doubles".formatted(KEY));
+	// }
 
-	@Override
-	public long aggregateLongs(long left, long right) {
-		throw new UnsupportedOperationException("Can not %s on longs".formatted(KEY));
-	}
+	// @Override
+	// public long aggregateLongs(long left, long right) {
+	// throw new UnsupportedOperationException("Can not %s on longs".formatted(KEY));
+	// }
 }

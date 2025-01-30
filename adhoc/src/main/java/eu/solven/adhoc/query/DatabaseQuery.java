@@ -41,12 +41,12 @@ import lombok.Value;
  * A Database query is dedicated to querying external database.
  * 
  * @author Benoit Lacelle
- * @see eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder
+ * @see eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder
  */
 @Value
 @AllArgsConstructor
 @Builder
-public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker {
+public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;

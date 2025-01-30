@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.database;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.AbstractSchema;
-
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.query.DatabaseQuery;
 
 /**
- * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
+ * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
+ * 
+ * @author Benoit Lacelle
+ *
  */
-public class AdhocSchema extends AbstractSchema {
-
-	final IAdhocCubeWrapper aqe;
-
-	@Override
-	public boolean isMutable() {
-		// Adhoc enables only queries to its own underlying database
-		return false;
-	}
+public interface IAdhocTableWrapper {
+	/**
+	 * 
+	 * @return the natural name/id of the underlying table.
+	 */
+	String getName();
 
 	/**
-	 * Creates a CSV schema.
-	 *
-	 * @param aqe
+	 * 
+	 * @return the columns available for groupBy operations.
 	 */
-	public AdhocSchema(IAdhocCubeWrapper aqe) {
-		this.aqe = aqe;
-	}
+	// TODO Do we need access to the dataTypes, e.g. for Calcite?
+	Set<String> getColumns();
 
-	@Override
-	protected Map<String, Table> getTableMap() {
-		return Collections.singletonMap("toto", new MongoTable(aqe));
-	}
+	IRowsStream openDbStream(DatabaseQuery dbQuery);
+
 }

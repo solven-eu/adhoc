@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.database.transcoder;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.AbstractSchema;
-
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 
 /**
- * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
+ * Holds the logic mapping from the columns names in {@link eu.solven.adhoc.api.v1.IAdhocQuery} and columnNames in
+ * {@link IAdhocTableWrapper}.
+ * <p>
+ * This enables re-using a {@link eu.solven.adhoc.dag.AdhocMeasureBag} for different {@link IAdhocTableWrapper}.
+ *
+ * @see TranscodingContext
+ * @see IAdhocTableReverseTranscoder
+ *
  */
-public class AdhocSchema extends AbstractSchema {
-
-	final IAdhocCubeWrapper aqe;
-
-	@Override
-	public boolean isMutable() {
-		// Adhoc enables only queries to its own underlying database
-		return false;
-	}
-
+public interface IAdhocTableTranscoder {
 	/**
-	 * Creates a CSV schema.
 	 *
-	 * @param aqe
+	 * @param queried
+	 *            a column name typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
+	 * @return the equivalent underlying column name, typically used by the database. If null, it means the column maps
+	 *         to itself.
 	 */
-	public AdhocSchema(IAdhocCubeWrapper aqe) {
-		this.aqe = aqe;
-	}
-
-	@Override
-	protected Map<String, Table> getTableMap() {
-		return Collections.singletonMap("toto", new MongoTable(aqe));
-	}
+	String underlying(String queried);
 }

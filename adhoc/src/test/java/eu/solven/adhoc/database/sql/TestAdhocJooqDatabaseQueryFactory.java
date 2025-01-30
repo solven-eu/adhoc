@@ -33,13 +33,13 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.aggregations.sum.CountAggregator;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.transformers.Aggregator;
-import max.CountAggregator;
 
 public class TestAdhocJooqDatabaseQueryFactory {
 	static {
@@ -49,7 +49,7 @@ public class TestAdhocJooqDatabaseQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqDatabaseQueryFactory streamOpener = new AdhocJooqDatabaseQueryFactory(new IdentityTranscoder(),
+	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new IdentityTranscoder(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 

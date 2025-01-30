@@ -29,7 +29,7 @@ import eu.solven.adhoc.api.v1.filters.IAndFilter;
 import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.filters.INotFilter;
 import eu.solven.adhoc.api.v1.filters.IOrFilter;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +41,7 @@ public class FilterHelpers {
 		return match(new IdentityTranscoder(), filter, input);
 	}
 
-	public static boolean match(IAdhocDatabaseTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
+	public static boolean match(IAdhocTableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
 		if (filter.isAnd()) {
 			IAndFilter andFilter = (IAndFilter) filter;
 			return andFilter.getOperands().stream().allMatch(f -> match(f, input));

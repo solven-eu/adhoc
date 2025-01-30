@@ -20,40 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.calcite.inmemory;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.AbstractSchema;
+public final class StreamIterable<T> implements Iterable<T> {
 
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+	private final Stream<T> stream;
 
-/**
- * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
- */
-public class AdhocSchema extends AbstractSchema {
-
-	final IAdhocCubeWrapper aqe;
-
-	@Override
-	public boolean isMutable() {
-		// Adhoc enables only queries to its own underlying database
-		return false;
-	}
-
-	/**
-	 * Creates a CSV schema.
-	 *
-	 * @param aqe
-	 */
-	public AdhocSchema(IAdhocCubeWrapper aqe) {
-		this.aqe = aqe;
+	StreamIterable(Stream<T> stream) {
+		this.stream = stream;
 	}
 
 	@Override
-	protected Map<String, Table> getTableMap() {
-		return Collections.singletonMap("toto", new MongoTable(aqe));
+	public Iterator<T> iterator() {
+		return stream.iterator();
+	}
+
+	public static <T> StreamIterable<T> of(Stream<T> stream) {
+		return new StreamIterable<>(stream);
 	}
 }

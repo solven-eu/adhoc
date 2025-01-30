@@ -42,7 +42,7 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,11 +51,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocGoogleBigQueryDatabaseWrapper extends AdhocJooqDatabaseWrapper {
+public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 
-	final AdhocBigQueryDatabaseWrapperParameters dbParameters;
+	final AdhocBigQueryTableWrapperParameters dbParameters;
 
-	public AdhocGoogleBigQueryDatabaseWrapper(AdhocBigQueryDatabaseWrapperParameters dbParameters) {
+	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters dbParameters) {
 		super(dbParameters.getBase());
 
 		this.dbParameters = dbParameters;

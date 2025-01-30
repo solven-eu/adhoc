@@ -26,15 +26,15 @@ import java.util.Set;
 
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.query.IQueryOption;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link AdhocMeasureBag} and a {@link IAdhocDatabaseWrapper}.
- *
+ * Combines an {@link AdhocQueryEngine}, including its {@link AdhocMeasureBag} and a {@link IAdhocTableWrapper}.
+ * 
  * @author Benoit Lacelle
  *
  */
@@ -46,7 +46,7 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
 	final IAdhocMeasureBag measures;
 	@NonNull
-	final IAdhocDatabaseWrapper table;
+	final IAdhocTableWrapper table;
 
 	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
@@ -62,5 +62,10 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	 */
 	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
 		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
+	}
+
+	@Override
+	public Set<String> getColumns() {
+		return table.getColumns();
 	}
 }

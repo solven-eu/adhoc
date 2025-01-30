@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.transcoder;
+package eu.solven.adhoc.database.sql;
 
-import java.util.Map;
+import org.jooq.Record;
+import org.jooq.ResultQuery;
 
-import lombok.Builder;
-import lombok.Singular;
+import eu.solven.adhoc.query.DatabaseQuery;
 
 /**
- * An {@link IAdhocDatabaseTranscoder} based on a (not-necessarily bijective) mapping.
+ * Converts a {@link DatabaseQuery} into a sql {@link ResultQuery}
  */
-@Builder
-public class MapDatabaseTranscoder implements IAdhocDatabaseTranscoder {
-	@Singular
-	final Map<String, String> queriedToUnderlyings;
-
-	@Override
-	public String underlying(String queried) {
-		return queriedToUnderlyings.get(queried);
-	}
-
-	// @Override
-	// public String queried(String underlying) {
-	// return queriedToUnderlying.inverse().get(underlying);
-	// }
+public interface IAdhocJooqTableQueryFactory {
+	ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery);
 }

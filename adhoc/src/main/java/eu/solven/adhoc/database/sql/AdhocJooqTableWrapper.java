@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,13 +42,15 @@ import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
 import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.database.SuppliedRowsStream;
+import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters.AdhocJooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseReverseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,15 +61,43 @@ import lombok.extern.slf4j.Slf4j;
  */
 @AllArgsConstructor
 @Slf4j
-public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
+public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 
-	final AdhocJooqDatabaseWrapperParameters dbParameters;
+	final AdhocJooqTableWrapperParameters dbParameters;
+
+	@Override
+	public String getName() {
+		return "someTableName";
+	}
+
+	@Override
+	public Set<String> getColumns() {
+		Field<?>[] select = dbParameters.getDslSupplier()
+				.getDSLContext()
+				.select()
+				.from(dbParameters.getTable())
+				.limit(0)
+				.fetch()
+				.fields();
+		return Stream.of(select).map(f -> f.getName()).collect(Collectors.toSet());
+	}
+
+	public static AdhocJooqTableWrapper newInstance(Map<String, ?> options) {
+		AdhocJooqTableWrapperParametersBuilder parametersBuilder = AdhocJooqTableWrapperParameters.builder();
+
+		if (options.containsKey("tableName")) {
+			parametersBuilder.tableName(MapPathGet.getRequiredString(options, "tableName"));
+		}
+
+		AdhocJooqTableWrapperParameters parameters = parametersBuilder.build();
+		return new AdhocJooqTableWrapper(parameters);
+	}
 
 	public DSLContext makeDsl() {
 		return dbParameters.getDslSupplier().getDSLContext();
 	}
 
-	protected Map<String, ?> transcodeFromDb(IAdhocDatabaseReverseTranscoder transcodingContext,
+	protected Map<String, ?> transcodeFromDb(IAdhocTableReverseTranscoder transcodingContext,
 			Map<String, ?> underlyingMap) {
 		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
 	}
@@ -75,7 +106,7 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
-		IAdhocJooqDatabaseQueryFactory queryFactory = makeQueryFactory(transcodingContext);
+		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext);
 
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(dbQuery);
 
@@ -140,10 +171,10 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 				.filter(m -> !m.isEmpty());
 	}
 
-	private IAdhocJooqDatabaseQueryFactory makeQueryFactory(TranscodingContext transcodingContext) {
+	private IAdhocJooqTableQueryFactory makeQueryFactory(TranscodingContext transcodingContext) {
 		DSLContext dslContext = makeDsl();
 
-		IAdhocJooqDatabaseQueryFactory queryFactory = makeQueryFactory(transcodingContext, dslContext);
+		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext, dslContext);
 		return queryFactory;
 	}
 
@@ -180,9 +211,9 @@ public class AdhocJooqDatabaseWrapper implements IAdhocDatabaseWrapper {
 		}
 	}
 
-	protected IAdhocJooqDatabaseQueryFactory makeQueryFactory(TranscodingContext transcodingContext,
+	protected IAdhocJooqTableQueryFactory makeQueryFactory(TranscodingContext transcodingContext,
 			DSLContext dslContext) {
-		return AdhocJooqDatabaseQueryFactory.builder()
+		return AdhocJooqTableQueryFactory.builder()
 				.transcoder(transcodingContext)
 				.table(dbParameters.getTable())
 				.dslContext(dslContext)

@@ -28,14 +28,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
-import eu.solven.adhoc.database.transcoder.MapDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.database.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 
 public class TestAdhocTranscodingHelper {
 	@Test
 	public void testSimpleMapping_Empty() {
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().build();
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
@@ -49,7 +49,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping() {
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
@@ -64,7 +64,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping_RequestUnderlying() {
-		IAdhocDatabaseTranscoder transcoder = MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
@@ -82,8 +82,8 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testOverlap() {
-		IAdhocDatabaseTranscoder transcoder =
-				MapDatabaseTranscoder.builder().queriedToUnderlying("k1", "k2").queriedToUnderlying("k2", "k3").build();
+		IAdhocTableTranscoder transcoder =
+				MapTableTranscoder.builder().queriedToUnderlying("k1", "k2").queriedToUnderlying("k2", "k3").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k2");

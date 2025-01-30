@@ -51,6 +51,7 @@ import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.dag.IAdhocMeasureBag;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -101,43 +102,43 @@ public class MeasuresSetFromResource {
 	}
 
 	/**
-     * @param measureAsMap
-     *            The measure as read from some configuration file. Typically produced with Jackson.
-     * @return a {@link List} of measures. There may be multiple measureAsMap if the explicit measureAsMap defines underlying
-     *         measures. The explicit measureAsMap is always first in the output list.
-     */
-    public List<IMeasure> makeMeasure(Map<String, ?> measureAsMap) {
-        List<IMeasure> measures = new ArrayList<>();
+	 * @param measureAsMap
+	 *            The measure as read from some configuration file. Typically produced with Jackson.
+	 * @return a {@link List} of measures. There may be multiple measureAsMap if the explicit measureAsMap defines
+	 *         underlying measures. The explicit measureAsMap is always first in the output list.
+	 */
+	public List<IMeasure> makeMeasure(Map<String, ?> measureAsMap) {
+		List<IMeasure> measures = new ArrayList<>();
 
-        String type = getStringParameter(measureAsMap, KEY_TYPE);
-        Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, "name");
-        String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
+		String type = getStringParameter(measureAsMap, KEY_TYPE);
+		Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, "name");
+		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
-        IMeasure asMeasure = switch (type) {
-            case "aggregator": {
-                yield makeAggregator(measureAsMap, name);
-            }
-            case "combinator": {
-                yield makeCombinator(measureAsMap, measures, name);
-            }
-            case "filtrator": {
-                yield makeFiltrator(measureAsMap, measures, name);
-            }
-            case "bucketor": {
-                yield makeBucketor(measureAsMap, measures, name);
-            }
-            case "dispatchor": {
-                yield makeDispatchor(measureAsMap, measures, name);
-            }
-            default:
-                yield onUnknownType(type, measureAsMap, measures, name);
-        };
+		IMeasure asMeasure = switch (type) {
+		case "aggregator": {
+			yield makeAggregator(measureAsMap, name);
+		}
+		case "combinator": {
+			yield makeCombinator(measureAsMap, measures, name);
+		}
+		case "filtrator": {
+			yield makeFiltrator(measureAsMap, measures, name);
+		}
+		case "bucketor": {
+			yield makeBucketor(measureAsMap, measures, name);
+		}
+		case "dispatchor": {
+			yield makeDispatchor(measureAsMap, measures, name);
+		}
+		default:
+			yield onUnknownType(type, measureAsMap, measures, name);
+		};
 
-        // The explicit measureAsMap has to be first in the output List
-        measures.addFirst(asMeasure);
+		// The explicit measureAsMap has to be first in the output List
+		measures.addFirst(asMeasure);
 
-        return measures;
-    }
+		return measures;
+	}
 
 	/**
 	 * @param type
@@ -415,9 +416,9 @@ public class MeasuresSetFromResource {
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
 
 		abmb.bagNames().forEach(bagName -> {
-			AdhocMeasureBag amb = abmb.getBag(bagName);
+			IAdhocMeasureBag measures = abmb.getBag(bagName);
 
-			List<?> asMaps = amb.getNameToMeasure()
+			List<?> asMaps = measures.getNameToMeasure()
 					.values()
 					.stream()
 					.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))

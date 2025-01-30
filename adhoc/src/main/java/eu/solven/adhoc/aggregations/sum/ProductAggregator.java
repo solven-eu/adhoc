@@ -23,6 +23,8 @@
 package eu.solven.adhoc.aggregations.sum;
 
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.IDoubleAggregation;
+import eu.solven.adhoc.aggregations.ILongAggregation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -30,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/product-function-dax
 @Slf4j
-public class ProductAggregator implements IAggregation {
+public class ProductAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "PRODUCT";
 

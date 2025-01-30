@@ -30,8 +30,8 @@ import org.assertj.core.api.Assertions;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
-import eu.solven.adhoc.database.InMemoryDatabase;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -44,7 +44,7 @@ import io.cucumber.java.en.When;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Basic step-definitions where the {@link IAdhocDatabaseWrapper} is a {@link InMemoryDatabase}.
+ * Basic step-definitions where the {@link IAdhocTableWrapper} is a {@link InMemoryTable}.
  * 
  * @author Benoit Lacelle
  *

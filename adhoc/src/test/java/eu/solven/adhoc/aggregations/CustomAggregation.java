@@ -31,13 +31,13 @@ public class CustomAggregation implements IAggregation {
 		return null;
 	}
 
-	@Override
-	public double aggregateDoubles(double left, double right) {
-		return 0;
-	}
+	// @Override
+	// public double aggregateDoubles(double left, double right) {
+	// return 0;
+	// }
 
-	@Override
-	public long aggregateLongs(long left, long right) {
-		return 0;
-	}
+	// @Override
+	// public long aggregateLongs(long left, long right) {
+	// return 0;
+	// }
 }

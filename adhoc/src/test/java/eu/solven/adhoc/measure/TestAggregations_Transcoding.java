@@ -38,7 +38,7 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.database.InMemoryDatabase;
+import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.database.transcoder.PrefixTranscoder;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -46,8 +46,8 @@ import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
 public class TestAggregations_Transcoding extends ADagTest {
-	public final InMemoryDatabase rows =
-			InMemoryDatabase.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
+	public final InMemoryTable rows =
+			InMemoryTable.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
 	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	@Override

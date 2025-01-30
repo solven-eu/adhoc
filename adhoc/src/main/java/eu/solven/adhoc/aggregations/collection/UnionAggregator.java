@@ -42,21 +42,21 @@ public class UnionAggregator implements IAggregation {
 		}
 	}
 
-	@Override
-	public double aggregateDoubles(double l, double r) {
-		if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
-			return setAggregator.aggregateDoubles(l, r);
-		} else {
-			throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
-		}
-	}
+	// @Override
+	// public double aggregateDoubles(double l, double r) {
+	// if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
+	// return setAggregator.aggregateDoubles(l, r);
+	// } else {
+	// throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
+	// }
+	// }
 
-	@Override
-	public long aggregateLongs(long l, long r) {
-		if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
-			return setAggregator.aggregateLongs(l, r);
-		} else {
-			throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
-		}
-	}
+	// @Override
+	// public long aggregateLongs(long l, long r) {
+	// if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
+	// return setAggregator.aggregateLongs(l, r);
+	// } else {
+	// throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
+	// }
+	// }
 }

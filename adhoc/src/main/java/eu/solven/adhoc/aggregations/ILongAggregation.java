@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
-
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.query.DatabaseQuery;
+package eu.solven.adhoc.aggregations;
 
 /**
- * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
+ * Relates with {@link IAggregation} when it is meaningful to have a dedicated aggregations for primitive longs.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocDatabaseWrapper {
+public interface ILongAggregation {
 
-	IRowsStream openDbStream(DatabaseQuery dbQuery);
-
+	long aggregateLongs(long left, long right);
 }

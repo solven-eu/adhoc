@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import lombok.Builder;
 import lombok.Value;
 
 /**
- * A {@link CalculatedColumn} is a column which is not explicitly provided by the {@link IAdhocDatabaseWrapper}, but
+ * A {@link CalculatedColumn} is a column which is not explicitly provided by the {@link IAdhocTableWrapper}, but
  * computed from it. It may be evaluated by the engine, or by Adhoc itself.
  * 
  * @author Benoit Lacelle

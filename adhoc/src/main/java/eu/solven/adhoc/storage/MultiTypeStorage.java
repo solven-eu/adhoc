@@ -49,6 +49,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * This data-structures aggregates input value on a per-key basis. Different keys are allowed to be associated to
  * different types (e.g. we may have some keys holding a functional double, while other keys may hold an error String).
+ * 
+ * This data-structure does not maintain order. Typically `SUM(123, 'a', 234)` could lead to `'123a234'` or `'357a'`.
  *
  * @param <T>
  */
@@ -79,7 +81,7 @@ public class MultiTypeStorage<T> {
 	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>();
 
 	/**
-	 * A put operation
+	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 * 
 	 * @param key
 	 * @param v

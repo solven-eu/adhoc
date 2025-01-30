@@ -31,18 +31,18 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Given an {@link IAdhocDatabaseTranscoder}, this will remember how each column has been transcoded. It serves multiple
- * purposes. The first one is not to require {@link IAdhocDatabaseTranscoder} to express a bi-directional mapping. The
+ * Given an {@link IAdhocTableTranscoder}, this will remember how each column has been transcoded. It serves multiple
+ * purposes. The first one is not to require {@link IAdhocTableTranscoder} to express a bi-directional mapping. The
  * second main purpose is the reverse mapping may be ambiguous, when multiple queries columns could be served by the
  * same underlying column.
  */
 @Builder
 @Slf4j
-public class TranscodingContext implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
 	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
 
 	@Builder.Default
-	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
+	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
 	public String underlying(String queried) {

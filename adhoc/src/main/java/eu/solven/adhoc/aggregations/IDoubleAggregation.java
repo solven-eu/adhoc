@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.transcoder;
-
-import java.util.Set;
+package eu.solven.adhoc.aggregations;
 
 /**
- * This reverse the use of {@link IAdhocDatabaseTranscoder}. It is useful to materialize ony the columns which has been
- * effectively queried.
+ * Relates with {@link IAggregation} when it is meaningful to have a dedicated aggregations for primitive doubles.
+ * 
+ * @author Benoit Lacelle
  */
-public interface IAdhocDatabaseReverseTranscoder {
+public interface IDoubleAggregation {
 
-	/**
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the queried columns which were mapping to given underlying.
-	 */
-	Set<String> queried(String underlying);
+	double aggregateDoubles(double left, double right);
 }

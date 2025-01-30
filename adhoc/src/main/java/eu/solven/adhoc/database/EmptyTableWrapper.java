@@ -22,9 +22,13 @@
  */
 package eu.solven.adhoc.database;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.DatabaseQuery;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * {@link IAdhocDatabaseWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
@@ -32,9 +36,20 @@ import eu.solven.adhoc.query.DatabaseQuery;
  *
  * @author Benoit Lacelle
  */
-public class EmptyTableWrapper implements IAdhocDatabaseWrapper {
+@Builder
+public class EmptyTableWrapper implements IAdhocTableWrapper {
+
+	@NonNull
+	@Getter
+	final String name;
+
 	@Override
 	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
 		return new SuppliedRowsStream(Stream::empty);
+	}
+
+	@Override
+	public Set<String> getColumns() {
+		return Set.of();
 	}
 }

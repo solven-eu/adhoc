@@ -23,6 +23,8 @@
 package eu.solven.adhoc.aggregations.sum;
 
 import eu.solven.adhoc.aggregations.IAggregation;
+import eu.solven.adhoc.aggregations.IDoubleAggregation;
+import eu.solven.adhoc.aggregations.ILongAggregation;
 
 /**
  * Like {@link SumAggregator}, but ignores {@link Double#NaN}
@@ -30,7 +32,7 @@ import eu.solven.adhoc.aggregations.IAggregation;
  * @author Benoit Lacelle
  *
  */
-public class SumNotNaNAggregator implements IAggregation {
+public class SumNotNaNAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "SUM";
 

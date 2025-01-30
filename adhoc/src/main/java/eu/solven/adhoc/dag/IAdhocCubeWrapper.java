@@ -35,11 +35,15 @@ import eu.solven.adhoc.query.IQueryOption;
  *
  */
 public interface IAdhocCubeWrapper {
+	// A cube is the combination of a database and a Set of measures.
+	// Set<String> getCubesNames();
 
 	default ITabularView execute(IAdhocQuery adhocQuery) {
 		return execute(adhocQuery, Set.of());
 	}
 
 	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions);
+
+	Set<String> getColumns();
 
 }

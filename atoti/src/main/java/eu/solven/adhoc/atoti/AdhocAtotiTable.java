@@ -25,13 +25,16 @@ package eu.solven.adhoc.atoti;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.ILocation;
+import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.biz.pivot.cellset.ICellSet;
 import com.quartetfs.biz.pivot.context.IContextValue;
 import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
@@ -39,12 +42,13 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.database.SuppliedRowsStream;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -55,18 +59,21 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 @Builder
-public class AdhocAtotiDatabase implements IAdhocDatabaseWrapper {
+public class AdhocAtotiTable implements IAdhocTableWrapper {
 	@NonNull
 	final IActivePivotManager apManager;
 
 	@NonNull
+	final String pivotId;
+
+	@NonNull
 	@Builder.Default
 	@Getter
-	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
+	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
 	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
-		IActivePivotVersion ap = apManager.getActivePivots().get(inferPivotId(dbQuery)).getHead();
+		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();
 		Collection<ILocation> locations = null;
@@ -121,7 +128,28 @@ public class AdhocAtotiDatabase implements IAdhocDatabaseWrapper {
 		return 0;
 	}
 
-	private String inferPivotId(DatabaseQuery dbQuery) {
-		return apManager.getActivePivots().keySet().iterator().next();
+	private IActivePivotVersion inferPivotId() {
+		IMultiVersionActivePivot mvActivePivot = MapPathGet.getRequiredAs(apManager.getActivePivots(), pivotId);
+		return mvActivePivot.getHead();
+	}
+
+	@Override
+	public Set<String> getColumns() {
+		Set<String> columns = new HashSet<>();
+
+		inferPivotId().getDimensions().forEach(d -> {
+			d.getHierarchies().forEach(h -> {
+				h.getLevels().forEach(l -> {
+					columns.add("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
+				});
+			});
+		});
+
+		return columns;
+	}
+
+	@Override
+	public String getName() {
+		return pivotId;
 	}
 }

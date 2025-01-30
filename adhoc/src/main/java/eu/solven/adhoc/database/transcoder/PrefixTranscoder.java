@@ -35,7 +35,7 @@ import lombok.NonNull;
  *
  */
 @Builder
-public class PrefixTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+public class PrefixTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
 	// If empty, it is like the IdentityTranscoder
 	@NonNull
 	@Default

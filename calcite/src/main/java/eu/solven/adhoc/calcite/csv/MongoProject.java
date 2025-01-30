@@ -24,7 +24,6 @@ package eu.solven.adhoc.calcite.csv;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
@@ -89,10 +88,10 @@ public class MongoProject extends Project implements MongoRel {
 		for (Pair<RexNode, String> pair : getNamedProjects()) {
 			final String name = pair.right;
 			final String expr = pair.left.accept(translator);
-			boolean isSimple = expr.toLowerCase(Locale.US).equals(("'$" + name + "'").toLowerCase(Locale.US));
+			boolean isSimple = expr.equalsIgnoreCase(name);
 
 			if (isSimple) {
-				implementor.adhocQueryBuilder.groupByAlso(name);
+				implementor.adhocQueryBuilder.groupByAlso(expr);
 				// items.add(isSimple ? MongoRules.maybeQuote(name) + ": 1" : MongoRules.maybeQuote(name) + ": " +
 				// expr);
 			} else {

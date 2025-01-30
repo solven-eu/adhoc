@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import org.apache.calcite.schema.Schema;
@@ -32,7 +33,8 @@ import org.greenrobot.eventbus.EventBus;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.pepper.mappath.MapPathGet;
 
 /**
  * Factory that creates a {@link AdhocSchema}.
@@ -54,12 +56,30 @@ public class AdhocSchemaFactory implements SchemaFactory {
 	@Override
 	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
 		AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-		IAdhocDatabaseWrapper adw = null;
+		IAdhocTableWrapper adw = makeDbWrapper(operand);
 
 		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(adw).build();
 
 		return new AdhocSchema(aqw);
+	}
+
+	private IAdhocTableWrapper makeDbWrapper(Map<String, ?> operand) {
+		String dbWrapperClass = MapPathGet.getRequiredString(operand, "dbWrapperFactoryClass");
+
+		Class<?> clazz;
+		try {
+			clazz = (Class<?>) Class.forName(dbWrapperClass);
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Issue with class=" + dbWrapperClass, e);
+		}
+
+		try {
+			return (IAdhocTableWrapper) clazz.getMethod("newInstance", Map.class).invoke(null, operand);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+				| SecurityException e) {
+			throw new IllegalArgumentException("Issue with class=" + dbWrapperClass, e);
+		}
 	}
 }

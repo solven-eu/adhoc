@@ -27,12 +27,8 @@ import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.function.Consumer;
 
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.TestUtil;
@@ -44,11 +40,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import eu.solven.adhoc.calcite.csv.AdhocSchema;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.InMemoryDatabase;
+import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
 
 /**
@@ -58,103 +52,26 @@ import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
  * @see MongoDatabasePolicy
  */
 @Disabled
-public class MongoAdapterTest implements SchemaFactory {
+public class MongoAdapterTest {
 
 	/** Connection factory based on the "mongo-zips" model. */
 	protected static final Resource MODEL = new ClassPathResource("/calcite_model-adhoc.json");
 
-	/** Number of records in local file. */
-	protected static final int ZIPS_SIZE = 149;
-
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).build();
+	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-	public final InMemoryDatabase rows = InMemoryDatabase.builder().build();
+	public final InMemoryTable rows = InMemoryTable.builder().build();
 
 	@BeforeEach
 	public void wireEvents() {
 		eventBus.register(toSlf4j);
 	}
 
-	// @RegisterExtension
-	// public static final MongoDatabasePolicy POLICY =
-	// MongoDatabasePolicy.create();
-
-	private AdhocSchema schema;
-
-	@BeforeEach
-	public void setUp() throws Exception {
-		// MongoDatabase database = POLICY.database();
-		//
-		// populate(database.getCollection("zips"),
-		// requireNonNull(MongoAdapterTest.class.getResource("/zips-mini.json"),
-		// "url"));
-		// populate(database.getCollection("store"),
-		// requireNonNull(FoodmartJson.class.getResource("/store.json"),
-		// "url"));
-		// populate(database.getCollection("warehouse"),
-		// requireNonNull(FoodmartJson.class.getResource("/warehouse.json"), "url"));
-		//
-		// // Manually insert data for data-time test.
-		// MongoCollection<BsonDocument> datatypes =
-		// database.getCollection("datatypes").withDocumentClass(BsonDocument.class);
-		// if (datatypes.countDocuments() > 0) {
-		// datatypes.deleteMany(new BsonDocument());
-		// }
-		//
-		// BsonDocument doc = new BsonDocument();
-		// Instant instant = LocalDate.of(2012, 9,
-		// 5).atStartOfDay(ZoneOffset.UTC).toInstant();
-		// doc.put("date", new BsonDateTime(instant.toEpochMilli()));
-		// doc.put("value", new BsonInt32(1231));
-		// doc.put("ownerId", new BsonString("531e7789e4b0853ddb861313"));
-		// doc.put("arr", new BsonArray(Arrays.asList(new BsonString("a"), new
-		// BsonString("b"))));
-		// doc.put("binaryData", new
-		// BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
-		// datatypes.insertOne(doc);
-
-		schema = new AdhocSchema(AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(rows).build());
-	}
-
-	// private static void populate(MongoCollection<Document> collection, URL
-	// resource) throws IOException {
-	// requireNonNull(collection, "collection");
-	//
-	// if (collection.countDocuments() > 0) {
-	// // delete any existing documents (run from a clean set)
-	// collection.deleteMany(new BsonDocument());
-	// }
-	//
-	// MongoCollection<BsonDocument> bsonCollection =
-	// collection.withDocumentClass(BsonDocument.class);
-	// Resources.readLines(resource, StandardCharsets.UTF_8, new
-	// LineProcessor<Void>() {
-	// @Override
-	// public boolean processLine(String line) {
-	// bsonCollection.insertOne(BsonDocument.parse(line));
-	// return true;
-	// }
-	//
-	// @Override
-	// public Void getResult() {
-	// return null;
-	// }
-	// });
-	// }
-
-	/** Returns always the same schema to avoid initialization costs. */
-	@Override
-	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
-		return schema;
-	}
-
 	private CalciteAssert.AssertThat assertModel(Resource resource) {
 		// ensure that Schema from this instance is being used
-		// model = model.replace(MongoSchemaFactory.class.getName(),
-		// MongoAdapterTest.class.getName());
+		// model = model.replace(MongoSchemaFactory.class.getName(), MongoAdapterTest.class.getName());
 
 		try {
 			return CalciteAssert.that().withModel(resource.getURL());
@@ -163,19 +80,20 @@ public class MongoAdapterTest implements SchemaFactory {
 		}
 	}
 
-	// private CalciteAssert.AssertThat assertModel(URL url) {
-	// requireNonNull(url, "url");
-	// try {
-	// return assertModel(Resources.toString(url, StandardCharsets.UTF_8));
-	// } catch (IOException e) {
-	// throw new UncheckedIOException(e);
-	// }
-	// }
+	@Test
+	void testSumK1GroupBya() {
+		assertModel(MODEL).query("select sum('k1') from \"mongo_raw\".\"toto\" GROUP BY a")
+				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0))
+				.explainContains(
+						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
+								+ "    MongoTableScan(table=[[mongo_raw, zips]])")
+				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
+	}
 
 	@Test
 	void testSort() {
 		assertModel(MODEL).query("select * from zips order by state")
-				.returnsCount(ZIPS_SIZE)
+				.returnsCount(0)
 				.explainContains("PLAN=MongoToEnumerableConverter\n" + "  MongoSort(sort0=[$4], dir0=[ASC])\n"
 						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
 						+ "      MongoTableScan(table=[[mongo_raw, zips]])");
@@ -348,13 +266,13 @@ public class MongoAdapterTest implements SchemaFactory {
 	/** Simple query based on the "mongo-zips" model. */
 	@Test
 	void testZips() {
-		assertModel(MODEL).query("select state, city from zips").returnsCount(ZIPS_SIZE);
+		assertModel(MODEL).query("select state, city from zips").returnsCount(0);
 	}
 
 	@Test
 	void testCountGroupByEmpty() {
 		assertModel(MODEL).query("select count(*) from zips")
-				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", ZIPS_SIZE))
+				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0))
 				.explainContains(
 						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
 								+ "    MongoTableScan(table=[[mongo_raw, zips]])")
@@ -364,7 +282,7 @@ public class MongoAdapterTest implements SchemaFactory {
 	@Test
 	void testCountGroupByEmptyMultiplyBy2() {
 		assertModel(MODEL).query("select count(*)*2 from zips")
-				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", ZIPS_SIZE * 2))
+				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0 * 2))
 				.queryContains(mongoChecker("{$group: {_id: {}, _0: {$sum: 1}}}",
 						"{$project: {'EXPR$0': {$multiply: ['$_0', {$literal: 2}]}}}"));
 	}

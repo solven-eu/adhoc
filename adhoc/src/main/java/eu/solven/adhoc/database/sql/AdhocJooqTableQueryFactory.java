@@ -50,6 +50,7 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
+import eu.solven.adhoc.aggregations.sum.CountAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.filters.IAndFilter;
@@ -61,7 +62,7 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -73,10 +74,9 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import max.CountAggregator;
 
 /**
- * This is especially important to make sure all calls to {@link IAdhocDatabaseTranscoder} relies on a
+ * This is especially important to make sure all calls to {@link IAdhocTableTranscoder} relies on a
  * {@link TranscodingContext}
  *
  * @author Benoit Lacelle
@@ -84,9 +84,9 @@ import max.CountAggregator;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class AdhocJooqDatabaseQueryFactory implements IAdhocJooqDatabaseQueryFactory {
+public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	@NonNull
-	final IAdhocDatabaseTranscoder transcoder;
+	final IAdhocTableTranscoder transcoder;
 
 	// BEWARE Should we enable table as SQL or TableLike?
 	@NonNull

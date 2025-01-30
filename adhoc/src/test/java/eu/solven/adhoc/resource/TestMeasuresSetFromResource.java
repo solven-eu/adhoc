@@ -372,7 +372,7 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat(obj.size()).isEqualTo(1);
 
-		AdhocMeasureBag bag = obj.getBag("niceBagName");
+		AdhocMeasureBag bag = (AdhocMeasureBag) obj.getBag("niceBagName");
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = bag.makeMeasuresDag();
 

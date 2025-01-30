@@ -49,7 +49,7 @@ public interface IAggregation {
 		}
 	}
 
-	double aggregateDoubles(double left, double right);
+	// double aggregateDoubles(double left, double right);
 
-	long aggregateLongs(long left, long right);
+	// long aggregateLongs(long left, long right);
 }

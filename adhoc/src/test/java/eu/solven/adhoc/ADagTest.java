@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.InMemoryDatabase;
+import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
 
 /**
@@ -43,7 +43,7 @@ public abstract class ADagTest {
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-	public final InMemoryDatabase rows = InMemoryDatabase.builder().build();
+	public final InMemoryTable rows = InMemoryTable.builder().build();
 	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	@BeforeEach

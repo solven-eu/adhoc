@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package max;
+package eu.solven.adhoc.aggregations.sum;
 
 import eu.solven.adhoc.aggregations.IAggregation;
 import lombok.Builder;
@@ -79,13 +79,13 @@ public class CountAggregator implements IAggregation {
 		}
 	}
 
-	@Override
-	public double aggregateDoubles(double left, double right) {
-		throw new UnsupportedOperationException("COUNT does not fit into a double");
-	}
+	// @Override
+	// public double aggregateDoubles(double left, double right) {
+	// throw new UnsupportedOperationException("COUNT does not fit into a double");
+	// }
 
-	@Override
-	public long aggregateLongs(long left, long right) {
-		throw new UnsupportedOperationException("COUNT does not fit into a double");
-	}
+	// @Override
+	// public long aggregateLongs(long left, long right) {
+	// throw new UnsupportedOperationException("COUNT does not fit into a double");
+	// }
 }

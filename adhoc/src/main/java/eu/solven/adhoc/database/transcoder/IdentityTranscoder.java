@@ -24,14 +24,14 @@ package eu.solven.adhoc.database.transcoder;
 
 import java.util.Set;
 
-import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.database.IAdhocTableWrapper;
 
 /**
  * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocDatabaseWrapper}. Then, the transcoding
- * is the identity.
+ * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocTableWrapper}. Then, the transcoding is
+ * the identity.
  */
-public class IdentityTranscoder implements IAdhocDatabaseTranscoder, IAdhocDatabaseReverseTranscoder {
+public class IdentityTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
 	@Override
 	public String underlying(String queried) {
 		return queried;

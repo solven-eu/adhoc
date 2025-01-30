@@ -28,11 +28,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseReverseTranscoder;
-import eu.solven.adhoc.database.transcoder.IAdhocDatabaseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableReverseTranscoder;
+import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.execute.FilterHelpers;
@@ -44,17 +45,26 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A simple {@link IAdhocDatabaseWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not
+ * A simple {@link IAdhocTableWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not
  * execute groupBys, nor it handles calculated columns (over SQL expressions).
  */
 @Slf4j
 @Builder
-public class InMemoryDatabase implements IAdhocDatabaseWrapper {
+public class InMemoryTable implements IAdhocTableWrapper {
+
+	public static InMemoryTable newInstance(Map<String, ?> options) {
+		return InMemoryTable.builder().build();
+	}
 
 	@Default
 	@NonNull
 	@Getter
-	final IAdhocDatabaseTranscoder transcoder = new IdentityTranscoder();
+	String name = "inMemory";
+
+	@Default
+	@NonNull
+	@Getter
+	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
 	@NonNull
 	@Default
@@ -68,7 +78,7 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 		return rows.stream();
 	}
 
-	protected Map<String, ?> transcodeFromDb(IAdhocDatabaseReverseTranscoder transcodingContext,
+	protected Map<String, ?> transcodeFromDb(IAdhocTableReverseTranscoder transcodingContext,
 			Map<String, ?> underlyingMap) {
 		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
 	}
@@ -100,4 +110,10 @@ public class InMemoryDatabase implements IAdhocDatabaseWrapper {
 			return withSelectedColumns;
 		}).map(row -> transcodeFromDb(transcodingContext, row)));
 	}
+
+	@Override
+	public Set<String> getColumns() {
+		return rows.stream().flatMap(row -> row.keySet().stream()).collect(Collectors.toSet());
+	}
+
 }
