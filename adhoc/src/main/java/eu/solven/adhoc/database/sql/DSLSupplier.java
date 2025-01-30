@@ -40,10 +40,21 @@ import lombok.NonNull;
 public interface DSLSupplier {
 	DSLContext getDSLContext();
 
+	/**
+	 *
+	 * @param connectionSupplier
+	 * @return a {@link DSLSupplier} based on provided connectionSupplier
+	 */
 	static DSLSupplier fromConnection(Supplier<Connection> connectionSupplier) {
+		// TODO Should rely on Connection provider
 		return () -> DSL.using(connectionSupplier.get());
 	}
 
+	/**
+	 *
+	 * @param sqlDialect
+	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
+	 */
 	static @NonNull DSLSupplier fromDialect(SQLDialect sqlDialect) {
 		return () -> DSL.using(sqlDialect);
 	}

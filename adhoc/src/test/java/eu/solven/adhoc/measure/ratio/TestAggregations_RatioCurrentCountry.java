@@ -67,7 +67,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=current_valid").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
@@ -84,7 +84,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				.andFilter("country", "FRANCE")
 				.debug(true)
 				.build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -101,7 +101,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testWildcardCountry() {
 		AdhocQuery adhocQuery =
 				AdhocQuery.builder().measure("d_country=current_valid").groupByAlso("country").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FRANCE"), Map.of("country", "USA"));
@@ -120,7 +120,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testParis() {
 		AdhocQuery adhocQuery =
 				AdhocQuery.builder().measure("d_country=current_valid").andFilter("city", "Paris").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);
@@ -138,7 +138,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				.andFilter("city", "Paris")
 				.debug(true)
 				.build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FRANCE"), Map.of("country", "USA"));
@@ -160,7 +160,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				.andFilter("country", "USA")
 				.debug(true)
 				.build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());

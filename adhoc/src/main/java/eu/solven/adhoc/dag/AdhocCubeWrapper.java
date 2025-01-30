@@ -22,9 +22,12 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Set;
+
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.database.IAdhocDatabaseWrapper;
+import eu.solven.adhoc.query.IQueryOption;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
@@ -38,10 +41,11 @@ import lombok.RequiredArgsConstructor;
 @Builder
 public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final IAdhocQueryEngine aqe;
+	final IAdhocMeasureBag measureBag;
 	final IAdhocDatabaseWrapper adw;
 
 	@Override
-	public ITabularView execute(IAdhocQuery adhocQuery) {
-		return aqe.execute(adhocQuery, adw);
+	public ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions) {
+		return aqe.execute(adhocQuery, queryOptions, measureBag, adw);
 	}
 }

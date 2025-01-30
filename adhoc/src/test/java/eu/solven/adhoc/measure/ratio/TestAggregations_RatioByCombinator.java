@@ -77,7 +77,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -89,7 +89,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	@Test
 	public void testFR() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("country", "FR").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +102,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	@Test
 	public void testWildcardCountry() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").groupByAlso("country").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -115,7 +115,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	@Test
 	public void testParis() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("city", "Paris").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -132,7 +132,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 				.andFilter("city", "Paris")
 				.debug(true)
 				.build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -146,7 +146,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	public void testUS() {
 		AdhocQuery adhocQuery =
 				AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
@@ -83,10 +84,10 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 				measureBag.addMeasure(k1Sum);
 
-				AdhocQueryEngine aqe =
-						AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+				AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
+				AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(jooqDb).aqe(aqe).measureBag(measureBag).build();
 
-				ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), jooqDb);
+				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 				Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())

@@ -89,8 +89,7 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result =
 				aqe.execute(
@@ -100,6 +99,7 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 										.of(CalculatedColumn.builder().column("first_letter").sql("word[1]").build()))
 								.debug(true)
 								.build(),
+						measureBag,
 						jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

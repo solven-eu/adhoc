@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Set;
+
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.query.IQueryOption;
 
 /**
  * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
@@ -33,6 +36,10 @@ import eu.solven.adhoc.api.v1.IAdhocQuery;
  */
 public interface IAdhocCubeWrapper {
 
-	ITabularView execute(IAdhocQuery adhocQuery);
+	default ITabularView execute(IAdhocQuery adhocQuery) {
+		return execute(adhocQuery, Set.of());
+	}
+
+	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions);
 
 }

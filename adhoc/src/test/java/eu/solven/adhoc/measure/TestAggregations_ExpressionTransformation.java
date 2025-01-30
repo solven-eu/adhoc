@@ -67,7 +67,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -92,10 +92,10 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = aqe.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(AdhocQuery.builder()
 				.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
-				.build(), rows);
+				.build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -125,10 +125,10 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		// Reject rows where k2 is not null
-		ITabularView output = aqe.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(AdhocQuery.builder()
 				.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
-				.build(), rows);
+				.build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());

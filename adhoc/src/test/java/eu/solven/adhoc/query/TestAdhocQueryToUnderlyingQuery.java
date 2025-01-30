@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.dag.AdhocExecutingQueryContext;
 import eu.solven.adhoc.transformers.Combinator;
 
 public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocTestConstants {
@@ -51,7 +52,10 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(Set.of(), AdhocQuery.builder().measure(k1Sum.getName()).build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
+				.adhocQuery(AdhocQuery.builder().measure(k1Sum.getName()).build())
+				.measureBag(amb)
+				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -72,7 +76,10 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(Set.of(), AdhocQuery.builder().measure("sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
+				.adhocQuery(AdhocQuery.builder().measure("sumK1K2").build())
+				.measureBag(amb)
+				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -93,8 +100,10 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output =
-				aqe.prepare(Set.of(), AdhocQuery.builder().measure(k1Sum.getName(), "sumK1K2").build());
+		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
+				.adhocQuery(AdhocQuery.builder().measure("sumK1K2").build())
+				.measureBag(amb)
+				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

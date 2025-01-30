@@ -211,10 +211,9 @@ public class TestDatabaseQuery_Transcoding implements IAdhocTestConstants {
 			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 			measureBag.addMeasure(k1Sum);
 
-			AdhocQueryEngine aqe =
-					AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+			AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
-			ITabularView result = aqe.execute(query, jooqDb);
+			ITabularView result = aqe.execute(query, measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

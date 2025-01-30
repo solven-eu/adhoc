@@ -46,6 +46,7 @@ import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
@@ -69,11 +70,9 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 	LocalDate today = LocalDate.now();
 
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder()
-			.eventBus(eventBus)
-			.measureBag(amb)
-			.operatorsFactory(makeOperatorsFactory(fxStorage))
-			.build();
+	public final AdhocQueryEngine aqe =
+			AdhocQueryEngine.builder().eventBus(eventBus).operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -169,7 +168,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -191,7 +190,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -217,11 +216,11 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqe.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(AdhocQuery.builder()
 				.measure(mName, mNameEUR, mNameUSD)
 				.customMarker(Optional.of("JPY"))
 				.debug(true)
-				.build(), rows);
+				.build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());

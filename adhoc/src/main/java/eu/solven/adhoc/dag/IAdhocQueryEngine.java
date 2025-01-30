@@ -31,10 +31,22 @@ import eu.solven.adhoc.query.IQueryOption;
 
 public interface IAdhocQueryEngine {
 
-	default ITabularView execute(IAdhocQuery adhocQuery, IAdhocDatabaseWrapper db) {
-		return execute(adhocQuery, Set.of(), db);
+	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocDatabaseWrapper db);
+
+	default ITabularView execute(IAdhocQuery query, IAdhocMeasureBag measureBag, IAdhocDatabaseWrapper db) {
+		return execute(AdhocExecutingQueryContext.builder().adhocQuery(query).measureBag(measureBag).build(), db);
 	}
 
-	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions, IAdhocDatabaseWrapper db);
-
+	default ITabularView execute(IAdhocQuery query,
+			Set<? extends IQueryOption> queryOptions,
+			IAdhocMeasureBag measureBag,
+			IAdhocDatabaseWrapper db) {
+		return execute(
+				AdhocExecutingQueryContext.builder()
+						.adhocQuery(query)
+						.queryOptions(queryOptions)
+						.measureBag(measureBag)
+						.build(),
+				db);
+	}
 }

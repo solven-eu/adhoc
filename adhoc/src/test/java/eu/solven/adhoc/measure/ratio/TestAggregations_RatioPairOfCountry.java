@@ -89,9 +89,8 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -102,7 +101,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testFR() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("country", "FR").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -118,7 +117,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testWildcardCountry() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").groupByAlso("country").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FR"), Map.of("country", "US"));
@@ -134,7 +133,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testParis() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("city", "Paris").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -151,7 +150,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 				.andFilter("city", "Paris")
 				.debug(true)
 				.build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -165,7 +164,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	public void testUS() {
 		AdhocQuery adhocQuery =
 				AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").debug(true).build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

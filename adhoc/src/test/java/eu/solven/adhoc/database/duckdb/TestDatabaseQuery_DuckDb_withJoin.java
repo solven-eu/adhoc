@@ -143,11 +143,11 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
-			ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), jooqDb);
+			ITabularView result =
+					aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList()).contains(Map.of());
@@ -164,12 +164,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -188,12 +188,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -212,12 +212,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -236,12 +236,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -260,12 +260,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -284,12 +284,12 @@ public class TestDatabaseQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
+					measureBag,
 					jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

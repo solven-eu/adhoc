@@ -81,7 +81,7 @@ public class TestAggregations_Filtrator extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k1", "filterK1onA1").build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -120,7 +120,7 @@ public class TestAggregations_Filtrator extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("Ratio_k1_k1witha1").build();
-		ITabularView output = aqe.execute(adhocQuery, rows);
+		ITabularView output = aqw.execute(adhocQuery);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());

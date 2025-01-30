@@ -57,7 +57,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("0or100").build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -82,7 +82,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("0or100").build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -110,7 +110,7 @@ public class TestAggregations_Dispatchor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build(), rows);
+				aqw.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("0_or_100", 0), Map.of("0_or_100", 100));

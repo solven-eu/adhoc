@@ -26,16 +26,48 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.duckdb.DuckDBConnection;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+
+import lombok.NonNull;
+
+/**
+ * Helps working with DuckDB.
+ */
 public class DuckDbHelper {
 	protected DuckDbHelper() {
 		// hidden
 	}
 
-	public static Connection makeFreshInMemoryDb() {
+	/**
+	 * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
+	 *
+	 * @return a {@link DuckDBConnection} to an new DuckDB InMemory instance.
+	 */
+	// https://duckdb.org/docs/api/java.html
+	public static DuckDBConnection makeFreshInMemoryDb() {
 		try {
-			return DriverManager.getConnection("jdbc:duckdb:");
+			return (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:");
 		} catch (SQLException e) {
-			throw new IllegalStateException(e);
+			throw new IllegalStateException("Issue opening an InMemory DuchDB", e);
 		}
+	}
+
+	/**
+	 *
+	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
+	 */
+	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
+		DuckDBConnection duckDbConnection = DuckDbHelper.makeFreshInMemoryDb();
+		return () -> {
+			Connection duplicated;
+			try {
+				duplicated = duckDbConnection.duplicate();
+			} catch (SQLException e) {
+				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
+			}
+			return DSL.using(duplicated);
+		};
 	}
 }

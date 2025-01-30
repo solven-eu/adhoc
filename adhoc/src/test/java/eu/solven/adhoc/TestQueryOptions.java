@@ -61,9 +61,8 @@ public class TestQueryOptions extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").build(),
-				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES),
-				rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build(),
+				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES));
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -83,9 +82,11 @@ public class TestQueryOptions extends ADagTest {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, rows)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, Set.of(), amb, rows))
+				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), rows);
+		ITabularView output =
+				aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), amb, rows);
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(0);

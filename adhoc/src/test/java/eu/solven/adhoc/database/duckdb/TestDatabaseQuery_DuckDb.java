@@ -23,7 +23,6 @@
 package eu.solven.adhoc.database.duckdb;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,6 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapper;
 import eu.solven.adhoc.database.sql.AdhocJooqDatabaseWrapperParameters;
-import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.DatabaseQuery;
@@ -65,9 +63,8 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 	AdhocJooqDatabaseWrapper jooqDb = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
-			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+			.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 			.tableName(tableName)
 			.build());
 
@@ -225,11 +222,10 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
-		ITabularView result =
-				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+		ITabularView result = aqe
+				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -263,8 +259,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		{
 			ITabularView result = aqe.execute(AdhocQuery.builder()
@@ -272,7 +267,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
 					.debug(true)
-					.build(), jooqDb);
+					.build(), measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -288,7 +283,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
 					.debug(true)
-					.build(), jooqDb);
+					.build(), measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -310,11 +305,11 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		Assertions.assertThatThrownBy(() -> aqe.execute(
 				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("b", "a1").debug(true).build(),
+				measureBag,
 				jooqDb)).isInstanceOf(DataAccessException.class);
 	}
 
@@ -329,11 +324,12 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
-		Assertions.assertThatThrownBy(() -> aqe
-				.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build(), jooqDb))
+		Assertions.assertThatThrownBy(
+				() -> aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build(),
+						measureBag,
+						jooqDb))
 				.isInstanceOf(DataAccessException.class);
 	}
 
@@ -352,11 +348,10 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(kSumOverk1);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result =
-				aqe.execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build(), jooqDb);
+				aqe.execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -378,13 +373,12 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		ITabularView result = aqe.execute(AdhocQuery.builder()
 				.measure(k1Sum.getName())
 				.andFilter("a", LikeMatcher.builder().like("a1%").build())
-				.build(), jooqDb);
+				.build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -402,8 +396,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		Assertions.assertThatThrownBy(() -> {
 			aqe.execute(AdhocQuery.builder()
@@ -411,7 +404,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 					// .groupByAlso("unknownColumn")
 					.andFilter("unknownColumn", "someValue")
 					.debug(true)
-					.build(), jooqDb);
+					.build(), measureBag, jooqDb);
 		})
 				.isInstanceOf(DataAccessException.class)
 				.hasMessageContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
@@ -430,11 +423,10 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
-		AdhocQueryEngine aqe =
-				AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).build();
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = aqe.execute(AdhocQuery.builder().groupByAlso("a").build(), jooqDb);
+		ITabularView result = aqe.execute(AdhocQuery.builder().groupByAlso("a").build(), measureBag, jooqDb);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

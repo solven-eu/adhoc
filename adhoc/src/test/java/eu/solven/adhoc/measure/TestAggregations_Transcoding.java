@@ -37,6 +37,7 @@ import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.database.InMemoryDatabase;
 import eu.solven.adhoc.database.transcoder.PrefixTranscoder;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -47,6 +48,7 @@ import eu.solven.adhoc.transformers.Combinator;
 public class TestAggregations_Transcoding extends ADagTest {
 	public final InMemoryDatabase rows =
 			InMemoryDatabase.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
 
 	@Override
 	@BeforeEach
@@ -67,7 +69,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -81,7 +83,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testFilter() {
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -95,7 +97,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testGroupBy() {
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("c").build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("c").build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("c", "v1"), Map.of("c", "v2"));
@@ -110,9 +112,8 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Test
 	public void testFilterGroupBy() {
-		ITabularView output = aqe.execute(
-				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").debug(true).build(),
-				rows);
+		ITabularView output = aqw.execute(
+				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").debug(true).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("c", "v1"));

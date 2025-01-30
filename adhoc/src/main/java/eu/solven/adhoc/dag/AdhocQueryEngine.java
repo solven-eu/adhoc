@@ -93,32 +93,26 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
-	final IAdhocMeasureBag measureBag;
-
-	@NonNull
 	final EventBus eventBus;
 
 	@Override
-	public ITabularView execute(IAdhocQuery adhocQuery,
-			Set<? extends IQueryOption> queryOptions,
-			IAdhocDatabaseWrapper db) {
-		Set<DatabaseQuery> prepared = prepare(queryOptions, adhocQuery);
+	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocDatabaseWrapper db) {
+		Set<DatabaseQuery> prepared = prepare(queryWithContext);
 
 		Map<DatabaseQuery, IRowsStream> dbQueryToStream = new HashMap<>();
 		for (DatabaseQuery dbQuery : prepared) {
 			dbQueryToStream.put(dbQuery, db.openDbStream(dbQuery));
 		}
 
-		return execute(adhocQuery, queryOptions, dbQueryToStream);
+		return execute(queryWithContext, dbQueryToStream);
 	}
 
-	protected ITabularView execute(IAdhocQuery adhocQuery,
-			Set<? extends IQueryOption> queryOptions,
+	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
 			Map<DatabaseQuery, IRowsStream> dbQueryToSteam) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates =
-				makeQueryStepsDag(queryOptions, adhocQuery);
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
-		Map<String, Set<Aggregator>> inputColumnToAggregators = columnToAggregators(fromQueriedToAggregates);
+		Map<String, Set<Aggregator>> inputColumnToAggregators =
+				columnToAggregators(queryWithContext, fromQueriedToAggregates);
 
 		Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues = new LinkedHashMap<>();
 
@@ -130,7 +124,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			queryStepToValues.putAll(oneQueryStepToValues);
 		});
 
-		if (adhocQuery.isDebug()) {
+		if (queryWithContext.isDebug()) {
 			queryStepToValues.forEach((aggregateStep, values) -> {
 				values.scan(row -> {
 					return AsObjectValueConsumer.consumer(o -> {
@@ -145,17 +139,17 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// query
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregates").source(this).build());
 
-		walkDagUpToQueriedMeasures(fromQueriedToAggregates, queryStepToValues);
+		walkDagUpToQueriedMeasures(queryWithContext, fromQueriedToAggregates, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transformations").source(this).build());
 
 		MapBasedTabularView mapBasedTabularView =
-				toTabularView(queryOptions, fromQueriedToAggregates, queryStepToValues);
+				toTabularView(queryWithContext.getQueryOptions(), fromQueriedToAggregates, queryStepToValues);
 
 		return mapBasedTabularView;
 	}
 
-	protected Map<String, Set<Aggregator>> columnToAggregators(
+	protected Map<String, Set<Aggregator>> columnToAggregators(AdhocExecutingQueryContext queryWithContext,
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates) {
 		Map<String, Set<Aggregator>> columnToAggregators = new LinkedHashMap<>();
 
@@ -164,7 +158,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.filter(step -> fromQueriedToAggregates.outDegreeOf(step) == 0)
 				.map(AdhocQueryStep::getMeasure)
 				.forEach(measure -> {
-					measure = resolveIfRef(measure);
+					measure = queryWithContext.resolveIfRef(measure);
 
 					if (measure instanceof Aggregator a) {
 						columnToAggregators.merge(a.getColumnName(), Set.of(a), UnionSetAggregator::unionSet);
@@ -258,7 +252,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepToValues;
 	}
 
-	protected void walkDagUpToQueriedMeasures(DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
+	protected void walkDagUpToQueriedMeasures(AdhocExecutingQueryContext queryWithContext,
+			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
 			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried =
@@ -283,7 +278,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
 
-			IMeasure measure = resolveIfRef(queryStep.getMeasure());
+			IMeasure measure = queryWithContext.resolveIfRef(queryStep.getMeasure());
 
 			Set<DefaultEdge> underlyingStepEdges = fromAggregatesToQueried.incomingEdgesOf(queryStep);
 			List<AdhocQueryStep> underlyingSteps = underlyingStepEdges.stream()
@@ -330,26 +325,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 			}
 		});
-	}
-
-	protected IMeasure resolveIfRef(IMeasure measure) {
-		return resolveIfRef(Set.of(), measure);
-	}
-
-	protected IMeasure resolveIfRef(Set<? extends IQueryOption> queryOptions, IMeasure measure) {
-		if (measure == null) {
-			throw new IllegalArgumentException("Null input");
-		}
-
-		if (queryOptions.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
-			if (measure instanceof ReferencedMeasure ref) {
-				return this.measureBag.resolveIfRefOpt(ref).orElseGet(() -> new EmptyMeasure(ref.getRef()));
-			} else {
-				return this.measureBag.resolveIfRefOpt(measure).orElseGet(() -> new EmptyMeasure(measure.getName()));
-			}
-		} else {
-			return this.measureBag.resolveIfRef(measure);
-		}
 	}
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(DatabaseQuery adhocQuery,
@@ -514,21 +489,18 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	/**
-	 * @param queryOptions
-	 * @param adhocQuery
+	 * @param queryWithContext
 	 * @return the Set of {@link DatabaseQuery} to be executed.
 	 */
-	public Set<DatabaseQuery> prepare(Set<? extends IQueryOption> queryOptions, IAdhocQuery adhocQuery) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryOptions, adhocQuery);
+	public Set<DatabaseQuery> prepare(AdhocExecutingQueryContext queryWithContext) {
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryWithContext);
 
-		return queryStepsDagToDbQueries(directedGraph, adhocQuery.isExplain(), adhocQuery.isDebug());
+		return queryStepsDagToDbQueries(queryWithContext, directedGraph);
 
 	}
 
-	protected Set<DatabaseQuery> queryStepsDagToDbQueries(
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph,
-			boolean explain,
-			boolean debug) {
+	protected Set<DatabaseQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
+			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph) {
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
@@ -536,7 +508,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.stream()
 				.filter(step -> directedGraph.outgoingEdgesOf(step).isEmpty())
 				.forEach(step -> {
-					IMeasure leafMeasure = resolveIfRef(step.getMeasure());
+					IMeasure leafMeasure = queryWithContext.resolveIfRef(step.getMeasure());
 
 					if (leafMeasure instanceof Aggregator leafAggregator) {
 						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
@@ -555,6 +527,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
 					}
 				});
+
+		boolean explain = queryWithContext.isExplain();
+		boolean debug = queryWithContext.isDebug();
 
 		if (explain || debug) {
 			new TopologicalOrderIterator<>(directedGraph).forEachRemaining(step -> {
@@ -578,26 +553,23 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> makeQueryStepsDag(
-			Set<? extends IQueryOption> queryOptions,
-			IAdhocQuery adhocQuery) {
-		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(adhocQuery);
+			AdhocExecutingQueryContext queryWithContext) {
+		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryWithContext.getAdhocQuery());
 
 		// Add explicitly requested steps
-		if (adhocQuery.getMeasureRefs().isEmpty()) {
+		Set<ReferencedMeasure> measureRefs = queryWithContext.getAdhocQuery().getMeasureRefs();
+		if (measureRefs.isEmpty()) {
 			IMeasure countAsterisk = defaultMeasure();
 			queryStepsDagBuilder.addRoot(countAsterisk);
 		} else {
-			adhocQuery.getMeasureRefs()
-					.stream()
-					.map(ref -> resolveIfRef(queryOptions, ref))
-					.forEach(queryStepsDagBuilder::addRoot);
+			measureRefs.stream().map(ref -> queryWithContext.resolveIfRef(ref)).forEach(queryStepsDagBuilder::addRoot);
 		}
 
 		// Add implicitly requested steps
 		while (queryStepsDagBuilder.hasLeftovers()) {
 			AdhocQueryStep adhocSubQuery = queryStepsDagBuilder.pollLeftover();
 
-			IMeasure measure = resolveIfRef(adhocSubQuery.getMeasure());
+			IMeasure measure = queryWithContext.resolveIfRef(adhocSubQuery.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
@@ -606,7 +578,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						measureWithUnderlyings.wrapNode(operatorsFactory, adhocSubQuery);
 				for (AdhocQueryStep underlyingStep : wrappedQueryStep.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
-					IMeasure notRefMeasure = resolveIfRef(underlyingStep.getMeasure());
+					IMeasure notRefMeasure = queryWithContext.resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 
 					queryStepsDagBuilder.addEdge(adhocSubQuery, underlyingStep);

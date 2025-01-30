@@ -69,7 +69,7 @@ public class MongoAdapterTest implements SchemaFactory {
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measureBag(amb).build();
+	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).build();
 
 	public final InMemoryDatabase rows = InMemoryDatabase.builder().build();
 
@@ -116,7 +116,7 @@ public class MongoAdapterTest implements SchemaFactory {
 		// BsonBinary("binaryData".getBytes(StandardCharsets.UTF_8)));
 		// datatypes.insertOne(doc);
 
-		schema = new AdhocSchema(new AdhocCubeWrapper(aqe, rows));
+		schema = new AdhocSchema(AdhocCubeWrapper.builder().aqe(aqe).measureBag(amb).adw(rows).build());
 	}
 
 	// private static void populate(MongoCollection<Document> collection, URL

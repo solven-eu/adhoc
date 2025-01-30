@@ -21,7 +21,72 @@ this project to remains simpler, given a query is generally slow due to the unde
 - MongoDB [Aggregation Pipeline](https://www.mongodb.com/resources/products/capabilities/aggregation-pipeline).
 - [DAX](https://learn.microsoft.com/en-us/dax/dax-overview) enables complex queries in Microsoft eco-system.
 - [SquashQL](https://www.squashql.io/) is an SQL query-engine for OLAP, with a strong emphasis on its typescript UI.
-- [Atoti PostProcessors](https://docs.activeviam.com/products/atoti/server/6.1.1/docs/cube/postprocessors/)
+- [Atoti PostProcessors](https://docs.activeviam.com/products/atoti/server/6.1.1/docs/cube/postprocessors/) is the standard Atoti way of building complex tree of measures on top of Atoti cubes.
+
+# Quick-start
+
+## Set-up
+
+1. Ensure you have JDK 21 available
+2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.1` (yet to be released. You have to compile the project locally for now)
+3. Define an `IAdhocDatabaseWrapper`: it defines how Adhoc can access your data
+
+Assuming your data is queryable with JooQ:
+
+```
+myTableWrapper = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+        .table(yourJooqTableLike)
+        .build());
+```
+
+For local `.parquet` files, it can be done with:
+
+```
+myTableWrapper = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+        .table(DSL.table(DSL.unquotedName("read_parquet('myRootFolder/2025-*-BaseFacts_*.parquet', union_by_name=True)")))
+        .build());
+```
+
+4. Define a `MeasureBag`: it defines the measures and the links between them
+
+An early-stage measureBag could look like:
+```
+Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
+Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
+
+Combinator k1PlusK2AsExpr = Combinator.builder()
+        .name("k1PlusK2AsExpr")
+        .underlyings(Arrays.asList("k1", "k2"))
+        .combinationKey(ExpressionCombination.KEY)
+        .combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)").build())
+        .build();
+
+AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+measureBag.addMeasure(k1Sum);
+measureBag.addMeasure(k2Sum);
+measureBag.addMeasure(k1PlusK2AsExpr);
+```
+
+5. Defines an Adhoc Engine: it know how to execute a query given the measure relationships
+
+```
+AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+```
+
+6. Define your query
+```
+ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+        .containsExactly(Map.of());
+Assertions.assertThat(mapBased.getCoordinatesToValues())
+        .containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
+```
+
+7. Execute your query
 
 # Concepts
 

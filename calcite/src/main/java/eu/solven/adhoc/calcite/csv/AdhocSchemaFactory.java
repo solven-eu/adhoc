@@ -54,11 +54,11 @@ public class AdhocSchemaFactory implements SchemaFactory {
 	@Override
 	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
 		AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).measureBag(amb).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus).build();
 
 		IAdhocDatabaseWrapper adw = null;
 
-		AdhocCubeWrapper aqw = new AdhocCubeWrapper(aqe, adw);
+		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().aqe(aqe).measureBag(amb).adw(adw).build();
 
 		return new AdhocSchema(aqw);
 	}

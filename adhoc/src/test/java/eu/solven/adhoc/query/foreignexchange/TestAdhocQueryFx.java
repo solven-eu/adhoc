@@ -43,6 +43,7 @@ import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
+import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -61,11 +62,9 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	LocalDate today = LocalDate.now();
 
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder()
-			.eventBus(eventBus)
-			.measureBag(amb)
-			.operatorsFactory(makeOperatorsFactory(fxStorage))
-			.build();
+	public final AdhocQueryEngine aqe =
+			AdhocQueryEngine.builder().eventBus(eventBus).operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().adw(rows).aqe(aqe).measureBag(amb).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -109,7 +108,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -128,7 +127,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		rows.add(Map.of("l", "A", "ccyFrom", "unknownCcy", "k1", 234));
 
-		ITabularView output = aqe.execute(AdhocQuery.builder().measure(mName).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -150,8 +149,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build(), rows);
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -176,8 +174,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
 		ITabularView output =
-				aqe.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build(),
-						rows);
+				aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
 
 		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
 		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
@@ -202,7 +199,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 			amb.addMeasure(k1Sum);
 		}
 
-		Assertions.assertThatThrownBy(() -> aqe.execute(AdhocQuery.builder().measure(mName).build(), rows))
+		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

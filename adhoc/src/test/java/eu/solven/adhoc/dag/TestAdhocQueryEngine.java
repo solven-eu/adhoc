@@ -37,7 +37,7 @@ import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocQueryEngine {
 	AdhocMeasureBag amg = AdhocMeasureBag.builder().build();
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().measureBag(amg).eventBus(new EventBus()).build();
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()).build();
 
 	@Test
 	public void testColumnToAggregationKeys() {
@@ -47,9 +47,12 @@ public class TestAdhocQueryEngine {
 		amg.addMeasure(Aggregator.builder().name("n4").build());
 
 		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().keySet()).build();
+		AdhocExecutingQueryContext queryWithContext =
+				AdhocExecutingQueryContext.builder().measureBag(amg).adhocQuery(adhocQuery).build();
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates =
-				aqe.makeQueryStepsDag(Set.of(), adhocQuery);
-		Map<String, Set<Aggregator>> columnToAggregators = aqe.columnToAggregators(fromQueriedToAggregates);
+				aqe.makeQueryStepsDag(queryWithContext);
+		Map<String, Set<Aggregator>> columnToAggregators =
+				aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates);
 
 		Assertions.assertThat(columnToAggregators)
 				.hasSize(3)
