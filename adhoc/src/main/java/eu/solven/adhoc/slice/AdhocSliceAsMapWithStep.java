@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.ToString;
@@ -51,6 +52,13 @@ public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
 	@Override
 	public Set<String> getColumns() {
 		return slice.getColumns();
+	}
+
+	@Override
+	public IAdhocFilter asFilter() {
+		// it seems useful to AND the slice and the queryStep, as the slice should always match the queryFilters
+		// TODO Add an assertions verifying the filters are compatible
+		return slice.asFilter();
 	}
 
 	@Override

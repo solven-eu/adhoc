@@ -37,8 +37,6 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
@@ -49,6 +47,8 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Bucketor;
+import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.view.MapBasedTabularView;
 import lombok.NonNull;
 
 /**

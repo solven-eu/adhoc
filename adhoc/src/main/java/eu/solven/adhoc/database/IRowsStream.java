@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.query.table.TableQuery;
+
 /**
- * Holds a resource to a stream of data, typically given a {@link eu.solven.adhoc.query.DatabaseQuery}
+ * Holds a resource to a stream of data, typically given a {@link TableQuery}
  *
  * @author Benoit Lacelle
  */

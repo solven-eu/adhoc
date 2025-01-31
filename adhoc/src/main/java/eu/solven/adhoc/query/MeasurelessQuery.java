@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IHasCustomMarker;
-import eu.solven.adhoc.api.v1.IIsDebugable;
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

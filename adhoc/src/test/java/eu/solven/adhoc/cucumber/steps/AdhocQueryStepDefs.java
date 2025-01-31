@@ -29,13 +29,13 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
+import eu.solven.adhoc.view.ITabularView;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;

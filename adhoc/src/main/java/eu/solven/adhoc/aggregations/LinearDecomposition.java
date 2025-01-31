@@ -30,9 +30,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;

@@ -24,11 +24,11 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IIsDebugable;
-import eu.solven.adhoc.api.v1.IIsExplainable;
+import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.transformers.EmptyMeasure;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;

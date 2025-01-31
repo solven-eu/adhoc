@@ -31,8 +31,8 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocQueryEngine {

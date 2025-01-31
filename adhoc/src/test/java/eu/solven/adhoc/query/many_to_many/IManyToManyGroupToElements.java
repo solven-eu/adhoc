@@ -24,7 +24,7 @@ package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * Holds the group to elements leg of a many2many definition

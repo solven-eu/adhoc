@@ -28,9 +28,9 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.execute.FilterHelpers;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestFilterHelpers {
 	@Test

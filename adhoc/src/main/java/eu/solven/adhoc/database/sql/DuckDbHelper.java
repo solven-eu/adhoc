@@ -43,6 +43,9 @@ public class DuckDbHelper {
 	/**
 	 * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
 	 *
+	 * Everything not persisted is discarded when the connection is closed: it can be used to read/write files, but any
+	 * inMemory tables would be dropped.
+	 *
 	 * @return a {@link DuckDBConnection} to an new DuckDB InMemory instance.
 	 */
 	// https://duckdb.org/docs/api/java.html
@@ -50,7 +53,7 @@ public class DuckDbHelper {
 		try {
 			return (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:");
 		} catch (SQLException e) {
-			throw new IllegalStateException("Issue opening an InMemory DuchDB", e);
+			throw new IllegalStateException("Issue opening an InMemory DuckDB", e);
 		}
 	}
 

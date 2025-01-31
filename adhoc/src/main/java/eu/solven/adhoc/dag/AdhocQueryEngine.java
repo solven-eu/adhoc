@@ -44,23 +44,20 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.MapBasedTabularView;
-import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.collection.UnionSetAggregator;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
-import eu.solven.adhoc.query.DatabaseQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -73,6 +70,9 @@ import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
 import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
+import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.view.RowScanner;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -96,10 +96,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	@Override
 	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
-		Set<DatabaseQuery> prepared = prepare(queryWithContext);
+		Set<TableQuery> prepared = prepare(queryWithContext);
 
-		Map<DatabaseQuery, IRowsStream> dbQueryToStream = new HashMap<>();
-		for (DatabaseQuery dbQuery : prepared) {
+		Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
+		for (TableQuery dbQuery : prepared) {
 			dbQueryToStream.put(dbQuery, table.openDbStream(dbQuery));
 		}
 
@@ -107,7 +107,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
-			Map<DatabaseQuery, IRowsStream> dbQueryToSteam) {
+			Map<TableQuery, IRowsStream> dbQueryToSteam) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
 		Map<String, Set<Aggregator>> inputColumnToAggregators =
@@ -214,7 +214,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(DatabaseQuery dbQuery,
+	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(TableQuery dbQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -224,7 +224,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return toImmutableChunks(dbQuery, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(DatabaseQuery dbQuery,
+	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(TableQuery dbQuery,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
@@ -326,7 +326,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		});
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(DatabaseQuery adhocQuery,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -360,7 +360,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
-	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(DatabaseQuery adhocQuery) {
+	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery adhocQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
@@ -384,7 +384,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return peekOnCoordinate;
 	}
 
-	protected void forEachStreamedRow(DatabaseQuery adhocQuery,
+	protected void forEachStreamedRow(TableQuery adhocQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			Map<String, ?> input,
 			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
@@ -489,16 +489,16 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	/**
 	 * @param queryWithContext
-	 * @return the Set of {@link DatabaseQuery} to be executed.
+	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	public Set<DatabaseQuery> prepare(AdhocExecutingQueryContext queryWithContext) {
+	public Set<TableQuery> prepare(AdhocExecutingQueryContext queryWithContext) {
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryWithContext);
 
 		return queryStepsDagToDbQueries(queryWithContext, directedGraph);
 
 	}
 
-	protected Set<DatabaseQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
+	protected Set<TableQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph) {
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
 
@@ -542,7 +542,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery adhocLeafQuery = e.getKey();
 			Set<Aggregator> leafAggregators = e.getValue();
-			return DatabaseQuery.edit(adhocLeafQuery)
+			return TableQuery.edit(adhocLeafQuery)
 					.aggregators(leafAggregators)
 					.explain(explain)
 					.debug(debug)

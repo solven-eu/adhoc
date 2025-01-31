@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;

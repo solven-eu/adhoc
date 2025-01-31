@@ -25,8 +25,8 @@ package eu.solven.adhoc.transformers;
 import java.util.Arrays;
 
 import eu.solven.adhoc.aggregations.DivideCombination;
-import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 
 /**
  * This defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures. The intermediate

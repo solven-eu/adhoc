@@ -25,13 +25,14 @@ package eu.solven.adhoc.query;
 import java.util.List;
 
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import eu.solven.adhoc.query.table.TableQuery;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Singular;
 import lombok.Value;
 
 /**
- * Used by {@link DatabaseQuery} to restrict ourselves to the top results.
+ * Used by {@link TableQuery} to restrict ourselves to the top results.
  * 
  * @author Benoit Lacelle
  *

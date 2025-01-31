@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
-import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.view.RowScanner;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;

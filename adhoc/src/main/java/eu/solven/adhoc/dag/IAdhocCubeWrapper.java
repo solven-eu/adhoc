@@ -24,9 +24,9 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.view.ITabularView;
 
 /**
  * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.

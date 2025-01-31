@@ -24,7 +24,7 @@ package eu.solven.adhoc.aggregations.many_to_many;
 
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * Simplest many2many relies on a single input columns, and equals matching.

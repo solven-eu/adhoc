@@ -35,14 +35,14 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.view.MapBasedTabularView;
 
 public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 	static {

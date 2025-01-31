@@ -34,7 +34,7 @@
 //import com.google.common.base.MoreObjects.ToStringHelper;
 //import com.google.common.collect.Lists;
 //
-//import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+//import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 //import lombok.Builder;
 //import lombok.Value;
 //

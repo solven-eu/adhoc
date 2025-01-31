@@ -30,8 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;

@@ -23,10 +23,10 @@
 package eu.solven.adhoc.database.transcoder;
 
 import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 
 /**
- * Holds the logic mapping from the columns names in {@link eu.solven.adhoc.api.v1.IAdhocQuery} and columnNames in
- * {@link IAdhocTableWrapper}.
+ * Holds the logic mapping from the columns names in {@link IAdhocQuery} and columnNames in {@link IAdhocTableWrapper}.
  * <p>
  * This enables re-using a {@link eu.solven.adhoc.dag.AdhocMeasureBag} for different {@link IAdhocTableWrapper}.
  *
@@ -38,7 +38,7 @@ public interface IAdhocTableTranscoder {
 	/**
 	 *
 	 * @param queried
-	 *            a column name typically used by an {@link eu.solven.adhoc.api.v1.IAdhocQuery}.
+	 *            a column name typically used by an {@link IAdhocQuery}.
 	 * @return the equivalent underlying column name, typically used by the database. If null, it means the column maps
 	 *         to itself.
 	 */

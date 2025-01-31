@@ -36,8 +36,6 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
@@ -49,6 +47,8 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
+import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.view.MapBasedTabularView;
 
 public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestConstants {
 

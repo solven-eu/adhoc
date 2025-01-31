@@ -25,7 +25,7 @@ package eu.solven.adhoc.database;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.table.TableQuery;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -44,7 +44,7 @@ public class EmptyTableWrapper implements IAdhocTableWrapper {
 	final String name;
 
 	@Override
-	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery dbQuery) {
 		return new SuppliedRowsStream(Stream::empty);
 	}
 

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
@@ -38,6 +39,12 @@ public interface IAdhocSlice {
 	 * The columns for which a filter is expressed
 	 */
 	Set<String> getColumns();
+
+	/**
+	 *
+	 * @return an {@link IAdhocFilter} equivalent to this slice.
+	 */
+	IAdhocFilter asFilter();
 
 	/**
 	 *

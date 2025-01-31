@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.api.v1.pojo.AndFilter;
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestAdhocQueryBuilder {

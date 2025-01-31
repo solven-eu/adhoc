@@ -47,11 +47,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.IAdhocMeasureBag;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.transformers.Aggregator;

@@ -25,12 +25,12 @@ package eu.solven.adhoc.dag;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IHasCustomMarker;
-import eu.solven.adhoc.api.v1.IIsDebugable;
-import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;

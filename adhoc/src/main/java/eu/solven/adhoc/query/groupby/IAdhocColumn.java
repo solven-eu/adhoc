@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.groupby;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 
 /**
  * A column, typically used in {@link IAdhocGroupBy}

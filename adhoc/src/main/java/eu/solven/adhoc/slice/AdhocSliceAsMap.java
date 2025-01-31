@@ -30,6 +30,9 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -39,6 +42,8 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class AdhocSliceAsMap implements IAdhocSlice {
+	// This is guaranteed not to contain a null-ref, neither as key nor as value
+	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	final Map<String, ?> asMap;
 
 	protected AdhocSliceAsMap(Map<String, ?> asMap) {
@@ -55,6 +60,9 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		} else if (safeMap.values().stream().anyMatch(o -> o instanceof Collection<?>)) {
 			throw new IllegalArgumentException(
 					"A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap));
+		} else if (safeMap.values().stream().anyMatch(o -> o instanceof IValueMatcher)) {
+			throw new IllegalArgumentException(
+					"A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap));
 		}
 
 		return new AdhocSliceAsMap(safeMap);
@@ -90,5 +98,10 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		});
 
 		return filters;
+	}
+
+	@Override
+	public IAdhocFilter asFilter() {
+		return AndFilter.andAxisEqualsFilters(asMap);
 	}
 }

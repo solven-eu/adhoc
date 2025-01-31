@@ -25,8 +25,8 @@ package eu.solven.adhoc.filter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestLikeFilter {
 	@Test

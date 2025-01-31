@@ -29,12 +29,13 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.IAdhocGroupBy;
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.api.v1.IHasCustomMarker;
-import eu.solven.adhoc.api.v1.pojo.AndFilter;
-import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
@@ -102,7 +103,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 
 		/**
-		 * `AND` existing {@link IAdhocFilter} with an {@link eu.solven.adhoc.api.v1.filters.IColumnFilter}
+		 * `AND` existing {@link IAdhocFilter} with an {@link IColumnFilter}
 		 *
 		 * @param filter
 		 * @return the builder
@@ -114,7 +115,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 
 		/**
-		 * `AND` existing {@link IAdhocFilter} with an {@link eu.solven.adhoc.api.v1.filters.IColumnFilter}
+		 * `AND` existing {@link IAdhocFilter} with an {@link IColumnFilter}
 		 *
 		 * @param column
 		 * @param value

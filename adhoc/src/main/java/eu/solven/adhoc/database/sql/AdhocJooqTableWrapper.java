@@ -49,13 +49,13 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters.AdhocJooqTab
 import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.database.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps a {@link Connection} and rely on JooQ to use it as database for {@link DatabaseQuery}.
+ * Wraps a {@link Connection} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
@@ -103,7 +103,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery dbQuery) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext);
@@ -122,7 +122,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		return new SuppliedRowsStream(() -> cleanStream(dbQuery, dbStream, transcodingContext));
 	}
 
-	private Stream<Map<String, ?>> cleanStream(DatabaseQuery dbQuery,
+	private Stream<Map<String, ?>> cleanStream(TableQuery dbQuery,
 			Stream<Map<String, ?>> dbStream,
 			TranscodingContext transcodingContext) {
 		return dbStream.filter(row -> {

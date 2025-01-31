@@ -47,14 +47,14 @@ import eu.solven.adhoc.database.IRowsStream;
 import eu.solven.adhoc.database.SuppliedRowsStream;
 import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * Wraps a {@link Connection} and rely on JooQ to use it as database for {@link DatabaseQuery}.
+ * Wraps a {@link Connection} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
@@ -72,7 +72,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
-	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery dbQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();
@@ -103,7 +103,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 		return new SuppliedRowsStream(asList::stream);
 	}
 
-	private Map<String, ?> asMap(DatabaseQuery dbQuery, ICellSet result, int locationIndex) {
+	private Map<String, ?> asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {
 		Map<String, Object> map = new LinkedHashMap<>();
 
 		dbQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
@@ -113,7 +113,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 		return map;
 	}
 
-	private Object getColumnCoordinate(DatabaseQuery dbQuery, ICellSet result, int locationIndex, String column) {
+	private Object getColumnCoordinate(TableQuery dbQuery, ICellSet result, int locationIndex, String column) {
 		// result.getCoordinate(locationIndex, result., locationIndex)
 		ILocation l = result.getLocation(locationIndex);
 

@@ -31,8 +31,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
-import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.transformers.ICombinator;
 import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 import lombok.Builder;

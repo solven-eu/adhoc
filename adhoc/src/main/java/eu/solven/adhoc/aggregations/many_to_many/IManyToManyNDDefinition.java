@@ -25,7 +25,7 @@ package eu.solven.adhoc.aggregations.many_to_many;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * Advanced many2many relies on a multiple input columns, and value matchers.

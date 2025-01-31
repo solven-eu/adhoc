@@ -24,11 +24,11 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.ValueConsumer;
+import eu.solven.adhoc.view.RowScanner;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

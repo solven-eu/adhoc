@@ -37,8 +37,6 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.ITabularView;
-import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
@@ -46,14 +44,16 @@ import eu.solven.adhoc.aggregations.many_to_many.IManyToManyNDDefinition;
 import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.aggregations.many_to_many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.aggregations.many_to_many.ManyToManyNDInMemoryDefinition;
-import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.api.v1.pojo.OrFilter;
-import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
+import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.view.MapBasedTabularView;
 
 public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestConstants {
 

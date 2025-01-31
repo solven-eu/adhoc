@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**

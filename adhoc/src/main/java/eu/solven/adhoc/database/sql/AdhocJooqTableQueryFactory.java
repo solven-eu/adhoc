@@ -52,22 +52,22 @@ import org.jooq.impl.DefaultDataType;
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.sum.CountAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.api.v1.IAdhocFilter;
-import eu.solven.adhoc.api.v1.filters.IAndFilter;
-import eu.solven.adhoc.api.v1.filters.IColumnFilter;
-import eu.solven.adhoc.api.v1.filters.IOrFilter;
-import eu.solven.adhoc.api.v1.pojo.value.ComparingMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
-import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
 import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.AdhocTopClause;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.IAndFilter;
+import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -96,7 +96,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	DSLContext dslContext;
 
 	@Override
-	public ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery) {
+	public ResultQuery<Record> prepareQuery(TableQuery dbQuery) {
 		// `SELECT ...`
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
 
@@ -141,7 +141,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return resultQuery;
 	}
 
-	protected Collection<Condition> toConditions(DatabaseQuery dbQuery) {
+	protected Collection<Condition> toConditions(TableQuery dbQuery) {
 		Collection<Condition> dbAndConditions = new ArrayList<>();
 
 		dbAndConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
@@ -158,7 +158,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return dbAndConditions;
 	}
 
-	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
+	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(TableQuery dbQuery) {
 		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
 
@@ -207,7 +207,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return DSL.quotedName(namesWithoutDot);
 	}
 
-	protected Collection<GroupField> makeGroupingFields(DatabaseQuery dbQuery) {
+	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {
 		Collection<Field<Object>> groupedFields = new ArrayList<>();
 
 		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
@@ -222,7 +222,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return Collections.singleton(DSL.groupingSets(groupedFields));
 	}
 
-	private List<? extends OrderField<?>> getOptionalOrders(DatabaseQuery dbQuery) {
+	private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
 		AdhocTopClause topClause = dbQuery.getTopClause();
 		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
