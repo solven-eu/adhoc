@@ -44,7 +44,7 @@ public class DAGExplainer {
 	IAdhocEventBus eventBus;
 
 	public void explain(DagHolder dag) {
-		Map<AdhocQueryStep, Integer> stepToIndentation = new HashMap<>();
+		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
 		// Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
 
 		dag.getQueried().forEach(rootStep -> {
@@ -53,7 +53,7 @@ public class DAGExplainer {
 	}
 
 	private void printStepAndUndelryings(DagHolder dagHolder,
-			Map<AdhocQueryStep, Integer> stepToIndentation,
+			Map<AdhocQueryStep, String> stepToIndentation,
 			AdhocQueryStep step,
 			Optional<AdhocQueryStep> optParent,
 			boolean isLast) {
@@ -61,20 +61,26 @@ public class DAGExplainer {
 		if (stepToIndentation.containsKey(step)) {
 			log.trace("This event has already been processed: {}", step);
 		} else {
-			int parentIndentation = optParent.map(parentStep -> stepToIndentation.get(parentStep) + 1).orElse(0);
-			stepToIndentation.putIfAbsent(step, parentIndentation);
+			String parentIndentation = optParent.map(parentStep -> stepToIndentation.get(parentStep)).orElse("");
 			// stepToIndentation.putIfAbsent(step, stepToIndentation.size());
 
-			int nbIndentation = stepToIndentation.get(step);
-			String indentation = Strings.repeat("  ", nbIndentation);
+			String indentation;
+			if (optParent.isEmpty()) {
+				indentation = "";
+			} else {
+				// We keep `|` symbols as they are relevant for the next lines
+				indentation = parentIndentation.replace('\\', ' ').replace('-', ' ');
 
-			if (nbIndentation > 0) {
+				// if (!parentIndentation.isEmpty()) {
 				if (isLast) {
 					indentation += "\\-- ";
 				} else {
 					indentation += "|\\- ";
 				}
+				// }
 			}
+
+			stepToIndentation.putIfAbsent(step, indentation);
 
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)

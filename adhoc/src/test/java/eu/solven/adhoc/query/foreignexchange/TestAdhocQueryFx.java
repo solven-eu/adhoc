@@ -49,6 +49,7 @@ import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -208,22 +209,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testExplain_grandTotal() {
-		List<String> messages = new ArrayList<>();
-
-		// Register an eventListener to collect the EXPLAIN results
-		{
-			Object listener = new Object() {
-
-				@Subscribe
-				public void onExplainOrDebugEvent(AdhocLogEvent event) {
-					if (event.isExplain()) {
-						messages.add(event.getMessage());
-					}
-				}
-			};
-
-			eventBus.register(listener);
-		}
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
 
 		prepareMeasures();
 
@@ -232,8 +218,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
-				  \\-- m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
-																				""".trim());
+				\\-- m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
+																								""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

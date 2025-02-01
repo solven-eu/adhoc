@@ -49,6 +49,7 @@ import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DInMemoryDefinition;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
@@ -359,22 +360,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 	@Test
 	public void testExplain_groupByGroups() {
-		List<String> messages = new ArrayList<>();
-
-		// Register an eventListener to collect the EXPLAIN results
-		{
-			Object listener = new Object() {
-
-				@Subscribe
-				public void onExplainOrDebugEvent(AdhocLogEvent event) {
-					if (event.isExplain()) {
-						messages.add(event.getMessage());
-					}
-				}
-			};
-
-			eventBus.register(listener);
-		}
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
 
 		{
 			prepareMeasures();
@@ -383,8 +369,8 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
-				  \\-- m=k1(Aggregator) filter=matchAll groupBy=(country)
-								""".trim());
+				\\-- m=k1(Aggregator) filter=matchAll groupBy=(country)
+												""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

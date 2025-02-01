@@ -172,4 +172,28 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				.containsEntry(Collections.emptyMap(),
 						Map.of("d", 0L + 123 + 234, "d_country=current_valid", (0D + 123 + 234) / (0D + 123 + 234)));
 	}
+
+	@Test
+	public void testExplain_groupByGroups() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
+		{
+			AdhocQuery adhocQuery = AdhocQuery.builder()
+					.measure("d_country=current_valid")
+					.andFilter("country", "US")
+					.debug(true)
+					.build();
+			aqw.execute(adhocQuery);
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				m=d_country=current_valid(Columnator) filter=country=US groupBy=grandTotal
+				\\-- m=d_country=current_ratio(Combinator) filter=country=US groupBy=grandTotal
+				    |\\- m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
+				    |   \\-- m=d(Aggregator) filter=country=US groupBy=(country)
+				    \\-- m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
+												  		""".trim());
+
+		Assertions.assertThat(messages).hasSize(5);
+	}
 }

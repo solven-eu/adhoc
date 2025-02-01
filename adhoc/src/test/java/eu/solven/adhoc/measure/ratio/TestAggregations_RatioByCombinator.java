@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.ratio;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +31,12 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.eventbus.Subscribe;
-
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.DivideCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
-import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import lombok.extern.slf4j.Slf4j;
@@ -163,22 +159,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 	@Test
 	public void testExplain_groupByGroups() {
-		List<String> messages = new ArrayList<>();
-
-		// Register an eventListener to collect the EXPLAIN results
-		{
-			Object listener = new Object() {
-
-				@Subscribe
-				public void onExplainOrDebugEvent(AdhocLogEvent event) {
-					if (event.isExplain()) {
-						messages.add(event.getMessage());
-					}
-				}
-			};
-
-			eventBus.register(listener);
-		}
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
 
 		{
 			AdhocQuery adhocQuery =
@@ -188,9 +169,9 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
-				  |\\- m=d(Aggregator) filter=matchNone groupBy=grandTotal
-				  \\-- m=d(Aggregator) filter=country=US groupBy=grandTotal
-				  		""".trim());
+				|\\- m=d(Aggregator) filter=matchNone groupBy=grandTotal
+				\\-- m=d(Aggregator) filter=country=US groupBy=grandTotal
+								  		""".trim());
 
 		Assertions.assertThat(messages).hasSize(3);
 	}
