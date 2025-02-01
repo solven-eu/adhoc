@@ -49,14 +49,6 @@
 		</dependency>
 
 		<dependency>
-			<!-- A lightweight EventBus. Used to transmit debug information, monitoring information, etc-->
-			<!-- https://github.com/greenrobot/EventBus -->
-			<groupId>org.greenrobot</groupId>
-			<artifactId>eventbus-java</artifactId>
-			<version>3.3.1</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.jgrapht</groupId>
 			<artifactId>jgrapht-core</artifactId>
 			<version>1.5.2</version>

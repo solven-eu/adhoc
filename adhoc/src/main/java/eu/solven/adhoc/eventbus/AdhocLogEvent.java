@@ -22,21 +22,29 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.api.v1.IIsDebugable;
+import eu.solven.adhoc.api.v1.IIsExplainable;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
+ * Typically used for unitTests, to check some debug/explain feature.
+ * 
+ * @author Benoit Lacelle
+ *
  */
 @Value
 @Builder
-public class QueryStepIsCompleted implements IAdhocEvent {
-	@NonNull
-	AdhocQueryStep querystep;
+public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable {
+	@Default
+	boolean explain = false;
+	@Default
+	boolean debug = false;
 
-	long nbCells;
+	@NonNull
+	String message;
 
 	@NonNull
 	Object source;

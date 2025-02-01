@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.many_to_many;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.eventbus.Subscribe;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -46,6 +48,7 @@ import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DInMemoryDefinition;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
@@ -63,7 +66,8 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 		return new StandardOperatorsFactory() {
 			@Override
 			public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-				if (ManyToMany1DDecomposition.KEY.equals(key) || key.equals(ManyToMany1DDecomposition.class.getName())) {
+				if (ManyToMany1DDecomposition.KEY.equals(key)
+						|| key.equals(ManyToMany1DDecomposition.class.getName())) {
 					return new ManyToMany1DDecomposition(options, manyToManyDefinition);
 				}
 				return switch (key) {
@@ -351,5 +355,37 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123 + 234));
+	}
+
+	@Test
+	public void testExplain_groupByGroups() {
+		List<String> messages = new ArrayList<>();
+
+		// Register an eventListener to collect the EXPLAIN results
+		{
+			Object listener = new Object() {
+
+				@Subscribe
+				public void onExplainOrDebugEvent(AdhocLogEvent event) {
+					if (event.isExplain()) {
+						messages.add(event.getMessage());
+					}
+				}
+			};
+
+			eventBus.register(listener);
+		}
+
+		{
+			prepareMeasures();
+			aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).explain(true).build());
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
+				  \\-- m=k1(Aggregator) filter=matchAll groupBy=(country)
+								""".trim());
+
+		Assertions.assertThat(messages).hasSize(2);
 	}
 }

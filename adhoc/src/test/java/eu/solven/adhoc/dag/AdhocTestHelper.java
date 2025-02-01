@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
-import org.greenrobot.eventbus.EventBus;
+import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 
 /**
  * Commons patterns used in Adhoc unit-tests
@@ -35,12 +35,12 @@ public class AdhocTestHelper {
 	}
 
 	/**
-	 * @return an EventBus with a registered {@link AdhocEventsToSfl4j}
+	 * @return an EventBus with a registered {@link AdhocEventsFromGuavaEventBusToSfl4j}
 	 */
 	public static EventBus eventBus() {
 		EventBus eventBus = new EventBus();
 
-		eventBus.register(new AdhocEventsToSfl4j());
+		eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
 
 		return eventBus;
 	}

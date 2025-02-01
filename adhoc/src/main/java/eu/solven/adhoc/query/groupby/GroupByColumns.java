@@ -27,6 +27,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -59,6 +60,11 @@ public class GroupByColumns implements IAdhocGroupBy {
 	public String toString() {
 		if (isGrandTotal()) {
 			return "grandTotal";
+		} else if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {
+			return nameToColumn.values()
+					.stream()
+					.map(c -> ((ReferencedColumn) c).getColumn())
+					.collect(Collectors.joining(", ", "(", ")"));
 		}
 
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", nameToColumn.size());

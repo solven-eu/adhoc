@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import java.util.Set;
+
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
-/**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
- */
 @Value
 @Builder
-public class QueryStepIsCompleted implements IAdhocEvent {
+public class DagHolder {
+	// The DAG of a given IAdhocQuery, from queried to aggregators
 	@NonNull
-	AdhocQueryStep querystep;
+	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;
 
-	long nbCells;
-
+	// We keep a separate list of queried, as some queried may not be roots in the DAG (e.g. when the query requests
+	// both a measure and one of its underlying)
 	@NonNull
-	Object source;
+	Set<AdhocQueryStep> queried;
 }

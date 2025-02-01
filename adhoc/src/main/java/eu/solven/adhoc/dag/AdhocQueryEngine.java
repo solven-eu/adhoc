@@ -54,13 +54,13 @@ import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.database.IAdhocTableWrapper;
 import eu.solven.adhoc.database.IRowsStream;
+import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
-import eu.solven.adhoc.query.DatabaseQuery;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -96,10 +96,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	@Override
 	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
-		Set<DatabaseQuery> prepared = prepare(queryWithContext);
+		Set<TableQuery> prepared = prepareForTable(queryWithContext);
 
-		Map<DatabaseQuery, IRowsStream> dbQueryToStream = new HashMap<>();
-		for (DatabaseQuery dbQuery : prepared) {
+		Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
+		for (TableQuery dbQuery : prepared) {
 			dbQueryToStream.put(dbQuery, table.openDbStream(dbQuery));
 		}
 
@@ -107,8 +107,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
-			Map<DatabaseQuery, IRowsStream> dbQueryToSteam) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
+			Map<TableQuery, IRowsStream> dbQueryToSteam) {
+		DagHolder fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
 		Map<String, Set<Aggregator>> inputColumnToAggregators =
 				columnToAggregators(queryWithContext, fromQueriedToAggregates);
@@ -127,7 +127,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			queryStepToValues.forEach((aggregateStep, values) -> {
 				values.scan(row -> {
 					return AsObjectValueConsumer.consumer(o -> {
-						log.info("[DEBUG] {} -> {} step={}", o, row, aggregateStep);
+						eventBus.post(AdhocLogEvent.builder()
+								.debug(true)
+								.message("%s -> %s step={}".formatted(o, row))
+								.source(aggregateStep));
 					});
 				});
 
@@ -143,18 +146,19 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transformations").source(this).build());
 
 		MapBasedTabularView mapBasedTabularView =
-				toTabularView(queryWithContext.getQueryOptions(), fromQueriedToAggregates, queryStepToValues);
+				toTabularView(queryWithContext, fromQueriedToAggregates, queryStepToValues);
 
 		return mapBasedTabularView;
 	}
 
 	protected Map<String, Set<Aggregator>> columnToAggregators(AdhocExecutingQueryContext queryWithContext,
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates) {
+			DagHolder dagHolder) {
 		Map<String, Set<Aggregator>> columnToAggregators = new LinkedHashMap<>();
 
-		fromQueriedToAggregates.vertexSet()
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
+		dag.vertexSet()
 				.stream()
-				.filter(step -> fromQueriedToAggregates.outDegreeOf(step) == 0)
+				.filter(step -> dag.outDegreeOf(step) == 0)
 				.map(AdhocQueryStep::getMeasure)
 				.forEach(measure -> {
 					measure = queryWithContext.resolveIfRef(measure);
@@ -174,21 +178,19 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return columnToAggregators;
 	}
 
-	protected MapBasedTabularView toTabularView(Set<? extends IQueryOption> queryOptions,
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
+	protected MapBasedTabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
+			DagHolder fromQueriedToAggregates,
 			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder().build();
 
 		Iterator<AdhocQueryStep> stepsToReturn;
-		if (queryOptions.contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
+		if (queryWithContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
 			// BEWARE Should we return steps with same groupBy?
 			// What about measures appearing multiple times in the DAG?
-			stepsToReturn = new BreadthFirstIterator<>(fromQueriedToAggregates);
+			stepsToReturn = new BreadthFirstIterator<>(fromQueriedToAggregates.getDag());
 		} else {
-			stepsToReturn = fromQueriedToAggregates.vertexSet()
-					.stream()
-					.filter(step -> fromQueriedToAggregates.inDegreeOf(step) == 0)
-					.iterator();
+			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
+			stepsToReturn = fromQueriedToAggregates.getQueried().iterator();
 		}
 
 		stepsToReturn.forEachRemaining(step -> {
@@ -196,9 +198,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 				@Override
 				public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
-					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-						mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o));
-					});
+					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(
+							o -> mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o)));
 
 					return consumer;
 				}
@@ -214,7 +215,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(DatabaseQuery dbQuery,
+	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(TableQuery dbQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -224,7 +225,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return toImmutableChunks(dbQuery, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(DatabaseQuery dbQuery,
+	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(TableQuery dbQuery,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
@@ -252,24 +253,22 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected void walkDagUpToQueriedMeasures(AdhocExecutingQueryContext queryWithContext,
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates,
+			DagHolder fromQueriedToAggregates,
 			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried =
-				new EdgeReversedGraph<>(fromQueriedToAggregates);
+				new EdgeReversedGraph<>(fromQueriedToAggregates.getDag());
 
 		// https://en.wikipedia.org/wiki/Topological_sorting
 		// TopologicalOrder guarantees processing a vertex after dependent vertices are
 		// done.
-		TopologicalOrderIterator<AdhocQueryStep, DefaultEdge> graphIterator =
-				new TopologicalOrderIterator<>(fromAggregatesToQueried);
+		Iterator<AdhocQueryStep> graphIterator = new TopologicalOrderIterator<>(fromAggregatesToQueried);
 
 		graphIterator.forEachRemaining(queryStep -> {
 
 			if (queryStepToValues.containsKey(queryStep)) {
 				// This typically happens on aggregator measures, as they are fed in a previous
-				// step
-				// Here, we want to process a measure once its underlying steps are completed
+				// step. Here, we want to process a measure once its underlying steps are completed
 				return;
 			} else if (queryStep.getMeasure() instanceof Aggregator a) {
 				throw new IllegalStateException("Missing values for %s".formatted(a));
@@ -283,16 +282,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			List<AdhocQueryStep> underlyingSteps = underlyingStepEdges.stream()
 					.map(edge -> Graphs.getOppositeVertex(fromAggregatesToQueried, edge, queryStep))
 					.toList();
-
-			// Map<String, AdhocQueryStep> underlyingToStep = new HashMap<>();
-			// underlyingSteps.forEach(step -> {
-			// String underlyingName = resolveIfRef(step.getMeasure()).getName();
-			// AdhocQueryStep removed = underlyingToStep.put(underlyingName, step);
-			// if (removed != null) {
-			// // TODO Is this a legit case for Dispatcher?
-			// throw new IllegalArgumentException("Multiple steps for %s".formatted(underlyingName));
-			// }
-			// });
 
 			if (underlyingSteps.isEmpty()) {
 				// This may happen on a Columnator which is missing a required column
@@ -326,7 +315,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		});
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(DatabaseQuery adhocQuery,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -360,7 +349,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
-	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(DatabaseQuery adhocQuery) {
+	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery adhocQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
@@ -384,7 +373,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return peekOnCoordinate;
 	}
 
-	protected void forEachStreamedRow(DatabaseQuery adhocQuery,
+	protected void forEachStreamedRow(TableQuery adhocQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			Map<String, ?> input,
 			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
@@ -489,80 +478,66 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	/**
 	 * @param queryWithContext
-	 * @return the Set of {@link DatabaseQuery} to be executed.
+	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	public Set<DatabaseQuery> prepare(AdhocExecutingQueryContext queryWithContext) {
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph = makeQueryStepsDag(queryWithContext);
+	public Set<TableQuery> prepareForTable(AdhocExecutingQueryContext queryWithContext) {
+		DagHolder dagHolder = makeQueryStepsDag(queryWithContext);
 
-		return queryStepsDagToDbQueries(queryWithContext, directedGraph);
+		if (queryWithContext.isExplain() || queryWithContext.isDebug()) {
+			explainDagSteps(dagHolder);
+		}
+
+		return queryStepsDagToDbQueries(queryWithContext, dagHolder);
 
 	}
 
-	protected Set<DatabaseQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> directedGraph) {
+	protected Set<TableQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
+			DagHolder dagHolder) {
+		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
-		directedGraph.vertexSet()
-				.stream()
-				.filter(step -> directedGraph.outgoingEdgesOf(step).isEmpty())
-				.forEach(step -> {
-					IMeasure leafMeasure = queryWithContext.resolveIfRef(step.getMeasure());
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
+		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
+			IMeasure leafMeasure = queryWithContext.resolveIfRef(step.getMeasure());
 
-					if (leafMeasure instanceof Aggregator leafAggregator) {
-						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
+			if (leafMeasure instanceof Aggregator leafAggregator) {
+				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
 
-						// We could analyze filters, to discard a query filter `k=v` if another query
-						// filters `k=v|v2`
-						measurelessToAggregators.merge(measureless,
-								Collections.singleton(leafAggregator),
-								UnionSetAggregator::unionSet);
-					} else if (leafMeasure instanceof EmptyMeasure) {
-						// ???
-					} else if (leafMeasure instanceof Columnator) {
-						// ???
-						// Happens if we miss given column
-					} else {
-						throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
-					}
-				});
-
-		boolean explain = queryWithContext.isExplain();
-		boolean debug = queryWithContext.isDebug();
-
-		if (explain || debug) {
-			new TopologicalOrderIterator<>(directedGraph).forEachRemaining(step -> {
-				Set<DefaultEdge> underlyings = directedGraph.outgoingEdgesOf(step);
-
-				underlyings.forEach(edge -> log
-						.info("[EXPLAIN] {} -> {}", step, Graphs.getOppositeVertex(directedGraph, edge, step)));
-			});
-		}
+				// We could analyze filters, to discard a query filter `k=v` if another query
+				// filters `k=v|v2`
+				measurelessToAggregators
+						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregator::unionSet);
+			} else if (leafMeasure instanceof EmptyMeasure) {
+				// ???
+			} else if (leafMeasure instanceof Columnator) {
+				// ???
+				// Happens if we miss given column
+			} else {
+				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
+			}
+		});
 
 		return measurelessToAggregators.entrySet().stream().map(e -> {
-			MeasurelessQuery adhocLeafQuery = e.getKey();
+			MeasurelessQuery measurelessQuery = e.getKey();
 			Set<Aggregator> leafAggregators = e.getValue();
-			return DatabaseQuery.edit(adhocLeafQuery)
+			return TableQuery.edit(measurelessQuery)
 					.aggregators(leafAggregators)
-					.explain(explain)
-					.debug(debug)
-					.customMarker(adhocLeafQuery.getCustomMarker())
+					.customMarker(measurelessQuery.getCustomMarker())
 					.build();
 		}).collect(Collectors.toSet());
 	}
 
-	protected DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> makeQueryStepsDag(
-			AdhocExecutingQueryContext queryWithContext) {
-		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryWithContext.getAdhocQuery());
+	protected void explainDagSteps(DagHolder dag) {
+		DAGExplainer.builder().eventBus(eventBus).build().explain(dag);
+	}
+
+	protected DagHolder makeQueryStepsDag(AdhocExecutingQueryContext queryWithContext) {
+		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryWithContext.getQuery());
 
 		// Add explicitly requested steps
-		Set<ReferencedMeasure> measureRefs = queryWithContext.getAdhocQuery().getMeasureRefs();
-		if (measureRefs.isEmpty()) {
-			IMeasure countAsterisk = defaultMeasure();
-			queryStepsDagBuilder.addRoot(countAsterisk);
-		} else {
-			measureRefs.stream().map(ref -> queryWithContext.resolveIfRef(ref)).forEach(queryStepsDagBuilder::addRoot);
-		}
+		Set<IMeasure> queriedMeasures = convertToQueriedSteps(queryWithContext);
+		queriedMeasures.forEach(queryStepsDagBuilder::addRoot);
 
 		// Add implicitly requested steps
 		while (queryStepsDagBuilder.hasLeftovers()) {
@@ -592,11 +567,24 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepsDagBuilder.getQueryDag();
 	}
 
+	private Set<IMeasure> convertToQueriedSteps(AdhocExecutingQueryContext queryWithContext) {
+		Set<ReferencedMeasure> measureRefs = queryWithContext.getQuery().getMeasureRefs();
+		Set<IMeasure> queriedMeasures;
+		if (measureRefs.isEmpty()) {
+			IMeasure countAsterisk = defaultMeasure();
+			queriedMeasures = Set.of(countAsterisk);
+		} else {
+			queriedMeasures =
+					measureRefs.stream().map(ref -> queryWithContext.resolveIfRef(ref)).collect(Collectors.toSet());
+		}
+		return queriedMeasures;
+	}
+
 	// Not a single measure is selected: we are doing a DISTINCT query
 
 	/**
 	 *
-	 * @return te measure to be considered if not measure is provided to the query
+	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
 		return Aggregator.builder().name("COUNT_ASTERISK").aggregationKey("COUNT").columnName("*").build();

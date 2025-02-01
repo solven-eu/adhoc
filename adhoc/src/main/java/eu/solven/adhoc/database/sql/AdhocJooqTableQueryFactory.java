@@ -65,7 +65,7 @@ import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
 import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.AdhocTopClause;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -96,7 +96,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	DSLContext dslContext;
 
 	@Override
-	public ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery) {
+	public ResultQuery<Record> prepareQuery(TableQuery dbQuery) {
 		// `SELECT ...`
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
 
@@ -141,7 +141,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return resultQuery;
 	}
 
-	protected Collection<Condition> toConditions(DatabaseQuery dbQuery) {
+	protected Collection<Condition> toConditions(TableQuery dbQuery) {
 		Collection<Condition> dbAndConditions = new ArrayList<>();
 
 		dbAndConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
@@ -158,7 +158,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return dbAndConditions;
 	}
 
-	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(DatabaseQuery dbQuery) {
+	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(TableQuery dbQuery) {
 		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
 
@@ -207,7 +207,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return DSL.quotedName(namesWithoutDot);
 	}
 
-	protected Collection<GroupField> makeGroupingFields(DatabaseQuery dbQuery) {
+	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {
 		Collection<Field<Object>> groupedFields = new ArrayList<>();
 
 		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
@@ -222,7 +222,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return Collections.singleton(DSL.groupingSets(groupedFields));
 	}
 
-	private List<? extends OrderField<?>> getOptionalOrders(DatabaseQuery dbQuery) {
+	private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
 		AdhocTopClause topClause = dbQuery.getTopClause();
 		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);

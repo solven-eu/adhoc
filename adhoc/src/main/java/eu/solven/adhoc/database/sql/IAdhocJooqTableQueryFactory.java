@@ -25,11 +25,11 @@ package eu.solven.adhoc.database.sql;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 
 /**
- * Converts a {@link DatabaseQuery} into a sql {@link ResultQuery}
+ * Converts a {@link TableQuery} into a sql {@link ResultQuery}
  */
 public interface IAdhocJooqTableQueryFactory {
-	ResultQuery<Record> prepareQuery(DatabaseQuery dbQuery);
+	ResultQuery<Record> prepareQuery(TableQuery dbQuery);
 }

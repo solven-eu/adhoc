@@ -43,7 +43,7 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -67,7 +67,7 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 			.tableName(tableName)
 			.build());
 
-	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
+	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();
 
 	@Test

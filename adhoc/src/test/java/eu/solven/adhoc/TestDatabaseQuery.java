@@ -27,12 +27,12 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 
 public class TestDatabaseQuery implements IAdhocTestConstants {
 	@Test
 	public void testGrandTotal() {
-		DatabaseQuery q = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
+		TableQuery q = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();

@@ -37,7 +37,7 @@ import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.execute.FilterHelpers;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -84,7 +84,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream openDbStream(DatabaseQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery dbQuery) {
 		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Set<String> queriedColumns = new HashSet<>();

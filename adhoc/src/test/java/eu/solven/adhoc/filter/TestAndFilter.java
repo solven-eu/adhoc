@@ -36,6 +36,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.solven.adhoc.api.v1.IAdhocFilter;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
+import eu.solven.adhoc.api.v1.pojo.OrFilter;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.OrMatcher;
 
 public class TestAndFilter {
 	// A short toString not to prevail is composition .toString
@@ -50,11 +53,11 @@ public class TestAndFilter {
 	@Test
 	public void toString_huge() {
 		List<ColumnFilter> filters = IntStream.range(0, 256)
-				.mapToObj(i -> ColumnFilter.builder().column("k").matching(i).build())
+				.mapToObj(i -> ColumnFilter.builder().column("k" + i).matching(i).build())
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(AndFilter.and(filters).toString())
-				.contains("#0=k=0", "#1=k=1")
+				.contains("#0=k0=0", "#1=k1=1")
 				.doesNotContain("7")
 				.hasSizeLessThan(512);
 	}
@@ -75,13 +78,13 @@ public class TestAndFilter {
 
 	@Test
 	public void testAndFilters_oneGrandTotal_TwoCustom() {
-		IAdhocFilter filterAllAndA = AndFilter
-				.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+		IAdhocFilter filterAllAndA =
+				AndFilter.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%"));
 
 		Assertions.assertThat(filterAllAndA).isInstanceOfSatisfying(AndFilter.class, andF -> {
 			Assertions.assertThat(andF.getOperands())
 					.hasSize(2)
-					.contains(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+					.contains(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%"));
 		});
 	}
 
@@ -149,5 +152,78 @@ public class TestAndFilter {
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).hasSize(3);
 		});
+	}
+
+	@Test
+	public void testMultipleEqualsSameColumn_disjoint() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(IAdhocFilter.MATCH_NONE);
+	}
+
+	@Test
+	public void testMultipleEqualsSameColumn_joint() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a1"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
+	}
+
+	@Test
+	public void testMultipleEqualsSameColumn_joint_andComplexNotColumn() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
+				ColumnFilter.isEqualTo("a", "a1"),
+				OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")));
+
+		Assertions.assertThat(a1Anda2)
+				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
+						OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%"))));
+	}
+
+	@Test
+	public void testMultipleEqualsSameColumn_joint_andComplexColumn() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
+				ColumnFilter.isEqualTo("a", "a1"),
+				ColumnFilter.builder()
+						.column("a")
+						.valueMatcher(OrMatcher.builder()
+								.operand(LikeMatcher.matching("%ab"))
+								.operand(LikeMatcher.matching("a%"))
+								.build())
+						.build());
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
+	}
+
+	@Test
+	public void testMultipleEqualsSameColumn_joint_withOr() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
+				ColumnFilter.isEqualTo("a", "a1"),
+				OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3")));
+
+		Assertions.assertThat(a1Anda2)
+				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
+						OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3"))));
+	}
+
+	@Test
+	public void testMultipleInSameColumn_disjoint() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a3", "a4"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(IAdhocFilter.MATCH_NONE);
+	}
+
+	@Test
+	public void testMultipleInSameColumn_joint_single() {
+		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a2"));
+	}
+
+	@Test
+	public void testMultipleInSameColumn_joint_multiple() {
+		IAdhocFilter a1Anda2 =
+				AndFilter.and(ColumnFilter.isIn("a", "a1", "a2", "a3"), ColumnFilter.isIn("a", "a2", "a3", "a4"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isIn("a", "a2", "a3"));
 	}
 }

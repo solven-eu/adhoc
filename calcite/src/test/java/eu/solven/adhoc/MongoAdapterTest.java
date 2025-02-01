@@ -33,17 +33,18 @@ import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.TestUtil;
 import org.apache.calcite.util.Util;
-import org.greenrobot.eventbus.EventBus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import com.google.common.eventbus.EventBus;
+
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.database.InMemoryTable;
-import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 
 /**
  * Testing mongo adapter functionality. By default, runs with Mongo Java Server unless {@code IT} maven profile is
@@ -58,7 +59,7 @@ public class MongoAdapterTest {
 	protected static final Resource MODEL = new ClassPathResource("/calcite_model-adhoc.json");
 
 	public final EventBus eventBus = new EventBus();
-	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
+	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 

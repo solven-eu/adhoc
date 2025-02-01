@@ -38,7 +38,7 @@ import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.OrFilter;
 import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocJooqDatabaseQueryFactory {
@@ -92,7 +92,7 @@ public class TestAdhocJooqDatabaseQueryFactory {
 	@Test
 	public void testGrandTotal() {
 		ResultQuery<Record> condition = streamOpener
-				.prepareQuery(DatabaseQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") "k" from "someTableName" where "k" is not null
@@ -101,9 +101,8 @@ public class TestAdhocJooqDatabaseQueryFactory {
 
 	@Test
 	public void testMeasureNameWithDot() {
-		ResultQuery<Record> condition = streamOpener.prepareQuery(DatabaseQuery.builder()
-				.aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build())
-				.build());
+		ResultQuery<Record> condition = streamOpener.prepareQuery(
+				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null
@@ -112,7 +111,7 @@ public class TestAdhocJooqDatabaseQueryFactory {
 
 	@Test
 	public void testCountAsterisk() {
-		ResultQuery<Record> condition = streamOpener.prepareQuery(DatabaseQuery.builder()
+		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("countStar")
 						.columnName(CountAggregator.ASTERISK)

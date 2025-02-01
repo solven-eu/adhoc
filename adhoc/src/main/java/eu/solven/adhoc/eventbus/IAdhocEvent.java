@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,41 +22,11 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import org.greenrobot.eventbus.Subscribe;
-
-import lombok.extern.slf4j.Slf4j;
-
 /**
- * This logs main steps of the query-engine. It is typically activated by calling `#AdhocQueryBuilder.debug()`.
- *
+ * A marker interface to indicate clearly if a class is used as Adhoc event.
+ * 
  * @author Benoit Lacelle
- *
  */
-@Slf4j
-public class AdhocEventsToSfl4j {
-	/**
-	 * An {@link eu.solven.adhoc.query.AdhocQuery} is resolved through a DAG of
-	 * {@link eu.solven.adhoc.dag.AdhocQueryStep}. This will log when an {@link eu.solven.adhoc.dag.AdhocQueryStep} is
-	 * completed.
-	 * 
-	 * @param event
-	 */
-	@Subscribe
-	public void onQueryStepIsCompleted(QueryStepIsCompleted event) {
-		log.info("size={} for queryStep={} on completed (source={})",
-				event.getNbCells(),
-				event.getQuerystep(),
-				event.getSource());
-	}
-
-	@Subscribe
-	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
-		log.info("query phase={} is completed (source={})", event.getPhase(), event.getSource());
-	}
-
-	@Subscribe
-	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
-		log.info("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
-	}
+public interface IAdhocEvent {
 
 }

@@ -39,7 +39,7 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import eu.solven.adhoc.google.bigquery.AdhocBigQueryTableWrapperParameters;
 import eu.solven.adhoc.google.bigquery.AdhocGoogleBigQueryTableWrapper;
 import eu.solven.adhoc.query.AdhocTopClause;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
@@ -92,7 +92,7 @@ public class TestDatabaseGoogleBigQuery {
 				.build();
 		AdhocGoogleBigQueryTableWrapper bgDbWrapper = new AdhocGoogleBigQueryTableWrapper(dbParameters);
 
-		List<Map<String, ?>> rows = bgDbWrapper.openDbStream(DatabaseQuery.builder()
+		List<Map<String, ?>> rows = bgDbWrapper.openDbStream(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))
 				.groupBy(GroupByColumns.of(CalculatedColumn.builder()
 						.column("url")

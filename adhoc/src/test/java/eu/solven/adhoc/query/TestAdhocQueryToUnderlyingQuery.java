@@ -52,9 +52,9 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
-				.adhocQuery(AdhocQuery.builder().measure(k1Sum.getName()).build())
-				.measureBag(amb)
+		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+				.query(AdhocQuery.builder().measure(k1Sum.getName()).build())
+				.measures(amb)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -76,9 +76,9 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
-				.adhocQuery(AdhocQuery.builder().measure("sumK1K2").build())
-				.measureBag(amb)
+		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+				.query(AdhocQuery.builder().measure("sumK1K2").build())
+				.measures(amb)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -100,9 +100,9 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<DatabaseQuery> output = aqe.prepare(AdhocExecutingQueryContext.builder()
-				.adhocQuery(AdhocQuery.builder().measure("sumK1K2").build())
-				.measureBag(amb)
+		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+				.query(AdhocQuery.builder().measure("sumK1K2").build())
+				.measures(amb)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {

@@ -31,7 +31,7 @@ import lombok.Singular;
 import lombok.Value;
 
 /**
- * Used by {@link DatabaseQuery} to restrict ourselves to the top results.
+ * Used by {@link TableQuery} to restrict ourselves to the top results.
  * 
  * @author Benoit Lacelle
  *

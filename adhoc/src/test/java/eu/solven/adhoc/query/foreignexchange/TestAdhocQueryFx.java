@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.foreignexchange;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.eventbus.Subscribe;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.ITabularView;
@@ -45,6 +48,7 @@ import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -52,9 +56,9 @@ import eu.solven.adhoc.transformers.Bucketor;
 import lombok.NonNull;
 
 /**
- * This tests a typical usecase: given financial data for different currencies, we need to convert the underlying data
- * into a common currency, by a multiplication with the proper rate, depending on current currency. Each data are
- * aggregated by their own currency, then converted into a common currency, and finally aggregated.
+ * This tests a typical financial use-case: given financial data for different currencies, we need to convert the
+ * underlying data into a common currency, by a multiplication with the proper rate, depending on current currency. Each
+ * data are aggregated by their own currency, then converted into a common currency, and finally aggregated.
  */
 public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
@@ -67,19 +71,19 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
-        return new StandardOperatorsFactory() {
-            @Override
-            public ICombination makeCombination(String key, Map<String, ?> options) {
-                return switch (key) {
-                    case ForeignExchangeCombination.KEY: {
-                        yield new ForeignExchangeCombination(fxStorage);
-                    }
-                    default:
-                        yield super.makeCombination(key, options);
-                };
-            }
-        };
-    }
+		return new StandardOperatorsFactory() {
+			@Override
+			public ICombination makeCombination(String key, Map<String, ?> options) {
+				return switch (key) {
+				case ForeignExchangeCombination.KEY: {
+					yield new ForeignExchangeCombination(fxStorage);
+				}
+				default:
+					yield super.makeCombination(key, options);
+				};
+			}
+		};
+	}
 
 	@Override
 	@BeforeEach
@@ -200,5 +204,37 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testExplain_grandTotal() {
+		List<String> messages = new ArrayList<>();
+
+		// Register an eventListener to collect the EXPLAIN results
+		{
+			Object listener = new Object() {
+
+				@Subscribe
+				public void onExplainOrDebugEvent(AdhocLogEvent event) {
+					if (event.isExplain()) {
+						messages.add(event.getMessage());
+					}
+				}
+			};
+
+			eventBus.register(listener);
+		}
+
+		prepareMeasures();
+
+		// ITabularView output =
+		aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
+				  \\-- m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
+																				""".trim());
+
+		Assertions.assertThat(messages).hasSize(2);
 	}
 }

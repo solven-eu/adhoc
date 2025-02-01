@@ -26,10 +26,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.greenrobot.eventbus.EventBus;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -48,9 +47,8 @@ public class TestAdhocQueryEngine {
 
 		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().keySet()).build();
 		AdhocExecutingQueryContext queryWithContext =
-				AdhocExecutingQueryContext.builder().measureBag(amg).adhocQuery(adhocQuery).build();
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> fromQueriedToAggregates =
-				aqe.makeQueryStepsDag(queryWithContext);
+				AdhocExecutingQueryContext.builder().measures(amg).query(adhocQuery).build();
+		DagHolder fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
 		Map<String, Set<Aggregator>> columnToAggregators =
 				aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates);
 

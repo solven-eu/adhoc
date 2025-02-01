@@ -47,40 +47,40 @@ import lombok.Value;
 public class AdhocExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// The query requested to the queryEngine
 	@NonNull
-	IAdhocQuery adhocQuery;
+	IAdhocQuery query;
 
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures
 	@NonNull
-	final IAdhocMeasureBag measureBag;
+	final IAdhocMeasureBag measures;
 
 	@NonNull
 	@Singular
-	Set<? extends IQueryOption> queryOptions;
+	Set<? extends IQueryOption> options;
 
 	protected IMeasure resolveIfRef(IMeasure measure) {
 		if (measure == null) {
 			throw new IllegalArgumentException("Null input");
 		}
 
-		if (queryOptions.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
+		if (options.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
 			if (measure instanceof ReferencedMeasure ref) {
-				return this.measureBag.resolveIfRefOpt(ref).orElseGet(() -> new EmptyMeasure(ref.getRef()));
+				return this.measures.resolveIfRefOpt(ref).orElseGet(() -> new EmptyMeasure(ref.getRef()));
 			} else {
-				return this.measureBag.resolveIfRefOpt(measure).orElseGet(() -> new EmptyMeasure(measure.getName()));
+				return this.measures.resolveIfRefOpt(measure).orElseGet(() -> new EmptyMeasure(measure.getName()));
 			}
 		} else {
-			return this.measureBag.resolveIfRef(measure);
+			return this.measures.resolveIfRef(measure);
 		}
 	}
 
 	public boolean isExplain() {
 		// TODO queryOptions may force explain
-		return getAdhocQuery().isExplain();
+		return getQuery().isExplain();
 	}
 
 	public boolean isDebug() {
 		// TODO queryOptions may force explain
-		return getAdhocQuery().isDebug();
+		return getQuery().isDebug();
 	}
 }

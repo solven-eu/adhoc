@@ -50,7 +50,7 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants {
@@ -65,7 +65,7 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 	Path tmpParquetPath;
-	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
+	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 	DSLContext dsl;
 	AdhocJooqTableWrapper jooqDb;

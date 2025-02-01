@@ -70,4 +70,8 @@ public class LikeMatcher implements IValueMatcher {
 		}
 		return LikeMatcher.like(getLike(), asCharSequence);
 	}
+
+	public static IValueMatcher matching(String likeExpression) {
+		return LikeMatcher.builder().like(likeExpression).build();
+	}
 }

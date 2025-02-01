@@ -46,7 +46,7 @@ import lombok.Value;
 @Value
 @AllArgsConstructor
 @Builder
-public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
@@ -58,7 +58,7 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker,
 	@Singular
 	Set<Aggregator> aggregators;
 
-	// This property is transported down to the DatabaseQuery
+	// This property is transported down to the TableQuery
 	@Default
 	Object customMarker = null;
 
@@ -70,14 +70,14 @@ public class DatabaseQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker,
 	@Default
 	boolean explain = false;
 
-	public static DatabaseQueryBuilder edit(DatabaseQuery dq) {
+	public static TableQueryBuilder edit(TableQuery dq) {
 		return edit((IWhereGroupbyAdhocQuery) dq).aggregators(dq.getAggregators())
 				.debug(dq.isDebug())
 				.explain(dq.isExplain());
 	}
 
-	public static DatabaseQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
-		DatabaseQueryBuilder builder = DatabaseQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
+	public static TableQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
+		TableQueryBuilder builder = TableQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
 
 		if (dq instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);

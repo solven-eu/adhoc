@@ -48,7 +48,7 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -71,7 +71,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 			.tableName(tableName)
 			.build());
 
-	DatabaseQuery qK1 = DatabaseQuery.builder().aggregators(Set.of(k1Sum)).build();
+	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();
 
 	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag) {
@@ -143,7 +143,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching("a1").build())
 				.explain(true)
 				.build()).toList();
@@ -164,7 +164,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.explain(true)
 				.build()).toList();
@@ -186,7 +186,7 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream =
-				jooqDb.openDbStream(DatabaseQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
+				jooqDb.openDbStream(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
 		Assertions.assertThat(dbStream)
 				.hasSize(3)
@@ -211,9 +211,9 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.values("a1", 123)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(DatabaseQuery.edit(qK1)
-				.filter(ColumnFilter.builder().column("with space").matching("a1").build())
-				.build()).toList();
+		List<Map<String, ?>> dbStream = jooqDb.openDbStream(
+				TableQuery.edit(qK1).filter(ColumnFilter.builder().column("with space").matching("a1").build()).build())
+				.toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}

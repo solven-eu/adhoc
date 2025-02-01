@@ -25,7 +25,7 @@ package eu.solven.adhoc.database;
 import java.util.Set;
 
 import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.query.DatabaseQuery;
+import eu.solven.adhoc.query.TableQuery;
 
 /**
  * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
@@ -47,6 +47,6 @@ public interface IAdhocTableWrapper {
 	// TODO Do we need access to the dataTypes, e.g. for Calcite?
 	Set<String> getColumns();
 
-	IRowsStream openDbStream(DatabaseQuery dbQuery);
+	IRowsStream openDbStream(TableQuery dbQuery);
 
 }

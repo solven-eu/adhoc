@@ -36,6 +36,7 @@ import eu.solven.adhoc.api.v1.filters.IColumnFilter;
 import eu.solven.adhoc.api.v1.pojo.value.EqualsMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.InMatcher;
+import eu.solven.adhoc.api.v1.pojo.value.LikeMatcher;
 import eu.solven.adhoc.api.v1.pojo.value.NotValueFilter;
 import eu.solven.adhoc.api.v1.pojo.value.NullMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -110,7 +111,7 @@ public class ColumnFilter implements IColumnFilter {
 					return o;
 				}
 			}).collect(Collectors.toSet());
-			this.valueMatcher = InMatcher.builder().operands(operands).build();
+			this.valueMatcher = InMatcher.isIn(operands);
 			return this;
 		}
 
@@ -169,6 +170,7 @@ public class ColumnFilter implements IColumnFilter {
 	 * @param first
 	 *            a first argument. If it is a {@link List}, it will be unnested.
 	 * @param more
+	 *            If it is a {@link List}, it will be unnested.
 	 * @return a {@link ColumnFilter}
 	 */
 	// https://duckdb.org/docs/sql/query_syntax/unnest.html
@@ -188,5 +190,9 @@ public class ColumnFilter implements IColumnFilter {
 		} else {
 			return ColumnFilter.builder().column(column).matchIn(expandedList).build();
 		}
+	}
+
+	public static IAdhocFilter isLike(String column, String likeExpression) {
+		return ColumnFilter.builder().column(column).valueMatcher(LikeMatcher.matching(likeExpression)).build();
 	}
 }

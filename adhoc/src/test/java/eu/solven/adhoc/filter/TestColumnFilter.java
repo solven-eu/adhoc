@@ -92,15 +92,15 @@ public class TestColumnFilter {
 
 	@Test
 	public void testJavaUtilSetOf() {
-		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Set.of("v")).build();
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Set.of("v1", "v2")).build();
 
 		Assertions.assertThat(FilterHelpers.match(filter, Map.of())).isFalse();
 		Assertions.assertThat(FilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
 
-		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v2"))).isFalse();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v2"))).isTrue();
+		Assertions.assertThat(FilterHelpers.match(filter, Map.of("k", "v3"))).isFalse();
 
-		Assertions.assertThat(filter.toString()).isEqualTo("k matches `InMatcher{size=1, #0=v}`");
+		Assertions.assertThat(filter.toString()).isEqualTo("k matches `InMatcher{size=2, #0=v1, #1=v2}`");
 	}
 
 	@Test
