@@ -56,6 +56,10 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public static MapBasedTabularView load(ITabularView from, MapBasedTabularView to) {
+		if (from instanceof MapBasedTabularView asMapBased) {
+			return asMapBased;
+		}
+
 		RowScanner<IAdhocSlice> rowScanner = coordinates -> {
 			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
 
@@ -96,9 +100,8 @@ public class MapBasedTabularView implements ITabularView {
 		});
 	}
 
-	public void append(AdhocSliceAsMap coordinates, Map<String, ?> mToValues) {
-		coordinatesToValues
-				.merge(coordinates.getCoordinates(), mToValues, new MapAggregator<String, Object>()::aggregate);
+	public void appendSlice(AdhocSliceAsMap slice, Map<String, ?> mToValues) {
+		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregator::aggregateMaps);
 	}
 
 	public static ITabularView empty() {

@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.map;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -38,12 +38,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 
 import autovalue.shaded.com.google.common.primitives.Ints;
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import eu.solven.adhoc.dag.AdhocObject2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 
-public final class AdhocMap implements IAdhocMap {
+// `extends AbstractMap` enables not duplicating `.toString`
+public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	// This is mandatory for fast `.get`
-	final Object2IntMap<String> keyToIndex;
+	final AdhocObject2IntArrayMap<String> keyToIndex;
 	// final List<String> keys;
 	final List<Object> values;
 
@@ -59,7 +60,7 @@ public final class AdhocMap implements IAdhocMap {
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
-	private AdhocMap(Object2IntMap<String> keyToIndex, List<Object> values) {
+	private AdhocMap(AdhocObject2IntArrayMap<String> keyToIndex, List<Object> values) {
 		this.keyToIndex = keyToIndex;
 		this.values = values;
 	}
@@ -154,11 +155,12 @@ public final class AdhocMap implements IAdhocMap {
 		// Like String.hashCode
 		int h = hash;
 		if (h == 0 && !hashIsZero) {
-			// https://stackoverflow.com/questions/11742593/what-is-the-hashcode-for-a-custom-class-having-just-two-int-properties
-
 			int[] hashcodeHolder = new int[1];
 
-			keyToIndex.forEach((key, index) -> {
+			Object2IntMaps.fastForEach(keyToIndex, entry -> {
+				String key = entry.getKey();
+				int index = entry.getIntValue();
+				// see `Map.Entry#hashCode`
 				hashcodeHolder[0] += key.hashCode() ^ values.get(index).hashCode();
 			});
 
@@ -207,28 +209,6 @@ public final class AdhocMap implements IAdhocMap {
 		}
 	}
 
-	// Duplicated from AbstractMap
-	@Override
-	public String toString() {
-		Iterator<Map.Entry<String, Object>> i = entrySet().iterator();
-		if (!i.hasNext())
-			return "{}";
-
-		StringBuilder sb = new StringBuilder();
-		sb.append('{');
-		for (;;) {
-			Map.Entry<String, Object> e = i.next();
-			String key = e.getKey();
-			Object value = e.getValue();
-			sb.append(key);
-			sb.append('=');
-			sb.append(value == this ? "(this Map)" : value);
-			if (!i.hasNext())
-				return sb.append('}').toString();
-			sb.append(',').append(' ');
-		}
-	}
-
 	// @Override
 	// public int compareTo(AdhocMap o) {
 	// // TODO Auto-generated method stub
@@ -258,7 +238,8 @@ public final class AdhocMap implements IAdhocMap {
 		}
 
 		public IAdhocMap build() {
-			Object2IntMap<String> keyToIndex = new Object2IntArrayMap<>(keys.size());
+			AdhocObject2IntArrayMap<String> keyToIndex = new AdhocObject2IntArrayMap<>(keys.size());
+
 			// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)
 			keyToIndex.defaultReturnValue(-1);
 

@@ -110,7 +110,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
-			Map<TableQuery, IRowsStream> dbQueryToSteam) {
+			Map<TableQuery, IRowsStream> dbQueryToStream) {
 		DagHolder fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
 		Map<String, Set<Aggregator>> inputColumnToAggregators =
@@ -119,7 +119,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
-		dbQueryToSteam.forEach((dbQuery, stream) -> {
+		dbQueryToStream.forEach((dbQuery, stream) -> {
 			Map<AdhocQueryStep, CoordinatesToValues> oneQueryStepToValues =
 					aggregateStreamToAggregates(dbQuery, stream, inputColumnToAggregators);
 
@@ -214,7 +214,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			} else {
 				RowScanner<AdhocSliceAsMap> rowScanner = coordinates -> {
 					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(
-							o -> mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o)));
+							o -> mapBasedTabularView.appendSlice(coordinates, Map.of(step.getMeasure().getName(), o)));
 
 					return consumer;
 				};

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.dag.IHasColumns;
-import eu.solven.adhoc.query.TableQuery;
+import java.util.Map;
 
 /**
- * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
+ * Helps describing the column of some data-structure.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocTableWrapper extends IHasColumns {
+public interface IHasColumns {
+
 	/**
 	 * 
-	 * @return the natural name/id of the underlying table.
+	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
 	 */
-	String getName();
-
-	IRowsStream openDbStream(TableQuery dbQuery);
+	Map<String, Class<?>> getColumns();
 
 }

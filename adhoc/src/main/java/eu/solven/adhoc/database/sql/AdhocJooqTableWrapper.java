@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,7 +70,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
+	public Map<String, Class<?>> getColumns() {
 		Field<?>[] select = dbParameters.getDslSupplier()
 				.getDSLContext()
 				.select()
@@ -79,7 +78,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 				.limit(0)
 				.fetch()
 				.fields();
-		return Stream.of(select).map(f -> f.getName()).collect(Collectors.toSet());
+		return Stream.of(select).collect(Collectors.<Field, String, Class<?>>toMap(f -> f.getName(), f -> f.getType()));
 	}
 
 	public static AdhocJooqTableWrapper newInstance(Map<String, ?> options) {

@@ -35,7 +35,7 @@ import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.RatioOverSpecificColumnValueCompositor;
+import eu.solven.adhoc.transformers.examples.RatioOverSpecificColumnValueCompositor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -34,7 +34,7 @@ import eu.solven.adhoc.query.IQueryOption;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocCubeWrapper {
+public interface IAdhocCubeWrapper extends IHasColumns {
 	// A cube is the combination of a database and a Set of measures.
 	// Set<String> getCubesNames();
 
@@ -43,7 +43,5 @@ public interface IAdhocCubeWrapper {
 	}
 
 	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions);
-
-	Set<String> getColumns();
 
 }

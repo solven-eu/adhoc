@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.ITabularView;
@@ -65,7 +67,20 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		return table.getColumns();
+	public Map<String, Class<?>> getColumns() {
+		Map<String, Class<?>> columnToType = new HashMap<>();
+
+		// First we register table columns
+		columnToType.putAll(table.getColumns());
+
+		// Then we override we measures: some measureName may take over an underlying column (e.g. `k1.sum` aliased as
+		// `k1` would hide the column `k1`)
+		measures.getNameToMeasure().forEach((measureName, measure) -> {
+			// TODO How can a measure express this type? This is even more complicated as it may actually depends on the
+			// underlying table types and the underlying querySteps
+			columnToType.put(measureName, Double.class);
+		});
+
+		return columnToType;
 	}
 }

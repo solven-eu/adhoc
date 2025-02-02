@@ -113,8 +113,6 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 
 		IDecomposition decomposition = makeDecomposition();
 
-		// Iterables.size( distinctSlices(underlyings))
-
 		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, aggregatingView));
 
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
@@ -145,7 +143,7 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 
 			{
 				Set<Set<String>> decompositionGroupBys =
-						decomposed.keySet().stream().map(d -> d.keySet()).collect(Collectors.toSet());
+						decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
 
 				NavigableSet<String> groupByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
 				if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {

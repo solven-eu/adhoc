@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.database;
 
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.TableQuery;
@@ -49,7 +49,7 @@ public class EmptyTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		return Set.of();
+	public Map<String, Class<?>> getColumns() {
+		return Map.of();
 	}
 }

@@ -40,6 +40,7 @@ import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -86,6 +87,7 @@ public class MultiTypeStorage<T> {
 	 *
 	 * @param key
 	 * @param v
+	 *            if null, this behave like `.clear`
 	 */
 	public void put(T key, Object v) {
 		// We clear all keys, to prevent storing different types for the same key
@@ -100,7 +102,7 @@ public class MultiTypeStorage<T> {
 		} else if (v instanceof CharSequence) {
 			String vAsString = v.toString();
 			measureToAggregateS.put(key, vAsString);
-		} else {
+		} else if (v != null) {
 			// throw new UnsupportedOperationException("Received: %s".formatted(PepperLogHelper.getObjectAndClass(v)));
 			measureToAggregateO.put(key, v);
 		}
@@ -127,8 +129,21 @@ public class MultiTypeStorage<T> {
 	}
 
 	public void scan(RowScanner<T> rowScanner) {
-		keySetStream().forEach(key -> {
-			onValue(key, rowScanner.onKey(key));
+		// Consider each column is much faster than going with `keySetStream` as
+		// it would require searching the column providing given type
+
+		// https://github.com/vigna/fastutil/issues/279
+		Object2LongMaps.fastForEach(measureToAggregateL, entry -> {
+			rowScanner.onKey(entry.getKey()).onLong(entry.getLongValue());
+		});
+		Object2DoubleMaps.fastForEach(measureToAggregateD, entry -> {
+			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
+		});
+		Object2ObjectMaps.fastForEach(measureToAggregateS, entry -> {
+			rowScanner.onKey(entry.getKey()).onCharsequence(entry.getValue());
+		});
+		Object2ObjectMaps.fastForEach(measureToAggregateO, entry -> {
+			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
 		});
 	}
 

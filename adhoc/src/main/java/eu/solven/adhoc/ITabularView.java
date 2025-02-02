@@ -34,8 +34,6 @@ import eu.solven.adhoc.slice.IAdhocSlice;
  *
  */
 public interface ITabularView {
-	// Stream<IAdhocSlice> rowKeys();
-
 	void acceptScanner(RowScanner<IAdhocSlice> rowScanner);
 
 	static ITabularView empty() {

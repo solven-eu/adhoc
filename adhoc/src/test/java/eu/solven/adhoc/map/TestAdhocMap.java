@@ -51,11 +51,27 @@ public class TestAdhocMap {
 
 	@Test
 	public void testHashcode() {
-
 		IAdhocMap simpleMap = AdhocMap.builder(Set.of("a", "b")).append("a1").append(now).build();
-		IAdhocMap simpleMap2 = AdhocMap.builder(Set.of("a", "b")).append("a1").append(now).build();
 
-		Assertions.assertThat(simpleMap).isEqualTo(simpleMap2);
+		{
+			IAdhocMap simpleMap2 = AdhocMap.builder(Set.of("a", "b")).append("a1").append(now).build();
+
+			Assertions.assertThat(simpleMap).isEqualTo(simpleMap2);
+		}
+
+		// Same keys different values
+		{
+			IAdhocMap simpleMap2 = AdhocMap.builder(Set.of("a", "b")).append("a1").append(now.plusDays(1)).build();
+
+			Assertions.assertThat(simpleMap).isNotEqualTo(simpleMap2);
+		}
+
+		// Same values different keys
+		{
+			IAdhocMap simpleMap2 = AdhocMap.builder(Set.of("a", "c")).append("a1").append(now).build();
+
+			Assertions.assertThat(simpleMap).isNotEqualTo(simpleMap2);
+		}
 
 		// Equals with standard map
 		{

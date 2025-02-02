@@ -41,26 +41,17 @@ public class MapAggregator<K, V> implements IAggregation {
 		Map<?, ?> lAsMap = (Map<?, ?>) l;
 		Map<?, ?> rAsMap = (Map<?, ?>) r;
 
-		return aggregateMaps(l, r, lAsMap, rAsMap);
+		return aggregateMaps(lAsMap, rAsMap);
 	}
 
-	private Map<K, V> aggregateMaps(Object l, Object r, Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (l == null) {
+	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
+		if (lAsMap == null) {
 			return (Map<K, V>) rAsMap;
-		} else if (r == null) {
+		} else if (rAsMap == null) {
 			return (Map<K, V>) lAsMap;
 		} else {
+			// BEWARE In case on conflict, ImmutableMap.builder() will through
 			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
 		}
 	}
-
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// throw new UnsupportedOperationException("Can not %s on doubles".formatted(KEY));
-	// }
-
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// throw new UnsupportedOperationException("Can not %s on longs".formatted(KEY));
-	// }
 }

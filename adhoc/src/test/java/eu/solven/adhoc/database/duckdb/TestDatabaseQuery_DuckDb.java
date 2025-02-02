@@ -435,6 +435,9 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 
 		AdhocCubeWrapper cube = wrapInCube(measureBag);
 
-		Assertions.assertThat(cube.getColumns()).containsExactlyInAnyOrder("a", "k1");
+		Assertions.assertThat(cube.getColumns())
+				.containsEntry("a", String.class)
+				.containsEntry("k1", Double.class)
+				.hasSize(2);
 	}
 }

@@ -159,7 +159,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 				final Iterator<? extends Map<String, ?>> resultIterator;
 				try {
 					ITabularView result = aqw.execute(adhocQuery);
-					
+
 					resultIterator = result.slices().map(slice -> {
 						return slice.getCoordinates();
 					}).iterator();

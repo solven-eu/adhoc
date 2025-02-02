@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.api.v1.IAdhocQuery;
-import eu.solven.adhoc.dag.IHasColumns;
-import eu.solven.adhoc.query.TableQuery;
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 
-/**
- * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IAdhocTableWrapper extends IHasColumns {
-	/**
-	 * 
-	 * @return the natural name/id of the underlying table.
-	 */
-	String getName();
-
-	IRowsStream openDbStream(TableQuery dbQuery);
-
+public class AdhocObject2IntArrayMap<T> extends Object2IntArrayMap<T> {
+	public AdhocObject2IntArrayMap(int capacity) {
+		super(capacity);
+	}
 }
