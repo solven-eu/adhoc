@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.storage;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * This data-structures aggregates input value on a per-key basis. Different keys are allowed to be associated to
  * different types (e.g. we may have some keys holding a functional double, while other keys may hold an error String).
- * 
+ * <p>
  * This data-structure does not maintain order. Typically `SUM(123, 'a', 234)` could lead to `'123a234'` or `'357a'`.
  *
  * @param <T>
@@ -64,9 +64,10 @@ public class MultiTypeStorage<T> {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
-	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a later
-	// implementation
-	// but with unclear benefits.
+	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
+	// later/alternative
+	// implementation but with unclear benefits. It could actually be done with an additional column with a multiType
+	// object
 	@Default
 	@NonNull
 	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
@@ -82,7 +83,7 @@ public class MultiTypeStorage<T> {
 
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
-	 * 
+	 *
 	 * @param key
 	 * @param v
 	 */
@@ -120,12 +121,13 @@ public class MultiTypeStorage<T> {
 		} else if (measureToAggregateS.containsKey(key)) {
 			consumer.onCharsequence(measureToAggregateS.get(key));
 		} else {
+			// BEWARE if the key is unknown, the call is done with null
 			consumer.onObject(measureToAggregateO.get(key));
 		}
 	}
 
 	public void scan(RowScanner<T> rowScanner) {
-		keySet().forEach(key -> {
+		keySetStream().forEach(key -> {
 			onValue(key, rowScanner.onKey(key));
 		});
 	}
@@ -133,6 +135,7 @@ public class MultiTypeStorage<T> {
 	public long size() {
 		long size = 0;
 
+		// Can sum sizes as a key can not appear in multiple columns
 		size += measureToAggregateL.size();
 		size += measureToAggregateD.size();
 		size += measureToAggregateS.size();
@@ -168,7 +171,9 @@ public class MultiTypeStorage<T> {
 		onValue(key, AsObjectValueConsumer.consumer(existingAggregate -> {
 			Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
-			clearKey(key);
+			if (existingAggregate != null) {
+				clearKey(key);
+			}
 			put(key, newAggregate);
 		}));
 
@@ -255,15 +260,15 @@ public class MultiTypeStorage<T> {
 	// put(key, valueToStore);
 	// }
 
-	public Set<T> keySet() {
-		Set<T> keySet = new HashSet<>();
+	public Stream<T> keySetStream() {
+		return Stream
+				.of(measureToAggregateD.keySet(),
+						measureToAggregateL.keySet(),
+						measureToAggregateS.keySet(),
+						measureToAggregateO.keySet())
+				// No need for .distinct as each key is guaranteed to appear in a single column
+				.flatMap(Collection::stream);
 
-		keySet.addAll(measureToAggregateD.keySet());
-		keySet.addAll(measureToAggregateL.keySet());
-		keySet.addAll(measureToAggregateS.keySet());
-		keySet.addAll(measureToAggregateO.keySet());
-
-		return keySet;
 	}
 
 	@Override
@@ -275,7 +280,7 @@ public class MultiTypeStorage<T> {
 				.add("measureToAggregateO.size()", measureToAggregateO.size());
 
 		AtomicInteger index = new AtomicInteger();
-		keySet().stream().limit(5).forEach(key -> {
+		keySetStream().limit(5).forEach(key -> {
 
 			onValue(key, AsObjectValueConsumer.consumer(o -> {
 				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));

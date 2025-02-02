@@ -24,10 +24,8 @@ package eu.solven.adhoc;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +35,6 @@ import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -64,9 +61,6 @@ public class TestQueryOptions extends ADagTest {
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES));
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.coordinatesToValues)
@@ -88,7 +82,6 @@ public class TestQueryOptions extends ADagTest {
 		ITabularView output =
 				aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), amb, rows);
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(0);
+		Assertions.assertThat(output.isEmpty()).isTrue();
 	}
 }

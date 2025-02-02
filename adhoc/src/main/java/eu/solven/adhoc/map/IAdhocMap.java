@@ -20,47 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.ratio;
+package eu.solven.adhoc.map;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
-
-import eu.solven.adhoc.dag.DAGExplainer;
-import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
+import eu.solven.adhoc.slice.IAdhocSlice;
 
 /**
- * Useful to test {@link DAGExplainer}
+ * A map dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a{@link IAdhocGroupBy}.
+ * 
+ * It requires {@link String} keys and {@link Object} values, as columns are always String.
+ * 
+ * It is immutable as it is used as key in {@link Map}. it may typically cache the hashCode.
+ * 
+ * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
+ * (https://openjdk.org/jeps/180).
  * 
  * @author Benoit Lacelle
  */
-public class AdhocExplainerTestHelper {
-	protected AdhocExplainerTestHelper() {
-		// hidden
-	}
-
-	public static List<String> listenForExplain(EventBus eventBus) {
-		List<String> messages = new ArrayList<>();
-
-		// Register an eventListener to collect the EXPLAIN results
-		{
-			Object listener = new Object() {
-
-				@Subscribe
-				public void onExplainOrDebugEvent(AdhocLogEvent event) {
-					if (event.isExplain()) {
-						messages.add(event.getMessage());
-					}
-				}
-			};
-
-			eventBus.register(listener);
-		}
-
-		return messages;
-
-	}
+public interface IAdhocMap extends Map<String, Object>
+// , Comparable<AdhocMap>
+{
 
 }

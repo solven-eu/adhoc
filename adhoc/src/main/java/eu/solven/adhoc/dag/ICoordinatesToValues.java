@@ -32,6 +32,8 @@ import eu.solven.adhoc.storage.ValueConsumer;
 public interface ICoordinatesToValues extends ICoordinatesAndValueConsumer {
 	Set<AdhocSliceAsMap> keySet();
 
+	long size();
+
 	void onValue(IAdhocSlice slice, ValueConsumer consumer);
 
 	void scan(RowScanner<AdhocSliceAsMap> rowScanner);

@@ -51,7 +51,6 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.TableQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 
@@ -159,8 +158,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
 	}
@@ -185,8 +182,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 						jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.contains(Map.of("a", "a1"), Map.of("a", "a2"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
 				.containsEntry(Map.of("a", "a2"), Map.of(k1SumSquared.getName(), (long) Math.pow(234, 2)));
@@ -212,7 +207,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList()).contains(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)));
 	}
@@ -241,8 +235,6 @@ public class TestDatabaseQuery_DuckDb_FromParquet implements IAdhocTestConstants
 				.build(), measureBag, jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
 				.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));

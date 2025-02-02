@@ -232,3 +232,4 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
 - Enable visual-filter, e.g. `groupBy(country in ['FR', 'UK']` which is not the same as `WHERE country in ['FR', 'UK']` especially on a measure like `/ Europe`
 - Make it simple to extract a column single equalsFilter from a potentially complex `IAdhocFilter`
 - Concurrency: for instance when processing the DAG given the results from the `TableQuery`
+- BDD: Automated generation of Scenario given an `IAdhocQuery`

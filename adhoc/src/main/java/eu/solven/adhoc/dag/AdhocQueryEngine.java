@@ -44,12 +44,15 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.google.common.primitives.Ints;
+
 import eu.solven.adhoc.ITabularView;
 import eu.solven.adhoc.MapBasedTabularView;
 import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
 import eu.solven.adhoc.aggregations.collection.UnionSetAggregator;
+import eu.solven.adhoc.api.v1.IAdhocGroupBy;
 import eu.solven.adhoc.api.v1.IAdhocQuery;
 import eu.solven.adhoc.api.v1.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.database.IAdhocTableWrapper;
@@ -58,6 +61,7 @@ import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.TableQuery;
@@ -65,7 +69,6 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
-import eu.solven.adhoc.storage.ValueConsumer;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Columnator;
 import eu.solven.adhoc.transformers.EmptyMeasure;
@@ -145,8 +148,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transformations").source(this).build());
 
-		MapBasedTabularView mapBasedTabularView =
-				toTabularView(queryWithContext, fromQueriedToAggregates, queryStepToValues);
+		ITabularView mapBasedTabularView = toTabularView(queryWithContext, fromQueriedToAggregates, queryStepToValues);
 
 		return mapBasedTabularView;
 	}
@@ -178,37 +180,45 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return columnToAggregators;
 	}
 
-	protected MapBasedTabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
+	protected ITabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
 			DagHolder fromQueriedToAggregates,
 			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
-		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder().build();
+		if (queryStepToValues.isEmpty()) {
+			return MapBasedTabularView.empty();
+		}
 
+		long expectedOutputCardinality;
 		Iterator<AdhocQueryStep> stepsToReturn;
 		if (queryWithContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
 			// BEWARE Should we return steps with same groupBy?
+			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
 			// What about measures appearing multiple times in the DAG?
 			stepsToReturn = new BreadthFirstIterator<>(fromQueriedToAggregates.getDag());
+			expectedOutputCardinality = 0;
 		} else {
 			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
 			stepsToReturn = fromQueriedToAggregates.getQueried().iterator();
+			expectedOutputCardinality =
+					queryStepToValues.values().stream().mapToLong(ICoordinatesToValues::size).max().getAsLong();
 		}
 
+		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
+				// Force a HashMap not to rely on default TreeMap
+				.coordinatesToValues(new HashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
+				.build();
+
 		stepsToReturn.forEachRemaining(step -> {
-			RowScanner<AdhocSliceAsMap> rowScanner = new RowScanner<AdhocSliceAsMap>() {
-
-				@Override
-				public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
-					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(
-							o -> mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o)));
-
-					return consumer;
-				}
-			};
-
 			ICoordinatesToValues coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
+				RowScanner<AdhocSliceAsMap> rowScanner = coordinates -> {
+					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(
+							o -> mapBasedTabularView.append(coordinates, Map.of(step.getMeasure().getName(), o)));
+
+					return consumer;
+				};
+
 				coordinatesToValues.scan(rowScanner);
 			}
 		});
@@ -304,7 +314,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 				eventBus.post(QueryStepIsCompleted.builder()
 						.querystep(queryStep)
-						.nbCells(coordinatesToValues.keySet().size())
+						.nbCells(coordinatesToValues.size())
 						.source(this)
 						.build());
 
@@ -375,13 +385,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected void forEachStreamedRow(TableQuery adhocQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
-			Map<String, ?> input,
+			Map<String, ?> tableRow,
 			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
 			Set<String> relevantColumns,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
-		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(adhocQuery, input);
+		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(adhocQuery, tableRow);
 
-		peekOnCoordinate.accept(input, optCoordinates);
+		peekOnCoordinate.accept(tableRow, optCoordinates);
 
 		if (optCoordinates.isEmpty()) {
 			return;
@@ -396,13 +406,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		AdhocSliceAsMap coordinates = optCoordinates.get();
 
 		for (String aggregatedColumn : relevantColumns) {
-			if (input.containsKey(aggregatedColumn)) {
+			if (tableRow.containsKey(aggregatedColumn)) {
 				// We received a row contributing to an aggregate: the DB does not provide
 				// aggregates (e.g.
 				// InMemoryDb)
 				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
 
-				Object v = input.get(aggregatedColumn);
+				Object v = tableRow.get(aggregatedColumn);
 
 				if (aggs == null) {
 					// DB has done the aggregation for us
@@ -431,26 +441,27 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	/**
 	 * @param adhocQuery
-	 * @param input
+	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<AdhocSliceAsMap> makeCoordinate(IWhereGroupbyAdhocQuery adhocQuery, Map<String, ?> input) {
-		if (adhocQuery.getGroupBy().isGrandTotal()) {
+	protected Optional<AdhocSliceAsMap> makeCoordinate(IWhereGroupbyAdhocQuery adhocQuery, Map<String, ?> tableRow) {
+		IAdhocGroupBy groupBy = adhocQuery.getGroupBy();
+		if (groupBy.isGrandTotal()) {
 			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
 		}
 
-		NavigableSet<String> groupedByColumns = adhocQuery.getGroupBy().getGroupedByColumns();
+		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		Map<String, Object> coordinates = new LinkedHashMap<>(groupedByColumns.size());
+		AdhocMap.AdhocMapBuilder coordinatesBuilder = AdhocMap.builder(groupedByColumns);
 
-		for (String groupBy : groupedByColumns) {
-			Object value = input.get(groupBy);
+		for (String groupedByColumn : groupedByColumns) {
+			Object value = tableRow.get(groupedByColumn);
 
 			if (value == null) {
-				if (input.containsKey(groupBy)) {
+				if (tableRow.containsKey(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(groupBy);
+					value = valueOnNull(groupedByColumn);
 
 					assert value != null : "`null` is not a legal column value";
 				} else {
@@ -460,10 +471,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				}
 			}
 
-			coordinates.put(groupBy, value);
+			coordinatesBuilder.append(value);
 		}
 
-		return Optional.of(AdhocSliceAsMap.fromMap(coordinates));
+		return Optional.of(AdhocSliceAsMap.fromMap(coordinatesBuilder.build()));
 	}
 
 	/**

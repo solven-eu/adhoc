@@ -50,7 +50,6 @@ import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
@@ -235,8 +234,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
 	}
@@ -277,8 +274,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 					.build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1Sum.getName(), 0L + 123))
 					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1Sum.getName(), 0L + 345));
@@ -293,8 +288,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 					.build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-					.contains(Map.of("b@b@b", "b1"), Map.of("b@b@b", "b2"));
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("b@b@b", "b1"), Map.of(k1SumSquared.getName(), (long) Math.pow(123, 2)))
 					.containsEntry(Map.of("b@b@b", "b2"), Map.of(k1SumSquared.getName(), (long) Math.pow(345, 2)));
@@ -354,8 +347,6 @@ public class TestDatabaseQuery_DuckDb implements IAdhocTestConstants {
 				wrapInCube(measureBag).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.containsExactly(Map.of());
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(kSumOverk1.getName(), 0L + 123 + 234));
 	}

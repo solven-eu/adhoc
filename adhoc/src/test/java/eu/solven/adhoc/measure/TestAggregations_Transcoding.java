@@ -24,9 +24,7 @@ package eu.solven.adhoc.measure;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +39,6 @@ import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.database.transcoder.PrefixTranscoder;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 
@@ -71,9 +68,6 @@ public class TestAggregations_Transcoding extends ADagTest {
 	public void testGrandTotal() {
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -85,9 +79,6 @@ public class TestAggregations_Transcoding extends ADagTest {
 	public void testFilter() {
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -98,9 +89,6 @@ public class TestAggregations_Transcoding extends ADagTest {
 	@Test
 	public void testGroupBy() {
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("c").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("c", "v1"), Map.of("c", "v2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -114,9 +102,6 @@ public class TestAggregations_Transcoding extends ADagTest {
 	public void testFilterGroupBy() {
 		ITabularView output = aqw.execute(
 				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").debug(true).build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Map.of("c", "v1"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

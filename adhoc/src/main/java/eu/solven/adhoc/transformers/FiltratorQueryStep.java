@@ -25,21 +25,29 @@ package eu.solven.adhoc.transformers;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
+import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
+import eu.solven.adhoc.aggregations.optional.FindFirstCombination;
 import eu.solven.adhoc.api.v1.pojo.AndFilter;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link IHasUnderlyingQuerySteps} for {@link Filtrator}
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
+public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
 	final Filtrator filtrator;
 	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;
@@ -67,33 +75,45 @@ public class FiltratorQueryStep implements IHasUnderlyingQuerySteps {
 
 		ICoordinatesToValues output = makeCoordinateToValues();
 
-		boolean debug = filtrator.isDebug() || step.isDebug();
-		for (AdhocSliceAsMap coordinate : UnderlyingQueryStepHelpers.distinctSlices(debug, underlyings)) {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(coordinate).queryStep(step).build();
-
-			List<Object> underlyingVs = underlyings.stream().map(storage -> {
-				AtomicReference<Object> refV = new AtomicReference<>();
-				AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(o -> {
-					refV.set(o);
-				});
-
-				storage.onValue(slice, consumer);
-
-				if (debug) {
-					log.info("[DEBUG] Write {} in {} for m={}", refV.get(), coordinate, filtrator.getName());
-				}
-
-				return refV.get();
-			}).toList();
-
-			Object value = underlyingVs.getFirst();
-			output.put(coordinate, value);
-		}
+		forEachDistinctSlice(underlyings, new FindFirstCombination(), output::put);
 
 		return output;
 	}
 
 	protected ICoordinatesToValues makeCoordinateToValues() {
 		return CoordinatesToValues.builder().build();
+	}
+
+	@Override
+	protected IMeasure getMeasure() {
+		return filtrator;
+	}
+
+	@Override
+	protected AdhocQueryStep getStep() {
+		return step;
+	}
+
+	@Override
+	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+			IAdhocSliceWithStep slice,
+			ICombination combination,
+			ICoordinatesAndValueConsumer output) {
+		List<Object> underlyingVs = underlyings.stream().map(storage -> {
+			AtomicReference<Object> refV = new AtomicReference<>();
+			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
+
+			storage.onValue(slice, consumer);
+
+			return refV.get();
+		}).collect(Collectors.toList());
+
+		Object value = combination.combine(slice, underlyingVs);
+
+		if (isDebug()) {
+			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, getMeasure().getName());
+		}
+
+		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 }

@@ -23,7 +23,7 @@
 package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,7 +52,6 @@ import eu.solven.adhoc.api.v1.pojo.value.IValueMatcher;
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
 import lombok.NonNull;
 
@@ -65,7 +64,7 @@ import lombok.NonNull;
  */
 public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements IAdhocTestConstants {
 	// This could be adjusted so that tests takes a few seconds to execute. Can be increased a lot to test bigger cases
-	int maxCardinality = 100_000;
+	int maxCardinality = 0_100_000;
 
 	int smallValue = 5;
 	int largeValue = maxCardinality - smallValue;
@@ -197,8 +196,9 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		// List<Map<String, ?>> keySet =
+		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
+		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -216,8 +216,9 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallValue).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		// List<Map<String, ?>> keySet =
+		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
+		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -234,8 +235,9 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallValue).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		// List<Map<String, ?>> keySet =
+		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
+		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -293,7 +295,11 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 				.andFilter(cElement, smallValue)
 				.build());
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output,
+				MapBasedTabularView.builder()
+						// HashMap as this is a performance test
+						.coordinatesToValues(new HashMap<>(output.size()))
+						.build());
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				// We filtered 5, so we have groups from 5 to N

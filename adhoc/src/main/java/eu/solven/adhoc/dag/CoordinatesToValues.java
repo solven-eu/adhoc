@@ -23,6 +23,7 @@
 package eu.solven.adhoc.dag;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.RowScanner;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -55,7 +56,7 @@ public class CoordinatesToValues implements ICoordinatesToValues {
 
 	@Override
 	public Set<AdhocSliceAsMap> keySet() {
-		return getStorage().keySet();
+		return getStorage().keySetStream().collect(Collectors.toSet());
 	}
 
 	@Override
@@ -66,5 +67,10 @@ public class CoordinatesToValues implements ICoordinatesToValues {
 	@Override
 	public void scan(RowScanner<AdhocSliceAsMap> rowScanner) {
 		storage.scan(rowScanner);
+	}
+
+	@Override
+	public long size() {
+		return storage.size();
 	}
 }

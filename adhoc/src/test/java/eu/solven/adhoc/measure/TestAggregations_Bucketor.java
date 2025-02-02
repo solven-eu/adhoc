@@ -24,9 +24,7 @@ package eu.solven.adhoc.measure;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +37,6 @@ import eu.solven.adhoc.aggregations.max.MaxCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;
 
@@ -67,9 +64,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -91,9 +85,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -117,9 +108,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -141,9 +129,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -168,9 +153,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(0);
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
@@ -190,9 +172,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Map.of());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -216,9 +195,6 @@ public class TestAggregations_Bucketor extends ADagTest {
 		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Map.of());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

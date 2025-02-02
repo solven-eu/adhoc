@@ -25,18 +25,16 @@ package eu.solven.adhoc.slice;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
-
-import lombok.EqualsAndHashCode;
+import eu.solven.adhoc.map.AdhocMap;
 import lombok.ToString;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
-@EqualsAndHashCode
 @ToString
 public class AdhocSliceAsMap implements IAdhocSlice {
 	final Map<String, ?> asMap;
@@ -47,15 +45,17 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 
 	public static AdhocSliceAsMap fromMap(Map<String, ?> asMap) {
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
-		Map<String, ?> safeMap = ImmutableMap.copyOf(asMap);
+		Map<String, ?> safeMap = AdhocMap.immutableCopyOf(asMap);
 
+		// This is very fast: keep the check as it is
 		if (safeMap.containsValue(null)) {
 			// BEWARE Should this be a legit case, handling NULL specifically?
 			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
-		} else if (safeMap.values().stream().anyMatch(o -> o instanceof Collection<?>)) {
-			throw new IllegalArgumentException(
-					"A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap));
 		}
+
+		// This is a bit slow: it is an assertions
+		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
+				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
 
 		return new AdhocSliceAsMap(safeMap);
 	}
@@ -72,7 +72,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 
 	@Override
 	public Map<String, Object> getCoordinates() {
-		return ImmutableMap.copyOf(asMap);
+		return AdhocMap.immutableCopyOf(asMap);
 	}
 
 	@Override
@@ -90,5 +90,24 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		});
 
 		return filters;
+	}
+
+	@Override
+	public int hashCode() {
+		// The simplest hashCode as this become a hotspot on large queries
+		return asMap.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		} else if (obj == null) {
+			return false;
+		} else if (getClass() != obj.getClass()) {
+			return false;
+		}
+		AdhocSliceAsMap other = (AdhocSliceAsMap) obj;
+		return Objects.equals(asMap, other.asMap);
 	}
 }

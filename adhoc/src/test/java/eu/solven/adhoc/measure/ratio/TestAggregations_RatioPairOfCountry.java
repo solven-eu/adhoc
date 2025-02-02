@@ -24,9 +24,7 @@ package eu.solven.adhoc.measure.ratio;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +37,6 @@ import eu.solven.adhoc.aggregations.DivideCombination;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.api.v1.pojo.ColumnFilter;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Combinator;
 import eu.solven.adhoc.transformers.Filtrator;
@@ -103,8 +100,9 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("country", "FR").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		// List<Map<String, ?>> keySet =
+		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
+		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -119,8 +117,9 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").groupByAlso("country").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FR"), Map.of("country", "US"));
+		// List<Map<String, ?>> keySet =
+		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
+		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FR"), Map.of("country", "US"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

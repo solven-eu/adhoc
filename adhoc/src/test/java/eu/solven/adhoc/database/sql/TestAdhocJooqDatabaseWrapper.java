@@ -42,7 +42,6 @@ import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 	static {
@@ -91,8 +90,6 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-				Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-						.containsExactly(Map.of());
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
 						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 234));
 			}

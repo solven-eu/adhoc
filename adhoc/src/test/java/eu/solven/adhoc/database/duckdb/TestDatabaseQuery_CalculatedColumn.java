@@ -46,7 +46,6 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.TableQuery;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
 public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 
@@ -94,8 +93,6 @@ public class TestDatabaseQuery_CalculatedColumn implements IAdhocTestConstants {
 						jooqDb);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
-				.containsExactlyInAnyOrder(Map.of("first_letter", "a"), Map.of("first_letter", "q"));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("first_letter", "a"), Map.of(k1Sum.getName(), 123L))
 				.containsEntry(Map.of("first_letter", "q"), Map.of(k1Sum.getName(), 234L));

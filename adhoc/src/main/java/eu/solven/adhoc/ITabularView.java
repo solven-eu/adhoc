@@ -24,20 +24,27 @@ package eu.solven.adhoc;
 
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.api.v1.IAdhocQuery;
+import eu.solven.adhoc.slice.IAdhocSlice;
 
 /**
- * Storage for static data (i.e. not Live data).
+ * Storage for static data (i.e. not Live data). Typical output of an {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  *
  */
 public interface ITabularView {
-	Stream<AdhocSliceAsMap> keySet();
+	// Stream<IAdhocSlice> rowKeys();
 
-	void acceptScanner(RowScanner<AdhocSliceAsMap> rowScanner);
+	void acceptScanner(RowScanner<IAdhocSlice> rowScanner);
 
 	static ITabularView empty() {
 		return MapBasedTabularView.empty();
 	}
+
+	int size();
+
+	boolean isEmpty();
+
+	Stream<IAdhocSlice> slices();
 }
