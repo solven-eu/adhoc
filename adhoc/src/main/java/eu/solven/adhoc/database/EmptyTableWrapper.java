@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.database;
 
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.table.TableQuery;
@@ -31,7 +31,7 @@ import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * {@link IAdhocDatabaseWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
+ * {@link IAdhocTableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
  * known (e.g. when one has to switch the underlying table depending on some queried filter).
  *
  * @author Benoit Lacelle
@@ -49,7 +49,7 @@ public class EmptyTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		return Set.of();
+	public Map<String, Class<?>> getColumns() {
+		return Map.of();
 	}
 }

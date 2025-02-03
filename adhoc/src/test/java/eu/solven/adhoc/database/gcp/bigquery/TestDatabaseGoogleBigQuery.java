@@ -38,11 +38,11 @@ import com.google.cloud.bigquery.BigQueryOptions;
 
 import eu.solven.adhoc.google.bigquery.AdhocBigQueryTableWrapperParameters;
 import eu.solven.adhoc.google.bigquery.AdhocGoogleBigQueryTableWrapper;
-import eu.solven.adhoc.query.AdhocTopClause;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.ReferencedColumn;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.transformers.Aggregator;
 import lombok.extern.slf4j.Slf4j;
 

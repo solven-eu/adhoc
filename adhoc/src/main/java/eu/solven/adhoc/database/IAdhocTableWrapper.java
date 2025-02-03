@@ -22,8 +22,7 @@
  */
 package eu.solven.adhoc.database;
 
-import java.util.Set;
-
+import eu.solven.adhoc.dag.IHasColumns;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -33,19 +32,12 @@ import eu.solven.adhoc.query.table.TableQuery;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocTableWrapper {
+public interface IAdhocTableWrapper extends IHasColumns {
 	/**
 	 * 
 	 * @return the natural name/id of the underlying table.
 	 */
 	String getName();
-
-	/**
-	 * 
-	 * @return the columns available for groupBy operations.
-	 */
-	// TODO Do we need access to the dataTypes, e.g. for Calcite?
-	Set<String> getColumns();
 
 	IRowsStream openDbStream(TableQuery dbQuery);
 

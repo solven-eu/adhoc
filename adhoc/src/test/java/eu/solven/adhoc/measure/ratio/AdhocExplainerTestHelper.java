@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,42 +20,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.measure.ratio;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
-import eu.solven.adhoc.query.table.TableQuery;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Singular;
-import lombok.Value;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+
+import eu.solven.adhoc.dag.DAGExplainer;
+import eu.solven.adhoc.eventbus.AdhocLogEvent;
 
 /**
- * Used by {@link TableQuery} to restrict ourselves to the top results.
+ * Useful to test {@link DAGExplainer}
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-public class AdhocTopClause {
-
-	public static final AdhocTopClause NO_LIMIT = AdhocTopClause.builder().build();
-
-	// If negative, do not apply any limit/top
-	// https://stackoverflow.com/questions/5668540/difference-between-top-and-limit-keyword-in-sql
-	private static final int NO_TOP = -1;
-
-	@Singular
-	final List<IAdhocColumn> columns;
-
-	@Default
-	final int limit = NO_TOP;
-	@Default
-	final boolean desc = true;
-
-	public boolean isPresent() {
-		return !columns.isEmpty();
+public class AdhocExplainerTestHelper {
+	protected AdhocExplainerTestHelper() {
+		// hidden
 	}
+
+	public static List<String> listenForExplain(EventBus eventBus) {
+		List<String> messages = new ArrayList<>();
+
+		// Register an eventListener to collect the EXPLAIN results
+		{
+			Object listener = new Object() {
+
+				@Subscribe
+				public void onExplainOrDebugEvent(AdhocLogEvent event) {
+					if (event.isExplain()) {
+						messages.add(event.getMessage());
+					}
+				}
+			};
+
+			eventBus.register(listener);
+		}
+
+		return messages;
+
+	}
+
 }

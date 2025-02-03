@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -30,30 +32,31 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
-import lombok.Getter;
 
 public class QueryStepsDagsBuilder {
-	final IAdhocQuery adhocQuery;
+	final IAdhocQuery query;
 
-	@Getter
+	final Set<AdhocQueryStep> roots = new HashSet<>();
+
 	final DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> queryDag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 	// Holds the querySteps which underlying steps are pending for processing
 	final LinkedList<AdhocQueryStep> leftOvers = new LinkedList<>();
 
-	public QueryStepsDagsBuilder(IAdhocQuery adhocQuery) {
-		this.adhocQuery = adhocQuery;
+	public QueryStepsDagsBuilder(IAdhocQuery query) {
+		this.query = query;
 	}
 
 	public void addRoot(IMeasure queriedMeasure) {
 		AdhocQueryStep rootStep = AdhocQueryStep.builder()
-				.filter(adhocQuery.getFilter())
-				.groupBy(adhocQuery.getGroupBy())
+				.filter(query.getFilter())
+				.groupBy(query.getGroupBy())
 				.measure(queriedMeasure)
-				.customMarker(adhocQuery.getCustomMarker())
-				.debug(adhocQuery.isDebug())
+				.customMarker(query.getCustomMarker())
+				.debug(query.isDebug())
 				.build();
 
+		roots.add(rootStep);
 		queryDag.addVertex(rootStep);
 		leftOvers.add(rootStep);
 	}
@@ -80,5 +83,9 @@ public class QueryStepsDagsBuilder {
 				throw new IllegalStateException("The DAG must not rely on ReferencedMeasure");
 			}
 		});
+	}
+
+	public DagHolder getQueryDag() {
+		return DagHolder.builder().dag(queryDag).queried(roots).build();
 	}
 }

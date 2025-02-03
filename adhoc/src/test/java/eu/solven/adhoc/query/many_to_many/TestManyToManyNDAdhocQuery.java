@@ -24,10 +24,8 @@ package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +48,6 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
@@ -135,9 +132,6 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -151,9 +145,6 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElementGender, "male").build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -169,9 +160,6 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "yellow").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -186,8 +174,7 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "unknownGroup").build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(0);
+		Assertions.assertThat(output.isEmpty()).isTrue();
 	}
 
 	@Test

@@ -34,6 +34,8 @@ public enum StandardQueryOptions implements IQueryOption {
 	 * computations, but it induces additional RAM consumptions (as these implicitly requested measures can not be
 	 * discarded).
 	 */
+	// BROKEN as there is no underlyingMeasures, but underlyingSteps
+	@Deprecated
 	RETURN_UNDERLYING_MEASURES,
 
 	/**

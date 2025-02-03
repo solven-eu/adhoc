@@ -47,7 +47,6 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
 
@@ -150,7 +149,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-			Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList()).contains(Map.of());
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 234));
 		}

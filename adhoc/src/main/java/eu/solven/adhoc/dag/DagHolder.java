@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc;
+package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.query.table.TableQuery;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
-public class TestTableQuery implements IAdhocTestConstants {
-	@Test
-	public void testGrandTotal() {
-		TableQuery q = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
+@Value
+@Builder
+public class DagHolder {
+	// The DAG of a given IAdhocQuery, from queried to aggregators
+	@NonNull
+	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;
 
-		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
-		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getAggregators()).hasSize(1).contains(k1Sum);
-
-		// Make sure the .toString returns actual values, and not the lambda toString
-		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
-	}
+	// We keep a separate list of queried, as some queried may not be roots in the DAG (e.g. when the query requests
+	// both a measure and one of its underlying)
+	@NonNull
+	Set<AdhocQueryStep> queried;
 }

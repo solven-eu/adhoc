@@ -10,9 +10,9 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 ### About performance
 
-Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying database. As the slow-part of a full `AdhocQuery` is generally the 
-database pre-aggregation, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables
-this project to remains simpler, given a query is generally slow due to the underlying database.
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. As the slow-part of a full `AdhocQuery` is generally the 
+table pre-aggregation, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables
+this project to remains simpler, given a query is generally slow due to the underlying table.
 
 ## Related Projects
 
@@ -29,12 +29,12 @@ this project to remains simpler, given a query is generally slow due to the unde
 
 1. Ensure you have JDK 21 available
 2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.1` (yet to be released. You have to compile the project locally for now)
-3. Define an `IAdhocDatabaseWrapper`: it defines how Adhoc can access your data
+3. Define an `IAdhocTableWrapper`: it defines how Adhoc can access your data
 
 Assuming your data is queryable with JooQ:
 
 ```
-myTableWrapper = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
         .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
         .table(yourJooqTableLike)
         .build());
@@ -43,7 +43,7 @@ myTableWrapper = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters
 For local `.parquet` files, it can be done with:
 
 ```
-myTableWrapper = new AdhocJooqDatabaseWrapper(AdhocJooqDatabaseWrapperParameters.builder()
+myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
         .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
         .table(DSL.table(DSL.unquotedName("read_parquet('myRootFolder/2025-*-BaseFacts_*.parquet', union_by_name=True)")))
         .build());
@@ -107,29 +107,29 @@ graph TB
     ratio.FR --> sum
 ```
 
-## Database
+## Table
 
-Adhoc is not a database, it is a query engine. It knows how to execute complex KPI queries, typically defined as complex graph of logics. The leaves of these graphes are simpler measures, to be provided by external databases.
+Adhoc is not a table, it is a query engine. It knows how to execute complex KPI queries, typically defined as complex graph of logics. The leaves of these graphes are simpler measures, to be provided by external tables.
 
-Typical database are:
+Typical table are:
 
-- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlDatabase](JooqSqlDatabase).
-- Any SQL database: you should rely on [JooqSqlDatabase](JooqSqlDatabase), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
+- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlTable](JooqSqlTable).
+- Any SQL table: you should rely on [JooqSqlTable](JooqSqlTable), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
 
 ### Transcoder
 
-Given databases may hold similar data but with different column names. A `IAdhocDatabaseWrapper` enables coding once per database such a mapping.
+Given tables may hold similar data but with different column names. A `IAdhocTableWrapper` enables coding once per table such a mapping.
 
-A default `IAdhocDatabaseWrapper` assumes `IAdhocQuery` columns matches the `IAdhocDatabaseWrapper` columns.
+A default `IAdhocTableWrapper` assumes `IAdhocQuery` columns matches the `IAdhocTableWrapper` columns.
 
 In case of a table with `JOIN`s, one would often encounter ambiguities when querying a field. For instance when:
 - querying a field used in a JOIN definition: the same name may appear in multiple tables
 - querying joined tables with `*`, but tables have conflicting field names.
 
-In such a case, one can resolve ambiguities by resolving them in a `IAdhocDatabaseWrapper`. For instance:
+In such a case, one can resolve ambiguities by resolving them in a `IAdhocTableWrapper`. For instance:
 ```java
-MapDatabaseTranscoder.builder()
+MapTableTranscoder.builder()
     .queriedToUnderlying("someColumn", "someTable.someColumn")
     .build()
 ```
@@ -194,8 +194,8 @@ where `currentCountry` is the country on the `Country` column, if we filter `Cou
 # Debug / Investigations
 
 Typical errors with Adhoc are :
-- Issue referencing underlying Database columns
-- Unexpected data returned by underlying Database
+- Issue referencing underlying Table columns
+- Unexpected data returned by underlying Table
 
 Tools to investigate these issues are:
 - Enable `debug` in your query: `AdhocQuery.builder()[...].debug(true).build()`
@@ -205,9 +205,9 @@ Tools to investigate these issues are:
 
 Debug will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
 
-Explain will provide additional information about the on-going query. It will typically log the query executed to the underlying database.
+Explain will provide additional information about the on-going query. It will typically log the query executed to the underlying table.
 
-# Databases
+# Tables
 
 ## SQL with JooQ
 
@@ -231,3 +231,5 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
 - Converge `IAdhocFilter` (filtering the data available to the query) with `IAdhocSlice.getRawFilter` (expressing the `filters` of current slice).
 - Enable visual-filter, e.g. `groupBy(country in ['FR', 'UK']` which is not the same as `WHERE country in ['FR', 'UK']` especially on a measure like `/ Europe`
 - Make it simple to extract a column single equalsFilter from a potentially complex `IAdhocFilter`
+- Concurrency: for instance when processing the DAG given the results from the `TableQuery`
+- BDD: Automated generation of Scenario given an `IAdhocQuery`

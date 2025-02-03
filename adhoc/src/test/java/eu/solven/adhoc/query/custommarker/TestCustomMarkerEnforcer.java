@@ -26,13 +26,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +48,6 @@ import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeStorage;
 import eu.solven.adhoc.query.foreignexchange.IForeignExchangeStorage;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Bucketor;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
@@ -169,9 +165,6 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
@@ -190,9 +183,6 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -220,9 +210,6 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 				.customMarker(Optional.of("JPY"))
 				.debug(true)
 				.build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

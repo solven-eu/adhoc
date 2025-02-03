@@ -73,4 +73,20 @@ public class TestMultiTypeStorage {
 			Assertions.assertThat(o).isEqualTo("123234");
 		}));
 	}
+
+	@Test
+	public void testClearKey() {
+		storage.merge("k1", 123);
+		storage.clearKey("k1");
+
+		Assertions.assertThat(storage.size()).isEqualTo(0);
+	}
+
+	@Test
+	public void testPutNull() {
+		storage.merge("k1", 123);
+		storage.put("k1", null);
+
+		Assertions.assertThat(storage.size()).isEqualTo(0);
+	}
 }

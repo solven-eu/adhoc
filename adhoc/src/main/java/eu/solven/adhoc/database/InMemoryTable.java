@@ -112,8 +112,8 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		return rows.stream().flatMap(row -> row.keySet().stream()).collect(Collectors.toSet());
+	public Map<String, Class<?>> getColumns() {
+		return rows.stream().flatMap(row -> row.keySet().stream()).collect(Collectors.toMap(c -> c, c -> Object.class));
 	}
 
 }

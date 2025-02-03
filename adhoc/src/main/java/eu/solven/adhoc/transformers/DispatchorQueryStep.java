@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.transformers;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -38,10 +38,10 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
@@ -119,7 +119,7 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 	}
 
 	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
-			AdhocSliceAsMapWithStep slice,
+			IAdhocSliceWithStep slice,
 			IDecomposition decomposition,
 			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
@@ -136,6 +136,28 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 		if (value != null) {
 			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice, value);
 
+			// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
+			// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
+			// G20`, `FR` should contributes only once).
+			boolean isMultiGroupSlice;
+
+			{
+				Set<Set<String>> decompositionGroupBys =
+						decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
+
+				NavigableSet<String> groupByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+				if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {
+					// all group columns are expressed in groupBy
+					isMultiGroupSlice = false;
+				} else {
+					// TODO We may also manage the case where we filter a single group
+					isMultiGroupSlice = true;
+				}
+
+			}
+
+			// This may actually be a mis-design, as `.decompose` should not have returned groups if groups are in
+			// filter.
 			Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
 
 			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
@@ -145,7 +167,11 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 
 				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice, fragmentCoordinate);
 
-				if (outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
+				if (
+				// Not multiGroupSlice: the group is single and clearly stated
+				!isMultiGroupSlice
+						// multiGroupSlice: ensure current element has not already been contributed
+						|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
 					AdhocSliceAsMap coordinateAsSlice = AdhocSliceAsMap.fromMap(outputCoordinate);
 					aggregatingView.merge(coordinateAsSlice, fragmentValue);
 
@@ -155,6 +181,11 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 						}));
 					}
 				} else {
+					// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
+					// times (for each contributed group). but the element should be counted only once.
+					// BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
+					// reason to keep. Though, a multi-filter on groups would be an unclear case.
+					// One weighted instead of another. But it is OK for many2many as all groups have the same weight.
 					log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
 				}
 			});
@@ -162,26 +193,27 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 	}
 
 	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy queryGroupBy,
-			AdhocSliceAsMapWithStep slice,
+			IAdhocSliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
-		Map<String, Object> queryCoordinates = new HashMap<>();
+		AdhocMap.AdhocMapBuilder queryCoordinatesBuilder = AdhocMap.builder(queryGroupBy.getGroupedByColumns());
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
-			// BEWARE it is legal only to get groupColumns from the fragment coordinate
+			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupBy);
 
 			if (value == null) {
+				// BEWARE When would we get a groupBy from the slice rather than from the fragment coordinate?
 				value = slice.getRawFilter(groupBy);
 			}
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
-				throw new IllegalStateException("A coordinate-value can not be null");
+				throw new IllegalStateException("A sliced-value can not be null");
 			}
 
-			queryCoordinates.put(groupBy, value);
+			queryCoordinatesBuilder.append(value);
 		});
 
-		return queryCoordinates;
+		return queryCoordinatesBuilder.build();
 	}
 }

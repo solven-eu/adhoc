@@ -34,8 +34,8 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import eu.solven.adhoc.aggregations.collection.MapAggregator;
 import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
-import eu.solven.adhoc.storage.ValueConsumer;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -49,47 +49,59 @@ public class MapBasedTabularView implements ITabularView {
 	@Getter
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
 
-	public static MapBasedTabularView load(ITabularView output) {
+	public static MapBasedTabularView load(ITabularView from) {
 		MapBasedTabularView newView = MapBasedTabularView.builder().build();
 
-		RowScanner<AdhocSliceAsMap> rowScanner = new RowScanner<AdhocSliceAsMap>() {
+		return load(from, newView);
+	}
 
-			@Override
-			public ValueConsumer onKey(AdhocSliceAsMap coordinates) {
-				Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
+	public static MapBasedTabularView load(ITabularView from, MapBasedTabularView to) {
+		if (from instanceof MapBasedTabularView asMapBased) {
+			return asMapBased;
+		}
 
-				if (newView.coordinatesToValues.containsKey(coordinatesAsMap)) {
+		RowScanner<IAdhocSlice> rowScanner = coordinates -> {
+			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
+
+			return AsObjectValueConsumer.consumer(o -> {
+				Map<String, ?> oAsMap = (Map<String, ?>) o;
+
+				Object previousValue = to.coordinatesToValues.put(coordinatesAsMap, oAsMap);
+				if (previousValue != null) {
 					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
 				}
-
-				return AsObjectValueConsumer.consumer(o -> {
-					Map<String, ?> oAsMap = (Map<String, ?>) o;
-
-					newView.coordinatesToValues.put(coordinatesAsMap, oAsMap);
-				});
-			}
+			});
 		};
 
-		output.acceptScanner(rowScanner);
+		from.acceptScanner(rowScanner);
 
-		return newView;
+		return to;
 	}
 
 	@Override
-	public Stream<AdhocSliceAsMap> keySet() {
+	public Stream<IAdhocSlice> slices() {
 		return coordinatesToValues.keySet().stream().map(AdhocSliceAsMap::fromMap);
 	}
 
 	@Override
-	public void acceptScanner(RowScanner<AdhocSliceAsMap> rowScanner) {
+	public int size() {
+		return coordinatesToValues.size();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return coordinatesToValues.isEmpty();
+	}
+
+	@Override
+	public void acceptScanner(RowScanner<IAdhocSlice> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
 			rowScanner.onKey(AdhocSliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
-	public void append(AdhocSliceAsMap coordinates, Map<String, ?> mToValues) {
-		coordinatesToValues
-				.merge(coordinates.getCoordinates(), mToValues, new MapAggregator<String, Object>()::aggregate);
+	public void appendSlice(AdhocSliceAsMap slice, Map<String, ?> mToValues) {
+		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregator::aggregateMaps);
 	}
 
 	public static ITabularView empty() {

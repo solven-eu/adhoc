@@ -70,4 +70,13 @@ public class InMatcher implements IValueMatcher {
 
 		return toStringHelper.toString();
 	}
+
+	public static IValueMatcher isIn(Set<?> allowedValues) {
+		if (allowedValues.size() == 1) {
+			Object singleValue = allowedValues.iterator().next();
+			return EqualsMatcher.builder().operand(singleValue).build();
+		} else {
+			return InMatcher.builder().operands(allowedValues).build();
+		}
+	}
 }

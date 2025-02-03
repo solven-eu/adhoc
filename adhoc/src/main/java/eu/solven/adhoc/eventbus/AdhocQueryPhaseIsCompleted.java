@@ -26,9 +26,15 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * Enable being notified when major steps on the queryExecution are completed.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
-public class AdhocQueryPhaseIsCompleted {
+public class AdhocQueryPhaseIsCompleted implements IAdhocEvent {
+	@NonNull
 	String phase;
 
 	@NonNull

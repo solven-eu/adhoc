@@ -32,7 +32,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class QueryStepIsCompleted {
+public class QueryStepIsCompleted implements IAdhocEvent {
 	@NonNull
 	AdhocQueryStep querystep;
 

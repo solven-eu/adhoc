@@ -23,7 +23,9 @@
 package eu.solven.adhoc.measure.ratio;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,5 +155,24 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 123 + 234, "FRoverUS", 0D));
+	}
+
+	@Test
+	public void testExplain_groupByGroups() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
+		{
+			AdhocQuery adhocQuery =
+					AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").debug(true).build();
+			aqw.execute(adhocQuery);
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
+				|\\- m=d(Aggregator) filter=matchNone groupBy=grandTotal
+				\\-- m=d(Aggregator) filter=country=US groupBy=grandTotal
+								  		""".trim());
+
+		Assertions.assertThat(messages).hasSize(3);
 	}
 }

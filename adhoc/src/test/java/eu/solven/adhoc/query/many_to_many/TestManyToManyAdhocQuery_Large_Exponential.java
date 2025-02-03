@@ -23,7 +23,6 @@
 package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -51,7 +50,6 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.transformers.Dispatchor;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
@@ -224,9 +222,6 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		// +1 as we include
@@ -244,9 +239,6 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallElement).build());
 
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		long valueSingleElement = elementAggregatedValue(IntStream.of(smallElement));
@@ -261,9 +253,6 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 
 		ITabularView output = aqw.execute(
 				AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).debug(false).build());
-
-		List<Map<String, ?>> keySet = output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

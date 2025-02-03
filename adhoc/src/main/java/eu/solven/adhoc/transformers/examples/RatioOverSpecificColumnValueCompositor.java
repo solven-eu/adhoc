@@ -20,13 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.transformers;
+package eu.solven.adhoc.transformers.examples;
 
 import java.util.Arrays;
 
 import eu.solven.adhoc.aggregations.DivideCombination;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.transformers.Filtrator;
+import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.transformers.IMeasureBagVisitor;
+import eu.solven.adhoc.transformers.Unfiltrator;
 
 /**
  * This defines a pattern, relying on multiple {@link IMeasure}, to produce one or multiple measures. The intermediate

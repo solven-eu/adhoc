@@ -22,11 +22,12 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.Collection;
+import java.util.Set;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -41,7 +42,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class OrMatcher implements IValueMatcher {
 	@NonNull
-	Collection<IValueMatcher> operands;
+	@Singular
+	Set<IValueMatcher> operands;
 
 	@Override
 	public boolean match(Object value) {

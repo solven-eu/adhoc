@@ -36,22 +36,17 @@ import eu.solven.adhoc.view.ITabularView;
  */
 public interface IAdhocQueryEngine {
 
-	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper db);
+	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table);
 
 	default ITabularView execute(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
-		return execute(AdhocExecutingQueryContext.builder().adhocQuery(query).measureBag(measures).build(), table);
+		return execute(AdhocExecutingQueryContext.builder().query(query).measures(measures).build(), table);
 	}
 
 	default ITabularView execute(IAdhocQuery query,
 			Set<? extends IQueryOption> options,
 			IAdhocMeasureBag measures,
 			IAdhocTableWrapper table) {
-		return execute(
-				AdhocExecutingQueryContext.builder()
-						.adhocQuery(query)
-						.queryOptions(options)
-						.measureBag(measures)
-						.build(),
+		return execute(AdhocExecutingQueryContext.builder().query(query).options(options).measures(measures).build(),
 				table);
 	}
 }

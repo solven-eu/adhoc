@@ -24,12 +24,12 @@ package eu.solven.adhoc.aggregations.many_to_many;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.dag.AdhocQueryStep;
@@ -115,17 +115,12 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return makeDecomposition(element, value, groupColumn, groups);
 	}
 
-	private Map<Map<String, ?>, Object> makeDecomposition(Object element,
+	protected Map<Map<String, ?>, Object> makeDecomposition(Object element,
 			Object value,
 			String groupColumn,
 			Set<Object> groups) {
-		Map<Map<String, ?>, Object> output = new HashMap<>();
-
-		groups.forEach(group -> {
-			output.put(Map.of(groupColumn, group), scale(element, value));
-		});
-
-		return output;
+		return groups.stream()
+				.collect(Collectors.toMap(group -> Map.of(groupColumn, group), group -> scale(element, value)));
 	}
 
 	protected Set<Object> getGroups(IAdhocSliceWithStep slice, Object element) {

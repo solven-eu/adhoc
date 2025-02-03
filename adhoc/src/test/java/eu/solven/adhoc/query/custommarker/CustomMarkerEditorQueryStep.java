@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
 import eu.solven.adhoc.dag.ICoordinatesToValues;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
@@ -70,7 +70,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 
 		ICoordinatesToValues singleUnderlying = underlyings.getFirst();
 
-		for (AdhocSliceAsMap rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
+		for (IAdhocSlice rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
 				underlyings)) {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 			onSlice(singleUnderlying, slice, debug, output);

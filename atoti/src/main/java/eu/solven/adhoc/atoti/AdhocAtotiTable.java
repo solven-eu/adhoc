@@ -25,7 +25,7 @@ package eu.solven.adhoc.atoti;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,13 +134,13 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public Set<String> getColumns() {
-		Set<String> columns = new HashSet<>();
+	public Map<String, Class<?>> getColumns() {
+		Map<String, Class<?>> columns = new HashMap<>();
 
 		inferPivotId().getDimensions().forEach(d -> {
 			d.getHierarchies().forEach(h -> {
 				h.getLevels().forEach(l -> {
-					columns.add("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
+					columns.put("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()), Object.class);
 				});
 			});
 		});

@@ -28,7 +28,8 @@ import java.util.Map;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
-import org.greenrobot.eventbus.EventBus;
+
+import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;

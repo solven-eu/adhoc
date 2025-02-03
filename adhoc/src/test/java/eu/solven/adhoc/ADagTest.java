@@ -22,14 +22,15 @@
  */
 package eu.solven.adhoc;
 
-import org.greenrobot.eventbus.EventBus;
 import org.junit.jupiter.api.BeforeEach;
+
+import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.dag.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.database.InMemoryTable;
-import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 
 /**
  * Helps testing anything related with a {@link AdhocMeasureBag} or a {@link AdhocQueryEngine}
@@ -39,7 +40,7 @@ import eu.solven.adhoc.eventbus.AdhocEventsToSfl4j;
  */
 public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
-	public final AdhocEventsToSfl4j toSlf4j = new AdhocEventsToSfl4j();
+	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
