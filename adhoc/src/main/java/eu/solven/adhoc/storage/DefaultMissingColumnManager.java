@@ -20,29 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.storage;
 
-import java.util.Set;
-
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.dag.IAdhocCubeWrapper;
 
 /**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
+ * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocCubeWrapper extends IHasColumns {
-	String getName();
-	// A cube is the combination of a database and a Set of measures.
-	// Set<String> getCubesNames();
+public class DefaultMissingColumnManager implements IMissingColumnManager {
 
-	default ITabularView execute(IAdhocQuery adhocQuery) {
-		return execute(adhocQuery, Set.of());
+	@Override
+	public Object onMissingColumn(IAdhocCubeWrapper cube, String column) {
+		return "%s".formatted(cube.getName());
 	}
 
-	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions);
+	@Override
+	public Object onMissingColumn(String column) {
+		return "NULL";
+	}
 
 }

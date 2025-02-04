@@ -64,6 +64,8 @@ import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
+import eu.solven.adhoc.storage.DefaultMissingColumnManager;
+import eu.solven.adhoc.storage.IMissingColumnManager;
 import eu.solven.adhoc.storage.IRowScanner;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.transformers.Aggregator;
@@ -92,6 +94,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@NonNull
 	@Default
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+
+	@NonNull
+	@Default
+	final IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
 
 	@NonNull
 	final IAdhocEventBus eventBus;
@@ -484,7 +490,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
 	 */
 	protected Object valueOnNull(String column) {
-		return "NULL";
+		return missingColumnManager.onMissingColumn(column);
 	}
 
 	/**
@@ -540,7 +546,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected void explainDagSteps(DagHolder dag) {
-		DAGExplainer.builder().eventBus(eventBus).build().explain(dag);
+		makeDagExplainer().explain(dag);
+	}
+
+	protected DAGExplainer makeDagExplainer() {
+		return DAGExplainer.builder().eventBus(eventBus).build();
 	}
 
 	protected DagHolder makeQueryStepsDag(AdhocExecutingQueryContext queryWithContext) {
@@ -608,6 +618,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {
-		return AdhocQueryEngine.builder().operatorsFactory(engine.operatorsFactory).eventBus(engine.eventBus);
+		return AdhocQueryEngine.builder()
+				.operatorsFactory(engine.operatorsFactory)
+				.eventBus(engine.eventBus)
+				.missingColumnManager(engine.missingColumnManager);
 	}
 }

@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -178,7 +177,6 @@ public class TestCompositeCube implements IAdhocTestConstants {
 				.hasSize(2);
 	}
 
-	@Disabled("TODO")
 	@Test
 	public void testQueryCube1Plus2_groupByUnshared() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
@@ -188,9 +186,10 @@ public class TestCompositeCube implements IAdhocTestConstants {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of("a", "a1"), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 1234))
-				.containsEntry(Map.of("a", "a2"), Map.of(k1PlusK2AsExpr.getName(), 0L + 345 + 456))
-				.hasSize(2);
+				.containsEntry(Map.of("b", "b1"), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234))
+				.containsEntry(Map.of("b", "b2"), Map.of(k1PlusK2AsExpr.getName(), 0L + 345 + 456))
+				.containsEntry(Map.of("b", "someTableName2.cube"), Map.of(k1PlusK2AsExpr.getName(), 0L + 1234))
+				.hasSize(3);
 	}
 
 	@Test
@@ -206,7 +205,6 @@ public class TestCompositeCube implements IAdhocTestConstants {
 				.hasSize(1);
 	}
 
-	@Disabled("TODO")
 	@Test
 	public void testQueryCube1Plus2_filterUnshared() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();

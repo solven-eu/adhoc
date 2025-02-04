@@ -51,6 +51,11 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final IAdhocTableWrapper table;
 
 	@Override
+	public String getName() {
+		return table.getName() + ".cube";
+	}
+
+	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
 		return engine.execute(query, options, measures, table);
 	}

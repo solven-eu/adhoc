@@ -25,19 +25,35 @@ package eu.solven.adhoc.database;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.dag.IAdhocCubeWrapper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.IAndFilter;
+import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.storage.DefaultMissingColumnManager;
+import eu.solven.adhoc.storage.IMissingColumnManager;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.view.ITabularView;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
 
@@ -51,10 +67,14 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 
 	@NonNull
 	@Default
+	@Getter
 	final String name = "composite";
 
 	@Singular
 	final List<IAdhocCubeWrapper> cubes;
+
+	@Default
+	IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
 
 	@Override
 	public Map<String, Class<?>> getColumns() {
@@ -67,21 +87,34 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public String getName() {
-		return name;
-	}
+	public IRowsStream openDbStream(TableQuery compositeQuery) {
+		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
+		IAdhocFilter compositeFilter = compositeQuery.getFilter();
 
-	@Override
-	public IRowsStream openDbStream(TableQuery dbQuery) {
-		Stream<Map<String, ?>> streams = cubes.stream().flatMap(table -> {
-			Set<String> measures = dbQuery.getAggregators().stream().map(a -> a.getName()).collect(Collectors.toSet());
+		Stream<Map<String, ?>> streams = cubes.stream().flatMap(cube -> {
+			Set<String> measures =
+					compositeQuery.getAggregators().stream().map(a -> a.getName()).collect(Collectors.toSet());
+
+			Set<String> cubeColumns = cube.getColumns().keySet();
+
+			// groupBy only by relevant columns. Other columns are ignored
+			NavigableMap<String, IAdhocColumn> validGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
+			validGroupBy.keySet().retainAll(cubeColumns);
+
+			NavigableSet<String> missingColumns =
+					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), cubeColumns));
+
+			IAdhocFilter validFilter = filterForColumns(compositeFilter, cubeColumns);
+
 			IAdhocQuery query = AdhocQuery.builder()
-					.filter(dbQuery.getFilter())
-					.groupBy(dbQuery.getGroupBy())
+					.filter(validFilter)
+					.groupBy(GroupByColumns.of(validGroupBy.values()))
 					.measures(measures)
+					.debug(compositeQuery.isDebug())
+					.explain(compositeQuery.isExplain())
 					.build();
 
-			ITabularView view = table.execute(query, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY));
+			ITabularView view = cube.execute(query, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY));
 
 			return view.stream((slice, o) -> {
 				Map<String, Object> columnsAndMeasures = new LinkedHashMap<>();
@@ -89,11 +122,33 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 				columnsAndMeasures.putAll(slice.getCoordinates());
 				columnsAndMeasures.putAll((Map<? extends String, ? extends Object>) o);
 
+				missingColumns.forEach(column -> columnsAndMeasures.put(column, missingColumn(cube, column)));
+
 				return columnsAndMeasures;
 			});
 		});
 
-		return new SuppliedRowsStream(dbQuery, () -> streams);
+		return new SuppliedRowsStream(compositeQuery, () -> streams);
+	}
+
+	private Object missingColumn(IAdhocCubeWrapper cube, String column) {
+		return missingColumnManager.onMissingColumn(cube, column);
+	}
+
+	private IAdhocFilter filterForColumns(IAdhocFilter filter, Set<String> columns) {
+		if (filter instanceof IColumnFilter columnFilter) {
+			if (columns.contains(columnFilter.getColumn())) {
+				return columnFilter;
+			} else {
+				return IAdhocFilter.MATCH_ALL;
+			}
+		} else if (filter instanceof IAndFilter andFilter) {
+			List<IAdhocFilter> operands = andFilter.getOperands();
+			List<IAdhocFilter> filteredOperands = operands.stream().map(f -> filterForColumns(f, columns)).toList();
+			return AndFilter.and(filteredOperands);
+		} else {
+			throw new UnsupportedOperationException("Not handled: %s".formatted(filter));
+		}
 	}
 
 }
