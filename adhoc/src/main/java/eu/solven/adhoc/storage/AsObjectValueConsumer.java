@@ -27,13 +27,14 @@ import java.util.function.Consumer;
 import lombok.Value;
 
 /**
- * Simple {@link ValueConsumer} treating all inputs as Objects
+ * Simple {@link IValueConsumer} treating all inputs as Objects
  * 
  * @author Benoit Lacelle
  *
  */
 @Value
-public class AsObjectValueConsumer implements ValueConsumer {
+@Deprecated(since = "IValueConsumer is a functional interface")
+public class AsObjectValueConsumer implements IValueConsumer {
 
 	final Consumer<Object> consumer;
 

@@ -51,6 +51,7 @@ import eu.solven.adhoc.database.transcoder.TranscodingContext;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -60,13 +61,16 @@ import lombok.extern.slf4j.Slf4j;
  */
 @AllArgsConstructor
 @Slf4j
+@ToString(of = "name")
 public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
+
+	final String name;
 
 	final AdhocJooqTableWrapperParameters dbParameters;
 
 	@Override
 	public String getName() {
-		return "someTableName";
+		return name;
 	}
 
 	@Override
@@ -78,18 +82,23 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 				.limit(0)
 				.fetch()
 				.fields();
-		return Stream.of(select).collect(Collectors.<Field, String, Class<?>>toMap(f -> f.getName(), f -> f.getType()));
+		return Stream.of(select)
+				.collect(Collectors.<Field<?>, String, Class<?>>toMap(f -> f.getName(), f -> f.getType()));
 	}
 
 	public static AdhocJooqTableWrapper newInstance(Map<String, ?> options) {
 		AdhocJooqTableWrapperParametersBuilder parametersBuilder = AdhocJooqTableWrapperParameters.builder();
 
+		String tableName;
 		if (options.containsKey("tableName")) {
-			parametersBuilder.tableName(MapPathGet.getRequiredString(options, "tableName"));
+			tableName = MapPathGet.getRequiredString(options, "tableName");
+			parametersBuilder.tableName(tableName);
+		} else {
+			tableName = "someTableName";
 		}
 
 		AdhocJooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new AdhocJooqTableWrapper(parameters);
+		return new AdhocJooqTableWrapper(tableName, parameters);
 	}
 
 	public DSLContext makeDsl() {
@@ -118,7 +127,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 
 		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
 
-		return new SuppliedRowsStream(() -> cleanStream(dbQuery, dbStream, transcodingContext));
+		return new SuppliedRowsStream(dbQuery, () -> cleanStream(dbQuery, dbStream, transcodingContext));
 	}
 
 	private Stream<Map<String, ?>> cleanStream(TableQuery dbQuery,

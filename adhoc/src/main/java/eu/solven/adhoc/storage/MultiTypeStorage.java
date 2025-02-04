@@ -26,12 +26,13 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.aggregations.IAggregation;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.view.RowScanner;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
@@ -115,7 +116,7 @@ public class MultiTypeStorage<T> {
 		measureToAggregateO.remove(key);
 	}
 
-	public void onValue(T key, ValueConsumer consumer) {
+	public void onValue(T key, IValueConsumer consumer) {
 		if (measureToAggregateL.containsKey(key)) {
 			consumer.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
@@ -128,7 +129,7 @@ public class MultiTypeStorage<T> {
 		}
 	}
 
-	public void scan(RowScanner<T> rowScanner) {
+	public void scan(IRowScanner<T> rowScanner) {
 		// Consider each column is much faster than going with `keySetStream` as
 		// it would require searching the column providing given type
 
@@ -145,6 +146,20 @@ public class MultiTypeStorage<T> {
 		Object2ObjectMaps.fastForEach(measureToAggregateO, entry -> {
 			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
 		});
+	}
+
+	public <U> Stream<U> stream(IRowConverter<T, U> converter) {
+		Stream<U> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
+				.map(entry -> converter.convertLong(entry.getKey(), entry.getLongValue()));
+		Stream<U> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
+				.map(entry -> converter.convertDouble(entry.getKey(), entry.getDoubleValue()));
+		Stream<U> streamFromCharsequence = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
+				.map(entry -> converter.convertCharSequence(entry.getKey(), entry.getValue()));
+		Stream<U> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
+				.map(entry -> converter.convertObject(entry.getKey(), entry.getValue()));
+
+		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)
+				.flatMap(Functions.identity());
 	}
 
 	public long size() {

@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
@@ -100,7 +99,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 			return true;
 		});
 
-		return new SuppliedRowsStream(asList::stream);
+		return new SuppliedRowsStream(dbQuery, asList::stream);
 	}
 
 	private Map<String, ?> asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {

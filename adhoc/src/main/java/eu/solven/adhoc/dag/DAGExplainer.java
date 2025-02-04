@@ -44,22 +44,21 @@ public class DAGExplainer {
 
 	public void explain(DagHolder dag) {
 		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
-		// Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
+		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
 
 		dag.getQueried().forEach(rootStep -> {
-			printStepAndUndelryings(dag, stepToIndentation, rootStep, Optional.empty(), true);
+			printStepAndUndelryings(dag, stepToIndentation, stepToReference, rootStep, Optional.empty(), true);
 		});
 	}
 
 	private void printStepAndUndelryings(DagHolder dagHolder,
 			Map<AdhocQueryStep, String> stepToIndentation,
+			Map<AdhocQueryStep, Integer> stepToReference,
 			AdhocQueryStep step,
 			Optional<AdhocQueryStep> optParent,
 			boolean isLast) {
-
-		if (stepToIndentation.containsKey(step)) {
-			log.trace("This event has already been processed: {}", step);
-		} else {
+		boolean isReferenced;
+		{
 			String parentIndentation = optParent.map(parentStep -> stepToIndentation.get(parentStep)).orElse("");
 			// stepToIndentation.putIfAbsent(step, stepToIndentation.size());
 
@@ -81,11 +80,18 @@ public class DAGExplainer {
 
 			stepToIndentation.putIfAbsent(step, indentation);
 
+			String stepAsString = toString(stepToReference, step);
+
+			isReferenced = stepAsString.startsWith("!");
+
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
-					.message("%s%s".formatted(indentation, toString(step)))
+					.message("%s%s".formatted(indentation, stepAsString))
 					.source(this)
 					.build());
+		}
+
+		if (!isReferenced) {
 
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
 			List<DefaultEdge> underlyings = dag.outgoingEdgesOf(step).stream().toList();
@@ -96,6 +102,7 @@ public class DAGExplainer {
 
 				printStepAndUndelryings(dagHolder,
 						stepToIndentation,
+						stepToReference,
 						underlyingStep,
 						Optional.of(step),
 						i == underlyings.size() - 1);
@@ -104,7 +111,17 @@ public class DAGExplainer {
 		}
 	}
 
-	protected String toString(AdhocQueryStep step) {
+	protected String toString(Map<AdhocQueryStep, Integer> stepToReference, AdhocQueryStep step) {
+		if (stepToReference.containsKey(step)) {
+			return "!" + stepToReference.get(step);
+		} else {
+			int ref = stepToReference.size();
+			stepToReference.put(step, ref);
+			return "#" + ref + " " + toString(step);
+		}
+	}
+
+	private String toString(AdhocQueryStep step) {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("m=")

@@ -64,6 +64,7 @@ public class RatioOverSpecificColumnValueCompositor {
 						.filterOnly(column)
 						.build())
 
+				// Filter the specific country: if we were filtering color=red, this returns (red&FR/FR)
 				.addMeasure(Combinator.builder()
 						.name(ratioMeasureName)
 						.underlyings(Arrays.asList(sliceMeasureName, wholeMeasureName))
@@ -71,6 +72,17 @@ public class RatioOverSpecificColumnValueCompositor {
 						.build());
 	}
 
+	/**
+	 * 
+	 * @param column
+	 *            the filtered column
+	 * @param value
+	 *            the value filtered on given column
+	 * @param underlying
+	 *            an {@link IMeasureBagVisitor} adding an {@link IMeasure} computing the ratio for current slice of
+	 *            `queryFilter&filter=column/filter=column`
+	 * @return
+	 */
 	public IMeasureBagVisitor asCombinator(String column, String value, String underlying) {
 		return new IMeasureBagVisitor() {
 

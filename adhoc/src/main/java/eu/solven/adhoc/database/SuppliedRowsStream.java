@@ -32,9 +32,11 @@ import com.google.common.base.Suppliers;
  * A {@link IRowsStream} memorizing an underlying `Stream<Map<String, ?>>`
  */
 public class SuppliedRowsStream implements IRowsStream {
+	final Object source;
 	final Supplier<Stream<Map<String, ?>>> mapStreamSupplier;
 
-	public SuppliedRowsStream(Supplier<Stream<Map<String, ?>>> mapStreamSupplier) {
+	public SuppliedRowsStream(Object source, Supplier<Stream<Map<String, ?>>> mapStreamSupplier) {
+		this.source = source;
 		// Memoize the stream to make sure it is open only once
 		this.mapStreamSupplier = Suppliers.memoize(mapStreamSupplier::get);
 	}
@@ -47,5 +49,10 @@ public class SuppliedRowsStream implements IRowsStream {
 	@Override
 	public void close() throws Exception {
 		mapStreamSupplier.get().close();
+	}
+
+	@Override
+	public String toString() {
+		return "Stream from source=%s".formatted(source);
 	}
 }

@@ -27,10 +27,11 @@ import java.util.List;
 import java.util.Set;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.IAndFilter;
+import eu.solven.adhoc.query.filter.IColumnFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,7 +57,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	private IAdhocFilter unfilter(IAdhocFilter filter) {
 		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
 
-		if (filter instanceof ColumnFilter columnFilter) {
+		if (filter instanceof IColumnFilter columnFilter) {
 			boolean columnIsUnfiltered = unfilteredColumns.contains(columnFilter.getColumn());
 			boolean inverse = unfiltrator.isInverse();
 
@@ -67,7 +68,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 			} else {
 				return filter;
 			}
-		} else if (filter instanceof AndFilter andFilter) {
+		} else if (filter instanceof IAndFilter andFilter) {
 			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands().stream().map(this::unfilter).toList();
 
 			return AndFilter.and(unfilteredAnds);
@@ -79,7 +80,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		}

@@ -66,7 +66,7 @@ public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.tableName(DSL.unquotedName(tableExpression))
 					.build();
-			AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(dbParameters);
+			AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper("fromParquet", dbParameters);
 
 			DSLContext dsl = jooqDb.makeDsl();
 

@@ -36,8 +36,8 @@ import eu.solven.adhoc.aggregations.IDecomposition;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceAndValueConsumer;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
@@ -90,16 +90,16 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 	}
 
 	@Override
-	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void onSlice(List<? extends ISliceToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
-			ICoordinatesAndValueConsumer output) {
+			ISliceAndValueConsumer output) {
 		throw new UnsupportedOperationException(
 				"Unclear how to refactor IDispator in AHasUnderlyingQuerySteps.onSlice");
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		} else if (underlyings.size() != 1) {
@@ -118,7 +118,7 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 		return CoordinatesToValues.builder().storage(aggregatingView).build();
 	}
 
-	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void onSlice(List<? extends ISliceToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			IDecomposition decomposition,
 			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {

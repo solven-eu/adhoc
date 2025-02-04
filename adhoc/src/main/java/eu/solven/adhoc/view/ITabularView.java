@@ -26,23 +26,44 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.storage.IRowConverter;
+import eu.solven.adhoc.storage.IRowScanner;
 
 /**
- * Storage for static data (i.e. not Live data). Typical output of an {@link IAdhocQuery}.
+ * Storage for static data (i.e. not mutating data). Typical output of an {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  *
  */
 public interface ITabularView {
-	void acceptScanner(RowScanner<IAdhocSlice> rowScanner);
 
+	/**
+	 * 
+	 * @return an empty and immutable {@link ITabularView}
+	 */
 	static ITabularView empty() {
 		return MapBasedTabularView.empty();
 	}
 
+	/**
+	 * 
+	 * @return the number of slices in this view
+	 */
 	int size();
 
+	/**
+	 * 
+	 * @return true if this view is empty.
+	 */
 	boolean isEmpty();
 
+	/**
+	 * 
+	 * @return a distinct stream of slices
+	 */
 	Stream<IAdhocSlice> slices();
+
+	void acceptScanner(IRowScanner<IAdhocSlice> rowScanner);
+
+	<U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner);
 }

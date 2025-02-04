@@ -32,8 +32,8 @@ import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.aggregations.optional.FindFirstCombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceAndValueConsumer;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
@@ -66,21 +66,21 @@ public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		} else if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		}
 
-		ICoordinatesToValues output = makeCoordinateToValues();
+		ISliceToValues output = makeCoordinateToValues();
 
 		forEachDistinctSlice(underlyings, new FindFirstCombination(), output::put);
 
 		return output;
 	}
 
-	protected ICoordinatesToValues makeCoordinateToValues() {
+	protected ISliceToValues makeCoordinateToValues() {
 		return CoordinatesToValues.builder().build();
 	}
 
@@ -95,10 +95,10 @@ public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void onSlice(List<? extends ISliceToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
-			ICoordinatesAndValueConsumer output) {
+			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);

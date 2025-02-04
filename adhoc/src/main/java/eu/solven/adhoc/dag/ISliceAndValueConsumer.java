@@ -24,6 +24,6 @@ package eu.solven.adhoc.dag;
 
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 
-public interface ICoordinatesAndValueConsumer {
+public interface ISliceAndValueConsumer {
 	void put(AdhocSliceAsMap coordinate, Object value);
 }

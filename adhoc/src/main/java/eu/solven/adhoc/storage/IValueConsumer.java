@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.storage;
 
-import java.util.Set;
+/**
+ * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IValueConsumer {
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.IAdhocSlice;
-import eu.solven.adhoc.storage.ValueConsumer;
-import eu.solven.adhoc.view.RowScanner;
+	default void onLong(long value) {
+		onObject(value);
+	}
 
-public interface ICoordinatesToValues extends ICoordinatesAndValueConsumer {
-	Set<AdhocSliceAsMap> keySet();
+	default void onDouble(double value) {
+		onObject(value);
+	}
 
-	long size();
+	default void onCharsequence(CharSequence value) {
+		onObject(value);
+	}
 
-	void onValue(IAdhocSlice slice, ValueConsumer consumer);
-
-	void scan(RowScanner<AdhocSliceAsMap> rowScanner);
+	void onObject(Object object);
 }

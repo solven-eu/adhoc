@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
@@ -59,16 +59,16 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyingNames.size() != 1");
 		}
 
-		ICoordinatesToValues output = makeCoordinateToValues();
+		ISliceToValues output = makeCoordinateToValues();
 
 		boolean debug = customMarkerEditor.isDebug() || step.isDebug();
 
-		ICoordinatesToValues singleUnderlying = underlyings.getFirst();
+		ISliceToValues singleUnderlying = underlyings.getFirst();
 
 		for (IAdhocSlice rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
 				underlyings)) {
@@ -79,10 +79,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 		return output;
 	}
 
-	protected void onSlice(ICoordinatesToValues underlying,
-			IAdhocSliceWithStep slice,
-			boolean debug,
-			ICoordinatesToValues output) {
+	protected void onSlice(ISliceToValues underlying, IAdhocSliceWithStep slice, boolean debug, ISliceToValues output) {
 		AtomicReference<Object> refV = new AtomicReference<>();
 		AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
@@ -97,7 +94,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected ICoordinatesToValues makeCoordinateToValues() {
+	protected ISliceToValues makeCoordinateToValues() {
 		return CoordinatesToValues.builder().build();
 	}
 }

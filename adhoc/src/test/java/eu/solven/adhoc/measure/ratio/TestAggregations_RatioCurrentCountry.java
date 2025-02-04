@@ -46,10 +46,11 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedDb() {
-		rows.add(Map.of("country", "USA", "city", "Paris", "d", 123, "color", "blue"));
-		rows.add(Map.of("country", "USA", "city", "New-York", "d", 234, "color", "green"));
-		rows.add(Map.of("country", "FRANCE", "city", "Paris", "d", 456, "color", "blue"));
-		rows.add(Map.of("country", "FRANCE", "city", "Lyon", "d", 567, "color", "green"));
+		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		rows.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		rows.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach
@@ -65,12 +66,8 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=current_valid").debug(true).build();
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=current_ratio").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(0);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -78,55 +75,41 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	}
 
 	@Test
-	public void testFrance() {
-		AdhocQuery adhocQuery = AdhocQuery.builder()
-				.measure("d_country=current_valid")
-				.andFilter("country", "FRANCE")
-				.debug(true)
-				.build();
+	public void testFR() {
+		AdhocQuery adhocQuery =
+				AdhocQuery.builder().measure("d_country=current_ratio").andFilter("country", "FR").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
-						Map.of("d_country=current_valid", (0D + 456 + 567) / (0D + 456 + 567)));
+						Map.of("d_country=current_ratio", (0D + 456 + 567) / (0D + 456 + 567)));
 	}
 
 	@Test
 	public void testWildcardCountry() {
 		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d_country=current_valid").groupByAlso("country").debug(true).build();
+				AdhocQuery.builder().measure("d_country=current_ratio").groupByAlso("country").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FRANCE"), Map.of("country", "USA"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
-				.containsEntry(Map.of("country", "FRANCE"),
-						Map.of("d_country=current_valid", (0D + 456 + 567) / (0D + 456 + 567)))
-				.containsEntry(Map.of("country", "USA"),
-						Map.of("d_country=current_valid", (0D + 456 + 567) / (0D + 456 + 567)));
+				.hasSize(3)
+				.containsEntry(Map.of("country", "US"),
+						Map.of("d_country=current_ratio", (0D + 123 + 234) / (0D + 123 + 234)))
+				.containsEntry(Map.of("country", "FR"), Map.of("d_country=current_ratio", (0D + 345) / (0D + 345)))
+				.containsEntry(Map.of("country", "DE"),
+						Map.of("d_country=current_ratio", (0D + 456 + 567) / (0D + 456 + 567)));
 	}
 
 	@Test
 	public void testParis() {
 		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d_country=current_valid").andFilter("city", "Paris").debug(true).build();
+				AdhocQuery.builder().measure("d_country=current_ratio").andFilter("city", "Paris").debug(true).build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(0);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -136,55 +119,47 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Test
 	public void testWildcardCountry_Paris() {
 		AdhocQuery adhocQuery = AdhocQuery.builder()
-				.measure("d_country=current_valid")
+				.measure("d_country=current_ratio")
 				.groupByAlso("country")
 				.andFilter("city", "Paris")
-				.debug(true)
+				.explain(true)
 				.build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FRANCE"), Map.of("country", "USA"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("country", "FRANCE"),
-						Map.of("d_country=current_valid", (0D + 456) / (0D + 456 + 567)))
-				.containsEntry(Map.of("country", "USA"),
-						Map.of("d_country=current_valid", (0D + 123) / (0D + 123 + 234)));
+				.containsEntry(Map.of("country", "FR"),
+						Map.of("d_country=current_ratio", (0D + 123) / (0D + 123 + 234)))
+				.containsEntry(Map.of("country", "US"),
+						Map.of("d_country=current_ratio", (0D + 456) / (0D + 456 + 567)));
 	}
 
 	@Test
-	public void testUSA() {
+	public void testUS() {
 		AdhocQuery adhocQuery = AdhocQuery.builder()
-				.measure("d", "d_country=current_valid")
-				.andFilter("country", "USA")
+				.measure("d", "d_country=current_ratio")
+				.andFilter("country", "US")
 				.debug(true)
 				.build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
-						Map.of("d", 0L + 123 + 234, "d_country=current_valid", (0D + 123 + 234) / (0D + 123 + 234)));
+						Map.of("d", 0L + 456 + 567, "d_country=current_ratio", (0D + 123 + 234) / (0D + 123 + 234)));
 	}
 
 	@Test
-	public void testExplain_groupByGroups() {
+	public void testExplain_filterUs() {
 		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
 
 		{
 			AdhocQuery adhocQuery = AdhocQuery.builder()
-					.measure("d_country=current_valid")
+					.measure("d_country=current_ratio")
 					.andFilter("country", "US")
 					.debug(true)
 					.build();
@@ -192,13 +167,14 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				m=d_country=current_valid(Columnator) filter=country=US groupBy=grandTotal
-				\\-- m=d_country=current_ratio(Combinator) filter=country=US groupBy=grandTotal
-				    |\\- m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
-				    |   \\-- m=d(Aggregator) filter=country=US groupBy=(country)
-				    \\-- m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
-												  		""".trim());
+				#0 m=d_country=current_ratio(Columnator) filter=country=US groupBy=grandTotal
+				\\-- #1 m=d_country=current_ratio_postcheck(Combinator) filter=country=US groupBy=grandTotal
+				    |\\- #2 m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
+				    |   \\-- #3 m=d(Aggregator) filter=country=US groupBy=(country)
+				    \\-- #4 m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
+				        \\-- !2
+																  		""".trim());
 
-		Assertions.assertThat(messages).hasSize(5);
+		Assertions.assertThat(messages).hasSize(6);
 	}
 }

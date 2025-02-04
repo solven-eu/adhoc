@@ -71,11 +71,12 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 
 	private AdhocJooqTableWrapper makeJooqDb(IAdhocTableTranscoder transcoder) {
-		AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-				.tableName(tableName)
-				.transcoder(transcoder)
-				.build());
+		AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
+				AdhocJooqTableWrapperParameters.builder()
+						.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+						.tableName(tableName)
+						.transcoder(transcoder)
+						.build());
 		return jooqDb;
 	}
 

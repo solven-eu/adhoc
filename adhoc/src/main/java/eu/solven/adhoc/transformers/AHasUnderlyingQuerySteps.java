@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 
 import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceAndValueConsumer;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
@@ -50,13 +50,13 @@ public abstract class AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySte
 		return getMeasure().isDebug() || getStep().isDebug();
 	}
 
-	protected void forEachDistinctSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void forEachDistinctSlice(List<? extends ISliceToValues> underlyings,
 			ICombination combination,
-			ICoordinatesAndValueConsumer output) {
+			ISliceAndValueConsumer output) {
 		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, combination, output));
 	}
 
-	protected void forEachDistinctSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void forEachDistinctSlice(List<? extends ISliceToValues> underlyings,
 			Consumer<AdhocSliceAsMapWithStep> sliceConsumer) {
 		Iterable<? extends AdhocSliceAsMap> distinctSlices = distinctSlices(underlyings);
 
@@ -81,12 +81,12 @@ public abstract class AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySte
 		}
 	}
 
-	private Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ICoordinatesToValues> underlyings) {
+	private Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ISliceToValues> underlyings) {
 		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
 	}
 
-	protected abstract void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected abstract void onSlice(List<? extends ISliceToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
-			ICoordinatesAndValueConsumer output);
+			ISliceAndValueConsumer output);
 }

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.database.duckdb;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,10 +66,11 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-			.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-			.tableName(tableName)
-			.build());
+	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
+			AdhocJooqTableWrapperParameters.builder()
+					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+					.tableName(tableName)
+					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();
@@ -308,7 +310,9 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		Assertions
 				.assertThatThrownBy(() -> wrapInCube(measureBag).execute(
 						AdhocQuery.builder().measure(k1Sum.getName()).andFilter("b", "a1").debug(true).build()))
-				.isInstanceOf(DataAccessException.class);
+				.isInstanceOf(RuntimeException.class)
+				.hasCauseInstanceOf(DataAccessException.class)
+				.hasRootCauseInstanceOf(SQLException.class);
 	}
 
 	@Test
@@ -325,7 +329,9 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		Assertions
 				.assertThatThrownBy(() -> wrapInCube(measureBag)
 						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build()))
-				.isInstanceOf(DataAccessException.class);
+				.isInstanceOf(RuntimeException.class)
+				.hasMessageContaining("from source=TableQuery")
+				.hasCauseInstanceOf(DataAccessException.class);
 	}
 
 	@Test
@@ -393,8 +399,12 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 					.debug(true)
 					.build());
 		})
-				.isInstanceOf(DataAccessException.class)
-				.hasMessageContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
+				.isInstanceOf(RuntimeException.class)
+				.hasMessageContaining("from source=TableQuery")
+				.hasCauseInstanceOf(DataAccessException.class)
+				.hasMessageContaining("from source=TableQuery")
+				.hasRootCauseInstanceOf(SQLException.class)
+				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}
 
 	@Test

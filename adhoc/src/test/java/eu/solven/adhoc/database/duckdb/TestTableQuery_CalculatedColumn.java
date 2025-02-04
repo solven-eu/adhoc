@@ -61,10 +61,11 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-			.tableName(tableName)
-			.build());
+	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
+			AdhocJooqTableWrapperParameters.builder()
+					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.tableName(tableName)
+					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();

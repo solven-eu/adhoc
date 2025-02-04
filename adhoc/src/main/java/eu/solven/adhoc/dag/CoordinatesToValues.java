@@ -24,12 +24,14 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.storage.IRowConverter;
+import eu.solven.adhoc.storage.IRowScanner;
+import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.MultiTypeStorage;
-import eu.solven.adhoc.storage.ValueConsumer;
-import eu.solven.adhoc.view.RowScanner;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -40,7 +42,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class CoordinatesToValues implements ICoordinatesToValues {
+public class CoordinatesToValues implements ISliceToValues {
 	@NonNull
 	@Default
 	MultiTypeStorage<AdhocSliceAsMap> storage = MultiTypeStorage.<AdhocSliceAsMap>builder().build();
@@ -50,12 +52,12 @@ public class CoordinatesToValues implements ICoordinatesToValues {
 	}
 
 	@Override
-	public void onValue(IAdhocSlice slice, ValueConsumer consumer) {
+	public void onValue(IAdhocSlice slice, IValueConsumer consumer) {
 		storage.onValue(slice.getAdhocSliceAsMap(), consumer);
 	}
 
 	@Override
-	public Set<AdhocSliceAsMap> keySet() {
+	public Set<AdhocSliceAsMap> slicesSet() {
 		return getStorage().keySetStream().collect(Collectors.toSet());
 	}
 
@@ -65,8 +67,13 @@ public class CoordinatesToValues implements ICoordinatesToValues {
 	}
 
 	@Override
-	public void scan(RowScanner<AdhocSliceAsMap> rowScanner) {
+	public void forEachSlice(IRowScanner<AdhocSliceAsMap> rowScanner) {
 		storage.scan(rowScanner);
+	}
+
+	@Override
+	public <U> Stream<U> stream(IRowConverter<AdhocSliceAsMap, U> rowScanner) {
+		return storage.stream(rowScanner);
 	}
 
 	@Override

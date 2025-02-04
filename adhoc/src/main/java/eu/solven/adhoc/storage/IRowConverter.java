@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,29 @@
  */
 package eu.solven.adhoc.storage;
 
-public interface ValueConsumer {
+/**
+ * Enables conversion from given types (including primitive types) into a uniform type.
+ * 
+ * @param <T>
+ *            the type of some key
+ * @param <U>
+ *            the uniform output
+ * @author Benoit Lacelle
+ */
+public interface IRowConverter<T, U> {
 
-	void onLong(long l);
+	default U convertLong(T key, long value) {
+		return convertObject(key, value);
+	}
 
-	void onDouble(double d);
+	default U convertDouble(T key, double value) {
+		return convertObject(key, value);
+	}
 
-	void onCharsequence(CharSequence charSequence);
+	default U convertCharSequence(T key, CharSequence value) {
+		return convertObject(key, value);
+	}
 
-	void onObject(Object object);
+	U convertObject(T key, Object value);
+
 }

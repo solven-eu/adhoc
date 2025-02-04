@@ -24,7 +24,9 @@ package eu.solven.adhoc.measure.ratio;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,10 +54,11 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedDb() {
-		rows.add(Map.of("country", "US", "city", "Paris", "d", 123, "color", "blue"));
-		rows.add(Map.of("country", "US", "city", "New-York", "d", 234, "color", "green"));
-		rows.add(Map.of("country", "FR", "city", "Paris", "d", 456, "color", "blue"));
-		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 567, "color", "green"));
+		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		rows.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		rows.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach
@@ -92,7 +95,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("FRoverUS", (0D + 456 + 567) / (0D + 123 + 234)));
+				.containsEntry(Collections.emptyMap(), Map.of("FRoverUS", (0D + 123 + 234) / (0D + 456 + 567)));
 	}
 
 	@Test
@@ -124,9 +127,12 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
+				.hasSize(1)
+				// denominator is null
 				.containsEntry(Map.of("country", "FR"), Map.of("FRoverUS", Double.NaN))
-				.containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D));
+		// numerator is null
+		// .containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D))
+		;
 	}
 
 	@Test
@@ -138,7 +144,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of(), Map.of("FRoverUS", (0D + 456) / (0D + 123)));
+				.containsEntry(Map.of(), Map.of("FRoverUS", (0D + 123) / (0D + 456)));
 	}
 
 	@Test
@@ -154,9 +160,12 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
+				.hasSize(1)
+				// denominator is null
 				.containsEntry(Map.of("country", "FR"), Map.of("FRoverUS", Double.NaN))
-				.containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D));
+		// numerator is null
+		// .containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D))
+		;
 	}
 
 	@Test
@@ -169,6 +178,29 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 123 + 234, "FRoverUS", 0D));
+				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 456 + 567
+				// FR is null
+				// , "FRoverUS", 0D
+				));
+	}
+
+	@Test
+	public void testExplain_filterOtherColumn() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
+		{
+			AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").explain(true).build();
+			aqw.execute(adhocQuery);
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				#0 m=FRoverUS(Combinator) filter=matchAll groupBy=grandTotal
+				|\\- #1 m=onFR(Filtrator) filter=matchAll groupBy=grandTotal
+				|   \\-- #2 m=d(Aggregator) filter=country=FR groupBy=grandTotal
+				\\-- #3 m=onUS(Filtrator) filter=matchAll groupBy=grandTotal
+				    \\-- #4 m=d(Aggregator) filter=country=US groupBy=grandTotal
+																				  		""".trim());
+
+		Assertions.assertThat(messages).hasSize(5);
 	}
 }

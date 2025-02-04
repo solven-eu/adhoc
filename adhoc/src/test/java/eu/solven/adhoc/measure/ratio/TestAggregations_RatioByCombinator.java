@@ -37,6 +37,7 @@ import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.transformers.Aggregator;
+import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,8 @@ import lombok.extern.slf4j.Slf4j;
  * One specific thing in this unitTest is that `FRoverUS` calls twice the same underlying measure (but with different
  * filters).
  *
- * It also demonstrate another case of custom IMeasure
+ * It also demonstrate another case of custom IMeasure: we introduced {@link RatioByCombinator} as a custom
+ * {@link IMeasure}.
  */
 @Slf4j
 public class TestAggregations_RatioByCombinator extends ADagTest {
@@ -53,10 +55,11 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedDb() {
-		rows.add(Map.of("country", "US", "city", "Paris", "d", 123, "color", "blue"));
-		rows.add(Map.of("country", "US", "city", "New-York", "d", 234, "color", "green"));
-		rows.add(Map.of("country", "FR", "city", "Paris", "d", 456, "color", "blue"));
-		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 567, "color", "green"));
+		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		rows.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		rows.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach
@@ -85,7 +88,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("FRoverUS", (0D + 456 + 567) / (0D + 123 + 234)));
+				.containsEntry(Collections.emptyMap(), Map.of("FRoverUS", (0D + 123 + 234) / (0D + 456 + 567)));
 	}
 
 	@Test
@@ -109,9 +112,12 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
+				.hasSize(1)
+				// On FR, US denominator is null
 				.containsEntry(Map.of("country", "FR"), Map.of("FRoverUS", Double.NaN))
-				.containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D));
+		// On US, FR numerator is null
+		// .containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D))
+		;
 	}
 
 	@Test
@@ -123,7 +129,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of(), Map.of("FRoverUS", (0D + 456) / (0D + 123)));
+				.containsEntry(Map.of(), Map.of("FRoverUS", (0D + 123) / (0D + 456)));
 	}
 
 	@Test
@@ -139,9 +145,12 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
+				.hasSize(1)
+				// On FR, US denominator is null
 				.containsEntry(Map.of("country", "FR"), Map.of("FRoverUS", Double.NaN))
-				.containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D));
+		// On US, FR numerator is null
+		// .containsEntry(Map.of("country", "US"), Map.of("FRoverUS", 0D))
+		;
 	}
 
 	@Test
@@ -154,7 +163,10 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 123 + 234, "FRoverUS", 0D));
+				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 456 + 567
+				// On US, FR numerator is null
+				// , "FRoverUS", 0D
+				));
 	}
 
 	@Test
@@ -163,16 +175,17 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 		{
 			AdhocQuery adhocQuery =
-					AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").debug(true).build();
+					AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").explain(true).build();
 			aqw.execute(adhocQuery);
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
-				|\\- m=d(Aggregator) filter=matchNone groupBy=grandTotal
-				\\-- m=d(Aggregator) filter=country=US groupBy=grandTotal
-								  		""".trim());
+				#0 m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
+				|\\- #1 m=d(Aggregator) filter=matchNone groupBy=grandTotal
+				\\-- #2 m=d(Aggregator) filter=country=US groupBy=grandTotal
+				!2
+												  		""".trim());
 
-		Assertions.assertThat(messages).hasSize(3);
+		Assertions.assertThat(messages).hasSize(4);
 	}
 }

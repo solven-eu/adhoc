@@ -99,7 +99,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 			underlyingColumns.add(underlying);
 		});
 
-		return new SuppliedRowsStream(() -> this.stream().filter(row -> {
+		return new SuppliedRowsStream(dbQuery, () -> this.stream().filter(row -> {
 			return FilterHelpers.match(transcodingContext, dbQuery.getFilter(), row);
 		}).map(row -> {
 			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);

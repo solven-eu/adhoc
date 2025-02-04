@@ -56,7 +56,7 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 	final AdhocBigQueryTableWrapperParameters dbParameters;
 
 	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters dbParameters) {
-		super(dbParameters.getBase());
+		super("Google", dbParameters.getBase());
 
 		this.dbParameters = dbParameters;
 	}

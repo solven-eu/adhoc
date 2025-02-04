@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.view;
+package eu.solven.adhoc.storage;
+
+import eu.solven.adhoc.view.ITabularView;
 
 /**
  * Used with a {@link ITabularView} to iterate over its rows.
@@ -28,6 +30,11 @@ package eu.solven.adhoc.view;
  * @author Benoit Lacelle
  *
  */
-public interface ColumnScanner<T> {
-	void onRow(T coordinates, Object value);
+public interface IRowScanner<T> {
+	/**
+	 * 
+	 * @param key
+	 * @return a {@link IValueConsumer}
+	 */
+	IValueConsumer onKey(T key);
 }

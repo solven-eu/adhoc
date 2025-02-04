@@ -347,9 +347,9 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
-				\\-- m=k1(Aggregator) filter=matchAll groupBy=(country)
-												""".trim());
+				#0 m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
+				\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=(country)
+																""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

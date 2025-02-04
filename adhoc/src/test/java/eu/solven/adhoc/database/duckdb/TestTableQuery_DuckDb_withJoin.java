@@ -82,10 +82,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-			.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-			.table(fromClause)
-			.build());
+	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(factTable,
+			AdhocJooqTableWrapperParameters.builder()
+					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.table(fromClause)
+					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = jooqDb.makeDsl();

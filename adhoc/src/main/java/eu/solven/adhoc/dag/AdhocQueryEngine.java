@@ -64,7 +64,7 @@ import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
+import eu.solven.adhoc.storage.IRowScanner;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Columnator;
@@ -75,7 +75,6 @@ import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.transformers.ReferencedMeasure;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
-import eu.solven.adhoc.view.RowScanner;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -116,7 +115,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		Map<String, Set<Aggregator>> inputColumnToAggregators =
 				columnToAggregators(queryWithContext, fromQueriedToAggregates);
 
-		Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues = new LinkedHashMap<>();
+		Map<AdhocQueryStep, ISliceToValues> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
 		dbQueryToStream.forEach((dbQuery, stream) -> {
@@ -128,13 +127,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		if (queryWithContext.isDebug()) {
 			queryStepToValues.forEach((aggregateStep, values) -> {
-				values.scan(row -> {
-					return AsObjectValueConsumer.consumer(o -> {
+				values.forEachSlice(row -> {
+					return o -> {
 						eventBus.post(AdhocLogEvent.builder()
 								.debug(true)
 								.message("%s -> %s step={}".formatted(o, row))
 								.source(aggregateStep));
-					});
+					};
 				});
 
 			});
@@ -182,7 +181,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected ITabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
 			DagHolder fromQueriedToAggregates,
-			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ISliceToValues> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
 			return MapBasedTabularView.empty();
 		}
@@ -199,7 +198,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
 			stepsToReturn = fromQueriedToAggregates.getQueried().iterator();
 			expectedOutputCardinality =
-					queryStepToValues.values().stream().mapToLong(ICoordinatesToValues::size).max().getAsLong();
+					queryStepToValues.values().stream().mapToLong(ISliceToValues::size).max().getAsLong();
 		}
 
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
@@ -208,18 +207,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.build();
 
 		stepsToReturn.forEachRemaining(step -> {
-			ICoordinatesToValues coordinatesToValues = queryStepToValues.get(step);
+			ISliceToValues coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
-				RowScanner<AdhocSliceAsMap> rowScanner = coordinates -> {
-					AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(
-							o -> mapBasedTabularView.appendSlice(coordinates, Map.of(step.getMeasure().getName(), o)));
-
-					return consumer;
+				IRowScanner<AdhocSliceAsMap> rowScanner = slice -> {
+					return mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName());
 				};
 
-				coordinatesToValues.scan(rowScanner);
+				coordinatesToValues.forEachSlice(rowScanner);
 			}
 		});
 		return mapBasedTabularView;
@@ -264,7 +260,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected void walkDagUpToQueriedMeasures(AdhocExecutingQueryContext queryWithContext,
 			DagHolder fromQueriedToAggregates,
-			Map<AdhocQueryStep, ICoordinatesToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ISliceToValues> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried =
 				new EdgeReversedGraph<>(fromQueriedToAggregates.getDag());
@@ -297,8 +293,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// This may happen on a Columnator which is missing a required column
 				return;
 			} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				List<ICoordinatesToValues> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-					ICoordinatesToValues values = queryStepToValues.get(underlyingStep);
+				List<ISliceToValues> underlyings = underlyingSteps.stream().map(underlyingStep -> {
+					ISliceToValues values = queryStepToValues.get(underlyingStep);
 
 					if (values == null) {
 						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
@@ -310,7 +306,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// BEWARE It looks weird we have to call again `.wrapNode`
 				IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
 						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
-				ICoordinatesToValues coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+				ISliceToValues coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
 
 				eventBus.post(QueryStepIsCompleted.builder()
 						.querystep(queryStep)
@@ -346,14 +342,18 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(adhocQuery);
 
 		// Process the underlying stream of data to execute aggregations
-		stream.asMap().forEach(input -> {
-			forEachStreamedRow(adhocQuery,
-					columnToAggregators,
-					input,
-					peekOnCoordinate,
-					relevantColumns,
-					coordinatesToAgg);
-		});
+		try {
+			stream.asMap().forEach(input -> {
+				forEachStreamedRow(adhocQuery,
+						columnToAggregators,
+						input,
+						peekOnCoordinate,
+						relevantColumns,
+						coordinatesToAgg);
+			});
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Issue processing stream from %s".formatted(stream), e);
+		}
 
 		return coordinatesToAgg;
 

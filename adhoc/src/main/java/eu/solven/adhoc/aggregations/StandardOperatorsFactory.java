@@ -46,7 +46,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
                 yield new MaxCombination();
             }
             case DivideCombination.KEY: {
-                yield new DivideCombination();
+                yield new DivideCombination(options);
             }
             case ExpressionCombination.KEY: {
                 yield ExpressionCombination.parse(options);

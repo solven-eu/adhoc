@@ -23,7 +23,9 @@
 package eu.solven.adhoc.measure.ratio;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,22 +40,27 @@ import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Test a ratio a defined by {@link RatioOverSpecificColumnValueCompositor}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Override
 	@BeforeEach
 	public void feedDb() {
-		rows.add(Map.of("country", "USA", "city", "Paris", "d", 123, "color", "blue"));
-		rows.add(Map.of("country", "USA", "city", "New-York", "d", 234, "color", "green"));
-		rows.add(Map.of("country", "FRANCE", "city", "Paris", "d", 456, "color", "blue"));
-		rows.add(Map.of("country", "FRANCE", "city", "Lyon", "d", 567, "color", "green"));
+		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		rows.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		rows.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach
 	public void registerMeasures() {
-		amb.acceptMeasureCombinator(
-				new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FRANCE", "d"));
+		amb.acceptMeasureCombinator(new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FR", "d"));
 
 		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregator.KEY).build());
 
@@ -64,66 +71,73 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FRANCE_ratio").build();
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
-						Map.of("d_country=FRANCE_ratio", (0D + 456 + 567) / (0D + 456 + 567)));
+						Map.of("d_country=FR_ratio", (0D + 456 + 567) / (0D + 456 + 567)));
 	}
 
 	@Test
-	public void testFrance() {
-		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d_country=FRANCE_ratio").andFilter("country", "FRANCE").build();
+	public void testFR() {
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("country", "FR").build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						Map.of("d_country=FRANCE_ratio", (0D + 456 + 567) / (456 + 567)));
+				.containsEntry(Collections.emptyMap(), Map.of("d_country=FR_ratio", (0D + 456 + 567) / (456 + 567)));
 	}
 
 	@Test
 	public void testParis() {
-		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d_country=FRANCE_ratio").andFilter("city", "Paris").build();
+		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("city", "Paris").build();
 		ITabularView output = aqw.execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("d_country=FRANCE_ratio", (0D + 456) / (456 + 567)));
+				.containsEntry(Collections.emptyMap(), Map.of("d_country=FR_ratio", (0D + 123) / (123 + 234)));
 	}
 
 	@Test
-	public void testUSA() {
+	public void testUS() {
 		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d", "d_country=FRANCE_ratio").andFilter("country", "USA").build();
+				AdhocQuery.builder().measure("d", "d_country=FR_ratio").andFilter("country", "US").build();
 		ITabularView output = aqw.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 123 + 234));
+				.containsEntry(Collections.emptyMap(), Map.of("d", 0L + 456 + 567));
+	}
+
+	@Test
+	public void testExplain_filterOtherColumn() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
+		{
+			AdhocQuery adhocQuery =
+					AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("color", "blue").explain(true).build();
+			aqw.execute(adhocQuery);
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				#0 m=d_country=FR_ratio(Combinator) filter=color=blue groupBy=grandTotal
+				|\\- #1 m=d_country=FR_slice(Filtrator) filter=color=blue groupBy=grandTotal
+				|   \\-- #2 m=d(Aggregator) filter=AndFilter{size=2, #0=color=blue, #1=country=FR} groupBy=grandTotal
+				\\-- #3 m=d_country=FR_whole(Unfiltrator) filter=color=blue groupBy=grandTotal
+				    \\-- #4 m=d_country=FR_slice(Filtrator) filter=matchAll groupBy=grandTotal
+				        \\-- #5 m=d(Aggregator) filter=country=FR groupBy=grandTotal
+																  		""".trim());
+
+		Assertions.assertThat(messages).hasSize(6);
 	}
 }

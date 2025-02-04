@@ -47,9 +47,9 @@ public class RatioOverCurrentColumnValueCompositor {
 	public AdhocMeasureBag addTo(AdhocMeasureBag measureBag, String column, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, "current");
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, "current");
-		String ratioMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, "current");
+		String ratioMeasureName = "%s_%s=%s_ratio_postcheck".formatted(underlying, column, "current");
 		// We ensure the filter is compatible (e.g. a multi-selection with no groupBy would not be compatible)
-		String validMeasureName = "%s_%s=%s_valid".formatted(underlying, column, "current");
+		String validMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, "current");
 
 		return measureBag
 

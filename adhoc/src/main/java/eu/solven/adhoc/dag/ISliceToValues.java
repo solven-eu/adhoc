@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.view;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.storage.ValueConsumer;
+import java.util.Set;
+import java.util.stream.Stream;
 
-/**
- * Used with a {@link ITabularView} to iterate over its rows.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface RowScanner<T> {
-	ValueConsumer onKey(T coordinates);
+import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.storage.IRowConverter;
+import eu.solven.adhoc.storage.IRowScanner;
+import eu.solven.adhoc.storage.IValueConsumer;
+
+public interface ISliceToValues extends ISliceAndValueConsumer {
+	Set<AdhocSliceAsMap> slicesSet();
+
+	long size();
+
+	void onValue(IAdhocSlice slice, IValueConsumer consumer);
+
+	void forEachSlice(IRowScanner<AdhocSliceAsMap> rowScanner);
+
+	<U> Stream<U> stream(IRowConverter<AdhocSliceAsMap, U> rowScanner);
 }

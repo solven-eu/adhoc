@@ -23,6 +23,7 @@
 package eu.solven.adhoc.view;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +37,9 @@ import eu.solven.adhoc.coordinate.MapComparators;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
+import eu.solven.adhoc.storage.IRowConverter;
+import eu.solven.adhoc.storage.IRowScanner;
+import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -50,7 +54,9 @@ public class MapBasedTabularView implements ITabularView {
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
 
 	public static MapBasedTabularView load(ITabularView from) {
-		MapBasedTabularView newView = MapBasedTabularView.builder().build();
+		int capacity = from.size();
+		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new HashMap<>(capacity);
+		MapBasedTabularView newView = MapBasedTabularView.builder().coordinatesToValues(coordinatesToValues).build();
 
 		return load(from, newView);
 	}
@@ -60,7 +66,7 @@ public class MapBasedTabularView implements ITabularView {
 			return asMapBased;
 		}
 
-		RowScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IRowScanner<IAdhocSlice> rowScanner = coordinates -> {
 			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
 
 			return AsObjectValueConsumer.consumer(o -> {
@@ -94,14 +100,29 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public void acceptScanner(RowScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IRowScanner<IAdhocSlice> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
 			rowScanner.onKey(AdhocSliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
+	@Override
+	public <U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner) {
+		return coordinatesToValues.entrySet()
+				.stream()
+				.map(e -> rowScanner.convertObject(AdhocSliceAsMap.fromMap(e.getKey()), e.getValue()));
+	}
+
 	public void appendSlice(AdhocSliceAsMap slice, Map<String, ?> mToValues) {
 		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregator::aggregateMaps);
+	}
+
+	public void appendSlice(AdhocSliceAsMap slice, String measure, Object value) {
+		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregator::aggregateMaps);
+	}
+
+	public IValueConsumer sliceFeeder(AdhocSliceAsMap slice, String measureName) {
+		return o -> appendSlice(slice, Map.of(measureName, o));
 	}
 
 	public static ITabularView empty() {
@@ -120,4 +141,5 @@ public class MapBasedTabularView implements ITabularView {
 
 		return toStringHelper.toString();
 	}
+
 }

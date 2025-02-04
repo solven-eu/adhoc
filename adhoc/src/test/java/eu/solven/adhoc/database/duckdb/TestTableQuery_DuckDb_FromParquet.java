@@ -76,10 +76,11 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 
 		Connection dbConn = makeFreshInMemoryDb();
-		jooqDb = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-				.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-				.tableName(tableName)
-				.build());
+		jooqDb = new AdhocJooqTableWrapper(tableName,
+				AdhocJooqTableWrapperParameters.builder()
+						.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+						.tableName(tableName)
+						.build());
 
 		dsl = jooqDb.makeDsl();
 	}

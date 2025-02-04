@@ -32,8 +32,8 @@ import eu.solven.adhoc.aggregations.ICombination;
 import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ICoordinatesAndValueConsumer;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceAndValueConsumer;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
@@ -75,14 +75,14 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
 		} else if (underlyings.isEmpty()) {
 			return CoordinatesToValues.empty();
 		}
 
-		ICoordinatesToValues output = makeCoordinateToValues();
+		ISliceToValues output = makeCoordinateToValues();
 
 		ICombination transformation = transformationFactory.makeCombination(combinator);
 
@@ -92,10 +92,10 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(List<? extends ICoordinatesToValues> underlyings,
+	protected void onSlice(List<? extends ISliceToValues> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
-			ICoordinatesAndValueConsumer output) {
+			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
 			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);

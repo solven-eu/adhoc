@@ -26,7 +26,7 @@ import java.util.List;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ICoordinatesToValues;
+import eu.solven.adhoc.dag.ISliceToValues;
 import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 
 /**
@@ -39,7 +39,7 @@ public class EmptyHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ICoordinatesToValues produceOutputColumn(List<? extends ICoordinatesToValues> underlyings) {
+	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
 		return CoordinatesToValues.empty();
 	}
 }

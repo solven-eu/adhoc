@@ -216,8 +216,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
-				\\-- m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
+				#0 m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
+				\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
 																								""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
