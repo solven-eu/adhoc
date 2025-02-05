@@ -111,23 +111,23 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream openDbStream(TableQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery tableQuery) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext);
 
-		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(dbQuery);
+		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
 
-		if (dbQuery.isExplain() || dbQuery.isDebug()) {
+		if (tableQuery.isExplain() || tableQuery.isDebug()) {
 			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
 		}
-		if (dbQuery.isDebug()) {
+		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);
 		}
 
 		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
 
-		return new SuppliedRowsStream(dbQuery, () -> cleanStream(dbQuery, dbStream, transcodingContext));
+		return new SuppliedRowsStream(tableQuery, () -> cleanStream(tableQuery, dbStream, transcodingContext));
 	}
 
 	private Stream<Map<String, ?>> cleanStream(TableQuery dbQuery,

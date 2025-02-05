@@ -20,24 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.js.account;
 
-import org.springframework.context.annotation.Import;
+import java.util.UUID;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
-import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
-@Slf4j
-public class AdhocWebFluxConfiguration {
-
+/**
+ * Give access to the authenticated user.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+public interface IAdhocUserContextHolder {
+	Mono<UUID> authenticatedAccountId();
 }

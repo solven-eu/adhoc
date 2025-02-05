@@ -39,12 +39,15 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.kumite.app.IKumiteSpringProfiles;
+import eu.solven.adhoc.app.IAdhocSpringProfiles;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
  * Redirect the SinglePageApplication routes to index.html content.
+ *
+ * The main design is that all routes to `/api/*` are redirected to the backend, while `/html/*` routes are redirected
+ * to the `HTML` and its own (SPA) routing logic.
  * 
  * @author Benoit Lacelle
  *
@@ -60,7 +63,7 @@ public class AdhocSpaRouter {
 	// https://stackoverflow.com/questions/6845772/should-i-use-singular-or-plural-name-convention-for-rest-resources
 	@Bean
 	public RouterFunction<ServerResponse> spaRoutes(Environment env) {
-		if (env.acceptsProfiles(Profiles.of(IKumiteSpringProfiles.P_HEROKU))) {
+		if (env.acceptsProfiles(Profiles.of(IAdhocSpringProfiles.P_HEROKU))) {
 			log.info("We should rely on PRD resources in `index.html`");
 		}
 
@@ -83,7 +86,7 @@ public class AdhocSpaRouter {
 	}
 
 	private Resource filterIndexHtmlMl(Environment env, Resource indexHtmlResource) {
-		if (env.acceptsProfiles(Profiles.of(IKumiteSpringProfiles.P_PRDMODE))) {
+		if (env.acceptsProfiles(Profiles.of(IAdhocSpringProfiles.P_PRDMODE))) {
 			String indexHtml;
 			try {
 				indexHtml = indexHtmlResource.getContentAsString(StandardCharsets.UTF_8);
@@ -97,7 +100,7 @@ public class AdhocSpaRouter {
 			log.info("{} has been minified", fileName);
 
 			return new ByteArrayResource(indexHtml.getBytes(StandardCharsets.UTF_8),
-					"fileName <minified for %s>".formatted(IKumiteSpringProfiles.P_PRDMODE));
+					"fileName <minified for %s>".formatted(IAdhocSpringProfiles.P_PRDMODE));
 		} else {
 			return indexHtmlResource;
 		}

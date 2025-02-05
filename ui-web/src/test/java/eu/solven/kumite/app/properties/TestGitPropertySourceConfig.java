@@ -20,24 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.kumite.app.properties;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
+import eu.solven.adhoc.tools.GitPropertySourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
+@ExtendWith(SpringExtension.class)
+// @SpringBootTest(classes = { EmptySpringBootApplication.class, GitPropertySourceConfig.class },
+// webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Import(GitPropertySourceConfig.class)
 @Slf4j
-public class AdhocWebFluxConfiguration {
+public class TestGitPropertySourceConfig {
 
+	@Autowired
+	Environment env;
+
+	@Test
+	public void testSpringProfiles() {
+		Assertions.assertThat(env.getRequiredProperty("git.commit.id.abbrev")).isNotNull();
+	}
 }

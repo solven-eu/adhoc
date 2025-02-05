@@ -22,13 +22,10 @@
  */
 package eu.solven.adhoc.js.webflux;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.solven.adhoc.app.AdhocJackson;
-import eu.solven.kumite.app.KumiteJackson;
-import eu.solven.kumite.contest.AccountForbiddenOperation;
-import eu.solven.kumite.security.LoginRouteButNotAuthenticatedException;
-import lombok.extern.slf4j.Slf4j;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -39,12 +36,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.resource.NoResourceFoundException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import eu.solven.adhoc.app.AdhocJackson;
+import eu.solven.adhoc.security.AccountForbiddenOperation;
+import eu.solven.adhoc.security.LoginRouteButNotAuthenticatedException;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Convert an applicative {@link Throwable} into a relevant {@link HttpStatus}
@@ -69,12 +70,12 @@ public class AdhocWebExceptionHandler implements WebExceptionHandler {
 		}
 
 		HttpStatus httpStatus;
-		if (e instanceof IllegalArgumentException) {
-			httpStatus = HttpStatus.BAD_REQUEST;
-		} else if (e instanceof LoginRouteButNotAuthenticatedException) {
+		if (e instanceof LoginRouteButNotAuthenticatedException) {
 			httpStatus = HttpStatus.UNAUTHORIZED;
 		} else if (e instanceof AccountForbiddenOperation) {
 			httpStatus = HttpStatus.FORBIDDEN;
+		} else if (e instanceof IllegalArgumentException) {
+			httpStatus = HttpStatus.BAD_REQUEST;
 		} else {
 			httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
 		}

@@ -25,6 +25,11 @@ this project to remains simpler, given a query is generally slow due to the unde
 
 # Quick-start
 
+## Hardware requirements
+
+RAM: any JVM can run Adhoc, as Adhoc does not store data: it queries on-the-fly the underlying/external tables.
+CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes advantage of them. But even a single-core JVM can run Adhoc queries smoothly.
+
 ## Set-up
 
 1. Ensure you have JDK 21 available
@@ -233,3 +238,4 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
 - Make it simple to extract a column single equalsFilter from a potentially complex `IAdhocFilter`
 - Concurrency: for instance when processing the DAG given the results from the `TableQuery`
 - BDD: Automated generation of Scenario given an `IAdhocQuery`
+- Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).

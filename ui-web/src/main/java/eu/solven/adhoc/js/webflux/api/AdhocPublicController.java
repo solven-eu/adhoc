@@ -27,6 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.AllArgsConstructor;
 
+/**
+ * Demonstrates controller, useful to do basic integrations tests before wiring real routes.
+ */
 @RestController
 @AllArgsConstructor
 public class AdhocPublicController {

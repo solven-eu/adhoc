@@ -20,24 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.security;
 
-import org.springframework.context.annotation.Import;
+/**
+ * This exception is typically used to report 401.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+public class LoginRouteButNotAuthenticatedException extends RuntimeException {
+	private static final long serialVersionUID = -8569851345844040153L;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
-import lombok.extern.slf4j.Slf4j;
-
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
-@Slf4j
-public class AdhocWebFluxConfiguration {
+	public LoginRouteButNotAuthenticatedException(String msg) {
+		super(msg);
+	}
 
 }

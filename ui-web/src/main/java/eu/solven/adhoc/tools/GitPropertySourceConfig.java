@@ -20,24 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.tools;
 
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
 import lombok.extern.slf4j.Slf4j;
 
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
+/**
+ * Give access to Git properties through {@link Environment}.
+ */
+// https://stackoverflow.com/questions/76679347/spring-boot-service-is-not-picking-up-the-git-properties-file-generated-by-the-g
 @Slf4j
-public class AdhocWebFluxConfiguration {
+@PropertySource(value = { "classpath:git.properties" }, ignoreResourceNotFound = true)
+public class GitPropertySourceConfig {
 
 }

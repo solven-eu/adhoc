@@ -20,24 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.security;
 
-import org.springframework.context.annotation.Import;
+/**
+ * When an user tries to do a forbidden operation.
+ *
+ * @author Benoit Lacelle
+ */
+public class AccountForbiddenOperation extends IllegalArgumentException {
+	private static final long serialVersionUID = -1332927839258276261L;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
-import lombok.extern.slf4j.Slf4j;
+	public AccountForbiddenOperation(String message, Throwable cause) {
+		super(message, cause);
+	}
 
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
-@Slf4j
-public class AdhocWebFluxConfiguration {
+	public AccountForbiddenOperation(String s) {
+		super(s);
+	}
 
 }

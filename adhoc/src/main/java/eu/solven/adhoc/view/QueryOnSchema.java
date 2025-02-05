@@ -20,24 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.view;
 
-import org.springframework.context.annotation.Import;
+import java.util.Set;
 
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.IQueryOption;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-@Import({
+/**
+ * Wraps an {@link AdhocQuery} with the context into which it has to be executed. The context is typically a cubeName.
+ */
+@Value
+@Builder
+@Jacksonized
+public class QueryOnSchema {
+	@NonNull
+	String cube;
 
-		AdhocSpaRouter.class,
+	@NonNull
+	AdhocQuery query;
 
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
-@Slf4j
-public class AdhocWebFluxConfiguration {
-
+	@NonNull
+	Set<IQueryOption> options;
 }

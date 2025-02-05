@@ -58,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class AdhocMeasureBag implements IAdhocMeasureBag {
+	@Getter
 	final String name;
 
 	@Default
@@ -65,14 +66,14 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
 	public AdhocMeasureBag addMeasure(IMeasure namedMeasure) {
-		String name = namedMeasure.getName();
+		String measureName = namedMeasure.getName();
 
-		if (nameToMeasure.containsKey(name)) {
+		if (nameToMeasure.containsKey(measureName)) {
 			throw new IllegalArgumentException(
-					"Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name));
+					"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name, measureName));
 		}
 
-		nameToMeasure.put(name, namedMeasure);
+		nameToMeasure.put(measureName, namedMeasure);
 
 		return this;
 	}
@@ -87,7 +88,7 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 				String minimizing = MeasuresSetFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
-						"No measure named: %s. Did you meant: %s".formatted(refName, minimizing));
+						"bag=%s No measure named: %s. Did you meant: %s".formatted(name, refName, minimizing));
 			}
 
 			return resolved;
@@ -144,7 +145,7 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	public static AdhocMeasureBag fromMeasures(List<IMeasure> measures) {
 		AdhocMeasureBag ams = AdhocMeasureBag.builder().build();
 
-		measures.forEach(m -> ams.addMeasure(m));
+		measures.forEach(ams::addMeasure);
 
 		return ams;
 	}

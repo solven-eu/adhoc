@@ -31,6 +31,7 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.view.ITabularView;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -44,6 +45,11 @@ import lombok.Value;
 @Builder
 public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
+	@Builder.Default
+	@Getter
+	final String name = "someCubeName";
+
+	@NonNull
 	final IAdhocQueryEngine engine;
 	@NonNull
 	final IAdhocMeasureBag measures;
@@ -51,24 +57,8 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final IAdhocTableWrapper table;
 
 	@Override
-	public String getName() {
-		return table.getName() + ".cube";
-	}
-
-	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
 		return engine.execute(query, options, measures, table);
-	}
-
-	/**
-	 * Typically useful when the {@link IAdhocDatabaseWrapper} has to be changed, but the other parameters must be kept.
-	 * 
-	 * @param template
-	 *            some template
-	 * @return
-	 */
-	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
-		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
 	}
 
 	@Override
@@ -88,4 +78,16 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 		return columnToType;
 	}
+
+	/**
+	 * Typically useful when the {@link IAdhocTableWrapper} has to be changed, but the other parameters must be kept.
+	 *
+	 * @param template
+	 *            some template
+	 * @return
+	 */
+	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
+		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
+	}
+
 }

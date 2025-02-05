@@ -57,13 +57,13 @@ import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.Bucketor;

@@ -22,9 +22,12 @@
  */
 package eu.solven.adhoc.composite;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.google.common.eventbus.EventBus;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -43,12 +46,11 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
 
-public class TestCompositeCube implements IAdhocTestConstants {
+public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -59,8 +61,10 @@ public class TestCompositeCube implements IAdhocTestConstants {
 
 	Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregator.KEY).build();
 
+	EventBus eventBus = AdhocTestHelper.eventBus();
+
 	// We can re-use a single engine for each cubes
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 	DSLContext dsl = dslSupplier.getDSLContext();
@@ -68,17 +72,21 @@ public class TestCompositeCube implements IAdhocTestConstants {
 	String tableName1 = "someTableName1";
 	AdhocJooqTableWrapper table1 = new AdhocJooqTableWrapper(tableName1,
 			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
-	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 	String tableName2 = "someTableName2";
 	AdhocJooqTableWrapper table2 = new AdhocJooqTableWrapper(tableName2,
 			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
-	TableQuery qK2 = TableQuery.builder().aggregators(Set.of(k2Sum)).build();
 
 	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).measures(measureBag).table(table).engine(aqe).build();
+		return AdhocCubeWrapper.builder()
+				.name(table.getName() + ".cube")
+				.engine(aqe)
+				.measures(measureBag)
+				.table(table)
+				.engine(aqe)
+				.build();
 	}
 
 	private AdhocCubeWrapper makeAndFeedCompositeCube() {
@@ -121,14 +129,12 @@ public class TestCompositeCube implements IAdhocTestConstants {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1PlusK2AsExpr);
 
-		// The aggregationKey is important in case multiple cubes contribute to the same measure
-		measureBag.addMeasure(Aggregator.edit(k1Sum).columnName(k1Sum.getName()).build());
-		measureBag.addMeasure(Aggregator.edit(k2Sum).columnName(k2Sum.getName()).build());
-		measureBag.addMeasure(Aggregator.edit(k3Sum).columnName(k3Sum.getName()).build());
-
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		compositeCubesTable.injectUnderlyingMeasures(measureBag);
+
 		AdhocCubeWrapper cube3 = AdhocCubeWrapper.builder()
 				.engine(aqe)
 				.measures(measureBag)
@@ -207,6 +213,8 @@ public class TestCompositeCube implements IAdhocTestConstants {
 
 	@Test
 	public void testQueryCube1Plus2_filterUnshared() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(
@@ -216,6 +224,10 @@ public class TestCompositeCube implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 1234))
 				.hasSize(1);
-	}
 
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				#0 m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
+				\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=(country)""".trim());
+		Assertions.assertThat(messages).hasSize(2);
+	}
 }

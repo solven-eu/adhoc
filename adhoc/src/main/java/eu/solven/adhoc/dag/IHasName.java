@@ -20,24 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.js.webflux;
+package eu.solven.adhoc.dag;
 
-import org.springframework.context.annotation.Import;
-
-import eu.solven.adhoc.js.webflux.api.AdhocSpaRouter;
-import eu.solven.adhoc.js.webflux.api.GreetingHandler;
-import lombok.extern.slf4j.Slf4j;
-
-@Import({
-
-		AdhocSpaRouter.class,
-
-		GreetingHandler.class,
-
-		AdhocWebExceptionHandler.class,
-
-})
-@Slf4j
-public class AdhocWebFluxConfiguration {
-
+/**
+ * To be impemented by components having a name, which can generally be used as identifier.
+ */
+@FunctionalInterface
+public interface IHasName {
+	String getName();
 }

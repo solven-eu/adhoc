@@ -35,7 +35,7 @@ import eu.solven.adhoc.transformers.ReferencedMeasure;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMeasureBag {
+public interface IAdhocMeasureBag extends IHasName {
 
 	/**
 	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}

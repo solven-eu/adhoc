@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.database;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +34,12 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.dag.IAdhocCubeWrapper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -49,6 +54,7 @@ import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.DefaultMissingColumnManager;
 import eu.solven.adhoc.storage.IMissingColumnManager;
+import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.adhoc.view.ITabularView;
 import lombok.Builder;
@@ -56,6 +62,7 @@ import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This enables combining multiple {@link IAdhocTableWrapper}, and to evaluate {@link IMeasure} on top of them.
@@ -63,6 +70,7 @@ import lombok.Singular;
  * @author Benoit Lacelle
  */
 @Builder
+@Slf4j
 public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 
 	@NonNull
@@ -151,4 +159,60 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 		}
 	}
 
+	/**
+	 * This will register all measure of underlying cubes into this measure bag. It will enable querying underlying cube
+	 * measures from the composite cube.
+	 * 
+	 * @param measureBag
+	 *            the measureBag to be applied on top of this composite cube
+	 */
+	public void injectUnderlyingMeasures(AdhocMeasureBag measureBag) {
+		// The aggregationKey is important in case multiple cubes contribute to the same measure
+
+		Set<String> compositeMeasures = new HashSet<>(measureBag.getNameToMeasure().keySet());
+
+		SetMultimap<String, String> measureToCubes = HashMultimap.create();
+
+		Set<IMeasure> measuresToAdd = new HashSet<>();
+
+		cubes.forEach(cube -> {
+			cube.getMeasures().getNameToMeasure().values().stream().forEach(underlyingMeasure -> {
+				String measureName = underlyingMeasure.getName();
+
+				String compositeMeasureName;
+
+				String cubeName = cube.getName();
+				if (compositeMeasures.contains(measureName)) {
+					log.debug("{} is a measureName both in composite and in {}", measureName, cubeName);
+					compositeMeasureName = measureName + "." + cubeName;
+
+					if (compositeMeasures.contains(compositeMeasureName)) {
+						// TODO Loop until we find an available measurename
+						throw new IllegalArgumentException(
+								"%s is a measure in both composite and %s, and %s is a composite measure"
+										.formatted(measureName, cubeName, compositeMeasureName));
+					}
+				} else {
+					compositeMeasureName = measureName;
+				}
+
+				measureToCubes.put(compositeMeasureName, cubeName);
+
+				Aggregator compositeMeasure = Aggregator.builder()
+						.name(compositeMeasureName)
+						// If some measure is returned by different cubes, we SUM the returned values
+						.aggregationKey(SumAggregator.KEY)
+						.build();
+				measuresToAdd.add(compositeMeasure);
+			});
+		});
+
+		measureToCubes.asMap()
+				.entrySet()
+				.stream()
+				.filter(e -> e.getValue().size() >= 2)
+				.forEach(e -> log.info("measure={} is provided by cubes: ", e.getKey(), e.getValue()));
+
+		measuresToAdd.forEach(measureBag::addMeasure);
+	}
 }

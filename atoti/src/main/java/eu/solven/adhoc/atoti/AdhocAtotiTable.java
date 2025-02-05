@@ -71,7 +71,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
 
 	@Override
-	public IRowsStream openDbStream(TableQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();
@@ -94,12 +94,12 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 		List<Map<String, ?>> asList = new ArrayList<>();
 
 		result.forEachLocation(location -> {
-			asList.add(asMap(dbQuery, result, location));
+			asList.add(asMap(tableQuery, result, location));
 
 			return true;
 		});
 
-		return new SuppliedRowsStream(dbQuery, asList::stream);
+		return new SuppliedRowsStream(tableQuery, asList::stream);
 	}
 
 	private Map<String, ?> asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {

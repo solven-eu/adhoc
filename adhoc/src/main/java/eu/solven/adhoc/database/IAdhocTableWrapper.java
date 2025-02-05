@@ -23,6 +23,7 @@
 package eu.solven.adhoc.database;
 
 import eu.solven.adhoc.dag.IHasColumns;
+import eu.solven.adhoc.dag.IHasName;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -32,13 +33,13 @@ import eu.solven.adhoc.query.table.TableQuery;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocTableWrapper extends IHasColumns {
-	/**
-	 * 
-	 * @return the natural name/id of the underlying table.
-	 */
-	String getName();
+public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 
-	IRowsStream openDbStream(TableQuery dbQuery);
+	/**
+	 *
+	 * @param tableQuery
+	 * @return a {@link IRowsStream} matching the input dpQuery
+	 */
+	IRowsStream openDbStream(TableQuery tableQuery);
 
 }

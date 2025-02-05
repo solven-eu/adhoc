@@ -44,7 +44,7 @@ public class EmptyTableWrapper implements IAdhocTableWrapper {
 	final String name;
 
 	@Override
-	public IRowsStream openDbStream(TableQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery tableQuery) {
 		return new SuppliedRowsStream("empty", Stream::empty);
 	}
 

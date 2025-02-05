@@ -34,15 +34,13 @@ import eu.solven.adhoc.view.ITabularView;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocCubeWrapper extends IHasColumns {
-	String getName();
-	// A cube is the combination of a database and a Set of measures.
-	// Set<String> getCubesNames();
+public interface IAdhocCubeWrapper extends IHasColumns, IHasName {
+	IAdhocMeasureBag getMeasures();
 
-	default ITabularView execute(IAdhocQuery adhocQuery) {
-		return execute(adhocQuery, Set.of());
+	default ITabularView execute(IAdhocQuery query) {
+		return execute(query, Set.of());
 	}
 
-	ITabularView execute(IAdhocQuery adhocQuery, Set<? extends IQueryOption> queryOptions);
+	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
 
 }

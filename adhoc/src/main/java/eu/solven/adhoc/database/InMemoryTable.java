@@ -84,12 +84,12 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream openDbStream(TableQuery dbQuery) {
+	public IRowsStream openDbStream(TableQuery tableQuery) {
 		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Set<String> queriedColumns = new HashSet<>();
-		queriedColumns.addAll(dbQuery.getGroupBy().getGroupedByColumns());
-		dbQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(queriedColumns::add);
+		queriedColumns.addAll(tableQuery.getGroupBy().getGroupedByColumns());
+		tableQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(queriedColumns::add);
 
 		Set<String> underlyingColumns = new HashSet<>();
 		queriedColumns.forEach(keyToKeep -> {
@@ -99,8 +99,8 @@ public class InMemoryTable implements IAdhocTableWrapper {
 			underlyingColumns.add(underlying);
 		});
 
-		return new SuppliedRowsStream(dbQuery, () -> this.stream().filter(row -> {
-			return FilterHelpers.match(transcodingContext, dbQuery.getFilter(), row);
+		return new SuppliedRowsStream(tableQuery, () -> this.stream().filter(row -> {
+			return FilterHelpers.match(transcodingContext, tableQuery.getFilter(), row);
 		}).map(row -> {
 			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);
 
