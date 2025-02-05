@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,8 +83,31 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 				.limit(0)
 				.fetch()
 				.fields();
-		return Stream.of(select)
-				.collect(Collectors.<Field<?>, String, Class<?>>toMap(f -> f.getName(), f -> f.getType()));
+
+		// https://duckdb.org/docs/sql/expressions/star.html
+
+		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
+
+		Stream.of(select).forEach(field -> {
+			String fieldName = field.getName();
+
+			// TODO Columns should express queryable columns, not underlying columns
+			// dbParameters.getTranscoder();
+
+			Class<?> fieldType = field.getType();
+			Class<?> previousType = columnToType.put(fieldName, fieldType);
+			if (previousType != null) {
+				log.debug("Multiple columns with same name. Typically happens on a JOIN");
+				if (!Objects.equals(fieldType, previousType)) {
+					log.warn("Multiple columns with same name (name=%s), and different types: %s != %s",
+							fieldName,
+							previousType,
+							fieldType);
+				}
+			}
+		});
+
+		return columnToType;
 	}
 
 	public static AdhocJooqTableWrapper newInstance(Map<String, ?> options) {

@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.eventbus.EventBus;
-import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
@@ -45,6 +45,7 @@ import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.database.sql.DSLSupplier;
 import eu.solven.adhoc.database.sql.DuckDbHelper;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.transformers.Aggregator;
 import eu.solven.adhoc.view.ITabularView;
@@ -155,6 +156,15 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				.containsEntry(Map.of(), Map.of(k2Sum.getName(), 0L + 234 + 456))
 				.hasSize(1);
 
+		Assertions.assertThat(cube3.getColumns())
+				.containsEntry("a", String.class)
+				.containsEntry("b", String.class)
+				.containsEntry("c", String.class)
+				.containsEntry(k1Sum.getColumnName(), Double.class)
+				.containsEntry(k1PlusK2AsExpr.getName(), Double.class)
+				.containsEntry(k2Sum.getColumnName(), Double.class)
+				.containsEntry(k3Sum.getColumnName(), Double.class)
+				.hasSize(7);
 	}
 
 	@Test
@@ -226,8 +236,13 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				.hasSize(1);
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 m=k1.dispatched(Dispatchor) filter=matchAll groupBy=(country_groups)
-				\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=(country)""".trim());
-		Assertions.assertThat(messages).hasSize(2);
+				#0 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
+				|\\- #1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+				\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+				#0 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+				#1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+				#0 m=k2(EmptyMeasure) filter=matchAll groupBy=grandTotal
+				#1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
+		Assertions.assertThat(messages).hasSize(7);
 	}
 }

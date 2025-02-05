@@ -86,9 +86,7 @@ public class AdhocSchemaForApi {
 						.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().getColumns())));
 
 		metadata.put("queries",
-				nameToQuery.entrySet()
-						.stream()
-						.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+				nameToQuery.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
 
 		return metadata;
 	}
@@ -102,7 +100,8 @@ public class AdhocSchemaForApi {
 	}
 
 	public void registerMeasure(String measureBagName, IMeasure measure) {
-		AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName, k -> new AdhocMeasureBag(measureBagName));
+		AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
+				k -> AdhocMeasureBag.builder().name(measureBagName).build());
 		measureBag.addMeasure(measure);
 	}
 

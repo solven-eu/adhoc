@@ -70,7 +70,8 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 
 		if (nameToMeasure.containsKey(measureName)) {
 			throw new IllegalArgumentException(
-					"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name, measureName));
+					"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
+							measureName));
 		}
 
 		nameToMeasure.put(measureName, namedMeasure);

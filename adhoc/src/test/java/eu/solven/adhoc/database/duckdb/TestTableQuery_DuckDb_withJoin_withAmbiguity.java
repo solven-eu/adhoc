@@ -50,7 +50,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.view.ITabularView;
 import eu.solven.adhoc.view.MapBasedTabularView;
 
-public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -101,27 +101,35 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		dsl.createTableIfNotExists(factTable)
 				.column("k1", SQLDataType.DOUBLE)
 				.column("productId", SQLDataType.VARCHAR)
+				.column("name", SQLDataType.VARCHAR)
 				.execute();
 		dsl.createTableIfNotExists(joinedTable)
 				.column("productId", SQLDataType.VARCHAR)
 				.column("productName", SQLDataType.VARCHAR)
 				.column("countryId", SQLDataType.VARCHAR)
+				.column("name", SQLDataType.VARCHAR)
 				.execute();
 		dsl.createTableIfNotExists(joinedFurtherTable)
 				.column("countryId", SQLDataType.VARCHAR)
 				.column("countryName", SQLDataType.VARCHAR)
+				.column("name", SQLDataType.VARCHAR)
 				.execute();
 	}
 
 	private void insertData() {
 		// Carot is fully joined
-		dsl.insertInto(DSL.table(factTable), DSL.field("k1"), DSL.field("productId")).values(123, "carot").execute();
-		dsl.insertInto(DSL.table(joinedTable), DSL.field("productId"), DSL.field("productName"), DSL.field("countryId"))
-				.values("carot", "Carotte", "FRA")
+		dsl.insertInto(DSL.table(factTable), DSL.field("k1"), DSL.field("productId"), DSL.field("name"))
+				.values(123, "carot", "fName")
 				.execute();
-		dsl.insertInto(DSL.table(joinedFurtherTable), DSL.field("countryId"), DSL.field("countryName"))
-				.values("FRA", "France")
-				.execute();
+		dsl.insertInto(DSL.table(joinedTable),
+				DSL.field("productId"),
+				DSL.field("productName"),
+				DSL.field("countryId"),
+				DSL.field("name")).values("carot", "Carotte", "FRA", "pName").execute();
+		dsl.insertInto(DSL.table(joinedFurtherTable),
+				DSL.field("countryId"),
+				DSL.field("countryName"),
+				DSL.field("name")).values("FRA", "France", "cName").execute();
 
 		// Banana is not joined
 		dsl.insertInto(DSL.table(factTable), DSL.field("k1"), DSL.field("productId")).values(234, "banana").execute();
@@ -140,8 +148,10 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 				.containsEntry("countryName", String.class)
 				.containsEntry("productId", String.class)
 				.containsEntry("productName", String.class)
+				// `name` is very ambiguous, as it is provided by the base table and 2 JOINed tables
+				.containsEntry("name", String.class)
 				.containsEntry("k1", Double.class)
-				.hasSize(5);
+				.hasSize(6);
 	}
 
 	@Test
