@@ -367,6 +367,30 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
+	public void testAggregator_countAsterisk() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+
+		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(1);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "countAsterisk",
+				  "type" : "aggregator",
+				  "aggregationKey" : "COUNT",
+				  "columnName" : "*"
+				} ]
+								""".strip());
+	}
+
+	@Test
 	public void testBasicFile() throws IOException {
 		AdhocBagOfMeasureBag obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
 

@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.aggregations.ExpressionCombination;
 import eu.solven.adhoc.aggregations.max.MaxCombination;
+import eu.solven.adhoc.aggregations.sum.CountAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -83,5 +84,11 @@ public interface IAdhocTestConstants {
 			// ImmutableMap for ordering (e.g. useful for serialization tests)
 			.decompositionOptions(ImmutableMap.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))
 			.aggregationKey(SumAggregator.KEY)
+			.build();
+
+	Aggregator countAsterisk = Aggregator.builder()
+			.name("countAsterisk")
+			.aggregationKey(CountAggregator.KEY)
+			.columnName(CountAggregator.ASTERISK)
 			.build();
 }

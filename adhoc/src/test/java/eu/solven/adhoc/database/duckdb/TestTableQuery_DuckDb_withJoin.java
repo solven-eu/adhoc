@@ -293,4 +293,49 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					.hasSize(2);
 		}
 	}
+
+	@Test
+	public void testCountAsterisk_grandTotal() {
+		initTables();
+		insertData();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(countAsterisk);
+
+		{
+			ITabularView result = aqe.execute(
+					AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").debug(true).build(),
+					measureBag,
+					jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("productId", "carot"), Map.of(countAsterisk.getName(), 0L + 1L))
+					.containsEntry(Map.of("productId", "banana"), Map.of(countAsterisk.getName(), 0L + 1L))
+					.hasSize(2);
+		}
+	}
+
+	@Test
+	public void testCountAsterisk_ByJoinedTwice() {
+		initTables();
+		insertData();
+
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(countAsterisk);
+
+		{
+			ITabularView result = aqe.execute(AdhocQuery.builder()
+					.measure(countAsterisk.getName())
+					.groupByAlso("c.countryName")
+					.debug(true)
+					.build(), measureBag, jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("c.countryName", "France"), Map.of(countAsterisk.getName(), 0L + 1L))
+					.containsEntry(Map.of("c.countryName", "NULL"), Map.of(countAsterisk.getName(), 0L + 1L))
+					.hasSize(2);
+		}
+	}
 }

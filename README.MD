@@ -180,6 +180,9 @@ This can be achieved in Adhoc with a `Dispatchor`.
 
 A full example is visible in `TestManyToManyAdhocQuery`.
 
+references:
+- [Analysis Services](https://learn.microsoft.com/en-us/analysis-services/multidimensional-models/define-a-many-to-many-relationship-and-many-to-many-relationship-properties)
+
 # Limitations
 
 ## Visual filters

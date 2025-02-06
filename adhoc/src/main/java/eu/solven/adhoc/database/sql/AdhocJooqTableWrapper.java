@@ -267,7 +267,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			Field<?> field = fields.get(i);
 
 			if (map.put(toQualifiedName(field), r.get(i)) != null) {
-				throw new InvalidResultException("Field " + field.getName() + " is not unique in Record : " + this);
+				throw new InvalidResultException("Field " + field.getName() + " is not unique in Record : " + r);
 			}
 		}
 

@@ -272,6 +272,7 @@ public class MeasuresSetFromResource {
 				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()));
 
 		MapPathGet.getOptionalString(measure, "columnName").ifPresent(builder::columnName);
+		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
 
 		return builder.build();
 	}

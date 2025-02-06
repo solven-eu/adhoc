@@ -56,6 +56,7 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.aggregations.max.MaxAggregator;
+import eu.solven.adhoc.aggregations.sum.CountAggregator;
 import eu.solven.adhoc.aggregations.sum.SumAggregator;
 import eu.solven.adhoc.dag.AdhocMeasureBag;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -88,17 +89,21 @@ public class ActivePivotMeasuresToAdhoc {
 		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
 		desc.getMeasuresDescription().getNativeMeasures().forEach(nativeMeasure -> {
 			String aggregationKey;
+			String columnName;
 			if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
-				aggregationKey = SumAggregator.KEY;
+				aggregationKey = CountAggregator.KEY;
+				columnName = CountAggregator.ASTERISK;
 			} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
 				aggregationKey = MaxAggregator.KEY;
+				// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this information
+				columnName = "someTimestampColumn";
 			} else {
 				log.warn("Unsupported native measure: {}", nativeMeasure);
 				return;
 			}
 
 			Aggregator.AggregatorBuilder aggregatorBuilder =
-					Aggregator.builder().name(nativeMeasure.getName()).aggregationKey(aggregationKey);
+					Aggregator.builder().name(nativeMeasure.getName()).aggregationKey(aggregationKey).columnName(columnName);
 
 			transferProperties(nativeMeasure, aggregatorBuilder::tag);
 
