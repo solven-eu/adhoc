@@ -3,13 +3,13 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="description" content="Kumite Homepage" />
+    <meta name="description" content="Adhoc Homepage" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <base href="/" />
     <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.css" />
     <!-- https://icons.getbootstrap.com/ -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <title>Kumite Contests</title>
+    <title>Adhoc Queries</title>
 </head>
 <body>
 <!-- https://vuejs.org/guide/quick-start -->
@@ -32,7 +32,7 @@
     }
 </script>
 <div id="app">
-    <KumiteApp />
+    <AdhocApp />
 </div>
 
 <script type="module">
@@ -42,19 +42,12 @@
     // https://pinia.vuejs.org/getting-started.html
     import { createPinia } from "pinia";
 
-    import KumiteApp from "./ui/js/kumite-app.js";
+    import AdhocApp from "./ui/js/adhoc-app.js";
     import HelloView from "./ui/js/hello.js";
-    import KumiteAccount from "./ui/js/kumite-account.js";
-    import KumiteMe from "./ui/js/kumite-account-me.js";
-    import KumitePlayer from "./ui/js/kumite-player.js";
-    import KumiteGames from "./ui/js/kumite-games.js";
-    import KumiteGame from "./ui/js/kumite-game.js";
-    import KumiteContestForm from "./ui/js/kumite-contest-form.js";
-    import KumiteSearchContests from "./ui/js/kumite-search-contests.js";
-    import KumiteContest from "./ui/js/kumite-contest.js";
-    import KumiteBoardOverview from "./ui/js/kumite-board-overview.js";
-    import KumiteBoardPlay from "./ui/js/kumite-board-play.js";
-    import KumiteSearch from "./ui/js/kumite-search.js";
+    import AdhocAccount from "./ui/js/adhoc-account.js";
+    import AdhocMe from "./ui/js/adhoc-account-me.js";
+	import AdhocServers from "./ui/js/adhoc-servers.js";
+	import AdhocServer from "./ui/js/adhoc-server.js";
     import Login from "./ui/js/login.js";
     import LoginBasic from "./ui/js/login-basic.js";
     import AboutView from "./ui/js/about.js";
@@ -63,8 +56,32 @@
     // It includes `/ui`, `/api`
     const routes = [
         { path: "/", component: HelloView },
-        { path: "/server_info", component: AdhocServerInfo },
-        { path: "/query/:queryId", component: AdhocQuery },
+		{
+		    path: "/html/me",
+		    component: AdhocMe,
+		    props: true,
+		},
+		{
+		    path: "/html/accounts/:accountId",
+		    component: AdhocAccount,
+		    props: true,
+		},
+		{ path: "/html/servers", component: AdhocServers },
+		// https://router.vuejs.org/guide/essentials/passing-props
+		{
+		    path: "/html/servers/:serverId",
+		    component: AdhocServer,
+		    props: true,
+		},
+		{
+		    path: "/html/servers/:serverId/cubes",
+		    component: AdhocServer,
+		    // https://stackoverflow.com/questions/47869676/combine-parameters-from-url-with-props-object-in-vue-router-config
+		    props: (route) => ({
+		        serverId: route.params.serverId,
+		        showContests: true,
+		    }),
+		},
     ];
 
     const router = createRouter({
@@ -75,7 +92,7 @@
     const pinia = createPinia();
 
     // https://router.vuejs.org/guide/
-    createApp(KumiteApp)
+    createApp(AdhocApp)
         .use(router)
         // https://pinia.vuejs.org/getting-started.html
         .use(pinia)
@@ -84,7 +101,7 @@
 <!-- This demonstrate how we can inject properties into source files, to be rendered without any API/Javascript-->
 <!-- https://stackoverflow.com/questions/39099295/make-div-stick-to-bottom-of-page -->
 <div style="position: fixed; bottom: 0; width: 100%; text-align: right; z-index: -1">
-    <a href="https://github.com/solven-eu/kumite/commit/@git.commit.id.abbrev@" target="_blank">
+    <a href="https://github.com/solven-eu/adhoc/commit/@git.commit.id.abbrev@" target="_blank">
         <img src="./ui/img/github-mark.svg" alt="Github" width="32" height="32" />
     </a>
 </div>

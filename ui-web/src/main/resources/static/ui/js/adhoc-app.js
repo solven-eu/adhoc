@@ -1,31 +1,29 @@
 import { watch } from "vue";
 
 import { mapState } from "pinia";
-import { useKumiteStore } from "./store.js";
+import { useAdhocStore } from "./store.js";
 import { useUserStore } from "./store-user.js";
 
-import KumiteNavbar from "./kumite-navbar.js";
+import AdhocNavbar from "./adhoc-navbar.js";
 
 import LoginRef from "./login-ref.js";
 
-import KumiteAccountRef from "./kumite-account-ref.js";
-import KumitePlayerRef from "./kumite-player-ref.js";
+import AdhocAccountRef from "./adhoc-account-ref.js";
 
 import LoginModal from "./login-modal.js";
 
 export default {
 	components: {
-		KumiteNavbar,
+		AdhocNavbar,
 		LoginRef,
 		LoginModal,
-		KumiteAccountRef,
-		KumitePlayerRef,
+		AdhocAccountRef,
 	},
 	computed: {
-		...mapState(useUserStore, ["account", "tokens", "nbAccountFetching", "playingPlayerId"]),
+		...mapState(useUserStore, ["account", "tokens", "nbAccountFetching"]),
 	},
 	setup() {
-		const store = useKumiteStore();
+		const store = useAdhocStore();
 		const userStore = useUserStore();
 
 		// https://pinia.vuejs.org/core-concepts/state.html
@@ -35,7 +33,7 @@ export default {
 			userStore.$state,
 			(state) => {
 				// persist the whole state to the local storage whenever it changes
-				localStorage.setItem("kumiteState", JSON.stringify(state));
+				localStorage.setItem("adhocState", JSON.stringify(state));
 			},
 			{ deep: true },
 		);
@@ -57,7 +55,7 @@ export default {
 	},
 	template: /* HTML */ `
         <div class="container">
-            <KumiteNavbar />
+            <AdhocNavbar />
 
             <main>
                 <RouterView />
@@ -70,8 +68,7 @@ export default {
 
             <div v-else>
                 <ul>
-                    <li v-if="account.accountId"><KumiteAccountRef :accountId="account.accountId" /></li>
-                    <li v-if="!!playingPlayerId"><KumitePlayerRef :playerId="playingPlayerId" /></li>
+                    <li v-if="account.accountId"><AdhocAccountRef :accountId="account.accountId" /></li>
                 </ul>
             </div>
         </div>
