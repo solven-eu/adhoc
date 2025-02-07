@@ -28,6 +28,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.combination.DivideCombination;
+
 public class TestDivideCombination {
 	@Test
 	public void testSimpleCases_default() {

@@ -24,7 +24,7 @@ package eu.solven.adhoc.atoti;
 
 import java.util.Set;
 
-import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.measure.transformers.IMeasure;
 
 /**
  * This demonstrates how one can add custom elements to the {@link eu.solven.adhoc.dag.AdhocQueryStep}.

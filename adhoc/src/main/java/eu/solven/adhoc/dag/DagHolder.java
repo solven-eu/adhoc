@@ -38,8 +38,8 @@ public class DagHolder {
 	@NonNull
 	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;
 
-	// We keep a separate list of queried, as some queried may not be roots in the DAG (e.g. when the query requests
-	// both a measure and one of its underlying)
+	// We keep a separate list of queried steps, as some queried may not be roots in the DAG (e.g. when the query
+	// requests both a measure and one of its underlying)
 	@NonNull
 	Set<AdhocQueryStep> queried;
 }

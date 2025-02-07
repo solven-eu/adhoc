@@ -30,10 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocExecutingQueryContext;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformers.Combinator;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.transformers.Combinator;
 
 public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocTestConstants {
 

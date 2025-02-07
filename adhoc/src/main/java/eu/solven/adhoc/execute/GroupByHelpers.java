@@ -25,9 +25,9 @@ package eu.solven.adhoc.execute;
 import java.util.HashSet;
 import java.util.Set;
 
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
 import lombok.NonNull;
 
 public class GroupByHelpers {

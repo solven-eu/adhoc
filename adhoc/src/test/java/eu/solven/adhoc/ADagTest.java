@@ -26,11 +26,11 @@ import org.junit.jupiter.api.BeforeEach;
 
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.InMemoryTable;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.table.InMemoryTable;
 
 /**
  * Helps testing anything related with a {@link AdhocMeasureBag} or a {@link AdhocQueryEngine}

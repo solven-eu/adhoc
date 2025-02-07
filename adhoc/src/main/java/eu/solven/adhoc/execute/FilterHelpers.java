@@ -24,13 +24,13 @@ package eu.solven.adhoc.execute;
 
 import java.util.Map;
 
-import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 

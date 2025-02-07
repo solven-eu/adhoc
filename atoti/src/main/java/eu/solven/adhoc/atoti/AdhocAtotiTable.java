@@ -41,12 +41,12 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
-import eu.solven.adhoc.database.IAdhocTableWrapper;
-import eu.solven.adhoc.database.IRowsStream;
-import eu.solven.adhoc.database.SuppliedRowsStream;
-import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.database.transcoder.IdentityTranscoder;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.IRowsStream;
+import eu.solven.adhoc.table.SuppliedRowsStream;
+import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;

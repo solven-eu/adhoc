@@ -28,7 +28,7 @@ import java.util.NavigableMap;
 
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.coordinate.MapComparators;
+import eu.solven.adhoc.map.MapComparators;
 
 public class TestMapComparators {
 	@Test

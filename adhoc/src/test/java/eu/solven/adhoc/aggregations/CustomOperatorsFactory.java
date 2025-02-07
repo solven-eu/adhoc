@@ -24,6 +24,11 @@ package eu.solven.adhoc.aggregations;
 
 import java.util.Map;
 
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

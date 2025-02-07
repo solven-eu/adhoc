@@ -28,11 +28,11 @@ import java.util.List;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
-import eu.solven.adhoc.dag.DAGExplainer;
+import eu.solven.adhoc.dag.DagExplainer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 
 /**
- * Useful to test {@link DAGExplainer}
+ * Useful to test {@link DagExplainer}
  * 
  * @author Benoit Lacelle
  */

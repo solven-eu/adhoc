@@ -26,12 +26,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.transformers.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;

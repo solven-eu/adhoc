@@ -29,14 +29,14 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.beta.api.AdhocSchemaForApi;
+import eu.solven.adhoc.beta.api.QueryOnSchema;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.view.AdhocSchemaForApi;
-import eu.solven.adhoc.view.QueryOnSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;

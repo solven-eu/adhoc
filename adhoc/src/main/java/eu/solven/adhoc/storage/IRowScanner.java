@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.storage;
 
-import eu.solven.adhoc.view.ITabularView;
-
 /**
  * Used with a {@link ITabularView} to iterate over its rows.
  * 

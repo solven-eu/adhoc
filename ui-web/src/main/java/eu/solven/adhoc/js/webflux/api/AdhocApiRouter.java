@@ -33,7 +33,7 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.storage.ITabularView;
 import lombok.extern.slf4j.Slf4j;
 
 /**

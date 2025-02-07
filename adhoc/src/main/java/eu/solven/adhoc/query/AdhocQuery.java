@@ -29,6 +29,9 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -37,9 +40,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
-import eu.solven.adhoc.query.groupby.ReferencedColumn;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

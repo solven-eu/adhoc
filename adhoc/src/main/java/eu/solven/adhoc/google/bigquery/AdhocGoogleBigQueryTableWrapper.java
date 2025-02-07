@@ -42,7 +42,7 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**

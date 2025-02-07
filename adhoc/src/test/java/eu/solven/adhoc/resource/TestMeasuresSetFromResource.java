@@ -41,14 +41,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Combinator;
+import eu.solven.adhoc.measure.transformers.Filtrator;
+import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Combinator;
-import eu.solven.adhoc.transformers.Filtrator;
-import eu.solven.adhoc.transformers.IMeasure;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees
 //An `anonymous` measure is a measure which has no name. It leads to more compact but less re-usable trees.

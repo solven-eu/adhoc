@@ -32,12 +32,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.aggregations.sum.SumCombination;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Combinator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Combinator;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
 
 public class TestQueryOptions extends ADagTest {
 	@BeforeEach
@@ -64,7 +66,7 @@ public class TestQueryOptions extends ADagTest {
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.coordinatesToValues)
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						Map.of("k1", 0L + 123 + 345, "k2", 0L + 234 + 456, "sumK1K2", 0L + 123 + 234 + 345 + 456));

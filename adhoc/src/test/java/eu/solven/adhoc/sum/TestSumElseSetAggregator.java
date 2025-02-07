@@ -28,8 +28,8 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumElseSetAggregator;
 
 public class TestSumElseSetAggregator {
 	SumAggregator a = new SumElseSetAggregator();

@@ -26,7 +26,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 
 /**
  * An {@link IAdhocSlice} combined with an {@link AdhocQueryStep}. It is useful to provide more contact to
- * {@link eu.solven.adhoc.transformers.IMeasure}.
+ * {@link eu.solven.adhoc.measure.transformers.IMeasure}.
  */
 public interface IAdhocSliceWithStep extends IAdhocSlice {
 	AdhocQueryStep getQueryStep();

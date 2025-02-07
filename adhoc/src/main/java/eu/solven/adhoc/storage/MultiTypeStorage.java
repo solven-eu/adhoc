@@ -31,8 +31,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Streams;
 
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;

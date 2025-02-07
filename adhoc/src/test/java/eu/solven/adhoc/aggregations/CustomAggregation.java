@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.aggregations;
 
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+
 /**
  * A {@link IAggregation} which is not known by {@link StandardOperatorsFactory}
  */

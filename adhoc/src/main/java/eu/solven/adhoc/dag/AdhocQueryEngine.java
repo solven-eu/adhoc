@@ -46,16 +46,23 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
-import eu.solven.adhoc.aggregations.collection.UnionSetAggregator;
-import eu.solven.adhoc.database.IAdhocTableWrapper;
-import eu.solven.adhoc.database.IRowsStream;
+import eu.solven.adhoc.column.DefaultMissingColumnManager;
+import eu.solven.adhoc.column.IMissingColumnManager;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Columnator;
+import eu.solven.adhoc.measure.transformers.EmptyMeasure;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -64,19 +71,15 @@ import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
-import eu.solven.adhoc.storage.DefaultMissingColumnManager;
-import eu.solven.adhoc.storage.IMissingColumnManager;
 import eu.solven.adhoc.storage.IRowScanner;
+import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.storage.MultiTypeStorage;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Columnator;
-import eu.solven.adhoc.transformers.EmptyMeasure;
-import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
-import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
-import eu.solven.adhoc.transformers.IMeasure;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.IRowsStream;
+import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -121,11 +124,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		Map<String, Set<Aggregator>> inputColumnToAggregators =
 				columnToAggregators(queryWithContext, fromQueriedToAggregates);
 
-		Map<AdhocQueryStep, ISliceToValues> queryStepToValues = new LinkedHashMap<>();
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
 		dbQueryToStream.forEach((dbQuery, stream) -> {
-			Map<AdhocQueryStep, CoordinatesToValues> oneQueryStepToValues =
+			Map<AdhocQueryStep, SliceToValue> oneQueryStepToValues =
 					aggregateStreamToAggregates(dbQuery, stream, inputColumnToAggregators);
 
 			queryStepToValues.putAll(oneQueryStepToValues);
@@ -187,7 +190,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected ITabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
 			DagHolder fromQueriedToAggregates,
-			Map<AdhocQueryStep, ISliceToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
 			return MapBasedTabularView.empty();
 		}
@@ -204,7 +207,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
 			stepsToReturn = fromQueriedToAggregates.getQueried().iterator();
 			expectedOutputCardinality =
-					queryStepToValues.values().stream().mapToLong(ISliceToValues::size).max().getAsLong();
+					queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
 		}
 
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
@@ -213,7 +216,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.build();
 
 		stepsToReturn.forEachRemaining(step -> {
-			ISliceToValues coordinatesToValues = queryStepToValues.get(step);
+			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
@@ -227,7 +230,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> aggregateStreamToAggregates(TableQuery dbQuery,
+	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(TableQuery dbQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -237,9 +240,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return toImmutableChunks(dbQuery, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, CoordinatesToValues> toImmutableChunks(TableQuery dbQuery,
+	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery dbQuery,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
-		Map<AdhocQueryStep, CoordinatesToValues> queryStepToValues = new HashMap<>();
+		Map<AdhocQueryStep, SliceToValue> queryStepToValues = new HashMap<>();
 		dbQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
 
@@ -259,14 +262,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to
 			// spare a copy to an immutable container
-			queryStepToValues.put(queryStep, CoordinatesToValues.builder().storage(storage).build());
+			queryStepToValues.put(queryStep, SliceToValue.builder().storage(storage).build());
 		});
 		return queryStepToValues;
 	}
 
 	protected void walkDagUpToQueriedMeasures(AdhocExecutingQueryContext queryWithContext,
 			DagHolder fromQueriedToAggregates,
-			Map<AdhocQueryStep, ISliceToValues> queryStepToValues) {
+			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried =
 				new EdgeReversedGraph<>(fromQueriedToAggregates.getDag());
@@ -299,8 +302,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// This may happen on a Columnator which is missing a required column
 				return;
 			} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				List<ISliceToValues> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-					ISliceToValues values = queryStepToValues.get(underlyingStep);
+				List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
+					ISliceToValue values = queryStepToValues.get(underlyingStep);
 
 					if (values == null) {
 						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
@@ -312,7 +315,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// BEWARE It looks weird we have to call again `.wrapNode`
 				IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
 						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
-				ISliceToValues coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+				ISliceToValue coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
 
 				eventBus.post(QueryStepIsCompleted.builder()
 						.querystep(queryStep)
@@ -549,8 +552,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		makeDagExplainer().explain(dag);
 	}
 
-	protected DAGExplainer makeDagExplainer() {
-		return DAGExplainer.builder().eventBus(eventBus).build();
+	protected DagExplainer makeDagExplainer() {
+		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
 	protected DagHolder makeQueryStepsDag(AdhocExecutingQueryContext queryWithContext) {

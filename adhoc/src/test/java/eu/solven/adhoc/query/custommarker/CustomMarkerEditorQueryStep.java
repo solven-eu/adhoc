@@ -26,15 +26,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ISliceToValues;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
+import eu.solven.adhoc.measure.transformers.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
-import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
-import eu.solven.adhoc.transformers.UnderlyingQueryStepHelpers;
+import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.SliceToValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,16 +59,16 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
+	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyingNames.size() != 1");
 		}
 
-		ISliceToValues output = makeCoordinateToValues();
+		ISliceToValue output = makeCoordinateToValues();
 
 		boolean debug = customMarkerEditor.isDebug() || step.isDebug();
 
-		ISliceToValues singleUnderlying = underlyings.getFirst();
+		ISliceToValue singleUnderlying = underlyings.getFirst();
 
 		for (IAdhocSlice rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
 				underlyings)) {
@@ -79,7 +79,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 		return output;
 	}
 
-	protected void onSlice(ISliceToValues underlying, IAdhocSliceWithStep slice, boolean debug, ISliceToValues output) {
+	protected void onSlice(ISliceToValue underlying, IAdhocSliceWithStep slice, boolean debug, ISliceToValue output) {
 		AtomicReference<Object> refV = new AtomicReference<>();
 		AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
@@ -94,7 +94,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected ISliceToValues makeCoordinateToValues() {
-		return CoordinatesToValues.builder().build();
+	protected ISliceToValue makeCoordinateToValues() {
+		return SliceToValue.builder().build();
 	}
 }

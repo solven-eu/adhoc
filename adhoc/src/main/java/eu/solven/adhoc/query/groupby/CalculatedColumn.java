@@ -22,7 +22,8 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
 import lombok.Value;
 

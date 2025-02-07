@@ -30,12 +30,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Dispatchor;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Dispatchor;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
 
 public class TestAggregations_Dispatchor extends ADagTest {
 	@Override

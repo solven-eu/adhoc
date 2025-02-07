@@ -28,7 +28,7 @@ import org.jooq.impl.DSL;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
-import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

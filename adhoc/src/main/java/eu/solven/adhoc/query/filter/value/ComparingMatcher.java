@@ -24,7 +24,7 @@ package eu.solven.adhoc.query.filter.value;
 
 import org.springframework.util.comparator.Comparators;
 
-import eu.solven.adhoc.coordinate.ComparableElseClassComparatorV2;
+import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;

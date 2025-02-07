@@ -48,10 +48,10 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.storage.ITabularView;
 
 /**
  * Table based on a MongoDB collection.

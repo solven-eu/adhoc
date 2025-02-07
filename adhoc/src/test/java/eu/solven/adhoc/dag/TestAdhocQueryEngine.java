@@ -30,9 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.transformers.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocQueryEngine {
 	AdhocMeasureBag amg = AdhocMeasureBag.builder().build();

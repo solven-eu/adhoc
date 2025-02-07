@@ -1,0 +1,130 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.measure.sum;
+
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
+ */
+// https://learn.microsoft.com/en-us/dax/sum-function-dax
+@Slf4j
+public class SumAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
+
+	public static final String KEY = "SUM";
+
+	@Override
+	public Object aggregate(Object l, Object r) {
+		if (l == null) {
+			return onlyOne(r);
+		} else if (r == null) {
+			return onlyOne(l);
+		} else if (isLongLike(l) && isLongLike(r)) {
+			return aggregateLongs(asLong(l), asLong(r));
+		} else if (isDoubleLike(l) && isDoubleLike(r)) {
+			return aggregateDoubles(asDouble(l), asDouble(r));
+		} else {
+			return aggregateObjects(l, r);
+		}
+	}
+
+	protected Object onlyOne(Object r) {
+		if (r == null) {
+			return null;
+		} else if (isDoubleLike(r)) {
+			return r;
+		} else if (r instanceof Collection<?> asCollection) {
+			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+		} else {
+			// Wrap into a Set, so this aggregate function return either a long/double, or a String
+			return r.toString();
+		}
+	}
+
+	protected Object aggregateObjects(Object l, Object r) {
+		// Fallback by concatenating Strings
+		String concatenated = l.toString() + r.toString();
+
+		if (concatenated.length() >= 16 * 1024) {
+			// If this were a real use-case, we should probably rely on a dedicated optimized IAggregation
+			throw new IllegalStateException("Aggregation led to a too-large (length=%s) String: %s"
+					.formatted(concatenated.length(), concatenated));
+		} else if (concatenated.length() >= 1024) {
+			log.warn("Aggregation led to a large String: {}", concatenated);
+		}
+
+		return concatenated;
+	}
+
+	@Override
+	public double aggregateDoubles(double left, double right) {
+		return left + right;
+	}
+
+	@Override
+	public long aggregateLongs(long left, long right) {
+		return left + right;
+	}
+
+	public static boolean isLongLike(Object o) {
+		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
+			return true;
+		} else if (o instanceof BigDecimal bigDecimal) {
+			try {
+				long asLong = bigDecimal.longValueExact();
+				log.trace("This is a long: {}", bigDecimal);
+				return true;
+			} catch (ArithmeticException e) {
+				log.trace("This is not a long: {}", bigDecimal, e);
+			}
+			return false;
+		} else {
+			return false;
+		}
+	}
+
+	public static long asLong(Object o) {
+		return ((Number) o).longValue();
+	}
+
+	/**
+	 *
+	 * @param o
+	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
+	 */
+	public static boolean isDoubleLike(Object o) {
+		return Number.class.isInstance(o);
+	}
+
+	public static double asDouble(Object o) {
+		return ((Number) o).doubleValue();
+	}
+}

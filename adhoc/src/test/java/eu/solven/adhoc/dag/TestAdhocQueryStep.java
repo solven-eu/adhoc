@@ -27,9 +27,9 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.transformers.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.transformers.Aggregator;
 
 public class TestAdhocQueryStep {
 	@Test

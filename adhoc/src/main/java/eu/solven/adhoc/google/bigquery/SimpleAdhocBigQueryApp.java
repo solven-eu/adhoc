@@ -38,8 +38,8 @@ import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
-import eu.solven.adhoc.database.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.DSLSupplier;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

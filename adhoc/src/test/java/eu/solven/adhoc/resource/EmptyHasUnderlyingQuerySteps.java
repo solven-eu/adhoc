@@ -25,9 +25,9 @@ package eu.solven.adhoc.resource;
 import java.util.List;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ISliceToValues;
-import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.SliceToValue;
 
 /**
  * Useful for unitTests
@@ -39,7 +39,7 @@ public class EmptyHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
-		return CoordinatesToValues.empty();
+	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+		return SliceToValue.empty();
 	}
 }

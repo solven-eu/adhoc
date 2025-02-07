@@ -24,10 +24,11 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.view.ITabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
  * Holds the logic to execute a query, which means turning a {@link IAdhocQuery} into a {@link ITabularView}.

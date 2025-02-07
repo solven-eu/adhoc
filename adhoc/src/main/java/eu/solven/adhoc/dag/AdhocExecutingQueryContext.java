@@ -26,12 +26,13 @@ import java.util.Set;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.transformers.EmptyMeasure;
+import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.transformers.EmptyMeasure;
-import eu.solven.adhoc.transformers.IMeasure;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

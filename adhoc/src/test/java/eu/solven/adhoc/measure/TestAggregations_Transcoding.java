@@ -31,16 +31,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.aggregations.sum.SumCombination;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.database.InMemoryTable;
-import eu.solven.adhoc.database.transcoder.PrefixTranscoder;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Combinator;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Combinator;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
+import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestAggregations_Transcoding extends ADagTest {
 	public final InMemoryTable rows =

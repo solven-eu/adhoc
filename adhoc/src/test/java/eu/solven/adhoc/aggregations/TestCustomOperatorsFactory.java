@@ -25,7 +25,8 @@ package eu.solven.adhoc.aggregations;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregator;
 
 public class TestCustomOperatorsFactory {
 	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();

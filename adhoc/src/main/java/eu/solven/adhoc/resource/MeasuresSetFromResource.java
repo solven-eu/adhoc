@@ -46,21 +46,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
-import eu.solven.adhoc.dag.IAdhocMeasureBag;
+import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Bucketor;
+import eu.solven.adhoc.measure.transformers.Combinator;
+import eu.solven.adhoc.measure.transformers.Dispatchor;
+import eu.solven.adhoc.measure.transformers.Filtrator;
+import eu.solven.adhoc.measure.transformers.IHasCombinationKey;
+import eu.solven.adhoc.measure.transformers.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.groupby.ReferencedColumn;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Bucketor;
-import eu.solven.adhoc.transformers.Combinator;
-import eu.solven.adhoc.transformers.Dispatchor;
-import eu.solven.adhoc.transformers.Filtrator;
-import eu.solven.adhoc.transformers.IHasCombinationKey;
-import eu.solven.adhoc.transformers.IMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathPut;
@@ -76,9 +76,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MeasuresSetFromResource {
-
-	private static final String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
-
 	public static final String KEY_TYPE = "type";
 
 	private static final List<String> sortedKeys = List.of("name",

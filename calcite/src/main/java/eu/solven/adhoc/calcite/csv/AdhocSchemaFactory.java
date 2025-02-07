@@ -31,10 +31,10 @@ import org.apache.calcite.schema.SchemaPlus;
 
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.database.IAdhocTableWrapper;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**

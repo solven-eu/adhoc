@@ -26,18 +26,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.aggregations.max.MaxAggregator;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.database.CompositeCubesTableWrapper;
-import eu.solven.adhoc.database.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.database.sql.AdhocJooqTableWrapperParameters;
-import eu.solven.adhoc.database.sql.DSLSupplier;
-import eu.solven.adhoc.database.sql.DuckDbHelper;
-import eu.solven.adhoc.transformers.Aggregator;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.table.CompositeCubesTableWrapper;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.DuckDbHelper;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 

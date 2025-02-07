@@ -28,9 +28,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.transformers.Bucketor;
+import eu.solven.adhoc.measure.transformers.Combinator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.transformers.Bucketor;
-import eu.solven.adhoc.transformers.Combinator;
 
 public class TestCombinator {
 	@Test

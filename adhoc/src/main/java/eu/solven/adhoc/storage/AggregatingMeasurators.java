@@ -25,9 +25,9 @@ package eu.solven.adhoc.storage;
 import java.util.HashMap;
 import java.util.Map;
 
-import eu.solven.adhoc.aggregations.IAggregation;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.transformers.Aggregator;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.transformers.Aggregator;
 import lombok.Value;
 
 /**

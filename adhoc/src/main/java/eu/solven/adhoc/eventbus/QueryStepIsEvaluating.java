@@ -23,14 +23,14 @@
 package eu.solven.adhoc.eventbus;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.CoordinatesToValues;
+import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * We start evaluating a queryStep, given underlying measures {@link CoordinatesToValues}. Once done, we'll have
- * computed a {@link CoordinatesToValues} for current {@link AdhocQueryStep}.
+ * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have
+ * computed a {@link SliceToValue} for current {@link AdhocQueryStep}.
  * 
  * @author Benoit Lacelle
  *

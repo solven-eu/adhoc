@@ -40,19 +40,19 @@ import com.google.common.collect.Range;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.aggregations.IDecomposition;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
-import eu.solven.adhoc.aggregations.many_to_many.IManyToMany1DDefinition;
-import eu.solven.adhoc.aggregations.many_to_many.ManyToMany1DDecomposition;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
+import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
+import eu.solven.adhoc.measure.transformers.Dispatchor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.transformers.Dispatchor;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
 import lombok.NonNull;
 
 /**

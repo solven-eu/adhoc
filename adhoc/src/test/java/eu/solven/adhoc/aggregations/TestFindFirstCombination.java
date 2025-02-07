@@ -27,7 +27,7 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.optional.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
 
 public class TestFindFirstCombination {
 	FindFirstCombination combination = new FindFirstCombination();

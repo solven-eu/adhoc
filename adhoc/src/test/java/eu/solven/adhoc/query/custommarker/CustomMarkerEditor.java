@@ -29,11 +29,11 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.transformers.IHasUnderlyingMeasures;
-import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
-import eu.solven.adhoc.transformers.IMeasure;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.transformers.IMeasure;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

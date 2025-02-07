@@ -29,12 +29,12 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.aggregations.sum.SumCombination;
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformers.ICombinator;
+import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.transformers.ICombinator;
-import eu.solven.adhoc.transformers.IHasUnderlyingQuerySteps;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -68,14 +68,14 @@ public class RatioByCombinator implements ICombinator {
 	IAdhocFilter denominatorFilter = IAdhocFilter.MATCH_ALL;
 
 	/**
-	 * @see eu.solven.adhoc.aggregations.ICombination
+	 * @see eu.solven.adhoc.measure.combination.ICombination
 	 */
 	@NonNull
 	@Builder.Default
 	String combinationKey = SumCombination.KEY;
 
 	/**
-	 * @see eu.solven.adhoc.aggregations.ICombination
+	 * @see eu.solven.adhoc.measure.combination.ICombination
 	 */
 	@NonNull
 	@Builder.Default

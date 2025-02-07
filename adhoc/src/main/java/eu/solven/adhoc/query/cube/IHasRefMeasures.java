@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.transformers.ReferencedMeasure;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 
 /**
  * A {@link List} of {@link IMeasuredAxis}. Typically used by {@link IAdhocQuery}.

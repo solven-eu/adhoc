@@ -28,9 +28,9 @@ import java.util.Optional;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
-import eu.solven.adhoc.aggregations.ICombination;
-import eu.solven.adhoc.aggregations.sum.ProductAggregator;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.sum.ProductAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;

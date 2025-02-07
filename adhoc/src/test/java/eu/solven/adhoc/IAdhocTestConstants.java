@@ -26,17 +26,17 @@ import java.util.Arrays;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.aggregations.ExpressionCombination;
-import eu.solven.adhoc.aggregations.max.MaxCombination;
-import eu.solven.adhoc.aggregations.sum.CountAggregator;
-import eu.solven.adhoc.aggregations.sum.SumAggregator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.sum.CountAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.transformers.Bucketor;
+import eu.solven.adhoc.measure.transformers.Combinator;
+import eu.solven.adhoc.measure.transformers.Dispatchor;
+import eu.solven.adhoc.measure.transformers.Filtrator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.transformers.Aggregator;
-import eu.solven.adhoc.transformers.Bucketor;
-import eu.solven.adhoc.transformers.Combinator;
-import eu.solven.adhoc.transformers.Dispatchor;
-import eu.solven.adhoc.transformers.Filtrator;
 
 public interface IAdhocTestConstants {
 	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();

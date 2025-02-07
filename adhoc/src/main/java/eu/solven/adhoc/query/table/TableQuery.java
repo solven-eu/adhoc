@@ -26,12 +26,12 @@ import java.util.Set;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.transformers.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
-import eu.solven.adhoc.transformers.Aggregator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -42,7 +42,7 @@ import lombok.Value;
  * A Database query is dedicated to querying external database.
  * 
  * @author Benoit Lacelle
- * @see eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder
+ * @see eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder
  */
 @Value
 @AllArgsConstructor

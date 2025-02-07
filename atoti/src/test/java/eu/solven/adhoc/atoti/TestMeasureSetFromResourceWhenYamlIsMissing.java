@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.ClassUtils;
 
-import eu.solven.adhoc.dag.AdhocBagOfMeasureBag;
+import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
 
 public class TestMeasureSetFromResourceWhenYamlIsMissing {

@@ -37,18 +37,18 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.aggregations.ICombination;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
-import eu.solven.adhoc.aggregations.StandardOperatorsFactory;
-import eu.solven.adhoc.aggregations.sum.SumElseSetAggregator;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.measure.sum.SumElseSetAggregator;
+import eu.solven.adhoc.measure.transformers.Bucketor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.transformers.Bucketor;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
 import lombok.NonNull;
 
 /**

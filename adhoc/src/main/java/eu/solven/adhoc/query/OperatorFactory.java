@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.aggregations.IStandardOperators;
+import eu.solven.adhoc.measure.IStandardOperators;
 
 public class OperatorFactory implements
 		// IOperatorFactory,

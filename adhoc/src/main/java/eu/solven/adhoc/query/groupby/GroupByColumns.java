@@ -33,6 +33,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import lombok.Builder;
 import lombok.Builder.Default;

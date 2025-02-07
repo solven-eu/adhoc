@@ -27,18 +27,18 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.aggregations.ICombination;
-import eu.solven.adhoc.aggregations.IOperatorsFactory;
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.CoordinatesToValues;
-import eu.solven.adhoc.dag.ISliceAndValueConsumer;
-import eu.solven.adhoc.dag.ISliceToValues;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.transformers.AHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.AsObjectValueConsumer;
-import eu.solven.adhoc.transformers.AHasUnderlyingQuerySteps;
-import eu.solven.adhoc.transformers.IMeasure;
-import eu.solven.adhoc.transformers.ReferencedMeasure;
+import eu.solven.adhoc.storage.ISliceAndValueConsumer;
+import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,12 +80,12 @@ public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	public ISliceToValues produceOutputColumn(List<? extends ISliceToValues> underlyings) {
+	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() != 2) {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
-		ISliceToValues output = makeCoordinateToValues();
+		ISliceToValue output = makeCoordinateToValues();
 
 		ICombination transformation = transformationFactory.makeCombination(combinator);
 
@@ -95,7 +95,7 @@ public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
 	}
 
 	@Override
-	protected void onSlice(List<? extends ISliceToValues> underlyings,
+	protected void onSlice(List<? extends ISliceToValue> underlyings,
 			IAdhocSliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
@@ -117,8 +117,8 @@ public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
 		output.put(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected ISliceToValues makeCoordinateToValues() {
-		return CoordinatesToValues.builder().build();
+	protected ISliceToValue makeCoordinateToValues() {
+		return SliceToValue.builder().build();
 	}
 
 }

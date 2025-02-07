@@ -24,7 +24,7 @@ package eu.solven.adhoc.query.top;
 
 import java.util.List;
 
-import eu.solven.adhoc.query.groupby.IAdhocColumn;
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.table.TableQuery;
 import lombok.Builder;
 import lombok.Builder.Default;

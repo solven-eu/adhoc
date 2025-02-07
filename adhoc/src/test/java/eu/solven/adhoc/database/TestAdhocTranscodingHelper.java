@@ -27,10 +27,10 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.database.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.database.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.database.transcoder.MapTableTranscoder;
-import eu.solven.adhoc.database.transcoder.TranscodingContext;
+import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
+import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
 public class TestAdhocTranscodingHelper {
 	@Test

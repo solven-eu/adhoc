@@ -25,7 +25,7 @@ package eu.solven.adhoc.sum;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.aggregations.sum.SumNotNaNAggregator;
+import eu.solven.adhoc.measure.sum.SumNotNaNAggregator;
 
 public class TestSumNotNaNAggregator {
 	SumNotNaNAggregator a = new SumNotNaNAggregator();

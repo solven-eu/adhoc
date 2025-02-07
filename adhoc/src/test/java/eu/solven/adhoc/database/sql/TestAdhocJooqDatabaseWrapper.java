@@ -35,13 +35,17 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocMeasureBag;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.view.ITabularView;
-import eu.solven.adhoc.view.MapBasedTabularView;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.MapBasedTabularView;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.DuckDbHelper;
 
 public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
 	static {

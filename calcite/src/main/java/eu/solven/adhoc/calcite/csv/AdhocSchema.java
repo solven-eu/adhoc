@@ -28,7 +28,7 @@ import java.util.Map;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import eu.solven.adhoc.dag.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
