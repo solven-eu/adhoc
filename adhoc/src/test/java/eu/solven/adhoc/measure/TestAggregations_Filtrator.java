@@ -31,11 +31,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.Combinator;
-import eu.solven.adhoc.measure.transformers.Filtrator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;

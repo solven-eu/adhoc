@@ -26,7 +26,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;

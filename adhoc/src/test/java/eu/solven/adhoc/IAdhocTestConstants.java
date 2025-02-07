@@ -28,13 +28,13 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.step.Bucketor;
+import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.step.Dispatchor;
+import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.sum.CountAggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.Bucketor;
-import eu.solven.adhoc.measure.transformers.Combinator;
-import eu.solven.adhoc.measure.transformers.Dispatchor;
-import eu.solven.adhoc.measure.transformers.Filtrator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 

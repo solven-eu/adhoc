@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;

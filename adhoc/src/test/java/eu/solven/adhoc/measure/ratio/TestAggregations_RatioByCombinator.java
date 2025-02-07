@@ -32,10 +32,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.measure.IMeasure;
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.IMeasure;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;

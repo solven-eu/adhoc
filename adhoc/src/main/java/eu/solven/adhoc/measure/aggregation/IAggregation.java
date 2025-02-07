@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 
-import eu.solven.adhoc.measure.transformers.Combinator;
+import eu.solven.adhoc.measure.step.Combinator;
 
 /**
  * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.

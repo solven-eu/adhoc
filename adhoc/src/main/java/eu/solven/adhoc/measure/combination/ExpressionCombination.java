@@ -31,7 +31,7 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
-import eu.solven.adhoc.measure.transformers.IHasCombinationKey;
+import eu.solven.adhoc.measure.step.IHasCombinationKey;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

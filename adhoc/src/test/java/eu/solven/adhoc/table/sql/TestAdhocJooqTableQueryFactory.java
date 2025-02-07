@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;

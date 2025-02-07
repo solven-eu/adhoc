@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
+import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.step.Bucketor;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.Bucketor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.storage.ITabularView;

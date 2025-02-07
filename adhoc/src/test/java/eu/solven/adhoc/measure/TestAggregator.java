@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.measure.transformers.Aggregator;
 
 public class TestAggregator {
 	@Test

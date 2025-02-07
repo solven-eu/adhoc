@@ -43,11 +43,11 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.Combinator;
-import eu.solven.adhoc.measure.transformers.Filtrator;
-import eu.solven.adhoc.measure.transformers.IMeasure;
-import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
+import eu.solven.adhoc.measure.IMeasure;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees

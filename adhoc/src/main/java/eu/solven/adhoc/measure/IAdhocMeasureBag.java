@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.transformers.IMeasure;
-import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IHasName;
 

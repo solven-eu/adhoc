@@ -37,13 +37,13 @@ import org.junit.jupiter.api.Test;
 import com.google.cloud.bigquery.BigQueryOptions;
 
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.google.bigquery.AdhocBigQueryTableWrapperParameters;
-import eu.solven.adhoc.google.bigquery.AdhocGoogleBigQueryTableWrapper;
-import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
+import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapperParameters;
+import eu.solven.adhoc.table.google.bigquery.AdhocGoogleBigQueryTableWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

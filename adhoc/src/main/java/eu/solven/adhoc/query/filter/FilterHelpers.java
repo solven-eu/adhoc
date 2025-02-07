@@ -29,23 +29,37 @@ import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Utility method to help doing operations on {@link IAdhocFilter}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class FilterHelpers {
 
+	/**
+	 * 
+	 * @param filter
+	 * @param input
+	 * @return true if the input matches the filter
+	 */
 	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
 		return match(new IdentityTranscoder(), filter, input);
 	}
 
+	/**
+	 * 
+	 * @param transcoder
+	 * @param filter
+	 * @param input
+	 * @return true if the input matches the filter, where each column in input is transcoded.
+	 */
 	public static boolean match(IAdhocTableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
-		if (filter.isAnd()) {
-			IAndFilter andFilter = (IAndFilter) filter;
-			return andFilter.getOperands().stream().allMatch(f -> match(f, input));
-		} else if (filter.isOr()) {
-			IOrFilter orFilter = (IOrFilter) filter;
-			return orFilter.getOperands().stream().anyMatch(f -> match(f, input));
-		} else if (filter.isColumnFilter()) {
-			IColumnFilter columnFilter = (IColumnFilter) filter;
-
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			String underlyingColumn = transcoder.underlying(columnFilter.getColumn());
 			Object value = input.get(underlyingColumn);
 
@@ -64,9 +78,8 @@ public class FilterHelpers {
 			}
 
 			return columnFilter.getValueMatcher().match(value);
-		} else if (filter.isNot()) {
-			INotFilter notFilter = (INotFilter) filter;
-			return !match(notFilter.getNegated(), input);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return !match(transcoder, notFilter.getNegated(), input);
 		} else {
 			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
 		}

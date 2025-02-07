@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.decomposition.many2many.IManyToManyNDDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDInMemoryDefinition;
-import eu.solven.adhoc.measure.transformers.Dispatchor;
+import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;

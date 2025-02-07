@@ -48,10 +48,10 @@ import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.transformers.Aggregator;
-import eu.solven.adhoc.measure.transformers.Bucketor;
-import eu.solven.adhoc.measure.transformers.Combinator;
-import eu.solven.adhoc.measure.transformers.Filtrator;
+import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.step.Bucketor;
+import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;

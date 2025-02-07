@@ -29,10 +29,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.transformers.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
-import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
 
 /**
  * Used to check the behavior of {@link MeasuresSetFromResource} on a project custom {@link IMeasure}

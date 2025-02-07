@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
-import eu.solven.adhoc.measure.transformers.Dispatchor;
+import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;

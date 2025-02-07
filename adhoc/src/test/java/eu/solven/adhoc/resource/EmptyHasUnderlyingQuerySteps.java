@@ -25,7 +25,7 @@ package eu.solven.adhoc.resource;
 import java.util.List;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.transformers.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
 

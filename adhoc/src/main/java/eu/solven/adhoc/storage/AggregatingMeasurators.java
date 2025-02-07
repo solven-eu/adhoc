@@ -27,7 +27,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.transformers.Aggregator;
+import eu.solven.adhoc.measure.step.Aggregator;
 import lombok.Value;
 
 /**

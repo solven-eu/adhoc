@@ -34,7 +34,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
-import eu.solven.adhoc.measure.transformers.IMeasure;
+import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;

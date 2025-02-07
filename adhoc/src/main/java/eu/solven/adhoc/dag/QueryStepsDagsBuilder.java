@@ -29,8 +29,8 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.measure.transformers.IMeasure;
-import eu.solven.adhoc.measure.transformers.ReferencedMeasure;
+import eu.solven.adhoc.measure.IMeasure;
+import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 
 public class QueryStepsDagsBuilder {
