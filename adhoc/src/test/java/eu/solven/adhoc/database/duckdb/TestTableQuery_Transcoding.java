@@ -211,7 +211,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k1", 123), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of(), Map.of("k1", 0L + 123));
 		}
 	}
 
@@ -220,17 +220,28 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 	@Test
 	public void testAdhocQuery_aliasWithNameAlreadyInTable() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k")
-				.queriedToUnderlying("k2", "k").build();
+		IAdhocTableTranscoder transcoder =
+				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
 		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
 		DSLContext dsl = jooqDb.makeDsl();
 
-		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).column("k1", SQLDataType.DOUBLE).column("k2", SQLDataType.DOUBLE).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k"), DSL.field("k1"), DSL.field("k2")).values(123, 234, 345).execute();
+		dsl.createTableIfNotExists(tableName)
+				.column("k", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.DOUBLE)
+				.column("k2", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k"), DSL.field("k1"), DSL.field("k2"))
+				.values(123, 234, 345)
+				.execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k2").debug(true).build();
+			AdhocQuery query = AdhocQuery.builder()
+					.measure(k1Sum.getName())
+					.andFilter("k1", 123)
+					.groupByAlso("k2")
+					.debug(true)
+					.build();
 
 			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 			measureBag.addMeasure(k1Sum);
@@ -257,7 +268,12 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k1").debug(true).build();
+			AdhocQuery query = AdhocQuery.builder()
+					.measure(k1Sum.getName())
+					.andFilter("k1", 123)
+					.groupByAlso("k1")
+					.debug(true)
+					.build();
 
 			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 			measureBag.addMeasure(k1Sum);

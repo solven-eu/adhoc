@@ -47,7 +47,7 @@ import eu.solven.adhoc.query.top.AdhocTopClause;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestDatabaseGoogleBigQuery {
+public class TestTableGoogleBigQuery {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4

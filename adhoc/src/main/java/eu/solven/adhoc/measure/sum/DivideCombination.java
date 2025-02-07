@@ -20,11 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
+package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
 import java.util.Map;
 
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**

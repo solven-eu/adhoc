@@ -47,7 +47,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
-public class TestAdhocJooqDatabaseWrapper implements IAdhocTestConstants {
+public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");

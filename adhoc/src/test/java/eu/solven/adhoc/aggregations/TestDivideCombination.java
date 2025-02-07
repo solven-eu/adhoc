@@ -28,7 +28,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.combination.DivideCombination;
+import eu.solven.adhoc.measure.sum.DivideCombination;
 
 public class TestDivideCombination {
 	@Test

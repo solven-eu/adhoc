@@ -20,14 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.execute;
+package eu.solven.adhoc.query.groupby;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.NonNull;
 
 public class GroupByHelpers {

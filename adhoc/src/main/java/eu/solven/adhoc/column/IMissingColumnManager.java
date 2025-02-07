@@ -23,11 +23,34 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.table.CompositeCubesTableWrapper;
 
+/**
+ * On edge-cases (e.g. a failed JOIN), we would encounter NULL. This interface centralizes the behaviors on such cases.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IMissingColumnManager {
 
+	/**
+	 * Typically called on {@link CompositeCubesTableWrapper}, when a {@link IAdhocCubeWrapper} is missing a column
+	 * requested by the query.
+	 * 
+	 * @param cube
+	 * @param column
+	 * @return
+	 */
 	Object onMissingColumn(IAdhocCubeWrapper cube, String column);
 
+	/**
+	 * Typically called by {@link IAdhocQueryEngine}, when received a row from table missing some column (e.g. failed
+	 * JOIN).
+	 * 
+	 * @param column
+	 * @return
+	 */
+	// BEWARE This should probably be contextual to the IAdhocTableWrapper
 	Object onMissingColumn(String column);
 
 }

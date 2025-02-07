@@ -169,7 +169,17 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return selectedFields;
 	}
 
+	/**
+	 * Most usages are not groupBy.
+	 * 
+	 * @param column
+	 * @return a {@link Field} mapping to given column.
+	 */
 	protected Field<Object> columnAsField(IAdhocColumn column) {
+		return columnAsField(column, false);
+	}
+
+	protected Field<Object> columnAsField(IAdhocColumn column, boolean isGroupBy) {
 		String columnName = column.getColumn();
 		String transcodedName = transcoder.underlying(columnName);
 		Field<Object> field;
@@ -182,7 +192,10 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		} else {
 			Field<Object> unaliasedField = DSL.field(name(transcodedName));
 
-			if (transcodedName.equals(columnName)) {
+			if (isGroupBy || transcodedName.equals(columnName)) {
+				// GroupBy: refer to the underlying column, to prevent ambiguities
+				// https://github.com/duckdb/duckdb/issues/16097
+				// https://github.com/jOOQ/jOOQ/issues/17980
 				field = unaliasedField;
 			} else {
 				field = unaliasedField.as(name(columnName));
@@ -211,7 +224,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		Collection<Field<Object>> groupedFields = new ArrayList<>();
 
 		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			Field<Object> field = columnAsField(column);
+			Field<Object> field = columnAsField(column, true);
 			groupedFields.add(field);
 		});
 

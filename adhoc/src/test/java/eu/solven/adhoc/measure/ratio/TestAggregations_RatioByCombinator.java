@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.combination.DivideCombination;
+import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.measure.transformers.Aggregator;
 import eu.solven.adhoc.measure.transformers.IMeasure;

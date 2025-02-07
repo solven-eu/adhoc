@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.transformers.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.combination.DivideCombination;
+import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.transformers.Bucketor;
 import eu.solven.adhoc.measure.transformers.Columnator;
 import eu.solven.adhoc.measure.transformers.Combinator;

@@ -20,15 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.execute;
+package eu.solven.adhoc.query.filter;
 
 import java.util.Map;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;

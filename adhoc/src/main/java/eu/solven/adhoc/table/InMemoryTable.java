@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.execute.FilterHelpers;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
