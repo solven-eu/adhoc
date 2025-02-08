@@ -132,7 +132,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 m=d_country=FR_ratio(Combinator) filter=color=blue groupBy=grandTotal
 				|\\- #1 m=d_country=FR_slice(Filtrator) filter=color=blue groupBy=grandTotal
-				|   \\-- #2 m=d(Aggregator) filter=AndFilter{size=2, #0=color=blue, #1=country=FR} groupBy=grandTotal
+				|   \\-- #2 m=d(Aggregator) filter=color=blue&country=FR groupBy=grandTotal
 				\\-- #3 m=d_country=FR_whole(Unfiltrator) filter=color=blue groupBy=grandTotal
 				    \\-- #4 m=d_country=FR_slice(Filtrator) filter=matchAll groupBy=grandTotal
 				        \\-- #5 m=d(Aggregator) filter=country=FR groupBy=grandTotal

@@ -203,7 +203,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		}
 
 		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure(mName).build()))
-				.isInstanceOf(IllegalArgumentException.class);
+				.isInstanceOf(IllegalStateException.class)
+				.hasRootCauseInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test

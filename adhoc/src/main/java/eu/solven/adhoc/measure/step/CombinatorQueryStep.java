@@ -101,7 +101,7 @@ public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 		Object value = combination.combine(slice, underlyingVs);
 
 		if (isDebug()) {
-			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
+			log.info("[DEBUG] Write {} (given {} over {}) in {}", value, combinator.getName(), underlyingVs, slice);
 		}
 
 		output.put(slice.getAdhocSliceAsMap(), value);

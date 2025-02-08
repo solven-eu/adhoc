@@ -24,6 +24,7 @@ package eu.solven.adhoc.query;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
@@ -39,7 +40,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsDebugable {
+public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 	@NonNull
 	IAdhocFilter filter;
@@ -52,6 +53,11 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMark
 	// This is part of hashcodeEquals
 	// It means we may have a different queryPlan when a subset of querySteps are debuggable
 	@Builder.Default
+	boolean explain = false;
+
+	// This is part of hashcodeEquals
+	// It means we may have a different queryPlan when a subset of querySteps are debuggable
+	@Builder.Default
 	boolean debug = false;
 
 	public static MeasurelessQueryBuilder edit(AdhocQueryStep step) {
@@ -59,6 +65,7 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMark
 				.filter(step.getFilter())
 				.groupBy(step.getGroupBy())
 				.customMarker(step.getCustomMarker())
+				.explain(step.isExplain())
 				.debug(step.isDebug());
 	}
 }

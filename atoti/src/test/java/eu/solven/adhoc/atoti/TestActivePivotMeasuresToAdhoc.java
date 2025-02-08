@@ -130,9 +130,13 @@ public class TestActivePivotMeasuresToAdhoc {
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(6)
 				.containsEntry("contributors.COUNT",
-						Aggregator.builder().name("contributors.COUNT").aggregationKey("SUM").build())
+						Aggregator.builder().name("contributors.COUNT").aggregationKey("COUNT").columnName("*").build())
 				.containsEntry("update.TIMESTAMP",
-						Aggregator.builder().name("update.TIMESTAMP").aggregationKey("MAX").build())
+						Aggregator.builder()
+								.name("update.TIMESTAMP")
+								.aggregationKey("MAX")
+								.columnName("someTimestampColumn")
+								.build())
 
 				.containsEntry("someAggregatedMeasure",
 						Aggregator.builder()

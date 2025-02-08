@@ -95,15 +95,18 @@ public class ActivePivotMeasuresToAdhoc {
 				columnName = CountAggregator.ASTERISK;
 			} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
 				aggregationKey = MaxAggregator.KEY;
-				// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this information
+				// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this
+				// information
 				columnName = "someTimestampColumn";
 			} else {
 				log.warn("Unsupported native measure: {}", nativeMeasure);
 				return;
 			}
 
-			Aggregator.AggregatorBuilder aggregatorBuilder =
-					Aggregator.builder().name(nativeMeasure.getName()).aggregationKey(aggregationKey).columnName(columnName);
+			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
+					.name(nativeMeasure.getName())
+					.aggregationKey(aggregationKey)
+					.columnName(columnName);
 
 			transferProperties(nativeMeasure, aggregatorBuilder::tag);
 

@@ -298,36 +298,50 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					.map(edge -> Graphs.getOppositeVertex(fromAggregatesToQueried, edge, queryStep))
 					.toList();
 
-			if (underlyingSteps.isEmpty()) {
-				// This may happen on a Columnator which is missing a required column
-				return;
-			} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-					ISliceToValue values = queryStepToValues.get(underlyingStep);
-
-					if (values == null) {
-						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
-					}
-
-					return values;
-				}).toList();
-
-				// BEWARE It looks weird we have to call again `.wrapNode`
-				IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
-						hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
-				ISliceToValue coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
-
-				eventBus.post(QueryStepIsCompleted.builder()
-						.querystep(queryStep)
-						.nbCells(coordinatesToValues.size())
-						.source(this)
-						.build());
-
-				queryStepToValues.put(queryStep, coordinatesToValues);
-			} else {
-				throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
-			}
+			processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
 		});
+	}
+
+	private void processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,
+			AdhocQueryStep queryStep,
+			List<AdhocQueryStep> underlyingSteps,
+			IMeasure measure) {
+		if (underlyingSteps.isEmpty()) {
+			// This may happen on a Columnator which is missing a required column
+			return;
+		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
+			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
+				ISliceToValue values = queryStepToValues.get(underlyingStep);
+
+				if (values == null) {
+					throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+				}
+
+				return values;
+			}).toList();
+
+			// BEWARE It looks weird we have to call again `.wrapNode`
+			IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
+					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+			ISliceToValue coordinatesToValues;
+			try {
+				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+			} catch (RuntimeException e) {
+				throw new IllegalStateException(
+						"Issue computing columns for m=%s".formatted(queryStep.getMeasure().getName()),
+						e);
+			}
+
+			eventBus.post(QueryStepIsCompleted.builder()
+					.querystep(queryStep)
+					.nbCells(coordinatesToValues.size())
+					.source(this)
+					.build());
+
+			queryStepToValues.put(queryStep, coordinatesToValues);
+		} else {
+			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
+		}
 	}
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,

@@ -55,6 +55,15 @@ public class TestOrFilter {
 	}
 
 	@Test
+	public void toString_small() {
+		List<ColumnFilter> filters = IntStream.range(0, 5)
+				.mapToObj(i -> ColumnFilter.builder().column("k" + i).matching(i).build())
+				.collect(Collectors.toList());
+
+		Assertions.assertThat(OrFilter.or(filters).toString()).isEqualTo("k0=0|k1=1|k2=2|k3=3|k4=4");
+	}
+
+	@Test
 	public void toString_huge() {
 		List<ColumnFilter> filters = IntStream.range(0, 256)
 				.mapToObj(i -> ColumnFilter.builder().column("k").matching(i).build())

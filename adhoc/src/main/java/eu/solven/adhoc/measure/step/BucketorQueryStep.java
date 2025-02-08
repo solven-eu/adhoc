@@ -121,7 +121,8 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 		try {
 			value = combinator.combine(slice, underlyingVs);
 		} catch (RuntimeException e) {
-			throw new IllegalArgumentException("Issue combining values=%s in slice=%s".formatted(underlyingVs, slice));
+			throw new IllegalArgumentException("Issue combining values=%s in slice=%s".formatted(underlyingVs, slice),
+					e);
 		}
 
 		if (isDebug()) {

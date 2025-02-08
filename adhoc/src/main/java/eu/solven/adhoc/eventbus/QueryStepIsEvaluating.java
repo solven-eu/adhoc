@@ -29,8 +29,8 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have
- * computed a {@link SliceToValue} for current {@link AdhocQueryStep}.
+ * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have computed a
+ * {@link SliceToValue} for current {@link AdhocQueryStep}.
  * 
  * @author Benoit Lacelle
  *

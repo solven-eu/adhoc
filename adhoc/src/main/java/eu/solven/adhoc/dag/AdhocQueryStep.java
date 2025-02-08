@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -58,13 +59,16 @@ import lombok.Value;
 @ToString(exclude = {
 		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
 		"cache" })
-public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsDebugable, IHasCustomMarker {
+public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, IIsDebugable, IHasCustomMarker {
 	@NonNull
 	IMeasure measure;
 	@NonNull
 	IAdhocFilter filter;
 	@NonNull
 	IAdhocGroupBy groupBy;
+
+	@Default
+	boolean explain = false;
 
 	@Default
 	boolean debug = false;

@@ -76,14 +76,19 @@ public class OrFilter implements IOrFilter {
 			return "matchNone";
 		}
 
-		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
+		int size = filters.size();
+		if (size <= 5) {
+			return filters.stream().map(Object::toString).collect(Collectors.joining("|"));
+		} else {
+			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
 
-		AtomicInteger index = new AtomicInteger();
-		filters.stream().limit(5).forEach(filter -> {
-			toStringHelper.add("#" + index.getAndIncrement(), filter);
-		});
+			AtomicInteger index = new AtomicInteger();
+			filters.stream().limit(5).forEach(filter -> {
+				toStringHelper.add("#" + index.getAndIncrement(), filter);
+			});
 
-		return toStringHelper.toString();
+			return toStringHelper.toString();
+		}
 	}
 
 	public static IAdhocFilter or(Collection<? extends IAdhocFilter> filters) {
@@ -93,6 +98,7 @@ public class OrFilter implements IOrFilter {
 
 		List<? extends IAdhocFilter> notMatchNone = filters.stream().filter(f -> !f.isMatchNone()).flatMap(operand -> {
 			if (operand instanceof IOrFilter operandIsOr) {
+				// OR of ORs
 				return operandIsOr.getOperands().stream();
 			} else {
 				return Stream.of(operand);

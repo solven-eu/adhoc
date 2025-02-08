@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -97,5 +98,14 @@ public class TestAdhocQueryBuilder {
 		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
 
 		Assertions.assertThat(fromString).isEqualTo(q1);
+	}
+
+	@Test
+	public void testCustomMarker() {
+		Assertions.assertThat(AdhocQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
+		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
+
+		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker()).isEqualTo("someCustom");
+		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker()).isEqualTo("someCustom");
 	}
 }

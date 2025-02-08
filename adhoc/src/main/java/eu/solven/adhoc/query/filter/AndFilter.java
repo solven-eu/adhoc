@@ -89,14 +89,19 @@ public class AndFilter implements IAndFilter {
 			return "matchAll";
 		}
 
-		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
+		int size = filters.size();
+		if (size <= 5) {
+			return filters.stream().map(Object::toString).collect(Collectors.joining("&"));
+		} else {
+			ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
 
-		AtomicInteger index = new AtomicInteger();
-		filters.stream().limit(5).forEach(filter -> {
-			toStringHelper.add("#" + index.getAndIncrement(), filter);
-		});
+			AtomicInteger index = new AtomicInteger();
+			filters.stream().limit(5).forEach(filter -> {
+				toStringHelper.add("#" + index.getAndIncrement(), filter);
+			});
 
-		return toStringHelper.toString();
+			return toStringHelper.toString();
+		}
 	}
 
 	public static IAdhocFilter and(IAdhocFilter filter, IAdhocFilter... moreFilters) {
@@ -120,6 +125,7 @@ public class AndFilter implements IAndFilter {
 		// Skipping matchAll is useful on `.edit`
 		List<? extends IAdhocFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
 			if (operand instanceof IAndFilter operandIsAnd) {
+				// AND of ANDs
 				return operandIsAnd.getOperands().stream();
 			} else {
 				return Stream.of(operand);

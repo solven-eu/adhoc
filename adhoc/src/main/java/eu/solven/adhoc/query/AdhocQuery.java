@@ -132,10 +132,23 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());
 			Lists.asList(firstGroupBy, moreGroupBys)
 					.stream()
-					.map(c -> ReferencedColumn.ref(c))
+					.map(ReferencedColumn::ref)
 					.forEach(allGroupByColumns::add);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
+
+			return this;
+		}
+
+		public AdhocQueryBuilder customMarker(Object custom) {
+			if (custom instanceof Optional<?> optional) {
+				// Custom variable is either a not-Optional or a null
+				// `optCustomMarker` would wrap in an Optional
+				custom = optional.orElse(null);
+			}
+
+			this.customMarker$value = custom;
+			this.customMarker$set = true;
 
 			return this;
 		}

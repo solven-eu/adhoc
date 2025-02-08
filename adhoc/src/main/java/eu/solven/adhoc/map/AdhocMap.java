@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.common.primitives.Ints;
 
-import autovalue.shaded.com.google.common.primitives.Ints;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 
 // `extends AbstractMap` enables not duplicating `.toString`
