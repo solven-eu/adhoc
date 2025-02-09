@@ -28,6 +28,8 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Collection;
+
 /**
  * To be used with {@link ColumnFilter}, for equality-based matchers.
  * 
@@ -44,5 +46,9 @@ public class EqualsMatcher implements IValueMatcher {
 	@Override
 	public boolean match(Object value) {
 		return operand == value || operand.equals(value);
+	}
+
+	public static IValueMatcher isEqualTo(Object operand) {
+		return EqualsMatcher.builder().operand(operand).build();
 	}
 }

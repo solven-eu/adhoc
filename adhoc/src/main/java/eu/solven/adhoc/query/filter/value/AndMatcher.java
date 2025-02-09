@@ -27,6 +27,7 @@ import java.util.Collection;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -41,6 +42,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class AndMatcher implements IValueMatcher {
 	@NonNull
+	@Singular
 	Collection<IValueMatcher> operands;
 
 	@Override

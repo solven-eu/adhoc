@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.NonNull;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -56,10 +57,12 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class AdhocMeasureBag implements IAdhocMeasureBag {
 	@Getter
+	@NonNull
 	final String name;
 
 	@Default
 	@Getter
+	@NonNull
 	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
 	public AdhocMeasureBag addMeasure(IMeasure namedMeasure) {

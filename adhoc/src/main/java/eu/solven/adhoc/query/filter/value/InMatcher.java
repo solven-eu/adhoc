@@ -79,4 +79,8 @@ public class InMatcher implements IValueMatcher {
 			return InMatcher.builder().operands(allowedValues).build();
 		}
 	}
+
+	public static IValueMatcher isIn(Object... operands) {
+		return isIn(Set.of(operands));
+	}
 }

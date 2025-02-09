@@ -333,7 +333,8 @@ public class ActivePivotMeasuresToAdhoc {
 		return ColumnFilter.builder().column(level).matching(rawCondition).build();
 	}
 
-	protected static boolean getMatchIfNull(String level, ComparisonMatchingCondition apComparisonCondition) {
+	protected boolean getMatchIfNull(String level, ComparisonMatchingCondition apComparisonCondition) {
+		// BEWARE False on all cases in a first implementation
 		return false;
 	}
 
@@ -351,6 +352,17 @@ public class ActivePivotMeasuresToAdhoc {
 				.groupBy(GroupByColumns.named(leafLevels))
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregator.KEY));
+
+		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				// Do not reject leafLevels as they are ordered in ActivePivot, while unordered in Adhoc
+				// e.g.: some custom DynamicPP may give leafLevels[0] some particular role
+				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
+
+		bucketorBuilder.combinationOptions(combinatorOptions);
 
 		transferProperties(measure, bucketorBuilder::tag);
 
@@ -371,12 +383,12 @@ public class ActivePivotMeasuresToAdhoc {
 				.toList();
 	}
 
-	protected void transferProperties(IMeasureMemberDescription nativeMeasure, Consumer<String> addTag) {
-		if (!nativeMeasure.isVisible()) {
-			addTag.accept("hidden");
+	protected void transferProperties(IMeasureMemberDescription apMeasure, Consumer<String> tagConsumer) {
+		if (!apMeasure.isVisible()) {
+			tagConsumer.accept("hidden");
 		}
-		if (!Strings.isNullOrEmpty(nativeMeasure.getGroup())) {
-			addTag.accept(nativeMeasure.getGroup());
+		if (!Strings.isNullOrEmpty(apMeasure.getGroup())) {
+			tagConsumer.accept(apMeasure.getGroup());
 		}
 	}
 }
