@@ -79,8 +79,6 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
 	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
-
 		return AdhocCubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
@@ -241,8 +239,8 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
 				#0 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
 				#1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
-				#0 m=k2(EmptyMeasure) filter=matchAll groupBy=grandTotal
-				#1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
+				#0 m=k1(Aggregator) filter=matchAll groupBy=grandTotal
+				#1 m=k2(EmptyMeasure) filter=matchAll groupBy=grandTotal""".trim());
 		Assertions.assertThat(messages).hasSize(7);
 	}
 }

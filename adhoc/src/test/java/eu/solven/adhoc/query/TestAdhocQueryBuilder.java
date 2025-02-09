@@ -105,7 +105,9 @@ public class TestAdhocQueryBuilder {
 		Assertions.assertThat(AdhocQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
 		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
 
-		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker()).isEqualTo("someCustom");
-		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker()).isEqualTo("someCustom");
+		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker())
+				.isEqualTo("someCustom");
+		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
+				.isEqualTo("someCustom");
 	}
 }

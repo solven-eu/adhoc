@@ -75,11 +75,17 @@ public interface IAdhocFilter {
 		return false;
 	}
 
+	/**
+	 * @return if this is an {@link OrFilter}
+	 */
 	@JsonIgnore
 	default boolean isOr() {
 		return false;
 	}
 
+	/**
+	 * @return true if this an {@link AndFilter}
+	 */
 	@JsonIgnore
 	default boolean isAnd() {
 		return false;
