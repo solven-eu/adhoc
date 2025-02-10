@@ -129,7 +129,7 @@ public class TestMeasuresSetFromResource {
 				// The first measure must be the explicit measure
 				.satisfies(m -> Assertions.assertThat(m.getName()).isEqualTo("k"));
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testDeepMeasuresAsUnderlyings", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(11);
@@ -165,7 +165,7 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-1");
 				});
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testAnonymousUnderlyingNode", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(4);
@@ -236,7 +236,7 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.isEqualTo("c", "someString"));
 				});
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures(measures);
+		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testWithFilter", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
@@ -273,14 +273,15 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testBucketor() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testBucketor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 		measureBag.addMeasure(IAdhocTestConstants.k2Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testBucketor",
+				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
@@ -307,13 +308,14 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testDispatchor() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testDispatchor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.dispatchFrom0To100);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testDispatchor",
+				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
@@ -342,13 +344,14 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testCustomMeasure() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testCustomMeasure").build();
 
 		measureBag.addMeasure(new CustomMeasureForResource());
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testCustomMeasure",
+				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
@@ -368,12 +371,13 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testAggregator_countAsterisk() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testAggregator_countAsterisk").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testAggregator_countAsterisk",
+				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
@@ -429,13 +433,17 @@ public class TestMeasuresSetFromResource {
 				.containsEntry("columnName", "legacyColumnName");
 
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder()
+					.name("testRemoveUselessProperties_Aggregator_differentColumnName")
+					.build();
 
 			measureBag.addMeasure(measure);
 
 			String asString = fromResource.asString("json", measureBag);
-			AdhocMeasureBag fromString = fromResource.loadBagFromResource("json",
-					new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+			AdhocMeasureBag fromString =
+					fromResource.loadBagFromResource("testRemoveUselessProperties_Aggregator_differentColumnName",
+							"json",
+							new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
 			Assertions.assertThat(fromString.getNameToMeasure().get("k1")).isEqualTo(measure);
 		}

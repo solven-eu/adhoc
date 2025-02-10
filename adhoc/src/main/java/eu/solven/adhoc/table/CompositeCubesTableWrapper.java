@@ -54,6 +54,8 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -139,12 +141,22 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 		return new SuppliedRowsStream(compositeQuery, () -> streams);
 	}
 
-	private Object missingColumn(IAdhocCubeWrapper cube, String column) {
+	protected Object missingColumn(IAdhocCubeWrapper cube, String column) {
 		return missingColumnManager.onMissingColumn(cube, column);
 	}
 
-	private IAdhocFilter filterForColumns(IAdhocFilter filter, Set<String> columns) {
-		if (filter instanceof IColumnFilter columnFilter) {
+	/**
+	 *
+	 * @param filter
+	 *            a {@link IAdhocQuery} filter
+	 * @param columns
+	 *            the {@link IAdhocColumn} available in a {@link IAdhocCubeWrapper}
+	 * @return the equivalent {@link IAdhocFilter} given the subset of columns
+	 */
+	protected IAdhocFilter filterForColumns(IAdhocFilter filter, Set<String> columns) {
+		if (filter.isMatchAll() || filter.isMatchNone()) {
+			return filter;
+		} else if (filter instanceof IColumnFilter columnFilter) {
 			if (columns.contains(columnFilter.getColumn())) {
 				return columnFilter;
 			} else {
@@ -154,6 +166,16 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 			List<IAdhocFilter> operands = andFilter.getOperands();
 			List<IAdhocFilter> filteredOperands = operands.stream().map(f -> filterForColumns(f, columns)).toList();
 			return AndFilter.and(filteredOperands);
+		} else if (filter instanceof IOrFilter orFilter) {
+			List<IAdhocFilter> operands = orFilter.getOperands();
+			List<IAdhocFilter> filteredOperands = operands.stream()
+					.map(f -> filterForColumns(f, columns))
+					// In a OR, matchAll should be discarded individually, else the whole OR is matchAll
+					// It assumes the initial operands where not matchAll: this is guaranteed by previous call to
+					// OrFilter.isMatchAll
+					.filter(f -> !f.isMatchAll())
+					.toList();
+			return OrFilter.or(filteredOperands);
 		} else {
 			throw new UnsupportedOperationException("Not handled: %s".formatted(filter));
 		}
@@ -187,7 +209,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 					compositeMeasureName = measureName + "." + cubeName;
 
 					if (compositeMeasures.contains(compositeMeasureName)) {
-						// TODO Loop until we find an available measurename
+						// TODO Loop until we find an available measureName
 						throw new IllegalArgumentException(
 								"%s is a measure in both composite and %s, and %s is a composite measure"
 										.formatted(measureName, cubeName, compositeMeasureName));
@@ -211,7 +233,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 				.entrySet()
 				.stream()
 				.filter(e -> e.getValue().size() >= 2)
-				.forEach(e -> log.info("measure={} is provided by cubes: ", e.getKey(), e.getValue()));
+				.forEach(e -> log.info("measure={} is provided by cubes: {}", e.getKey(), e.getValue()));
 
 		measuresToAdd.forEach(measureBag::addMeasure);
 	}

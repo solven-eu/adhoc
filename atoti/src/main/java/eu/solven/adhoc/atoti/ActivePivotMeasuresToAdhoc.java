@@ -39,6 +39,7 @@ import com.google.common.base.Strings;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
 import com.quartetfs.biz.pivot.definitions.IMeasureMemberDescription;
+import com.quartetfs.biz.pivot.definitions.INativeMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.fwk.Registry;
@@ -83,35 +84,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class ActivePivotMeasuresToAdhoc {
-	public AdhocMeasureBag asBag(IActivePivotDescription desc) {
-		AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().build();
+	public AdhocMeasureBag asBag(String pivotId, IActivePivotDescription desc) {
+		AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().name(pivotId).build();
 
 		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
 		desc.getMeasuresDescription().getNativeMeasures().forEach(nativeMeasure -> {
-			String aggregationKey;
-			String columnName;
-			if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
-				aggregationKey = CountAggregator.KEY;
-				columnName = CountAggregator.ASTERISK;
-			} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
-				aggregationKey = MaxAggregator.KEY;
-				// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this
-				// information
-				columnName = "someTimestampColumn";
-			} else {
-				log.warn("Unsupported native measure: {}", nativeMeasure);
+			Aggregator.AggregatorBuilder aggregatorBuilder = convertNativeMeasure(nativeMeasure);
+
+			if (aggregatorBuilder == null) {
+				// Happens on unknown/new native measure
 				return;
 			}
 
-			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
-					.name(nativeMeasure.getName())
-					.aggregationKey(aggregationKey)
-					.columnName(columnName);
-
-			transferProperties(nativeMeasure, aggregatorBuilder::tag);
-
 			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
 		});
+		if (desc.getMeasuresDescription()
+				.getNativeMeasures()
+				.stream()
+				.noneMatch(m -> IMeasureHierarchy.COUNT_ID.equals(m.getName()))) {
+			// contributors.COUNT was not present in the description, but it is then added implicitly
+			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
+					.name(IMeasureHierarchy.COUNT_ID)
+					.aggregationKey(CountAggregator.KEY)
+					.columnName(CountAggregator.ASTERISK);
+			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
+
+			// Do not add update.TIMESTAMP as it is any way ambiguous regarding the underlying columnName
+		}
 
 		// Add (pre-)aggregated measures.
 		desc.getMeasuresDescription().getAggregatedMeasuresDescription().forEach(preAggregatedMeasure -> {
@@ -144,6 +143,31 @@ public class ActivePivotMeasuresToAdhoc {
 		});
 
 		return adhocMeasureSet;
+	}
+
+	protected Aggregator.AggregatorBuilder convertNativeMeasure(INativeMeasureDescription nativeMeasure) {
+		String aggregationKey;
+		String columnName;
+		if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
+			aggregationKey = CountAggregator.KEY;
+			columnName = CountAggregator.ASTERISK;
+		} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
+			aggregationKey = MaxAggregator.KEY;
+			// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this
+			// information
+			columnName = "someTimestampColumn";
+		} else {
+			log.warn("Unsupported native measure: {}", nativeMeasure);
+			return null;
+		}
+
+		Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
+				.name(nativeMeasure.getName())
+				.aggregationKey(aggregationKey)
+				.columnName(columnName);
+
+		transferProperties(nativeMeasure, aggregatorBuilder::tag);
+		return aggregatorBuilder;
 	}
 
 	protected List<IMeasure> onImplementationClass(IPostProcessorDescription measure,
@@ -358,6 +382,7 @@ public class ActivePivotMeasuresToAdhoc {
 				.stream()
 				// Reject the properties which are implicitly available in Adhoc model
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				.filter(k -> !ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION.equals(k))
 				// Do not reject leafLevels as they are ordered in ActivePivot, while unordered in Adhoc
 				// e.g.: some custom DynamicPP may give leafLevels[0] some particular role
 				.forEach(key -> combinatorOptions.put(key, properties.get(key)));

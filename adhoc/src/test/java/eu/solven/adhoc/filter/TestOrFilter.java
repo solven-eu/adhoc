@@ -90,6 +90,16 @@ public class TestOrFilter {
 	}
 
 	@Test
+	public void testAndFilters_oneGrandTotal_forced() {
+		IAdhocFilter filterAllAndA =
+				OrFilter.builder().filter(IAdhocFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).build();
+
+		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
+		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();
+		Assertions.assertThat(filterAllAndA).isNotEqualTo(IAdhocFilter.MATCH_ALL);
+	}
+
+	@Test
 	public void testAndFilters_oneMatchNone() {
 		IAdhocFilter filterAllAndA = OrFilter.or(IAdhocFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
 

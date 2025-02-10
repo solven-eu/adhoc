@@ -36,6 +36,7 @@ import com.activeviam.copper.CopperRegistrations;
 import com.activeviam.copper.pivot.pp.LeafIdentityPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
+import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.google.common.collect.ImmutableMap;
 import com.qfs.condition.impl.BaseConditions;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
@@ -91,7 +92,65 @@ public class TestActivePivotMeasuresToAdhoc {
 	}
 
 	@Test
+	public void testNativeimplicit() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("").build();
+
+		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
+				cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(1)
+				.containsEntry("contributors.COUNT",
+						Aggregator.builder()
+								.name("contributors.COUNT")
+								.aggregationKey("COUNT")
+								.columnName("*")
+								.build());
+	}
+
+	@Test
 	public void testMakePP() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
+
+							.withContributorsCount()
+							.withUpdateTimestamp()
+
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
+				;
+				}).withSingleLevelDimension("").build();
+
+		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
+				cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(3)
+				.containsEntry("contributors.COUNT",
+						Aggregator.builder().name("contributors.COUNT").aggregationKey("COUNT").columnName("*").build())
+				.containsEntry("update.TIMESTAMP",
+						Aggregator.builder()
+								.name("update.TIMESTAMP")
+								.aggregationKey("MAX")
+								.columnName("someTimestampColumn")
+								.build())
+
+				.containsEntry("someAggregatedMeasure",
+						Aggregator.builder()
+								.name("someAggregatedMeasure")
+								.columnName("someColumnName")
+								.aggregationKey("SUM")
+								.build())
+
+		;
+	}
+
+	@Test
+	public void testMakePP_levelFiltering() {
 		IActivePivotInstanceDescription cubeDescription =
 				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
 					return measures
@@ -110,6 +169,38 @@ public class TestActivePivotMeasuresToAdhoc {
 							.withProperty(LevelFilteringPostProcessor.CONDITIONS_PROPERTY,
 									Arrays.asList(new EqualCondition("someValue"), new EqualCondition(123)))
 
+				;
+				}).withSingleLevelDimension("").build();
+
+		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
+				cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(4)
+				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
+
+				.containsEntry("someLevelFilteringMeasure",
+						Filtrator.builder()
+								.name("someLevelFilteringMeasure")
+								.underlying("underlying1")
+								.filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someValue"),
+										ColumnFilter.isEqualTo("level1", 123)))
+								.build());
+	}
+
+	@Test
+	public void testMakePP_storeLookup() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
+
+							.withContributorsCount()
+							.withUpdateTimestamp()
+
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
 							// Hidden to check we convert it into an adhoc tag
 							.withPostProcessor("someStoreLookupMeasure")
 							.withPluginKey(StoreLookupPostProcessor.PLUGIN_KEY)
@@ -117,48 +208,16 @@ public class TestActivePivotMeasuresToAdhoc {
 							.withProperty(StoreLookupPostProcessor.FIELDS_PROPERTY, "field0,field1")
 							.withProperty(StoreLookupPostProcessor.STORE_NAME_PROPERTY, "someStoreName")
 
-							.withPostProcessor("someLeafMeasure")
-							.withPluginKey(LeafIdentityPostProcessor.TYPE)
-							.withProperty(LeafIdentityPostProcessor.AGGREGATION_FUNCTION, "MAX")
-							.withProperty(LeafIdentityPostProcessor.LEAF_LEVELS, "lvl0,lvl1")
-
 				;
 				}).withSingleLevelDimension("").build();
 
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
+				cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
-				.hasSize(6)
-				.containsEntry("contributors.COUNT",
-						Aggregator.builder().name("contributors.COUNT").aggregationKey("COUNT").columnName("*").build())
-				.containsEntry("update.TIMESTAMP",
-						Aggregator.builder()
-								.name("update.TIMESTAMP")
-								.aggregationKey("MAX")
-								.columnName("someTimestampColumn")
-								.build())
+				.hasSize(4)
+				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
 
-				.containsEntry("someAggregatedMeasure",
-						Aggregator.builder()
-								.name("someAggregatedMeasure")
-								.columnName("someColumnName")
-								.aggregationKey("SUM")
-								.build())
-
-				.containsEntry("someLeafMeasure",
-						Bucketor.builder()
-								.name("someLeafMeasure")
-								.aggregationKey("MAX")
-								.combinationKey(LeafIdentityPostProcessor.TYPE)
-								.groupBy(GroupByColumns.named("lvl1", "lvl0"))
-								.build())
-				.containsEntry("someLevelFilteringMeasure",
-						Filtrator.builder()
-								.name("someLevelFilteringMeasure")
-								.underlying("underlying1")
-								.filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someValue"),
-										ColumnFilter.isEqualTo("level1", 123)))
-								.build())
 				.containsEntry("someStoreLookupMeasure",
 						Combinator.builder()
 								.name("someStoreLookupMeasure")
@@ -168,6 +227,50 @@ public class TestActivePivotMeasuresToAdhoc {
 										.put("storeName", "someStoreName")
 										.put("fields", "field0,field1")
 										.build())
+								.build());
+	}
+
+	@Test
+	public void testMakePP_dynamicAggregation() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
+
+							.withContributorsCount()
+							.withUpdateTimestamp()
+
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
+							.withPostProcessor("someLeafMeasure")
+							.withPluginKey(LeafIdentityPostProcessor.TYPE)
+							.withProperty(LeafIdentityPostProcessor.AGGREGATION_FUNCTION, "MAX")
+							.withProperty(LeafIdentityPostProcessor.LEAF_LEVELS, "lvl0,lvl1")
+							.withProperty("customKey", "customValue")
+
+				;
+				}).withSingleLevelDimension("").build();
+
+		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
+				cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(4)
+				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
+
+				.containsEntry("someLeafMeasure",
+						Bucketor.builder()
+								.name("someLeafMeasure")
+								.aggregationKey("MAX")
+								.combinationKey(LeafIdentityPostProcessor.TYPE)
+								.combinationOptions(ImmutableMap.<String, Object>builder()
+										// leafLevels keep the original ordering
+										.put(ADynamicAggregationPostProcessorV2.LEAF_LEVELS, "lvl0,lvl1")
+										.put("customKey", "customValue")
+										.build())
+								// groupBy may be re-ordered
+								.groupBy(GroupByColumns.named("lvl1", "lvl0"))
 								.build());
 	}
 

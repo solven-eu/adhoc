@@ -211,7 +211,7 @@ public class MeasuresSetFromResource {
 		return builder.build();
 	}
 
-	private @NonNull IAdhocGroupBy toGroupBy(Object rawGroupBy) {
+	protected @NonNull IAdhocGroupBy toGroupBy(Object rawGroupBy) {
 		if (rawGroupBy instanceof List<?> wildcards) {
 			List<ReferencedColumn> adhocColumns = wildcards.stream().map(columnDefinition -> {
 				if (columnDefinition instanceof String asString) {
@@ -274,7 +274,7 @@ public class MeasuresSetFromResource {
 		return builder.build();
 	}
 
-	private String registerMeasuresReturningMainOne(Object rawUnderlying, List<IMeasure> measures) {
+	protected String registerMeasuresReturningMainOne(Object rawUnderlying, List<IMeasure> measures) {
 		if (rawUnderlying instanceof String asString) {
 			return asString;
 		} else if (rawUnderlying instanceof Map<?, ?> asMap) {
@@ -289,13 +289,13 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	private @NonNull IAdhocFilter toFilter(Map<String, ?> rawFilter) {
+	protected @NonNull IAdhocFilter toFilter(Map<String, ?> rawFilter) {
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		return objectMapper.convertValue(rawFilter, IAdhocFilter.class);
 	}
 
-	private Map<String, ?> getMapParameter(Map<String, ?> map, String key) {
+	protected Map<String, ?> getMapParameter(Map<String, ?> map, String key) {
 		try {
 			return MapPathGet.getRequiredMap(map, key);
 		} catch (IllegalArgumentException e) {
@@ -327,7 +327,7 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	private <T> T onIllegalGet(Map<String, ?> map, String key, IllegalArgumentException e) {
+	protected <T> T onIllegalGet(Map<String, ?> map, String key, IllegalArgumentException e) {
 		if (map.isEmpty()) {
 			throw new IllegalArgumentException("input map is empty while looking for %s".formatted(key));
 		} else if (e.getMessage().contains("(key not present)")) {
@@ -358,13 +358,13 @@ public class MeasuresSetFromResource {
 		return minimizingDistance;
 	}
 
-	public AdhocMeasureBag loadBagFromResource(String format, Resource resource) throws IOException {
+	public AdhocMeasureBag loadBagFromResource(String name, String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			List measures = objectMapper.readValue(inputStream, List.class);
 
-			return makeBag(measures);
+			return makeBag(name, measures);
 		}
 	}
 
@@ -378,18 +378,18 @@ public class MeasuresSetFromResource {
 			bags.forEach(bag -> {
 				String name = MapPathGet.getRequiredString(bag, "name");
 				List measures = MapPathGet.getRequiredAs(bag, "measures");
-				abmb.putBag(name, makeBag(measures));
+				abmb.putBag(name, makeBag(name, measures));
 			});
 
 			return abmb;
 		}
 	}
 
-	private AdhocMeasureBag makeBag(List<Map<String, ?>> rawMeasures) {
+	protected AdhocMeasureBag makeBag(String name, List<Map<String, ?>> rawMeasures) {
 		List<IMeasure> measures =
 				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
 
-		return AdhocMeasureBag.fromMeasures(measures);
+		return AdhocMeasureBag.fromMeasures(name, measures);
 	}
 
 	public String asString(String format, AdhocMeasureBag amb) {

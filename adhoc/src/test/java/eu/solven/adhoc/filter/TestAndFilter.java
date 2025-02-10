@@ -86,6 +86,16 @@ public class TestAndFilter {
 	}
 
 	@Test
+	public void testAndFilters_oneGrandTotal_forced() {
+		IAdhocFilter filterAllAndA =
+				AndFilter.builder().filter(IAdhocFilter.MATCH_NONE).filter(ColumnFilter.isEqualTo("a", "a1")).build();
+
+		// We forced an AndFilter: It is not simplified into IAdhocFilter.MATCH_NONE but is is isMatchNone
+		Assertions.assertThat(filterAllAndA.isMatchNone()).isTrue();
+		Assertions.assertThat(filterAllAndA).isNotEqualTo(IAdhocFilter.MATCH_NONE);
+	}
+
+	@Test
 	public void testAndFilters_oneGrandTotal_TwoCustom() {
 		IAdhocFilter filterAllAndA =
 				AndFilter.and(IAdhocFilter.MATCH_ALL, ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%"));

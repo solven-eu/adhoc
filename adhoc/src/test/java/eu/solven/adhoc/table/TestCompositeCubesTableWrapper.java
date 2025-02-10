@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.composite;
+package eu.solven.adhoc.table;
+
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,10 @@ import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
-import eu.solven.adhoc.table.CompositeCubesTableWrapper;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -122,5 +127,22 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 						// aggregator
 						.aggregationKey(SumAggregator.KEY)
 						.build());
+	}
+
+	@Test
+	public void testFilterUnderlyingCube() {
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
+
+		Assertions.assertThat(composite.filterForColumns(IAdhocFilter.MATCH_ALL, Set.of()))
+				.isEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(composite.filterForColumns(IAdhocFilter.MATCH_NONE, Set.of()))
+				.isEqualTo(IAdhocFilter.MATCH_NONE);
+
+		Assertions.assertThat(composite.filterForColumns(
+				AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+		Assertions.assertThat(composite.filterForColumns(
+				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
 	}
 }

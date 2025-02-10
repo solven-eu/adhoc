@@ -28,8 +28,6 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Collection;
-
 /**
  * To be used with {@link ColumnFilter}, for equality-based matchers.
  * 

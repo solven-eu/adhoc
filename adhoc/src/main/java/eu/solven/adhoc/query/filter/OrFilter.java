@@ -61,6 +61,11 @@ public class OrFilter implements IOrFilter {
 	}
 
 	@Override
+	public boolean isMatchAll() {
+		return filters.stream().anyMatch(IAdhocFilter::isMatchAll);
+	}
+
+	@Override
 	public boolean isOr() {
 		return true;
 	}

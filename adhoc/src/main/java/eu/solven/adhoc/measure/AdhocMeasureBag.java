@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import lombok.NonNull;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -40,6 +39,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,7 +89,7 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 				String minimizing = MeasuresSetFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
-						"bag=%s No measure named: %s. Did you meant: %s".formatted(name, refName, minimizing));
+						"bag=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
 			}
 
 			return resolved;
@@ -143,8 +143,8 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 		return measuresDag;
 	}
 
-	public static AdhocMeasureBag fromMeasures(List<IMeasure> measures) {
-		AdhocMeasureBag ams = AdhocMeasureBag.builder().build();
+	public static AdhocMeasureBag fromMeasures(String name, List<IMeasure> measures) {
+		AdhocMeasureBag ams = AdhocMeasureBag.builder().name(name).build();
 
 		measures.forEach(ams::addMeasure);
 

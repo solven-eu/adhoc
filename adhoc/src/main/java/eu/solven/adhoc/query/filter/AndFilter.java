@@ -74,6 +74,11 @@ public class AndFilter implements IAndFilter {
 	}
 
 	@Override
+	public boolean isMatchNone() {
+		return filters.stream().anyMatch(IAdhocFilter::isMatchNone);
+	}
+
+	@Override
 	public boolean isAnd() {
 		return true;
 	}
