@@ -60,6 +60,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
 
 	String factTable = "someFactTable";
 	String joinedTable = "someJoinedName";
@@ -159,7 +160,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -177,7 +177,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -199,7 +198,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -221,7 +219,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -243,7 +240,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -265,7 +261,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -287,7 +282,6 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{

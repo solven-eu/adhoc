@@ -66,6 +66,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("transcoding").build();
 
 	String tableName = "someTableName";
 
@@ -203,7 +204,6 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).debug(true).build();
 
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 			measureBag.addMeasure(k1Sum);
 
 			ITabularView result = aqe.execute(query, measureBag, jooqDb);
@@ -243,7 +243,6 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.debug(true)
 					.build();
 
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 			measureBag.addMeasure(k1Sum);
 
 			ITabularView result = aqe.execute(query, measureBag, jooqDb);

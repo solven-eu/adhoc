@@ -41,7 +41,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
-	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
+	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().name(this.getClass().getName()).build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();

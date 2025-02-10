@@ -104,7 +104,7 @@ public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 			log.info("[DEBUG] Write {} (given {} over {}) in {}", value, combinator.getName(), underlyingVs, slice);
 		}
 
-		output.put(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
 	protected ISliceToValue makeCoordinateToValues() {

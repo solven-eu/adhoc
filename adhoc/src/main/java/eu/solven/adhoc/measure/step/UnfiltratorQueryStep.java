@@ -55,13 +55,15 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 		return Collections.singletonList(underlyingStep);
 	}
 
-	private IAdhocFilter unfilter(IAdhocFilter filter) {
+	protected IAdhocFilter unfilter(IAdhocFilter filter) {
 		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
 
 		if (filter instanceof IColumnFilter columnFilter) {
 			boolean columnIsUnfiltered = unfilteredColumns.contains(columnFilter.getColumn());
 			boolean inverse = unfiltrator.isInverse();
 
+			// If inverse is false, we drop columnFilters on given columns
+			// If inverse is true, we keep columnFilters on given columns
 			boolean eraseFilter = columnIsUnfiltered ^ inverse;
 
 			if (eraseFilter) {
@@ -86,6 +88,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		}
 
+		// Return the column without any change, as we just edited the filter (but not the groupBy)
 		return underlyings.getFirst();
 	}
 }

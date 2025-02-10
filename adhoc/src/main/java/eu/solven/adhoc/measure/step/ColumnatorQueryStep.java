@@ -107,6 +107,6 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		Object value = combination.combine(slice, underlyingVs);
 
-		output.put(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 }

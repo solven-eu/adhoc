@@ -74,20 +74,20 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
 		AdhocCubeWrapper cube1;
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		AdhocCubeWrapper cube2;
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Max);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("composite").build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1PlusK2AsExpr);
 

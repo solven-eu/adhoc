@@ -63,6 +63,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("duckdb").build();
 
 	String tableName = "someTableName";
 
@@ -228,7 +229,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
@@ -261,7 +261,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				DSL.field(DSL.name("b@b@b")),
 				DSL.field("k1")).values("a1", "b2", 345).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
@@ -304,7 +303,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		Assertions
@@ -323,7 +321,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		Assertions
@@ -346,7 +343,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		Aggregator kSumOverk1 =
 				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregator.KEY).build();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(kSumOverk1);
 
 		ITabularView result =
@@ -367,7 +363,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		ITabularView result = wrapInCube(measureBag).execute(AdhocQuery.builder()
@@ -388,7 +383,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		Assertions.assertThatThrownBy(() -> {
@@ -417,7 +411,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
@@ -440,7 +433,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		AdhocCubeWrapper cube = wrapInCube(measureBag);

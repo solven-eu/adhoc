@@ -114,7 +114,7 @@ public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
-		output.put(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
 	protected ISliceToValue makeCoordinateToValues() {

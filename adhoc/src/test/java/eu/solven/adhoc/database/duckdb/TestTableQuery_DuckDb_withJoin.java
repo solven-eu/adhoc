@@ -60,6 +60,7 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
 
 	String factTable = "someFactTable";
 	String joinedTable = "someJoinedName";
@@ -149,7 +150,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -167,7 +167,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -189,7 +188,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -211,7 +209,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -233,7 +230,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -255,7 +251,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -277,7 +272,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		{
@@ -299,7 +293,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(countAsterisk);
 
 		{
@@ -321,7 +314,6 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(countAsterisk);
 
 		{

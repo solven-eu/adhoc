@@ -77,7 +77,7 @@ public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
 
 		ISliceToValue output = makeCoordinateToValues();
 
-		forEachDistinctSlice(underlyings, new FindFirstCombination(), output::put);
+		forEachDistinctSlice(underlyings, new FindFirstCombination(), output::putSlice);
 
 		return output;
 	}
@@ -116,6 +116,6 @@ public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, getMeasure().getName());
 		}
 
-		output.put(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 }

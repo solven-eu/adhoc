@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
@@ -46,7 +50,7 @@ public class AdhocFilterHelpers {
 	 *            some specific column
 	 * @return
 	 */
-	public Optional<IValueMatcher> getValueMatcher(IAdhocFilter filter, String column) {
+	public static Optional<IValueMatcher> getValueMatcher(IAdhocFilter filter, String column) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			if (columnFilter.getColumn().equals(column)) {
 				return Optional.of(columnFilter.getValueMatcher());
@@ -103,4 +107,35 @@ public class AdhocFilterHelpers {
 	// }
 	// });
 	// }
+
+	public static Map<String, Object> asMap(IAdhocFilter slice) {
+		if (slice.isMatchAll()) {
+			return Map.of();
+		} else if (slice.isColumnFilter() && slice instanceof IColumnFilter columnFilter) {
+			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+			if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+				return Map.of(columnFilter.getColumn(), equalsMatcher.getOperand());
+			} else {
+				throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
+			}
+		} else if (slice.isAnd() && slice instanceof IAndFilter andFilter) {
+			if (andFilter.getOperands().stream().anyMatch(f -> !f.isColumnFilter())) {
+				throw new IllegalArgumentException("Only AND of IColumnMatcher can not turned into a Map");
+			}
+			List<IColumnFilter> columnMatchers = andFilter.getOperands().stream().map(f -> (IColumnFilter) f).toList();
+			if (columnMatchers.stream().anyMatch(f -> !(f.getValueMatcher() instanceof EqualsMatcher))) {
+				throw new IllegalArgumentException("Only AND of EqualsMatcher can not turned into a Map");
+			}
+			Map<String, Object> asMap = new HashMap<>();
+
+			columnMatchers.forEach(columnFilter -> asMap.put(columnFilter.getColumn(),
+					((EqualsMatcher) columnFilter.getValueMatcher()).getOperand()));
+
+			return asMap;
+		} else if (slice.isOr()) {
+			throw new IllegalArgumentException("OrMatcher can not be turned into a Map");
+		} else {
+			throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
+		}
+	}
 }

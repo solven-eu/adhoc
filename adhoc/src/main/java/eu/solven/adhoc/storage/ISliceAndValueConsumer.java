@@ -30,5 +30,5 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
  * @author Benoit Lacelle
  */
 public interface ISliceAndValueConsumer {
-	void put(AdhocSliceAsMap coordinate, Object value);
+	void putSlice(AdhocSliceAsMap coordinate, Object value);
 }

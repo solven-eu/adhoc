@@ -103,7 +103,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("a"), DSL.field("b"))
 					.values(345, 456, "a2", "b2")
 					.execute();
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
@@ -119,13 +119,13 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("a"), DSL.field("c"))
 					.values(1234, 2345, "a1", "c1")
 					.execute();
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Sum);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("composite").build();
 		measureBag.addMeasure(k1PlusK2AsExpr);
 
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();

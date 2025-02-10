@@ -62,6 +62,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("parquet").build();
 
 	Path tmpParquetPath;
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
@@ -151,7 +152,6 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
@@ -173,7 +173,6 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
@@ -198,7 +197,6 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
@@ -224,7 +222,6 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 

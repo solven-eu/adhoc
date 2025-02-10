@@ -91,7 +91,7 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
 
-		output.put(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
 	protected ISliceToValue makeCoordinateToValues() {

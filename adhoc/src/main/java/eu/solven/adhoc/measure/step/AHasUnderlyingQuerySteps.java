@@ -82,7 +82,7 @@ public abstract class AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySte
 		}
 	}
 
-	private Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
+	protected Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
 		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
 	}
 

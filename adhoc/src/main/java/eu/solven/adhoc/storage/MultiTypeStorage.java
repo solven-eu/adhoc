@@ -303,11 +303,20 @@ public class MultiTypeStorage<T> {
 
 	@Override
 	public String toString() {
-		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
-				.add("measureToAggregateD.size()", measureToAggregateD.size())
-				.add("measureToAggregateL.size()", measureToAggregateL.size())
-				.add("measureToAggregateS.size()", measureToAggregateS.size())
-				.add("measureToAggregateO.size()", measureToAggregateO.size());
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
+
+		if (!measureToAggregateD.isEmpty()) {
+			toStringHelper.add("measureToAggregateD.size()", measureToAggregateD.size());
+		}
+		if (!measureToAggregateL.isEmpty()) {
+			toStringHelper.add("measureToAggregateL.size()", measureToAggregateL.size());
+		}
+		if (!measureToAggregateS.isEmpty()) {
+			toStringHelper.add("measureToAggregateS.size()", measureToAggregateS.size());
+		}
+		if (!measureToAggregateO.isEmpty()) {
+			toStringHelper.add("measureToAggregateO.size()", measureToAggregateO.size());
+		}
 
 		AtomicInteger index = new AtomicInteger();
 		keySetStream().limit(5).forEach(key -> {

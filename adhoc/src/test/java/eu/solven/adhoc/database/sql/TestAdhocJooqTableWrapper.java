@@ -86,7 +86,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			}
 
 			{
-				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("jooq").build();
 				measureBag.addMeasure(k1Sum);
 				AdhocCubeWrapper aqw =
 						AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).measures(measureBag).build();

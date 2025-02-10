@@ -148,7 +148,7 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
-			output.put(AdhocSliceAsMap.fromMap(outputCoordinate), value);
+			output.putSlice(AdhocSliceAsMap.fromMap(outputCoordinate), value);
 		}
 	}
 

@@ -58,7 +58,7 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public void put(AdhocSliceAsMap coordinate, Object value) {
+	public void putSlice(AdhocSliceAsMap coordinate, Object value) {
 		storage.put(coordinate, value);
 	}
 

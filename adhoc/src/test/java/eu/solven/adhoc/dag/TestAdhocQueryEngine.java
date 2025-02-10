@@ -36,7 +36,7 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 
 public class TestAdhocQueryEngine {
-	AdhocMeasureBag amg = AdhocMeasureBag.builder().build();
+	AdhocMeasureBag amg = AdhocMeasureBag.builder().name("engine").build();
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()::post).build();
 
 	@Test
