@@ -33,8 +33,10 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.activeviam.builders.StartBuilding;
 import com.activeviam.copper.CopperRegistrations;
+import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LeafIdentityPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
+import com.activeviam.copper.pivot.pp.ShiftPostProcessor;
 import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.google.common.collect.ImmutableMap;
@@ -53,6 +55,8 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Bucketor;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Filtrator;
+import eu.solven.adhoc.measure.step.Shiftor;
+import eu.solven.adhoc.measure.step.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -60,6 +64,8 @@ import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestActivePivotMeasuresToAdhoc {
+
+	final ActivePivotMeasuresToAdhoc apMeasuresToAdhoc = new ActivePivotMeasuresToAdhoc();
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -94,10 +100,10 @@ public class TestActivePivotMeasuresToAdhoc {
 	@Test
 	public void testNativeimplicit() {
 		IActivePivotInstanceDescription cubeDescription =
-				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("").build();
+				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
-				cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(1)
@@ -123,10 +129,10 @@ public class TestActivePivotMeasuresToAdhoc {
 							.withName("someAggregatedMeasure")
 
 				;
-				}).withSingleLevelDimension("").build();
+				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
-				cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -155,34 +161,29 @@ public class TestActivePivotMeasuresToAdhoc {
 				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
 					return measures
 
-							.withContributorsCount()
-							.withUpdateTimestamp()
-
 							.withAggregatedMeasure()
 							.sum("someColumnName")
 							.withName("someAggregatedMeasure")
 
 							.withPostProcessor("someLevelFilteringMeasure")
 							.withPluginKey(LevelFilteringPostProcessor.TYPE)
-							.withUnderlyingMeasures("underlying1")
+							.withUnderlyingMeasures("someAggregatedMeasure")
 							.withProperty(LevelFilteringPostProcessor.LEVELS_PROPERTY, "level0,level1")
 							.withProperty(LevelFilteringPostProcessor.CONDITIONS_PROPERTY,
-									Arrays.asList(new EqualCondition("someValue"), new EqualCondition(123)))
+									Arrays.asList(new EqualCondition("someValue"), new EqualCondition(123)));
+				}).withSingleLevelDimension("someL").build();
 
-				;
-				}).withSingleLevelDimension("").build();
-
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
-				cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
-				.hasSize(4)
-				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
 
 				.containsEntry("someLevelFilteringMeasure",
 						Filtrator.builder()
 								.name("someLevelFilteringMeasure")
-								.underlying("underlying1")
+								.underlying("someAggregatedMeasure")
 								.filter(AndFilter.and(ColumnFilter.isEqualTo("level0", "someValue"),
 										ColumnFilter.isEqualTo("level1", 123)))
 								.build());
@@ -194,9 +195,6 @@ public class TestActivePivotMeasuresToAdhoc {
 				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
 					return measures
 
-							.withContributorsCount()
-							.withUpdateTimestamp()
-
 							.withAggregatedMeasure()
 							.sum("someColumnName")
 							.withName("someAggregatedMeasure")
@@ -204,24 +202,22 @@ public class TestActivePivotMeasuresToAdhoc {
 							// Hidden to check we convert it into an adhoc tag
 							.withPostProcessor("someStoreLookupMeasure")
 							.withPluginKey(StoreLookupPostProcessor.PLUGIN_KEY)
-							.hidden()
+							.withUnderlyingMeasures("someAggregatedMeasure")
 							.withProperty(StoreLookupPostProcessor.FIELDS_PROPERTY, "field0,field1")
-							.withProperty(StoreLookupPostProcessor.STORE_NAME_PROPERTY, "someStoreName")
+							.withProperty(StoreLookupPostProcessor.STORE_NAME_PROPERTY, "someStoreName");
+				}).withSingleLevelDimension("someL").build();
 
-				;
-				}).withSingleLevelDimension("").build();
-
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
-				cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
-				.hasSize(4)
-				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
 
 				.containsEntry("someStoreLookupMeasure",
 						Combinator.builder()
 								.name("someStoreLookupMeasure")
-								.underlying("contributors.COUNT")
+								.underlying("someAggregatedMeasure")
 								.combinationKey(StoreLookupPostProcessor.PLUGIN_KEY)
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										.put("storeName", "someStoreName")
@@ -236,33 +232,30 @@ public class TestActivePivotMeasuresToAdhoc {
 				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
 					return measures
 
-							.withContributorsCount()
-							.withUpdateTimestamp()
-
 							.withAggregatedMeasure()
 							.sum("someColumnName")
 							.withName("someAggregatedMeasure")
 
 							.withPostProcessor("someLeafMeasure")
 							.withPluginKey(LeafIdentityPostProcessor.TYPE)
+							.withUnderlyingMeasures("someAggregatedMeasure")
 							.withProperty(LeafIdentityPostProcessor.AGGREGATION_FUNCTION, "MAX")
 							.withProperty(LeafIdentityPostProcessor.LEAF_LEVELS, "lvl0,lvl1")
-							.withProperty("customKey", "customValue")
+							.withProperty("customKey", "customValue");
+				}).withSingleLevelDimension("someL").build();
 
-				;
-				}).withSingleLevelDimension("").build();
-
-		AdhocMeasureBag adhoc = new ActivePivotMeasuresToAdhoc().asBag(cubeDescription.getId(),
-				cubeDescription.getActivePivotDescription());
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
-				.hasSize(4)
-				.containsKeys("contributors.COUNT", "update.TIMESTAMP", "someAggregatedMeasure")
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
 
 				.containsEntry("someLeafMeasure",
 						Bucketor.builder()
 								.name("someLeafMeasure")
 								.aggregationKey("MAX")
+								.underlying("someAggregatedMeasure")
 								.combinationKey(LeafIdentityPostProcessor.TYPE)
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										// leafLevels keep the original ordering
@@ -275,38 +268,101 @@ public class TestActivePivotMeasuresToAdhoc {
 	}
 
 	@Test
-	public void testConditionToFilter_Raw() {
-		ActivePivotMeasuresToAdhoc converter = new ActivePivotMeasuresToAdhoc();
+	public void testMakePP_DrillUp() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
 
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", "someString"))
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
+							.withPostProcessor("someDrilledUpMeasure")
+							.withPluginKey(DrillupPostProcessor.PLUGIN_KEY)
+							.withUnderlyingMeasures("someAggregatedMeasure")
+							.withProperty(DrillupPostProcessor.PARENT_HIERARCHIES, "level1,level2")
+							.withProperty("customKey", "customValue");
+				}).withSingleLevelDimension("someL").build();
+
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
+
+				.containsEntry("someDrilledUpMeasure",
+						Unfiltrator.builder()
+								.name("someDrilledUpMeasure")
+								.underlying("someAggregatedMeasure")
+								.unfiltered("level1")
+								.unfiltered("level2")
+								.inverse(false)
+								.build());
+	}
+
+	@Test
+	public void testMakePP_shift() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
+
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
+							.withPostProcessor("someShiftedMeasure")
+							.withPluginKey(ShiftPostProcessor.TYPE)
+							.withUnderlyingMeasures("someAggregatedMeasure")
+							.withProperty("customKey", "customValue");
+				}).withSingleLevelDimension("someL").build();
+
+		AdhocMeasureBag adhoc =
+				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
+
+				.containsEntry("someShiftedMeasure",
+						Shiftor.builder()
+								.name("someShiftedMeasure")
+								.editorKey(ShiftPostProcessor.TYPE)
+								.editorOptions(
+										ImmutableMap.<String, Object>builder().put("customKey", "customValue").build())
+								.underlying("someAggregatedMeasure")
+								.build());
+	}
+
+	@Test
+	public void testConditionToFilter_Raw() {
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", "someString"))
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", "someString"));
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", 123))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", 123))
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", 123));
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", Arrays.asList("someString", 123)))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", Arrays.asList("someString", 123)))
 				.isEqualTo(ColumnFilter.isIn("someLevel", Arrays.asList("someString", 123)));
 
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", null))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", null))
 				.isEqualTo(ColumnFilter.builder().column("someLevel").matchNull().build());
 	}
 
 	@Test
 	public void testConditionToFilter_Conditions() {
-		ActivePivotMeasuresToAdhoc converter = new ActivePivotMeasuresToAdhoc();
-
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", new TrueCondition()))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", new TrueCondition()))
 				.isEqualTo(ColumnFilter.MATCH_ALL);
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", new FalseCondition()))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", new FalseCondition()))
 				.isEqualTo(ColumnFilter.MATCH_NONE);
 
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", new EqualCondition("someString")))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", new EqualCondition("someString")))
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", "someString"));
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", new InCondition("someString")))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", new InCondition("someString")))
 				.isEqualTo(ColumnFilter.isIn("someLevel", "someString"));
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", new InCondition("someString", 123)))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", new InCondition("someString", 123)))
 				.isEqualTo(ColumnFilter.isIn("someLevel", Set.of("someString", 123)));
 
 		Assertions
-				.assertThat(converter.convertToAdhoc("someLevel",
+				.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel",
 						new OrCondition(Arrays.asList(new GreaterEqualCondition(123), new LowerCondition(234)))))
 				.isEqualTo(OrFilter.or(Arrays.asList(ColumnFilter.builder()
 						.column("someLevel")
@@ -325,11 +381,9 @@ public class TestActivePivotMeasuresToAdhoc {
 
 	@Test
 	public void testConditionToFilter_DatastoreConditions() {
-		ActivePivotMeasuresToAdhoc converter = new ActivePivotMeasuresToAdhoc();
-
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", BaseConditions.True()))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", BaseConditions.True()))
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", "TRUE"));
-		Assertions.assertThat(converter.convertToAdhoc("someLevel", BaseConditions.False()))
+		Assertions.assertThat(apMeasuresToAdhoc.convertToAdhoc("someLevel", BaseConditions.False()))
 				.isEqualTo(ColumnFilter.isEqualTo("someLevel", "FALSE"));
 	}
 }

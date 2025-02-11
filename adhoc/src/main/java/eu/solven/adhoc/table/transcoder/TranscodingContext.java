@@ -42,7 +42,7 @@ public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableRev
 	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
 
 	@Builder.Default
-	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
+	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
 	public String underlying(String queried) {

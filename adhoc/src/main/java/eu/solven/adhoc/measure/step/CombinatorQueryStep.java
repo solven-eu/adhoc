@@ -24,7 +24,10 @@ package eu.solven.adhoc.measure.step;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
@@ -32,7 +35,6 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -44,9 +46,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 	final ICombinator combinator;
-	final IOperatorsFactory transformationFactory;
+	final IOperatorsFactory operatorsFactory;
 	@Getter
 	final AdhocQueryStep step;
+
+	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
+
+	protected ICombination makeCombination() {
+		return operatorsFactory.makeCombination(combinator);
+	}
 
 	@Override
 	protected IMeasure getMeasure() {
@@ -77,7 +85,7 @@ public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 
 		ISliceToValue output = makeCoordinateToValues();
 
-		ICombination transformation = transformationFactory.makeCombination(combinator);
+		ICombination transformation = combinationSupplier.get();
 
 		forEachDistinctSlice(underlyings, transformation, output);
 
@@ -91,9 +99,8 @@ public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice, consumer);
+			storage.onValue(slice, refV::set);
 
 			return refV.get();
 		}).collect(Collectors.toList());

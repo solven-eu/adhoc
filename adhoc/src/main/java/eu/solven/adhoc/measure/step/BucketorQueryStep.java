@@ -27,7 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
@@ -52,9 +55,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
 	final Bucketor bucketor;
-	final IOperatorsFactory transformationFactory;
+	final IOperatorsFactory operatorsFactory;
 	@Getter
 	final AdhocQueryStep step;
+
+	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
+
+	protected ICombination makeCombination() {
+		return operatorsFactory.makeCombination(bucketor);
+	}
+
+	protected IAggregation getMakeAggregation() {
+		return operatorsFactory.makeAggregation(bucketor.getAggregationKey());
+	}
 
 	@Override
 	protected IMeasure getMeasure() {
@@ -88,19 +101,11 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
 				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
-		ICombination combinator = makeCombination();
+		ICombination combinator = combinationSupplier.get();
 
 		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
 
 		return SliceToValue.builder().storage(aggregatingView).build();
-	}
-
-	private IAggregation getMakeAggregation() {
-		return transformationFactory.makeAggregation(bucketor.getAggregationKey());
-	}
-
-	private ICombination makeCombination() {
-		return transformationFactory.makeCombination(bucketor);
 	}
 
 	@Override
@@ -156,7 +161,7 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 		Map<String, Object> queryCoordinates = new HashMap<>();
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
-			Object value = slice.getRawFilter(groupBy);
+			Object value = slice.getRawSliced(groupBy);
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?

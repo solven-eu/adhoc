@@ -96,7 +96,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
-		Optional<?> optInput = slice.optFilter(elementColumn);
+		Optional<?> optInput = slice.optSliced(elementColumn);
 		if (optInput.isEmpty()) {
 			// There is no expressed element
 			return Map.of(Map.of(), value);

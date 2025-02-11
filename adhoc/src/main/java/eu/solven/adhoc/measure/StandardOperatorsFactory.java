@@ -34,6 +34,7 @@ import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
+import eu.solven.adhoc.measure.step.IFilterEditor;
 import eu.solven.adhoc.measure.sum.CountAggregator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregator;
@@ -140,6 +141,35 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		Class<? extends IDecomposition> asClass;
 		try {
 			asClass = (Class<? extends IDecomposition>) Class.forName(key);
+
+		} catch (ClassNotFoundException e) {
+			log.trace("No class matches %s".formatted(key));
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		}
+
+		try {
+			return asClass.getConstructor(Map.class).newInstance(options);
+		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
+				| NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public IFilterEditor makeEditor(String key, Map<String, ?> options) {
+		return switch (key) {
+			case AdhocIdentity.KEY: {
+				yield f -> f;
+			}
+			default:
+				yield defaultEditor(key, options);
+		};
+	}
+
+	protected IFilterEditor defaultEditor(String key, Map<String, ?> options) {
+		Class<? extends IFilterEditor> asClass;
+		try {
+			asClass = (Class<? extends IFilterEditor>) Class.forName(key);
 
 		} catch (ClassNotFoundException e) {
 			log.trace("No class matches %s".formatted(key));

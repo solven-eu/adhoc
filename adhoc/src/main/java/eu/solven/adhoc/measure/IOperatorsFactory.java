@@ -29,6 +29,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.ICombineUnderlyingMeasures;
+import eu.solven.adhoc.measure.step.IFilterEditor;
 
 /**
  * Provides {@link ICombination} given their key. This can be extended to provides custom transformations.
@@ -63,4 +64,6 @@ public interface IOperatorsFactory {
 	}
 
 	IDecomposition makeDecomposition(String key, Map<String, ?> decompositionOptions);
+
+	IFilterEditor makeEditor(String key, Map<String, ?> editorOptions);
 }

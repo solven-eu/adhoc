@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.table.transcoder;
 
-import java.util.Set;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
+public class TestIdentityImplicitTranscoder {
+	IdentityImplicitTranscoder transcoder = new IdentityImplicitTranscoder();
 
-/**
- * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
- *
- * @author Benoit Lacelle
- */
-@Builder
-@Value
-public final class AndMatcher implements IValueMatcher {
-	@Singular
-	@NonNull
-	Set<IValueMatcher> operands;
+	@Test
+	public void testTranscoder() {
+		Assertions.assertThat(transcoder.underlying("c")).isEqualTo(null);
 
-	public static AndMatcherBuilder builder() {
-		return new AndMatcherBuilder();
+		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+
+		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
+		Assertions.assertThat(context.queried("c")).isEqualTo("c");
 	}
-
-	@Override
-	public boolean match(Object value) {
-		return operands.stream().allMatch(operand -> operand.match(value));
-	}
-
 }

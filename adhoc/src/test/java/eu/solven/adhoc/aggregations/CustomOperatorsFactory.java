@@ -29,6 +29,7 @@ import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.step.IFilterEditor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -73,6 +74,17 @@ public class CustomOperatorsFactory implements IOperatorsFactory {
             }
             default:
                 yield fallback.makeDecomposition(key, decompositionOptions);
+        };
+    }
+
+	@Override
+    public IFilterEditor makeEditor(String key, Map<String, ?> editorOptions) {
+        return switch (key) {
+            case "CUSTOM": {
+                yield new CustomFilterEditor();
+            }
+            default:
+                yield fallback.makeEditor(key, editorOptions);
         };
     }
 }

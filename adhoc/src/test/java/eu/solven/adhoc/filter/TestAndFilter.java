@@ -245,4 +245,12 @@ public class TestAndFilter {
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isIn("a", "a2", "a3"));
 	}
+
+	@Test
+	public void testEquals_differentOrders() {
+		IAdhocFilter f1Then2 = AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2"));
+		IAdhocFilter f2Then1 = AndFilter.and(ColumnFilter.isEqualTo("c2", "v2"), ColumnFilter.isEqualTo("c1", "v1"));
+
+		Assertions.assertThat(f1Then2).isEqualTo(f2Then1);
+	}
 }

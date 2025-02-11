@@ -39,25 +39,25 @@ public class TestAdhocSlice {
 		Assertions.assertThat(slice.getColumns()).containsExactly("k");
 
 		{
-			Assertions.assertThat(slice.getRawFilter("k")).isEqualTo("v");
-			Assertions.assertThat(slice.getFilter("k", Object.class)).isEqualTo("v");
-			Assertions.assertThat(slice.getFilter("k", String.class)).isEqualTo("v");
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k", Number.class))
+			Assertions.assertThat(slice.getRawSliced("k")).isEqualTo("v");
+			Assertions.assertThat(slice.getSliced("k", Object.class)).isEqualTo("v");
+			Assertions.assertThat(slice.getSliced("k", String.class)).isEqualTo("v");
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optFilter("k")).contains("v");
+			Assertions.assertThat(slice.optSliced("k")).contains("v");
 		}
 
 		{
-			Assertions.assertThatThrownBy(() -> slice.getRawFilter("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Object.class))
+			Assertions.assertThatThrownBy(() -> slice.getRawSliced("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Object.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optFilter("k2")).isEmpty();
+			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
 		}
 	}
 
-	@Disabled("AdhocSliceAsMap does not accept Collection filters")
+	@Disabled("AdhocSliceAsMap does not accept Collection sliced")
 	@Test
 	public void testRequireFilter_Collection() {
 		IAdhocSlice slice = AdhocSliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
@@ -65,24 +65,24 @@ public class TestAdhocSlice {
 		Assertions.assertThat(slice.getColumns()).containsExactly("k");
 
 		{
-			Assertions.assertThat(slice.getRawFilter("k")).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getFilter("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getFilter("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getFilter("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k", String.class))
+			Assertions.assertThat(slice.getRawSliced("k")).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getSliced("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getSliced("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getSliced("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k", String.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optFilter("k")).contains(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.optSliced("k")).contains(Arrays.asList("v1", "v2"));
 		}
 
 		{
-			Assertions.assertThatThrownBy(() -> slice.getRawFilter("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Object.class))
+			Assertions.assertThatThrownBy(() -> slice.getRawSliced("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Object.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getFilter("k2", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optFilter("k2")).isEmpty();
+			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
 		}
 	}
 }

@@ -59,6 +59,8 @@ import lombok.Value;
 @ToString(exclude = {
 		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
 		"cache" })
+// BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
+// measure
 public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, IIsDebugable, IHasCustomMarker {
 	@NonNull
 	IMeasure measure;
@@ -87,6 +89,9 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, 
 	public static AdhocQueryStepBuilder edit(IWhereGroupbyAdhocQuery step) {
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
+		if (step instanceof IIsExplainable explainable) {
+			builder.debug(explainable.isExplain());
+		}
 		if (step instanceof IIsDebugable debuggable) {
 			builder.debug(debuggable.isDebug());
 		}

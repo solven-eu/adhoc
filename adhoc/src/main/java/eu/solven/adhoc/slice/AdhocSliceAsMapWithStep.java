@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -56,14 +57,14 @@ public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
 
 	@Override
 	public IAdhocFilter asFilter() {
-		// it seems useful to AND the slice and the queryStep, as the slice should always match the queryFilters
-		// TODO Add an assertions verifying the filters are compatible
-		return slice.asFilter();
+		// AND the slice with the step as the step may express some filters which are not in the slice
+		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
+		return AndFilter.and(slice.asFilter(), queryStep.getFilter());
 	}
 
 	@Override
-	public Optional<Object> optFilter(String column) {
-		return slice.optFilter(column);
+	public Optional<Object> optSliced(String column) {
+		return slice.optSliced(column);
 	}
 
 	@Override
@@ -72,8 +73,8 @@ public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
 	}
 
 	@Override
-	public Map<String, ?> optFilters(Set<String> columns) {
-		return slice.optFilters(columns);
+	public Map<String, ?> optSliced(Set<String> columns) {
+		return slice.optSliced(columns);
 	}
 
 }

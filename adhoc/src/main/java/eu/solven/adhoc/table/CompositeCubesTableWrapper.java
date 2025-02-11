@@ -58,6 +58,7 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ITabularView;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -101,44 +102,68 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 		IAdhocFilter compositeFilter = compositeQuery.getFilter();
 
+		Set<String> compositeQueryMeasures =
+				compositeQuery.getAggregators().stream().map(Aggregator::getName).collect(Collectors.toSet());
+
 		Stream<Map<String, ?>> streams = cubes.stream().flatMap(cube -> {
-			Set<String> measures =
-					compositeQuery.getAggregators().stream().map(a -> a.getName()).collect(Collectors.toSet());
 
 			Set<String> cubeColumns = cube.getColumns().keySet();
 
 			// groupBy only by relevant columns. Other columns are ignored
-			NavigableMap<String, IAdhocColumn> validGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
-			validGroupBy.keySet().retainAll(cubeColumns);
+			NavigableMap<String, IAdhocColumn> underlyingGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
+			underlyingGroupBy.keySet().retainAll(cubeColumns);
 
-			NavigableSet<String> missingColumns =
-					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), cubeColumns));
+			IAdhocFilter underlyingFilter = filterForColumns(compositeFilter, cubeColumns);
 
-			IAdhocFilter validFilter = filterForColumns(compositeFilter, cubeColumns);
+			Set<String> cubeMeasures = cube.getMeasures().getNameToMeasure().keySet();
+			Set<String> underlyingQueryMeasure = Sets.intersection(compositeQueryMeasures, cubeMeasures);
 
 			IAdhocQuery query = AdhocQuery.builder()
-					.filter(validFilter)
-					.groupBy(GroupByColumns.of(validGroupBy.values()))
-					.measures(measures)
+					.filter(underlyingFilter)
+					.groupBy(GroupByColumns.of(underlyingGroupBy.values()))
+					.measures(underlyingQueryMeasure)
+					.customMarker(compositeQuery.getCustomMarker())
 					.debug(compositeQuery.isDebug())
 					.explain(compositeQuery.isExplain())
 					.build();
 
 			ITabularView view = cube.execute(query, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY));
 
+			NavigableSet<String> missingColumns =
+					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), cubeColumns));
 			return view.stream((slice, o) -> {
-				Map<String, Object> columnsAndMeasures = new LinkedHashMap<>();
+				Map<String, ?> oAsMap = (Map<String, ? extends Object>) o;
 
-				columnsAndMeasures.putAll(slice.getCoordinates());
-				columnsAndMeasures.putAll((Map<? extends String, ? extends Object>) o);
-
-				missingColumns.forEach(column -> columnsAndMeasures.put(column, missingColumn(cube, column)));
-
-				return columnsAndMeasures;
+				return transcodeSliceToComposite(cube, slice, oAsMap, missingColumns);
 			});
 		});
 
 		return new SuppliedRowsStream(compositeQuery, () -> streams);
+	}
+
+	/**
+	 *
+	 * @param cube
+	 *            the underlying cube
+	 * @param slice
+	 *            a slice from the underlying cube
+	 * @param measures
+	 * @param missingColumns
+	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
+	 * @return
+	 */
+	protected Map<String, Object> transcodeSliceToComposite(IAdhocCubeWrapper cube,
+			IAdhocSlice slice,
+			Map<String, ?> measures,
+			NavigableSet<String> missingColumns) {
+		Map<String, Object> columnsAndMeasures = new LinkedHashMap<>();
+
+		columnsAndMeasures.putAll(slice.getCoordinates());
+		columnsAndMeasures.putAll(measures);
+
+		missingColumns.forEach(column -> columnsAndMeasures.put(column, missingColumn(cube, column)));
+
+		return columnsAndMeasures;
 	}
 
 	protected Object missingColumn(IAdhocCubeWrapper cube, String column) {

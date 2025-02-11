@@ -66,7 +66,7 @@ public class LinearDecomposition implements IDecomposition {
 	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
-		Optional<?> optInput = slice.optFilter(inputColumn);
+		Optional<?> optInput = slice.optSliced(inputColumn);
 		if (optInput.isEmpty()) {
 			return Map.of(Map.of(), value);
 		}

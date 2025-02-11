@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.filter;
 import java.util.Map;
 
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +44,7 @@ public class FilterHelpers {
 	 * @return true if the input matches the filter
 	 */
 	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
-		return match(new IdentityTranscoder(), filter, input);
+		return match(new IdentityImplicitTranscoder(), filter, input);
 	}
 
 	/**

@@ -49,11 +49,11 @@ public interface IAdhocSlice {
 	/**
 	 *
 	 * @param column
-	 * @return the filtered coordinate, only if the column is actually filtered. It may be a {@link Collection} if the
-	 *         column is filtered along multiple values.
+	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
+	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
 	 */
-	default Object getRawFilter(String column) {
-		return optFilter(column).orElseThrow(() -> new IllegalArgumentException(
+	default Object getRawSliced(String column) {
+		return optSliced(column).orElseThrow(() -> new IllegalArgumentException(
 				"%s is not a sliced column amongst %s".formatted(column, getColumns())));
 	}
 
@@ -61,12 +61,12 @@ public interface IAdhocSlice {
 	 *
 	 * @param column
 	 * @param clazz
-	 * @return the filtered coordinate on given column. Unless clazz accept {@link java.util.Collection}, this would
-	 *         match only on simple (single value) filters.
+	 * @return the filtered coordinate on given column. Can not be a {@link Collection} nor a
+	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
 	 * @param <T>
 	 */
-	default <T> T getFilter(String column, Class<? extends T> clazz) {
-		Object filter = getRawFilter(column);
+	default <T> T getSliced(String column, Class<? extends T> clazz) {
+		Object filter = getRawSliced(column);
 
 		if (clazz.isInstance(filter)) {
 			return clazz.cast(filter);
@@ -77,13 +77,13 @@ public interface IAdhocSlice {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param column
 	 * @return the {@link Optional} filtered value along given column.
 	 */
-	Optional<Object> optFilter(String column);
+	Optional<Object> optSliced(String column);
 
-	Map<String, ?> optFilters(Set<String> columns);
+	Map<String, ?> optSliced(Set<String> columns);
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
@@ -91,7 +91,7 @@ public interface IAdhocSlice {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		getColumns().forEach(column -> {
-			asMap.put(column, getFilter(column, Object.class));
+			asMap.put(column, getSliced(column, Object.class));
 		});
 
 		return asMap;

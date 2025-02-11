@@ -27,10 +27,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.filter.AdhocFilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -46,15 +49,22 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IHasUnderlyingQuerySteps} for {@link Shiftor}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
 public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 	final Shiftor shiftor;
+	final IOperatorsFactory operatorsFactory;
 	@Getter
 	final AdhocQueryStep step;
+
+	final Supplier<IFilterEditor> filterEditorSupplier = Suppliers.memoize(this::makeFilterEditor);
+
+	protected IFilterEditor makeFilterEditor() {
+		return operatorsFactory.makeEditor(shiftor.getEditorKey(), shiftor.getEditorOptions());
+	}
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
@@ -70,8 +80,8 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 		return Arrays.asList(whereToRead, whereTowrite);
 	}
 
-	protected IAdhocFilter shift(IAdhocFilter filter) {
-		return shiftor.getSliceEditor().edit(filter);
+	private IAdhocFilter shift(IAdhocFilter filter) {
+		return filterEditorSupplier.get().editFilter(filter);
 	}
 
 	// @Override
@@ -90,12 +100,12 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 
 	/**
 	 * Given a whereToWrite slice, get the equivalent whereToRead slice.
-	 * 
+	 *
 	 * @param slice
 	 * @return
 	 */
 	protected AdhocSliceAsMap shiftSlice(IAdhocSliceWithStep slice) {
-		IAdhocFilter editedSlice = shiftor.getSliceEditor().edit(slice.asFilter());
+		IAdhocFilter editedSlice = shift(slice.asFilter());
 		Map<String, Object> editedAsMap = AdhocFilterHelpers.asMap(editedSlice);
 
 		// Typically useful on querying grandTotal

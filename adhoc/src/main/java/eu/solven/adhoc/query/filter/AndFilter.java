@@ -24,7 +24,6 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,7 +59,7 @@ import lombok.extern.jackson.Jacksonized;
 public class AndFilter implements IAndFilter {
 
 	@Singular
-	final List<IAdhocFilter> filters;
+	final Set<IAdhocFilter> filters;
 
 	@Override
 	public boolean isNot() {
@@ -85,7 +84,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public List<IAdhocFilter> getOperands() {
-		return Collections.unmodifiableList(filters);
+		return List.copyOf(filters);
 	}
 
 	@Override

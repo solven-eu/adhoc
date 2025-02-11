@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ABasicPostProcessorV2;
@@ -42,6 +43,7 @@ import com.quartetfs.biz.pivot.definitions.IMeasureMemberDescription;
 import com.quartetfs.biz.pivot.definitions.INativeMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
+import com.quartetfs.biz.pivot.postprocessing.impl.ALocationShiftPostProcessor;
 import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.filtering.ICondition;
 import com.quartetfs.fwk.filtering.ILogicalCondition;
@@ -63,6 +65,8 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Bucketor;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Filtrator;
+import eu.solven.adhoc.measure.step.Shiftor;
+import eu.solven.adhoc.measure.step.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -179,6 +183,10 @@ public class ActivePivotMeasuresToAdhoc {
 			return onDynamicPostProcessor(measure);
 		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)) {
 			return onFilteringPostProcessor(measure);
+		} else if (DrillupPostProcessor.class.isAssignableFrom(implementationClass)) {
+			return onDrillupPostProcessor(measure);
+		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
+			return onLocationShiftPosProcessor(measure);
 		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)) {
 			return onBasicPostProcessor(measure);
 		} else {
@@ -198,15 +206,18 @@ public class ActivePivotMeasuresToAdhoc {
 		return onBasicPostProcessor(measure);
 	}
 
+	protected String getDefaultMeasure() {
+		return IMeasureHierarchy.COUNT_ID;
+	}
+
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
 		Properties properties = measure.getProperties();
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
-		Combinator.CombinatorBuilder combinatorBuilder =
-				Combinator.builder().name(measure.getName()).combinationKey(measure.getPluginKey());
+		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
 		if (underlyingNames.isEmpty()) {
 			// When there is no explicit underlying measure, Atoti relies on contributors.COUNT
-			combinatorBuilder.underlying(IMeasureHierarchy.COUNT_ID);
+			combinatorBuilder.underlying(getDefaultMeasure());
 		} else {
 			combinatorBuilder.underlyings(underlyingNames);
 		}
@@ -218,6 +229,7 @@ public class ActivePivotMeasuresToAdhoc {
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
 				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
 
+		combinatorBuilder.combinationKey(measure.getPluginKey());
 		combinatorBuilder.combinationOptions(combinatorOptions);
 
 		return List.of(combinatorBuilder.build());
@@ -228,21 +240,61 @@ public class ActivePivotMeasuresToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
 		Filtrator.FiltratorBuilder filtratorBuilder = Filtrator.builder().name(measure.getName());
-		if (underlyingNames.isEmpty()) {
-			// When there is no explicit underlying measure, Atoti relies on contributors.COUNT
-			filtratorBuilder.underlying(IMeasureHierarchy.COUNT_ID);
-		} else if (underlyingNames.size() >= 2) {
-			log.warn("What's the logic when filtering multiple underlying measures?");
-			filtratorBuilder.underlying("Multiple measures? : " + String.join(",", underlyingNames));
-		} else {
-			filtratorBuilder.underlying(underlyingNames.getFirst());
-		}
+		filtratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		IAdhocFilter filter = makeFilter(measure, properties);
 
 		filtratorBuilder.filter(filter);
 
 		return List.of(filtratorBuilder.build());
+	}
+
+	// TODO ParentValuePostProcessor is not managed as it requires multi-level hierarchies
+	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure) {
+		Properties properties = measure.getProperties();
+		List<String> underlyingNames = getUnderlyingNames(properties);
+
+		Shiftor.ShiftorBuilder shiftorBuilder = Shiftor.builder().name(measure.getName());
+
+		shiftorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
+
+		shiftorBuilder.editorKey(measure.getPluginKey());
+
+		Map<String, Object> editorOptions = new LinkedHashMap<>();
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				.forEach(key -> editorOptions.put(key, properties.get(key)));
+		shiftorBuilder.editorOptions(editorOptions);
+
+		return List.of(shiftorBuilder.build());
+	}
+
+	protected String getSingleUnderylingMeasure(List<String> underlyingNames) {
+		if (underlyingNames.isEmpty()) {
+			// When there is no explicit underlying measure, Atoti relies on contributors.COUNT
+			return getDefaultMeasure();
+		} else if (underlyingNames.size() >= 2) {
+			log.warn("What's the logic when filtering multiple underlying measures?");
+			return "Multiple measures? : " + String.join(",", underlyingNames);
+		} else {
+			return underlyingNames.getFirst();
+		}
+	}
+
+	protected List<IMeasure> onDrillupPostProcessor(IPostProcessorDescription measure) {
+		Properties properties = measure.getProperties();
+		List<String> underlyingNames = getUnderlyingNames(properties);
+
+		Unfiltrator.UnfiltratorBuilder unfiltratorBuilder = Unfiltrator.builder().name(measure.getName());
+
+		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
+
+		List<String> parentHierarchies = getPropertyList(properties, DrillupPostProcessor.PARENT_HIERARCHIES);
+		unfiltratorBuilder.unfiltereds(parentHierarchies);
+
+		return List.of(unfiltratorBuilder.build());
 	}
 
 	protected IAdhocFilter makeFilter(IPostProcessorDescription measure, Properties properties) {

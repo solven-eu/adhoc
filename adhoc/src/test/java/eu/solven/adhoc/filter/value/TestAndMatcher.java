@@ -20,45 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.filter.value;
 
-import org.jooq.Name;
-import org.jooq.TableLike;
-import org.jooq.impl.DSL;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.value.AndMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
-@Value
-@Builder
-public class AdhocJooqTableWrapperParameters {
+public class TestAndMatcher {
+	@Test
+	public void testAndInEq() {
+		AndMatcher a_and_aandb =
+				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
 
-	@Builder.Default
-	@NonNull
-	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
+		// TODO Improve this when relevant
+		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
+		Assertions.assertThat(a_and_aandb).isEqualTo(a_and_aandb);
+	}
 
-	@NonNull
-	DSLSupplier dslSupplier;
+	@Test
+	public void testEqualsDifferentOrder() {
+		AndMatcher aThenB =
+				AndMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
+		AndMatcher bThenA =
+				AndMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
 
-	@NonNull
-	final TableLike<?> table;
-
-	public static class AdhocJooqTableWrapperParametersBuilder {
-		public AdhocJooqTableWrapperParametersBuilder tableName(String tableName) {
-			this.tableName(DSL.quotedName(tableName));
-
-			return this;
-		}
-
-		public AdhocJooqTableWrapperParametersBuilder tableName(Name tableName) {
-			this.table(DSL.table(tableName));
-
-			return this;
-		}
+		Assertions.assertThat(aThenB).isEqualTo(bThenA);
 	}
 }

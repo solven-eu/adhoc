@@ -33,6 +33,8 @@ import eu.solven.adhoc.measure.step.Bucketor;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.measure.step.Filtrator;
+import eu.solven.adhoc.measure.step.Shiftor;
+import eu.solven.adhoc.measure.step.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -68,6 +70,16 @@ public interface IAdhocTestConstants {
 
 	Filtrator filterK1onA1 =
 			Filtrator.builder().name("filterK1onA1").underlying("k1").filter(ColumnFilter.isEqualTo("a", "a1")).build();
+
+	Unfiltrator unfilterOnA = Unfiltrator.builder().name("unfilterOnK1").underlying("k1").unfiltered("a").build();
+
+	Shiftor shiftorAisA1 = Shiftor.builder()
+			.name("shiftorAisA1")
+			.underlying("k1")
+			.editorKey("single")
+			.editorOptions(
+					ImmutableMap.<String, Object>builder().put("shiftedColumn", "a").put("shiftedValue", "a1").build())
+			.build();
 
 	Bucketor sum_MaxK1K2ByA = Bucketor.builder()
 			.name("sum_maxK1K2ByA")

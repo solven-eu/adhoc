@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.measure.step;
 
-import java.util.Set;
-
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
- * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
+ * Used by {@link Shiftor}
  *
  * @author Benoit Lacelle
  */
-@Builder
-@Value
-public final class AndMatcher implements IValueMatcher {
-	@Singular
-	@NonNull
-	Set<IValueMatcher> operands;
-
-	public static AndMatcherBuilder builder() {
-		return new AndMatcherBuilder();
-	}
-
-	@Override
-	public boolean match(Object value) {
-		return operands.stream().allMatch(operand -> operand.match(value));
-	}
-
+public interface IFilterEditor {
+	/**
+	 *
+	 * @param input
+	 *            some input {@link IAdhocFilter}
+	 * @return a {@link IAdhocFilter}, typically computed from the input filter.
+	 */
+	IAdhocFilter editFilter(IAdhocFilter input);
 }

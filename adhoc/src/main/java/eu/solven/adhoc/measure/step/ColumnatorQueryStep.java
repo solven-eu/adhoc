@@ -34,7 +34,6 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -84,7 +83,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		ISliceToValue output = makeCoordinateToValues();
 
-		ICombination transformation = transformationFactory.makeCombination(combinator);
+		ICombination transformation = operatorsFactory.makeCombination(combinator);
 
 		forEachDistinctSlice(underlyings, transformation, output);
 
@@ -98,9 +97,8 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice, consumer);
+			storage.onValue(slice, refV::set);
 
 			return refV.get();
 		}).collect(Collectors.toList());

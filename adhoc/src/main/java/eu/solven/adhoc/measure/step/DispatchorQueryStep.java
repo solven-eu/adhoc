@@ -205,7 +205,7 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 
 			if (value == null) {
 				// BEWARE When would we get a groupBy from the slice rather than from the fragment coordinate?
-				value = slice.getRawFilter(groupBy);
+				value = slice.getRawSliced(groupBy);
 			}
 
 			if (value == null) {

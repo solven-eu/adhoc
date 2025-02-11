@@ -125,7 +125,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
 		Set<String> elementColumns = getInputColumns(options);
 
-		Map<String, ?> elementCoordinates = slice.optFilters(elementColumns);
+		Map<String, ?> elementCoordinates = slice.optSliced(elementColumns);
 		if (elementCoordinates.size() < elementColumns.size()) {
 			// We lack some coordinates
 			return Map.of(Map.of(), value);

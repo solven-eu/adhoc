@@ -20,23 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.filter.value;
+
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-public class TestAndMatcher {
+public class TestEqualsMatcher {
 	@Test
-	public void testAndInEq() {
-		AndMatcher a_and_aandb =
-				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
+	public void testSimple() {
+		IValueMatcher equalsMatcher = EqualsMatcher.isEqualTo("a");
 
-		// TODO Improve this when relevant
-		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
-		Assertions.assertThat(a_and_aandb).isEqualTo(a_and_aandb);
+		Assertions.assertThat(equalsMatcher.match("a")).isEqualTo(true);
+		Assertions.assertThat(equalsMatcher.match(Set.of("a"))).isEqualTo(false);
+
+		Assertions.assertThat(equalsMatcher.match(null)).isEqualTo(false);
+	}
+
+	@Test
+	public void testNull() {
+		Assertions.assertThatThrownBy(() -> EqualsMatcher.isEqualTo(null)).isInstanceOf(IllegalArgumentException.class);
 	}
 }

@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,7 +48,7 @@ import lombok.extern.jackson.Jacksonized;
 public class OrFilter implements IOrFilter {
 
 	@Singular
-	final List<IAdhocFilter> filters;
+	final Set<IAdhocFilter> filters;
 
 	@Override
 	public boolean isNot() {
@@ -72,7 +73,7 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public List<IAdhocFilter> getOperands() {
-		return filters;
+		return List.copyOf(filters);
 	}
 
 	@Override

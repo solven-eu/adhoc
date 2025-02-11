@@ -46,7 +46,7 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.IRowsStream;
 import eu.solven.adhoc.table.SuppliedRowsStream;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;
@@ -68,7 +68,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	@NonNull
 	@Builder.Default
 	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
+	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
 	public IRowsStream openDbStream(TableQuery tableQuery) {

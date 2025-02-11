@@ -75,7 +75,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Optional<Object> optFilter(String column) {
+	public Optional<Object> optSliced(String column) {
 		return Optional.ofNullable(asMap.get(column));
 	}
 
@@ -90,12 +90,12 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Map<String, ?> optFilters(Set<String> columns) {
+	public Map<String, ?> optSliced(Set<String> columns) {
 		// Keep requested columns ordering
 		Map<String, Object> filters = new LinkedHashMap<>();
 
 		columns.forEach(column -> {
-			optFilter(column).ifPresent(filter -> filters.put(column, filter));
+			optSliced(column).ifPresent(filter -> filters.put(column, filter));
 		});
 
 		return filters;

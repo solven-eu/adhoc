@@ -57,6 +57,8 @@ import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.step.IHasCombinationKey;
+import eu.solven.adhoc.measure.step.Shiftor;
+import eu.solven.adhoc.measure.step.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -120,6 +122,12 @@ public class MeasuresSetFromResource {
 		}
 		case "filtrator": {
 			yield makeFiltrator(measureAsMap, measures, name);
+		}
+		case "unfiltrator": {
+			yield makeUnfiltrator(measureAsMap, measures, name);
+		}
+		case "shiftor": {
+			yield makeShiftor(measureAsMap, measures, name);
 		}
 		case "bucketor": {
 			yield makeBucketor(measureAsMap, measures, name);
@@ -241,6 +249,40 @@ public class MeasuresSetFromResource {
 
 		Map<String, ?> rawFilter = getMapParameter(measure, "filter");
 		builder.filter(toFilter(rawFilter));
+
+		return builder.build();
+	}
+
+	protected IMeasure makeUnfiltrator(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		// Unfiltrator has a single underlying measure
+		Object rawUnderlying = getAnyParameter(measure, "underlying");
+
+		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
+
+		Unfiltrator.UnfiltratorBuilder builder = Unfiltrator.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlying(underlyingName);
+
+		List<String> unfiltered = (List<String>) getListParameter(measure, "unfiltereds");
+		builder.unfiltereds(unfiltered);
+
+		return builder.build();
+	}
+
+	protected IMeasure makeShiftor(Map<String, ?> measure, List<IMeasure> measures, String name) {
+		// Filtrator has a single underlying measure
+		Object rawUnderlying = getAnyParameter(measure, "underlying");
+
+		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
+
+		Shiftor.ShiftorBuilder builder = Shiftor.builder()
+				.name(name)
+				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
+				.underlying(underlyingName);
+
+		MapPathGet.getOptionalString(measure, "editorKey").ifPresent(builder::editorKey);
+		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "editorOptions").ifPresent(builder::editorOptions);
 
 		return builder.build();
 	}
@@ -509,6 +551,10 @@ public class MeasuresSetFromResource {
 			}
 		} else if (measure instanceof Filtrator f) {
 			clean.put(KEY_TYPE, "filtrator");
+		} else if (measure instanceof Unfiltrator u) {
+			clean.put(KEY_TYPE, "unfiltrator");
+		} else if (measure instanceof Shiftor s) {
+			clean.put(KEY_TYPE, "shiftor");
 		} else if (measure instanceof Dispatchor d) {
 			clean.put(KEY_TYPE, "dispatchor");
 		} else if (measure instanceof Bucketor b) {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.slice;
 
-import java.util.Set;
+import java.util.Map;
 
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocTableWrapper}. Then, the transcoding is
- * the identity.
- */
-public class IdentityTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
+public class TestAdhocSliceAsMapWithStep implements IAdhocTestConstants {
+	@Test
+	public void testAsFilter() {
+		IAdhocFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
+		AdhocQueryStep step =
+				AdhocQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
+		IAdhocSlice parentSlice = AdhocSliceAsMap.fromMap(Map.of("c2", "v2"));
+
+		AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
+
+		Assertions.assertThat(slice.asFilter())
+				.isEqualTo(AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2")));
 	}
 }

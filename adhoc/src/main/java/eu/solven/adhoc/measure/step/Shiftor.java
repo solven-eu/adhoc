@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.step;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -31,12 +33,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.step.Shiftor.ISliceEditor;
+import eu.solven.adhoc.measure.combination.AdhocIdentity;
+import eu.solven.adhoc.query.filter.AdhocFilterHelpers;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -67,7 +71,12 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	String underlying;
 
 	@NonNull
-	ISliceEditor sliceEditor;
+	@Builder.Default
+	String editorKey = AdhocIdentity.KEY;
+
+	@NonNull
+	@Builder.Default
+	Map<String, ?> editorOptions = Map.of();
 
 	@JsonIgnore
 	@Override
@@ -76,15 +85,18 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
-		return new ShiftorQueryStep(this, step);
+	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep step) {
+		return new ShiftorQueryStep(this, operatorsFactory, step);
 	}
 
-	public static interface ISliceEditor {
-		IAdhocFilter edit(IAdhocFilter input);
-	}
-
-	protected static IAdhocFilter shift(String column, Object value, IAdhocFilter filter) {
+	/**
+	 *
+	 * @param column
+	 * @param value
+	 * @param filter
+	 * @return a filter equivalent to input filter, except the column is filtered on given value
+	 */
+	public static IAdhocFilter shift(String column, Object value, IAdhocFilter filter) {
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return ColumnFilter.isEqualTo(column, value);
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
@@ -106,8 +118,26 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 		}
 	}
 
-	public static ISliceEditor shift(String column, Object value) {
-		return filter -> shift(column, value, filter);
+	/**
+	 *
+	 * @param column
+	 *            the column to filter. If it is not already expressed, the filter is not shited.
+	 * @param value
+	 * @param filter
+	 * @return like {@link #shift(String, Object, IAdhocFilter)} but only if the column is expressed
+	 */
+	public static IAdhocFilter shiftIfPresent(String column, Object value, IAdhocFilter filter) {
+		Optional<IValueMatcher> valueMatcher = AdhocFilterHelpers.getValueMatcher(filter, column);
+
+		if (valueMatcher.isPresent()) {
+			return shift(column, value, filter);
+		} else {
+			return filter;
+		}
 	}
+
+	// public static IFilterEditor shift(String column, Object value) {
+	// return filter -> shift(column, value, filter);
+	// }
 
 }

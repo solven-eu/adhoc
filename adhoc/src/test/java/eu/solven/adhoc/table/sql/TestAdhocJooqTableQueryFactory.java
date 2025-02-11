@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 
 public class TestAdhocJooqTableQueryFactory {
 	static {
@@ -49,7 +49,7 @@ public class TestAdhocJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new IdentityTranscoder(),
+	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new IdentityImplicitTranscoder(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 

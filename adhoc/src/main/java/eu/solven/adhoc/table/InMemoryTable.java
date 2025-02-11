@@ -36,7 +36,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -64,7 +64,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	@Default
 	@NonNull
 	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityTranscoder();
+	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@NonNull
 	@Default

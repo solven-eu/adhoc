@@ -210,7 +210,7 @@ public class TestMeasuresSetFromResource {
 	}
 
 	@Test
-	public void testWithFilter() throws IOException {
+	public void testFiltrator() throws IOException {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k1_c=V")
 				.put("type", "filtrator")
@@ -269,6 +269,69 @@ public class TestMeasuresSetFromResource {
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(2);
 		}
+	}
+
+	@Test
+	public void testUnfiltrator() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testUnfiltrator").build();
+
+		measureBag.addMeasure(IAdhocTestConstants.unfilterOnA);
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testUnfiltrator",
+				"json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "k1",
+				  "type" : "aggregator"
+				}, {
+				  "name" : "unfilterOnK1",
+				  "type" : "unfiltrator",
+				  "inverse" : false,
+				  "underlying" : "k1",
+				  "unfiltereds" : [ "a" ]
+				} ]
+				""".strip());
+	}
+
+	@Test
+	public void testShiftor() throws IOException {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testShiftor").build();
+
+		measureBag.addMeasure(IAdhocTestConstants.shiftorAisA1);
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testShiftor",
+				"json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "shiftorAisA1",
+				  "type" : "shiftor",
+				  "editorKey" : "single",
+				  "editorOptions" : {
+				    "shiftedColumn" : "a",
+				    "shiftedValue" : "a1"
+				  },
+				  "underlying" : "k1"
+				}, {
+				  "name" : "k1",
+				  "type" : "aggregator"
+				} ]
+				                """.strip());
 	}
 
 	@Test
@@ -391,7 +454,7 @@ public class TestMeasuresSetFromResource {
 				  "aggregationKey" : "COUNT",
 				  "columnName" : "*"
 				} ]
-								""".strip());
+				""".strip());
 	}
 
 	@Test

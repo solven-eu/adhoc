@@ -20,35 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.table.transcoder;
 
-import java.util.Set;
-
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
- * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
+ * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
+ * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocTableWrapper}. Then, the transcoding is
+ * the identity.
  *
- * @author Benoit Lacelle
+ * This always returns `null`, hence it is not reversible.
  */
-@Builder
-@Value
-public final class AndMatcher implements IValueMatcher {
-	@Singular
-	@NonNull
-	Set<IValueMatcher> operands;
-
-	public static AndMatcherBuilder builder() {
-		return new AndMatcherBuilder();
-	}
-
+public class IdentityImplicitTranscoder implements IAdhocTableTranscoder {
 	@Override
-	public boolean match(Object value) {
-		return operands.stream().allMatch(operand -> operand.match(value));
+	public String underlying(String queried) {
+		return null;
 	}
-
 }
