@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

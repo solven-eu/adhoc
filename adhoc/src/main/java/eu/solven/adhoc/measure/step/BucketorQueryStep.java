@@ -42,7 +42,6 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.MultiTypeStorage;
@@ -125,7 +124,8 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 		try {
 			value = combinator.combine(slice, underlyingVs);
 		} catch (RuntimeException e) {
-			throw new IllegalArgumentException("Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
+			throw new IllegalArgumentException(
+					"Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
 					e);
 		}
 

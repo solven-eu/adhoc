@@ -180,11 +180,11 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
-				|\\- #1 m=d(Aggregator) filter=matchNone groupBy=grandTotal
-				\\-- #2 m=d(Aggregator) filter=country=US groupBy=grandTotal
-				!2
-												  		""".trim());
+				#0 m=d(Aggregator) filter=country=US groupBy=grandTotal
+				#1 m=FRoverUS(RatioByCombinator) filter=country=US groupBy=grandTotal
+				|\\- #2 m=d(Aggregator) filter=matchNone groupBy=grandTotal
+				\\-- !0
+																  		""".trim());
 
 		Assertions.assertThat(messages).hasSize(4);
 	}

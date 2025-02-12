@@ -330,13 +330,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				StringBuilder describeStep = new StringBuilder();
 
 				// First, we print only measure as a simplistic shorthand of the step
-				describeStep.append("Issue computing columns for m=%s given %s".formatted(simplistic(queryStep), underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+				describeStep.append("Issue computing columns for m=%s given %s".formatted(simplistic(queryStep),
+						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
 				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
-				describeStep.append("Issue computing columns for m=%s given %s".formatted(dense(queryStep), underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+				describeStep.append("Issue computing columns for m=%s given %s".formatted(dense(queryStep),
+						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
 
-				throw new IllegalStateException(describeStep.toString()
-						,
-						e);
+				throw new IllegalStateException(describeStep.toString(), e);
 			}
 
 			eventBus.post(QueryStepIsCompleted.builder()
@@ -367,10 +367,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 */
 	protected String dense(AdhocQueryStep queryStep) {
 		// Do not log about debug, explainm or cache
-		return new StringBuilder().append("m=").append(queryStep.getMeasure().getName())
-				.append("filter=").append(queryStep.getFilter())
-				.append("groupBy=").append(queryStep.getGroupBy())
-				.append("custom=").append(queryStep.getCustomMarker()).toString();
+		return new StringBuilder().append("m=")
+				.append(queryStep.getMeasure().getName())
+				.append("filter=")
+				.append(queryStep.getFilter())
+				.append("groupBy=")
+				.append(queryStep.getGroupBy())
+				.append("custom=")
+				.append(queryStep.getCustomMarker())
+				.toString();
 	}
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,

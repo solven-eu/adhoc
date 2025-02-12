@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
+
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import lombok.Builder;
@@ -59,7 +60,6 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	public boolean match(Object value) {
 		return operands.stream().anyMatch(operand -> operand.match(value));
 	}
-
 
 	@Override
 	public String toString() {

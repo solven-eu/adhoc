@@ -240,6 +240,6 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				#0 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
 				#1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
 				#0 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
-		Assertions.assertThat(messages).hasSize(7);
+		Assertions.assertThat(messages).hasSize(6);
 	}
 }

@@ -44,8 +44,7 @@ public class TestAndMatcher {
 
 	@Test
 	public void testAnd_all() {
-		AndMatcher matcher =
-				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(IValueMatcher.MATCH_ALL).build();
+		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
 		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
 	}
 
