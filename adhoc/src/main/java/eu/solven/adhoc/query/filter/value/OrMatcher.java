@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
@@ -45,8 +48,43 @@ public class OrMatcher implements IValueMatcher {
 	@Singular
 	Set<IValueMatcher> operands;
 
+	public boolean isMatchNone() {
+		return operands.isEmpty();
+	}
+
 	@Override
 	public boolean match(Object value) {
 		return operands.stream().anyMatch(operand -> operand.match(value));
+	}
+
+	public static IValueMatcher or(IValueMatcher... filters) {
+		return or(Set.of(filters));
+	}
+
+	public static IValueMatcher or(Set<IValueMatcher> filters) {
+		if (filters.stream().anyMatch(f -> f instanceof AndMatcher andMatcher && andMatcher.isMatchAll())) {
+			return MATCH_ALL;
+		}
+
+		// Skipping matchAll is useful on `.edit`
+		List<? extends IValueMatcher> notMatchNone = filters.stream()
+				.filter(f -> !(f instanceof OrMatcher orMatcher && orMatcher.isMatchNone()))
+				.flatMap(operand -> {
+					if (operand instanceof OrMatcher operandIsOr) {
+						// OR of ORs
+						return operandIsOr.getOperands().stream();
+					} else {
+						return Stream.of(operand);
+					}
+				})
+				.collect(Collectors.toList());
+
+		if (notMatchNone.isEmpty()) {
+			return IValueMatcher.MATCH_NONE;
+		} else if (notMatchNone.size() == 1) {
+			return notMatchNone.getFirst();
+		} else {
+			return OrMatcher.builder().operands(notMatchNone).build();
+		}
 	}
 }

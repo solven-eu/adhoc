@@ -31,7 +31,11 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
@@ -76,5 +80,37 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.match(transcoder,
 				OrFilter.or(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")),
 				Map.of("p_c", "azerty"))).isTrue();
+	}
+
+	@Test
+	public void testGetValueMatcher_in() {
+		ColumnFilter inV1OrV2 = ColumnFilter.builder().column("c").matching(Set.of("v1", "v2")).build();
+		Assertions.assertThat(FilterHelpers.getValueMatcher(inV1OrV2, "c")).isEqualTo(InMatcher.isIn("v1", "v2"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(inV1OrV2, "unknownColumn"))
+				.isEqualTo(IValueMatcher.MATCH_ALL);
+	}
+
+	@Test
+	public void testGetValueMatcher_or() {
+		IAdhocFilter like1OrLike2 = AndFilter.and(ColumnFilter.isLike("c1", "1%"), ColumnFilter.isLike("c2", "2%"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c1")).isEqualTo(LikeMatcher.matching("1%"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c2")).isEqualTo(LikeMatcher.matching("2%"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
+	}
+
+	@Test
+	public void testGetValueMatcher_ALL_NONE() {
+		Assertions.assertThat(FilterHelpers.getValueMatcher(IAdhocFilter.MATCH_ALL, "c"))
+				.isEqualTo(IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.getValueMatcher(IAdhocFilter.MATCH_NONE, "c"))
+				.isEqualTo(IValueMatcher.MATCH_NONE);
+	}
+
+	@Test
+	public void testGetValueMatcher_AND() {
+		IAdhocFilter filter = AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(EqualsMatcher.isEqualTo("v2"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 }

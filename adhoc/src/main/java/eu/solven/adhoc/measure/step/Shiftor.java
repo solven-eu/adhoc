@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.step;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,9 +33,9 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
-import eu.solven.adhoc.query.filter.AdhocFilterHelpers;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -127,12 +126,13 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	 * @return like {@link #shift(String, Object, IAdhocFilter)} but only if the column is expressed
 	 */
 	public static IAdhocFilter shiftIfPresent(String column, Object value, IAdhocFilter filter) {
-		Optional<IValueMatcher> valueMatcher = AdhocFilterHelpers.getValueMatcher(filter, column);
+		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
 
-		if (valueMatcher.isPresent()) {
-			return shift(column, value, filter);
-		} else {
+		if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
+			// Do not shift if there is no filter
 			return filter;
+		} else {
+			return shift(column, value, filter);
 		}
 	}
 

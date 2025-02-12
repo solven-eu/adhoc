@@ -35,7 +35,7 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.query.filter.AdhocFilterHelpers;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
@@ -106,7 +106,7 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 	 */
 	protected AdhocSliceAsMap shiftSlice(IAdhocSliceWithStep slice) {
 		IAdhocFilter editedSlice = shift(slice.asFilter());
-		Map<String, Object> editedAsMap = AdhocFilterHelpers.asMap(editedSlice);
+		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
 		// Typically useful on querying grandTotal
 		if (!Sets.difference(editedAsMap.keySet(), step.getGroupBy().getGroupedByColumns()).isEmpty()) {

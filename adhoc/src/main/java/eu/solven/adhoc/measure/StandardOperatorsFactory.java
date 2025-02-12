@@ -170,7 +170,6 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		Class<? extends IFilterEditor> asClass;
 		try {
 			asClass = (Class<? extends IFilterEditor>) Class.forName(key);
-
 		} catch (ClassNotFoundException e) {
 			log.trace("No class matches %s".formatted(key));
 			throw new IllegalArgumentException("Unexpected value: " + key);

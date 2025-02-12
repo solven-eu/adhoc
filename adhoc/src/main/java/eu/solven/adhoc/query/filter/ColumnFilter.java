@@ -37,6 +37,7 @@ import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotValueFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -192,5 +193,9 @@ public class ColumnFilter implements IColumnFilter {
 
 	public static IAdhocFilter isLike(String column, String likeExpression) {
 		return ColumnFilter.builder().column(column).valueMatcher(LikeMatcher.matching(likeExpression)).build();
+	}
+
+	public static IAdhocFilter isMatching(String column, Pattern pattern) {
+		return ColumnFilter.builder().column(column).valueMatcher(RegexMatcher.matching(pattern)).build();
 	}
 }

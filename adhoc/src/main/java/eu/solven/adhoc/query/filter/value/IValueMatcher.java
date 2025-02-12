@@ -36,5 +36,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = AndMatcher.class, name = "and"),
 		@JsonSubTypes.Type(value = OrMatcher.class, name = "or") })
 public interface IValueMatcher {
+	IValueMatcher MATCH_ALL = AndMatcher.builder().build();
+	IValueMatcher MATCH_NONE = OrMatcher.builder().build();
+
 	boolean match(Object value);
 }

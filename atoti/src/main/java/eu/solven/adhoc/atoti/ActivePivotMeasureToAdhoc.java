@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -45,15 +44,6 @@ import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ALocationShiftPostProcessor;
 import com.quartetfs.fwk.Registry;
-import com.quartetfs.fwk.filtering.ICondition;
-import com.quartetfs.fwk.filtering.ILogicalCondition;
-import com.quartetfs.fwk.filtering.IMatchingCondition;
-import com.quartetfs.fwk.filtering.impl.AndCondition;
-import com.quartetfs.fwk.filtering.impl.ComparisonMatchingCondition;
-import com.quartetfs.fwk.filtering.impl.EqualCondition;
-import com.quartetfs.fwk.filtering.impl.FalseCondition;
-import com.quartetfs.fwk.filtering.impl.InCondition;
-import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
@@ -70,13 +60,9 @@ import eu.solven.adhoc.measure.step.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import lombok.RequiredArgsConstructor;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -86,8 +72,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@RequiredArgsConstructor
-public class ActivePivotMeasuresToAdhoc {
+@Builder
+public class ActivePivotMeasureToAdhoc {
+	@Builder.Default
+	final ActivePivotConditionCubeToAdhoc apConditionToAdhoc = new ActivePivotConditionCubeToAdhoc();
+
 	public AdhocMeasureBag asBag(String pivotId, IActivePivotDescription desc) {
 		AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().name(pivotId).build();
 
@@ -321,97 +310,10 @@ public class ActivePivotMeasuresToAdhoc {
 		// By chaining AND operations, we may end with a simpler filter (e.g. given a single filter clause)
 		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 		for (int i = 0; i < Math.min(levels.size(), filters.size()); i++) {
-			IAdhocFilter columnFilter = convertToAdhoc(levels.get(i), filters.get(i));
+			IAdhocFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levels.get(i), filters.get(i));
 			filter = AndFilter.and(filter, columnFilter);
 		}
 		return filter;
-	}
-
-	public IAdhocFilter convertToAdhoc(String level, Object rawCondition) {
-		if (rawCondition == null) {
-			return ColumnFilter.builder().column(level).matchNull().build();
-		} else if (rawCondition instanceof com.qfs.condition.ICondition apCondition) {
-			log.warn("We should not receive Datastore conditions: {}", apCondition);
-			return ColumnFilter.builder().column(level).matchEquals(apCondition.toString()).build();
-		} else if (rawCondition instanceof ICondition apCondition) {
-			if (rawCondition instanceof IMatchingCondition matchingCondition) {
-				if (matchingCondition instanceof EqualCondition apEqualCondition) {
-					return ColumnFilter.isEqualTo(level, apEqualCondition.getMatchingParameter());
-				} else if (matchingCondition instanceof InCondition apInCondition) {
-					Set<?> domain = (Set<?>) apInCondition.getMatchingParameter();
-					return ColumnFilter.builder().column(level).matchIn(domain).build();
-				} else if (matchingCondition instanceof ComparisonMatchingCondition apComparisonCondition) {
-					Object operand = apComparisonCondition.getMatchingParameter();
-					boolean greaterThan;
-					boolean matchIfEqual;
-					// TODO It is unclear how we should matchNull from ActivePivot
-					boolean matchIfNull = getMatchIfNull(level, apComparisonCondition);
-
-					switch (apComparisonCondition.getType()) {
-					case IMatchingCondition.GREATER:
-						greaterThan = true;
-						matchIfEqual = false;
-						break;
-					case IMatchingCondition.LOWER:
-						greaterThan = false;
-						matchIfEqual = false;
-						break;
-					case IMatchingCondition.GREATEREQUAL:
-						greaterThan = true;
-						matchIfEqual = true;
-						break;
-					case IMatchingCondition.LOWEREQUAL:
-						greaterThan = false;
-						matchIfEqual = true;
-						break;
-					default:
-						throw new IllegalStateException("Unexpected value: " + apComparisonCondition.getType());
-					}
-					IValueMatcher valueMatcher = ComparingMatcher.builder()
-							.matchIfEqual(matchIfEqual)
-							.matchIfNull(matchIfNull)
-							.greaterThan(greaterThan)
-							.operand(operand)
-							.build();
-					return ColumnFilter.builder().column(level).valueMatcher(valueMatcher).build();
-				} else {
-					// ToStringEquals, Like, Comparison
-					log.warn("This case is not well handled: {}", matchingCondition);
-					return ColumnFilter.builder().column(level).matchEquals(matchingCondition.toString()).build();
-				}
-			} else if (rawCondition instanceof ILogicalCondition logicalCondition) {
-				if (logicalCondition instanceof FalseCondition) {
-					return ColumnFilter.MATCH_NONE;
-				} else if (logicalCondition instanceof TrueCondition) {
-					return ColumnFilter.MATCH_ALL;
-				} else if (logicalCondition instanceof OrCondition orCondition) {
-					List<IAdhocFilter> subAdhocConditions = Stream.of(orCondition.getConditions())
-							.map(subCondition -> convertToAdhoc(level, subCondition))
-							.toList();
-					return OrFilter.or(subAdhocConditions);
-				} else if (logicalCondition instanceof AndCondition andCondition) {
-					List<IAdhocFilter> subAdhocConditions = Stream.of(andCondition.getConditions())
-							.map(subCondition -> convertToAdhoc(level, subCondition))
-							.toList();
-					return AndFilter.and(subAdhocConditions);
-				} else {
-					// Or, And, Not
-					log.warn("This case is not well handled: {}", logicalCondition);
-					return ColumnFilter.builder().column(level).matchEquals(logicalCondition.toString()).build();
-				}
-			} else {
-				// SubCondition
-				log.warn("This case is not well handled: {}", apCondition);
-				return ColumnFilter.builder().column(level).matchEquals(apCondition.toString()).build();
-			}
-		}
-		// Assume we received a raw object
-		return ColumnFilter.builder().column(level).matching(rawCondition).build();
-	}
-
-	protected boolean getMatchIfNull(String level, ComparisonMatchingCondition apComparisonCondition) {
-		// BEWARE False on all cases in a first implementation
-		return false;
 	}
 
 	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure) {

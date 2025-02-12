@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.Optional;
+
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
@@ -36,6 +38,7 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  */
 public interface IAdhocTableTranscoder {
 	/**
+	 * This may return null for convenience of implementation.
 	 *
 	 * @param queried
 	 *            a column name typically used by an {@link IAdhocQuery}.
@@ -43,4 +46,17 @@ public interface IAdhocTableTranscoder {
 	 *         to itself.
 	 */
 	String underlying(String queried);
+
+	/**
+	 * This never returns null for convenience of callers.
+	 *
+	 * @param queried
+	 *            a column name typically used by an {@link IAdhocQuery}.
+	 * @return the equivalent underlying column name, typically used by the database.
+	 */
+	default String underlyingNonNull(String queried) {
+		String underlyingColumn = underlying(queried);
+
+		return Optional.ofNullable(underlyingColumn).orElse(queried);
+	}
 }

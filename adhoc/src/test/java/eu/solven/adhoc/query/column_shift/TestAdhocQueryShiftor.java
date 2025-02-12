@@ -60,6 +60,10 @@ public class TestAdhocQueryShiftor extends ADagTest implements IAdhocTestConstan
 	String mName = "k1.EUR";
 
 	public static class ToEurShifter implements IFilterEditor {
+		public ToEurShifter(Map<String, ?> options) {
+			// Instantiation through key requires a Map constructor
+		}
+
 		@Override
 		public IAdhocFilter editFilter(IAdhocFilter input) {
 			return Shiftor.shift("ccy", "EUR", input);

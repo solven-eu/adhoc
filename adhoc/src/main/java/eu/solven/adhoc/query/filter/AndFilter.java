@@ -121,6 +121,7 @@ public class AndFilter implements IAndFilter {
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
+	// BEWARE Synchronize with AndFilter
 	private static IAdhocFilter andNotOptimized(List<? extends IAdhocFilter> filters) {
 		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
 			return MATCH_NONE;

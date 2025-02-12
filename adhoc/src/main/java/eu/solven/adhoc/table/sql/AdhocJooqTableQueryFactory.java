@@ -181,7 +181,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected Field<Object> columnAsField(IAdhocColumn column, boolean isGroupBy) {
 		String columnName = column.getColumn();
-		String transcodedName = transcoder.underlying(columnName);
+		String transcodedName = transcoder.underlyingNonNull(columnName);
 		Field<Object> field;
 
 		if (column instanceof IHasSqlExpression hasSql) {
@@ -255,7 +255,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
 		String aggregationKey = a.getAggregationKey();
-		String columnName = transcoder.underlying(a.getColumnName());
+		String columnName = transcoder.underlyingNonNull(a.getColumnName());
 		Name namedColumn = name(columnName);
 
 		AggregateFunction<?> sqlAggFunction;
@@ -283,7 +283,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
 				.filter(columnName -> !CountAggregator.ASTERISK.equals(columnName))
-				.map(transcoder::underlying)
+				.map(transcoder::underlyingNonNull)
 				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
 
@@ -314,7 +314,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected Condition toCondition(IColumnFilter columnFilter) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-		String column = transcoder.underlying(columnFilter.getColumn());
+		String column = transcoder.underlyingNonNull(columnFilter.getColumn());
 
 		Condition condition;
 		final Field<Object> field = DSL.field(name(column));

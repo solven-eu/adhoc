@@ -22,40 +22,28 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.regex.Pattern;
-
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.regex.Pattern;
+
 /**
  * To be used with {@link ColumnFilter}, for regex-based matchers.
  *
  * @author Benoit Lacelle
- * @see RegexMatcher
+ * @see LikeMatcher
  */
 @Value
 @Builder
 @Jacksonized
-public class LikeMatcher implements IValueMatcher {
-	String like;
+public class RegexMatcher implements IValueMatcher {
+	Pattern pattern;
 
-	public static boolean like(final String likePattern, final CharSequence inputToTest) {
-		Pattern p = asPattern(likePattern);
-		return p.matcher(inputToTest).matches();
-	}
-
-	/**
-	 *
-	 * @param likePattern
-	 * @return the {@link Pattern} equivalent to this LIKE expression
-	 */
-	// https://www.alibabacloud.com/blog/how-to-efficiently-implement-sql-like-syntax-in-java_600079
-	// Is it missing % escaping?
-	public static Pattern asPattern(final String likePattern) {
-		String regexPattern = likePattern.replace("_", ".").replace("%", ".*?");
-		return Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	public static Pattern compile(final String regex) {
+		// BEWARE how to customize flags?
+		return Pattern.compile(regex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 	}
 
 	@Override
@@ -68,10 +56,14 @@ public class LikeMatcher implements IValueMatcher {
 			// BEWARE Should we require explicit cast, than casting ourselves?
 			asCharSequence = String.valueOf(value);
 		}
-		return LikeMatcher.like(getLike(), asCharSequence);
+		return pattern.matcher(asCharSequence).matches();
 	}
 
-	public static IValueMatcher matching(String likeExpression) {
-		return LikeMatcher.builder().like(likeExpression).build();
+	public static IValueMatcher matching(String regex) {
+		return RegexMatcher.builder().pattern(compile(regex)).build();
+	}
+
+	public static IValueMatcher matching(Pattern pattern) {
+		return RegexMatcher.builder().pattern(pattern).build();
 	}
 }

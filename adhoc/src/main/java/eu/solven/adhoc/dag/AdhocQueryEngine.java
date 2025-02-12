@@ -555,10 +555,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery measurelessQuery = e.getKey();
 			Set<Aggregator> leafAggregators = e.getValue();
-			return TableQuery.edit(measurelessQuery)
-					.aggregators(leafAggregators)
-					.customMarker(measurelessQuery.getCustomMarker())
-					.build();
+			return TableQuery.edit(measurelessQuery).aggregators(leafAggregators).build();
 		}).collect(Collectors.toSet());
 	}
 

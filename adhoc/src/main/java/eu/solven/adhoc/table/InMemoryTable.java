@@ -94,7 +94,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 		Set<String> underlyingColumns = new HashSet<>();
 		queriedColumns.forEach(keyToKeep -> {
 			// We need to call `transcodingContext.underlying` to register the reverse mapping
-			String underlying = transcodingContext.underlying(keyToKeep);
+			String underlying = transcodingContext.underlyingNonNull(keyToKeep);
 			log.debug("{} -> {}", keyToKeep, underlying);
 			underlyingColumns.add(underlying);
 		});

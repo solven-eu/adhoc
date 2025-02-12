@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
@@ -39,6 +40,19 @@ public class TestAndMatcher {
 		// TODO Improve this when relevant
 		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
 		Assertions.assertThat(a_and_aandb).isEqualTo(a_and_aandb);
+	}
+
+	@Test
+	public void testAnd_all() {
+		AndMatcher matcher =
+				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(IValueMatcher.MATCH_ALL).build();
+		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
+	}
+
+	@Test
+	public void testAnd_none() {
+		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_NONE);
 	}
 
 	@Test

@@ -48,13 +48,7 @@ public class QueryStepsDagsBuilder {
 	}
 
 	public void addRoot(IMeasure queriedMeasure) {
-		AdhocQueryStep rootStep = AdhocQueryStep.builder()
-				.filter(query.getFilter())
-				.groupBy(query.getGroupBy())
-				.measure(queriedMeasure)
-				.customMarker(query.getCustomMarker())
-				.debug(query.isDebug())
-				.build();
+		AdhocQueryStep rootStep = AdhocQueryStep.edit(query).measure(queriedMeasure).build();
 
 		roots.add(rootStep);
 		queryDag.addVertex(rootStep);

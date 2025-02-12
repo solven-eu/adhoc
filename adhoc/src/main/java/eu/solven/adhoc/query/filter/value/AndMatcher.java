@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
@@ -42,6 +45,10 @@ public final class AndMatcher implements IValueMatcher {
 	@NonNull
 	Set<IValueMatcher> operands;
 
+	public boolean isMatchAll() {
+		return operands.isEmpty();
+	}
+
 	public static AndMatcherBuilder builder() {
 		return new AndMatcherBuilder();
 	}
@@ -51,4 +58,34 @@ public final class AndMatcher implements IValueMatcher {
 		return operands.stream().allMatch(operand -> operand.match(value));
 	}
 
+	public static IValueMatcher and(IValueMatcher... filters) {
+		return and(Set.of(filters));
+	}
+
+	public static IValueMatcher and(Set<IValueMatcher> filters) {
+		if (filters.stream().anyMatch(f -> f instanceof OrMatcher orMatcher && orMatcher.isMatchNone())) {
+			return MATCH_NONE;
+		}
+
+		// Skipping matchAll is useful on `.edit`
+		List<? extends IValueMatcher> notMatchAll = filters.stream()
+				.filter(f -> !(f instanceof AndMatcher andMatcher && andMatcher.isMatchAll()))
+				.flatMap(operand -> {
+					if (operand instanceof AndMatcher operandIsAnd) {
+						// AND of ANDs
+						return operandIsAnd.getOperands().stream();
+					} else {
+						return Stream.of(operand);
+					}
+				})
+				.collect(Collectors.toList());
+
+		if (notMatchAll.isEmpty()) {
+			return IValueMatcher.MATCH_ALL;
+		} else if (notMatchAll.size() == 1) {
+			return notMatchAll.getFirst();
+		} else {
+			return AndMatcher.builder().operands(notMatchAll).build();
+		}
+	}
 }

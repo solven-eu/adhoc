@@ -20,23 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
-
-import java.util.Set;
+package eu.solven.adhoc.filter.value;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestIdentityImplicitTranscoder {
-	IdentityImplicitTranscoder transcoder = new IdentityImplicitTranscoder();
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
+public class TestValueMatcher {
 	@Test
-	public void testTranscoder() {
-		Assertions.assertThat(transcoder.underlying("c")).isEqualTo(null);
-
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
-
-		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
-		Assertions.assertThat(context.queried("c")).isEqualTo(Set.of("c"));
+	public void testMatchAll() {
+		Assertions.assertThat(IValueMatcher.MATCH_ALL.match("abc")).isTrue();
+		Assertions.assertThat(IValueMatcher.MATCH_NONE.match("abc")).isFalse();
 	}
 }
