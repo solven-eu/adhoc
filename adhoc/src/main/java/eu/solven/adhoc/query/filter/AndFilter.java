@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -83,8 +84,8 @@ public class AndFilter implements IAndFilter {
 	}
 
 	@Override
-	public List<IAdhocFilter> getOperands() {
-		return List.copyOf(filters);
+	public Set<IAdhocFilter> getOperands() {
+		return ImmutableSet.copyOf(filters);
 	}
 
 	@Override

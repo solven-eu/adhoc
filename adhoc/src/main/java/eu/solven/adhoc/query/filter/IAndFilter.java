@@ -23,19 +23,14 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public interface IAndFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
 
-	/**
-	 * Would throw if `.isAnd` is false
-	 *
-	 * @return
-	 */
 	@Override
-	// This is a logical field, but not a constraint at serialization as some IAndFilter ay be more dynamic than given a
-	// List of operands
+	// This is a logical field, but not a constraint at serialization as some IAndFilter may compute these operands
 	@JsonIgnore
-	List<IAdhocFilter> getOperands();
+	Set<IAdhocFilter> getOperands();
 }

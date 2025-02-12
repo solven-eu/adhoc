@@ -24,10 +24,13 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.base.MoreObjects;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IHasOperands;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -43,7 +46,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class OrMatcher implements IValueMatcher {
+public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	@NonNull
 	@Singular
 	Set<IValueMatcher> operands;
@@ -55,6 +58,28 @@ public class OrMatcher implements IValueMatcher {
 	@Override
 	public boolean match(Object value) {
 		return operands.stream().anyMatch(operand -> operand.match(value));
+	}
+
+
+	@Override
+	public String toString() {
+		if (isMatchNone()) {
+			return "matchNone";
+		}
+
+		int size = operands.size();
+		if (size <= 5) {
+			return operands.stream().map(Object::toString).collect(Collectors.joining("|"));
+		} else {
+			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
+
+			AtomicInteger index = new AtomicInteger();
+			operands.stream().limit(5).forEach(filter -> {
+				toStringHelper.add("#" + index.getAndIncrement(), filter);
+			});
+
+			return toStringHelper.toString();
+		}
 	}
 
 	public static IValueMatcher or(IValueMatcher... filters) {

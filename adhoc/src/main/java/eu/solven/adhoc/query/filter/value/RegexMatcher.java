@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.regex.Pattern;
+
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-
-import java.util.regex.Pattern;
 
 /**
  * To be used with {@link ColumnFilter}, for regex-based matchers.

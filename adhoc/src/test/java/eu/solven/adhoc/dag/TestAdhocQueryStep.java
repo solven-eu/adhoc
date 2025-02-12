@@ -33,6 +33,34 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 public class TestAdhocQueryStep {
 	@Test
+	public void testEdit() {
+		AdhocQueryStep step = AdhocQueryStep.builder()
+				// This test should customize all fields
+				.measure(Aggregator.sum("c"))
+				.filter(IAdhocFilter.MATCH_ALL)
+				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+				.customMarker("somethingCutom")
+				.debug(true)
+				.explain(true)
+				.build();
+
+		step.getCache().put("k", "v");
+
+		AdhocQueryStep copy = AdhocQueryStep.edit(step).build();
+
+		// Check .equals, even if some fields are not in the equals
+		Assertions.assertThat(copy).isEqualTo(step);
+
+		// Check fields not in equals
+		Assertions.assertThat(copy.isExplain()).isEqualTo(step.isExplain());
+		Assertions.assertThat(copy.isDebug()).isEqualTo(step.isDebug());
+
+		// Check Cache is not copied
+		Assertions.assertThat(copy.getCache()).isEmpty();
+		Assertions.assertThat(step.getCache()).hasSize(1);
+	}
+
+	@Test
 	public void testDebug() {
 		AdhocQueryStep stepNotDebug = AdhocQueryStep.builder()
 				.measure(Aggregator.sum("c"))

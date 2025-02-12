@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -189,6 +190,24 @@ public class FilterHelpers {
 			throw new IllegalArgumentException("OrMatcher can not be turned into a Map");
 		} else {
 			throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
+		}
+	}
+
+	public static Set<String> getFilteredColumns(IAdhocFilter filter) {
+		if (filter.isMatchAll() || filter.isMatchNone()) {
+			return Set.of();
+		} else {
+			if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+				return Set.of(columnFilter.getColumn());
+			} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+				return getFilteredColumns(notFilter);
+			} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+				return andFilter.getOperands().stream().flatMap(operand -> getFilteredColumns(operand).stream()).collect(Collectors.toSet());
+			} else if (filter.isAnd() && filter instanceof IOrFilter orFilter) {
+				return orFilter.getOperands().stream().flatMap(operand -> getFilteredColumns(operand).stream()).collect(Collectors.toSet());
+			} else {
+				throw new UnsupportedOperationException("Not managed yet: %s".formatted(filter));
+			}
 		}
 	}
 }

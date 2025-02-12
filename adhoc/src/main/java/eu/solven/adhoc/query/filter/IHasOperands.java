@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.List;
+import java.util.Set;
 
 /**
- * Some operators has a ordered {@link List} of operands
+ * Some operators has a ordered {@link Set} of operands
  *
  * @param <T>
  */
 public interface IHasOperands<T> {
-	List<T> getOperands();
+	Set<T> getOperands();
 }

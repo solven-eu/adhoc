@@ -90,7 +90,7 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, 
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
 		if (step instanceof IIsExplainable explainable) {
-			builder.debug(explainable.isExplain());
+			builder.explain(explainable.isExplain());
 		}
 		if (step instanceof IIsDebugable debuggable) {
 			builder.debug(debuggable.isDebug());

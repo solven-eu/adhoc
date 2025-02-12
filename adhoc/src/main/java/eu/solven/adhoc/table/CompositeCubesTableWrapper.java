@@ -188,11 +188,11 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 				return IAdhocFilter.MATCH_ALL;
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> operands = andFilter.getOperands();
+			Set<IAdhocFilter> operands = andFilter.getOperands();
 			List<IAdhocFilter> filteredOperands = operands.stream().map(f -> filterForColumns(f, columns)).toList();
 			return AndFilter.and(filteredOperands);
 		} else if (filter instanceof IOrFilter orFilter) {
-			List<IAdhocFilter> operands = orFilter.getOperands();
+			Set<IAdhocFilter> operands = orFilter.getOperands();
 			List<IAdhocFilter> filteredOperands = operands.stream()
 					.map(f -> filterForColumns(f, columns))
 					// In a OR, matchAll should be discarded individually, else the whole OR is matchAll

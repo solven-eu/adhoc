@@ -327,8 +327,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			try {
 				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
 			} catch (RuntimeException e) {
-				throw new IllegalStateException(
-						"Issue computing columns for m=%s".formatted(queryStep.getMeasure().getName()),
+				StringBuilder describeStep = new StringBuilder();
+
+				// First, we print only measure as a simplistic shorthand of the step
+				describeStep.append("Issue computing columns for m=%s given %s".formatted(simplistic(queryStep), underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
+				describeStep.append("Issue computing columns for m=%s given %s".formatted(dense(queryStep), underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+
+				throw new IllegalStateException(describeStep.toString()
+						,
 						e);
 			}
 
@@ -342,6 +349,28 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		} else {
 			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}
+	}
+
+	/**
+	 *
+	 * @param queryStep
+	 * @return a simplistic version of the queryStep, for logging purposes
+	 */
+	protected String simplistic(AdhocQueryStep queryStep) {
+		return queryStep.getMeasure().getName();
+	}
+
+	/**
+	 *
+	 * @param queryStep
+	 * @return a dense version of the queryStep, for logging purposes
+	 */
+	protected String dense(AdhocQueryStep queryStep) {
+		// Do not log about debug, explainm or cache
+		return new StringBuilder().append("m=").append(queryStep.getMeasure().getName())
+				.append("filter=").append(queryStep.getFilter())
+				.append("groupBy=").append(queryStep.getGroupBy())
+				.append("custom=").append(queryStep.getCustomMarker()).toString();
 	}
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,

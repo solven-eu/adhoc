@@ -24,10 +24,13 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.base.MoreObjects;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IHasOperands;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -40,7 +43,7 @@ import lombok.Value;
  */
 @Builder
 @Value
-public final class AndMatcher implements IValueMatcher {
+public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	@Singular
 	@NonNull
 	Set<IValueMatcher> operands;
@@ -49,8 +52,25 @@ public final class AndMatcher implements IValueMatcher {
 		return operands.isEmpty();
 	}
 
-	public static AndMatcherBuilder builder() {
-		return new AndMatcherBuilder();
+	@Override
+	public String toString() {
+		if (isMatchAll()) {
+			return "matchAll";
+		}
+
+		int size = operands.size();
+		if (size <= 5) {
+			return operands.stream().map(Object::toString).collect(Collectors.joining("&"));
+		} else {
+			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
+
+			AtomicInteger index = new AtomicInteger();
+			operands.stream().limit(5).forEach(filter -> {
+				toStringHelper.add("#" + index.getAndIncrement(), filter);
+			});
+
+			return toStringHelper.toString();
+		}
 	}
 
 	@Override

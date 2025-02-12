@@ -113,4 +113,10 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(EqualsMatcher.isEqualTo("v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
+
+	@Test
+	public void testGetFilteredColumns() {
+		IAdhocFilter filter = AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2"));
+		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
+	}
 }

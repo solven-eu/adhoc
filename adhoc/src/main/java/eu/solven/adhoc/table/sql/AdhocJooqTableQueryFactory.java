@@ -299,12 +299,12 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			return toCondition(columnFilter);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> operands = andFilter.getOperands();
-			List<Condition> conditions = operands.stream().map(this::toCondition).collect(Collectors.toList());
+			Set<IAdhocFilter> operands = andFilter.getOperands();
+			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
 			return DSL.and(conditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			List<IAdhocFilter> operands = orFilter.getOperands();
-			List<Condition> conditions = operands.stream().map(this::toCondition).collect(Collectors.toList());
+			Set<IAdhocFilter> operands = orFilter.getOperands();
+			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
 			return DSL.or(conditions);
 		} else {
 			throw new UnsupportedOperationException(

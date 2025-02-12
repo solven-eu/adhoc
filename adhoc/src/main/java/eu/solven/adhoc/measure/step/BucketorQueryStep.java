@@ -115,9 +115,8 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice.getAdhocSliceAsMap(), consumer);
+			storage.onValue(slice.getAdhocSliceAsMap(), refV::set);
 
 			return refV.get();
 		}).collect(Collectors.toList());
@@ -126,7 +125,7 @@ public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasU
 		try {
 			value = combinator.combine(slice, underlyingVs);
 		} catch (RuntimeException e) {
-			throw new IllegalArgumentException("Issue combining values=%s in slice=%s".formatted(underlyingVs, slice),
+			throw new IllegalArgumentException("Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
 					e);
 		}
 

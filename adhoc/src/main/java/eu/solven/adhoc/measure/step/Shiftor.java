@@ -105,7 +105,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 				return columnFilter;
 			}
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> operands = andFilter.getOperands();
+			Set<IAdhocFilter> operands = andFilter.getOperands();
 
 			List<IAdhocFilter> shiftedOperands = operands.stream().map(f -> shift(column, value, f)).toList();
 
