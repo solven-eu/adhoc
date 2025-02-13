@@ -20,19 +20,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.measure.step.Combinator;
+import com.google.common.base.Functions;
+
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.pepper.mappath.MapPathGet;
 
 /**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
+ * A {@link ICombination} which multiplies the underlying measures. If any measure is null, the product is null.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+// https://learn.microsoft.com/en-us/dax/product-function-dax
+public class ProductCombination implements ICombination {
+
+	public static final String KEY = "PRODUCT";
+
+	// If true, a null underlying leads to a null output
+	// If false, null underlyings are ignored
+	final boolean nullOperandIsNull;
+
+	public ProductCombination() {
+		nullOperandIsNull = true;
+	}
+
+	@Override
+	public Object combine(List<?> underlyingValues) {
+		if (nullOperandIsNull && underlyingValues.contains(null)) {
+			return null;
+		}
+
+		return underlyingValues.stream()
+				.<Object>map(Functions.identity())
+				.reduce(new ProductAggregator()::aggregate)
+				.orElse(null);
+	}
+
+	public ProductCombination(Map<String, ?> options) {
+		nullOperandIsNull = MapPathGet.<Boolean>getOptionalAs(options, "nullOperandIsNull").orElse(true);
+	}
 
 }

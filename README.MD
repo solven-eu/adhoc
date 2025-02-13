@@ -242,3 +242,4 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 - Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - Resiliency on querySteps errors: a failing measure should not break the whole query.
 - Manage custom types, like filtering on an Enum (see `TestTableQuery_DuckDb_customType`).
+- ITableTranscoder should be managed by `IAdhocCubeWrapper`, not in each `IAdhocTableWrapper`. It can then be coupled with `ICustomTypeManager`

@@ -42,6 +42,8 @@ import com.google.common.collect.ImmutableMap;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
+import eu.solven.adhoc.atoti.custom.CustomActivePivotConditionCubeToAdhoc;
+import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Bucketor;
@@ -322,5 +324,13 @@ public class TestActivePivotMeasureToAdhoc {
 										ImmutableMap.<String, Object>builder().put("customKey", "customValue").build())
 								.underlying("someAggregatedMeasure")
 								.build());
+	}
+
+	@Test
+	public void testCustomConditions() {
+		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
+
+		Assertions.assertThat(converter.getApConditionToAdhoc())
+				.isInstanceOf(CustomActivePivotConditionCubeToAdhoc.class);
 	}
 }

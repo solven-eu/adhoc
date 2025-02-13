@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.measure.aggregation;
 
 import java.util.Arrays;
 

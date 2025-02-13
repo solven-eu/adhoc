@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.atoti.measure;
 
-import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.measure.step.Combinator;
+import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
+
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.combination.ICombination;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
- * 
- * @author Benoit Lacelle
- *
+ * Extends {@link StandardOperatorsFactory} with Atoti additional logics.
  */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+@Slf4j
+@RequiredArgsConstructor
+public class AtotiOperatorsFactory extends StandardOperatorsFactory {
 
+	@Override
+    public ICombination makeCombination(String key, Map<String, ?> options) {
+        return switch (key) {
+            case ArithmeticFormulaPostProcessor.PLUGIN_KEY: {
+                yield new ArithmeticFormulaCombination(options);
+            }
+            default:
+                yield super.makeCombination(key, options);
+        };
+    }
 }

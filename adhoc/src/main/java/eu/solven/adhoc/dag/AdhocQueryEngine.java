@@ -355,11 +355,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			} catch (RuntimeException e) {
 				StringBuilder describeStep = new StringBuilder();
 
+				describeStep.append("Issue computing columns for:");
+
 				// First, we print only measure as a simplistic shorthand of the step
-				describeStep.append("Issue computing columns for m=%s given %s".formatted(simplistic(queryStep),
+				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
 						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
 				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
-				describeStep.append("Issue computing columns for m=%s given %s".formatted(dense(queryStep),
+				describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
 						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
 
 				throw new IllegalStateException(describeStep.toString(), e);
@@ -636,21 +638,21 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		// Add implicitly requested steps
 		while (queryStepsDagBuilder.hasLeftovers()) {
-			AdhocQueryStep adhocSubQuery = queryStepsDagBuilder.pollLeftover();
+			AdhocQueryStep parentStep = queryStepsDagBuilder.pollLeftover();
 
-			IMeasure measure = queryWithContext.resolveIfRef(adhocSubQuery.getMeasure());
+			IMeasure measure = queryWithContext.resolveIfRef(parentStep.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
 				IHasUnderlyingQuerySteps wrappedQueryStep =
-						measureWithUnderlyings.wrapNode(operatorsFactory, adhocSubQuery);
+						measureWithUnderlyings.wrapNode(operatorsFactory, parentStep);
 				for (AdhocQueryStep underlyingStep : wrappedQueryStep.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
 					IMeasure notRefMeasure = queryWithContext.resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 
-					queryStepsDagBuilder.addEdge(adhocSubQuery, underlyingStep);
+					queryStepsDagBuilder.addEdge(parentStep, underlyingStep);
 				}
 			} else {
 				throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(measure).toString());

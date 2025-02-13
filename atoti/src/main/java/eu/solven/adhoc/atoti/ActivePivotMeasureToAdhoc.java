@@ -62,7 +62,9 @@ import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -73,8 +75,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
+// Add constructor to facilitate custom overloads
+@AllArgsConstructor
 public class ActivePivotMeasureToAdhoc {
 	@Builder.Default
+	@Getter
 	final ActivePivotConditionCubeToAdhoc apConditionToAdhoc = new ActivePivotConditionCubeToAdhoc();
 
 	public AdhocMeasureBag asBag(String pivotId, IActivePivotDescription desc) {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,24 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import java.util.List;
-
-import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
 
 /**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
- * 
- * @author Benoit Lacelle
- *
+ * A {@link IAggregation} which is not known by {@link StandardOperatorsFactory}
  */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+public class CustomAggregation implements IAggregation {
+	@Override
+	public Object aggregate(Object left, Object right) {
+		return null;
+	}
 
+	// @Override
+	// public double aggregateDoubles(double left, double right) {
+	// return 0;
+	// }
+
+	// @Override
+	// public long aggregateLongs(long left, long right) {
+	// return 0;
+	// }
 }

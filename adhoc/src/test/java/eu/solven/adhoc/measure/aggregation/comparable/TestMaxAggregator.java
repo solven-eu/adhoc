@@ -20,38 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
-
-import java.util.Map;
+package eu.solven.adhoc.measure.aggregation.comparable;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
-
-public class TestStandardOperatorsFactory {
-	StandardOperatorsFactory factory = new StandardOperatorsFactory();
+public class TestMaxAggregator {
+	MaxAggregator a = new MaxAggregator();
 
 	@Test
-	public void testAggregation_byKey() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY, Map.of());
+	public void testNull() {
+		Assertions.assertThat(a.aggregate(null, null)).isNull();
+		Assertions.assertThat(a.aggregate(null, 123)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
 
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
+		Assertions.assertThat(a.aggregateStrings(null, null)).isNull();
+		Assertions.assertThat(a.aggregateStrings(null, "someS")).isEqualTo("someS");
+		Assertions.assertThat(a.aggregateStrings("someS", null)).isEqualTo("someS");
 	}
 
 	@Test
-	public void testAggregation_byClassQualifiedName() {
-		IAggregation aggregation = factory.makeAggregation(CustomAggregation.class.getName());
+	public void testNominal() {
+		// TODO Is it legal to cast to long?
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(234L);
 
-		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
+		Assertions.assertThat(a.aggregate("qwerty", "azerty")).isEqualTo("qwerty");
+		// Java considers lowerCase greater than upperCase
+		Assertions.assertThat(a.aggregate("a", "A")).isEqualTo("a");
+		Assertions.assertThat(a.aggregate("A", "a")).isEqualTo("a");
 	}
 
 	@Test
-	public void testAggregation_unknownKey() {
-		Assertions.assertThatThrownBy(() -> factory.makeAggregation("someUnknownKey"))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("someUnknownKey");
+	public void testDifferentTypes() {
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(234L);
 	}
 }

@@ -20,29 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.measure.aggregation;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.ProductAggregator;
 
-public class TestCustomOperatorsFactory {
-	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
+public class TestProductAggregator {
+	ProductAggregator a = new ProductAggregator();
 
 	@Test
-	public void testAggregation_custom() {
-		IAggregation aggregation = factory.makeAggregation("CUSTOM");
-
-		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
+	void testNominal() {
+		Assertions.assertThat(a.aggregate(123, 234.56)).isEqualTo(123 * 234.56);
 	}
 
 	@Test
-	public void testAggregation_fallback() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY);
-
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
+	void testNull() {
+		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate(null, 234.56)).isEqualTo(234.56);
 	}
-
 }

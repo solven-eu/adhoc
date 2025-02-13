@@ -20,13 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.atoti.ActivePivotMeasureToAdhoc;
+import lombok.Builder;
 
 /**
- * A {@link ICombination} which is not known by {@link StandardOperatorsFactory}
+ * Demonstrate how to extends {@link ActivePivotMeasureToAdhoc} given it has a {@link Builder}
  */
-public class CustomCombination implements ICombination {
+public class CustomActivePivotMeasureToAdhoc extends ActivePivotMeasureToAdhoc {
+	@Builder(builderMethodName = "customBuilder")
+	public CustomActivePivotMeasureToAdhoc() {
+		super(new CustomActivePivotConditionCubeToAdhoc());
+	}
 }

@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -373,6 +375,28 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
+	}
+
+
+	@Test
+	public void testFilterNone() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
+
+		measureBag.addMeasure(k1Sum);
+
+		ITabularView result = wrapInCube(measureBag).execute(AdhocQuery.builder()
+				.measure(k1Sum.getName())
+				.filter(IAdhocFilter.MATCH_NONE)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 	}
 
 	@Test

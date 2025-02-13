@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.aggregation.comparable;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregator;
@@ -30,7 +31,7 @@ import eu.solven.adhoc.measure.sum.SumAggregator;
 /**
  * Keep the highest value amongst encountered values
  */
-public class MaxAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
+public class MaxAggregator implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
 
 	public static final String KEY = "MAX";
 
@@ -63,7 +64,11 @@ public class MaxAggregator implements IAggregation, IDoubleAggregation, ILongAgg
 
 	@Override
 	public CharSequence aggregateStrings(CharSequence left, CharSequence right) {
-		if (CharSequence.compare(left, right) >= 0) {
+		if (left == null) {
+			return right;
+		} else if (right == null) {
+			return left;
+		} else if (CharSequence.compare(left, right) >= 0) {
 			return left;
 		} else {
 			return right;

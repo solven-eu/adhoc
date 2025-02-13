@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,16 +23,25 @@
 package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 
 /**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
- * 
- * @author Benoit Lacelle
- *
+ * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
  */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+public class CustomDecomposition implements IDecomposition {
+	@Override
+	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
+		return Map.of();
+	}
 
+	@Override
+	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
+		return List.of();
+	}
 }

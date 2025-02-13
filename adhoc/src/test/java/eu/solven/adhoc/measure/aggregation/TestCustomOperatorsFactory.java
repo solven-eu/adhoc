@@ -20,28 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.measure.aggregation;
 
-import java.util.List;
-import java.util.Map;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.measure.sum.SumAggregator;
 
-/**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
- */
-public class CustomDecomposition implements IDecomposition {
-	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
-		return Map.of();
+public class TestCustomOperatorsFactory {
+	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
+
+	@Test
+	public void testAggregation_custom() {
+		IAggregation aggregation = factory.makeAggregation("CUSTOM");
+
+		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
 	}
 
-	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
-		return List.of();
+	@Test
+	public void testAggregation_fallback() {
+		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY);
+
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
 	}
+
 }

@@ -20,27 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.measure.aggregation;
 
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.step.IFilterEditor;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
- * A {@link IAggregation} which is not known by {@link StandardOperatorsFactory}
+ * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
  */
-public class CustomAggregation implements IAggregation {
+public class CustomFilterEditor implements IFilterEditor {
 	@Override
-	public Object aggregate(Object left, Object right) {
-		return null;
+	public IAdhocFilter editFilter(IAdhocFilter input) {
+		return input;
 	}
-
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// return 0;
-	// }
-
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// return 0;
-	// }
 }

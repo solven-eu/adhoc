@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,35 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.measure.step.Combinator;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.sum.SumAggregator;
 
+public class TestStandardOperatorsFactory {
+	StandardOperatorsFactory factory = new StandardOperatorsFactory();
+
+	@Test
+	public void testAggregation_byKey() {
+		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY, Map.of());
+
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
+	}
+
+	@Test
+	public void testAggregation_byClassQualifiedName() {
+		IAggregation aggregation = factory.makeAggregation(CustomAggregation.class.getName());
+
+		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
+	}
+
+	@Test
+	public void testAggregation_unknownKey() {
+		Assertions.assertThatThrownBy(() -> factory.makeAggregation("someUnknownKey"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("someUnknownKey");
+	}
 }

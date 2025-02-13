@@ -20,19 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.aggregations;
+package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.step.IFilterEditor;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.atoti.ActivePivotConditionCubeToAdhoc;
 
 /**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
+ * Check we can customize ActivePivotConditionCubeToAdhoc
  */
-public class CustomFilterEditor implements IFilterEditor {
-	@Override
-	public IAdhocFilter editFilter(IAdhocFilter input) {
-		return input;
-	}
+public class CustomActivePivotConditionCubeToAdhoc extends ActivePivotConditionCubeToAdhoc {
 }

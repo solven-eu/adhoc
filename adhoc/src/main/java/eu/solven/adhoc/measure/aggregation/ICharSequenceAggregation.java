@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,26 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import java.util.List;
-
-import eu.solven.adhoc.measure.step.Combinator;
-
 /**
- * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
+ * Relates with {@link IAggregation} when it is meaningful to have a dedicated aggregations for primitive doubles.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAggregation {
-	Object aggregate(Object left, Object right);
+public interface ICharSequenceAggregation {
 
+	// default
+	CharSequence aggregateStrings(CharSequence left, CharSequence right);
+	// {
+	// Object aggregated = aggregate(left, right);
+	//
+	// if (aggregated == null) {
+	// return null;
+	// }
+	//
+	// if (aggregated instanceof CharSequence aggregatedCharSequence) {
+	// return aggregatedCharSequence;
+	// } else {
+	// return aggregated.toString();
+	// }
+	// }
 }
