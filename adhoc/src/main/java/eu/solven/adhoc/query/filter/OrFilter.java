@@ -124,8 +124,7 @@ public class OrFilter implements IOrFilter {
 		}
 	}
 
-
-	public static IAdhocFilter or(IAdhocFilter first,IAdhocFilter second, IAdhocFilter... more) {
+	public static IAdhocFilter or(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
 		return or(Lists.asList(first, second, more));
 	}
 }

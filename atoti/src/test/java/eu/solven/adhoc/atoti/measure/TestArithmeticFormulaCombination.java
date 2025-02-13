@@ -54,6 +54,6 @@ public class TestArithmeticFormulaCombination {
 		IAdhocSliceWithStep slice = Mockito.mock(IAdhocSliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(34.56))).isEqualTo(123 * 34.56 * 234);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isEqualTo(123 * 234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isNull();
 	}
 }

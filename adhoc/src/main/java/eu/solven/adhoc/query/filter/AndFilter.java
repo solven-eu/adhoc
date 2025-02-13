@@ -113,7 +113,7 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
-	public static IAdhocFilter and(IAdhocFilter first,IAdhocFilter second, IAdhocFilter... more) {
+	public static IAdhocFilter and(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
 		return and(Lists.asList(first, second, more));
 	}
 

@@ -22,17 +22,18 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
+
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 public class TestOrMatcher {
 	@Test
@@ -77,17 +78,17 @@ public class TestOrMatcher {
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
-{
-  "type" : "or",
-  "operands" : [ {
-    "type" : "like",
-    "like" : "b%"
-  }, {
-    "type" : "equals",
-    "operand" : "azerty"
-  } ]
-}
-				""".trim());
+				{
+				  "type" : "or",
+				  "operands" : [ {
+				    "type" : "equals",
+				    "operand" : "azerty"
+				  }, {
+				    "type" : "like",
+				    "like" : "b%"
+				  } ]
+				}
+												""".trim());
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 

@@ -24,16 +24,15 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.util.AdhocUnsafe;
