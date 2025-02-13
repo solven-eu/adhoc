@@ -35,6 +35,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -50,6 +51,7 @@ import lombok.extern.jackson.Jacksonized;
 public class OrFilter implements IOrFilter {
 
 	@Singular
+	@NonNull
 	final ImmutableSet<IAdhocFilter> filters;
 
 	@Override
@@ -122,7 +124,8 @@ public class OrFilter implements IOrFilter {
 		}
 	}
 
-	public static IAdhocFilter or(IAdhocFilter first, IAdhocFilter... more) {
-		return or(Lists.asList(first, more));
+
+	public static IAdhocFilter or(IAdhocFilter first,IAdhocFilter second, IAdhocFilter... more) {
+		return or(Lists.asList(first, second, more));
 	}
 }

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -86,11 +88,11 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 		}
 	}
 
-	public static IValueMatcher or(IValueMatcher... filters) {
-		return or(Set.of(filters));
+	public static IValueMatcher or(IValueMatcher first, IValueMatcher second, IValueMatcher... more) {
+		return or(Lists.asList(first, second, more));
 	}
 
-	public static IValueMatcher or(Set<IValueMatcher> filters) {
+	public static IValueMatcher or(Collection<? extends IValueMatcher> filters) {
 		if (filters.stream().anyMatch(f -> f instanceof AndMatcher andMatcher && andMatcher.isMatchAll())) {
 			return MATCH_ALL;
 		}

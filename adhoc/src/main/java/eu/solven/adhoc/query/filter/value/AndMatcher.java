@@ -22,16 +22,10 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
-
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -39,17 +33,26 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
  *
  * @author Benoit Lacelle
  */
-@Builder
 @Value
+@Builder
+@Jacksonized
 public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
-	@Singular
 	@NonNull
+	@Singular
 	ImmutableSet<IValueMatcher> operands;
 
 	@JsonIgnore
@@ -83,11 +86,11 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		return operands.stream().allMatch(operand -> operand.match(value));
 	}
 
-	public static IValueMatcher and(IValueMatcher... filters) {
-		return and(Set.of(filters));
+	public static IValueMatcher and(IValueMatcher first, IValueMatcher second, IValueMatcher... more) {
+		return and(Lists.asList(first, second, more));
 	}
 
-	public static IValueMatcher and(Set<IValueMatcher> filters) {
+	public static IValueMatcher and(Collection<? extends IValueMatcher> filters) {
 		if (filters.stream().anyMatch(f -> f instanceof OrMatcher orMatcher && orMatcher.isMatchNone())) {
 			return MATCH_NONE;
 		}

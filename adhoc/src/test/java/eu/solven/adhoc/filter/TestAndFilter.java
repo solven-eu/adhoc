@@ -164,8 +164,7 @@ public class TestAndFilter {
 
 	@Test
 	public void testChained() {
-		IAdhocFilter a1 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"));
-		IAdhocFilter a1Andb2 = AndFilter.and(a1, ColumnFilter.isEqualTo("b", "b2"));
+		IAdhocFilter a1Andb2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
 		IAdhocFilter a1Andb2AndC3 = AndFilter.and(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(AndFilter.class, andFilter -> {

@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -61,6 +63,7 @@ import lombok.extern.jackson.Jacksonized;
 public class AndFilter implements IAndFilter {
 
 	@Singular
+	@NonNull
 	final ImmutableSet<IAdhocFilter> filters;
 
 	@Override
@@ -110,11 +113,11 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
-	public static IAdhocFilter and(IAdhocFilter filter, IAdhocFilter... moreFilters) {
-		return and(Lists.asList(filter, moreFilters));
+	public static IAdhocFilter and(IAdhocFilter first,IAdhocFilter second, IAdhocFilter... more) {
+		return and(Lists.asList(first, second, more));
 	}
 
-	public static IAdhocFilter and(List<? extends IAdhocFilter> filters) {
+	public static IAdhocFilter and(Collection<? extends IAdhocFilter> filters) {
 		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
 			return MATCH_NONE;
 		}
@@ -124,7 +127,7 @@ public class AndFilter implements IAndFilter {
 
 	// Like `and` but skipping the optimization. May be useful for debugging
 	// BEWARE Synchronize with AndFilter
-	private static IAdhocFilter andNotOptimized(List<? extends IAdhocFilter> filters) {
+	private static IAdhocFilter andNotOptimized(Collection<? extends IAdhocFilter> filters) {
 		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
 			return MATCH_NONE;
 		}
@@ -148,11 +151,13 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
-	private static List<? extends IAdhocFilter> packColumnFilters(List<? extends IAdhocFilter> filters) {
+	private static Collection<? extends IAdhocFilter> packColumnFilters(Collection<? extends IAdhocFilter> filters) {
 		Map<Boolean, List<IAdhocFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.groupingBy(f -> f instanceof IColumnFilter));
 
-		if (isColumnToFilters.containsKey(true)) {
+		if (!isColumnToFilters.containsKey(true)) {
+			return filters;
+		} else {
 			// isMatchNone is cross column as a single column not matching anything reject the whole filter
 			AtomicBoolean isMatchNone = new AtomicBoolean();
 
@@ -255,8 +260,6 @@ public class AndFilter implements IAndFilter {
 						.addAll(notManaged)
 						.build();
 			}
-		} else {
-			return filters;
 		}
 	}
 
