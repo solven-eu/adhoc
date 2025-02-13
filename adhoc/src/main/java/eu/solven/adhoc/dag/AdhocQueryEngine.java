@@ -46,7 +46,9 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.column.DefaultCustomTypeManager;
 import eu.solven.adhoc.column.DefaultMissingColumnManager;
+import eu.solven.adhoc.column.ICustomTypeManager;
 import eu.solven.adhoc.column.IMissingColumnManager;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
@@ -67,7 +69,8 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IHasGroupBy;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
@@ -103,18 +106,41 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
 
 	@NonNull
+	@Default
+	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
+
+	@NonNull
 	final IAdhocEventBus eventBus;
 
 	@Override
 	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
-		Set<TableQuery> prepared = prepareForTable(queryWithContext);
+		Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
 
 		Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
-		for (TableQuery dbQuery : prepared) {
-			dbQueryToStream.put(dbQuery, table.openDbStream(dbQuery));
+		for (TableQuery tableQuery : tableQueries) {
+			dbQueryToStream.put(tableQuery, openDbStream(table, tableQuery));
 		}
 
 		return execute(queryWithContext, dbQueryToStream);
+	}
+
+	protected IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery tableQuery) {
+		TableQuery transcodedQuery =
+				TableQuery.edit(tableQuery).filter(transcodeFilter(tableQuery.getFilter())).build();
+
+		return table.openDbStream(transcodedQuery);
+	}
+
+	protected IAdhocFilter transcodeFilter(IAdhocFilter filter) {
+		// TODO Transcoder columns and types
+		// if (filter.isMatchAll() || filter.isMatchNone()) {
+		return filter;
+		// } else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+		// return ColumnFilter.
+		// } else {
+		// throw new UnsupportedOperationException(
+		// "Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		// }
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
@@ -378,7 +404,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery adhocQuery,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery tableQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
@@ -396,12 +422,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		// TODO We'd like to log on the last row, to have the number if row actually
 		// streamed
-		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(adhocQuery);
+		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
 		try {
 			stream.asMap().forEach(input -> {
-				forEachStreamedRow(adhocQuery,
+				forEachStreamedRow(tableQuery,
 						columnToAggregators,
 						input,
 						peekOnCoordinate,
@@ -416,7 +442,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
-	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery adhocQuery) {
+	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
@@ -427,12 +453,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.
 				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
 				int currentOut = nbOut.incrementAndGet();
-				if (adhocQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
+				if (tableQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
 					log.info("We rejected {} as row #{}", input, currentOut);
 				}
 			} else {
 				int currentIn = nbIn.incrementAndGet();
-				if (adhocQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
+				if (tableQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
 					log.info("We accepted {} as row #{}", input, currentIn);
 				}
 			}
@@ -440,7 +466,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return peekOnCoordinate;
 	}
 
-	protected void forEachStreamedRow(TableQuery tableQuery,
+	protected void forEachStreamedRow(IHasGroupBy tableQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			Map<String, ?> tableRow,
 			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
@@ -497,12 +523,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	/**
-	 * @param adhocQuery
+	 * @param tableQuery
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<AdhocSliceAsMap> makeCoordinate(IWhereGroupbyAdhocQuery adhocQuery, Map<String, ?> tableRow) {
-		IAdhocGroupBy groupBy = adhocQuery.getGroupBy();
+	protected Optional<AdhocSliceAsMap> makeCoordinate(IHasGroupBy tableQuery, Map<String, ?> tableRow) {
+		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
 			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
 		}

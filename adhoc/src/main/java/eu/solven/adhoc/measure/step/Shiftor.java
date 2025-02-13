@@ -96,7 +96,9 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	 * @return a filter equivalent to input filter, except the column is filtered on given value
 	 */
 	public static IAdhocFilter shift(String column, Object value, IAdhocFilter filter) {
-		if (filter.isMatchAll() || filter.isMatchNone()) {
+		if (filter.isMatchNone()) {
+			return filter;
+		} else if (filter.isMatchAll()) {
 			return ColumnFilter.isEqualTo(column, value);
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			if (columnFilter.getColumn().equals(column)) {

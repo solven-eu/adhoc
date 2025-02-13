@@ -237,9 +237,6 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 
 # Roadmap / Limitations to lift soon
 
-- Converge `IAdhocFilter` (filtering the data available to the query) with `IAdhocSlice.getRawFilter` (expressing the `filters` of current slice).
-- Enable visual-filter, e.g. `groupBy(country in ['FR', 'UK']` which is not the same as `WHERE country in ['FR', 'UK']` especially on a measure like `/ Europe`
-- Make it simple to extract a column single equalsFilter from a potentially complex `IAdhocFilter`
 - Concurrency: for instance when processing the DAG given the results from the `TableQuery`
 - BDD: Automated generation of Scenario given an `IAdhocQuery`
 - Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).

@@ -47,6 +47,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
 @Disabled("TODO")
+// https://www.jooq.org/doc/latest/manual/sql-building/queryparts/custom-bindings/
 public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 
 	static {
@@ -57,6 +58,7 @@ public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(this.getClass().getName()).build();
 
 	String tableName = "someTableName";
 
@@ -79,17 +81,20 @@ public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 		A, B, C
 	}
 
-	@Test
-	public void testFilterEnum() {
+	private void initAndInsert() {
 		dsl.createTableIfNotExists(tableName)
-				.column("a", SQLDataType.VARCHAR)
+				.column("letter", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("A", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("B", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("C", 345).execute();
+	}
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+	@Test
+	public void testFilterEnum() {
+		initAndInsert();
+
 		measureBag.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
@@ -105,15 +110,8 @@ public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 
 	@Test
 	public void testGroupByEnum() {
-		dsl.createTableIfNotExists(tableName)
-				.column("a", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.DOUBLE)
-				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("A", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("B", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("C", 345).execute();
+		initAndInsert();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
 		measureBag.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy

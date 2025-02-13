@@ -20,31 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.column_shift;
+package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+public class DefaultCustomTypeManager implements ICustomTypeManager {
 
-import eu.solven.adhoc.measure.step.Shiftor;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-
-public class TestShiftor {
-	@Test
-	public void testShiftColumn() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(ColumnFilter.isEqualTo("c", "v1"));
-	}
-
-	@Test
-	public void testShiftIfPresent() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-		Assertions.assertThat(Shiftor.shiftIfPresent("c", "v1", filter)).isEqualTo(IAdhocFilter.MATCH_ALL);
-	}
-
-	@Test
-	public void testMatchNone() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_NONE;
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(IAdhocFilter.MATCH_NONE);
-	}
 }

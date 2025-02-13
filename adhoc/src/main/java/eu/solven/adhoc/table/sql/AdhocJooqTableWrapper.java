@@ -35,12 +35,9 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Record1;
 import org.jooq.ResultQuery;
-import org.jooq.SelectJoinStep;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
-import org.jooq.impl.DSL;
 
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
@@ -184,7 +181,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 				// We transcode only groupBy columns, as an aggregator may have a name matching an underlying column
 				Map<String, ?> transcoded = transcodeFromDb(transcodingContext, notTranscoded);
 
-				// ImmutableMap does not accept null value. How should we handle missing value i ngroupBy, when returned
+				// ImmutableMap does not accept null value. How should we handle missing value in groupBy, when returned
 				// as null by DB?
 				// return ImmutableMap.<String, Object>builderWithExpectedSize(transcoded.size() +
 				// aggregatorValues.size())
@@ -217,29 +214,16 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
 		DSLContext dslContext = makeDsl();
 
-		// This would fail in case of complex `from` expression, like one with JOINs
-		SelectJoinStep<Record1<Object>> query =
-				dslContext.select(DSL.field(DSL.unquotedName("DESCRIBE"))).from(dbParameters.getTable());
 		try {
-			// "column_name",
-			// "column_type",
-			// "null",
-			// "key",
-			// "default",
-			// "extra"
-
-			Map<Object, Object> columnNameToType = dslContext.fetchStream(query)
-					.collect(Collectors.toMap(r -> r.get("column_name"), r -> r.get("column_type")));
-
+			Map<String, Class<?>> columnNameToType = getColumns();
 			log.info("[DEBUG] {}", columnNameToType);
 
 			// https://stackoverflow.com/questions/76908078/how-to-check-if-a-query-is-valid-or-not-using-jooq
 			String plan = dslContext.explain(resultQuery).plan();
 
 			log.info("[DEBUG] Query plan: {}", plan);
-
 		} catch (RuntimeException e) {
-			log.debug("[DEBUG] Issue executing debug-query: {}", query, e);
+			log.warn("[DEBUG] Issue on EXPLAIN on query={}", resultQuery, e);
 		}
 	}
 
