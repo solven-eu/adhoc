@@ -101,10 +101,13 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 		} else if (filter.isMatchAll()) {
 			return ColumnFilter.isEqualTo(column, value);
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			ColumnFilter shiftColumn = ColumnFilter.isEqualTo(column, value);
 			if (columnFilter.getColumn().equals(column)) {
-				return ColumnFilter.isEqualTo(column, value);
+				// Replace the valueMatcher by the shift
+				return shiftColumn;
 			} else {
-				return columnFilter;
+				// Combine both columns
+				return AndFilter.and(columnFilter, shiftColumn);
 			}
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();

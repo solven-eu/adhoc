@@ -36,6 +36,7 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.measure.aggregation.collection.MapAggregator;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -132,7 +133,7 @@ public class MapBasedTabularView implements ITabularView {
 		AtomicInteger index = new AtomicInteger();
 		coordinatesToValues.entrySet()
 				.stream()
-				.limit(5)
+				.limit(AdhocUnsafe.limitOrdinalToString)
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
 		return toStringHelper.toString();

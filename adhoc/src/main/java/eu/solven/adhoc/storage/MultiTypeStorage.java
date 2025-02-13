@@ -33,6 +33,7 @@ import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
@@ -319,7 +320,7 @@ public class MultiTypeStorage<T> {
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keySetStream().limit(5).forEach(key -> {
+		keySetStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
 			onValue(key, AsObjectValueConsumer.consumer(o -> {
 				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));

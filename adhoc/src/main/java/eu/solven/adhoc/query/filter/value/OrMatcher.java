@@ -28,10 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
 
+import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -50,8 +53,9 @@ import lombok.extern.jackson.Jacksonized;
 public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	@NonNull
 	@Singular
-	Set<IValueMatcher> operands;
+	ImmutableSet<IValueMatcher> operands;
 
+	@JsonIgnore
 	public boolean isMatchNone() {
 		return operands.isEmpty();
 	}
@@ -68,13 +72,13 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 		}
 
 		int size = operands.size();
-		if (size <= 5) {
+		if (size <= AdhocUnsafe.limitOrdinalToString) {
 			return operands.stream().map(Object::toString).collect(Collectors.joining("|"));
 		} else {
 			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
 
 			AtomicInteger index = new AtomicInteger();
-			operands.stream().limit(5).forEach(filter -> {
+			operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 

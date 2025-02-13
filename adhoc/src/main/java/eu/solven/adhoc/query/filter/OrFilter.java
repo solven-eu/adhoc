@@ -33,6 +33,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -49,7 +50,7 @@ import lombok.extern.jackson.Jacksonized;
 public class OrFilter implements IOrFilter {
 
 	@Singular
-	final Set<IAdhocFilter> filters;
+	final ImmutableSet<IAdhocFilter> filters;
 
 	@Override
 	public boolean isNot() {
@@ -74,7 +75,7 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public Set<IAdhocFilter> getOperands() {
-		return ImmutableSet.copyOf(filters);
+		return filters;
 	}
 
 	@Override
@@ -84,13 +85,13 @@ public class OrFilter implements IOrFilter {
 		}
 
 		int size = filters.size();
-		if (size <= 5) {
+		if (size <= AdhocUnsafe.limitOrdinalToString) {
 			return filters.stream().map(Object::toString).collect(Collectors.joining("|"));
 		} else {
 			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
 
 			AtomicInteger index = new AtomicInteger();
-			filters.stream().limit(5).forEach(filter -> {
+			filters.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 

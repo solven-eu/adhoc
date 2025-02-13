@@ -25,23 +25,20 @@ package eu.solven.adhoc.filter.value;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.query.filter.value.AndMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class TestAndMatcher {
+public class TestOrMatcher {
 	@Test
 	public void testAndInEq() {
-		AndMatcher a_and_aandb =
-				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
+		OrMatcher a_and_aandb =
+				OrMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
 
 		// TODO Improve this when relevant
 		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
@@ -50,29 +47,29 @@ public class TestAndMatcher {
 
 	@Test
 	public void testAnd_all() {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
-		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 
 	@Test
 	public void testAnd_none() {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
-		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_NONE);
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
 	}
 
 	@Test
 	public void testEqualsDifferentOrder() {
-		AndMatcher aThenB =
-				AndMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
-		AndMatcher bThenA =
-				AndMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
+		OrMatcher aThenB =
+				OrMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
+		OrMatcher bThenA =
+				OrMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
 
 		Assertions.assertThat(aThenB).isEqualTo(bThenA);
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%"));
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%"));
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -81,13 +78,13 @@ public class TestAndMatcher {
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 {
-  "type" : "and",
+  "type" : "or",
   "operands" : [ {
-    "type" : "equals",
-    "operand" : "azerty"
-  }, {
     "type" : "like",
     "like" : "b%"
+  }, {
+    "type" : "equals",
+    "operand" : "azerty"
   } ]
 }
 				""".trim());

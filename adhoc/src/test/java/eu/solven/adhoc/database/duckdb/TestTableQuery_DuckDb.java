@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.value.InMatcher;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -46,6 +44,7 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -377,7 +376,6 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
 	}
 
-
 	@Test
 	public void testFilterNone() {
 		dsl.createTableIfNotExists(tableName)
@@ -390,10 +388,8 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 		measureBag.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(measureBag).execute(AdhocQuery.builder()
-				.measure(k1Sum.getName())
-				.filter(IAdhocFilter.MATCH_NONE)
-				.build());
+		ITabularView result = wrapInCube(measureBag)
+				.execute(AdhocQuery.builder().measure(k1Sum.getName()).filter(IAdhocFilter.MATCH_NONE).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();

@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -72,7 +73,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", nameToColumn.size());
 
 		AtomicInteger index = new AtomicInteger();
-		nameToColumn.entrySet().stream().limit(5).forEach(filter -> {
+		nameToColumn.entrySet().stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 			toStringHelper.add("#" + index.getAndIncrement(), filter);
 		});
 
