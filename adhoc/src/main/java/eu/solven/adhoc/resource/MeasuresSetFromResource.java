@@ -59,7 +59,7 @@ import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.step.IHasCombinationKey;
 import eu.solven.adhoc.measure.step.Shiftor;
 import eu.solven.adhoc.measure.step.Unfiltrator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -532,7 +532,7 @@ public class MeasuresSetFromResource {
 
 		if (measure instanceof Aggregator a) {
 			clean.put(KEY_TYPE, "aggregator");
-			if (SumAggregator.KEY.equals(a.getAggregationKey())) {
+			if (SumAggregation.KEY.equals(a.getAggregationKey())) {
 				clean.remove("aggregationKey");
 			}
 			if (a.getColumnName().equals(a.getName())) {

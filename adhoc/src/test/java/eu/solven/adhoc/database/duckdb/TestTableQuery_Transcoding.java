@@ -40,7 +40,8 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -123,7 +124,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 
 		{
 			// There is an aggregator which name is also an underlying column: it does not be reverseTranscoded
-			Aggregator kSum = Aggregator.builder().name("k").aggregationKey(SumAggregator.KEY).build();
+			Aggregator kSum = Aggregator.builder().name("k").aggregationKey(SumAggregation.KEY).build();
 
 			// We request both k1 and k, which are the same in DB
 			TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum, kSum)).build();
@@ -172,8 +173,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		}
 
 		{
-			Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregator.KEY).build();
-			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregator.KEY).build();
+			Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
+			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregation.KEY).build();
 
 			TableQuery qK1K2 = TableQuery.builder().aggregators(Set.of(k1Sum, k2Sum, k3Sum, k4Sum)).build();
 			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
@@ -266,6 +267,9 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
+		measureBag.addMeasure(k1Sum);
+
 		{
 			AdhocQuery query = AdhocQuery.builder()
 					.measure(k1Sum.getName())
@@ -274,15 +278,49 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.debug(true)
 					.build();
 
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
-			measureBag.addMeasure(k1Sum);
-
 			ITabularView result = aqe.execute(query, measureBag, jooqDb);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
 					.containsEntry(Map.of("k1", 123), Map.of("k1", 0L + 123));
+		}
+	}
+
+	@Test
+	public void testAdhocQuery_transcodeAggregatedToExpression() {
+		// In this useCase, we rely on a simple FILTER expression
+		// While this could be done with a Filtrator, it demonstrate useCases like: potentially more complex
+		// expressions, or Atoti ColumnCalculator
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
+				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
+				.build();
+
+		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
+		DSLContext dsl = jooqDb.makeDsl();
+
+		dsl.createTableIfNotExists(tableName)
+				.column("v", SQLDataType.DOUBLE)
+				.column("color", SQLDataType.VARCHAR)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("v"), DSL.field("color"))
+				.values(123, "red")
+				.values(234, "blue")
+				.values(345, "red")
+				.execute();
+
+		Aggregator vRedSum = Aggregator.builder().name("v_RED").aggregationKey(ExpressionAggregation.KEY).build();
+		measureBag.addMeasure(vRedSum);
+
+		{
+			AdhocQuery query = AdhocQuery.builder().measure("v_RED").build();
+
+			ITabularView result = aqe.execute(query, measureBag, jooqDb);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.hasSize(1)
+					.containsEntry(Map.of(), Map.of("v_RED", 0D + 345));
 		}
 	}
 }

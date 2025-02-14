@@ -57,8 +57,8 @@ import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.step.Shiftor;
 import eu.solven.adhoc.measure.step.Unfiltrator;
-import eu.solven.adhoc.measure.sum.CountAggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -103,8 +103,8 @@ public class ActivePivotMeasureToAdhoc {
 			// contributors.COUNT was not present in the description, but it is then added implicitly
 			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
 					.name(IMeasureHierarchy.COUNT_ID)
-					.aggregationKey(CountAggregator.KEY)
-					.columnName(CountAggregator.ASTERISK);
+					.aggregationKey(CountAggregation.KEY)
+					.columnName(CountAggregation.ASTERISK);
 			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
 
 			// Do not add update.TIMESTAMP as it is any way ambiguous regarding the underlying columnName
@@ -147,8 +147,8 @@ public class ActivePivotMeasureToAdhoc {
 		String aggregationKey;
 		String columnName;
 		if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
-			aggregationKey = CountAggregator.KEY;
-			columnName = CountAggregator.ASTERISK;
+			aggregationKey = CountAggregation.KEY;
+			columnName = CountAggregation.ASTERISK;
 		} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
 			aggregationKey = MaxAggregator.KEY;
 			// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this
@@ -334,7 +334,7 @@ public class ActivePivotMeasureToAdhoc {
 				.combinationKey(measure.getPluginKey())
 				.groupBy(GroupByColumns.named(leafLevels))
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
-						SumAggregator.KEY));
+						SumAggregation.KEY));
 
 		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
 		properties.stringPropertyNames()

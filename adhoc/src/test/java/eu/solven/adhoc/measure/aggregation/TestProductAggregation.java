@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.measure.aggregation;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
- * 
- * @author Benoit Lacelle
- *
- */
-@Value
-@Builder
-@Jacksonized
-public class EqualsMatcher implements IValueMatcher {
-	@NonNull
-	Object operand;
+import eu.solven.adhoc.measure.sum.ProductAggregation;
 
-	@Override
-	public boolean match(Object value) {
-		return operand == value || operand.equals(value);
+public class TestProductAggregation {
+	ProductAggregation a = new ProductAggregation();
+
+	@Test
+	void testNominal() {
+		Assertions.assertThat(a.aggregate(123, 234.56)).isEqualTo(123 * 234.56);
 	}
 
-	public static IValueMatcher isEqualTo(Object operand) {
-		if (operand == null) {
-			return NullMatcher.matchNull();
-		} else {
-			return EqualsMatcher.builder().operand(operand).build();
-		}
+	@Test
+	void testNull() {
+		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate(null, 234.56)).isEqualTo(234.56);
 	}
 }

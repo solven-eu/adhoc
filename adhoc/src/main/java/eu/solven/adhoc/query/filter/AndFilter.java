@@ -52,7 +52,9 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Default implementation for {@link IAndFilter}
+ * Default implementation for {@link IAndFilter}.
+ *
+ * Prefer `.and(...)` to optimize the matcher, except if you need an unoptimized `AndFilter`.
  *
  * @author Benoit Lacelle
  *
@@ -113,6 +115,7 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
+	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IAdhocFilter and(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
 		return and(Lists.asList(first, second, more));
 	}

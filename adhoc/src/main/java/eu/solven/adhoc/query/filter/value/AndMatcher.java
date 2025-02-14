@@ -45,6 +45,8 @@ import lombok.extern.jackson.Jacksonized;
 /**
  * To be used with {@link ColumnFilter}, for AND matchers. True if there is not a single operand.
  *
+ * Prefer `.and(...)` to optimize the matcher, except if you need an unoptimized `AndMatcher`.
+ *
  * @author Benoit Lacelle
  */
 @Value
@@ -86,6 +88,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		return operands.stream().allMatch(operand -> operand.match(value));
 	}
 
+	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IValueMatcher and(IValueMatcher first, IValueMatcher second, IValueMatcher... more) {
 		return and(Lists.asList(first, second, more));
 	}

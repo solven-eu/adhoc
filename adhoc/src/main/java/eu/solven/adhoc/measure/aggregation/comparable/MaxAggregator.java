@@ -26,7 +26,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 
 /**
  * Keep the highest value amongst encountered values
@@ -43,7 +43,7 @@ public class MaxAggregator implements IAggregation, IDoubleAggregation, ILongAgg
 			return l;
 		} else {
 			if (l instanceof Number lAsNumber && r instanceof Number rAsNumber) {
-				if (SumAggregator.isLongLike(l) && SumAggregator.isLongLike(r)) {
+				if (SumAggregation.isLongLike(l) && SumAggregation.isLongLike(r)) {
 					long leftAsLong = lAsNumber.longValue();
 					long rightAsLong = rAsNumber.longValue();
 

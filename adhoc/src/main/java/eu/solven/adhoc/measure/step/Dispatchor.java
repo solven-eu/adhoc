@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -77,7 +77,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	 */
 	@NonNull
 	@Default
-	String aggregationKey = SumAggregator.KEY;
+	String aggregationKey = SumAggregation.KEY;
 
 	/**
 	 * @see IDecomposition

@@ -22,20 +22,27 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
  * To be used with {@link ColumnFilter}, for IN-based matchers.
- * 
+ *
+ * Prefer `.in(...)` to optimize the matcher, except if you need an unoptimized `InMatcher`.
+ *
  * @author Benoit Lacelle
  *
  */
@@ -44,6 +51,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class InMatcher implements IValueMatcher {
 	@NonNull
+	@Singular
 	Set<?> operands;
 
 	@Override
@@ -71,16 +79,34 @@ public class InMatcher implements IValueMatcher {
 		return toStringHelper.toString();
 	}
 
-	public static IValueMatcher isIn(Set<?> allowedValues) {
-		if (allowedValues.size() == 1) {
-			Object singleValue = allowedValues.iterator().next();
-			return EqualsMatcher.builder().operand(singleValue).build();
+	/**
+	 *
+	 * @param allowedValues
+	 *            {@link Collection} will be unnested.
+	 * @return
+	 */
+	public static IValueMatcher isIn(Collection<?> allowedValues) {
+		List<Object> unnested = allowedValues.stream().flatMap(allowed -> {
+			if (allowed instanceof Collection<?> asCollection) {
+				return asCollection.stream();
+			} else {
+				return Stream.of(allowed);
+			}
+		}).toList();
+		if (unnested.size() == 1) {
+			Object singleValue = unnested.getFirst();
+			return EqualsMatcher.isEqualTo(singleValue);
 		} else {
 			return InMatcher.builder().operands(allowedValues).build();
 		}
 	}
 
-	public static IValueMatcher isIn(Object... operands) {
-		return isIn(Set.of(operands));
+	/**
+	 * {@link Collection} will be unnested.
+	 * 
+	 * @return
+	 */
+	public static IValueMatcher isIn(Object first, Object second, Object... more) {
+		return isIn(Lists.asList(first, second, more));
 	}
 }

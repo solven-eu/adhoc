@@ -114,14 +114,21 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	@Override
 	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
-		Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
+		try {
+			Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
 
-		Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
-		for (TableQuery tableQuery : tableQueries) {
-			dbQueryToStream.put(tableQuery, openDbStream(table, tableQuery));
+			Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
+			for (TableQuery tableQuery : tableQueries) {
+				dbQueryToStream.put(tableQuery, openDbStream(table, tableQuery));
+			}
+
+			return execute(queryWithContext, dbQueryToStream);
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException(
+					"Issue executing query=%s options=%s".formatted(queryWithContext.getQuery(),
+							queryWithContext.getOptions()),
+					e);
 		}
-
-		return execute(queryWithContext, dbQueryToStream);
 	}
 
 	protected IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery tableQuery) {

@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.sum.SumElseSetAggregator;
+import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.storage.ITabularView;
@@ -97,7 +97,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				.groupBy(GroupByColumns.named("ccyFrom"))
 				.combinationKey(ForeignExchangeCombination.KEY)
 				// This tests we can refer an aggregation key but its class
-				.aggregationKey(SumElseSetAggregator.class.getName())
+				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 
 		amb.addMeasure(k1Sum);

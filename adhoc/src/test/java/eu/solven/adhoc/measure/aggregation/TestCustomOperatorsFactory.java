@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.aggregation;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestCustomOperatorsFactory {
 	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
@@ -39,9 +39,9 @@ public class TestCustomOperatorsFactory {
 
 	@Test
 	public void testAggregation_fallback() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY);
+		IAggregation aggregation = factory.makeAggregation(SumAggregation.KEY);
 
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregation.class);
 	}
 
 }

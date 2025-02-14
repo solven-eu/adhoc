@@ -35,13 +35,13 @@ import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.step.Shiftor;
 import eu.solven.adhoc.measure.step.Unfiltrator;
-import eu.solven.adhoc.measure.sum.CountAggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public interface IAdhocTestConstants {
-	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
+	Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 
 	Combinator k1SumSquared = Combinator.builder()
 			.name("k1SumSquared")
@@ -54,7 +54,7 @@ public interface IAdhocTestConstants {
 					ImmutableMap.<String, Object>builder().put("expression", "IF(k1 == null, 0, k1 * k1)").build())
 			.build();
 
-	Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
+	Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build();
 
 	Combinator k1PlusK2AsExpr = Combinator.builder()
 			.name("k1PlusK2AsExpr")
@@ -86,7 +86,7 @@ public interface IAdhocTestConstants {
 			.underlyings(Arrays.asList("k1", "k2"))
 			.groupBy(GroupByColumns.named("a"))
 			.combinationKey(MaxCombination.KEY)
-			.aggregationKey(SumAggregator.KEY)
+			.aggregationKey(SumAggregation.KEY)
 			.build();
 
 	Dispatchor dispatchFrom0To100 = Dispatchor.builder()
@@ -95,12 +95,12 @@ public interface IAdhocTestConstants {
 			.decompositionKey("linear")
 			// ImmutableMap for ordering (e.g. useful for serialization tests)
 			.decompositionOptions(ImmutableMap.of("input", "percent", "min", 0, "max", 100, "output", "0_or_100"))
-			.aggregationKey(SumAggregator.KEY)
+			.aggregationKey(SumAggregation.KEY)
 			.build();
 
 	Aggregator countAsterisk = Aggregator.builder()
 			.name("countAsterisk")
-			.aggregationKey(CountAggregator.KEY)
-			.columnName(CountAggregator.ASTERISK)
+			.aggregationKey(CountAggregation.KEY)
+			.columnName(CountAggregation.ASTERISK)
 			.build();
 }

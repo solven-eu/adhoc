@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.CountAggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -114,8 +114,8 @@ public class TestAdhocJooqTableQueryFactory {
 		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("countStar")
-						.columnName(CountAggregator.ASTERISK)
-						.aggregationKey(CountAggregator.KEY)
+						.columnName(CountAggregation.ASTERISK)
+						.aggregationKey(CountAggregation.KEY)
 						.build())
 				.build());
 

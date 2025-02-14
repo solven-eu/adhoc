@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.filter.value;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
-public class TestAggregator {
+public class TestInMatcher {
 	@Test
-	public void testWithoutColumnName() {
-		Aggregator aggregator = Aggregator.builder().name("someName").build();
-
-		Assertions.assertThat(aggregator.getName()).isEqualTo("someName");
-		Assertions.assertThat(aggregator.getColumnName()).isEqualTo("someName");
-		Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo(SumAggregation.KEY);
+	public void testNested() {
+		Assertions.assertThat(InMatcher.isIn("a", "b"))
+				.isInstanceOfSatisfying(InMatcher.class,
+						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
+		Assertions.assertThat(InMatcher.isIn(Set.of("a", "b")))
+				.isInstanceOfSatisfying(InMatcher.class,
+						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
+		Assertions.assertThat(InMatcher.isIn(List.of("a", "b")))
+				.isInstanceOfSatisfying(InMatcher.class,
+						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
 	}
 
 	@Test
-	public void testWithColumnName() {
-		Aggregator aggregator = Aggregator.builder().name("someName").columnName("otherColumnName").build();
+	public void testSingleNull() {
+		Set<Object> singletonNull = new HashSet<>();
+		singletonNull.add(null);
 
-		Assertions.assertThat(aggregator.getName()).isEqualTo("someName");
-		Assertions.assertThat(aggregator.getColumnName()).isEqualTo("otherColumnName");
-		Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo(SumAggregation.KEY);
+		Assertions.assertThat(InMatcher.isIn(singletonNull)).isInstanceOf(NullMatcher.class);
 	}
 }

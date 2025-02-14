@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumAggregator implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
+public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
 
 	public static final String KEY = "SUM";
 

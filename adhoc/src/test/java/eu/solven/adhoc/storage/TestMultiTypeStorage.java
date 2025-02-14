@@ -26,10 +26,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestMultiTypeStorage {
-	IAggregation sum = new SumAggregator();
+	IAggregation sum = new SumAggregation();
 
 	MultiTypeStorage<String> storage = MultiTypeStorage.<String>builder().aggregation(sum).build();
 

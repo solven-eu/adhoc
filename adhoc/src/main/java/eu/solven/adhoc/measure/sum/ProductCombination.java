@@ -56,7 +56,7 @@ public class ProductCombination implements ICombination {
 
 		return underlyingValues.stream()
 				.<Object>map(Functions.identity())
-				.reduce(new ProductAggregator()::aggregate)
+				.reduce(new ProductAggregation()::aggregate)
 				.orElse(null);
 	}
 

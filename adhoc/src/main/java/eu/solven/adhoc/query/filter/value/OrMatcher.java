@@ -44,7 +44,9 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * To be used with {@link ColumnFilter}, for OR matchers. False if not a single operand.
- * 
+ *
+ * Prefer `.or(...)` to optimize the matcher, except if you need an unoptimized `OrMatcher`.
+ *
  * @author Benoit Lacelle
  *
  */
@@ -87,6 +89,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 		}
 	}
 
+	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IValueMatcher or(IValueMatcher first, IValueMatcher second, IValueMatcher... more) {
 		return or(Lists.asList(first, second, more));
 	}

@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.step;
 import java.util.Set;
 
 import eu.solven.adhoc.measure.IMeasure;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -53,7 +53,7 @@ public class Aggregator implements IMeasure {
 
 	@NonNull
 	@Default
-	String aggregationKey = SumAggregator.KEY;
+	String aggregationKey = SumAggregation.KEY;
 
 	public String getColumnName() {
 		if (columnName != null) {
@@ -65,7 +65,7 @@ public class Aggregator implements IMeasure {
 	}
 
 	public static Aggregator sum(String column) {
-		return Aggregator.builder().aggregationKey(SumAggregator.KEY).name(column).build();
+		return Aggregator.builder().aggregationKey(SumAggregation.KEY).name(column).build();
 	}
 
 	public static AggregatorBuilder edit(Aggregator aggregator) {

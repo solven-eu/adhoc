@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.jgrapht.graph.DefaultEdge;
@@ -131,7 +132,7 @@ public class TestMeasuresSetFromResource {
 
 		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testDeepMeasuresAsUnderlyings", measures);
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(11);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(10);
 
@@ -167,7 +168,7 @@ public class TestMeasuresSetFromResource {
 
 		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testAnonymousUnderlyingNode", measures);
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(4);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(4);
 
@@ -238,7 +239,7 @@ public class TestMeasuresSetFromResource {
 
 		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testWithFilter", measures);
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = ams.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
@@ -283,7 +284,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
@@ -313,7 +314,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
@@ -347,7 +348,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(3);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(2);
 
@@ -381,7 +382,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
@@ -417,7 +418,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
 
@@ -443,7 +444,7 @@ public class TestMeasuresSetFromResource {
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = fromString.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(1);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
 
@@ -465,7 +466,7 @@ public class TestMeasuresSetFromResource {
 
 		AdhocMeasureBag bag = (AdhocMeasureBag) obj.getBag("niceBagName");
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = bag.makeMeasuresDag();
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = MeasureBagTestHelpers.makeMeasuresDag(bag);AdJooqTab
 
 		Assertions.assertThat(jgrapht.vertexSet()).hasSize(5);
 		Assertions.assertThat(jgrapht.edgeSet()).hasSize(5);

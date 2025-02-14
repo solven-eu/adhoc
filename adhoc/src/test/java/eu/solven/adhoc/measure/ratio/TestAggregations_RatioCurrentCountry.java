@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.measure.examples.RatioOverCurrentColumnValueCompositor;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -55,9 +55,9 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@BeforeEach
 	public void registerMeasures() {
-		amb.acceptMeasureCombinator(new RatioOverCurrentColumnValueCompositor().asCombinator("country", "d"));
+		amb.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", "d"));
 
-		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 
 		amb.getNameToMeasure().forEach((measureName, measure) -> {
 			log.debug("Measure: {}", measureName);

@@ -28,49 +28,49 @@ import java.time.LocalDate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
 
-public class TestSumAggregator {
-	SumAggregator aggregator = new SumAggregator();
+public class TestSumAggregation {
+	SumAggregation aggregator = new SumAggregation();
 
 	@Test
 	public void isLongLike() {
-		Assertions.assertThat(SumAggregator.isLongLike(123)).isTrue();
-		Assertions.assertThat(SumAggregator.isLongLike(123L)).isTrue();
+		Assertions.assertThat(SumAggregation.isLongLike(123)).isTrue();
+		Assertions.assertThat(SumAggregation.isLongLike(123L)).isTrue();
 
-		Assertions.assertThat(SumAggregator.isLongLike(123.4F)).isFalse();
-		Assertions.assertThat(SumAggregator.isLongLike(123.4D)).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(123.4F)).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(123.4D)).isFalse();
 
-		Assertions.assertThat(SumAggregator.isLongLike("someString")).isFalse();
-		Assertions.assertThat(SumAggregator.isLongLike(LocalDate.now())).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike("someString")).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(LocalDate.now())).isFalse();
 
 		// Float without decimal
-		Assertions.assertThat(SumAggregator.isLongLike(123F)).isFalse();
-		Assertions.assertThat(SumAggregator.isLongLike(123D)).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(123F)).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(123D)).isFalse();
 
-		Assertions.assertThat(SumAggregator.isLongLike(BigDecimal.valueOf(123))).isTrue();
-		Assertions.assertThat(SumAggregator.isLongLike(BigDecimal.valueOf(123.456))).isFalse();
+		Assertions.assertThat(SumAggregation.isLongLike(BigDecimal.valueOf(123))).isTrue();
+		Assertions.assertThat(SumAggregation.isLongLike(BigDecimal.valueOf(123.456))).isFalse();
 	}
 
 	@Test
 	public void isDoubleLike() {
-		Assertions.assertThat(SumAggregator.isDoubleLike(123)).isTrue();
-		Assertions.assertThat(SumAggregator.isDoubleLike(123L)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123L)).isTrue();
 
-		Assertions.assertThat(SumAggregator.isDoubleLike(123.4F)).isTrue();
-		Assertions.assertThat(SumAggregator.isDoubleLike(123.4D)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123.4F)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123.4D)).isTrue();
 
-		Assertions.assertThat(SumAggregator.isDoubleLike("someString")).isFalse();
-		Assertions.assertThat(SumAggregator.isDoubleLike(LocalDate.now())).isFalse();
+		Assertions.assertThat(SumAggregation.isDoubleLike("someString")).isFalse();
+		Assertions.assertThat(SumAggregation.isDoubleLike(LocalDate.now())).isFalse();
 
 		// Float without decimal
-		Assertions.assertThat(SumAggregator.isDoubleLike(123F)).isTrue();
-		Assertions.assertThat(SumAggregator.isDoubleLike(123D)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123F)).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(123D)).isTrue();
 
-		Assertions.assertThat(SumAggregator.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
-		Assertions.assertThat(SumAggregator.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
+		Assertions.assertThat(SumAggregation.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();
 	}
 
 	@Test
@@ -83,7 +83,7 @@ public class TestSumAggregator {
 	public void testBigString() {
 		String aggregated = "initial";
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregator.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
 			for (int i = 0; i < 256; i++) {
 				aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
 			}
@@ -100,7 +100,7 @@ public class TestSumAggregator {
 		Assertions.assertThatThrownBy(() -> {
 			String aggregated = "initial";
 
-			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregator.class)) {
+			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
 				for (int i = 0; i < 16 * 1024; i++) {
 					aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
 				}

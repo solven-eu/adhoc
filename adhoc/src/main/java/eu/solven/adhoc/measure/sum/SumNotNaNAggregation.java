@@ -23,44 +23,18 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 
 /**
- * Keep the highest value amongst encountered values
+ * Like {@link SumAggregation}, but ignores {@link Double#NaN}
+ * 
+ * @author Benoit Lacelle
+ *
  */
-public class CountAggregator implements IAggregation {
+public class SumNotNaNAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
 
-	public static final String KEY = "COUNT";
-
-	// A marker for the special columnName `*`, typically used in `COUNT(*)`
-	public static final String ASTERISK = "*";
-
-	@Value
-	@Builder
-	public static class CountHolder {
-		long count;
-
-		public static CountHolder zero() {
-			return new CountHolder(0);
-		}
-
-		public CountHolder aggregate(Object input) {
-			if (input instanceof CountHolder inputCountHolder) {
-				return add(inputCountHolder.count);
-			} else {
-				return increment();
-			}
-		}
-
-		public CountHolder increment() {
-			return new CountHolder(this.count + 1);
-		}
-
-		public CountHolder add(long input) {
-			return new CountHolder(this.count + input);
-		}
-	}
+	public static final String KEY = "SUM";
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -68,24 +42,34 @@ public class CountAggregator implements IAggregation {
 			return r;
 		} else if (r == null) {
 			return l;
+		} else if (isLongLike(l) && isLongLike(r)) {
+			return aggregateLongs(((Number) l).longValue(), ((Number) r).longValue());
 		} else {
-			if (l instanceof CountHolder countHolder) {
-				return countHolder.aggregate(r);
-			} else if (r instanceof CountHolder countHolder) {
-				return countHolder.aggregate(l);
-			} else {
-				return CountHolder.zero().aggregate(l).aggregate(r);
-			}
+			return aggregateDoubles(((Number) l).doubleValue(), ((Number) r).doubleValue());
 		}
 	}
 
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// throw new UnsupportedOperationException("COUNT does not fit into a double");
-	// }
+	@Override
+	public double aggregateDoubles(double l, double r) {
+		if (Double.isNaN(l)) {
+			if (Double.isNaN(r)) {
+				return 0D;
+			} else {
+				return r;
+			}
+		} else if (Double.isNaN(r)) {
+			return l;
+		} else {
+			return l + r;
+		}
+	}
 
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// throw new UnsupportedOperationException("COUNT does not fit into a double");
-	// }
+	@Override
+	public long aggregateLongs(long l, long r) {
+		return l + r;
+	}
+
+	public static boolean isLongLike(Object o) {
+		return Integer.class.isInstance(o) || Long.class.isInstance(o);
+	}
 }

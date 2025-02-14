@@ -41,7 +41,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -342,7 +342,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
 
 		Aggregator kSumOverk1 =
-				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregator.KEY).build();
+				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregation.KEY).build();
 
 		measureBag.addMeasure(kSumOverk1);
 

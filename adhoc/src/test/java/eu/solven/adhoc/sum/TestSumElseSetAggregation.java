@@ -22,13 +22,17 @@
  */
 package eu.solven.adhoc.sum;
 
+import java.util.List;
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.sum.SumNotNaNAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 
-public class TestSumNotNaNAggregator {
-	SumNotNaNAggregator a = new SumNotNaNAggregator();
+public class TestSumElseSetAggregation {
+	SumAggregation a = new SumElseSetAggregation();
 
 	@Test
 	public void testSum_objects() {
@@ -39,8 +43,25 @@ public class TestSumNotNaNAggregator {
 
 	@Test
 	public void testSum_doubles() {
-		Assertions.assertThat(a.aggregateDoubles(Double.NaN, 1.2D)).isEqualTo(1.2D);
-		Assertions.assertThat(a.aggregateDoubles(1.2D, Double.NaN)).isEqualTo(1.2D);
-		Assertions.assertThat(a.aggregateDoubles(Double.NaN, Double.NaN)).isEqualTo(0D);
+		Assertions.assertThat(a.aggregateDoubles(Double.NaN, 1.2D)).isNaN();
+		Assertions.assertThat(a.aggregateDoubles(1.2D, Double.NaN)).isNaN();
+		Assertions.assertThat(a.aggregateDoubles(Double.NaN, Double.NaN)).isNaN();
+	}
+
+	@Test
+	public void testSum_String() {
+		Assertions.assertThat(a.aggregate(null, "someString")).isEqualTo(Set.of("someString"));
+		Assertions.assertThat(a.aggregate("otherString", "someString")).isEqualTo(Set.of("someString", "otherString"));
+		Assertions.assertThat(a.aggregate(123, "someString")).isEqualTo(Set.of("someString"));
+
+		Assertions.assertThat(a.aggregate(null, Set.of("someString"))).isEqualTo(Set.of("someString"));
+		Assertions.assertThat(a.aggregate("otherString", Set.of("someString")))
+				.isEqualTo(Set.of("someString", "otherString"));
+		Assertions.assertThat(a.aggregate(123, Set.of("someString"))).isEqualTo(Set.of("someString"));
+
+		Assertions.assertThat(a.aggregate(Set.of("a", "b"), Set.of("b", "c"))).isEqualTo(Set.of("a", "b", "c"));
+
+		Assertions.assertThat(a.aggregate("otherString", List.of("someString")))
+				.isEqualTo(Set.of("someString", "otherString"));
 	}
 }

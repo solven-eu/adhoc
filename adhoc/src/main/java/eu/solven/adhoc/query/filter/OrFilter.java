@@ -41,7 +41,9 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Default implementation for {@link IAndFilter}
+ * Default implementation for {@link IAndFilter}.
+ *
+ * Prefer `.and(...)` to optimize the matcher, except if you need an unoptimized `OrFilter`.
  *
  * @author Benoit Lacelle
  */
@@ -124,6 +126,7 @@ public class OrFilter implements IOrFilter {
 		}
 	}
 
+	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IAdhocFilter or(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
 		return or(Lists.asList(first, second, more));
 	}

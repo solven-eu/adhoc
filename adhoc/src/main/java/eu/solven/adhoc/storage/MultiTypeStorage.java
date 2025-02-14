@@ -32,7 +32,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
@@ -63,7 +63,7 @@ public class MultiTypeStorage<T> {
 
 	@Default
 	@NonNull
-	IAggregation aggregation = new SumAggregator();
+	IAggregation aggregation = new SumAggregation();
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
@@ -95,11 +95,11 @@ public class MultiTypeStorage<T> {
 		// We clear all keys, to prevent storing different types for the same key
 		clearKey(key);
 
-		if (SumAggregator.isLongLike(v)) {
-			long vAsPrimitive = SumAggregator.asLong(v);
+		if (SumAggregation.isLongLike(v)) {
+			long vAsPrimitive = SumAggregation.asLong(v);
 			measureToAggregateL.put(key, vAsPrimitive);
-		} else if (SumAggregator.isDoubleLike(v)) {
-			double vAsPrimitive = SumAggregator.asDouble(v);
+		} else if (SumAggregation.isDoubleLike(v)) {
+			double vAsPrimitive = SumAggregation.asDouble(v);
 			measureToAggregateD.put(key, vAsPrimitive);
 		} else if (v instanceof CharSequence) {
 			String vAsString = v.toString();

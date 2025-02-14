@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumElseSetAggregator extends SumAggregator {
+public class SumElseSetAggregation extends SumAggregation {
 
 	public static final String KEY = "SUM_ELSE_SET";
 

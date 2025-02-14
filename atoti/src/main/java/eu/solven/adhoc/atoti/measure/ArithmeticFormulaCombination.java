@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.sum.ProductAggregator;
+import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -106,7 +106,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 
 	// TODO Rely on IOperatorsFactory
 	protected ICombination getCombination(String operator) {
-		if ("*".equals(operator) || ProductAggregator.KEY.equals(operator)) {
+		if ("*".equals(operator) || ProductAggregation.KEY.equals(operator)) {
 			return new ProductCombination();
 		} else {
 			throw new UnsupportedOperationException("Not-managed: " + operator);

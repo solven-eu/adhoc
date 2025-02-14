@@ -43,7 +43,7 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.sum.SumElseSetAggregator;
+import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeStorage;
@@ -104,7 +104,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 				.groupBy(GroupByColumns.named("ccyFrom"))
 				.combinationKey(ForeignExchangeCombination.KEY)
 				// This tests we can refer an aggregation key but its class
-				.aggregationKey(SumElseSetAggregator.class.getName())
+				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 
 		amb.addMeasure(

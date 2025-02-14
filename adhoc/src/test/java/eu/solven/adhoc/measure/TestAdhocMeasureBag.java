@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.measure;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.Arrays;
 
-/**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
- * 
- * @author Benoit Lacelle
- *
- */
-@Value
-@Builder
-@Jacksonized
-public class EqualsMatcher implements IValueMatcher {
-	@NonNull
-	Object operand;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	@Override
-	public boolean match(Object value) {
-		return operand == value || operand.equals(value);
+import eu.solven.adhoc.measure.step.Aggregator;
+
+public class TestAdhocMeasureBag {
+
+	Aggregator inital = Aggregator.builder().name("someName").columnName("someColumn").build();
+	Aggregator later = Aggregator.builder().name("someName").columnName("otherColumn").build();
+
+	@Test
+	public void testReplaceMeasure() {
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testReplaceMeasure").build();
+		measureBag.addMeasure(inital);
+		measureBag.addMeasure(later);
+
+		Assertions.assertThat(measureBag.getNameToMeasure()).hasSize(1).containsEntry("someName", later);
 	}
 
-	public static IValueMatcher isEqualTo(Object operand) {
-		if (operand == null) {
-			return NullMatcher.matchNull();
-		} else {
-			return EqualsMatcher.builder().operand(operand).build();
-		}
+	@Test
+	public void testFromList() {
+		Assertions
+				.assertThatThrownBy(
+						() -> AdhocMeasureBag.fromMeasures("testReplaceMeasure", Arrays.asList(inital, later)))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

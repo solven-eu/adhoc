@@ -46,9 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The set of named {@link IMeasure}. Many of them are {@link IHasUnderlyingMeasures}, which express a
  * Directed-Acyclic-Graph. The DAG is actually evaluated on a per-query basis.
- * 
+ *
  * This may not generate a single-connected DAG, as it may contains unfinished chains of measures.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -65,16 +65,14 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	@NonNull
 	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
-	public AdhocMeasureBag addMeasure(IMeasure namedMeasure) {
-		String measureName = namedMeasure.getName();
+	/**
+	 * @param measure
+	 * @return this
+	 */
+	public AdhocMeasureBag addMeasure(IMeasure measure) {
+		String measureName = measure.getName();
 
-		if (nameToMeasure.containsKey(measureName)) {
-			throw new IllegalArgumentException(
-					"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
-							measureName));
-		}
-
-		nameToMeasure.put(measureName, namedMeasure);
+		nameToMeasure.put(measureName, measure);
 
 		return this;
 	}
@@ -108,50 +106,24 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 		return Optional.of(measure);
 	}
 
-	/**
-	 * This is the DAG of measure. It is a simplistic view of the measures graph, as it may not reflect the impacts of
-	 * {@link IMeasure} requesting underlying measures with custom {@link IAdhocFilter} or {@link IAdhocGroupBy}.
-	 * 
-	 * @return
-	 */
-	public DirectedAcyclicGraph<IMeasure, DefaultEdge> makeMeasuresDag() {
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-		nameToMeasure.forEach((name, measure) -> {
-			measuresDag.addVertex(measure);
-
-			if (measure instanceof Aggregator aggregator) {
-				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
-			} else if (measure instanceof IHasUnderlyingMeasures combinator) {
-				for (String underlyingName : combinator.getUnderlyingNames()) {
-					// Make sure the DAG has actual measure nodes, and not references
-					IMeasure notRefMeasure = nameToMeasure.get(underlyingName);
-
-					if (notRefMeasure == null) {
-						throw new IllegalArgumentException("`%s` references an unknown measure: `%s`"
-								.formatted(measure.getName(), underlyingName));
-					}
-
-					measuresDag.addVertex(notRefMeasure);
-					measuresDag.addEdge(measure, notRefMeasure);
-				}
-			} else {
-				throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(measure).toString());
-			}
-		});
-
-		return measuresDag;
-	}
-
 	public static AdhocMeasureBag fromMeasures(String name, List<IMeasure> measures) {
 		AdhocMeasureBag ams = AdhocMeasureBag.builder().name(name).build();
 
-		measures.forEach(ams::addMeasure);
+		measures.forEach(measure -> {
+			String measureName = measure.getName();
+			if (ams.getNameToMeasure().containsKey(measureName)) {
+				throw new IllegalArgumentException(
+						"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
+								measureName));
+			}
+
+			ams.addMeasure(measure);
+		});
 
 		return ams;
 	}
 
-	public AdhocMeasureBag acceptMeasureCombinator(IMeasureBagVisitor asCombinator) {
+	public AdhocMeasureBag acceptVisitor(IMeasureBagVisitor asCombinator) {
 		return asCombinator.addMeasures(this);
 	}
 

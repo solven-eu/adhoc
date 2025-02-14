@@ -20,24 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.measure.sum;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-import eu.solven.adhoc.measure.sum.ProductAggregator;
+/**
+ * Used when the aggregation is an expression for {@link eu.solven.adhoc.table.IAdhocTableWrapper}.
+ *
+ * @author Benoit Lacelle
+ */
+public class ExpressionAggregation implements IAggregation {
+	public static final String KEY = "expression";
 
-public class TestProductAggregator {
-	ProductAggregator a = new ProductAggregator();
-
-	@Test
-	void testNominal() {
-		Assertions.assertThat(a.aggregate(123, 234.56)).isEqualTo(123 * 234.56);
-	}
-
-	@Test
-	void testNull() {
-		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
-		Assertions.assertThat(a.aggregate(null, 234.56)).isEqualTo(234.56);
+	@Override
+	public Object aggregate(Object left, Object right) {
+		if (left == null) {
+			return right;
+		} else if (right == null) {
+			return left;
+		} else {
+			throw new UnsupportedOperationException("Can not be evaluated. left=%s right=%s".formatted(left, right));
+		}
 	}
 }

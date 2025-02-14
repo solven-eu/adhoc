@@ -140,7 +140,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isExplain() || tableQuery.isDebug()) {
-			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
+			log.info("[EXPLAIN] SQL to db={}: `{}`", getName(), resultQuery.getSQL(ParamType.INLINED));
 		}
 		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);

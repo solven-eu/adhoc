@@ -35,9 +35,10 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.step.IFilterEditor;
-import eu.solven.adhoc.measure.sum.CountAggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,14 +86,17 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	@Override
     public IAggregation makeAggregation(String key, Map<String, ?> options) {
         return switch (key) {
-            case SumAggregator.KEY: {
-                yield new SumAggregator();
+            case SumAggregation.KEY: {
+                yield new SumAggregation();
             }
 			case MaxAggregator.KEY: {
 				yield new MaxAggregator();
 			}
-			case CountAggregator.KEY: {
-				yield new CountAggregator();
+			case CountAggregation.KEY: {
+				yield new CountAggregation();
+			}
+			case ExpressionAggregation.KEY: {
+				yield new ExpressionAggregation();
 			}
             default:
                 yield defaultAggregation(key, options);

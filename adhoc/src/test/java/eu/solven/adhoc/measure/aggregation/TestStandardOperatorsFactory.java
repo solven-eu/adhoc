@@ -28,16 +28,16 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestStandardOperatorsFactory {
 	StandardOperatorsFactory factory = new StandardOperatorsFactory();
 
 	@Test
 	public void testAggregation_byKey() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregator.KEY, Map.of());
+		IAggregation aggregation = factory.makeAggregation(SumAggregation.KEY, Map.of());
 
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregator.class);
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregation.class);
 	}
 
 	@Test

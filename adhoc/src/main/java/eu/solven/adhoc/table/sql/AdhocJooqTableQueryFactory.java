@@ -45,15 +45,15 @@ import org.jooq.SelectJoinStep;
 import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.True;
-import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.CountAggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -134,9 +134,10 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			resultQuery = selectFromWhereGroupBy;
 		}
 
-		if (dbQuery.isExplain() || dbQuery.isDebug()) {
-			log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
-		}
+		// DO NOT EXPLAIN as it is already done in AdhocJooqTableWrapper.openDbStream
+		// if (dbQuery.isExplain() || dbQuery.isDebug()) {
+		// log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
+		// }
 
 		return resultQuery;
 	}
@@ -148,11 +149,11 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 		IAdhocFilter filter = dbQuery.getFilter();
 		if (!filter.isMatchAll()) {
-			if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-				andFilter.getOperands().stream().map(this::toCondition).forEach(dbAndConditions::add);
-			} else {
-				dbAndConditions.add(toCondition(filter));
-			}
+			// if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			// andFilter.getOperands().stream().map(this::toCondition).forEach(dbAndConditions::add);
+			// } else {
+			dbAndConditions.add(toCondition(filter));
+			// }
 		}
 
 		return dbAndConditions;
@@ -204,13 +205,24 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return field;
 	}
 
+	protected boolean isExpression(String columnName) {
+		if (CountAggregation.ASTERISK.equals(columnName)) {
+			// Typically on `COUNT(*)`
+			return true;
+		} else if (columnName.indexOf('"') >= 0) {
+			// Typically on `max("v") FILTER("color" in ('red'))`
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	protected Name name(String name) {
 		// BEWARE it is unclear what's the proper way of quoting
 		// `unquotedName` is useful to handle input columns referencing (e.g. joined) tables as in
 		// `tableName.columnName`, while `quoted` would treat `tableName.columnName` as a columnName
 
-		if (CountAggregator.ASTERISK.equals(name)) {
-			// Typically on `COUNT(*)`
+		if (isExpression(name)) {
 			return DSL.unquotedName(name);
 		}
 
@@ -258,32 +270,43 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		String columnName = transcoder.underlyingNonNull(a.getColumnName());
 		Name namedColumn = name(columnName);
 
-		AggregateFunction<?> sqlAggFunction;
-		if (SumAggregator.KEY.equals(aggregationKey)) {
-			// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in dialect
-			// DEFAULT`
-			Field<Double> field =
-					DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
-
-			sqlAggFunction = DSL.sum(field);
-		} else if (MaxAggregator.KEY.equals(aggregationKey)) {
-			Field<?> field = DSL.field(namedColumn);
-			sqlAggFunction = DSL.max(field);
-		} else if (CountAggregator.KEY.equals(aggregationKey)) {
-			Field<?> field = DSL.field(namedColumn);
-			sqlAggFunction = DSL.count(field);
+		if (ExpressionAggregation.KEY.equals(aggregationKey)) {
+			// Do not call `name` to make sure it is not qualified
+			if (namedColumn.qualified()) {
+				// This is useful to ensure default expression detector is valid
+				log.warn("Ambiguous expression: {}", columnName);
+			}
+			return DSL.field(DSL.unquotedName(columnName)).as(a.getName());
 		} else {
-			throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
+			AggregateFunction<?> sqlAggFunction;
+			if (SumAggregation.KEY.equals(aggregationKey)) {
+				// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
+				// dialect
+				// DEFAULT`
+				Field<Double> field =
+						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
+
+				sqlAggFunction = DSL.sum(field);
+			} else if (MaxAggregator.KEY.equals(aggregationKey)) {
+				Field<?> field = DSL.field(namedColumn);
+				sqlAggFunction = DSL.max(field);
+			} else if (CountAggregation.KEY.equals(aggregationKey)) {
+				Field<?> field = DSL.field(namedColumn);
+				sqlAggFunction = DSL.count(field);
+			} else {
+				throw new UnsupportedOperationException(
+						"SQL does not support aggregationKey=%s".formatted(aggregationKey));
+			}
+			return sqlAggFunction.as(a.getName());
 		}
-		return sqlAggFunction.as(a.getName());
 	}
 
 	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
-				.filter(columnName -> !CountAggregator.ASTERISK.equals(columnName))
 				.map(transcoder::underlyingNonNull)
+				.filter(columnName -> !isExpression(columnName))
 				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
 
@@ -300,6 +323,8 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			return toCondition(columnFilter);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();
+			// TODO Detect and report if multiple conditions hits the same column
+			// It would be the symptom of conflicting transcoding
 			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
 			return DSL.and(conditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {

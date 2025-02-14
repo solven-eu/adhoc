@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;
@@ -74,8 +74,8 @@ public class TestAggregations_Filtrator extends ADagTest {
 						.combinationKey(DivideCombination.KEY)
 						.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k1", "filterK1onA1").build();
 		ITabularView output = aqw.execute(adhocQuery);
@@ -114,8 +114,8 @@ public class TestAggregations_Filtrator extends ADagTest {
 						.combinationKey(DivideCombination.KEY)
 						.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("Ratio_k1_k1witha1").build();
 		ITabularView output = aqw.execute(adhocQuery);

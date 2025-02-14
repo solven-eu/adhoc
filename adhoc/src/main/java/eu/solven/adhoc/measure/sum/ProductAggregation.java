@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/product-function-dax
 @Slf4j
-public class ProductAggregator implements IAggregation, IDoubleAggregation, ILongAggregation {
+public class ProductAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "PRODUCT";
 
@@ -42,9 +42,9 @@ public class ProductAggregator implements IAggregation, IDoubleAggregation, ILon
 			return r;
 		} else if (r == null) {
 			return l;
-		} else if (SumAggregator.isLongLike(l) && SumAggregator.isLongLike(r)) {
+		} else if (SumAggregation.isLongLike(l) && SumAggregation.isLongLike(r)) {
 			return aggregateLongs(asLong(l), asLong(r));
-		} else if (SumAggregator.isDoubleLike(l) && SumAggregator.isDoubleLike(r)) {
+		} else if (SumAggregation.isDoubleLike(l) && SumAggregation.isDoubleLike(r)) {
 			return aggregateDoubles(asDouble(l), asDouble(r));
 		} else {
 			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)".formatted(KEY, l, r));

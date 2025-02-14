@@ -243,3 +243,5 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 - Resiliency on querySteps errors: a failing measure should not break the whole query.
 - Manage custom types, like filtering on an Enum (see `TestTableQuery_DuckDb_customType`).
 - ITableTranscoder should be managed by `IAdhocCubeWrapper`, not in each `IAdhocTableWrapper`. It can then be coupled with `ICustomTypeManager`
+- EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
+- Demonstrate how to automatically add some filter based on some security layer

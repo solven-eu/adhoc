@@ -37,7 +37,7 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.step.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;
@@ -79,7 +79,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 				.combinationKey(DivideCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 
 		amb.getNameToMeasure().forEach((measureName, measure) -> {
 			log.debug("Measure: {}", measureName);

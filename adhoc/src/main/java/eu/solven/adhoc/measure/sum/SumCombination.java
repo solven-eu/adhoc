@@ -31,7 +31,7 @@ public class SumCombination implements ICombination {
 
 	public static final String KEY = "SUM";
 
-	final IAggregation agg = new SumAggregator();
+	final IAggregation agg = new SumAggregation();
 
 	@Override
 	public Object combine(List<?> underlyingValues) {

@@ -29,8 +29,8 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.sum.ProductAggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.ProductAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class ForeignExchangeCombination implements ICombination {
 	public Object combine(IAdhocSliceWithStep slice, List<?> underlyingValues) {
 		Object beforeFx = underlyingValues.getFirst();
 
-		if (!SumAggregator.isDoubleLike(beforeFx)) {
+		if (!SumAggregation.isDoubleLike(beforeFx)) {
 			// This is typically a String holding an error message
 			return beforeFx;
 		}
@@ -74,7 +74,7 @@ public class ForeignExchangeCombination implements ICombination {
 			log.info("[DEBUG] fxRate={} for fxKey={}", fxRate, fxKey);
 		}
 
-		if (!SumAggregator.isDoubleLike(fxRate)) {
+		if (!SumAggregation.isDoubleLike(fxRate)) {
 			// This is typically a String holding an error message
 			return fxRate;
 		}
@@ -82,8 +82,8 @@ public class ForeignExchangeCombination implements ICombination {
 		return getProductAggregator().aggregate(beforeFx, fxRate);
 	}
 
-	protected ProductAggregator getProductAggregator() {
-		return new ProductAggregator();
+	protected ProductAggregation getProductAggregator() {
+		return new ProductAggregation();
 	}
 
 	protected String getCcyTo(IAdhocSliceWithStep slice) {

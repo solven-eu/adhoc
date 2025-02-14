@@ -33,7 +33,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -69,7 +69,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasGroup
 
 	@NonNull
 	@Default
-	String aggregationKey = SumAggregator.KEY;
+	String aggregationKey = SumAggregation.KEY;
 
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull

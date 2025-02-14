@@ -34,7 +34,7 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -106,26 +106,26 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 						// k1 is both a compositeMeasure and a cube1 measure
 						// We aliased the underlyingMeasure
 						.name(k1Sum.getName() + "." + tableName1 + ".cube")
-						.aggregationKey(SumAggregator.KEY)
+						.aggregationKey(SumAggregation.KEY)
 						.build())
 				.contains(Aggregator.builder()
 						// k2 is only a cube1 measure
 						// Not aliased
 						.name(k2Sum.getName())
-						.aggregationKey(SumAggregator.KEY)
+						.aggregationKey(SumAggregation.KEY)
 						.build())
 
 				// Cube2 measures, available through composite
 				.contains(Aggregator.builder()
 						.name(k1Sum.getName() + "." + tableName2 + ".cube")
-						.aggregationKey(SumAggregator.KEY)
+						.aggregationKey(SumAggregation.KEY)
 						.build())
 				.contains(Aggregator.builder()
 						.name(k3Max.getName())
 						// k3 is a MAX, but it is fed by a single cube: SUM is KO
 						// BEWARE: if k3.MAX was provided by multiple cubes, we should probably prefer MAX in composite
 						// aggregator
-						.aggregationKey(SumAggregator.KEY)
+						.aggregationKey(SumAggregation.KEY)
 						.build());
 	}
 

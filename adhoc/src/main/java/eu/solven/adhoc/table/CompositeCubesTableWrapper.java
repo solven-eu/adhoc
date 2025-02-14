@@ -45,7 +45,7 @@ import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregator;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -248,7 +248,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 				Aggregator compositeMeasure = Aggregator.builder()
 						.name(compositeMeasureName)
 						// If some measure is returned by different cubes, we SUM the returned values
-						.aggregationKey(SumAggregator.KEY)
+						.aggregationKey(SumAggregation.KEY)
 						.build();
 				measuresToAdd.add(compositeMeasure);
 			});
