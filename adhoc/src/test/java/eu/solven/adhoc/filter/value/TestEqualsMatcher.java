@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestEqualsMatcher {
 	@Test
@@ -43,6 +44,9 @@ public class TestEqualsMatcher {
 
 	@Test
 	public void testNull() {
-		Assertions.assertThatThrownBy(() -> EqualsMatcher.isEqualTo(null)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> EqualsMatcher.builder().operand(null).build())
+				.isInstanceOf(IllegalArgumentException.class);
+
+		Assertions.assertThat(EqualsMatcher.isEqualTo(null)).isInstanceOf(NullMatcher.class);
 	}
 }

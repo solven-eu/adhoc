@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 import org.jgrapht.graph.DefaultEdge;
@@ -45,6 +44,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasure;
+import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
@@ -466,7 +466,7 @@ public class TestMeasuresSetFromResource {
 
 		AdhocMeasureBag bag = (AdhocMeasureBag) obj.getBag("niceBagName");
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = MeasureBagTestHelpers.makeMeasuresDag(bag);AdJooqTab
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = MeasureBagTestHelpers.makeMeasuresDag(bag);
 
 		Assertions.assertThat(jgrapht.vertexSet()).hasSize(5);
 		Assertions.assertThat(jgrapht.edgeSet()).hasSize(5);

@@ -233,8 +233,8 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		ITabularView result = wrapInCube(measureBag)
-				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build());
+		ITabularView result =
+				wrapInCube(measureBag).execute(AdhocQuery.builder().measure(k1SumSquared.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -272,7 +272,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 					.measure(k1Sum.getName())
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
-					.debug(true)
+
 					.build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -286,7 +286,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 					.measure(k1SumSquared.getName())
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
-					.debug(true)
+
 					.build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -306,11 +306,10 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 		measureBag.addMeasure(k1Sum);
 
-		Assertions
-				.assertThatThrownBy(() -> wrapInCube(measureBag).execute(
-						AdhocQuery.builder().measure(k1Sum.getName()).andFilter("b", "a1").debug(true).build()))
+		Assertions.assertThatThrownBy(() -> wrapInCube(measureBag).execute(
+				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "unknownValue").build()))
 				.isInstanceOf(RuntimeException.class)
-				.hasCauseInstanceOf(DataAccessException.class)
+				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!")
 				.hasRootCauseInstanceOf(SQLException.class);
 	}
 
@@ -326,10 +325,10 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 		Assertions
 				.assertThatThrownBy(() -> wrapInCube(measureBag)
-						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("b").debug(true).build()))
+						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
 				.isInstanceOf(RuntimeException.class)
-				.hasMessageContaining("from source=TableQuery")
-				.hasCauseInstanceOf(DataAccessException.class);
+				.hasStackTraceContaining("from source=TableQuery")
+				.hasStackTraceContaining("unknownColumn");
 	}
 
 	@Test
@@ -347,7 +346,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(kSumOverk1);
 
 		ITabularView result =
-				wrapInCube(measureBag).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).debug(true).build());
+				wrapInCube(measureBag).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -406,17 +405,11 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 
 		Assertions.assertThatThrownBy(() -> {
-			wrapInCube(measureBag).execute(AdhocQuery.builder()
-					.measure(k1Sum.getName())
-					// .groupByAlso("unknownColumn")
-					.andFilter("unknownColumn", "someValue")
-					.debug(true)
-					.build());
+			wrapInCube(measureBag).execute(
+					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
 				.isInstanceOf(RuntimeException.class)
-				.hasMessageContaining("from source=TableQuery")
-				.hasCauseInstanceOf(DataAccessException.class)
-				.hasMessageContaining("from source=TableQuery")
+				.hasStackTraceContaining("from source=TableQuery")
 				.hasRootCauseInstanceOf(SQLException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}

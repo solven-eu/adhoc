@@ -84,8 +84,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedDb() {
-		rows.add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
-		rows.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
+		rows.add(Map.of("color", "red", "ccyFrom", "USD", "k1", 123));
+		rows.add(Map.of("color", "red", "ccyFrom", "EUR", "k1", 234));
 	}
 
 	String mName = "k1.CCY";
@@ -125,13 +125,9 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testHasUnknownFromCcy() {
 		prepareMeasures();
 
-		rows.add(Map.of("l", "A", "ccyFrom", "unknownCcy", "k1", 234));
+		rows.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -151,10 +147,6 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -178,10 +170,6 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -202,9 +190,12 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 			amb.addMeasure(k1Sum);
 		}
 
+		Assertions.setMaxStackTraceElementsDisplayed(128);
+
 		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure(mName).build()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseInstanceOf(IllegalArgumentException.class);
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("ccyFrom is not a sliced column");
 	}
 
 	@Test
@@ -214,12 +205,35 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
+		aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
 				\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY
 																								""".trim());
+
+		Assertions.assertThat(messages).hasSize(2);
+	}
+
+	@Test
+	public void testExplain_filter() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+
+		prepareMeasures();
+
+		// ITabularView output =
+		aqw.execute(AdhocQuery.builder()
+				.measure(mName)
+				.customMarker(Optional.of("JPY"))
+				.groupByAlso("letter")
+				.andFilter("color", "red")
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				#0 m=k1.CCY(Bucketor) filter=color=red groupBy=(letter) customMarker=JPY
+				\\-- #1 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
+						""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

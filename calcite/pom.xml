@@ -9,8 +9,6 @@
 	<artifactId>calcite</artifactId>
 
 	<properties>
-		<java.version>21</java.version>
-
 		<calcite.version>1.38.0</calcite.version>
 	</properties>
 

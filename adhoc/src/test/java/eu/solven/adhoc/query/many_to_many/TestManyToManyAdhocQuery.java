@@ -54,9 +54,8 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
-	public final AdhocQueryEngine aqe =
-			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
+	AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
+	AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 

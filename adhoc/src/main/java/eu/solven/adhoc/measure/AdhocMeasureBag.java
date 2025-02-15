@@ -27,15 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
-import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
