@@ -68,7 +68,7 @@ public class ActivePivotConditionCubeToAdhoc {
 					Set<?> domain = (Set<?>) apInCondition.getMatchingParameter();
 					return ColumnFilter.builder().column(level).matchIn(domain).build();
 				} else if (matchingCondition instanceof ComparisonMatchingCondition apComparisonCondition) {
-					return convertToAdhoc(level, apComparisonCondition);
+					return convertComparisonMatchingCondition(level, apComparisonCondition);
 				} else {
 					// ToStringEquals, Like, Comparison
 					log.warn("This case is not well handled: {}", matchingCondition);
@@ -109,7 +109,7 @@ public class ActivePivotConditionCubeToAdhoc {
 		}
 	}
 
-	public ColumnFilter convertToAdhoc(String level, ComparisonMatchingCondition apComparisonCondition) {
+	public ColumnFilter convertComparisonMatchingCondition(String level, ComparisonMatchingCondition apComparisonCondition) {
 		Object operand = apComparisonCondition.getMatchingParameter();
 		boolean greaterThan;
 		boolean matchIfEqual;
