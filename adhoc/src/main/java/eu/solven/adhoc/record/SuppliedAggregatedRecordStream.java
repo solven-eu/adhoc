@@ -20,10 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.record;
 
-import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-public interface IRowMap extends Map<String, Object> {
+import com.google.common.base.Suppliers;
 
+/**
+ * A {@link IAggregatedRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
+ */
+public class SuppliedAggregatedRecordStream implements IAggregatedRecordStream {
+	final Object source;
+	final Supplier<Stream<IAggregatedRecord>> streamSupplier;
+
+	public SuppliedAggregatedRecordStream(Object source, Supplier<Stream<IAggregatedRecord>> streamSupplier) {
+		this.source = source;
+		// Memoize the stream to make sure it is open only once
+		this.streamSupplier = Suppliers.memoize(streamSupplier::get);
+	}
+
+	@Override
+	public Stream<IAggregatedRecord> asMap() {
+		return streamSupplier.get();
+	}
+
+	@Override
+	public void close() throws Exception {
+		streamSupplier.get().close();
+	}
+
+	@Override
+	public String toString() {
+		return "Stream from source=%s".formatted(source);
+	}
 }

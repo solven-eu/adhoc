@@ -303,7 +303,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
 					// TODO It is unclear why we got Doubles or Longs
-					.containsEntry(Map.of("k2", 123.0D), Map.of("k1", 0L + 123.0D));
+					.containsEntry(Map.of("k2", 123.0D), Map.of("k1", 0L + 123));
 		}
 	}
 

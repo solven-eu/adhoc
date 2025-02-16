@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.record;
 
 import java.util.List;
 import java.util.Map;
@@ -33,8 +33,8 @@ import eu.solven.adhoc.query.table.TableQuery;
  *
  * @author Benoit Lacelle
  */
-public interface IRowsStream extends AutoCloseable {
-	Stream<Map<String, ?>> asMap();
+public interface IAggregatedRecordStream extends AutoCloseable {
+	Stream<IAggregatedRecord> asMap();
 
 	/**
 	 * @deprecated Used for unitTests
@@ -42,6 +42,6 @@ public interface IRowsStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return asMap().toList();
+		return asMap().<Map<String, ?>>map(m -> m.asMap()).toList();
 	}
 }

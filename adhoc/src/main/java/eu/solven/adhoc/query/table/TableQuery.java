@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
+import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -103,13 +104,14 @@ public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, II
 	 * @param tableQuery
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
-	public static List<String> makeSelectedColumns(TableQuery tableQuery) {
-		List<String> selectedFields = new ArrayList<>();
-		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(a.getName()));
+	public static AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery) {
+		List<String> aggregatorNames = new ArrayList<>();
+		tableQuery.getAggregators().stream().distinct().forEach(a -> aggregatorNames.add(a.getName()));
 
+		List<String> columns = new ArrayList<>();
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			selectedFields.add(column.getColumn());
+			columns.add(column.getColumn());
 		});
-		return selectedFields;
+		return AggregatedRecordFields.builder().aggregates(aggregatorNames).columns(columns).build();
 	}
 }

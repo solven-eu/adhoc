@@ -430,17 +430,12 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("k1").build();
 
-			Assertions.assertThatThrownBy(() -> {
+			ITabularView result = wrapInCube(amb).execute(query);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-				ITabularView result = wrapInCube(amb).execute(query);
-				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.hasSize(1)
-						.containsEntry(Map.of("k1", 123), Map.of("k1", 0L + 123));
-			})
-					.isInstanceOf(IllegalArgumentException.class)
-					.hasStackTraceContaining("Some columns are both used as aggregators and as groupBy");
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.hasSize(1)
+					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0L + 123));
 		}
 	}
 

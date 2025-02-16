@@ -58,6 +58,10 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.AggregatedRecordOverMaps;
+import eu.solven.adhoc.record.IAggregatedRecord;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
+import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ITabularView;
 import lombok.Builder;
@@ -98,14 +102,14 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream streamSlices(TableQuery compositeQuery) {
+	public IAggregatedRecordStream streamSlices(TableQuery compositeQuery) {
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 		IAdhocFilter compositeFilter = compositeQuery.getFilter();
 
 		Set<String> compositeQueryMeasures =
 				compositeQuery.getAggregators().stream().map(Aggregator::getName).collect(Collectors.toSet());
 
-		Stream<Map<String, ?>> streams = cubes.stream().flatMap(cube -> {
+		Stream<IAggregatedRecord> streams = cubes.stream().flatMap(cube -> {
 
 			Set<String> cubeColumns = cube.getColumns().keySet();
 
@@ -138,7 +142,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 			});
 		});
 
-		return new SuppliedRowsStream(compositeQuery, () -> streams);
+		return new SuppliedAggregatedRecordStream(compositeQuery, () -> streams);
 	}
 
 	/**
@@ -152,18 +156,16 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
 	 * @return
 	 */
-	protected Map<String, Object> transcodeSliceToComposite(IAdhocCubeWrapper cube,
+	protected IAggregatedRecord transcodeSliceToComposite(IAdhocCubeWrapper cube,
 			IAdhocSlice slice,
 			Map<String, ?> measures,
 			NavigableSet<String> missingColumns) {
-		Map<String, Object> columnsAndMeasures = new LinkedHashMap<>();
+		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
 
-		columnsAndMeasures.putAll(slice.getCoordinates());
-		columnsAndMeasures.putAll(measures);
+		Map<String, Object> groupBys = new LinkedHashMap<>(slice.getCoordinates());
+		missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
 
-		missingColumns.forEach(column -> columnsAndMeasures.put(column, missingColumn(cube, column)));
-
-		return columnsAndMeasures;
+		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 	}
 
 	protected Object missingColumn(IAdhocCubeWrapper cube, String column) {

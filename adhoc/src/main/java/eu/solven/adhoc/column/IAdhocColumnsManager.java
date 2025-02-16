@@ -23,8 +23,8 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.IRowsStream;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 
 /**
@@ -37,7 +37,7 @@ import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
  */
 public interface IAdhocColumnsManager {
 
-	IRowsStream openTableStream(IAdhocTableWrapper table, TableQuery tableQuery);
+	IAggregatedRecordStream openTableStream(IAdhocTableWrapper table, TableQuery tableQuery);
 
 	Object onMissingColumn(String column);
 

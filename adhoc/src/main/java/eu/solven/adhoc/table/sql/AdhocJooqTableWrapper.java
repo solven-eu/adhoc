@@ -39,9 +39,11 @@ import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.AggregatedRecordOverMaps;
+import eu.solven.adhoc.record.IAggregatedRecord;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
+import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.IRowsStream;
-import eu.solven.adhoc.table.SuppliedRowsStream;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters.AdhocJooqTableWrapperParametersBuilder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
@@ -123,7 +125,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream streamSlices(TableQuery tableQuery) {
+	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
 		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory();
 
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
@@ -136,11 +138,11 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			debugResultQuery(resultQuery);
 		}
 
-		List<String> fields = queryFactory.makeSelectedColumns(tableQuery);
+		AggregatedRecordFields fields = queryFactory.makeSelectedColumns(tableQuery);
 
-		Stream<Map<String, ?>> tableStream = toMapStream(fields, resultQuery);
+		Stream<IAggregatedRecord> tableStream = toMapStream(fields, resultQuery);
 
-		return new SuppliedRowsStream(tableQuery, () -> tableStream);
+		return new SuppliedAggregatedRecordStream(tableQuery, () -> tableStream);
 	}
 
 	protected IAdhocJooqTableQueryFactory makeQueryFactory() {
@@ -170,28 +172,45 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		return AdhocJooqTableQueryFactory.builder().table(dbParameters.getTable()).dslContext(dslContext).build();
 	}
 
-	protected Stream<Map<String, ?>> toMapStream(List<String> queriedColumns, ResultQuery<Record> sqlQuery) {
-		return sqlQuery.stream().map(r -> intoMap(queriedColumns, r));
+	protected Stream<IAggregatedRecord> toMapStream(AggregatedRecordFields fields, ResultQuery<Record> sqlQuery) {
+		return sqlQuery.stream().map(r -> intoMap(fields, r));
 
 	}
 
 	// Inspired from AbstractRecord.intoMap
 	// Take original `queriedColumns` as the record may not clearly expresses aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
-	protected Map<String, Object> intoMap(List<String> queriedColumns, Record r) {
-		Map<String, Object> map = new LinkedHashMap<>();
+	protected IAggregatedRecord intoMap(AggregatedRecordFields fields, Record r) {
+		Map<String, Object> aggregates = new LinkedHashMap<>();
 
-		int size = queriedColumns.size();
-		for (int i = 0; i < size; i++) {
-			String columnName = queriedColumns.get(i);
+		List<String> aggregateFields = fields.getAggregates();
+		{
+			int size = aggregateFields.size();
+			for (int i = 0; i < size; i++) {
+				String columnName = aggregateFields.get(i);
 
-			Object previousValue = map.put(columnName, r.get(i));
-			if (previousValue != null) {
-				throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+				Object previousValue = aggregates.put(columnName, r.get(i));
+				if (previousValue != null) {
+					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+				}
 			}
 		}
 
-		return map;
+		Map<String, Object> groupBys = new LinkedHashMap<>();
+		{
+			List<String> groupByFields = fields.getColumns();
+			int size = groupByFields.size();
+			for (int i = 0; i < size; i++) {
+				String columnName = groupByFields.get(i);
+
+				Object previousValue = groupBys.put(columnName, r.get(aggregateFields.size() + i));
+				if (previousValue != null) {
+					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+				}
+			}
+		}
+
+		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 	}
 
 	protected String toQualifiedName(Field<?> field) {

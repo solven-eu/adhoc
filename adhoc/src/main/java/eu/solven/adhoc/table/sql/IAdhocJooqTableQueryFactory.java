@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.table.sql;
 
-import java.util.List;
-
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 
@@ -41,5 +39,5 @@ public interface IAdhocJooqTableQueryFactory {
 	 * @param tableQuery
 	 * @return the ordered name of the selected columns.
 	 */
-	List<String> makeSelectedColumns(TableQuery tableQuery);
+	AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery);
 }

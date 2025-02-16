@@ -33,6 +33,9 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.AggregatedRecordOverMaps;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
+import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -70,28 +73,33 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream streamSlices(TableQuery tableQuery) {
-		Set<String> queriedColumns = new HashSet<>();
-		queriedColumns.addAll(tableQuery.getGroupBy().getGroupedByColumns());
-		tableQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(queriedColumns::add);
+	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
+		Set<String> aggregateColumns =
+				tableQuery.getAggregators().stream().map(a -> a.getColumnName()).collect(Collectors.toSet());
+		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
-		return new SuppliedRowsStream(tableQuery, () -> this.stream().filter(row -> {
+		return new SuppliedAggregatedRecordStream(tableQuery, () -> this.stream().filter(row -> {
 			return FilterHelpers.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 		}).map(row -> {
-			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);
-
-			// Discard the column not expressed by the dbQuery
-			withSelectedColumns.keySet().retainAll(queriedColumns);
-
-			tableQuery.getAggregators().forEach(aggregator -> {
-				String columnName = aggregator.getColumnName();
-				Object aggregatorValue = row.get(columnName);
-
-				// TODO This may lead to issues if we alias an aggregator with a name also used as groupBy
-				withSelectedColumns.put(aggregator.getName(), aggregatorValue);
+			Map<String, Object> aggregates = new LinkedHashMap<>();
+			// Transcode from columnName to aggregatorName, supposing all aggregation functions does not change a not
+			// aggregated single value
+			aggregateColumns.forEach(aggregatedColumn -> {
+				Object aggregatorUnderlyingValue = row.get(aggregatedColumn);
+				if (aggregatorUnderlyingValue != null) {
+					tableQuery.getAggregators()
+							.stream()
+							.filter(a -> a.getColumnName().equals(aggregatedColumn))
+							.forEach(a -> {
+								aggregates.put(a.getName(), aggregatorUnderlyingValue);
+							});
+				}
 			});
 
-			return withSelectedColumns;
+			Map<String, Object> groupBys = new LinkedHashMap<>(row);
+			groupBys.keySet().retainAll(groupByColumns);
+
+			return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 		}));
 	}
 

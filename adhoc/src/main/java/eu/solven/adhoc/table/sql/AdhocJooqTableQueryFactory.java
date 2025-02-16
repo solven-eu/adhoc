@@ -164,7 +164,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	}
 
 	@Override
-	public List<String> makeSelectedColumns(TableQuery tableQuery) {
+	public AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery) {
 		return TableQuery.makeSelectedColumns(tableQuery);
 	}
 

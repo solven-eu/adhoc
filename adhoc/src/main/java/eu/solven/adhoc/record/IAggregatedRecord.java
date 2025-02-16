@@ -20,38 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.record;
 
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 
 /**
- * {@link IAdhocTableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
- * known (e.g. when one has to switch the underlying table depending on some queried filter).
- *
+ * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
+ * 
  * @author Benoit Lacelle
  */
-@Builder
-public class EmptyTableWrapper implements IAdhocTableWrapper {
+public interface IAggregatedRecord {
+	Set<String> aggregateKeySet();
 
-	@NonNull
-	@Getter
-	final String name;
+	Object getAggregate(String aggregateName);
 
-	@Override
-	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
-		return new SuppliedAggregatedRecordStream("empty", Stream::empty);
-	}
+	Set<String> groupByKeySet();
 
-	@Override
-	public Map<String, Class<?>> getColumns() {
-		return Map.of();
-	}
+	Object getGroupBy(String columnName);
+
+	/**
+	 * 
+	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
+	 */
+	Map<String, ?> asMap();
+
+	boolean isEmpty();
+
+	Map<String, ?> getGroupBys();
+
+	IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
+
 }

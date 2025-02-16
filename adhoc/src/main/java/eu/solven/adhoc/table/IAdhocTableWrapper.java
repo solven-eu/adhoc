@@ -24,6 +24,7 @@ package eu.solven.adhoc.table;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
@@ -38,8 +39,8 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 	/**
 	 *
 	 * @param tableQuery
-	 * @return a {@link IRowsStream} matching the input dpQuery
+	 * @return a {@link IAggregatedRecordStream} matching the input dpQuery
 	 */
-	IRowsStream streamSlices(TableQuery tableQuery);
+	IAggregatedRecordStream streamSlices(TableQuery tableQuery);
 
 }

@@ -20,39 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.table.sql;
 
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.List;
 
-import com.google.common.base.Suppliers;
+import lombok.Builder;
+import lombok.Value;
 
-/**
- * A {@link IRowsStream} memorizing an underlying `Stream<Map<String, ?>>`
- */
-public class SuppliedRowsStream implements IRowsStream {
-	final Object source;
-	final Supplier<Stream<Map<String, ?>>> mapStreamSupplier;
-
-	public SuppliedRowsStream(Object source, Supplier<Stream<Map<String, ?>>> mapStreamSupplier) {
-		this.source = source;
-		// Memoize the stream to make sure it is open only once
-		this.mapStreamSupplier = Suppliers.memoize(mapStreamSupplier::get);
-	}
-
-	@Override
-	public Stream<Map<String, ?>> asMap() {
-		return mapStreamSupplier.get();
-	}
-
-	@Override
-	public void close() throws Exception {
-		mapStreamSupplier.get().close();
-	}
-
-	@Override
-	public String toString() {
-		return "Stream from source=%s".formatted(source);
-	}
+@Value
+@Builder
+public class AggregatedRecordFields {
+	List<String> aggregates;
+	List<String> columns;
 }

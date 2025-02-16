@@ -43,7 +43,10 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
+import eu.solven.adhoc.record.AggregatedRecordOverMaps;
+import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
+import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -63,7 +66,8 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<Map<String, ?>> toMapStream(List<String> queriedColumns, ResultQuery<Record> sqlQuery) {
+	protected Stream<IAggregatedRecord> toMapStream(AggregatedRecordFields queriedColumns,
+			ResultQuery<Record> sqlQuery) {
 		String sql = sqlQuery.getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
@@ -109,24 +113,47 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 
 		// Print all pages of the results.
 		return result.streamAll().map(row -> {
-			Map<String, Object> asMap = new LinkedHashMap<>();
+			Map<String, Object> aggregates = new LinkedHashMap<>();
 
-			for (int i = 0; i < queriedColumns.size(); i++) {
-				Field field = schema.getFields().get(i);
+			{
+				List<String> aggregateColumns = queriedColumns.getAggregates();
+				for (int i = 0; i < aggregateColumns.size(); i++) {
+					Field field = schema.getFields().get(i);
 
-				Object value;
-				FieldValue fieldValue = row.get(i);
-				if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
-					value = fieldValue.getLongValue();
-				} else {
-					value = fieldValue.getValue();
+					Object value;
+					FieldValue fieldValue = row.get(i);
+					if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
+						value = fieldValue.getLongValue();
+					} else {
+						value = fieldValue.getValue();
+					}
+
+					String columnName = aggregateColumns.get(i);
+					aggregates.put(columnName, value);
 				}
-
-				String columnName = queriedColumns.get(i);
-				asMap.put(columnName, value);
 			}
 
-			return asMap;
+			Map<String, Object> groupBys = new LinkedHashMap<>();
+
+			{
+				List<String> aggregateGroupBys = queriedColumns.getColumns();
+				for (int i = 0; i < aggregateGroupBys.size(); i++) {
+					Field field = schema.getFields().get(aggregateGroupBys.size() + i);
+
+					Object value;
+					FieldValue fieldValue = row.get(aggregateGroupBys.size() + i);
+					if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
+						value = fieldValue.getLongValue();
+					} else {
+						value = fieldValue.getValue();
+					}
+
+					String columnName = aggregateGroupBys.get(i);
+					aggregates.put(columnName, value);
+				}
+			}
+
+			return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 		});
 	}
 

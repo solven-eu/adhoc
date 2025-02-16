@@ -23,9 +23,7 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -33,8 +31,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.step.Aggregator;
@@ -51,10 +47,9 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.IAggregatedRecord;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.IRowsStream;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
@@ -90,7 +85,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
 
 	@Override
-	public IRowsStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
+	public IAggregatedRecordStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -119,32 +114,17 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			log.info("[DEBUG] Transcoded query is `{}` given `{}`", transcodedQuery, query);
 		}
 
-		{
-			List<String> columns = TableQuery.makeSelectedColumns(transcodedQuery);
-			if (columns.size() != columns.stream().distinct().count()) {
-				// This limitation may be lifted, by having a AdhocRecord which splits clearly the aggregated columns
-				// and the groupBy columns
-				throw new IllegalArgumentException(
-						"Some columns are both used as aggregators and as groupBy: %s".formatted(transcodedQuery));
-			}
-		}
-
-		IRowsStream rowStream = table.streamSlices(transcodedQuery);
+		IAggregatedRecordStream rowStream = table.streamSlices(transcodedQuery);
 
 		return transcodeRows(transcodingContext, transcodedQuery, rowStream);
 	}
 
-	protected Map<String, ?> transcodeFromDb(IAdhocTableReverseTranscoder transcodingContext,
-			Map<String, ?> underlyingMap) {
-		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
-	}
-
-	protected IRowsStream transcodeRows(TranscodingContext transcodingContext,
+	protected IAggregatedRecordStream transcodeRows(TranscodingContext transcodingContext,
 			TableQuery tableQuery,
-			IRowsStream openDbStream) {
-		Supplier<Stream<Map<String, ?>>> memoized = Suppliers.memoize(openDbStream::asMap);
+			IAggregatedRecordStream openDbStream) {
+		Supplier<Stream<IAggregatedRecord>> memoized = Suppliers.memoize(openDbStream::asMap);
 
-		return new IRowsStream() {
+		return new IAggregatedRecordStream() {
 
 			@Override
 			public void close() throws Exception {
@@ -153,92 +133,8 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			}
 
 			@Override
-			public Stream<Map<String, ?>> asMap() {
-				return memoized.get()
-						// .map(notTranscoded -> {
-						// // We transcode only groupBy columns, as an aggregator may have a name matching an underlying
-						// column
-						// Map<String, ?> transcoded = transcodeFromDb(transcodingContext, notTranscoded);
-						//
-						// return transcoded;
-						//
-						// })
-						.<Map<String, ?>>map(notTranscoded -> {
-							Map<String, Object> aggregatorValues = new LinkedHashMap<>();
-							tableQuery.getAggregators().forEach(a -> {
-								String aggregatorName = a.getName();
-								Object aggregatedValue = notTranscoded.remove(aggregatorName);
-								if (aggregatedValue == null) {
-									// SQL groupBy returns `a=null` even if there is not a single matching row
-									notTranscoded.remove(aggregatorName);
-								} else {
-									aggregatorValues.put(aggregatorName, aggregatedValue);
-								}
-							});
-
-							if (aggregatorValues.isEmpty()) {
-								// There is not a single non-null aggregate: discard the whole Map (including groupedBy
-								// columns)
-								// BEWARE When is this relevant? Why not returning only materialized sliced, even if
-								// there is
-								// not a
-								// single column? One poor argument is we (may? always?) add `COUNT(*)` if there is no
-								// explicit
-								// measure.
-								return Map.of();
-							} else {
-								// In case of manual filters, we may have to hide some some columns, needed by the
-								// manual filter, but unexpected by the output stream
-
-								Map<String, ?> transcoded = transcodeFromDb(transcodingContext, notTranscoded);
-
-								// ImmutableMap does not accept null value. How should we handle missing value in
-								// groupBy, when returned as null by DB?
-								ImmutableMap.Builder<String, Object> transcodedBuilder =
-										ImmutableMap.<String, Object>builderWithExpectedSize(
-												transcoded.size() + aggregatorValues.size());
-
-								transcoded.forEach((column, value) -> {
-									Object nonNullValue;
-
-									if (value == null) {
-										// May happen on a failed JOIN: most DB returns null
-										// BEWARE If the column is also used as aggregator name, we are setting a
-										// default value as aggregator: this may lead to issues
-										nonNullValue = getMissingColumnManager().onMissingColumn(column);
-									} else {
-										nonNullValue = value;
-									}
-
-									transcodedBuilder.put(column, nonNullValue);
-								});
-
-								Set<String> conflictingKeys =
-										Sets.intersection(transcoded.keySet(), aggregatorValues.keySet());
-								if (conflictingKeys.isEmpty()) {
-									transcodedBuilder.putAll(aggregatorValues);
-								} else {
-									// This log should be detected before hand, not on each entry
-									log.info("[DEBUG] Conflicting keys: {}", conflictingKeys);
-
-									aggregatorValues.entrySet()
-											.stream()
-											.filter(e -> !conflictingKeys.contains(e.getKey()))
-											.forEach(e -> transcodedBuilder.put(e.getKey(), e.getValue()));
-								}
-
-								return transcodedBuilder.build();
-
-								// Map<String, Object> merged = new LinkedHashMap<>();
-								//
-								// merged.putAll(notTranscoded);
-								// merged.putAll(aggregatorValues);
-								// return merged;
-							}
-						})
-						// Filter-out the groups which does not have a single aggregatedValue
-						.filter(m -> !m.isEmpty());
-
+			public Stream<IAggregatedRecord> asMap() {
+				return memoized.get().map(notTranscoded -> notTranscoded.transcode(transcodingContext));
 			}
 
 			@Override

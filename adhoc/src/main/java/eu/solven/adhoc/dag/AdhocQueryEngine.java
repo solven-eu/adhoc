@@ -67,6 +67,8 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.record.IAggregatedRecord;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
 import eu.solven.adhoc.storage.IRowScanner;
@@ -76,7 +78,6 @@ import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.storage.MultiTypeStorage;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.IRowsStream;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -104,9 +105,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		try {
 			Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
 
-			Map<TableQuery, IRowsStream> tableQueryToStream = new HashMap<>();
+			Map<TableQuery, IAggregatedRecordStream> tableQueryToStream = new HashMap<>();
 			for (TableQuery tableQuery : tableQueries) {
-				IRowsStream rowsStream = openTableStream(queryWithContext, table, tableQuery);
+				IAggregatedRecordStream rowsStream = openTableStream(queryWithContext, table, tableQuery);
 				tableQueryToStream.put(tableQuery, rowsStream);
 			}
 
@@ -119,14 +120,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	protected IRowsStream openTableStream(AdhocExecutingQueryContext queryWithContext,
+	protected IAggregatedRecordStream openTableStream(AdhocExecutingQueryContext queryWithContext,
 			IAdhocTableWrapper table,
 			TableQuery tableQuery) {
 		return queryWithContext.getColumnsManager().openTableStream(table, tableQuery);
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
-			Map<TableQuery, IRowsStream> tableToRowsStream) {
+			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream) {
 		DagHolder fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
 		Map<String, Set<Aggregator>> columnToAggregators =
@@ -240,7 +241,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(AdhocExecutingQueryContext queryWithContext,
 			TableQuery query,
-			IRowsStream stream,
+			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
@@ -391,7 +392,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(AdhocExecutingQueryContext queryWithContext,
 			TableQuery tableQuery,
-			IRowsStream stream,
+			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
@@ -408,7 +409,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		// TODO We'd like to log on the last row, to have the number if row actually
 		// streamed
-		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
+		BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
 		try {
@@ -433,11 +434,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return new AggregatingMeasurators<>(operatorsFactory);
 	}
 
-	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
+	protected BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
-		BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
+		BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
 
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy
@@ -460,9 +461,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	protected void forEachStreamedRow(AdhocExecutingQueryContext queryWithContext,
 			IHasGroupBy tableQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
-			Map<String, ?> tableRow,
-			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
-			Set<String> relevantColumns,
+			IAggregatedRecord tableRow,
+			BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate,
+			Set<String> aggregatorColumns,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
 		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(queryWithContext, tableQuery, tableRow);
 
@@ -472,22 +473,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			return;
 		}
 
-		// When would we need to filter? As the filter is done by the
-		// IAdhocDatabaseWrapper
-		// if (!FilterHelpers.match(adhocQuery.getFilter(), input)) {
-		// return;
-		// }
-
 		AdhocSliceAsMap coordinates = optCoordinates.get();
 
-		for (String aggregatedColumn : relevantColumns) {
-			if (tableRow.containsKey(aggregatedColumn)) {
+		for (String aggregatedColumn : aggregatorColumns) {
+			Object v = tableRow.getAggregate(aggregatedColumn);
+			if (v != null) {
 				// We received a row contributing to an aggregate: the DB does not provide
-				// aggregates (e.g.
-				// InMemoryDb)
+				// aggregates (e.g. InMemoryDb)
 				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
-
-				Object v = tableRow.get(aggregatedColumn);
 
 				if (aggs == null) {
 					// DB has done the aggregation for us
@@ -521,7 +514,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 */
 	protected Optional<AdhocSliceAsMap> makeCoordinate(AdhocExecutingQueryContext queryWithContext,
 			IHasGroupBy tableQuery,
-			Map<String, ?> tableRow) {
+			IAggregatedRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
 			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
@@ -532,10 +525,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		AdhocMap.AdhocMapBuilder coordinatesBuilder = AdhocMap.builder(groupedByColumns);
 
 		for (String groupedByColumn : groupedByColumns) {
-			Object value = tableRow.get(groupedByColumn);
+			Object value = tableRow.getGroupBy(groupedByColumn);
 
 			if (value == null) {
-				if (tableRow.containsKey(groupedByColumn)) {
+				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
 					value = valueOnNull(queryWithContext, groupedByColumn);
