@@ -33,6 +33,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,9 +77,7 @@ public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
 
 			return AndFilter.and(unfilteredAnds);
 		} else {
-			throw new UnsupportedOperationException(
-					"Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case: filter=%s"
-							.formatted(filter));
+			throw new NotYetImplementedException("filter=%s".formatted(filter));
 		}
 	}
 

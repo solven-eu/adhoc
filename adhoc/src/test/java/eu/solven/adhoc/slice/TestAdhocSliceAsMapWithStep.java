@@ -44,7 +44,6 @@ public class TestAdhocSliceAsMapWithStep implements IAdhocTestConstants {
 
 		AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 
-		Assertions.assertThat(slice.asFilter())
-				.isEqualTo(AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2")));
+		Assertions.assertThat(slice.asFilter()).isEqualTo(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
 	}
 }

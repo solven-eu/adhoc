@@ -32,7 +32,6 @@ import eu.solven.adhoc.measure.step.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.RequiredArgsConstructor;
@@ -81,9 +80,8 @@ public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
 
 	protected void onSlice(ISliceToValue underlying, IAdhocSliceWithStep slice, boolean debug, ISliceToValue output) {
 		AtomicReference<Object> refV = new AtomicReference<>();
-		AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-		underlying.onValue(slice, consumer);
+		underlying.onValue(slice, refV::set);
 
 		Object value = refV.get();
 

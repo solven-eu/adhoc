@@ -42,8 +42,7 @@ public class TestShiftor {
 	@Test
 	public void testShiftColumn() {
 		IAdhocFilter filter = ColumnFilter.isEqualTo("a", "a1");
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter))
-				.isEqualTo(AndFilter.andAxisEqualsFilters(Map.of("a", "a1", "c", "v1")));
+		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
 	}
 
 	@Test
@@ -60,8 +59,8 @@ public class TestShiftor {
 
 	@Test
 	public void testShiftAnd() {
-		IAdhocFilter filter = AndFilter.andAxisEqualsFilters(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		IAdhocFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
 		Assertions.assertThat(Shiftor.shift("c", "c2", filter))
-				.isEqualTo(AndFilter.andAxisEqualsFilters(Map.of("a", "a1", "b", "b1", "c", "c2")));
+				.isEqualTo(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c2")));
 	}
 }

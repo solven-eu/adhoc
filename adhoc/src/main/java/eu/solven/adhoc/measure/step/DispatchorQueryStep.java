@@ -42,7 +42,6 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.AsObjectValueConsumer;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.MultiTypeStorage;
@@ -126,9 +125,8 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(storage -> {
 			AtomicReference<Object> refV = new AtomicReference<>();
-			AsObjectValueConsumer consumer = AsObjectValueConsumer.consumer(refV::set);
 
-			storage.onValue(slice, consumer);
+			storage.onValue(slice, refV::set);
 
 			return refV.get();
 		}).toList();
@@ -178,9 +176,8 @@ public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHa
 					aggregatingView.merge(coordinateAsSlice, fragmentValue);
 
 					if (isDebug()) {
-						aggregatingView.onValue(coordinateAsSlice, AsObjectValueConsumer.consumer(o -> {
-							log.info("[DEBUG] slice={} has been merged into agg={}", fragmentCoordinate, o);
-						}));
+						aggregatingView.onValue(coordinateAsSlice,
+								o -> log.info("[DEBUG] slice={} has been merged into agg={}", fragmentCoordinate, o));
 					}
 				} else {
 					// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple

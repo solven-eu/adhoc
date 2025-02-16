@@ -66,14 +66,14 @@ public class MapBasedTabularView implements ITabularView {
 		IRowScanner<IAdhocSlice> rowScanner = coordinates -> {
 			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
 
-			return AsObjectValueConsumer.consumer(o -> {
+			return o -> {
 				Map<String, ?> oAsMap = (Map<String, ?>) o;
 
 				Object previousValue = to.coordinatesToValues.put(coordinatesAsMap, oAsMap);
 				if (previousValue != null) {
 					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
 				}
-			});
+			};
 		};
 
 		from.acceptScanner(rowScanner);

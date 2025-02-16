@@ -38,9 +38,9 @@ public class TestMultiTypeStorage {
 		storage.merge("k1", 123);
 		storage.merge("k1", 234L);
 
-		storage.onValue("k1", AsObjectValueConsumer.consumer(o -> {
+		storage.onValue("k1", o -> {
 			Assertions.assertThat(o).isEqualTo(357L);
-		}));
+		});
 	}
 
 	@Test
@@ -48,9 +48,9 @@ public class TestMultiTypeStorage {
 		storage.merge("k1", 123);
 		storage.merge("k1", 234.567D);
 
-		storage.onValue("k1", AsObjectValueConsumer.consumer(o -> {
+		storage.onValue("k1", o -> {
 			Assertions.assertThat(o).isEqualTo(357.567D);
-		}));
+		});
 	}
 
 	@Test
@@ -59,9 +59,9 @@ public class TestMultiTypeStorage {
 		storage.merge("k1", "234");
 		storage.merge("k1", 345);
 
-		storage.onValue("k1", AsObjectValueConsumer.consumer(o -> {
+		storage.onValue("k1", o -> {
 			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
-		}));
+		});
 	}
 
 	@Test
@@ -69,9 +69,9 @@ public class TestMultiTypeStorage {
 		storage.merge("k1", "123");
 		storage.merge("k1", "234");
 
-		storage.onValue("k1", AsObjectValueConsumer.consumer(o -> {
+		storage.onValue("k1", o -> {
 			Assertions.assertThat(o).isEqualTo("123234");
-		}));
+		});
 	}
 
 	@Test

@@ -27,22 +27,17 @@ import org.jooq.Condition;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
-import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
-public class TestAdhocJooqTableQueryFactory {
+public class TestAdhocJooqTableQueryFactory_Transcoding {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -50,80 +45,39 @@ public class TestAdhocJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new IdentityImplicitTranscoder(),
+	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(
+			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 
 	TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(streamOpener.transcoder).build();
 
 	@Test
-	public void testToCondition_ColumnEquals() {
-		Condition condition = streamOpener.toCondition(transcodingContext, ColumnFilter.isEqualTo("k1", "v1"));
-
-		Assertions.assertThat(condition.toString()).isEqualTo("""
-				"k1" = 'v1'
-				""".trim());
-	}
-
-	@Test
-	public void testToCondition_AndColumnsEquals() {
-		// ImmutableMap for ordering, as we later check the .toString
+	public void testToCondition_transcodingLeadsToMatchNone() {
 		Condition condition =
 				streamOpener.toCondition(transcodingContext, AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				(
-				  "k1" = 'v1'
-				  and "k2" = 'v2'
+				  "k" = 'v1'
+				  and "k" = 'v2'
 				)
-				""".trim());
+								""".trim());
 	}
 
 	@Test
-	public void testToCondition_OrColumnsEquals() {
-		Condition condition = streamOpener.toCondition(transcodingContext,
-				OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
+	public void testToTableQuery_transcodingLeadsToMatchNone() {
+		// BEWARE We expect a WARN. It should be turned into an Event at some point
+		ResultQuery<Record> condition = streamOpener.prepareQuery(
+				TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build());
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
-				(
-				  "k1" = 'v1'
-				  or "k2" = 'v2'
+				select *
+				from "someTableName"
+				where (
+				  "k" = 'v1'
+				  and "k" = 'v2'
 				)
-				""".trim());
-	}
-
-	@Test
-	public void testGrandTotal() {
-		ResultQuery<Record> condition = streamOpener
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
-
-		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k" from "someTableName" where "k" is not null
-				""".trim());
-	}
-
-	@Test
-	public void testMeasureNameWithDot() {
-		ResultQuery<Record> condition = streamOpener.prepareQuery(
-				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
-
-		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null
-				""".trim());
-	}
-
-	@Test
-	public void testCountAsterisk() {
-		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
-				.aggregator(Aggregator.builder()
-						.name("countStar")
-						.columnName(CountAggregation.ASTERISK)
-						.aggregationKey(CountAggregation.KEY)
-						.build())
-				.build());
-
-		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(*) "countStar" from "someTableName"
-				""".trim());
+								""".trim());
 	}
 }

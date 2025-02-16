@@ -245,3 +245,4 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 - ITableTranscoder should be managed by `IAdhocCubeWrapper`, not in each `IAdhocTableWrapper`. It can then be coupled with `ICustomTypeManager`
 - EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - Demonstrate how to automatically add some filter based on some security layer
+- Shift some filters are `FILTER` DuckDB clause, hence enabling wider `TableQuery` (as the shared `filter` would be wider).

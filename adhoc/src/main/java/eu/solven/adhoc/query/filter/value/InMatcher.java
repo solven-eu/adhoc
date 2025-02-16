@@ -24,14 +24,15 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -52,7 +53,7 @@ import lombok.extern.jackson.Jacksonized;
 public class InMatcher implements IValueMatcher {
 	@NonNull
 	@Singular
-	Set<?> operands;
+	ImmutableSet<?> operands;
 
 	@Override
 	public boolean match(Object value) {
@@ -97,7 +98,11 @@ public class InMatcher implements IValueMatcher {
 			Object singleValue = unnested.getFirst();
 			return EqualsMatcher.isEqualTo(singleValue);
 		} else {
-			return InMatcher.builder().operands(allowedValues).build();
+			if (unnested.contains(null)) {
+				throw new NotYetImplementedException(
+						"`%s` is not allowed in an InMatcher".formatted(new Object[] { null }));
+			}
+			return InMatcher.builder().operands(unnested).build();
 		}
 	}
 

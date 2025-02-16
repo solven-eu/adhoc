@@ -149,11 +149,21 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 		IAdhocFilter filter = dbQuery.getFilter();
 		if (!filter.isMatchAll()) {
+			TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
+
 			// if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			// andFilter.getOperands().stream().map(this::toCondition).forEach(dbAndConditions::add);
 			// } else {
-			dbAndConditions.add(toCondition(filter));
+			dbAndConditions.add(toCondition(transcodingContext, filter));
 			// }
+
+			transcodingContext.underlyings().forEach(underlying -> {
+				Set<String> queried = transcodingContext.queried(underlying);
+				if (queried.size() >= 2) {
+					// TODO Pop an Event when transcoding is moved to AdhocQueryEngine
+					log.warn("Ambiguous filters: {} -> {} (filter={})", underlying, queried, filter);
+				}
+			});
 		}
 
 		return dbAndConditions;
@@ -318,18 +328,19 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return DSL.or(oneNotNullConditions);
 	}
 
-	protected Condition toCondition(IAdhocFilter filter) {
+	protected Condition toCondition(TranscodingContext transcodingContext, IAdhocFilter filter) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			return toCondition(columnFilter);
+			return toCondition(transcodingContext, columnFilter);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column
 			// It would be the symptom of conflicting transcoding
-			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
+			List<Condition> conditions = operands.stream().map(c -> toCondition(transcodingContext, c)).toList();
+
 			return DSL.and(conditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<IAdhocFilter> operands = orFilter.getOperands();
-			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
+			List<Condition> conditions = operands.stream().map(c -> toCondition(transcodingContext, c)).toList();
 			return DSL.or(conditions);
 		} else {
 			throw new UnsupportedOperationException(
@@ -337,9 +348,9 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		}
 	}
 
-	protected Condition toCondition(IColumnFilter columnFilter) {
+	protected Condition toCondition(TranscodingContext transcodingContext, IColumnFilter columnFilter) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-		String column = transcoder.underlyingNonNull(columnFilter.getColumn());
+		String column = transcodingContext.underlyingNonNull(columnFilter.getColumn());
 
 		Condition condition;
 		final Field<Object> field = DSL.field(name(column));

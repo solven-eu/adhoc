@@ -123,12 +123,11 @@ public class ColumnFilter implements IColumnFilter {
 			if (matching == null) {
 				return matchNull();
 			} else if (matching instanceof IValueMatcher vm) {
-				this.valueMatcher = vm;
-				return this;
+				return this.valueMatcher(vm);
 			} else if (matching instanceof Collection<?> c) {
 				return matchIn(c);
 			} else if (matching instanceof IColumnFilter) {
-				throw new IllegalArgumentException("Can not use a columnFilter as valueFilter: %s"
+				throw new IllegalArgumentException("Can not use a IColumnFilter as valueFilter: %s"
 						.formatted(PepperLogHelper.getObjectAndClass(matching)));
 			} else {
 				if (matching instanceof Pattern) {

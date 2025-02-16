@@ -266,15 +266,16 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
-	public static IAdhocFilter and(Map<String, IValueMatcher> filters) {
-		return and(filters.entrySet()
-				.stream()
-				.map(e -> ColumnFilter.builder().column(e.getKey()).valueMatcher(e.getValue()).build())
-				.collect(Collectors.toList()));
-	}
-
-	public static IAdhocFilter andAxisEqualsFilters(Map<String, ?> filters) {
-		return and(filters.entrySet()
+	/**
+	 *
+	 * @param columnToFilter
+	 *            each key maps to a column, while each value represent a matcher. May be an {@link IValueMatcher}, or a
+	 *            {@link Collection}, a `null`, or a value
+	 *
+	 * @return a filter doing an `AND` between each {@link Map} entry,
+	 */
+	public static IAdhocFilter and(Map<String, ?> columnToFilter) {
+		return and(columnToFilter.entrySet()
 				.stream()
 				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
 				.collect(Collectors.toList()));

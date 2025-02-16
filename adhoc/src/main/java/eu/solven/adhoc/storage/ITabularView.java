@@ -28,15 +28,16 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.slice.IAdhocSlice;
 
 /**
- * Storage for static data (i.e. not mutating data). Typical output of an {@link IAdhocQuery}.
- * 
+ * Storage for static data (i.e. not mutating data). Typical output of an {@link IAdhocQuery} on an
+ * {@link eu.solven.adhoc.dag.IAdhocQueryEngine}.
+ *
  * @author Benoit Lacelle
  *
  */
 public interface ITabularView {
 
 	/**
-	 * 
+	 *
 	 * @return an empty and immutable {@link ITabularView}
 	 */
 	static ITabularView empty() {
@@ -44,24 +45,37 @@ public interface ITabularView {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return the number of slices in this view
 	 */
 	int size();
 
 	/**
-	 * 
+	 *
 	 * @return true if this view is empty.
 	 */
 	boolean isEmpty();
 
 	/**
-	 * 
+	 *
 	 * @return a distinct stream of slices
 	 */
 	Stream<IAdhocSlice> slices();
 
+	/**
+	 * Will apply the rowScanner to each sliced.
+	 * 
+	 * @param rowScanner
+	 */
 	void acceptScanner(IRowScanner<IAdhocSlice> rowScanner);
 
-	<U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner);
+	/**
+	 *
+	 * @param rowConverter
+	 *            convert each slice and associated values.
+	 * @return
+	 * @param <U>
+	 *            the output type of the rowConvertor
+	 */
+	<U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowConverter);
 }

@@ -69,19 +69,20 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		// This will provide underlying values from the shifted slice
+		ReferencedMeasure underlyingMeasure = ReferencedMeasure.ref(shiftor.getUnderlying());
 		AdhocQueryStep whereToRead = AdhocQueryStep.edit(step)
-				.filter(shift(step.getFilter()))
-				.measure(ReferencedMeasure.ref(shiftor.getUnderlying()))
+				.filter(shift(step.getFilter(), step.getCustomMarker()))
+				.measure(underlyingMeasure)
 				.build();
-		AdhocQueryStep whereTowrite =
-				AdhocQueryStep.edit(step).measure(ReferencedMeasure.ref(shiftor.getUnderlying())).build();
+		AdhocQueryStep whereToWrite =
+				AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
-		return Arrays.asList(whereToRead, whereTowrite);
+		return Arrays.asList(whereToRead, whereToWrite);
 	}
 
-	private IAdhocFilter shift(IAdhocFilter filter) {
-		return filterEditorSupplier.get().editFilter(filter);
+	protected IAdhocFilter shift(IAdhocFilter filter, Object customMarker) {
+		return filterEditorSupplier.get().editFilter(IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build());
 	}
 
 	// @Override
@@ -105,7 +106,7 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 	 * @return
 	 */
 	protected AdhocSliceAsMap shiftSlice(IAdhocSliceWithStep slice) {
-		IAdhocFilter editedSlice = shift(slice.asFilter());
+		IAdhocFilter editedSlice = shift(slice.asFilter(), step.getCustomMarker());
 		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
 		// Typically useful on querying grandTotal
@@ -115,8 +116,7 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 			editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
 		}
 
-		AdhocSliceAsMap editedAsSliceAsMap = AdhocSliceAsMap.fromMap(editedAsMap);
-		return editedAsSliceAsMap;
+        return AdhocSliceAsMap.fromMap(editedAsMap);
 	}
 
 	protected boolean isDebug() {
@@ -136,7 +136,6 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 		ISliceToValue whereToWrite = underlyings.getLast();
 		Iterable<? extends AdhocSliceAsMap> distinctSlices = whereToWrite.slicesSet();
 
-		// if (distinctSlices.iterator().hasNext()) {
 		int slicesDone = 0;
 		for (AdhocSliceAsMap coordinates : distinctSlices) {
 			AdhocSliceAsMapWithStep slice =
@@ -155,18 +154,12 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 				}
 			}
 		}
-		// } else {
-		// IAdhocSlice slice = step.ge;
-		// AdhocSliceAsMapWithStep sliceWithStep =
-		// AdhocSliceAsMapWithStep.builder().queryStep(step).slice(slice)..build();
-		// sliceConsumer.accept(sliceWithStep);
-		// }
 	}
 
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() == 1) {
-			log.debug("Happens wqhen whereToRead matches whereToWrite");
+			log.debug("Happens when whereToRead matches whereToWrite");
 		} else if (underlyings.size() != 2) {
 			throw new IllegalArgumentException("underlyings.size() != 2");
 		}

@@ -49,7 +49,7 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testGrandTotal_filterAndEmpty() {
-		AdhocQuery q = AdhocQuery.builder().andFilter(AndFilter.andAxisEqualsFilters(Map.of())).build();
+		AdhocQuery q = AdhocQuery.builder().andFilter(AndFilter.and(Map.of())).build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();

@@ -199,14 +199,14 @@ public class MultiTypeStorage<T> {
 		//
 		// }
 		// });
-		onValue(key, AsObjectValueConsumer.consumer(existingAggregate -> {
+		onValue(key, existingAggregate -> {
 			Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
 			if (existingAggregate != null) {
 				clearKey(key);
 			}
 			put(key, newAggregate);
-		}));
+		});
 
 		// Aggregate received longs together
 		// if (SumAggregator.isLongLike(v)) {
@@ -322,9 +322,9 @@ public class MultiTypeStorage<T> {
 		AtomicInteger index = new AtomicInteger();
 		keySetStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
-			onValue(key, AsObjectValueConsumer.consumer(o -> {
+			onValue(key, o -> {
 				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));
-			}));
+			});
 		});
 
 		return toStringHelper.toString();

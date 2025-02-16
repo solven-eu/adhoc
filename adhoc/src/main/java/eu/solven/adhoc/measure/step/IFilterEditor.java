@@ -22,7 +22,11 @@
  */
 package eu.solven.adhoc.measure.step;
 
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
  * Used by {@link Shiftor}
@@ -30,6 +34,16 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
  * @author Benoit Lacelle
  */
 public interface IFilterEditor {
+	@Value
+	@Builder
+	class FilterEditorContext implements IHasCustomMarker {
+		@NonNull
+		IAdhocFilter filter;
+
+		// May be null
+		Object customMarker;
+	}
+
 	/**
 	 *
 	 * @param input
@@ -37,4 +51,13 @@ public interface IFilterEditor {
 	 * @return a {@link IAdhocFilter}, typically computed from the input filter.
 	 */
 	IAdhocFilter editFilter(IAdhocFilter input);
+
+	/**
+	 * Most {@link IFilterEditor} would not need to extend this more complex method.
+	 * @param filterEditorContext
+	 * @return
+	 */
+	default IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {
+		return editFilter(filterEditorContext.getFilter());
+	}
 }

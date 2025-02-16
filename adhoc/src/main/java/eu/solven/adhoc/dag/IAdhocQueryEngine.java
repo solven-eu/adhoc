@@ -32,22 +32,35 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
  * Holds the logic to execute a query, which means turning a {@link IAdhocQuery} into a {@link ITabularView}.
- * 
+ *
  * @author Benoit Lacelle
  */
 public interface IAdhocQueryEngine {
 
+	/**
+	 * Execute an {@link IAdhocQuery}.
+	 *
+	 * @param queryWithContext
+	 * @param table
+	 * @return
+	 */
 	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table);
 
 	default ITabularView execute(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
-		return execute(AdhocExecutingQueryContext.builder().query(query).measures(measures).build(), table);
+		return execute(query, Set.of(), measures, table);
 	}
 
 	default ITabularView execute(IAdhocQuery query,
 			Set<? extends IQueryOption> options,
 			IAdhocMeasureBag measures,
 			IAdhocTableWrapper table) {
-		return execute(AdhocExecutingQueryContext.builder().query(query).options(options).measures(measures).build(),
+		return execute(
+				AdhocExecutingQueryContext.builder()
+						.query(query)
+						.options(options)
+						.measures(measures)
+						.table(table)
+						.build(),
 				table);
 	}
 }

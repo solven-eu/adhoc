@@ -54,11 +54,11 @@ public class DagExplainer {
 		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
 
 		dag.getQueried().forEach(rootStep -> {
-			printStepAndUndelryings(dag, stepToIndentation, stepToReference, rootStep, Optional.empty(), true);
+			printStepAndUnderlyings(dag, stepToIndentation, stepToReference, rootStep, Optional.empty(), true);
 		});
 	}
 
-	private void printStepAndUndelryings(DagHolder dagHolder,
+	private void printStepAndUnderlyings(DagHolder dagHolder,
 			Map<AdhocQueryStep, String> stepToIndentation,
 			Map<AdhocQueryStep, Integer> stepToReference,
 			AdhocQueryStep step,
@@ -67,7 +67,6 @@ public class DagExplainer {
 		boolean isReferenced;
 		{
 			String parentIndentation = optParent.map(parentStep -> stepToIndentation.get(parentStep)).orElse("");
-			// stepToIndentation.putIfAbsent(step, stepToIndentation.size());
 
 			String indentation;
 			if (optParent.isEmpty()) {
@@ -76,13 +75,11 @@ public class DagExplainer {
 				// We keep `|` symbols as they are relevant for the next lines
 				indentation = parentIndentation.replace('\\', ' ').replace('-', ' ');
 
-				// if (!parentIndentation.isEmpty()) {
 				if (isLast) {
 					indentation += "\\-- ";
 				} else {
 					indentation += "|\\- ";
 				}
-				// }
 			}
 
 			stepToIndentation.putIfAbsent(step, indentation);
@@ -107,7 +104,7 @@ public class DagExplainer {
 				DefaultEdge edge = underlyings.get(i);
 				AdhocQueryStep underlyingStep = Graphs.getOppositeVertex(dag, edge, step);
 
-				printStepAndUndelryings(dagHolder,
+				printStepAndUnderlyings(dagHolder,
 						stepToIndentation,
 						stepToReference,
 						underlyingStep,

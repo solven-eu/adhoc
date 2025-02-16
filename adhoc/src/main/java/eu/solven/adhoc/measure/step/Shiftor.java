@@ -40,6 +40,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -116,9 +117,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 
 			return AndFilter.and(shiftedOperands);
 		} else {
-			throw new UnsupportedOperationException(
-					"Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case: filter=%s"
-							.formatted(filter));
+			throw new NotYetImplementedException("filter=%s".formatted(filter));
 		}
 	}
 

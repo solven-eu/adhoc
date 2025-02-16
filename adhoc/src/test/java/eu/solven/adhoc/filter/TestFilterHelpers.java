@@ -108,7 +108,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_AND() {
-		IAdhocFilter filter = AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2"));
+		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(EqualsMatcher.isEqualTo("v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
@@ -116,7 +116,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetFilteredColumns() {
-		IAdhocFilter filter = AndFilter.andAxisEqualsFilters(Map.of("c1", "v1", "c2", "v2"));
+		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
 	}
 }

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestInMatcher {
 	@Test
@@ -44,6 +45,10 @@ public class TestInMatcher {
 		Assertions.assertThat(InMatcher.isIn(List.of("a", "b")))
 				.isInstanceOfSatisfying(InMatcher.class,
 						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
+
+		Assertions.assertThat(InMatcher.isIn(List.of("a", "b"), "c"))
+				.isInstanceOfSatisfying(InMatcher.class,
+						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b", "c")));
 	}
 
 	@Test
@@ -52,5 +57,16 @@ public class TestInMatcher {
 		singletonNull.add(null);
 
 		Assertions.assertThat(InMatcher.isIn(singletonNull)).isInstanceOf(NullMatcher.class);
+	}
+
+	@Test
+	public void testNullAndNotNull() {
+		Set<Object> singletonNull = new HashSet<>();
+		singletonNull.add(null);
+		singletonNull.add("notNull");
+
+		// Assertions.assertThat(InMatcher.isIn(singletonNull)).isInstanceOf(InMatcher.class);
+		Assertions.assertThatThrownBy(() -> InMatcher.isIn(singletonNull))
+				.isInstanceOf(NotYetImplementedException.class);
 	}
 }

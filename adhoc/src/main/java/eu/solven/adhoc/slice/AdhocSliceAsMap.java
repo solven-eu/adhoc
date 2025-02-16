@@ -103,7 +103,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 
 	@Override
 	public IAdhocFilter asFilter() {
-		return AndFilter.andAxisEqualsFilters(asMap);
+		return AndFilter.and(asMap);
 	}
 
 	@Override

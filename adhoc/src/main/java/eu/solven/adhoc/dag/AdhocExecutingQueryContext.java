@@ -33,6 +33,7 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -53,7 +54,10 @@ public class AdhocExecutingQueryContext implements IIsExplainable, IIsDebugable 
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures
 	@NonNull
-	final IAdhocMeasureBag measures;
+	IAdhocMeasureBag measures;
+
+	@NonNull
+	IAdhocTableWrapper table;
 
 	@NonNull
 	@Singular
@@ -76,12 +80,10 @@ public class AdhocExecutingQueryContext implements IIsExplainable, IIsDebugable 
 	}
 
 	public boolean isExplain() {
-		// TODO queryOptions may force explain
-		return getQuery().isExplain();
+		return getQuery().isExplain() || options.contains(StandardQueryOptions.EXPLAIN);
 	}
 
 	public boolean isDebug() {
-		// TODO queryOptions may force explain
-		return getQuery().isDebug();
+		return getQuery().isDebug() || options.contains(StandardQueryOptions.DEBUG);
 	}
 }

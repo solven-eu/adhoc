@@ -46,10 +46,7 @@ public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableRev
 
 	@Override
 	public String underlying(String queried) {
-		String underlyingColumn = transcoder.underlying(queried);
-		if (underlyingColumn == null) {
-			underlyingColumn = queried;
-		}
+		String underlyingColumn = transcoder.underlyingNonNull(queried);
 
 		if (underlyingToQueried.put(underlyingColumn, queried)) {
 			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
@@ -61,5 +58,9 @@ public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableRev
 	@Override
 	public Set<String> queried(String underlying) {
 		return underlyingToQueried.get(underlying);
+	}
+
+	public Set<String> underlyings() {
+		return underlyingToQueried.keySet();
 	}
 }
