@@ -85,7 +85,7 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		manyToManyDefinition.putElementToGroup(Map.of(cElementGender,
 				EqualsMatcher.builder().operand("male").build(),
 				cElementAge,

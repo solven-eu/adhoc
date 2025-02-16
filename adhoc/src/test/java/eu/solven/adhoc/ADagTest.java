@@ -22,14 +22,19 @@
  */
 package eu.solven.adhoc;
 
+import java.util.function.Supplier;
+
 import org.junit.jupiter.api.BeforeEach;
 
+import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.AdhocCubeWrapper.AdhocCubeWrapperBuilder;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**
@@ -45,7 +50,17 @@ public abstract class ADagTest {
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
+	public final Supplier<IAdhocTableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
+	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder()
+			.table(tableSupplier.get())
+			.engine(aqe)
+			.measures(amb)
+			.eventBus(eventBus::post)
+			.build();
+
+	public IAdhocTableWrapper makeTable() {
+		return rows;
+	}
 
 	@BeforeEach
 	public void wireEvents() {
@@ -54,13 +69,20 @@ public abstract class ADagTest {
 
 	// `@BeforeEach` has to be duplicated on each implementation
 	// @BeforeEach
-	public abstract void feedDb();
+	public abstract void feedTable();
 
 	/**
 	 * Typically used to edit the operatorsFactory
 	 */
 	public AdhocQueryEngine.AdhocQueryEngineBuilder editEngine() {
 		return AdhocQueryEngine.edit(aqe);
+	}
+
+	/**
+	 * Typically used to edit the operatorsFactory
+	 */
+	public AdhocCubeWrapperBuilder editCube() {
+		return AdhocCubeWrapper.edit(aqw);
 	}
 
 }

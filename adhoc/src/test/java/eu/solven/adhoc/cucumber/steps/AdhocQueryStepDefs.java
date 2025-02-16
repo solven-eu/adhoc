@@ -55,7 +55,7 @@ public class AdhocQueryStepDefs {
 	ADagTest aDagTest = new ADagTest() {
 
 		@Override
-		public void feedDb() {
+		public void feedTable() {
 
 		}
 	};

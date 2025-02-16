@@ -36,6 +36,7 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -99,6 +100,15 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	 */
 	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
 		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
+	}
+
+	public static class AdhocCubeWrapperBuilder {
+		public AdhocCubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
+			AdhocColumnsManager columnsManager = (AdhocColumnsManager) this.build().getColumnsManager();
+			this.columnsManager(columnsManager.toBuilder().eventBus(eventBus).build());
+
+			return this;
+		}
 	}
 
 }

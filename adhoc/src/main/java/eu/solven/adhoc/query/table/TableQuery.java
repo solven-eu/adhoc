@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.query.table;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
@@ -93,5 +96,20 @@ public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, II
 		}
 
 		return builder;
+	}
+
+	/**
+	 * 
+	 * @param tableQuery
+	 * @return the {@link List} of the columns to be output by the tableQuery
+	 */
+	public static List<String> makeSelectedColumns(TableQuery tableQuery) {
+		List<String> selectedFields = new ArrayList<>();
+		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(a.getName()));
+
+		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+			selectedFields.add(column.getColumn());
+		});
+		return selectedFields;
 	}
 }

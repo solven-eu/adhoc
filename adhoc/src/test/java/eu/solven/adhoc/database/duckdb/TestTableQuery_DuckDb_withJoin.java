@@ -39,6 +39,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
@@ -61,7 +62,7 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
+	AdhocMeasureBag measures = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
 
 	String factTable = "someFactTable";
 	String joinedTable = "someJoinedName";
@@ -88,6 +89,7 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.table(fromClause)
 					.build());
+	AdhocCubeWrapper cube = AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).build();
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
@@ -152,10 +154,10 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, table);
+			ITabularView result = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -168,13 +170,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -189,13 +189,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -210,13 +208,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -231,13 +227,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -252,13 +246,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -273,13 +265,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result =
+					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -294,13 +284,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(countAsterisk);
+		measures.addMeasure(countAsterisk);
 
 		{
-			ITabularView result = aqe.execute(
-					AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").debug(true).build(),
-					measureBag,
-					table);
+			ITabularView result = cube
+					.execute(AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -315,14 +303,11 @@ public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(countAsterisk);
+		measures.addMeasure(countAsterisk);
 
 		{
-			ITabularView result = aqe.execute(AdhocQuery.builder()
-					.measure(countAsterisk.getName())
-					.groupByAlso("c.countryName")
-					.debug(true)
-					.build(), measureBag, table);
+			ITabularView result = cube.execute(
+					AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("c.countryName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

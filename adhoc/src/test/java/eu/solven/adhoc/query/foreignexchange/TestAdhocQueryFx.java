@@ -63,7 +63,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	LocalDate today = LocalDate.now();
 
 	public final AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
+	public final AdhocCubeWrapper aqw = editCube().engine(aqe).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -83,7 +83,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("color", "red", "ccyFrom", "USD", "k1", 123));
 		rows.add(Map.of("color", "red", "ccyFrom", "EUR", "k1", 234));
 	}

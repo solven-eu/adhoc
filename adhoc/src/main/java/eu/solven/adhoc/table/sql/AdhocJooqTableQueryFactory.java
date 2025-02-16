@@ -163,14 +163,9 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return selectedFields;
 	}
 
+	@Override
 	public List<String> makeSelectedColumns(TableQuery tableQuery) {
-		List<String> selectedFields = new ArrayList<>();
-		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(a.getName()));
-
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			selectedFields.add(column.getColumn());
-		});
-		return selectedFields;
+		return TableQuery.makeSelectedColumns(tableQuery);
 	}
 
 	/**

@@ -44,7 +44,7 @@ import eu.solven.adhoc.storage.MapBasedTabularView;
 public class TestAggregations_Double extends ADagTest {
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("k1", 123D));
 		rows.add(Map.of("k2", 234D));
 		rows.add(Map.of("k1", 345F, "k2", 456F));

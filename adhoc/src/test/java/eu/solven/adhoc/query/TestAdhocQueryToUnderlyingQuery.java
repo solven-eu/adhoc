@@ -42,7 +42,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 	IAdhocTableWrapper table = InMemoryTable.builder().build();
 
 	@Override
-	public void feedDb() {
+	public void feedTable() {
 		// no need for data
 	}
 

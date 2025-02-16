@@ -37,7 +37,7 @@ import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
  */
 public interface IAdhocColumnsManager {
 
-	IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery tableQuery);
+	IRowsStream openTableStream(IAdhocTableWrapper table, TableQuery tableQuery);
 
 	Object onMissingColumn(String column);
 

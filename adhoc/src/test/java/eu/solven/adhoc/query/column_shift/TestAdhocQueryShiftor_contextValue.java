@@ -50,7 +50,7 @@ public class TestAdhocQueryShiftor_contextValue extends ADagTest implements IAdh
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
 		rows.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
 		rows.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));

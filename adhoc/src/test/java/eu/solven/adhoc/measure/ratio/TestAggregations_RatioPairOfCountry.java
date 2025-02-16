@@ -53,7 +53,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
 		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
 		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));

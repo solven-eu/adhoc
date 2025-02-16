@@ -136,7 +136,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			debugResultQuery(resultQuery);
 		}
 
-		List<String> fields = ((AdhocJooqTableQueryFactory) queryFactory).makeSelectedColumns(tableQuery);
+		List<String> fields = queryFactory.makeSelectedColumns(tableQuery);
 
 		Stream<Map<String, ?>> tableStream = toMapStream(fields, resultQuery);
 

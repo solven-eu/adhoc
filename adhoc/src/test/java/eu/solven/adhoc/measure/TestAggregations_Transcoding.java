@@ -53,7 +53,7 @@ public class TestAggregations_Transcoding extends ADagTest {
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		// As assume the data in DB is already prefixed with `_p`
 		rows.add(Map.of("p_c", "v1", "p_k1", 123D));
 		rows.add(Map.of("p_c", "v2", "p_k2", 234D));

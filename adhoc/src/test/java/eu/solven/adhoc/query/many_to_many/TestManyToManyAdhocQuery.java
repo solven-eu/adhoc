@@ -81,7 +81,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		manyToManyDefinition.putElementToGroup("FR", "G8");
 		manyToManyDefinition.putElementToGroup("FR", "G20");
 		manyToManyDefinition.putElementToGroup("CH", "G20");

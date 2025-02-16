@@ -87,7 +87,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
 		rows.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
 	}

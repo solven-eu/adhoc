@@ -40,7 +40,7 @@ import eu.solven.adhoc.storage.MapBasedTabularView;
 public class TestAggregations_Dispatchor extends ADagTest {
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("a", "a1", "percent", 1, "k1", 123));
 		rows.add(Map.of("a", "a1", "percent", 10, "k1", 345, "k2", 456));
 		rows.add(Map.of("a", "a2", "percent", 100, "b", "b1", "k2", 234));

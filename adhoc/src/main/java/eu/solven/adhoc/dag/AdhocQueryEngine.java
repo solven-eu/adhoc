@@ -104,12 +104,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		try {
 			Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
 
-			Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
+			Map<TableQuery, IRowsStream> tableQueryToStream = new HashMap<>();
 			for (TableQuery tableQuery : tableQueries) {
-				dbQueryToStream.put(tableQuery, openDbStream(queryWithContext, table, tableQuery));
+				IRowsStream rowsStream = openTableStream(queryWithContext, table, tableQuery);
+				tableQueryToStream.put(tableQuery, rowsStream);
 			}
 
-			return execute(queryWithContext, dbQueryToStream);
+			return execute(queryWithContext, tableQueryToStream);
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException(
 					"Issue executing query=%s options=%s".formatted(queryWithContext.getQuery(),
@@ -118,25 +119,25 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	protected IRowsStream openDbStream(AdhocExecutingQueryContext queryWithContext,
+	protected IRowsStream openTableStream(AdhocExecutingQueryContext queryWithContext,
 			IAdhocTableWrapper table,
 			TableQuery tableQuery) {
-		return queryWithContext.getColumnsManager().openDbStream(table, tableQuery);
+		return queryWithContext.getColumnsManager().openTableStream(table, tableQuery);
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
-			Map<TableQuery, IRowsStream> dbQueryToStream) {
+			Map<TableQuery, IRowsStream> tableToRowsStream) {
 		DagHolder fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
 
-		Map<String, Set<Aggregator>> inputColumnToAggregators =
+		Map<String, Set<Aggregator>> columnToAggregators =
 				columnToAggregators(queryWithContext, fromQueriedToAggregates);
 
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
-		dbQueryToStream.forEach((tableQuery, stream) -> {
+		tableToRowsStream.forEach((tableQuery, rowsStream) -> {
 			Map<AdhocQueryStep, SliceToValue> oneQueryStepToValues =
-					aggregateStreamToAggregates(queryWithContext, tableQuery, stream, inputColumnToAggregators);
+					aggregateStreamToAggregates(queryWithContext, tableQuery, rowsStream, columnToAggregators);
 
 			queryStepToValues.putAll(oneQueryStepToValues);
 		});

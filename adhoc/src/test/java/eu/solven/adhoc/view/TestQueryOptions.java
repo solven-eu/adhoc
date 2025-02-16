@@ -45,7 +45,7 @@ import eu.solven.adhoc.storage.MapBasedTabularView;
 public class TestQueryOptions extends ADagTest {
 	@BeforeEach
 	@Override
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("k1", 123));
 		rows.add(Map.of("k2", 234));
 		rows.add(Map.of("k1", 345, "k2", 456));

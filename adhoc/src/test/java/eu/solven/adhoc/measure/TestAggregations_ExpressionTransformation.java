@@ -46,7 +46,7 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		rows.add(Map.of("k1", 123D));
 		rows.add(Map.of("k2", 234D));
 		rows.add(Map.of("k1", 345D, "k2", 456D));

@@ -156,7 +156,7 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
 			rows.add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
 		}

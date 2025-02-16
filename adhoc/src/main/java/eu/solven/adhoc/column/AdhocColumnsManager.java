@@ -68,7 +68,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 public class AdhocColumnsManager implements IAdhocColumnsManager {
 
@@ -90,7 +90,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
 
 	@Override
-	public IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery query) {
+	public IRowsStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -117,6 +117,16 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 		if (query.isDebug()) {
 			log.info("[DEBUG] Transcoded query is `{}` given `{}`", transcodedQuery, query);
+		}
+
+		{
+			List<String> columns = TableQuery.makeSelectedColumns(transcodedQuery);
+			if (columns.size() != columns.stream().distinct().count()) {
+				// This limitation may be lifted, by having a AdhocRecord which splits clearly the aggregated columns
+				// and the groupBy columns
+				throw new IllegalArgumentException(
+						"Some columns are both used as aggregators and as groupBy: %s".formatted(transcodedQuery));
+			}
 		}
 
 		IRowsStream rowStream = table.streamSlices(transcodedQuery);

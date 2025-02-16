@@ -182,7 +182,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 
 	@Override
 	@BeforeEach
-	public void feedDb() {
+	public void feedTable() {
 		for (int i = 0; i <= maxElementInserted; i++) {
 			rows.add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
 		}
