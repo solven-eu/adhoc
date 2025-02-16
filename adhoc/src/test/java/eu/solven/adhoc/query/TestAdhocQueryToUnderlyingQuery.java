@@ -34,8 +34,12 @@ import eu.solven.adhoc.dag.AdhocExecutingQueryContext;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocTestConstants {
+
+	IAdhocTableWrapper table = InMemoryTable.builder().build();
 
 	@Override
 	public void feedDb() {
@@ -56,6 +60,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure(k1Sum.getName()).build())
 				.measures(amb)
+				.table(table)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -80,6 +85,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
 				.measures(amb)
+				.table(table)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -104,6 +110,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
 				.measures(amb)
+				.table(table)
 				.build());
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {

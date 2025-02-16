@@ -20,17 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.column;
+
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.IRowsStream;
+import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 
 /**
- * Abstract the EventBus to which Adhoc events are published
- *
+ * Helps managing various edge-cases around columns.
+ * 
  * @author Benoit Lacelle
+ * @see IMissingColumnManager
+ * @see ICustomTypeManager
+ * @see IAdhocTableTranscoder
  */
-@FunctionalInterface
-public interface IAdhocEventBus {
-	IAdhocEventBus BLACK_HOLE = event -> {
-	};
+public interface IAdhocColumnsManager {
 
-	void post(Object event);
+	IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery tableQuery);
+
+	Object onMissingColumn(String column);
+
 }

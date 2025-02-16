@@ -54,6 +54,7 @@ public interface IFilterEditor {
 
 	/**
 	 * Most {@link IFilterEditor} would not need to extend this more complex method.
+	 * 
 	 * @param filterEditorContext
 	 * @return
 	 */

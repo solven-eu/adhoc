@@ -31,6 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
@@ -43,9 +45,11 @@ import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestAggregations_Transcoding extends ADagTest {
-	public final InMemoryTable rows =
-			InMemoryTable.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).build();
+	InMemoryTable rows = InMemoryTable.builder().build();
+	IAdhocColumnsManager columnsManager =
+			AdhocColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
+	AdhocCubeWrapper aqw =
+			AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).columnsManager(columnsManager).build();
 
 	@Override
 	@BeforeEach

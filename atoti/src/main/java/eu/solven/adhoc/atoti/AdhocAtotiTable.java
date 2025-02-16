@@ -71,7 +71,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
-	public IRowsStream openDbStream(TableQuery tableQuery) {
+	public IRowsStream streamSlices(TableQuery tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();

@@ -42,6 +42,8 @@ public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable 
 	boolean explain = false;
 	@Default
 	boolean debug = false;
+	@Default
+	boolean warn = false;
 
 	@NonNull
 	String message;

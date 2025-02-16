@@ -39,8 +39,6 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
 public class TestAdhocJooqTableQueryFactory {
 	static {
@@ -50,15 +48,12 @@ public class TestAdhocJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new IdentityImplicitTranscoder(),
-			DSL.table(DSL.name("someTableName")),
-			DSL.using(SQLDialect.DUCKDB));
-
-	TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(streamOpener.transcoder).build();
+	AdhocJooqTableQueryFactory streamOpener =
+			new AdhocJooqTableQueryFactory(DSL.table(DSL.name("someTableName")), DSL.using(SQLDialect.DUCKDB));
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = streamOpener.toCondition(transcodingContext, ColumnFilter.isEqualTo("k1", "v1"));
+		Condition condition = streamOpener.toCondition(ColumnFilter.isEqualTo("k1", "v1"));
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'
@@ -68,8 +63,7 @@ public class TestAdhocJooqTableQueryFactory {
 	@Test
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
-		Condition condition =
-				streamOpener.toCondition(transcodingContext, AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+		Condition condition = streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				(
@@ -81,8 +75,8 @@ public class TestAdhocJooqTableQueryFactory {
 
 	@Test
 	public void testToCondition_OrColumnsEquals() {
-		Condition condition = streamOpener.toCondition(transcodingContext,
-				OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
+		Condition condition = streamOpener
+				.toCondition(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				(

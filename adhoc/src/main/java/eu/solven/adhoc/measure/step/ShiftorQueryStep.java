@@ -74,15 +74,16 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 				.filter(shift(step.getFilter(), step.getCustomMarker()))
 				.measure(underlyingMeasure)
 				.build();
-		AdhocQueryStep whereToWrite =
-				AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
+		AdhocQueryStep whereToWrite = AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
 		return Arrays.asList(whereToRead, whereToWrite);
 	}
 
 	protected IAdhocFilter shift(IAdhocFilter filter, Object customMarker) {
-		return filterEditorSupplier.get().editFilter(IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build());
+		return filterEditorSupplier.get()
+				.editFilter(
+						IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build());
 	}
 
 	// @Override
@@ -116,7 +117,7 @@ public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
 			editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
 		}
 
-        return AdhocSliceAsMap.fromMap(editedAsMap);
+		return AdhocSliceAsMap.fromMap(editedAsMap);
 	}
 
 	protected boolean isDebug() {

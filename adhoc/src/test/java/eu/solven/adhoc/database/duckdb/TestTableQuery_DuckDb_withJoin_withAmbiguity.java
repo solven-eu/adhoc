@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -82,18 +83,18 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(factTable,
+	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(factTable,
 			AdhocJooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.table(fromClause)
 					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = jooqDb.makeDsl();
+	DSLContext dsl = table.makeDsl();
 
 	@Test
 	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList())
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList())
 				.isInstanceOf(DataAccessException.class)
 				.hasMessageContaining("Table with name someFactTable does not exist!");
 	}
@@ -140,11 +141,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 	public void testEmptyDb() {
 		initTables();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).isEmpty();
+		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
+		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
 
-		Assertions.assertThat(jooqDb.getColumns())
+		Assertions.assertThat(table.getColumns())
 				.containsEntry("countryId", String.class)
 				.containsEntry("countryName", String.class)
 				.containsEntry("productId", String.class)
@@ -163,8 +165,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result =
-					aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, jooqDb);
+			ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -183,7 +184,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -204,7 +205,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -225,7 +226,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -246,7 +247,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -267,7 +268,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -288,7 +289,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 			ITabularView result = aqe.execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
 					measureBag,
-					jooqDb);
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

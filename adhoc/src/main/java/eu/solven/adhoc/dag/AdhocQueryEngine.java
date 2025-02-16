@@ -46,10 +46,6 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.column.DefaultCustomTypeManager;
-import eu.solven.adhoc.column.DefaultMissingColumnManager;
-import eu.solven.adhoc.column.ICustomTypeManager;
-import eu.solven.adhoc.column.IMissingColumnManager;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -70,7 +66,6 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
@@ -102,14 +97,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
-	@Default
-	final IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
-
-	@NonNull
-	@Default
-	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
-
-	@NonNull
 	final IAdhocEventBus eventBus;
 
 	@Override
@@ -119,7 +106,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			Map<TableQuery, IRowsStream> dbQueryToStream = new HashMap<>();
 			for (TableQuery tableQuery : tableQueries) {
-				dbQueryToStream.put(tableQuery, openDbStream(table, tableQuery));
+				dbQueryToStream.put(tableQuery, openDbStream(queryWithContext, table, tableQuery));
 			}
 
 			return execute(queryWithContext, dbQueryToStream);
@@ -131,23 +118,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	protected IRowsStream openDbStream(IAdhocTableWrapper table, TableQuery tableQuery) {
-		TableQuery transcodedQuery =
-				TableQuery.edit(tableQuery).filter(transcodeFilter(tableQuery.getFilter())).build();
-
-		return table.openDbStream(transcodedQuery);
-	}
-
-	protected IAdhocFilter transcodeFilter(IAdhocFilter filter) {
-		// TODO Transcoder columns and types
-		// if (filter.isMatchAll() || filter.isMatchNone()) {
-		return filter;
-		// } else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-		// return ColumnFilter.
-		// } else {
-		// throw new UnsupportedOperationException(
-		// "Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-		// }
+	protected IRowsStream openDbStream(AdhocExecutingQueryContext queryWithContext,
+			IAdhocTableWrapper table,
+			TableQuery tableQuery) {
+		return queryWithContext.getColumnsManager().openDbStream(table, tableQuery);
 	}
 
 	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
@@ -160,9 +134,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
-		dbQueryToStream.forEach((dbQuery, stream) -> {
+		dbQueryToStream.forEach((tableQuery, stream) -> {
 			Map<AdhocQueryStep, SliceToValue> oneQueryStepToValues =
-					aggregateStreamToAggregates(dbQuery, stream, inputColumnToAggregators);
+					aggregateStreamToAggregates(queryWithContext, tableQuery, stream, inputColumnToAggregators);
 
 			queryStepToValues.putAll(oneQueryStepToValues);
 		});
@@ -263,14 +237,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(TableQuery dbQuery,
+	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(AdhocExecutingQueryContext queryWithContext,
+			TableQuery query,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(dbQuery, stream, columnToAggregators);
+				sinkToAggregates(queryWithContext, query, stream, columnToAggregators);
 
-		return toImmutableChunks(dbQuery, coordinatesToAggregates);
+		return toImmutableChunks(query, coordinatesToAggregates);
 	}
 
 	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery dbQuery,
@@ -413,11 +388,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(TableQuery tableQuery,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(AdhocExecutingQueryContext queryWithContext,
+			TableQuery tableQuery,
 			IRowsStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = new AggregatingMeasurators<>(operatorsFactory);
+		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
 
 		Set<String> relevantColumns = new HashSet<>();
 		// We may receive raw columns,to be aggregated by ourselves
@@ -436,7 +412,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// Process the underlying stream of data to execute aggregations
 		try {
 			stream.asMap().forEach(input -> {
-				forEachStreamedRow(tableQuery,
+				forEachStreamedRow(queryWithContext,
+						tableQuery,
 						columnToAggregators,
 						input,
 						peekOnCoordinate,
@@ -451,6 +428,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
+	private AggregatingMeasurators<AdhocSliceAsMap> makeAggregatingMeasures() {
+		return new AggregatingMeasurators<>(operatorsFactory);
+	}
+
 	protected BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
@@ -463,25 +444,26 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
 				int currentOut = nbOut.incrementAndGet();
 				if (tableQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
-					log.info("We rejected {} as row #{}", input, currentOut);
+					log.info("Rejected row #{}: {}", currentOut, input);
 				}
 			} else {
 				int currentIn = nbIn.incrementAndGet();
 				if (tableQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
-					log.info("We accepted {} as row #{}", input, currentIn);
+					log.info("Accepted row #{}: {}", currentIn, input);
 				}
 			}
 		};
 		return peekOnCoordinate;
 	}
 
-	protected void forEachStreamedRow(IHasGroupBy tableQuery,
+	protected void forEachStreamedRow(AdhocExecutingQueryContext queryWithContext,
+			IHasGroupBy tableQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			Map<String, ?> tableRow,
 			BiConsumer<Map<String, ?>, Optional<AdhocSliceAsMap>> peekOnCoordinate,
 			Set<String> relevantColumns,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
-		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(tableQuery, tableRow);
+		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(queryWithContext, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
 
@@ -536,7 +518,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<AdhocSliceAsMap> makeCoordinate(IHasGroupBy tableQuery, Map<String, ?> tableRow) {
+	protected Optional<AdhocSliceAsMap> makeCoordinate(AdhocExecutingQueryContext queryWithContext,
+			IHasGroupBy tableQuery,
+			Map<String, ?> tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
 			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
@@ -553,7 +537,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				if (tableRow.containsKey(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(groupedByColumn);
+					value = valueOnNull(queryWithContext, groupedByColumn);
 
 					assert value != null : "`null` is not a legal column value";
 				} else {
@@ -575,8 +559,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param column
 	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
 	 */
-	protected Object valueOnNull(String column) {
-		return missingColumnManager.onMissingColumn(column);
+	protected Object valueOnNull(AdhocExecutingQueryContext queryWithContext, String column) {
+		return queryWithContext.getColumnsManager().onMissingColumn(column);
 	}
 
 	/**
@@ -701,9 +685,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {
-		return AdhocQueryEngine.builder()
-				.operatorsFactory(engine.operatorsFactory)
-				.eventBus(engine.eventBus)
-				.missingColumnManager(engine.missingColumnManager);
+		return AdhocQueryEngine.builder().operatorsFactory(engine.operatorsFactory).eventBus(engine.eventBus);
 	}
 }

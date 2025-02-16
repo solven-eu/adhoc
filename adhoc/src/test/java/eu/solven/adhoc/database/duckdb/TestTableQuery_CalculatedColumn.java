@@ -61,14 +61,14 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
+	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
 			AdhocJooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.tableName(tableName)
 					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = jooqDb.makeDsl();
+	DSLContext dsl = table.makeDsl();
 
 	@Test
 	public void testWholeQuery() {
@@ -91,7 +91,7 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 								.debug(true)
 								.build(),
 						measureBag,
-						jooqDb);
+						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

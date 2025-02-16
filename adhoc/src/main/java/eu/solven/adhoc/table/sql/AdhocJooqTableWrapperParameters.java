@@ -26,21 +26,13 @@ import org.jooq.Name;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 
 @Value
 @Builder
 public class AdhocJooqTableWrapperParameters {
-
-	@Builder.Default
-	@NonNull
-	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@NonNull
 	DSLSupplier dslSupplier;

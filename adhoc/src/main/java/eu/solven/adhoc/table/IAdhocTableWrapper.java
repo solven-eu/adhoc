@@ -40,6 +40,6 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link IRowsStream} matching the input dpQuery
 	 */
-	IRowsStream openDbStream(TableQuery tableQuery);
+	IRowsStream streamSlices(TableQuery tableQuery);
 
 }

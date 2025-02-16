@@ -39,6 +39,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -68,33 +69,34 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
+	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
 			AdhocJooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = jooqDb.makeDsl();
+	DSLContext dsl = table.makeDsl();
 
 	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).measures(measureBag).table(jooqDb).engine(aqe).build();
+		return AdhocCubeWrapper.builder().engine(aqe).measures(measureBag).table(table).engine(aqe).build();
 	}
 
 	@Test
 	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
 	public void testEmptyDb() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).isEmpty();
+		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
+		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
 	}
 
 	@Test
@@ -102,7 +104,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}
@@ -112,7 +114,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
 
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
@@ -125,7 +127,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
 		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
@@ -146,7 +148,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(TableQuery.edit(qK1)
+		List<Map<String, ?>> dbStream = table.streamSlices(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching("a1").build())
 				.explain(true)
 				.build()).toList();
@@ -167,7 +169,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(TableQuery.edit(qK1)
+		List<Map<String, ?>> dbStream = table.streamSlices(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.explain(true)
 				.build()).toList();
@@ -189,7 +191,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.execute();
 
 		List<Map<String, ?>> dbStream =
-				jooqDb.openDbStream(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
+				table.streamSlices(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
 		Assertions.assertThat(dbStream)
 				.hasSize(3)
@@ -214,7 +216,7 @@ public class TestTableQuery_DuckDb implements IAdhocTestConstants {
 				.values("a1", 123)
 				.execute();
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(
+		List<Map<String, ?>> dbStream = table.streamSlices(
 				TableQuery.edit(qK1).filter(ColumnFilter.builder().column("with space").matching("a1").build()).build())
 				.toList();
 

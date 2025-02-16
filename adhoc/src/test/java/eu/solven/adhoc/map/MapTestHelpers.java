@@ -20,17 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.map;
 
-/**
- * Abstract the EventBus to which Adhoc events are published
- *
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IAdhocEventBus {
-	IAdhocEventBus BLACK_HOLE = event -> {
-	};
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-	void post(Object event);
+public class MapTestHelpers {
+	public static Map<String, ?> mapWithNull(String keyWithNull) {
+		Map<String, Object> map = new LinkedHashMap<>();
+
+		map.put(keyWithNull, null);
+
+		return map;
+	}
 }

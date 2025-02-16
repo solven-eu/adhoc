@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -68,7 +69,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 	DSLContext dsl;
-	AdhocJooqTableWrapper jooqDb;
+	AdhocJooqTableWrapper table;
 
 	@BeforeEach
 	public void initParquetFiles() throws IOException {
@@ -77,13 +78,13 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 
 		Connection dbConn = makeFreshInMemoryDb();
-		jooqDb = new AdhocJooqTableWrapper(tableName,
+		table = new AdhocJooqTableWrapper(tableName,
 				AdhocJooqTableWrapperParameters.builder()
 						.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 						.tableName(tableName)
 						.build());
 
-		dsl = jooqDb.makeDsl();
+		dsl = table.makeDsl();
 	}
 
 	@AfterEach
@@ -104,14 +105,14 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 
 	@Test
 	public void testFileIsEmpty() {
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
 	public void testTableDoesNotExists() throws IOException {
 		Files.delete(tmpParquetPath);
 
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
@@ -119,9 +120,10 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		dsl.execute("CREATE OR REPLACE TABLE someTableName (k1 DECIMAL);");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).isEmpty();
+		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
+		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
 	}
 
 	@Test
@@ -129,7 +131,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		dsl.execute("CREATE TABLE someTableName AS SELECT 123 AS k1;");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
+		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
 		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(123)));
 	}
@@ -139,7 +141,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		dsl.execute("CREATE TABLE someTableName AS SELECT 'someKey' AS k1;");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		Assertions.assertThatThrownBy(() -> jooqDb.openDbStream(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
@@ -156,7 +158,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		measureBag.addMeasure(k1SumSquared);
 
 		ITabularView result = aqe
-				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, jooqDb);
+				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -179,7 +181,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		ITabularView result =
 				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).groupByAlso("a").debug(true).build(),
 						measureBag,
-						jooqDb);
+						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -203,7 +205,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		ITabularView result = aqe.execute(
 				AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").debug(true).build(),
 				measureBag,
-				jooqDb);
+				table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -230,7 +232,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")
 				.debug(true)
-				.build(), measureBag, jooqDb);
+				.build(), measureBag, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

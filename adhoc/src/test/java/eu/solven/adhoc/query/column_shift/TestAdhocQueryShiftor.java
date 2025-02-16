@@ -152,8 +152,7 @@ public class TestAdhocQueryShiftor extends ADagTest implements IAdhocTestConstan
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0)
-		;
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
 	}
 
 	@Test
@@ -165,8 +164,7 @@ public class TestAdhocQueryShiftor extends ADagTest implements IAdhocTestConstan
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0)
-		;
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
 	}
 
 	@Test

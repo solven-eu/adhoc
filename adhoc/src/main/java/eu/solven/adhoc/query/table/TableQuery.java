@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.query.table;
 
-import java.util.Set;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.top.AdhocTopClause;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -57,7 +58,8 @@ public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, II
 
 	// We query only simple aggregations to external databases
 	@Singular
-	Set<Aggregator> aggregators;
+	@NonNull
+	ImmutableSet<Aggregator> aggregators;
 
 	// This property is transported down to the TableQuery
 	@Default

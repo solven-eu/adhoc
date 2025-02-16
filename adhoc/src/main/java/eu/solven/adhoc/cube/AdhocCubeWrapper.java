@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
@@ -35,6 +37,7 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
@@ -54,15 +57,19 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final String name = "someCubeName";
 
 	@NonNull
-	final IAdhocQueryEngine engine;
+	@Default
+	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 	@NonNull
 	final IAdhocMeasureBag measures;
 	@NonNull
 	final IAdhocTableWrapper table;
+	@NonNull
+	@Default
+	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
 
 	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(query, options, measures, table);
+		return engine.execute(query, options, measures, table, columnsManager);
 	}
 
 	@Override

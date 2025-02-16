@@ -85,9 +85,6 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
-	@NonNull
-	final IAdhocTableTranscoder transcoder;
-
 	// BEWARE Should we enable table as SQL or TableLike?
 	@NonNull
 	final TableLike<?> table;
@@ -149,33 +146,29 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 		IAdhocFilter filter = dbQuery.getFilter();
 		if (!filter.isMatchAll()) {
-			TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
-
-			// if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			// andFilter.getOperands().stream().map(this::toCondition).forEach(dbAndConditions::add);
-			// } else {
-			dbAndConditions.add(toCondition(transcodingContext, filter));
-			// }
-
-			transcodingContext.underlyings().forEach(underlying -> {
-				Set<String> queried = transcodingContext.queried(underlying);
-				if (queried.size() >= 2) {
-					// TODO Pop an Event when transcoding is moved to AdhocQueryEngine
-					log.warn("Ambiguous filters: {} -> {} (filter={})", underlying, queried, filter);
-				}
-			});
+			dbAndConditions.add(toCondition(filter));
 		}
 
 		return dbAndConditions;
 	}
 
-	protected Collection<SelectFieldOrAsterisk> makeSelectedFields(TableQuery dbQuery) {
-		Collection<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		dbQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
+	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery) {
+		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
+		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
 
-		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
 			Field<Object> field = columnAsField(column);
 			selectedFields.add(field);
+		});
+		return selectedFields;
+	}
+
+	public List<String> makeSelectedColumns(TableQuery tableQuery) {
+		List<String> selectedFields = new ArrayList<>();
+		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(a.getName()));
+
+		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+			selectedFields.add(column.getColumn());
 		});
 		return selectedFields;
 	}
@@ -192,7 +185,6 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected Field<Object> columnAsField(IAdhocColumn column, boolean isGroupBy) {
 		String columnName = column.getColumn();
-		String transcodedName = transcoder.underlyingNonNull(columnName);
 		Field<Object> field;
 
 		if (column instanceof IHasSqlExpression hasSql) {
@@ -201,16 +193,13 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			String sql = hasSql.getSql();
 			field = DSL.field(sql).as(columnName);
 		} else {
-			Field<Object> unaliasedField = DSL.field(name(transcodedName));
+			Field<Object> unaliasedField = DSL.field(name(columnName));
 
-			if (isGroupBy || transcodedName.equals(columnName)) {
-				// GroupBy: refer to the underlying column, to prevent ambiguities
-				// https://github.com/duckdb/duckdb/issues/16097
-				// https://github.com/jOOQ/jOOQ/issues/17980
-				field = unaliasedField;
-			} else {
-				field = unaliasedField.as(name(columnName));
-			}
+			// GroupBy: refer to the underlying column, to prevent ambiguities
+			// If we were to have some aliasing around here, aliases should probably not be appled on groupBy
+			// https://github.com/duckdb/duckdb/issues/16097
+			// https://github.com/jOOQ/jOOQ/issues/17980
+			field = unaliasedField;
 		}
 		return field;
 	}
@@ -277,7 +266,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
 		String aggregationKey = a.getAggregationKey();
-		String columnName = transcoder.underlyingNonNull(a.getColumnName());
+		String columnName = a.getColumnName();
 		Name namedColumn = name(columnName);
 
 		if (ExpressionAggregation.KEY.equals(aggregationKey)) {
@@ -315,7 +304,6 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.map(Aggregator::getColumnName)
-				.map(transcoder::underlyingNonNull)
 				.filter(columnName -> !isExpression(columnName))
 				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
@@ -328,19 +316,19 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		return DSL.or(oneNotNullConditions);
 	}
 
-	protected Condition toCondition(TranscodingContext transcodingContext, IAdhocFilter filter) {
+	protected Condition toCondition(IAdhocFilter filter) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			return toCondition(transcodingContext, columnFilter);
+			return toCondition(columnFilter);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column
 			// It would be the symptom of conflicting transcoding
-			List<Condition> conditions = operands.stream().map(c -> toCondition(transcodingContext, c)).toList();
+			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
 
 			return DSL.and(conditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<IAdhocFilter> operands = orFilter.getOperands();
-			List<Condition> conditions = operands.stream().map(c -> toCondition(transcodingContext, c)).toList();
+			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
 			return DSL.or(conditions);
 		} else {
 			throw new UnsupportedOperationException(
@@ -348,9 +336,9 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		}
 	}
 
-	protected Condition toCondition(TranscodingContext transcodingContext, IColumnFilter columnFilter) {
+	protected Condition toCondition(IColumnFilter columnFilter) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-		String column = transcodingContext.underlyingNonNull(columnFilter.getColumn());
+		String column = columnFilter.getColumn();
 
 		Condition condition;
 		final Field<Object> field = DSL.field(name(column));

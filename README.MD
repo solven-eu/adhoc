@@ -246,3 +246,4 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 - EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - Demonstrate how to automatically add some filter based on some security layer
 - Shift some filters are `FILTER` DuckDB clause, hence enabling wider `TableQuery` (as the shared `filter` would be wider).
+- Explicitly forbid queries with a `GROUP BY` on a column which name is also used as aggregator name (e.g. `SUM(k) AS c WHERE c = 'c1' GROUP BY c`).

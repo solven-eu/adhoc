@@ -33,11 +33,7 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -61,11 +57,6 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	@Getter
 	String name = "inMemory";
 
-	@Default
-	@NonNull
-	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
-
 	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
@@ -78,37 +69,30 @@ public class InMemoryTable implements IAdhocTableWrapper {
 		return rows.stream();
 	}
 
-	protected Map<String, ?> transcodeFromDb(IAdhocTableReverseTranscoder transcodingContext,
-			Map<String, ?> underlyingMap) {
-		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
-	}
-
 	@Override
-	public IRowsStream openDbStream(TableQuery tableQuery) {
-		TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
-
+	public IRowsStream streamSlices(TableQuery tableQuery) {
 		Set<String> queriedColumns = new HashSet<>();
 		queriedColumns.addAll(tableQuery.getGroupBy().getGroupedByColumns());
 		tableQuery.getAggregators().stream().map(a -> a.getColumnName()).forEach(queriedColumns::add);
 
-		Set<String> underlyingColumns = new HashSet<>();
-		queriedColumns.forEach(keyToKeep -> {
-			// We need to call `transcodingContext.underlying` to register the reverse mapping
-			String underlying = transcodingContext.underlyingNonNull(keyToKeep);
-			log.debug("{} -> {}", keyToKeep, underlying);
-			underlyingColumns.add(underlying);
-		});
-
 		return new SuppliedRowsStream(tableQuery, () -> this.stream().filter(row -> {
-			return FilterHelpers.match(transcodingContext, tableQuery.getFilter(), row);
+			return FilterHelpers.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 		}).map(row -> {
 			Map<String, Object> withSelectedColumns = new LinkedHashMap<>(row);
 
 			// Discard the column not expressed by the dbQuery
-			withSelectedColumns.keySet().retainAll(underlyingColumns);
+			withSelectedColumns.keySet().retainAll(queriedColumns);
+
+			tableQuery.getAggregators().forEach(aggregator -> {
+				String columnName = aggregator.getColumnName();
+				Object aggregatorValue = row.get(columnName);
+
+				// TODO This may lead to issues if we alias an aggregator with a name also used as groupBy
+				withSelectedColumns.put(aggregator.getName(), aggregatorValue);
+			});
 
 			return withSelectedColumns;
-		}).map(row -> transcodeFromDb(transcodingContext, row)));
+		}));
 	}
 
 	@Override

@@ -98,7 +98,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IRowsStream openDbStream(TableQuery compositeQuery) {
+	public IRowsStream streamSlices(TableQuery compositeQuery) {
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 		IAdhocFilter compositeFilter = compositeQuery.getFilter();
 

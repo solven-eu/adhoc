@@ -24,6 +24,8 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -47,19 +49,21 @@ public interface IAdhocQueryEngine {
 	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table);
 
 	default ITabularView execute(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
-		return execute(query, Set.of(), measures, table);
+		return execute(query, Set.of(), measures, table, AdhocColumnsManager.builder().build());
 	}
 
 	default ITabularView execute(IAdhocQuery query,
 			Set<? extends IQueryOption> options,
 			IAdhocMeasureBag measures,
-			IAdhocTableWrapper table) {
+			IAdhocTableWrapper table,
+			IAdhocColumnsManager columnsManager) {
 		return execute(
 				AdhocExecutingQueryContext.builder()
 						.query(query)
 						.options(options)
 						.measures(measures)
 						.table(table)
+						.columnsManager(columnsManager)
 						.build(),
 				table);
 	}

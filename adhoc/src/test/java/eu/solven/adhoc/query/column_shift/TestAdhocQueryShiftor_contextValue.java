@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
- * <p>
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * <p>
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * <p>
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,6 +22,13 @@
  */
 package eu.solven.adhoc.query.column_shift;
 
+import java.util.Map;
+import java.util.Optional;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.step.IFilterEditor;
@@ -31,175 +38,182 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * This is useful to check advanced behaviors around customMarker. A legitimate case for customMarker is to force a
  * customMarker for a given measure, while other measure may be dynamic.
  *
- *  This mostly duplicates {@link TestAdhocQueryShiftor}, but requiring the shift to EUR to be provided as customMarker.
+ * This mostly duplicates {@link TestAdhocQueryShiftor}, but requiring the shift to EUR to be provided as customMarker.
  */
 @Slf4j
 public class TestAdhocQueryShiftor_contextValue extends ADagTest implements IAdhocTestConstants {
 
-    @Override
-    @BeforeEach
-    public void feedDb() {
-        rows.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
-        rows.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
-        rows.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
-        rows.add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
-        // Lack measure: should not materialize coordinates on shift
-        rows.add(Map.of("color", "yellow", "ccy", "CHN"));
-    }
+	@Override
+	@BeforeEach
+	public void feedDb() {
+		rows.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
+		rows.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
+		rows.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
+		rows.add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
+		// Lack measure: should not materialize coordinates on shift
+		rows.add(Map.of("color", "yellow", "ccy", "CHN"));
+	}
 
-    // Default is EUR
-    String mName = "k1.dynamic";
+	// Default is EUR
+	String mName = "k1.dynamic";
 
-    public static class ToCcyShifter implements IFilterEditor {
-        public ToCcyShifter(Map<String, ?> options) {
-            // Instantiation through key requires a Map constructor
-        }
+	public static class ToCcyShifter implements IFilterEditor {
+		public ToCcyShifter(Map<String, ?> options) {
+			// Instantiation through key requires a Map constructor
+		}
 
-        @Override
-        public IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {
-            // For the sake of the unittest, we require the customMarker to be properly provided
-            String ccy = Optional.ofNullable(filterEditorContext.getCustomMarker()).map(customMarker -> {
-                String customMarkerAsString = customMarker.toString();
-                if (customMarkerAsString.matches("[A-Z]{3}")) {
-                    return customMarkerAsString;
-                } else {
-                    log.warn("Invalid customMarker: {}", customMarker);
-                    return "unknownCcy";
-                }
-            }).orElse("unknownCcy");
-            return Shiftor.shift("ccy", ccy, filterEditorContext.getFilter());
-        }
+		@Override
+		public IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {
+			// For the sake of the unittest, we require the customMarker to be properly provided
+			String ccy = Optional.ofNullable(filterEditorContext.getCustomMarker()).map(customMarker -> {
+				String customMarkerAsString = customMarker.toString();
+				if (customMarkerAsString.matches("[A-Z]{3}")) {
+					return customMarkerAsString;
+				} else {
+					log.warn("Invalid customMarker: {}", customMarker);
+					return "unknownCcy";
+				}
+			}).orElse("unknownCcy");
+			return Shiftor.shift("ccy", ccy, filterEditorContext.getFilter());
+		}
 
-        @Override
-        public IAdhocFilter editFilter(IAdhocFilter input) {
-            throw new UnsupportedOperationException("Where is FilterEditorContext?");
-        }
-    }
+		@Override
+		public IAdhocFilter editFilter(IAdhocFilter input) {
+			throw new UnsupportedOperationException("Where is FilterEditorContext?");
+		}
+	}
 
-    void prepareMeasures() {
-        amb.addMeasure(k1Sum);
+	void prepareMeasures() {
+		amb.addMeasure(k1Sum);
 
-        amb.addMeasure(Shiftor.builder()
-                .name(mName)
-                .underlying(k1Sum.getName())
-                .editorKey(ToCcyShifter.class.getName())
-                .build());
-    }
+		amb.addMeasure(Shiftor.builder()
+				.name(mName)
+				.underlying(k1Sum.getName())
+				.editorKey(ToCcyShifter.class.getName())
+				.build());
+	}
 
-    @Test
-    public void testGrandTotal() {
-        prepareMeasures();
+	@Test
+	public void testGrandTotal() {
+		prepareMeasures();
 
-        ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker("EUR").build());
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker("EUR").build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat(coordinates).isEmpty();
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        });
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
+	}
 
-    @Test
-    public void testGroupByCcy() {
-        prepareMeasures();
+	@Test
+	public void testGroupByCcy() {
+		prepareMeasures();
 
-        ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(3).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        }).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "USD");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        }).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        });
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(3).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "USD");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
+	}
 
-    @Test
-    public void testGroupByCcyFilterCcy_notFiltered() {
-        prepareMeasures();
+	@Test
+	public void testGroupByCcyFilterCcy_notFiltered() {
+		prepareMeasures();
 
-        ITabularView output =
-                aqw.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "USD").groupByAlso("ccy").customMarker("EUR").build());
+		ITabularView output = aqw.execute(AdhocQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", "USD")
+				.groupByAlso("ccy")
+				.customMarker("EUR")
+				.build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "USD");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        });
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "USD");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
+	}
 
-    @Test
-    public void testGroupByCcyFilterCcy_filteredCcy() {
-        prepareMeasures();
+	@Test
+	public void testGroupByCcyFilterCcy_filteredCcy() {
+		prepareMeasures();
 
-        ITabularView output =
-                aqw.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "EUR").groupByAlso("ccy").customMarker("EUR").build());
+		ITabularView output = aqw.execute(AdhocQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", "EUR")
+				.groupByAlso("ccy")
+				.customMarker("EUR")
+				.build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-        });
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
+	}
 
-    @Test
-    public void testUnknownCcy() {
-        prepareMeasures();
+	@Test
+	public void testUnknownCcy() {
+		prepareMeasures();
 
-        ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "unknown").customMarker("EUR").build());
+		ITabularView output = aqw
+				.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "unknown").customMarker("EUR").build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0)
-        ;
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+	}
 
-    @Test
-    public void testUnknownCcy_groupByColor() {
-        prepareMeasures();
+	@Test
+	public void testUnknownCcy_groupByColor() {
+		prepareMeasures();
 
-        ITabularView output = aqw
-                .execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "unknown").groupByAlso("color").customMarker("EUR").build());
+		ITabularView output = aqw.execute(AdhocQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", "unknown")
+				.groupByAlso("color")
+				.customMarker("EUR")
+				.build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0)
-        ;
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+	}
 
-    @Test
-    public void testGroupByColor() {
-        prepareMeasures();
+	@Test
+	public void testGroupByColor() {
+		prepareMeasures();
 
-        ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "red");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123);
-        }).anySatisfy((coordinates, measures) -> {
-            Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "blue");
-            Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
-        });
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "red");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
 }

@@ -24,6 +24,8 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.EmptyMeasure;
@@ -35,6 +37,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -58,6 +61,10 @@ public class AdhocExecutingQueryContext implements IIsExplainable, IIsDebugable 
 
 	@NonNull
 	IAdhocTableWrapper table;
+
+	@NonNull
+	@Default
+	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
 
 	@NonNull
 	@Singular

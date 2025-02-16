@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.google.bigquery;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -62,7 +63,7 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<Map<String, ?>> toMapStream(ResultQuery<Record> sqlQuery) {
+	protected Stream<Map<String, ?>> toMapStream(List<String> queriedColumns, ResultQuery<Record> sqlQuery) {
 		String sql = sqlQuery.getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
@@ -110,7 +111,7 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 		return result.streamAll().map(row -> {
 			Map<String, Object> asMap = new LinkedHashMap<>();
 
-			for (int i = 0; i < schema.getFields().size(); i++) {
+			for (int i = 0; i < queriedColumns.size(); i++) {
 				Field field = schema.getFields().get(i);
 
 				Object value;
@@ -120,28 +121,14 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 				} else {
 					value = fieldValue.getValue();
 				}
-				asMap.put(field.getName(), value);
+
+				String columnName = queriedColumns.get(i);
+				asMap.put(columnName, value);
 			}
 
 			return asMap;
 		});
 	}
-
-	// TODO The SuperBuilder class is more complex
-	// public static class AdhocGoogleBigQueryDatabaseWrapperSuperBuilder {
-	// /**
-	// * This will reset the projectId to the bigQueryOptions projectId.
-	// *
-	// * @param bigQueryOptions
-	// * @return the builder
-	// */
-	// // We should default the projectId to the bigQueryOptions projectId
-	// // public AdhocGoogleBigQueryDatabaseWrapperBuilder setProjectId(BigQueryOptions bigQueryOptions) {
-	// // setProjectId(bigQueryOptions.getProjectId());
-	// //
-	// // return this;
-	// // }
-	// }
 
 	@Override
 	protected void debugResultQuery(ResultQuery<Record> resultQuery) {

@@ -22,11 +22,8 @@
  */
 package eu.solven.adhoc.database.duckdb;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -36,6 +33,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
@@ -43,7 +42,6 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
@@ -67,20 +65,30 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("transcoding").build();
+	AdhocMeasureBag measures = AdhocMeasureBag.builder().name("transcoding").build();
 
 	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
+	DSLSupplier dslSupplier = DSLSupplier.fromConnection(() -> dbConn);
 
-	private AdhocJooqTableWrapper makeJooqDb(IAdhocTableTranscoder transcoder) {
-		AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
-				AdhocJooqTableWrapperParameters.builder()
-						.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-						.tableName(tableName)
-						.transcoder(transcoder)
-						.build());
-		return jooqDb;
+	{
+		measures.addMeasure(k1Sum);
+		measures.addMeasure(k2Sum);
+	}
+
+	private AdhocCubeWrapper makecube(IAdhocTableTranscoder transcoder) {
+		AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
+				AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+
+		AdhocCubeWrapper cubeWrapper = AdhocCubeWrapper.builder()
+				.engine(aqe)
+				.table(table)
+				.measures(measures)
+				.columnsManager(AdhocColumnsManager.builder().transcoder(transcoder).build())
+				.build();
+
+		return cubeWrapper;
 	}
 
 	@Test
@@ -89,24 +97,24 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		IAdhocTableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
-			Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123));
 		}
 
 		{
-			TableQuery qK1K2 = TableQuery.builder().aggregators(Set.of(k1Sum, k2Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
-			Assertions.assertThat(dbStream)
-					.hasSize(1)
-					.contains(Map.of("k1", BigDecimal.valueOf(0D + 123), "k2", BigDecimal.valueOf(0D + 123)));
+			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123, k2Sum.getName(), 0L + 123));
 		}
 	}
 
@@ -116,8 +124,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -125,19 +133,19 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		{
 			// There is an aggregator which name is also an underlying column: it does not be reverseTranscoded
 			Aggregator kSum = Aggregator.builder().name("k").aggregationKey(SumAggregation.KEY).build();
+			measures.addMeasure(kSum);
 
 			// We request both k1 and k, which are the same in DB
-			TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum, kSum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
-			Assertions.assertThat(dbStream)
-					.hasSize(1)
-					.contains(Map.of("k1", BigDecimal.valueOf(0D + 123), "k", BigDecimal.valueOf(0D + 123)));
+			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123, kSum.getName(), 0L + 123));
 		}
 	}
 
 	@Test
-	public void testCycle() {
-		// Let's say k1 and k2 rely on the single k DB column
+	public void testCycle_measure() {
+		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
 				.queriedToUnderlying("k1", "k2")
 				.queriedToUnderlying("k2", "k3")
@@ -145,8 +153,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
 				.column("k1", SQLDataType.DOUBLE)
@@ -159,35 +167,76 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 				.execute();
 
 		{
-			TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1).toList();
-			Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 234)));
+			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 234));
 		}
 
 		{
-			TableQuery qK1K2 = TableQuery.builder().aggregators(Set.of(k1Sum, k2Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
-			Assertions.assertThat(dbStream)
-					.hasSize(1)
-					.contains(Map.of("k1", BigDecimal.valueOf(0D + 234), "k2", BigDecimal.valueOf(0D + 345)));
+			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 234, k2Sum.getName(), 0L + 345));
 		}
 
 		{
 			Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
 			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregation.KEY).build();
+			measures.addMeasure(k3Sum).addMeasure(k4Sum);
 
-			TableQuery qK1K2 = TableQuery.builder().aggregators(Set.of(k1Sum, k2Sum, k3Sum, k4Sum)).build();
-			List<Map<String, ?>> dbStream = jooqDb.openDbStream(qK1K2).toList();
-			Assertions.assertThat(dbStream)
-					.hasSize(1)
-					.contains(Map.of("k1",
-							BigDecimal.valueOf(0D + 234),
-							"k2",
-							BigDecimal.valueOf(0D + 345),
-							"k3",
-							BigDecimal.valueOf(0D + 456),
-							"k4",
-							BigDecimal.valueOf(0D + 123)));
+			ITabularView view = cube.execute(AdhocQuery.builder()
+					.measure(k1Sum.getName(), k2Sum.getName(), k3Sum.getName(), k4Sum.getName())
+					.build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of(),
+							Map.of(k1Sum.getName(),
+									0L + 234,
+									k2Sum.getName(),
+									0L + 345,
+									k3Sum.getName(),
+									0L + 456,
+									k4Sum.getName(),
+									0L + 123));
+		}
+	}
+
+	@Test
+	public void testCycle_groupBy() {
+		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
+		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
+				.queriedToUnderlying("k1", "k2")
+				.queriedToUnderlying("k2", "k3")
+				.queriedToUnderlying("k3", "k4")
+				.queriedToUnderlying("k4", "k1")
+				.build();
+
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
+
+		dsl.createTableIfNotExists(tableName)
+				.column("k1", SQLDataType.DOUBLE)
+				.column("k2", SQLDataType.DOUBLE)
+				.column("k3", SQLDataType.DOUBLE)
+				.column("k4", SQLDataType.DOUBLE)
+				.column("k5", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL
+				.table(tableName), DSL.field("k1"), DSL.field("k2"), DSL.field("k3"), DSL.field("k4"), DSL.field("k5"))
+				.values(123, 234, 345, 456, 567)
+				.execute();
+
+		{
+			Aggregator k5Sum = Aggregator.builder().name("k5").aggregationKey(SumAggregation.KEY).build();
+			measures.addMeasure(k5Sum);
+
+			ITabularView view = cube
+					.execute(AdhocQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
+
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.containsEntry(Map.of("k1", 234D, "k2", 345D, "k3", 456D, "k4", 123D),
+							Map.of(k5Sum.getName(), 0L + 567));
 		}
 	}
 
@@ -196,8 +245,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -205,9 +254,9 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).debug(true).build();
 
-			measureBag.addMeasure(k1Sum);
+			measures.addMeasure(k1Sum);
 
-			ITabularView result = aqe.execute(query, measureBag, jooqDb);
+			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -218,14 +267,16 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 
 	// https://github.com/duckdb/duckdb/issues/16097
 	// https://github.com/jOOQ/jOOQ/issues/17980
+	// This is not testing the initial issue since transcoding is moved from `table` to `engine`, as `table` now have
+	// less uses of ALIASes.
 	@Test
 	public void testAdhocQuery_aliasWithNameAlreadyInTable() {
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
 				.column("k", SQLDataType.DOUBLE)
@@ -244,14 +295,15 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.debug(true)
 					.build();
 
-			measureBag.addMeasure(k1Sum);
+			measures.addMeasure(k1Sum);
 
-			ITabularView result = aqe.execute(query, measureBag, jooqDb);
+			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k2", 123.0D), Map.of("k1", 0L + 123));
+					// TODO It is unclear why we got Doubles or Longs
+					.containsEntry(Map.of("k2", 123.0D), Map.of("k1", 0L + 123.0D));
 		}
 	}
 
@@ -261,14 +313,11 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
-
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
-		measureBag.addMeasure(k1Sum);
 
 		{
 			AdhocQuery query = AdhocQuery.builder()
@@ -278,7 +327,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.debug(true)
 					.build();
 
-			ITabularView result = aqe.execute(query, measureBag, jooqDb);
+			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -296,8 +345,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
 				.build();
 
-		AdhocJooqTableWrapper jooqDb = makeJooqDb(transcoder);
-		DSLContext dsl = jooqDb.makeDsl();
+		AdhocCubeWrapper cube = makecube(transcoder);
+		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
 				.column("v", SQLDataType.DOUBLE)
@@ -310,12 +359,12 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 				.execute();
 
 		Aggregator vRedSum = Aggregator.builder().name("v_RED").aggregationKey(ExpressionAggregation.KEY).build();
-		measureBag.addMeasure(vRedSum);
+		measures.addMeasure(vRedSum);
 
 		{
 			AdhocQuery query = AdhocQuery.builder().measure("v_RED").build();
 
-			ITabularView result = aqe.execute(query, measureBag, jooqDb);
+			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

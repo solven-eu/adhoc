@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.eventbus;
 
+import java.util.function.BiConsumer;
+
 import com.google.common.eventbus.Subscribe;
 
 import lombok.extern.slf4j.Slf4j;
@@ -61,11 +63,18 @@ public class AdhocEventsFromGuavaEventBusToSfl4j {
 
 	@Subscribe
 	public void onExplainOrDebugEvent(AdhocLogEvent event) {
-		log.info("{}{} {} (source={})",
-				event.isDebug() ? "[DEBUG]" : "",
+		BiConsumer<String, Object[]> logMethod;
+		if (event.isWarn()) {
+			logMethod = log::warn;
+		} else {
+			logMethod = log::info;
+		}
+		Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
 				event.isExplain() ? "[EXPLAIN]" : "",
 				event.getMessage(),
-				event.getSource());
+				event.getSource() };
+
+		logMethod.accept("{}{} {} (source={})", arguments);
 	}
 
 }

@@ -20,17 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.column;
 
-/**
- * Abstract the EventBus to which Adhoc events are published
- *
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IAdhocEventBus {
-	IAdhocEventBus BLACK_HOLE = event -> {
-	};
+import java.util.Map;
 
-	void post(Object event);
+public interface IRowMap extends Map<String, Object> {
+
 }

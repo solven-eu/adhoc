@@ -23,7 +23,6 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +43,6 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.IRowsStream;
 import eu.solven.adhoc.table.SuppliedRowsStream;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters.AdhocJooqTableWrapperParametersBuilder;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -126,89 +122,32 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		return dbParameters.getDslSupplier().getDSLContext();
 	}
 
-	protected Map<String, ?> transcodeFromDb(IAdhocTableReverseTranscoder transcodingContext,
-			Map<String, ?> underlyingMap) {
-		return AdhocTranscodingHelper.transcode(transcodingContext, underlyingMap);
-	}
-
 	@Override
-	public IRowsStream openDbStream(TableQuery tableQuery) {
-		TranscodingContext transcodingContext = openTranscodingContext();
-
-		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext);
+	public IRowsStream streamSlices(TableQuery tableQuery) {
+		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory();
 
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isExplain() || tableQuery.isDebug()) {
 			log.info("[EXPLAIN] SQL to db={}: `{}`", getName(), resultQuery.getSQL(ParamType.INLINED));
+			// resultQuery.fields()
 		}
 		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);
 		}
 
-		Stream<Map<String, ?>> dbStream = toMapStream(resultQuery);
+		List<String> fields = ((AdhocJooqTableQueryFactory) queryFactory).makeSelectedColumns(tableQuery);
 
-		return new SuppliedRowsStream(tableQuery, () -> cleanStream(tableQuery, dbStream, transcodingContext));
+		Stream<Map<String, ?>> tableStream = toMapStream(fields, resultQuery);
+
+		return new SuppliedRowsStream(tableQuery, () -> tableStream);
 	}
 
-	private Stream<Map<String, ?>> cleanStream(TableQuery dbQuery,
-			Stream<Map<String, ?>> dbStream,
-			TranscodingContext transcodingContext) {
-		return dbStream.filter(row -> {
-			// We could have a fallback, to filter manually when it is not doable by the DB (or we do not know how to
-			// build the proper filter)
-			return true;
-		}).<Map<String, ?>>map(notTranscoded -> {
-			Map<String, Object> aggregatorValues = new LinkedHashMap<>();
-			dbQuery.getAggregators().forEach(a -> {
-				String aggregatorName = a.getName();
-				Object aggregatedValue = notTranscoded.remove(aggregatorName);
-				if (aggregatedValue == null) {
-					// SQL groupBy returns `a=null` even if there is not a single matching row
-					notTranscoded.remove(aggregatorName);
-				} else {
-					aggregatorValues.put(aggregatorName, aggregatedValue);
-				}
-			});
-
-			if (aggregatorValues.isEmpty()) {
-				// There is not a single non-null aggregate: discard the whole Map (including groupedBy columns)
-				return Map.of();
-			} else {
-				// In case of manual filters, we may have to hide some some columns, needed by the manual filter, but
-				// unexpected by the output stream
-
-				// We transcode only groupBy columns, as an aggregator may have a name matching an underlying column
-				Map<String, ?> transcoded = transcodeFromDb(transcodingContext, notTranscoded);
-
-				// ImmutableMap does not accept null value. How should we handle missing value in groupBy, when returned
-				// as null by DB?
-				// return ImmutableMap.<String, Object>builderWithExpectedSize(transcoded.size() +
-				// aggregatorValues.size())
-				// .putAll(transcoded)
-				// .putAll(aggregatorValues)
-				// .build();
-
-				Map<String, Object> merged = new LinkedHashMap<>();
-
-				merged.putAll(transcoded);
-				merged.putAll(aggregatorValues);
-				return merged;
-			}
-		})
-				// Filter-out the groups which does not have a single aggregatedValue
-				.filter(m -> !m.isEmpty());
-	}
-
-	private IAdhocJooqTableQueryFactory makeQueryFactory(TranscodingContext transcodingContext) {
+	protected IAdhocJooqTableQueryFactory makeQueryFactory() {
 		DSLContext dslContext = makeDsl();
 
-		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(transcodingContext, dslContext);
+		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(dslContext);
 		return queryFactory;
-	}
-
-	private TranscodingContext openTranscodingContext() {
-		return TranscodingContext.builder().transcoder(dbParameters.getTranscoder()).build();
 	}
 
 	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
@@ -227,31 +166,28 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		}
 	}
 
-	protected IAdhocJooqTableQueryFactory makeQueryFactory(TranscodingContext transcodingContext,
-			DSLContext dslContext) {
-		return AdhocJooqTableQueryFactory.builder()
-				.transcoder(transcodingContext)
-				.table(dbParameters.getTable())
-				.dslContext(dslContext)
-				.build();
+	protected IAdhocJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
+		return AdhocJooqTableQueryFactory.builder().table(dbParameters.getTable()).dslContext(dslContext).build();
 	}
 
-	protected Stream<Map<String, ?>> toMapStream(ResultQuery<Record> sqlQuery) {
-		return sqlQuery.stream().map(this::intoMap);
+	protected Stream<Map<String, ?>> toMapStream(List<String> queriedColumns, ResultQuery<Record> sqlQuery) {
+		return sqlQuery.stream().map(r -> intoMap(queriedColumns, r));
 
 	}
 
 	// Inspired from AbstractRecord.intoMap
-	protected Map<String, Object> intoMap(Record r) {
+	// Take original `queriedColumns` as the record may not clearly expresses aliases (e.g. `p.name` vs `name`). And it
+	// is ambiguous to build a `columnName` from a `Name`.
+	protected Map<String, Object> intoMap(List<String> queriedColumns, Record r) {
 		Map<String, Object> map = new LinkedHashMap<>();
 
-		List<Field<?>> fields = Arrays.asList(r.fields());
-		int size = fields.size();
+		int size = queriedColumns.size();
 		for (int i = 0; i < size; i++) {
-			Field<?> field = fields.get(i);
+			String columnName = queriedColumns.get(i);
 
-			if (map.put(toQualifiedName(field), r.get(i)) != null) {
-				throw new InvalidResultException("Field " + field.getName() + " is not unique in Record : " + r);
+			Object previousValue = map.put(columnName, r.get(i));
+			if (previousValue != null) {
+				throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 			}
 		}
 
@@ -259,6 +195,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	protected String toQualifiedName(Field<?> field) {
+		// field.getQualifiedName()
 		return Stream.of(field.getQualifiedName().parts()).map(Name::first).collect(Collectors.joining("."));
 	}
 

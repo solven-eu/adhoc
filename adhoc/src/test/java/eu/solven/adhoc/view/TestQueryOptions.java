@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -79,11 +80,14 @@ public class TestQueryOptions extends ADagTest {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, Set.of(), amb, rows))
+		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, amb, rows))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output =
-				aqe.execute(adhocQuery, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY), amb, rows);
+		ITabularView output = aqe.execute(adhocQuery,
+				Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY),
+				amb,
+				rows,
+				AdhocColumnsManager.builder().build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
 	}

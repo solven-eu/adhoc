@@ -92,7 +92,7 @@ public class TestTableGoogleBigQuery {
 				.build();
 		AdhocGoogleBigQueryTableWrapper bgDbWrapper = new AdhocGoogleBigQueryTableWrapper(dbParameters);
 
-		List<Map<String, ?>> rows = bgDbWrapper.openDbStream(TableQuery.builder()
+		List<Map<String, ?>> rows = bgDbWrapper.streamSlices(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))
 				.groupBy(GroupByColumns.of(CalculatedColumn.builder()
 						.column("url")

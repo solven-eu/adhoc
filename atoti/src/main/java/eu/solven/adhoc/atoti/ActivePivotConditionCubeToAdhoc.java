@@ -109,7 +109,8 @@ public class ActivePivotConditionCubeToAdhoc {
 		}
 	}
 
-	public ColumnFilter convertComparisonMatchingCondition(String level, ComparisonMatchingCondition apComparisonCondition) {
+	public ColumnFilter convertComparisonMatchingCondition(String level,
+			ComparisonMatchingCondition apComparisonCondition) {
 		Object operand = apComparisonCondition.getMatchingParameter();
 		boolean greaterThan;
 		boolean matchIfEqual;

@@ -22,6 +22,11 @@
  */
 package eu.solven.adhoc.query.filter;
 
+/**
+ * A filter which returns the opposite result of the underlying filter.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface INotFilter extends IAdhocFilter {
 	IAdhocFilter getNegated();
 }

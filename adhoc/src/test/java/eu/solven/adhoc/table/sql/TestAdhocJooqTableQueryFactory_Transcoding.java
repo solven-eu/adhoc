@@ -32,11 +32,18 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
+/**
+ * BEWARE This unitTests is useless since transcoding has been moved to {@link IAdhocColumnsManager}.
+ * 
+ * @author Benoit Lacelle
+ */
 public class TestAdhocJooqTableQueryFactory_Transcoding {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -45,22 +52,21 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(
-			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build(),
-			DSL.table(DSL.name("someTableName")),
-			DSL.using(SQLDialect.DUCKDB));
+	IAdhocTableTranscoder transcoder =
+			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
+	AdhocJooqTableQueryFactory streamOpener =
+			new AdhocJooqTableQueryFactory(DSL.table(DSL.name("someTableName")), DSL.using(SQLDialect.DUCKDB));
 
-	TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(streamOpener.transcoder).build();
+	TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
-		Condition condition =
-				streamOpener.toCondition(transcodingContext, AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+		Condition condition = streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				(
-				  "k" = 'v1'
-				  and "k" = 'v2'
+				  "k1" = 'v1'
+				  and "k2" = 'v2'
 				)
 								""".trim());
 	}
@@ -75,8 +81,8 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 				select *
 				from "someTableName"
 				where (
-				  "k" = 'v1'
-				  and "k" = 'v2'
+				  "k1" = 'v1'
+				  and "k2" = 'v2'
 				)
 								""".trim());
 	}

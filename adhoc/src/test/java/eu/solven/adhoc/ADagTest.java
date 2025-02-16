@@ -22,14 +22,13 @@
  */
 package eu.solven.adhoc;
 
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.table.InMemoryTable;
 

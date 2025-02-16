@@ -30,10 +30,12 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocQueryEngine {
 	AdhocMeasureBag amg = AdhocMeasureBag.builder().name("engine").build();
@@ -47,8 +49,12 @@ public class TestAdhocQueryEngine {
 		amg.addMeasure(Aggregator.builder().name("n4").build());
 
 		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().keySet()).build();
-		AdhocExecutingQueryContext queryWithContext =
-				AdhocExecutingQueryContext.builder().measures(amg).query(adhocQuery).build();
+		AdhocExecutingQueryContext queryWithContext = AdhocExecutingQueryContext.builder()
+				.measures(amg)
+				.query(adhocQuery)
+				.table(InMemoryTable.builder().build())
+				.columnsManager(AdhocColumnsManager.builder().build())
+				.build();
 		DagHolder fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
 		Map<String, Set<Aggregator>> columnToAggregators =
 				aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates);

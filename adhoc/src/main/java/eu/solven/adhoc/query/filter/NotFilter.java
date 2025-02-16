@@ -40,4 +40,8 @@ public class NotFilter implements INotFilter {
 		return true;
 	}
 
+	public static IAdhocFilter not(IAdhocFilter filter) {
+		return NotFilter.builder().negated(filter).build();
+	}
+
 }
