@@ -30,14 +30,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.step.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Dispatchor extends ADagTest {
+public class TestAggregations_Dispatchor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
@@ -51,8 +51,8 @@ public class TestAggregations_Dispatchor extends ADagTest {
 	public void testSumOfMaxOfSum_identity() {
 		amb.addMeasure(Dispatchor.builder().name("0or100").underlying("k1").aggregationKey(SumAggregation.KEY).build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
 
@@ -73,8 +73,8 @@ public class TestAggregations_Dispatchor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
 
@@ -97,8 +97,8 @@ public class TestAggregations_Dispatchor extends ADagTest {
 				.tag("debug")
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());

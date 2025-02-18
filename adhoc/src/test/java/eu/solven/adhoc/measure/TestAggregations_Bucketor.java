@@ -31,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Bucketor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Bucketor extends ADagTest {
+public class TestAggregations_Bucketor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
@@ -59,8 +59,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
@@ -81,8 +81,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
@@ -103,8 +103,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
@@ -125,8 +125,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
 
@@ -148,8 +148,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
@@ -168,8 +168,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
 
@@ -191,8 +191,8 @@ public class TestAggregations_Bucketor extends ADagTest {
 				.tag("debug")
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
 

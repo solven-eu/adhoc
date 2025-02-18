@@ -100,7 +100,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
 		return new DispatchorQueryStep(this, transformationFactory, adhocSubQuery);
 	}
 

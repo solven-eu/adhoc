@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.duckdb;
+package eu.solven.adhoc.table.duckdb;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;

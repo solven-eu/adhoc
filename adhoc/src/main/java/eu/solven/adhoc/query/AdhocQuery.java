@@ -78,7 +78,8 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	@Default
 	boolean explain = false;
 
-	public Optional<?> optCustomMaker() {
+	@Override
+	public Optional<?> optCustomMarker() {
 		return Optional.ofNullable(customMarker);
 	}
 

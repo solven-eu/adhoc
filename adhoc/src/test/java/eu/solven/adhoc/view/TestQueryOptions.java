@@ -32,17 +32,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestQueryOptions extends ADagTest {
+public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
 	@Override
 	public void feedTable() {
@@ -59,8 +58,8 @@ public class TestQueryOptions extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES));
@@ -75,7 +74,7 @@ public class TestQueryOptions extends ADagTest {
 
 	@Test
 	public void testUnknownMeasuresAreEmpty() {
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
 

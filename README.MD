@@ -114,13 +114,14 @@ graph TB
 
 ## Table
 
-Adhoc is not a table, it is a query engine. It knows how to execute complex KPI queries, typically defined as complex graph of logics. The leaves of these graphes are simpler measures, to be provided by external tables.
+Adhoc is not a database, it is a query engine. It knows how to execute complex KPI queries, typically defined as complex graph of logics. The leaves of these graphes are pre-aggregated measures, to be provided by external tables.
 
-Typical table are:
+Typical tables are:
 
 - CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlTable](JooqSqlTable).
 - Any SQL table: you should rely on [JooqSqlTable](JooqSqlTable), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
+- Your own Database implementing `IAdhocTableWrapper`
 
 ### Transcoder
 
@@ -145,7 +146,7 @@ A measure can be:
 - an aggregated measure (a column aggregated by an aggregation function)
 - an transformed measure (one or multiple measures are mixed together, possibly with additional `filter` and/or `groupBys`).
 
-Measures defines a Directed-Acyclic-Graph, where leaves are aggregated measures and nodes are transformed measures. The DAG is typically evaluated on a per-query basis, as the AdhocQuery `groupBy` and `filter` has to be combined with the own measures `groupBys` and `filters`.
+A set of measures defines a Directed-Acyclic-Graph, where leaves are pre-aggregated measures and nodes are transformed measures. The DAG is typically evaluated on a per-query basis, as the AdhocQuery `groupBy` and `filter` has to be combined with the own measures `groupBys` and `filters`.
 
 ## Node granularity
 
@@ -161,9 +162,9 @@ Aggregations are used to reduce input data up to the requested (by `groupBys`) g
 
 See https://support.microsoft.com/en-us/office/aggregate-function-43b9278e-6aa7-4f17-92b6-e19993fa26df
 
-### Tranformations Measures
+### Transformators
 
-On top of aggregated-measures, one can define transformation.
+On top of aggregated-measures, one can define transformators.
 
 - Combinator: the simplest transformation evaluate a formula over underlying measures. (e.g. `sumMeasure=a+b`).
 - Filtrator: evaluate underlying measure with a coordinate when the filter is enforced. The node `filter` is AND-ed with the `measure` filter. Hence, if the query filters `country=France` and the filtrator filters `country=Germany`, then the result is empty.
@@ -246,4 +247,3 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 - EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - Demonstrate how to automatically add some filter based on some security layer
 - Shift some filters are `FILTER` DuckDB clause, hence enabling wider `TableQuery` (as the shared `filter` would be wider).
-- Explicitly forbid queries with a `GROUP BY` on a column which name is also used as aggregator name (e.g. `SUM(k) AS c WHERE c = 'c1' GROUP BY c`).

@@ -52,7 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class BucketorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
+public class BucketorQueryStep extends ATransformator implements ITransformator {
 	final Bucketor bucketor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter

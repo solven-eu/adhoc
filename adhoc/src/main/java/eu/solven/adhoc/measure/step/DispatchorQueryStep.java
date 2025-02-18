@@ -53,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class DispatchorQueryStep extends AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
+public class DispatchorQueryStep extends ATransformator implements ITransformator {
 	final Dispatchor dispatchor;
 	final IOperatorsFactory transformationFactory;
 	@Getter

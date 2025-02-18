@@ -114,7 +114,7 @@ public class Combinator implements ICombinator {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 }

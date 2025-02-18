@@ -76,7 +76,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new UnfiltratorQueryStep(this, step);
 	}
 

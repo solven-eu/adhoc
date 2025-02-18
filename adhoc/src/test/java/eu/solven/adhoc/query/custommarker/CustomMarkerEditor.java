@@ -33,7 +33,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -71,7 +71,7 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new CustomMarkerEditorQueryStep(this, step);
 	}
 

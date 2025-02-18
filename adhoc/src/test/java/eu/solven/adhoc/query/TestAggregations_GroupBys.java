@@ -31,16 +31,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_GroupBys extends ADagTest {
+public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
@@ -59,8 +59,8 @@ public class TestAggregations_GroupBys extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
@@ -83,8 +83,8 @@ public class TestAggregations_GroupBys extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
@@ -108,8 +108,8 @@ public class TestAggregations_GroupBys extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("b").build());
 
@@ -158,8 +158,8 @@ public class TestAggregations_GroupBys extends ADagTest {
 				.combinationKey(MaxCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").groupByAlso("a").build());
 

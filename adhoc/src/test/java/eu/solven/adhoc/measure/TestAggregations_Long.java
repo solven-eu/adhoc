@@ -31,17 +31,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Long extends ADagTest {
+public class TestAggregations_Long extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
 	@Override
 	public void feedTable() {
@@ -58,14 +58,10 @@ public class TestAggregations_Long extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -89,10 +85,6 @@ public class TestAggregations_Long extends ADagTest {
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -110,14 +102,10 @@ public class TestAggregations_Long extends ADagTest {
 				.combinationKey(MaxCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

@@ -27,7 +27,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Value;
@@ -53,8 +53,8 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
-		return new IHasUnderlyingQuerySteps() {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
+		return new ITransformator() {
 
 			@Override
 			public List<AdhocQueryStep> getUnderlyingSteps() {

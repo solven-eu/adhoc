@@ -33,16 +33,15 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
-import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_ExpressionTransformation extends ADagTest {
+public class TestAggregations_ExpressionTransformation extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
@@ -61,8 +60,8 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
@@ -82,8 +81,8 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
 		ITabularView output = aqw.execute(AdhocQuery.builder()
@@ -112,8 +111,8 @@ public class TestAggregations_ExpressionTransformation extends ADagTest {
 						.build())
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
 		ITabularView output = aqw.execute(AdhocQuery.builder()

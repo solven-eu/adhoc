@@ -85,7 +85,7 @@ public class Columnator implements ICombinator {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new ColumnatorQueryStep(this, transformationFactory, step);
 	}
 

@@ -20,9 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.duckdb;
+package eu.solven.adhoc.table.duckdb;
 
-import java.sql.Connection;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,24 +29,26 @@ import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.groupby.CalculatedColumn;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
-public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
+@Disabled("TODO")
+// https://www.jooq.org/doc/latest/manual/sql-building/queryparts/custom-bindings/
+public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -57,45 +58,71 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 	}
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(this.getClass().getName()).build();
 
 	String tableName = "someTableName";
 
-	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
+	AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper(tableName,
 			AdhocJooqTableWrapperParameters.builder()
-					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = table.makeDsl();
+	DSLContext dsl = jooqDb.makeDsl();
+
+	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag) {
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+
+		return AdhocCubeWrapper.builder().engine(aqe).measures(measureBag).table(jooqDb).engine(aqe).build();
+	}
+
+	enum Letter {
+		A, B, C
+	}
+
+	private void initAndInsert() {
+		dsl.createTableIfNotExists(tableName)
+				.column("letter", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("A", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("B", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("C", 345).execute();
+	}
 
 	@Test
-	public void testWholeQuery() {
-		dsl.createTableIfNotExists(tableName)
-				.column("word", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.INTEGER)
-				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("azerty", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("qwerty", 234).execute();
+	public void testFilterEnum() {
+		initAndInsert();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testWholeQuery").build();
 		measureBag.addMeasure(k1Sum);
 
-		ITabularView result =
-				aqe.execute(
-						AdhocQuery.builder()
-								.measure(k1Sum.getName())
-								.groupBy(GroupByColumns
-										.of(CalculatedColumn.builder().column("first_letter").sql("word[1]").build()))
-								.debug(true)
-								.build(),
-						measureBag,
-						table);
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result = wrapInCube(measureBag)
+				.execute(AdhocQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).build());
+
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of("first_letter", "a"), Map.of(k1Sum.getName(), 123L))
-				.containsEntry(Map.of("first_letter", "q"), Map.of(k1Sum.getName(), 234L));
+				.containsEntry(Map.of("letter", Letter.A), Map.of(k1Sum.getName(), 0L + 123))
+				.hasSize(1);
+	}
+
+	@Test
+	public void testGroupByEnum() {
+		initAndInsert();
+
+		measureBag.addMeasure(k1Sum);
+
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result = wrapInCube(measureBag).execute(AdhocQuery.builder().groupByAlso("letter").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("letter", Letter.A), Map.of("k1", 0L + 123))
+				.containsEntry(Map.of("letter", Letter.B), Map.of("k1", 0L + 234))
+				.containsEntry(Map.of("letter", Letter.C), Map.of("k1", 0L + 345))
+				.hasSize(3);
 	}
 }

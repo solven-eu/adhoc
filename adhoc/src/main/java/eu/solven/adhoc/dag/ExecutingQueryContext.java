@@ -49,7 +49,7 @@ import lombok.Value;
  */
 @Builder
 @Value
-public class AdhocExecutingQueryContext implements IIsExplainable, IIsDebugable {
+public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// The query requested to the queryEngine
 	@NonNull
 	IAdhocQuery query;

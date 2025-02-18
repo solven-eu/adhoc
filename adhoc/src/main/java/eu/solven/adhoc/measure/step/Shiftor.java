@@ -85,7 +85,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep step) {
 		return new ShiftorQueryStep(this, operatorsFactory, step);
 	}
 

@@ -33,7 +33,7 @@ import eu.solven.adhoc.eventbus.AdhocLogEvent;
 
 /**
  * Useful to test {@link DagExplainer}
- * 
+ *
  * @author Benoit Lacelle
  */
 public class AdhocExplainerTestHelper {
@@ -60,7 +60,25 @@ public class AdhocExplainerTestHelper {
 		}
 
 		return messages;
+	}
 
+	public static List<String> listenForLogs(EventBus eventBus) {
+		List<String> messages = new ArrayList<>();
+
+		// Register an eventListener to collect the EXPLAIN results
+		{
+			Object listener = new Object() {
+
+				@Subscribe
+				public void onExplainOrDebugEvent(AdhocLogEvent event) {
+					messages.add(event.getMessage());
+				}
+			};
+
+			eventBus.register(listener);
+		}
+
+		return messages;
 	}
 
 }

@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = SameMatcher.class, name = "same"),
 		@JsonSubTypes.Type(value = InMatcher.class, name = "in"),
 		@JsonSubTypes.Type(value = LikeMatcher.class, name = "like"),
+		@JsonSubTypes.Type(value = RegexMatcher.class, name = "regex"),
 		@JsonSubTypes.Type(value = NotValueFilter.class, name = "not"),
 		@JsonSubTypes.Type(value = NullMatcher.class, name = "null"),
 		@JsonSubTypes.Type(value = AndMatcher.class, name = "and"),

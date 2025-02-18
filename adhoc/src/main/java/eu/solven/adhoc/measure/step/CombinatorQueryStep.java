@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep extends AHasUnderlyingQuerySteps {
+public class CombinatorQueryStep extends ATransformator {
 	final ICombinator combinator;
 	final IOperatorsFactory operatorsFactory;
 	@Getter

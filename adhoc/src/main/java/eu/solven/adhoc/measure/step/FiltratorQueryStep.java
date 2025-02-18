@@ -42,13 +42,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link IHasUnderlyingQuerySteps} for {@link Filtrator}
+ * {@link ITransformator} for {@link Filtrator}
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep extends AHasUnderlyingQuerySteps {
+public class FiltratorQueryStep extends ATransformator {
 	final Filtrator filtrator;
 	final IOperatorsFactory transformationFactory;
 	final AdhocQueryStep step;

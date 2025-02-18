@@ -42,6 +42,6 @@ public interface IAggregatedRecordStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return asMap().<Map<String, ?>>map(m -> m.asMap()).toList();
+		return asMap().<Map<String, ?>>map(IAggregatedRecord::asMap).toList();
 	}
 }

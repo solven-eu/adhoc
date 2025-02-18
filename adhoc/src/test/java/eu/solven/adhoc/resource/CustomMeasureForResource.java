@@ -32,7 +32,7 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 
 /**
  * Used to check the behavior of {@link MeasuresSetFromResource} on a project custom {@link IMeasure}
@@ -57,7 +57,7 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
-		return new EmptyHasUnderlyingQuerySteps();
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
+		return new EmptyTransformator();
 	}
 }

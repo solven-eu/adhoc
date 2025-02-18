@@ -30,5 +30,5 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 public interface IHasUnderlyingMeasures {
 	List<String> getUnderlyingNames();
 
-	IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
 }

@@ -42,11 +42,10 @@ public interface IAdhocQueryEngine {
 	/**
 	 * Execute an {@link IAdhocQuery}.
 	 *
-	 * @param queryWithContext
-	 * @param table
+	 * @param executingQueryContext
 	 * @return
 	 */
-	ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table);
+	ITabularView execute(ExecutingQueryContext executingQueryContext);
 
 	default ITabularView execute(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
 		return execute(query, Set.of(), measures, table, AdhocColumnsManager.builder().build());
@@ -57,14 +56,13 @@ public interface IAdhocQueryEngine {
 			IAdhocMeasureBag measures,
 			IAdhocTableWrapper table,
 			IAdhocColumnsManager columnsManager) {
-		return execute(
-				AdhocExecutingQueryContext.builder()
-						.query(query)
-						.options(options)
-						.measures(measures)
-						.table(table)
-						.columnsManager(columnsManager)
-						.build(),
-				table);
+		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
+				.query(query)
+				.options(options)
+				.measures(measures)
+				.table(table)
+				.columnsManager(columnsManager)
+				.build();
+		return execute(executingQueryContext);
 	}
 }

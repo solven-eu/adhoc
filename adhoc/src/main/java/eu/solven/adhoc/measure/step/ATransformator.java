@@ -37,11 +37,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Holds default behaviors used by most {@link IHasUnderlyingQuerySteps}
+ * Holds default behaviors used by most {@link ITransformator}
  */
 @RequiredArgsConstructor
 @Slf4j
-public abstract class AHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
+public abstract class ATransformator implements ITransformator {
 
 	protected abstract IMeasure getMeasure();
 

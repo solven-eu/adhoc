@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.database.sql;
+package eu.solven.adhoc.table.duckdb;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.groupby.CalculatedColumn;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
@@ -47,7 +47,8 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
-public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
+public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
+
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -57,48 +58,44 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-	@Test
-	public void testTableIsFunctionCall() throws IOException, SQLException {
-		// Duplicated from TestDatabaseQuery_DuckDb_FromParquet
-		Path tmpParquetPath = Files.createTempFile(this.getClass().getSimpleName(), ".parquet");
-		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
+	String tableName = "someTableName";
 
-		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
-
-		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
-			AdhocJooqTableWrapperParameters dbParameters = AdhocJooqTableWrapperParameters.builder()
+	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
+	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
+			AdhocJooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
-					.tableName(DSL.unquotedName(tableExpression))
-					.build();
-			AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper("fromParquet", dbParameters);
+					.tableName(tableName)
+					.build());
 
-			DSLContext dsl = jooqDb.makeDsl();
+	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
+	DSLContext dsl = table.makeDsl();
 
-			// We create a simple parquet files, as we want to test the `read_parquet` expression as tableName
-			{
-				dsl.execute("""
-						CREATE TABLE someTableName AS
-							SELECT 'a1' AS a, 123 AS k1 UNION ALL
-							SELECT 'a2' AS a, 234 AS k1
-							;
-						""");
-				dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
-			}
+	@Test
+	public void testWholeQuery() {
+		dsl.createTableIfNotExists(tableName)
+				.column("word", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("azerty", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("qwerty", 234).execute();
 
-			{
-				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("jooq").build();
-				measureBag.addMeasure(k1Sum);
-				AdhocCubeWrapper aqw =
-						AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).measures(measureBag).build();
+		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testWholeQuery").build();
+		measureBag.addMeasure(k1Sum);
 
-				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
-				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+		ITabularView result =
+				aqe.execute(
+						AdhocQuery.builder()
+								.measure(k1Sum.getName())
+								.groupBy(GroupByColumns
+										.of(CalculatedColumn.builder().column("first_letter").sql("word[1]").build()))
+								.debug(true)
+								.build(),
+						measureBag,
+						table);
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 234));
-			}
-		} finally {
-			Files.delete(tmpParquetPath);
-		}
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("first_letter", "a"), Map.of(k1Sum.getName(), 123L))
+				.containsEntry(Map.of("first_letter", "q"), Map.of(k1Sum.getName(), 234L));
 	}
 }

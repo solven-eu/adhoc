@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.measure.step.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CustomMarkerEditorQueryStep implements IHasUnderlyingQuerySteps {
+public class CustomMarkerEditorQueryStep implements ITransformator {
 	final CustomMarkerEditor customMarkerEditor;
 	final AdhocQueryStep step;
 

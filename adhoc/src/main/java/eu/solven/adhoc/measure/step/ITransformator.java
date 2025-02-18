@@ -29,12 +29,17 @@ import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.storage.ISliceToValue;
 
 /**
- * Most {@link IMeasure} defines underlying nodes. (e.g. given underlyings measures, or different coordinates).
+ * {@link IMeasure} which are not {@link Aggregator} defines underlying nodes and transform them together. (e.g. given
+ * underlyings measures, or different coordinates).
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IHasUnderlyingQuerySteps {
+public interface ITransformator {
+	/**
+	 *
+	 * @return the {@link List} of underlying {@link AdhocQueryStep}
+	 */
 	List<AdhocQueryStep> getUnderlyingSteps();
 
 	ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings);

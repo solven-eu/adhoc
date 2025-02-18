@@ -111,18 +111,21 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 				.build();
 
 		if (query.isDebug()) {
-			log.info("[DEBUG] Transcoded query is `{}` given `{}`", transcodedQuery, query);
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(true)
+					.message("Transcoded query is `%s` given `%s`".formatted(transcodedQuery, query))
+					.source(this)
+					.build());
 		}
 
-		IAggregatedRecordStream rowStream = table.streamSlices(transcodedQuery);
+		IAggregatedRecordStream aggregatedRecordsStream = table.streamSlices(transcodedQuery);
 
-		return transcodeRows(transcodingContext, transcodedQuery, rowStream);
+		return transcodeRows(transcodingContext, aggregatedRecordsStream);
 	}
 
 	protected IAggregatedRecordStream transcodeRows(TranscodingContext transcodingContext,
-			TableQuery tableQuery,
-			IAggregatedRecordStream openDbStream) {
-		Supplier<Stream<IAggregatedRecord>> memoized = Suppliers.memoize(openDbStream::asMap);
+			IAggregatedRecordStream aggregatedRecordsStream) {
+		Supplier<Stream<IAggregatedRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::asMap);
 
 		return new IAggregatedRecordStream() {
 
@@ -139,7 +142,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 			@Override
 			public String toString() {
-				return "Transcoding: " + openDbStream;
+				return "Transcoding: " + aggregatedRecordsStream;
 			}
 		};
 	}
@@ -183,7 +186,11 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			if (c instanceof ReferencedColumn referencedColumn) {
 				return ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getColumn()));
 			} else if (c instanceof CalculatedColumn calculatedColumn) {
-				log.info("BEWARE If {} should be impacted by transcoding", calculatedColumn);
+				eventBus.post(AdhocLogEvent.builder()
+						.warn(true)
+						.message("BEWARE If %s should be impacted by transcoding".formatted(calculatedColumn))
+						.source(this)
+						.build());
 				return calculatedColumn;
 			} else {
 				throw new UnsupportedOperationException(

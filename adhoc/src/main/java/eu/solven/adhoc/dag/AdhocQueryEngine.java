@@ -60,7 +60,7 @@ import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
 import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Columnator;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -101,49 +101,81 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IAdhocEventBus eventBus;
 
 	@Override
-	public ITabularView execute(AdhocExecutingQueryContext queryWithContext, IAdhocTableWrapper table) {
+	public ITabularView execute(ExecutingQueryContext executingQueryContext) {
+		boolean postedAboutDone = false;
 		try {
-			Set<TableQuery> tableQueries = prepareForTable(queryWithContext);
+			eventBus.post(AdhocLogEvent.builder()
+					.message("Executing on table=%s measures=%s query=%s".formatted(
+							executingQueryContext.getTable().getName(),
+							executingQueryContext.getMeasures().getName(),
+							executingQueryContext.getQuery()))
+					.source(this)
+					.build());
+
+			Set<TableQuery> tableQueries = prepareForTable(executingQueryContext);
 
 			Map<TableQuery, IAggregatedRecordStream> tableQueryToStream = new HashMap<>();
 			for (TableQuery tableQuery : tableQueries) {
-				IAggregatedRecordStream rowsStream = openTableStream(queryWithContext, table, tableQuery);
+				IAggregatedRecordStream rowsStream = openTableStream(executingQueryContext, tableQuery);
 				tableQueryToStream.put(tableQuery, rowsStream);
 			}
 
-			return execute(queryWithContext, tableQueryToStream);
+			ITabularView tabularView = execute(executingQueryContext, tableQueryToStream);
+
+			postAboutQueryDone(executingQueryContext, "OK");
+			postedAboutDone = true;
+			return tabularView;
 		} catch (RuntimeException e) {
+			// TODO Add the Exception to the event
+			postAboutQueryDone(executingQueryContext, "KO");
+			postedAboutDone = true;
+
 			throw new IllegalArgumentException(
-					"Issue executing query=%s options=%s".formatted(queryWithContext.getQuery(),
-							queryWithContext.getOptions()),
+					"Issue executing query=%s options=%s".formatted(executingQueryContext.getQuery(),
+							executingQueryContext.getOptions()),
 					e);
+		} finally {
+			if (!postedAboutDone) {
+				// This may happen in case of OutOfMemoryError, or any uncaught exception
+				postAboutQueryDone(executingQueryContext, "KO_Uncaught");
+			}
 		}
 	}
 
-	protected IAggregatedRecordStream openTableStream(AdhocExecutingQueryContext queryWithContext,
-			IAdhocTableWrapper table,
-			TableQuery tableQuery) {
-		return queryWithContext.getColumnsManager().openTableStream(table, tableQuery);
+	private void postAboutQueryDone(ExecutingQueryContext executingQueryContext, String status) {
+		eventBus.post(AdhocLogEvent.builder()
+				.message("Executed status=%s on table=%s measures=%s query=%s".formatted(status,
+						executingQueryContext.getTable().getName(),
+						executingQueryContext.getMeasures().getName(),
+						executingQueryContext.getQuery()))
+				.source(this)
+				.build());
 	}
 
-	protected ITabularView execute(AdhocExecutingQueryContext queryWithContext,
+	protected IAggregatedRecordStream openTableStream(ExecutingQueryContext executingQueryContext,
+			TableQuery tableQuery) {
+		IAdhocTableWrapper table = executingQueryContext.getTable();
+		return executingQueryContext.getColumnsManager().openTableStream(table, tableQuery);
+	}
+
+	protected ITabularView execute(ExecutingQueryContext executingQueryContext,
 			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream) {
-		DagHolder fromQueriedToAggregates = makeQueryStepsDag(queryWithContext);
+		DagHolder fromQueriedToAggregates = makeQueryStepsDag(executingQueryContext);
 
 		Map<String, Set<Aggregator>> columnToAggregators =
-				columnToAggregators(queryWithContext, fromQueriedToAggregates);
+				columnToAggregators(executingQueryContext, fromQueriedToAggregates);
 
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
 		tableToRowsStream.forEach((tableQuery, rowsStream) -> {
 			Map<AdhocQueryStep, SliceToValue> oneQueryStepToValues =
-					aggregateStreamToAggregates(queryWithContext, tableQuery, rowsStream, columnToAggregators);
+					aggregateStreamToAggregates(executingQueryContext, tableQuery, rowsStream, columnToAggregators);
 
 			queryStepToValues.putAll(oneQueryStepToValues);
 		});
 
-		if (queryWithContext.isDebug()) {
+		if (executingQueryContext.isDebug()) {
 			queryStepToValues.forEach((aggregateStep, values) -> {
 				values.forEachSlice(row -> {
 					return o -> {
@@ -161,16 +193,17 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// query
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregates").source(this).build());
 
-		walkDagUpToQueriedMeasures(queryWithContext, fromQueriedToAggregates, queryStepToValues);
+		walkDagUpToQueriedMeasures(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transformations").source(this).build());
 
-		ITabularView mapBasedTabularView = toTabularView(queryWithContext, fromQueriedToAggregates, queryStepToValues);
+		ITabularView mapBasedTabularView =
+				toTabularView(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
 
 		return mapBasedTabularView;
 	}
 
-	protected Map<String, Set<Aggregator>> columnToAggregators(AdhocExecutingQueryContext queryWithContext,
+	protected Map<String, Set<Aggregator>> columnToAggregators(ExecutingQueryContext executingQueryContext,
 			DagHolder dagHolder) {
 		Map<String, Set<Aggregator>> columnToAggregators = new LinkedHashMap<>();
 
@@ -180,7 +213,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.filter(step -> dag.outDegreeOf(step) == 0)
 				.map(AdhocQueryStep::getMeasure)
 				.forEach(measure -> {
-					measure = queryWithContext.resolveIfRef(measure);
+					measure = executingQueryContext.resolveIfRef(measure);
 
 					if (measure instanceof Aggregator a) {
 						columnToAggregators.merge(a.getColumnName(), Set.of(a), UnionSetAggregator::unionSet);
@@ -197,7 +230,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return columnToAggregators;
 	}
 
-	protected ITabularView toTabularView(AdhocExecutingQueryContext queryWithContext,
+	protected ITabularView toTabularView(ExecutingQueryContext executingQueryContext,
 			DagHolder fromQueriedToAggregates,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
@@ -206,7 +239,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		long expectedOutputCardinality;
 		Iterator<AdhocQueryStep> stepsToReturn;
-		if (queryWithContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
+		if (executingQueryContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
 			// BEWARE Should we return steps with same groupBy?
 			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
 			// What about measures appearing multiple times in the DAG?
@@ -239,13 +272,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(AdhocExecutingQueryContext queryWithContext,
+	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery query,
 			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
 		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(queryWithContext, query, stream, columnToAggregators);
+				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
 
 		return toImmutableChunks(query, coordinatesToAggregates);
 	}
@@ -277,7 +310,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepToValues;
 	}
 
-	protected void walkDagUpToQueriedMeasures(AdhocExecutingQueryContext queryWithContext,
+	protected void walkDagUpToQueriedMeasures(ExecutingQueryContext executingQueryContext,
 			DagHolder fromQueriedToAggregates,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
@@ -301,7 +334,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
 
-			IMeasure measure = queryWithContext.resolveIfRef(queryStep.getMeasure());
+			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
 
 			Set<DefaultEdge> underlyingStepEdges = fromAggregatesToQueried.incomingEdgesOf(queryStep);
 			List<AdhocQueryStep> underlyingSteps = underlyingStepEdges.stream()
@@ -331,8 +364,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			}).toList();
 
 			// BEWARE It looks weird we have to call again `.wrapNode`
-			IHasUnderlyingQuerySteps hasUnderlyingQuerySteps =
-					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+			ITransformator hasUnderlyingQuerySteps = hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
 			ISliceToValue coordinatesToValues;
 			try {
 				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
@@ -390,7 +422,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(AdhocExecutingQueryContext queryWithContext,
+	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
 			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
@@ -414,7 +446,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// Process the underlying stream of data to execute aggregations
 		try {
 			stream.asMap().forEach(input -> {
-				forEachStreamedRow(queryWithContext,
+				forEachStreamedRow(executingQueryContext,
 						tableQuery,
 						columnToAggregators,
 						input,
@@ -458,14 +490,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return peekOnCoordinate;
 	}
 
-	protected void forEachStreamedRow(AdhocExecutingQueryContext queryWithContext,
+	protected void forEachStreamedRow(ExecutingQueryContext executingQueryContext,
 			IHasGroupBy tableQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			IAggregatedRecord tableRow,
 			BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate,
 			Set<String> aggregatorColumns,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
-		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(queryWithContext, tableQuery, tableRow);
+		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
 
@@ -512,7 +544,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<AdhocSliceAsMap> makeCoordinate(AdhocExecutingQueryContext queryWithContext,
+	protected Optional<AdhocSliceAsMap> makeCoordinate(ExecutingQueryContext executingQueryContext,
 			IHasGroupBy tableQuery,
 			IAggregatedRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
@@ -531,7 +563,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(queryWithContext, groupedByColumn);
+					value = valueOnNull(executingQueryContext, groupedByColumn);
 
 					assert value != null : "`null` is not a legal column value";
 				} else {
@@ -553,26 +585,26 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param column
 	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
 	 */
-	protected Object valueOnNull(AdhocExecutingQueryContext queryWithContext, String column) {
-		return queryWithContext.getColumnsManager().onMissingColumn(column);
+	protected Object valueOnNull(ExecutingQueryContext executingQueryContext, String column) {
+		return executingQueryContext.getColumnsManager().onMissingColumn(column);
 	}
 
 	/**
-	 * @param queryWithContext
+	 * @param executingQueryContext
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	public Set<TableQuery> prepareForTable(AdhocExecutingQueryContext queryWithContext) {
-		DagHolder dagHolder = makeQueryStepsDag(queryWithContext);
+	public Set<TableQuery> prepareForTable(ExecutingQueryContext executingQueryContext) {
+		DagHolder dagHolder = makeQueryStepsDag(executingQueryContext);
 
-		if (queryWithContext.isExplain() || queryWithContext.isDebug()) {
+		if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
 			explainDagSteps(dagHolder);
 		}
 
-		return queryStepsDagToDbQueries(queryWithContext, dagHolder);
+		return queryStepsDagToDbQueries(executingQueryContext, dagHolder);
 
 	}
 
-	protected Set<TableQuery> queryStepsDagToDbQueries(AdhocExecutingQueryContext queryWithContext,
+	protected Set<TableQuery> queryStepsDagToDbQueries(ExecutingQueryContext executingQueryContext,
 			DagHolder dagHolder) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
@@ -580,7 +612,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
 		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
-			IMeasure leafMeasure = queryWithContext.resolveIfRef(step.getMeasure());
+			IMeasure leafMeasure = executingQueryContext.resolveIfRef(step.getMeasure());
 
 			if (leafMeasure instanceof Aggregator leafAggregator) {
 				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
@@ -614,27 +646,26 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
-	protected DagHolder makeQueryStepsDag(AdhocExecutingQueryContext queryWithContext) {
-		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryWithContext.getQuery());
+	protected DagHolder makeQueryStepsDag(ExecutingQueryContext executingQueryContext) {
+		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext.getQuery());
 
 		// Add explicitly requested steps
-		Set<IMeasure> queriedMeasures = convertToQueriedSteps(queryWithContext);
+		Set<IMeasure> queriedMeasures = convertToQueriedSteps(executingQueryContext);
 		queriedMeasures.forEach(queryStepsDagBuilder::addRoot);
 
 		// Add implicitly requested steps
 		while (queryStepsDagBuilder.hasLeftovers()) {
 			AdhocQueryStep parentStep = queryStepsDagBuilder.pollLeftover();
 
-			IMeasure measure = queryWithContext.resolveIfRef(parentStep.getMeasure());
+			IMeasure measure = executingQueryContext.resolveIfRef(parentStep.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				IHasUnderlyingQuerySteps wrappedQueryStep =
-						measureWithUnderlyings.wrapNode(operatorsFactory, parentStep);
+				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, parentStep);
 				for (AdhocQueryStep underlyingStep : wrappedQueryStep.getUnderlyingSteps()) {
 					// Make sure the DAG has actual measure nodes, and not references
-					IMeasure notRefMeasure = queryWithContext.resolveIfRef(underlyingStep.getMeasure());
+					IMeasure notRefMeasure = executingQueryContext.resolveIfRef(underlyingStep.getMeasure());
 					underlyingStep = AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 
 					queryStepsDagBuilder.addEdge(parentStep, underlyingStep);
@@ -649,15 +680,16 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepsDagBuilder.getQueryDag();
 	}
 
-	private Set<IMeasure> convertToQueriedSteps(AdhocExecutingQueryContext queryWithContext) {
-		Set<ReferencedMeasure> measureRefs = queryWithContext.getQuery().getMeasureRefs();
+	private Set<IMeasure> convertToQueriedSteps(ExecutingQueryContext executingQueryContext) {
+		Set<ReferencedMeasure> measureRefs = executingQueryContext.getQuery().getMeasureRefs();
 		Set<IMeasure> queriedMeasures;
 		if (measureRefs.isEmpty()) {
 			IMeasure countAsterisk = defaultMeasure();
 			queriedMeasures = Set.of(countAsterisk);
 		} else {
-			queriedMeasures =
-					measureRefs.stream().map(ref -> queryWithContext.resolveIfRef(ref)).collect(Collectors.toSet());
+			queriedMeasures = measureRefs.stream()
+					.map(ref -> executingQueryContext.resolveIfRef(ref))
+					.collect(Collectors.toSet());
 		}
 		return queriedMeasures;
 	}

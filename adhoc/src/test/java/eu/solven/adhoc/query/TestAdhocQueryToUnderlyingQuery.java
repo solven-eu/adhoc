@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocExecutingQueryContext;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.measure.step.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -57,7 +57,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+		Set<TableQuery> output = aqe.prepareForTable(ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure(k1Sum.getName()).build())
 				.measures(amb)
 				.table(table)
@@ -82,7 +82,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+		Set<TableQuery> output = aqe.prepareForTable(ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
 				.measures(amb)
 				.table(table)
@@ -107,7 +107,7 @@ public class TestAdhocQueryToUnderlyingQuery extends ADagTest implements IAdhocT
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		Set<TableQuery> output = aqe.prepareForTable(AdhocExecutingQueryContext.builder()
+		Set<TableQuery> output = aqe.prepareForTable(ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
 				.measures(amb)
 				.table(table)

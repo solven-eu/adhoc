@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class UnfiltratorQueryStep implements IHasUnderlyingQuerySteps {
+public class UnfiltratorQueryStep implements ITransformator {
 	final Unfiltrator unfiltrator;
 	final AdhocQueryStep step;
 

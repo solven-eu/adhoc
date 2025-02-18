@@ -48,13 +48,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link IHasUnderlyingQuerySteps} for {@link Shiftor}.
+ * {@link ITransformator} for {@link Shiftor}.
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class ShiftorQueryStep implements IHasUnderlyingQuerySteps {
+public class ShiftorQueryStep implements ITransformator {
 	final Shiftor shiftor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter

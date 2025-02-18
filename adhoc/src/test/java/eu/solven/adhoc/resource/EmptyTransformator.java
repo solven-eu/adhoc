@@ -25,14 +25,14 @@ package eu.solven.adhoc.resource;
 import java.util.List;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
 
 /**
  * Useful for unitTests
  */
-public class EmptyHasUnderlyingQuerySteps implements IHasUnderlyingQuerySteps {
+public class EmptyTransformator implements ITransformator {
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return List.of();

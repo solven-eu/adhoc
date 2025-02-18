@@ -24,21 +24,23 @@ package eu.solven.adhoc.query;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Filter extends ADagTest {
+public class TestAggregations_Filter extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
@@ -56,8 +58,8 @@ public class TestAggregations_Filter extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").build());
 
@@ -76,8 +78,8 @@ public class TestAggregations_Filter extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build());
@@ -97,8 +99,8 @@ public class TestAggregations_Filter extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build());
@@ -119,8 +121,8 @@ public class TestAggregations_Filter extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "none").build());
 
@@ -129,4 +131,23 @@ public class TestAggregations_Filter extends ADagTest {
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
 	}
 
+	@Test
+	public void testLogs() {
+		List<String> messages = AdhocExplainerTestHelper.listenForLogs(eventBus);
+
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
+
+		aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								Executing on table=inMemory measures=TestAggregations_Filter query=AdhocQuery(filter=a=a1, groupBy=grandTotal, measureRefs=[ReferencedMeasure(ref=k1)], customMarker=null, debug=false, explain=false)
+								Executed status=OK on table=inMemory measures=TestAggregations_Filter query=AdhocQuery(filter=a=a1, groupBy=grandTotal, measureRefs=[ReferencedMeasure(ref=k1)], customMarker=null, debug=false, explain=false)
+								"""
+								.trim());
+
+		Assertions.assertThat(messages).hasSize(2);
+	}
 }

@@ -168,7 +168,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).debug(true).build());
+				aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

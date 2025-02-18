@@ -28,7 +28,7 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 
 /**
- * Helps managing various edge-cases around columns.
+ * Helps managing various edge-cases around columns, like missing columns or type transcoding.
  * 
  * @author Benoit Lacelle
  * @see IMissingColumnManager

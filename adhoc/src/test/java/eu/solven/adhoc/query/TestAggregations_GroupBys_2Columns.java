@@ -30,14 +30,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_GroupBys_2Columns extends ADagTest {
+public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
@@ -55,8 +54,8 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest {
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(SumAggregation.KEY).build());
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
 
 		ITabularView output =
 				aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());

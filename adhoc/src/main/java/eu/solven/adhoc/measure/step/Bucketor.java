@@ -91,7 +91,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasGroup
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep queryStep) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep queryStep) {
 		return new BucketorQueryStep(this, transformationFactory, queryStep);
 	}
 

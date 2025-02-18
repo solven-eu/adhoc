@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.step.ICombinator;
-import eu.solven.adhoc.measure.step.IHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
@@ -88,7 +88,7 @@ public class RatioByCombinator implements ICombinator {
 	}
 
 	@Override
-	public IHasUnderlyingQuerySteps wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new RatioByCombinatorQueryStep(this, transformationFactory, step);
 	}
 }

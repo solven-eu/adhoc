@@ -32,7 +32,7 @@ import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.step.AHasUnderlyingQuerySteps;
+import eu.solven.adhoc.measure.step.ATransformator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RatioByCombinatorQueryStep extends AHasUnderlyingQuerySteps {
+public class RatioByCombinatorQueryStep extends ATransformator {
 	final RatioByCombinator combinator;
 	final IOperatorsFactory transformationFactory;
 	@Getter
