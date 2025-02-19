@@ -110,4 +110,19 @@ public class TestAdhocQueryBuilder {
 		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
 				.isEqualTo("someCustom");
 	}
+
+	@Test
+	public void testEdit() {
+		AdhocQuery query = AdhocQuery.builder()
+				.measure("k1.SUM")
+				.groupByAlso("c1")
+				.andFilter("c2", "v2")
+				.customMarker("somethingCustom")
+				.debug(true)
+				.explain(true)
+				.build();
+		AdhocQuery edited = AdhocQuery.edit(query).build();
+
+		Assertions.assertThat(edited).isEqualTo(query);
+	}
 }

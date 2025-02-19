@@ -61,11 +61,14 @@ import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.step.Columnator;
 import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.step.ITransformator;
+import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
@@ -100,8 +103,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@NonNull
 	final IAdhocEventBus eventBus;
 
+	@NonNull
+	@Default
+	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
+
 	@Override
-	public ITabularView execute(ExecutingQueryContext executingQueryContext) {
+	public ITabularView execute(ExecutingQueryContext rawExecutingQueryContext) {
+		ExecutingQueryContext executingQueryContext = preprocessQuery(rawExecutingQueryContext);
+
 		boolean postedAboutDone = false;
 		try {
 			eventBus.post(AdhocLogEvent.builder()
@@ -140,6 +149,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				postAboutQueryDone(executingQueryContext, "KO_Uncaught");
 			}
 		}
+	}
+
+	protected ExecutingQueryContext preprocessQuery(ExecutingQueryContext rawExecutingQueryContext) {
+		IAdhocQuery query = rawExecutingQueryContext.getQuery();
+		IAdhocFilter preprocessedFilter = AndFilter.and(query.getFilter(), implicitFilter.getImplicitFilter(query));
+
+		AdhocQuery preprocessedQuery = AdhocQuery.edit(query).filter(preprocessedFilter).build();
+		return rawExecutingQueryContext.toBuilder().query(preprocessedQuery).build();
 	}
 
 	private void postAboutQueryDone(ExecutingQueryContext executingQueryContext, String status) {

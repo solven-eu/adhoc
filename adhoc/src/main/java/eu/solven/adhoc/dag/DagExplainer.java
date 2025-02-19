@@ -66,7 +66,7 @@ public class DagExplainer {
 			boolean isLast) {
 		boolean isReferenced;
 		{
-			String parentIndentation = optParent.map(parentStep -> stepToIndentation.get(parentStep)).orElse("");
+			String parentIndentation = optParent.map(stepToIndentation::get).orElse("");
 
 			String indentation;
 			if (optParent.isEmpty()) {

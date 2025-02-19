@@ -19,6 +19,7 @@
 		<module>adhoc</module>
 		<module>experimental</module>
 		<module>calcite</module>
+		<module>spring</module>
 	</modules>
 
 	<properties>

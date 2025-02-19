@@ -47,7 +47,7 @@ import lombok.Value;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 @Value
 public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// The query requested to the queryEngine

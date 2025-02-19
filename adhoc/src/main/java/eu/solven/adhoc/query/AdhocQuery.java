@@ -155,12 +155,13 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 	}
 
-	public AdhocQueryBuilder edit(AdhocQuery query) {
+	public static AdhocQueryBuilder edit(IAdhocQuery query) {
 		return AdhocQuery.builder()
-				.debug(query.isDebug())
-				.explain(query.isExplain())
 				.measureRefs(query.getMeasureRefs())
 				.filter(query.getFilter())
-				.groupBy(query.getGroupBy());
+				.groupBy(query.getGroupBy())
+				.customMarker(query.getCustomMarker())
+				.explain(query.isExplain())
+				.debug(query.isDebug());
 	}
 }
