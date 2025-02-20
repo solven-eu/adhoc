@@ -20,15 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.table.transcoder.value;
 
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
  * Used to transcode types, typically from/to {@link IAdhocTableWrapper}.
- * 
+ *
  * @author Benoit Lacelle
  */
 public interface ICustomTypeManager {
+	/**
+	 *
+	 * @param column
+	 * @param coordinate
+	 * @return
+	 */
+	Object toTable(String column, Object coordinate);
 
+	/**
+	 *
+	 * @param column
+	 * @param coordinate
+	 * @return
+	 */
+	Object fromTable(String column, Object coordinate);
+
+	/**
+	 * This is especially useful to skip column with {@link eu.solven.adhoc.query.filter.value.IValueMatcher} which may
+	 * not be supported
+	 * 
+	 * @param column
+	 * @return true if this column may be transcoded
+	 */
+	boolean mayTranscode(String column);
 }

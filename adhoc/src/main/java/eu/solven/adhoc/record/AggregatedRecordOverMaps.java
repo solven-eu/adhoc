@@ -28,6 +28,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import lombok.Builder;
 import lombok.ToString;
 
@@ -83,7 +84,15 @@ public class AggregatedRecordOverMaps implements IAggregatedRecord {
 
 	@Override
 	public IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
-		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcode(transcodingContext, groupBys);
+		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBys);
+
+		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(transcodedGroupBys).build();
+	}
+
+	@Override
+	public IAggregatedRecord transcode(ICustomTypeManager customTypeManager) {
+		Map<String, ?> transcodedGroupBys =
+				AdhocTranscodingHelper.transcodeValues(customTypeManager::fromTable, groupBys);
 
 		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(transcodedGroupBys).build();
 	}

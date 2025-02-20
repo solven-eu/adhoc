@@ -35,7 +35,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotValueFilter;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -158,8 +158,7 @@ public class ColumnFilter implements IColumnFilter {
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
 	public static ColumnFilter isDistinctFrom(String column, Object matching) {
-		NotValueFilter not =
-				NotValueFilter.builder().negated(EqualsMatcher.builder().operand(matching).build()).build();
+		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.builder().operand(matching).build()).build();
 		return ColumnFilter.builder().column(column).matching(not).build();
 	}
 

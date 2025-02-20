@@ -20,26 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.table.transcoder.value;
 
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+public class DefaultCustomTypeManager implements ICustomTypeManager {
 
-/**
- * Helps managing various edge-cases around columns, like missing columns or type transcoding.
- * 
- * @author Benoit Lacelle
- * @see IMissingColumnManager
- * @see ICustomTypeManager
- * @see IAdhocTableTranscoder
- */
-public interface IAdhocColumnsManager {
+	@Override
+	public boolean mayTranscode(String column) {
+		return false;
+	}
 
-	IAggregatedRecordStream openTableStream(IAdhocTableWrapper table, TableQuery tableQuery);
+	@Override
+	public Object toTable(String column, Object coordinate) {
+		return coordinate;
+	}
 
-	Object onMissingColumn(String column);
-
+	@Override
+	public Object fromTable(String column, Object coordinate) {
+		return coordinate;
+	}
 }

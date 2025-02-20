@@ -252,7 +252,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).debug(true).build();
+			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).build();
 
 			measures.addMeasure(k1Sum);
 
@@ -292,7 +292,6 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.measure(k1Sum.getName())
 					.andFilter("k1", 123)
 					.groupByAlso("k2")
-					.debug(true)
 					.build();
 
 			measures.addMeasure(k1Sum);
@@ -307,7 +306,6 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		}
 	}
 
-	@Disabled("This pin-point not a transcoding issue: having a measure and a groupedBy column with same name leads to ambiguity in output rows")
 	@Test
 	public void testAdhocQuery_sumFilterGroupByk1() {
 		// Let's say k1 and k2 rely on the single k DB column
@@ -324,7 +322,6 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 					.measure(k1Sum.getName())
 					.andFilter("k1", 123)
 					.groupByAlso("k1")
-					.debug(true)
 					.build();
 
 			ITabularView result = cube.execute(query);
@@ -332,7 +329,7 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k1", 123), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0L + 123));
 		}
 	}
 

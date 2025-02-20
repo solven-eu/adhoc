@@ -27,6 +27,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 
 /**
  * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
@@ -54,4 +55,5 @@ public interface IAggregatedRecord {
 
 	IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
 
+	IAggregatedRecord transcode(ICustomTypeManager customTypeManager);
 }

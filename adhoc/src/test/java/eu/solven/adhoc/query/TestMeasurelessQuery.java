@@ -45,7 +45,7 @@ public class TestMeasurelessQuery {
 
 		MeasurelessQuery measurelessFromStep = MeasurelessQuery.edit(queryStep).build();
 
-		// This is especially important we transport all flags through the process, like debug and customMaker
+		// This is especially important we transport all flags through the process, like debug and customMarker
 		Assertions.assertThat(measurelessFromStep).isEqualTo(measureless);
 	}
 }

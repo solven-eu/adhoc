@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.step.ATransformator;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -65,13 +64,13 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 
 		AdhocQueryStep numerator = AdhocQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
-				.measure(ReferencedMeasure.builder().ref(underlying).build())
+				.measureNamed(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getNumeratorFilter()))
 				.build();
 
 		AdhocQueryStep denominator = AdhocQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
-				.measure(ReferencedMeasure.builder().ref(underlying).build())
+				.measureNamed(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getDenominatorFilter()))
 				.build();
 

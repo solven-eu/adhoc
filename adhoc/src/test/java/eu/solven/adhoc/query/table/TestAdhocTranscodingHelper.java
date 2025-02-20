@@ -40,10 +40,11 @@ public class TestAdhocTranscodingHelper {
 
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
 
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of())).isEmpty();
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k", "v"))).isEqualTo(Map.of("k", "v"));
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of())).isEmpty();
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k", "v")))
+				.isEqualTo(Map.of("k", "v"));
 		// Receiving unknown column would be a bug
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("otherK", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
 				.isEqualTo(Map.of("otherK", "v"));
 	}
 
@@ -55,10 +56,11 @@ public class TestAdhocTranscodingHelper {
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k2");
 
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of())).isEmpty();
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k", "v"))).isEqualTo(Map.of("k1", "v"));
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of())).isEmpty();
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k", "v")))
+				.isEqualTo(Map.of("k1", "v"));
 		// Receiving unknown column would be a bug
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("otherK", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
 				.isEqualTo(Map.of("otherK", "v"));
 	}
 
@@ -70,13 +72,13 @@ public class TestAdhocTranscodingHelper {
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
 
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of())).isEmpty();
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of())).isEmpty();
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k", "v")))
 				.isEqualTo(Map.of("k1", "v", "k", "v"));
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k1", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k1", "v")))
 				.isEqualTo(Map.of("k1", "v"));
 		// Receiving unknown column would be a bug
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("otherK", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
 				.isEqualTo(Map.of("otherK", "v"));
 	}
 
@@ -89,17 +91,17 @@ public class TestAdhocTranscodingHelper {
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k2");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k3");
 
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of())).isEmpty();
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k2", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of())).isEmpty();
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k2", "v")))
 				.isEqualTo(Map.of("k1", "v"));
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k3", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k3", "v")))
 				.isEqualTo(Map.of("k2", "v"));
 
 		// Receiving k1 from DB would be a bug
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("k1", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k1", "v")))
 				.isEqualTo(Map.of("k1", "v"));
 		// Receiving unknown column would be a bug
-		Assertions.assertThat(AdhocTranscodingHelper.transcode(context, Map.of("otherK", "v")))
+		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
 				.isEqualTo(Map.of("otherK", "v"));
 	}
 }

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.step.ITransformator;
 import eu.solven.adhoc.measure.step.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
@@ -51,7 +50,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return AdhocQueryStep.edit(step)
-					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
+					.measureNamed(underlyingName)
 					.customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()))
 					.build();
 		}).toList();

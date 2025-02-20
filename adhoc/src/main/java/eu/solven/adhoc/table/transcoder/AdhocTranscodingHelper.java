@@ -23,9 +23,12 @@
 package eu.solven.adhoc.table.transcoder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -38,7 +41,7 @@ public class AdhocTranscodingHelper {
 		// hidden
 	}
 
-	public static Map<String, ?> transcode(IAdhocTableReverseTranscoder reverseTranscoder,
+	public static Map<String, ?> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
 		Map<String, Object> transcoded = new HashMap<>();
 
@@ -70,5 +73,39 @@ public class AdhocTranscodingHelper {
 					replaced,
 					v);
 		}
+	}
+
+	/**
+	 *
+	 * @param transcoder
+	 * @param notTranscoded
+	 * @return a {@link Map} where each value is replaced by the transcoded value.
+	 */
+	public static Map<String, ?> transcodeValues(IColumnValueTranscoder transcoder, Map<String, ?> notTranscoded) {
+		List<Map.Entry<String, Object>> columnToTranscodedValue = notTranscoded.entrySet().stream().flatMap(e -> {
+			Object rawValue = e.getValue();
+			String column = e.getKey();
+			Object transcodedValue = transcoder.transcodeValue(column, rawValue);
+
+			if (rawValue == transcodedValue) {
+				// Register only not trivial mappings
+				return Stream.empty();
+			} else {
+				return Stream.of(Map.entry(column, transcodedValue));
+			}
+		}).toList();
+
+		if (columnToTranscodedValue.isEmpty()) {
+			// Not a single transcoding: return original Map
+			return notTranscoded;
+		}
+
+		// Initialize with notTranscoded values
+		Map<String, Object> transcoded = new HashMap<>(notTranscoded);
+
+		// Replace transcoded values
+		columnToTranscodedValue.forEach(e -> transcoded.put(e.getKey(), e.getValue()));
+
+		return transcoded;
 	}
 }

@@ -34,7 +34,6 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
@@ -78,9 +77,9 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 			log.info("[DEBUG] {} underlyingSteps given step={}", measurelessSteps, step);
 		}
 
-		ReferencedMeasure refToUnderlying = ReferencedMeasure.builder().ref(dispatchor.getUnderlying()).build();
+		String underlyingMeasure = dispatchor.getUnderlying();
 		return measurelessSteps.stream()
-				.map(subStep -> AdhocQueryStep.edit(subStep).measure(refToUnderlying).build())
+				.map(subStep -> AdhocQueryStep.edit(subStep).measureNamed(underlyingMeasure).build())
 				.collect(Collectors.toList());
 
 	}

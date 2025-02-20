@@ -34,7 +34,6 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -69,12 +68,13 @@ public class ShiftorQueryStep implements ITransformator {
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		// This will provide underlying values from the shifted slice
-		ReferencedMeasure underlyingMeasure = ReferencedMeasure.ref(shiftor.getUnderlying());
+		String underlyingMeasure = shiftor.getUnderlying();
+
 		AdhocQueryStep whereToRead = AdhocQueryStep.edit(step)
 				.filter(shift(step.getFilter(), step.getCustomMarker()))
-				.measure(underlyingMeasure)
+				.measureNamed(underlyingMeasure)
 				.build();
-		AdhocQueryStep whereToWrite = AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
+		AdhocQueryStep whereToWrite = AdhocQueryStep.edit(step).measureNamed(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
 		return Arrays.asList(whereToRead, whereToWrite);

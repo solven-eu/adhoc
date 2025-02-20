@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -61,7 +60,7 @@ public class FiltratorQueryStep extends ATransformator {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
 				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measure(ReferencedMeasure.builder().ref(filtrator.getUnderlying()).build())
+				.measureNamed(filtrator.getUnderlying())
 				.build();
 		return Collections.singletonList(underlyingStep);
 	}

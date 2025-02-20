@@ -29,6 +29,7 @@ import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasure;
+import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -81,6 +82,12 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, 
 
 	// Used to store transient information, like slow-to-evaluate information
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
+
+	public static class AdhocQueryStepBuilder {
+		public AdhocQueryStepBuilder measureNamed(String measureName) {
+			return this.measure(ReferencedMeasure.ref(measureName));
+		}
+	}
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
 		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());

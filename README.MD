@@ -125,6 +125,8 @@ Typical tables are:
 
 ### Transcoder
 
+#### Column Transcoding
+
 Given tables may hold similar data but with different column names. A `IAdhocTableWrapper` enables coding once per table such a mapping.
 
 A default `IAdhocTableWrapper` assumes `IAdhocQuery` columns matches the `IAdhocTableWrapper` columns.
@@ -139,6 +141,13 @@ MapTableTranscoder.builder()
     .queriedToUnderlying("someColumn", "someTable.someColumn")
     .build()
 ```
+
+#### Value Transcoding
+
+Tables may not all accept query with similar types. Typically, one may filter a column with an `enum` while given `enum` type
+may be unknown to the table.
+
+This can be managed with a `ICustomTypeManager`, which will handle type-transcoding on a per-column per-value basis.
 
 ## Measures 
 
@@ -161,6 +170,20 @@ Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of
 Aggregations are used to reduce input data up to the requested (by `groupBys`) granularity. Multiple aggregation functions may be applied over the same column.
 
 See https://support.microsoft.com/en-us/office/aggregate-function-43b9278e-6aa7-4f17-92b6-e19993fa26df
+
+### Expressions as Aggregations
+
+`ExpressionAggregation` enable custom expression for table processing. 
+
+For instance, in DuckDB, one can use the syntax `SUM("v") FILTER color = 'red'`. It can be used as aggregator:
+
+```
+Aggregator.builder()
+    .name("v_RED")
+    .aggregationKey(ExpressionAggregation.KEY)
+    .column("max(\"v\") FILTER(\"color\" in ('red'))")
+    .build();
+```
 
 ### Transformators
 
@@ -236,14 +259,17 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
 
 See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 
+# Authorizations - Rights Management
+
+Right-management is typically implemented by an `AND` operation combining the user `filter` and a filter based on user-rights.
+
+This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example is demonstrated in `TestImplicitFilter_SpringSecurity`.
+
 # Roadmap / Limitations to lift soon
 
 - Concurrency: for instance when processing the DAG given the results from the `TableQuery`
 - BDD: Automated generation of Scenario given an `IAdhocQuery`
 - Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - Resiliency on querySteps errors: a failing measure should not break the whole query.
-- Manage custom types, like filtering on an Enum (see `TestTableQuery_DuckDb_customType`).
-- ITableTranscoder should be managed by `IAdhocCubeWrapper`, not in each `IAdhocTableWrapper`. It can then be coupled with `ICustomTypeManager`
 - EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
-- Demonstrate how to automatically add some filter based on some security layer
-- Shift some filters are `FILTER` DuckDB clause, hence enabling wider `TableQuery` (as the shared `filter` would be wider).
+- [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 

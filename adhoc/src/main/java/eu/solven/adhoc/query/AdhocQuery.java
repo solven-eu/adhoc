@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -92,6 +93,22 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		public AdhocQueryBuilder measure(String firstName, String... moreNames) {
 			Lists.asList(firstName, moreNames).forEach(measureName -> {
 				this.measureRef(ReferencedMeasure.ref(measureName));
+			});
+
+			return this;
+		}
+
+		/**
+		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
+		 * This may be lifted in a later version.
+		 *
+		 * @param first
+		 * @param more
+		 * @return
+		 */
+		public AdhocQueryBuilder measure(IMeasure first, IMeasure... more) {
+			Lists.asList(first, more).forEach(measure -> {
+				this.measureRef(ReferencedMeasure.ref(measure.getName()));
 			});
 
 			return this;

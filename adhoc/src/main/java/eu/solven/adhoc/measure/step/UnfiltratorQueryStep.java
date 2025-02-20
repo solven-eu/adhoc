@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
@@ -51,7 +50,7 @@ public class UnfiltratorQueryStep implements ITransformator {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
 				.filter(unfilter(step.getFilter()))
-				.measure(ReferencedMeasure.ref(unfiltrator.getUnderlying()))
+				.measureNamed(unfiltrator.getUnderlying())
 				.build();
 		return Collections.singletonList(underlyingStep);
 	}

@@ -32,7 +32,6 @@ import com.google.common.base.Suppliers;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
@@ -70,7 +69,7 @@ public class CombinatorQueryStep extends ATransformator {
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return AdhocQueryStep.edit(step)
 					// Change the requested measureName to the underlying measureName
-					.measure(ReferencedMeasure.builder().ref(underlyingName).build())
+					.measureNamed(underlyingName)
 					.build();
 		}).toList();
 	}

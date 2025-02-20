@@ -35,7 +35,6 @@ import com.google.common.base.Suppliers;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -81,11 +80,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
 			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy());
-			AdhocQueryStep object = AdhocQueryStep.edit(step)
-					.groupBy(groupBy)
-					.measure(ReferencedMeasure.builder().ref(underlying).build())
-					.build();
-			return object;
+			return AdhocQueryStep.edit(step).groupBy(groupBy).measureNamed(underlying).build();
 		}).collect(Collectors.toList());
 	}
 

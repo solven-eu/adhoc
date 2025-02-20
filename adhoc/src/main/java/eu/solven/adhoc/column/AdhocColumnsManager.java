@@ -44,6 +44,14 @@ import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -53,16 +61,17 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
+import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
-@Value
 @Builder(toBuilder = true)
 @Slf4j
 public class AdhocColumnsManager implements IAdhocColumnsManager {
@@ -137,7 +146,9 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 			@Override
 			public Stream<IAggregatedRecord> asMap() {
-				return memoized.get().map(notTranscoded -> notTranscoded.transcode(transcodingContext));
+				return memoized.get()
+						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
+						.map(row -> transcodeTypes(row));
 			}
 
 			@Override
@@ -145,6 +156,10 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 				return "Transcoding: " + aggregatedRecordsStream;
 			}
 		};
+	}
+
+	protected IAggregatedRecord transcodeTypes(IAggregatedRecord row) {
+		return row.transcode(customTypeManager);
 	}
 
 	protected TranscodingContext openTranscodingContext() {
@@ -157,9 +172,10 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return filter;
 		} else if (filter instanceof IColumnFilter columnFilter) {
+			String column = columnFilter.getColumn();
 			return ColumnFilter.builder()
-					.column(transcodingContext.underlying(columnFilter.getColumn()))
-					.valueMatcher(columnFilter.getValueMatcher())
+					.column(transcodingContext.underlying(column))
+					.valueMatcher(transcodeType(column, columnFilter.getValueMatcher()))
 					.build();
 		} else if (filter instanceof IAndFilter andFilter) {
 			return AndFilter.and(andFilter.getOperands()
@@ -176,6 +192,35 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 		} else {
 			throw new UnsupportedOperationException(
 					"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
+	}
+
+	protected @NonNull IValueMatcher transcodeType(String column, IValueMatcher valueMatcher) {
+		if (!customTypeManager.mayTranscode(column)) {
+			return valueMatcher;
+		}
+
+		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+			return EqualsMatcher.isEqualTo(customTypeManager.toTable(column, equalsMatcher.getOperand()));
+		} else if (valueMatcher instanceof InMatcher inMatcher) {
+			List<Object> transcodedOperands = inMatcher.getOperands()
+					.stream()
+					.map(operand -> customTypeManager.toTable(column, operand))
+					.toList();
+
+			return InMatcher.isIn(transcodedOperands);
+		} else if (valueMatcher instanceof NotMatcher notMatcher) {
+			return NotMatcher.builder().negated(transcodeType(column, notMatcher.getNegated())).build();
+		} else if (valueMatcher instanceof NullMatcher || valueMatcher instanceof LikeMatcher
+				|| valueMatcher instanceof RegexMatcher) {
+			return valueMatcher;
+		} else if (valueMatcher instanceof OrMatcher orMatcher) {
+			List<IValueMatcher> transcoded =
+					orMatcher.getOperands().stream().map(operand -> transcodeType(column, operand)).toList();
+			return OrMatcher.or(transcoded);
+		} else {
+			throw new NotYetImplementedException(
+					"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
 		}
 	}
 
@@ -210,7 +255,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 	@Override
 	public Object onMissingColumn(String column) {
-		return getMissingColumnManager().onMissingColumn(column);
+		return missingColumnManager.onMissingColumn(column);
 	}
 
 }
