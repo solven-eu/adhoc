@@ -104,13 +104,24 @@ public class CombinatorQueryStep extends ATransformator {
 			return refV.get();
 		}).collect(Collectors.toList());
 
-		Object value = combination.combine(slice, underlyingVs);
+		Object value = combine(slice, combination, underlyingVs);
+
+		output.putSlice(slice.getAdhocSliceAsMap(), value);
+	}
+
+	protected Object combine(IAdhocSliceWithStep slice, ICombination combination, List<Object> underlyingVs) {
+		Object value;
+		try {
+			value = combination.combine(slice, underlyingVs);
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException(
+					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), underlyingVs, slice));
+		}
 
 		if (isDebug()) {
 			log.info("[DEBUG] Write {} (given {} over {}) in {}", value, combinator.getName(), underlyingVs, slice);
 		}
-
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		return value;
 	}
 
 	protected ISliceToValue makeCoordinateToValues() {

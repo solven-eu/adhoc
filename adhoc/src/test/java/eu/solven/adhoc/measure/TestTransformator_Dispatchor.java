@@ -37,7 +37,7 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Dispatchor extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {

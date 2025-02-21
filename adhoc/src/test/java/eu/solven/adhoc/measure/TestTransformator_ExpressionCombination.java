@@ -30,24 +30,25 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Long extends ADagTest implements IAdhocTestConstants {
-	@BeforeEach
+public class TestTransformator_ExpressionCombination extends ADagTest implements IAdhocTestConstants {
+
 	@Override
+	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		rows.add(Map.of("k1", 123D));
+		rows.add(Map.of("k2", 234D));
+		rows.add(Map.of("k1", 345D, "k2", 456D));
 	}
 
 	@Test
@@ -55,7 +56,8 @@ public class TestAggregations_Long extends ADagTest implements IAdhocTestConstan
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(SumCombination.KEY)
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
 		amb.addMeasure(k1Sum);
@@ -67,52 +69,61 @@ public class TestAggregations_Long extends ADagTest implements IAdhocTestConstan
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
 
 	@Test
-	public void testSumOfMax() {
+	public void testSumOfSum_oneIsNull_improperFormula() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(SumCombination.KEY)
-				.build());
-
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregator.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregator.KEY).build());
-
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 345, "k2", 456,
-						Map.of("sumK1K2", 0L + 345 + 456));
-	}
-
-	@Test
-	public void testMaxOfSum() {
-		amb.addMeasure(Combinator.builder()
-				.name("maxK1K2")
-				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(MaxCombination.KEY)
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		// Reject rows where k2 is not null
+		ITabularView output = aqw.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
+				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("maxK1K2", 0L + 234 + 456));
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", "123.0null"));
+	}
+
+	@Test
+	public void testSumOfSum_oneIsNull() {
+		amb.addMeasure(Combinator.builder()
+				.name("sumK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.combinationKey(ExpressionCombination.KEY)
+				// https://github.com/ezylang/EvalEx/issues/204
+				// We may process ternary into IF
+				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
+						.build())
+				.build());
+
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
+
+		// Reject rows where k2 is not null
+		ITabularView output = aqw.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
+				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 123L));
 	}
 }

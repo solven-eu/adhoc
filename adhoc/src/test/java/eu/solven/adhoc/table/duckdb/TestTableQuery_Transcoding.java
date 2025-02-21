@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -288,11 +287,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 				.execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder()
-					.measure(k1Sum.getName())
-					.andFilter("k1", 123)
-					.groupByAlso("k2")
-					.build();
+			AdhocQuery query =
+					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k2").build();
 
 			measures.addMeasure(k1Sum);
 
@@ -318,11 +314,8 @@ public class TestTableQuery_Transcoding implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder()
-					.measure(k1Sum.getName())
-					.andFilter("k1", 123)
-					.groupByAlso("k1")
-					.build();
+			AdhocQuery query =
+					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k1").build();
 
 			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);

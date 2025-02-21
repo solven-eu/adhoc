@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
  * This mostly duplicates {@link TestAdhocQueryShiftor}, but requiring the shift to EUR to be provided as customMarker.
  */
 @Slf4j
-public class TestAdhocQueryShiftor_contextValue extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Shiftor_contextValue extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach

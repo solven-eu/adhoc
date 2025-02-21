@@ -267,9 +267,11 @@ This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example i
 
 # Roadmap / Limitations to lift soon
 
-- Concurrency: for instance when processing the DAG given the results from the `TableQuery`
-- BDD: Automated generation of Scenario given an `IAdhocQuery`
-- Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
-- Resiliency on querySteps errors: a failing measure should not break the whole query.
-- EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
+- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`
+- [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
+- [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
+- [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
+- [Explain] EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
+- [Documentation] `MeasuresSetFromResource` should enable generation of Graphiviz `.dot` files
+- [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.

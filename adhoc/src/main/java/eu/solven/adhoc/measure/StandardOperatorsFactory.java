@@ -65,22 +65,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
         };
     }
 
-	protected ICombination defaultCombination(String key, Map<String, ?> options) {
-		Class<? extends ICombination> asClass;
-		try {
-			asClass = (Class<? extends ICombination>) Class.forName(key);
-
-		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		}
-
-		try {
-			return asClass.getConstructor(Map.class).newInstance(options);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
-				| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
+	protected ICombination defaultCombination(String className, Map<String, ?> options) {
+		return makeWithmapOrEmpty(ICombination.class, className, options);
 	}
 
 	@Override
@@ -103,22 +89,29 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
         };
     }
 
-	protected IAggregation defaultAggregation(String key, Map<String, ?> options) {
-		Class<? extends IAggregation> asClass;
-		try {
-			asClass = (Class<? extends IAggregation>) Class.forName(key);
+	protected IAggregation defaultAggregation(String className, Map<String, ?> options) {
+		return makeWithmapOrEmpty(IAggregation.class, className, options);
+	}
 
+	protected <T> T makeWithmapOrEmpty(Class<? extends T> parentClazz, String className, Map<String, ?> options) {
+		Class<? extends T> asClass;
+		try {
+			asClass = (Class<? extends T>) Class.forName(className);
 		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
+			log.trace("No class matches %s".formatted(className));
+			throw new IllegalArgumentException("Unexpected value: " + className);
+		}
+
+		if (!parentClazz.isAssignableFrom(asClass)) {
+			throw new IllegalArgumentException("class=`%s` does not extends %s".formatted(className, parentClazz));
 		}
 
 		try {
 			try {
-				Constructor<? extends IAggregation> constructorWithOptions = asClass.getConstructor(Map.class);
+				Constructor<? extends T> constructorWithOptions = asClass.getConstructor(Map.class);
 				return constructorWithOptions.newInstance(options);
 			} catch (NoSuchMethodException e) {
-				Constructor<? extends IAggregation> constructorWithNothing = asClass.getConstructor();
+				Constructor<? extends T> constructorWithNothing = asClass.getConstructor();
 				return constructorWithNothing.newInstance();
 			}
 		} catch (InvocationTargetException | InstantiationException | IllegalAccessException

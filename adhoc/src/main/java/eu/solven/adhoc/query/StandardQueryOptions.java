@@ -41,10 +41,17 @@ public enum StandardQueryOptions implements IQueryOption {
 
 	/**
 	 * Request for an unknown measure will treat it as if it returned only empty values.
-	 * 
-	 * It is useful when a measure bag may refer another measure which may be missing for any reason.
+	 *
+	 * It is useful when a {@link eu.solven.adhoc.measure.IAdhocMeasureBag} refers a
+	 * {@link eu.solven.adhoc.measure.IMeasure} which is be missing for any reason.
 	 */
 	UNKNOWN_MEASURES_ARE_EMPTY,
+
+	/**
+	 * When used, an {@link Exception} in a {@link eu.solven.adhoc.measure.step.ITransformator} evaluation leads to this
+	 * {@link Exception} to be returned as {@link eu.solven.adhoc.measure.step.ITransformator} output.
+	 */
+	EXCEPTIONS_AS_MEASURE_VALUE,
 
 	/**
 	 * Force the {@link eu.solven.adhoc.query.cube.IAdhocQuery} to be executed with `explain==true`.
@@ -54,5 +61,5 @@ public enum StandardQueryOptions implements IQueryOption {
 	/**
 	 * Force the {@link eu.solven.adhoc.query.cube.IAdhocQuery} to be executed with `debug==true`.
 	 */
-	DEBUG
+	DEBUG,
 }

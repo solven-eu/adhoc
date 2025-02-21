@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestAggregations_Filtrator extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
