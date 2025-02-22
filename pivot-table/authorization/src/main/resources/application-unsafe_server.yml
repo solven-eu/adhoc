@@ -1,0 +1,7 @@
+# fake_server: we activate various unsafe mecanisms to make the server easier to run for development purposes
+
+# The constant seed is useful to push contestsIds to be the same on each run
+adhoc.pivotable:
+    random.seed: 0
+    # This is the authorizationServer base url
+    oauth2.issuer-base-url: http://localhost:8080

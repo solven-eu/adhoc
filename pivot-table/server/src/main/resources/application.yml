@@ -1,0 +1,46 @@
+spring:
+    application.name: pivotable
+    main:
+        banner-mode: "off"
+    profiles:
+        # Do not add any default `include`, else `default` would never kicks in
+        group:
+            # `default` is used for quick-start: we enable unsafe and fake
+            default:
+                # unsafe provides various unsafe default parameters (like an unsafe signingKey)
+                - unsafe
+                # fakeuser introduces a default fakeAccount with a default fakePlayer
+                - fakeuser
+                - inmemory
+            default_server:
+                - inject_default_games
+            prodmode:
+                - default_server
+            heroku:
+                - default_server
+            unsafe:
+                - default_server
+                # unsafe_server provides unsafe security (JWT signature, etc)
+                - unsafe_server
+                - unsafe_oauth2
+                - unsafe_external_oauth2
+            unsafe_server:
+                - default_server
+            unsafe_external_oauth2:
+                - default_server
+
+logging:
+    level:
+        org.springframework.security: INFO
+        org.springframework.web.reactive: INFO
+        eu.solven.kumite.app.webflux.KumiteWebExceptionHandler: DEBUG
+
+adhoc.pivotable.oauth2:
+    # Used to sign the JWT, which are used to interact withthe API
+    signing-key: NEEDS_TO_BE_DEFINED
+    issuer-base-url: NEEDS_TO_BE_DEFINED
+
+# https://stackoverflow.com/questions/30571319/spring-boot-logging-pattern
+# https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot/src/main/resources/org/springframework/boot/logging/logback/defaults.xml#L15C48-L15C67
+# https://stackoverflow.com/questions/5924112/how-to-shorten-thread-name-in-logback-logs
+logging.pattern.console: "%clr(%d{yyyy-MM-dd'T'HH:mm:ss}){faint} %clr(%5p) [%-7.7thread] %clr(){faint}%clr(%-40.40logger{39}){cyan}|%method\\(%line\\)%clr(:){faint} %m%n%wEx"

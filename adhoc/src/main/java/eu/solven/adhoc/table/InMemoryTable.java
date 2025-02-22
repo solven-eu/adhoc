@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.AggregatedRecordOverMaps;
@@ -75,7 +76,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	@Override
 	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
 		Set<String> aggregateColumns =
-				tableQuery.getAggregators().stream().map(a -> a.getColumnName()).collect(Collectors.toSet());
+				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
 		return new SuppliedAggregatedRecordStream(tableQuery, () -> this.stream().filter(row -> {
@@ -90,14 +91,14 @@ public class InMemoryTable implements IAdhocTableWrapper {
 					tableQuery.getAggregators()
 							.stream()
 							.filter(a -> a.getColumnName().equals(aggregatedColumn))
-							.forEach(a -> {
-								aggregates.put(a.getName(), aggregatorUnderlyingValue);
-							});
+							.forEach(a -> aggregates.put(a.getName(), aggregatorUnderlyingValue));
 				}
 			});
 
-			Map<String, Object> groupBys = new LinkedHashMap<>(row);
-			groupBys.keySet().retainAll(groupByColumns);
+			Map<String, Object> groupBys = row.entrySet()
+					.stream()
+					.filter(e -> groupByColumns.contains(e.getKey()))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 		}));

@@ -45,11 +45,16 @@ public class UnderlyingQueryStepHelpers {
 	 */
 	public static Iterable<? extends AdhocSliceAsMap> distinctSlices(boolean debug,
 			List<? extends ISliceToValue> underlyings) {
+		if (!debug && underlyings.size() == 1) {
+			// Fast track
+			return underlyings.getFirst().slicesSet();
+		}
+
 		Set<AdhocSliceAsMap> keySet;
 		if (debug) {
 			// Enforce an iteration order for debugging-purposes
 			keySet = new TreeSet<>(
-					Comparator.comparing(simpleSlice -> simpleSlice.getCoordinates(), MapComparators.mapComparator()));
+					Comparator.comparing(AdhocSliceAsMap::getCoordinates, MapComparators.mapComparator()));
 		} else {
 			keySet = new HashSet<>();
 		}

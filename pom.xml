@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.1</version>
+		<version>3.4.2</version>
 		<relativePath />
 		<!-- lookup parent from repository -->
 	</parent>
@@ -20,12 +20,16 @@
 		<module>experimental</module>
 		<module>calcite</module>
 		<module>spring</module>
+
+		<module>pivot-table</module>
 	</modules>
 
 	<properties>
 		<java.version>21</java.version>
 
-		<spotless.version>2.44.0.BETA4</spotless.version>
+		<pepper.version>5.1</pepper.version>
+
+		<spotless.version>2.44.2</spotless.version>
 		<cleanthat.version>2.22</cleanthat.version>
 
 		<!-- By default (i.e. in local environments), check for code formatting AFTER trying automatic fixes. -->
@@ -217,14 +221,6 @@
 			<id>activeviam</id>
 			<modules>
 				<module>atoti</module>
-			</modules>
-		</profile>
-		<profile>
-			<!-- mvn clean install -Pjs -->
-			<!-- JS user-interface is WIP, and broken most of the time -->
-			<id>js</id>
-			<modules>
-				<module>ui-web</module>
 			</modules>
 		</profile>
 	</profiles>

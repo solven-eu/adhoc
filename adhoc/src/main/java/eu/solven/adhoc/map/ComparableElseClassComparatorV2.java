@@ -26,8 +26,6 @@ import java.util.Comparator;
 import java.util.NavigableSet;
 import java.util.Objects;
 
-import org.springframework.util.comparator.Comparators;
-
 //import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
@@ -40,8 +38,29 @@ import org.springframework.util.comparator.Comparators;
 public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 	final Comparator<Object> nullComparator;
 
+	/**
+	 * Return a {@link Comparable} adapter which accepts null values and sorts them higher than non-null values.
+	 * 
+	 * @see Comparator#nullsLast(Comparator)
+	 */
+	// Duplicated from Spring Comparators
+	@SuppressWarnings("unchecked")
+	private static <T> Comparator<T> nullsHigh() {
+		return nullsHigh((Comparator<T>) Comparator.naturalOrder());
+	}
+
+	/**
+	 * Return a decorator for the given comparator which accepts null values and sorts them higher than non-null values.
+	 * 
+	 * @see Comparator#nullsLast(Comparator)
+	 */
+	// Duplicated from Spring Comparators
+	private static <T> Comparator<T> nullsHigh(Comparator<T> comparator) {
+		return Comparator.nullsLast(comparator);
+	}
+
 	public ComparableElseClassComparatorV2() {
-		this(Comparators.nullsHigh());
+		this(nullsHigh());
 	}
 
 	public ComparableElseClassComparatorV2(Comparator<Object> nullComparator) {

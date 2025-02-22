@@ -101,7 +101,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
-	final IAdhocEventBus eventBus;
+	@Default
+	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
 
 	@NonNull
 	@Default
@@ -179,6 +180,30 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream) {
 		DagHolder fromQueriedToAggregates = makeQueryStepsDag(executingQueryContext);
 
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("prepare").source(this).build());
+
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
+				preAggregate(executingQueryContext, tableToRowsStream, fromQueriedToAggregates);
+
+		// We're done with the input stream: the DB can be shutdown, we could answer the
+		// query
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
+
+		walkDagUpToQueriedMeasures(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
+
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
+
+		ITabularView mapBasedTabularView =
+				toTabularView(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
+
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
+
+		return mapBasedTabularView;
+	}
+
+	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
+			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream,
+			DagHolder fromQueriedToAggregates) {
 		Map<String, Set<Aggregator>> columnToAggregators =
 				columnToAggregators(executingQueryContext, fromQueriedToAggregates);
 
@@ -205,19 +230,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			});
 		}
-
-		// We're done with the input stream: the DB can be shutdown, we could answer the
-		// query
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregates").source(this).build());
-
-		walkDagUpToQueriedMeasures(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
-
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transformations").source(this).build());
-
-		ITabularView mapBasedTabularView =
-				toTabularView(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
-
-		return mapBasedTabularView;
+		return queryStepToValues;
 	}
 
 	protected Map<String, Set<Aggregator>> columnToAggregators(ExecutingQueryContext executingQueryContext,
@@ -527,8 +540,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		for (String aggregatedColumn : aggregatorColumns) {
 			Object v = tableRow.getAggregate(aggregatedColumn);
 			if (v != null) {
-				// We received a row contributing to an aggregate: the DB does not provide
-				// aggregates (e.g. InMemoryDb)
 				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
 
 				if (aggs == null) {
@@ -540,7 +551,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					});
 				} else {
 					// The DB provides the column raw value, and not an aggregated value
-					// So we aggregate row values ourselves
+					// So we aggregate row values ourselves (e.g. InMemoryTable)
 					aggs.forEach(agg -> coordinatesToAgg.contribute(agg, coordinates, v));
 				}
 			}
@@ -551,7 +562,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			String aggregatorName) {
 		return columnToAggregators.values()
 				.stream()
-				.flatMap(c -> c.stream())
+				.flatMap(Collection::stream)
 				.filter(a -> a.getName().equals(aggregatorName))
 				.findAny();
 	}

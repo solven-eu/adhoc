@@ -1,0 +1,14 @@
+# https://prettier.io/docs/en/configuration.html
+
+tabWidth: 4
+printWidth: 160
+
+overrides:
+  # // https://github.com/prettier/prettier/issues/5892#issuecomment-466318688
+  - files: "*.html"
+    options:
+      parser: html
+  - files:
+      - "*.vue"
+    options:
+      parser: vue

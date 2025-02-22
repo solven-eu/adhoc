@@ -14,13 +14,22 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-json</artifactId>
+			<!-- Resource -->
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- MapPathGet -->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-mappath</artifactId>
+			<version>${pepper.version}</version>
 		</dependency>
 		<dependency>
+			<!-- PepperLoghelper -->
 			<groupId>io.github.solven-eu.pepper</groupId>
-			<artifactId>map-path</artifactId>
-			<version>5.0</version>
+			<artifactId>pepper</artifactId>
+			<version>${pepper.version}</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
@@ -107,8 +116,8 @@
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
-			<artifactId>unittest</artifactId>
-			<version>5.0</version>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
