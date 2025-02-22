@@ -3,16 +3,10 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
-		<artifactId>aggregator-adhoc</artifactId>
+		<artifactId>pivotable</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-
-	<artifactId>adhoc-atoti</artifactId>
-
-	<properties>
-		<activepivot.server.version>5.11.16</activepivot.server.version>
-		<apex.version>9.1</apex.version>
-	</properties>
+	<artifactId>pivotable-server-core</artifactId>
 
 	<dependencies>
 		<dependency>
@@ -22,15 +16,27 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.activeviam.activepivot</groupId>
-			<artifactId>activepivot-intf</artifactId>
-			<version>${activepivot.server.version}</version>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-tools</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-public</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>eu.solven.apex</groupId>
-			<artifactId>apex-server-cube</artifactId>
-			<version>${apex.version}</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- A lightweight EventBus-->
+			<!-- https://github.com/greenrobot/EventBus -->
+			<groupId>org.greenrobot</groupId>
+			<artifactId>eventbus-java</artifactId>
+			<version>3.3.1</version>
 		</dependency>
 
 		<dependency>

@@ -10,7 +10,7 @@
 	</parent>
 
 	<groupId>eu.solven.adhoc</groupId>
-	<artifactId>aggregator</artifactId>
+	<artifactId>aggregator-adhoc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
@@ -21,7 +21,7 @@
 		<module>calcite</module>
 		<module>spring</module>
 
-		<module>pivot-table</module>
+		<module>pivotable</module>
 	</modules>
 
 	<properties>

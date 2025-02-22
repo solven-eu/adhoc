@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
-		<artifactId>aggregator</artifactId>
+		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>calcite</artifactId>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>pivotable</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>pivotable-authorization</artifactId>
+	<description>Manage access_token and refresh_token</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-tools</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-public</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- Useful to parse the accessToken, to get the playerId-->
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>9.41.1</version>
+		</dependency>
+
+		<dependency>
+			<!-- JwtAuthenticationToken, for the sole purpose of inferring the accountId authoring a contest-->
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-resource-server</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- Provides ServerHttpSecurity -->
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-jose</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<!--    <build>-->
+	<!--        <plugins>-->
+	<!--            <plugin>-->
+	<!--                <groupId>org.springframework.boot</groupId>-->
+	<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
+	<!--                <configuration>-->
+	<!--                    <classifier>exec</classifier>-->
+	<!--                </configuration>-->
+	<!--            </plugin>-->
+	<!--        </plugins>-->
+	<!--    </build>-->
+
+</project>

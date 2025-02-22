@@ -3,34 +3,27 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
-		<artifactId>aggregator-adhoc</artifactId>
+		<artifactId>pivotable</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-
-	<artifactId>adhoc-atoti</artifactId>
-
-	<properties>
-		<activepivot.server.version>5.11.16</activepivot.server.version>
-		<apex.version>9.1</apex.version>
-	</properties>
+	<artifactId>pivotable-public</artifactId>
+	<description>Resources shared between server and clients</description>
 
 	<dependencies>
 		<dependency>
-			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
-			<version>${project.version}</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>com.activeviam.activepivot</groupId>
-			<artifactId>activepivot-intf</artifactId>
-			<version>${activepivot.server.version}</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>eu.solven.apex</groupId>
-			<artifactId>apex-server-cube</artifactId>
-			<version>${apex.version}</version>
+			<!-- ConstantCreationMetadata holds some OffsetDateTime fields -->
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 
 		<dependency>
@@ -39,5 +32,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 </project>

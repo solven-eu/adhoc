@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>pivotable</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>pivotable-js</artifactId>
+	<description>JavaScript/SPA static resources</description>
+
+	<build>
+		<resources>
+			<resource>
+				<!-- By default, only `application*.yml` and related properties are filtered -->
+				<!-- We want at least `index.html` to also be filtered -->
+				<filtering>true</filtering>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<!-- Used to inject into index.html -->
+				<groupId>io.github.git-commit-id</groupId>
+				<artifactId>git-commit-id-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

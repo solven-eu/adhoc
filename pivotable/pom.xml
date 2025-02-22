@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>aggregator-adhoc</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>pivotable</artifactId>
+
+	<packaging>pom</packaging>
+
+	<modules>
+		<module>authorization</module>
+		<module>tools</module>
+		<module>public</module>
+		<module>server-core</module>
+		<module>js</module>
+
+		<!-- Following modules are bootable-->
+		<module>server</module>
+		<module>monolith</module>
+	</modules>
+
+	<profiles>
+		<profile>
+			<!-- mvn clean install -Pjs -->
+			<!-- JS user-interface is WIP, and broken most of the time -->
+			<id>js</id>
+			<modules>
+				<module>monolith</module>
+			</modules>
+		</profile>
+	</profiles>
+</project>
