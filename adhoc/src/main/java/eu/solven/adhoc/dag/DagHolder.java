@@ -34,6 +34,9 @@ import lombok.Value;
 @Value
 @Builder
 public class DagHolder {
+	@NonNull
+	String table;
+
 	// The DAG of a given IAdhocQuery, from queried to aggregators
 	@NonNull
 	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;

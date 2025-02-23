@@ -30,27 +30,56 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearchParameters.AdhocEntrypointSearchParametersBuilder;
+import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
+import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Handler related to {@link AdhocEntrypointMetadata} and related
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableEntrypointsHandler {
 	final AdhocEntrypointsRegistry entrypointsRegistry;
+	final AdhocSchemaForApi schemaForApi;
 
-	public Mono<ServerResponse> listEntrypoints(ServerRequest request) {
-		AdhocEntrypointSearchParametersBuilder parameters = AdhocEntrypointSearchParameters.builder();
+	private List<AdhocEntrypointMetadata> matchingEntrypoints(ServerRequest request) {
+		AdhocEntrypointSearch.AdhocEntrypointSearchBuilder parameters = AdhocEntrypointSearch.builder();
 
 		AdhocHandlerHelper.optUuid(request, "entrypoint_id").ifPresent(id -> parameters.entrypointId(Optional.of(id)));
 
 		Optional<String> optKeyword = request.queryParam("keyword");
 		optKeyword.ifPresent(rawKeyword -> parameters.keyword(Optional.of(rawKeyword)));
 
-		List<AdhocEntrypointMetadata> entrypoints = entrypointsRegistry.searchGames(parameters.build());
+		List<AdhocEntrypointMetadata> entrypoints = entrypointsRegistry.search(parameters.build());
 		log.debug("Entrypoints for {}: {}", parameters, entrypoints);
+		return entrypoints;
+	}
+
+	public Mono<ServerResponse> listEntrypoints(ServerRequest request) {
+		List<AdhocEntrypointMetadata> entrypoints = matchingEntrypoints(request);
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(entrypoints));
+	}
+
+	public Mono<ServerResponse> entrypointSchema(ServerRequest request) {
+		List<AdhocEntrypointMetadata> entrypoints = matchingEntrypoints(request);
+
+		List<SchemaMetadata> schemas = entrypoints.stream().map(entrypoint -> {
+			if (!"http://localhost:self".equals(entrypoint.getUrl())) {
+				throw new NotYetImplementedException("%s".formatted(PepperLogHelper.getObjectAndClass(entrypoint)));
+			}
+
+			return schemaForApi.getMetadata();
+		}).toList();
+
+		log.debug("Schemas for {}: {}", entrypoints, schemas);
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(schemas));
 	}
 }

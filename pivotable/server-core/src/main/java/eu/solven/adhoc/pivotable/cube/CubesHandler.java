@@ -38,7 +38,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Slf4j
 public class CubesHandler {
-	final AdhocCubesRegistry entrypointsRegistry;
+	final AdhocCubesRegistry cubesRegistry;
 
 	public Mono<ServerResponse> listGames(ServerRequest request) {
 		PivotableCubeSearchParameters.PivotableCubeSearchParametersBuilder parameters =
@@ -50,7 +50,7 @@ public class CubesHandler {
 		Optional<String> optKeyword = request.queryParam("keyword");
 		optKeyword.ifPresent(rawKeyword -> parameters.keyword(Optional.of(rawKeyword)));
 
-		List<PivotableCubeMetadata> cubes = entrypointsRegistry.searchCubes(parameters.build());
+		List<PivotableCubeMetadata> cubes = cubesRegistry.searchCubes(parameters.build());
 		log.debug("Cubes for {}: {}", parameters, cubes);
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(cubes));
 	}

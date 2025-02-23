@@ -52,9 +52,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
+import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;

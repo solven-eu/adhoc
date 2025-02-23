@@ -32,7 +32,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;

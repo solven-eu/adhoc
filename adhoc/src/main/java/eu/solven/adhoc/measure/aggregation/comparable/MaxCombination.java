@@ -35,7 +35,7 @@ public class MaxCombination implements ICombination {
 
 	public static final String KEY = "MAX";
 
-	final IAggregation agg = new MaxAggregator();
+	final IAggregation agg = new MaxAggregation();
 
 	@Override
 	public Object combine(List<?> underlyingValues) {

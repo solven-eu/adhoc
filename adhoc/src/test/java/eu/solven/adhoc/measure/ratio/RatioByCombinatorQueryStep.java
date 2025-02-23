@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.step.ATransformator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.ATransformator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;

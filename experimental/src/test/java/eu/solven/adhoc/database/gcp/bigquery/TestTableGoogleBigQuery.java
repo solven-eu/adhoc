@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
+import eu.solven.adhoc.column.CalculatedColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.query.groupby.CalculatedColumn;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
@@ -95,7 +95,7 @@ public class TestTableGoogleBigQuery {
 		List<Map<String, ?>> rows = bgDbWrapper.streamSlices(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))
 				.groupBy(GroupByColumns.of(CalculatedColumn.builder()
-						.column("url")
+						.name("url")
 						.sql("CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING))")
 						.build()))
 				.topClause(AdhocTopClause.builder().column(ReferencedColumn.ref("view_count")).limit(10).build())

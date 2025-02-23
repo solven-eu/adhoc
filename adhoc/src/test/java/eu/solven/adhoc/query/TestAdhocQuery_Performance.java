@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.storage.ITabularView;

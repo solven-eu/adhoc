@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -43,12 +42,12 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Filtrator;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees
@@ -74,56 +73,53 @@ public class TestMeasuresSetFromResource {
 				.hasMessageNotContaining("instead of");
 	}
 
+	// @Disabled("The actual feature+usecase is unclear")
 	@Test
 	public void testDeepMeasuresAsUnderlyings() {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k")
-				.put("type", "combinator")
+				.put("type", ".Combinator")
 				.put("underlyings",
 						List.of(ImmutableMap.<String, Object>builder()
 								.put("name", "k1")
-								.put("type", "combinator")
+								.put("type", ".Combinator")
 								.put("underlyings",
 										Arrays.asList(
-												Map.of("name",
-														"k11",
-														"type",
-														"combinator",
-														"underlyings",
-														Arrays.asList("k111")),
-												Map.of("name",
-														"k12",
-														"type",
-														"combinator",
-														"underlyings",
-														Arrays.asList("k121"))))
+												ImmutableMap.builder()
+														.put("name", "k11")
+														.put("type", ".Combinator")
+														.put("underlyings", Arrays.asList("k111"))
+														.build(),
+												ImmutableMap.builder()
+														.put("name", "k12")
+														.put("type", ".Combinator")
+														.put("underlyings", Arrays.asList("k121"))
+														.build()))
 								.build(),
 								ImmutableMap.<String, Object>builder()
 										.put("name", "k2")
-										.put("type", "combinator")
+										.put("type", ".Combinator")
 										.put("underlyings",
 												Arrays.asList(
-														Map.of("name",
-																"k21",
-																"type",
-																"combinator",
-																"underlyings",
-																Arrays.asList("k211")),
-														Map.of("name",
-																"k22",
-																"type",
-																"combinator",
-																"underlyings",
-																Arrays.asList("k221"))))
+														ImmutableMap.builder()
+																.put("name", "k21")
+																.put("type", ".Combinator")
+																.put("underlyings", Arrays.asList("k211"))
+																.build(),
+														ImmutableMap.builder()
+																.put("name", "k22")
+																.put("type", ".Combinator")
+																.put("underlyings", Arrays.asList("k221"))
+																.build()))
 										.build()))
 				.build();
 
 		List<IMeasure> measures = fromResource.makeMeasure(input);
 		// TODO: Should these be defaulted?
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k111", "type", "aggregator")));
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k121", "type", "aggregator")));
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k211", "type", "aggregator")));
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k221", "type", "aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k111", "type", ".Aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k121", "type", ".Aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k211", "type", ".Aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k221", "type", ".Aggregator")));
 
 		ListAssert<IMeasure> assertMeasures = Assertions.assertThat(measures).hasSize(11);
 		assertMeasures.element(0)
@@ -142,28 +138,32 @@ public class TestMeasuresSetFromResource {
 				});
 	}
 
+	// @Disabled("The actual feature+usecase is unclear")
 	@Test
 	public void testAnonymousUnderlyingNode() throws IOException {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k1Byk1k2")
-				.put("type", "combinator")
+				.put("type", ".Combinator")
 				.put("combinationKey", "DIVIDE")
 				.put("underlyings",
 						List.of("k1",
 								// The denominator definition is anonymous: it does not have as explicit name
-								Map.of("type", "combinator", "underlyings", List.of("k1", "k2"))))
+								ImmutableMap.builder()
+										.put("type", ".Combinator")
+										.put("underlyings", List.of("k1", "k2"))
+										.build()))
 				.build();
 
 		List<IMeasure> measures = fromResource.makeMeasure(input);
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", "aggregator")));
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k2", "type", "aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", ".Aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k2", "type", ".Aggregator")));
 
 		ListAssert<IMeasure> assertMeasures = Assertions.assertThat(measures).hasSize(4);
 		assertMeasures.element(0)
 				// The first measure must be the explicit measure
 				.isInstanceOfSatisfying(Combinator.class, c -> {
 					Assertions.assertThat(c.getName()).isEqualTo("k1Byk1k2");
-					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-1");
+					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-0");
 				});
 
 		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testAnonymousUnderlyingNode", measures);
@@ -174,7 +174,7 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat(ams.resolveIfRef(ReferencedMeasure.builder().ref("k1Byk1k2").build()))
 				.isInstanceOfSatisfying(Combinator.class, c -> {
-					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-1");
+					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-0");
 				});
 
 		{
@@ -186,17 +186,17 @@ public class TestMeasuresSetFromResource {
 					- name: "someBagName"
 					  measures:
 					  - name: "k1Byk1k2"
-					    type: "combinator"
+					    type: ".Combinator"
 					    combinationKey: "DIVIDE"
 					    underlyings:
 					    - "k1"
-					    - "anonymous-1"
+					    - "anonymous-0"
 					  - name: "k1"
-					    type: "aggregator"
+					    type: ".Aggregator"
 					  - name: "k2"
-					    type: "aggregator"
-					  - name: "anonymous-1"
-					    type: "combinator"
+					    type: ".Aggregator"
+					  - name: "anonymous-0"
+					    type: ".Combinator"
 					    combinationKey: "SUM"
 					    underlyings:
 					    - "k1"
@@ -214,7 +214,7 @@ public class TestMeasuresSetFromResource {
 	public void testFiltrator() throws IOException {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k1_c=V")
-				.put("type", "filtrator")
+				.put("type", ".Filtrator")
 				.put("filter",
 						Map.of("type",
 								"column",
@@ -226,7 +226,7 @@ public class TestMeasuresSetFromResource {
 				.build();
 
 		List<IMeasure> measures = fromResource.makeMeasure(input);
-		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", "aggregator")));
+		measures.addAll(fromResource.makeMeasure(Map.of("name", "k1", "type", ".Aggregator")));
 
 		ListAssert<IMeasure> assertMeasures = Assertions.assertThat(measures).hasSize(2);
 		assertMeasures.element(0)
@@ -252,7 +252,7 @@ public class TestMeasuresSetFromResource {
 					- name: "someBagName"
 					  measures:
 					  - name: "k1_c=V"
-					    type: "filtrator"
+					    type: ".Filtrator"
 					    filter:
 					      type: "column"
 					      column: "c"
@@ -262,7 +262,7 @@ public class TestMeasuresSetFromResource {
 					      nullIfAbsent: true
 					    underlying: "k1"
 					  - name: "k1"
-					    type: "aggregator"
+					    type: ".Aggregator"
 					""");
 
 			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
@@ -291,10 +291,10 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "k1",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				}, {
 				  "name" : "unfilterOnK1",
-				  "type" : "unfiltrator",
+				  "type" : ".Unfiltrator",
 				  "inverse" : false,
 				  "underlying" : "k1",
 				  "unfiltereds" : [ "a" ]
@@ -321,7 +321,7 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "shiftorAisA1",
-				  "type" : "shiftor",
+				  "type" : ".Shiftor",
 				  "editorKey" : "single",
 				  "editorOptions" : {
 				    "shiftedColumn" : "a",
@@ -330,7 +330,7 @@ public class TestMeasuresSetFromResource {
 				  "underlying" : "k1"
 				}, {
 				  "name" : "k1",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				} ]
 				                """.strip());
 	}
@@ -355,17 +355,19 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "sum_maxK1K2ByA",
-				  "type" : "bucketor",
+				  "type" : ".Bucketor",
 				  "aggregationKey" : "SUM",
 				  "combinationKey" : "MAX",
-				  "groupBy" : [ "a" ],
+				  "groupBy" : {
+				    "columns" : [ "a" ]
+				  },
 				  "underlyings" : [ "k1", "k2" ]
 				}, {
 				  "name" : "k1",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				}, {
 				  "name" : "k2",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				} ]
 				""".strip());
 	}
@@ -389,10 +391,10 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "k1",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				}, {
 				  "name" : "0or100",
-				  "type" : "dispatchor",
+				  "type" : ".Dispatchor",
 				  "aggregationKey" : "SUM",
 				  "decompositionKey" : "linear",
 				  "decompositionOptions" : {
@@ -410,7 +412,8 @@ public class TestMeasuresSetFromResource {
 	public void testCustomMeasure() throws IOException {
 		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testCustomMeasure").build();
 
-		measureBag.addMeasure(new CustomMeasureForResource());
+		measureBag.addMeasure(
+				CustomMeasureForResource.builder().name("someCustomName").customProperty("customValue").build());
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
@@ -425,10 +428,10 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "k1",
-				  "type" : "aggregator"
+				  "type" : ".Aggregator"
 				}, {
-				  "type" : "eu.solven.adhoc.resource.CustomMeasureForResource",
-				  "underlyingNames" : [ ]
+				  "name" : "someCustomName",
+				  "type" : "eu.solven.adhoc.resource.CustomMeasureForResource"
 				} ]
 				""".strip());
 	}
@@ -450,8 +453,8 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
-				  "name" : "countAsterisk",
-				  "type" : "aggregator",
+				  "name" : "count(*)",
+				  "type" : ".Aggregator",
 				  "aggregationKey" : "COUNT",
 				  "columnName" : "*"
 				} ]
@@ -474,26 +477,29 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testRemoveUselessProperties_Aggregator() {
-		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.k1Sum, Map.class);
-		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1Sum, rawMap);
+		Map<String, ?> cleaned = fromResource.simplifyProperties(IAdhocTestConstants.k1Sum, rawMap);
 
-		Assertions.assertThat((Map) cleaned).hasSize(2).containsEntry("name", "k1").containsEntry("type", "aggregator");
+		Assertions.assertThat((Map) cleaned)
+				.hasSize(2)
+				.containsEntry("name", "k1")
+				.containsEntry("type", ".Aggregator");
 	}
 
 	@Test
 	public void testRemoveUselessProperties_Aggregator_differentColumnName() throws IOException {
-		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		Aggregator measure = Aggregator.edit(IAdhocTestConstants.k1Sum).columnName("legacyColumnName").build();
 
 		Map<String, ?> rawMap = objectMapper.convertValue(measure, Map.class);
-		Map<String, ?> cleaned = fromResource.removeUselessProperties(measure, rawMap);
+		Map<String, ?> cleaned = fromResource.simplifyProperties(measure, rawMap);
 
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(3)
 				.containsEntry("name", "k1")
-				.containsEntry("type", "aggregator")
+				.containsEntry("type", ".Aggregator")
 				.containsEntry("columnName", "legacyColumnName");
 
 		{
@@ -515,10 +521,10 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testRemoveUselessProperties_Combinator() {
-		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.k1PlusK2AsExpr, Map.class);
-		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.k1PlusK2AsExpr, rawMap);
+		Map<String, ?> cleaned = fromResource.simplifyProperties(IAdhocTestConstants.k1PlusK2AsExpr, rawMap);
 
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(5)
@@ -526,33 +532,33 @@ public class TestMeasuresSetFromResource {
 				.containsEntry("combinationOptions",
 						Map.of("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)"))
 				.containsEntry("name", "k1PlusK2AsExpr")
-				.containsEntry("type", "combinator")
+				.containsEntry("type", ".Combinator")
 				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
 	}
 
 	@Test
 	public void testRemoveUselessProperties_Bucketor() {
-		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.sum_MaxK1K2ByA, Map.class);
-		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.sum_MaxK1K2ByA, rawMap);
+		Map<String, ?> cleaned = fromResource.simplifyProperties(IAdhocTestConstants.sum_MaxK1K2ByA, rawMap);
 
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(6)
 				.containsEntry("aggregationKey", "SUM")
 				.containsEntry("combinationKey", "MAX")
-				.containsEntry("groupBy", Set.of("a"))
+				.containsEntry("groupBy", Map.of("columns", List.of("a")))
 				.containsEntry("name", "sum_maxK1K2ByA")
-				.containsEntry("type", "bucketor")
+				.containsEntry("type", ".Bucketor")
 				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
 	}
 
 	@Test
 	public void testRemoveUselessProperties_Filtrator() {
-		ObjectMapper objectMapper = MeasuresSetFromResource.makeObjectMapper("json");
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.filterK1onA1, Map.class);
-		Map<String, ?> cleaned = fromResource.removeUselessProperties(IAdhocTestConstants.filterK1onA1, rawMap);
+		Map<String, ?> cleaned = fromResource.simplifyProperties(IAdhocTestConstants.filterK1onA1, rawMap);
 
 		Assertions.assertThat((Map) cleaned)
 				.hasSize(4)
@@ -564,7 +570,7 @@ public class TestMeasuresSetFromResource {
 								.put("valueMatcher", Map.of("operand", "a1", "type", "equals"))
 								.build())
 				.containsEntry("name", "filterK1onA1")
-				.containsEntry("type", "filtrator")
+				.containsEntry("type", ".Filtrator")
 				.containsEntry("underlying", "k1");
 	}
 }

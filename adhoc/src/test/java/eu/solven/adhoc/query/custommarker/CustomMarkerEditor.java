@@ -30,10 +30,10 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.ITransformator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.ITransformator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

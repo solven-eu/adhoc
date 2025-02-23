@@ -35,9 +35,9 @@ import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenServic
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableJwtWebFluxSecurity;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableMetadataController;
-import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import lombok.extern.slf4j.Slf4j;
 
 // https://docs.spring.io/spring-security/reference/reactive/oauth2/login/advanced.html#webflux-oauth2-login-advanced-userinfo-endpoint

@@ -33,11 +33,11 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.CalculatedColumn;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -87,7 +87,7 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 						AdhocQuery.builder()
 								.measure(k1Sum.getName())
 								.groupBy(GroupByColumns
-										.of(CalculatedColumn.builder().column("first_letter").sql("word[1]").build()))
+										.of(CalculatedColumn.builder().name("first_letter").sql("word[1]").build()))
 								.debug(true)
 								.build(),
 						measureBag,

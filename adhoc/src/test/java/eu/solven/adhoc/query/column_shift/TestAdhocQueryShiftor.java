@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.step.IFilterEditor;
-import eu.solven.adhoc.measure.step.Shiftor;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.storage.ITabularView;

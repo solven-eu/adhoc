@@ -223,5 +223,31 @@
 				<module>atoti</module>
 			</modules>
 		</profile>
+
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>fast</id>
+			<properties>
+				<!-- Code style -->
+				<checkstyle.skip>true</checkstyle.skip>
+				<pmd.skip>true</pmd.skip>
+				<cpd.skip>true</cpd.skip>
+				<spotbugs.skip>true</spotbugs.skip>
+				<maven.javadoc.skip>true</maven.javadoc.skip>
+				<license.skip>true</license.skip>
+				<formatter.skip>true</formatter.skip>
+				<impsort.skip>true</impsort.skip>
+				<cleanthat.skip>true</cleanthat.skip>
+				<skip.npm.style>true</skip.npm.style>
+				<spotless.skip>true</spotless.skip>
+
+				<!-- Dependency will be checked with style -->
+				<enforcer.skip>true</enforcer.skip>
+
+				<skipTests>true</skipTests>
+				<skipITs>true</skipITs>
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+		</profile>
 	</profiles>
 </project>

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webflux.api;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
+import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
 import java.util.Map;
 
@@ -35,10 +36,12 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.beta.schema.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
-import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -62,7 +65,13 @@ public class PivotableApiRouter {
 	public RouterFunction<ServerResponse> apiRoutes(PivotableEntrypointsHandler entrypointsHandler,
 			PivotableQueryHandler queryHandler) {
 
-		// Builder accountId = parameterBuilder().name("account_id").description("Search for a specific accountId");
+		var cubeId = parameterBuilder().name("cube_id")
+				.description("Search for a specific cubeId")
+				.example("12345678-1234-1234-1234-123456789012");
+
+		var cubeName = parameterBuilder().name("cube_name")
+				.description("Search for a specific cubeName")
+				.example("someCubeName");
 
 		return SpringdocRouteBuilder.route()
 				.GET(json("/entrypoints"),
@@ -71,6 +80,12 @@ public class PivotableApiRouter {
 								// .parameter(gameId)
 								.response(responseBuilder().responseCode("200")
 										.implementationArray(AdhocEntrypointMetadata.class)))
+				.GET(json("/schemas"),
+						entrypointsHandler::entrypointSchema,
+						ops -> ops.operationId("loadMetadata")
+								// .parameter(gameId)
+								.response(responseBuilder().responseCode("200")
+										.implementationArray(SchemaMetadata.class)))
 
 				.GET(json("/cubes/metadata"),
 						queryHandler::loadMetadata,
@@ -79,16 +94,33 @@ public class PivotableApiRouter {
 								.response(responseBuilder().responseCode("200").implementation(Map.class)))
 
 				// simple AdhocQuery with a GET
-				.GET(json("/cubes/execute"),
+				.GET(json("/cubes/query"),
 						queryHandler::executeFlatQuery,
 						ops -> ops.operationId("executeQuery")
-								.response(responseBuilder().responseCode("200").implementation(ITabularView.class)))
+								// the targeted cube can be referred through id or name
+								.parameter(cubeId)
+								.parameter(cubeName)
+
+								.parameter(parameterBuilder().name("measure")
+										.description("Some pre-aggregated or transformed measure")
+										.example("delta.EUR"))
+								.parameter(parameterBuilder().name("group_by")
+										.description("Columns which are decomposed")
+										.example("ccy,country"))
+								.parameter(parameterBuilder().name("column_color")
+										.description("A filter expression for column `color`")
+										.example("red"))
+								.response(responseBuilder().responseCode("200")
+										.implementation(ListBasedTabularView.class)))
 
 				// complex AdhocQuery with a POST
-				.POST(json("/cubes/execute"),
+				.POST(json("/cubes/query"),
 						queryHandler::executeQuery,
 						ops -> ops.operationId("executeQuery")
-								.response(responseBuilder().responseCode("200").implementation(ITabularView.class)))
+								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
+										.implementation(QueryOnSchema.class))
+								.response(responseBuilder().responseCode("200")
+										.implementation(ListBasedTabularView.class)))
 
 				.build();
 

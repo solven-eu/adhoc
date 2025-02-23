@@ -35,12 +35,12 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
+import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
-import eu.solven.adhoc.pivotable.account.login.IPivottableTestConstants;
+import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +64,7 @@ public class PivotableOAuth2UserService extends DefaultReactiveOAuth2UserService
 	public static final String PROVIDERID_GOOGLE = "google";
 
 	@Deprecated
-	public static final String PROVIDERID_TEST = IPivottableTestConstants.PROVIDERID_TEST;
+	public static final String PROVIDERID_TEST = IPivotableTestConstants.PROVIDERID_TEST;
 
 	// private final AccountsStore accountsStore;
 	final PivotableUsersRegistry usersRegistry;

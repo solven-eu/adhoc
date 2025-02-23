@@ -27,67 +27,71 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
+import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
-import eu.solven.adhoc.measure.step.IFilterEditor;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	@Override
-    public ICombination makeCombination(String key, Map<String, ?> options) {
-        return switch (key) {
-            case SumCombination.KEY: {
-                yield new SumCombination();
-            }
-            case MaxCombination.KEY: {
-                yield new MaxCombination();
-            }
-            case DivideCombination.KEY: {
-                yield new DivideCombination(options);
-            }
-            case ExpressionCombination.KEY: {
-                yield ExpressionCombination.parse(options);
-            }
-            default:
-                yield defaultCombination(key, options);
-        };
-    }
+	public ICombination makeCombination(String key, Map<String, ?> options) {
+		return switch (key) {
+		case SumCombination.KEY: {
+			yield new SumCombination();
+		}
+		case MaxCombination.KEY: {
+			yield new MaxCombination();
+		}
+		case DivideCombination.KEY: {
+			yield new DivideCombination(options);
+		}
+		case ExpressionCombination.KEY: {
+			yield ExpressionCombination.parse(options);
+		}
+		default:
+			yield defaultCombination(key, options);
+		};
+	}
 
 	protected ICombination defaultCombination(String className, Map<String, ?> options) {
 		return makeWithmapOrEmpty(ICombination.class, className, options);
 	}
 
 	@Override
-    public IAggregation makeAggregation(String key, Map<String, ?> options) {
-        return switch (key) {
-            case SumAggregation.KEY: {
-                yield new SumAggregation();
-            }
-			case MaxAggregator.KEY: {
-				yield new MaxAggregator();
-			}
-			case CountAggregation.KEY: {
-				yield new CountAggregation();
-			}
-			case ExpressionAggregation.KEY: {
-				yield new ExpressionAggregation();
-			}
-            default:
-                yield defaultAggregation(key, options);
-        };
-    }
+	public IAggregation makeAggregation(String key, Map<String, ?> options) {
+		return switch (key) {
+		case SumAggregation.KEY: {
+			yield new SumAggregation();
+		}
+		case MaxAggregation.KEY: {
+			yield new MaxAggregation();
+		}
+		case MinAggregation.KEY: {
+			yield new MinAggregation();
+		}
+		case CountAggregation.KEY: {
+			yield new CountAggregation();
+		}
+		case ExpressionAggregation.KEY: {
+			yield new ExpressionAggregation();
+		}
+		default:
+			yield defaultAggregation(key, options);
+		};
+	}
 
 	protected IAggregation defaultAggregation(String className, Map<String, ?> options) {
 		return makeWithmapOrEmpty(IAggregation.class, className, options);
@@ -121,18 +125,18 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	}
 
 	@Override
-    public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-        return switch (key) {
-            case AdhocIdentity.KEY: {
-                yield new AdhocIdentity();
-            }
-            case LinearDecomposition.KEY: {
-                yield new LinearDecomposition(options);
-            }
-            default:
-                yield defaultDecomposition(key, options);
-        };
-    }
+	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
+		return switch (key) {
+		case AdhocIdentity.KEY: {
+			yield new AdhocIdentity();
+		}
+		case LinearDecomposition.KEY: {
+			yield new LinearDecomposition(options);
+		}
+		default:
+			yield defaultDecomposition(key, options);
+		};
+	}
 
 	protected IDecomposition defaultDecomposition(String key, Map<String, ?> options) {
 		Class<? extends IDecomposition> asClass;
@@ -155,11 +159,11 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	@Override
 	public IFilterEditor makeEditor(String key, Map<String, ?> options) {
 		return switch (key) {
-			case AdhocIdentity.KEY: {
-				yield f -> f;
-			}
-			default:
-				yield defaultEditor(key, options);
+		case AdhocIdentity.KEY: {
+			yield f -> f;
+		}
+		default:
+			yield defaultEditor(key, options);
 		};
 	}
 

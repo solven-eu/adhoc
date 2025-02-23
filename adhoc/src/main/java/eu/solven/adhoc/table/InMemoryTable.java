@@ -23,21 +23,30 @@
 package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.measure.step.Aggregator;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.AggregatedRecordOverMaps;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -92,6 +101,11 @@ public class InMemoryTable implements IAdhocTableWrapper {
 							.stream()
 							.filter(a -> a.getColumnName().equals(aggregatedColumn))
 							.forEach(a -> aggregates.put(a.getName(), aggregatorUnderlyingValue));
+				} else if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
+					tableQuery.getAggregators()
+							.stream()
+							.filter(a -> a.getColumnName().equals(aggregatedColumn))
+							.forEach(a -> aggregates.put(a.getName(), 1L));
 				}
 			});
 
@@ -106,7 +120,43 @@ public class InMemoryTable implements IAdhocTableWrapper {
 
 	@Override
 	public Map<String, Class<?>> getColumns() {
-		return rows.stream().flatMap(row -> row.keySet().stream()).collect(Collectors.toMap(c -> c, c -> Object.class));
+		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
+
+		rows.stream().flatMap(row -> row.entrySet().stream()).forEach(e -> {
+			columnToClasses.put(e.getKey(), e.getValue().getClass());
+		});
+
+		Map<String, Class<?>> columnToClass = new HashMap<>();
+
+		columnToClasses.asMap().forEach((column, classes) -> {
+			if (classes.size() == 1) {
+				columnToClass.put(column, classes.iterator().next());
+			} else if (classes.isEmpty()) {
+				throw new IllegalStateException("No class for column=%s in %s".formatted(column, columnToClasses));
+			} else {
+				if (classes.stream().allMatch(c -> Number.class.isAssignableFrom(c))) {
+					columnToClass.put(column, Number.class);
+				} else if (classes.stream().allMatch(c -> CharSequence.class.isAssignableFrom(c))) {
+					columnToClass.put(column, CharSequence.class);
+				} else {
+					columnToClass.put(column, Object.class);
+				}
+			}
+		});
+
+		return columnToClass;
+	}
+
+	@Override
+	public String toString() {
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", rows.size());
+
+		AtomicInteger index = new AtomicInteger();
+
+		stream().limit(AdhocUnsafe.limitOrdinalToString)
+				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
+
+		return toStringHelper.toString();
 	}
 
 }

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.groupby;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
@@ -37,9 +38,10 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
@@ -53,20 +55,37 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Jacksonized
+// @JsonSerialize(using = GroupByColumnsSerializer2.class)
+// @JsonDeserialize(using = GroupByColumnsDeserializer2.class)
 @Slf4j
 public class GroupByColumns implements IAdhocGroupBy {
-	@Default
+	// @JsonSerialize(using = GroupByColumnsSerializer.class)
+	// @JsonDeserialize(using = GroupByColumnsDeserializer.class)
+	// @Default
+	// @NonNull
+	// final NavigableMap<String, IAdhocColumn> nameToColumn = new TreeMap<>();
+
+	@Singular
 	@NonNull
-	final NavigableMap<String, IAdhocColumn> nameToColumn = new TreeMap<>();
+	final List<IAdhocColumn> columns;
+
+	@Override
+	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+		return namedColumns(columns);
+	}
 
 	@Override
 	public String toString() {
 		if (isGrandTotal()) {
 			return "grandTotal";
-		} else if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {
+		}
+
+		NavigableMap<String, IAdhocColumn> nameToColumn = getNameToColumn();
+
+		if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {
 			return nameToColumn.values()
 					.stream()
-					.map(c -> ((ReferencedColumn) c).getColumn())
+					.map(c -> ((ReferencedColumn) c).getName())
 					.collect(Collectors.joining(", ", "(", ")"));
 		}
 
@@ -81,13 +100,19 @@ public class GroupByColumns implements IAdhocGroupBy {
 	}
 
 	public static IAdhocGroupBy of(Collection<? extends IAdhocColumn> columns) {
-		NavigableMap<String, IAdhocColumn> nameToColumn = new TreeMap<>();
+		namedColumns(columns);
+
+		return GroupByColumns.builder().columns(List.copyOf(columns)).build();
+	}
+
+	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
+		NavigableMap<String, T> nameToColumn = new TreeMap<>();
 
 		columns.forEach(column -> {
-			String columnName = column.getColumn();
+			String columnName = column.getName();
 			if (nameToColumn.containsKey(columnName)) {
 				if (nameToColumn.get(columnName).equals(column)) {
-					log.trace("Column={} is expressed multiple times", column);
+					log.trace("Column={} is expressed multiple times in {}", column, columns);
 				} else {
 					throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
 				}
@@ -95,7 +120,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 			nameToColumn.put(columnName, column);
 		});
 
-		return GroupByColumns.builder().nameToColumn(nameToColumn).build();
+		return nameToColumn;
 	}
 
 	public static IAdhocGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
@@ -110,24 +135,24 @@ public class GroupByColumns implements IAdhocGroupBy {
 		return named(Lists.asList(column, moreColumns));
 	}
 
-	public static class GroupByColumnsBuilder {
-		/**
-		 * 
-		 * @param column
-		 *            ad additional column to groupBy
-		 * @return the mutated builder
-		 */
-		public GroupByColumnsBuilder column(IAdhocColumn column) {
-			NavigableMap<String, IAdhocColumn> currentColumns = this.build().getNameToColumn();
-
-			NavigableMap<String, IAdhocColumn> newColumns = new TreeMap<>(currentColumns);
-			newColumns.put(column.getColumn(), column);
-
-			this.nameToColumn(newColumns);
-
-			return this;
-		}
-	}
+	// public static class GroupByColumnsBuilder {
+	// /**
+	// *
+	// * @param column
+	// * an additional column to groupBy
+	// * @return the mutated builder
+	// */
+	// public GroupByColumnsBuilder column(IAdhocColumn column) {
+	// NavigableMap<String, IAdhocColumn> currentColumns = this.build().getNameToColumn();
+	//
+	// NavigableMap<String, IAdhocColumn> newColumns = new TreeMap<>(currentColumns);
+	// newColumns.put(column.getColumn(), column);
+	//
+	// this.nameToColumn(newColumns);
+	//
+	// return this;
+	// }
+	// }
 
 	/**
 	 * 

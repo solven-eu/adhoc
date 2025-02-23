@@ -28,7 +28,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.step.IFilterEditor;
+import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;

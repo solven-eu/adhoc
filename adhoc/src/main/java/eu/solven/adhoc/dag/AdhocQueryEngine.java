@@ -51,16 +51,16 @@ import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.measure.EmptyMeasure;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Columnator;
-import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.ITransformator;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.EmptyMeasure;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -193,12 +193,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
 
-		ITabularView mapBasedTabularView =
-				toTabularView(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
+		ITabularView tabularView = toTabularView(executingQueryContext, fromQueriedToAggregates, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
 
-		return mapBasedTabularView;
+		return tabularView;
 	}
 
 	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
@@ -313,11 +312,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return toImmutableChunks(query, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery dbQuery,
+	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery tableQuery,
 			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, SliceToValue> queryStepToValues = new HashMap<>();
-		dbQuery.getAggregators().forEach(aggregator -> {
-			AdhocQueryStep queryStep = AdhocQueryStep.edit(dbQuery).measure(aggregator).build();
+		tableQuery.getAggregators().forEach(aggregator -> {
+			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
 
 			MultiTypeStorage<AdhocSliceAsMap> storage =
 					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
@@ -326,11 +325,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// Typically happens when a filter reject completely one of the underlying
 				// measure
 				storage = MultiTypeStorage.empty();
+			} else {
+				// Typically converts a CountHolder into the count as a `long`
+				storage.purgeAggregationCarriers();
 			}
 
 			eventBus.post(
 					QueryStepIsCompleted.builder().querystep(queryStep).nbCells(storage.size()).source(this).build());
-			log.debug("dbQuery={} generated a column with size={}", dbQuery, storage.size());
+			log.debug("tableQuery={} generated a column with size={}", tableQuery, storage.size());
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to
@@ -628,11 +630,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			explainDagSteps(dagHolder);
 		}
 
-		return queryStepsDagToDbQueries(executingQueryContext, dagHolder);
+		return queryStepsDagToTableQueries(executingQueryContext, dagHolder);
 
 	}
 
-	protected Set<TableQuery> queryStepsDagToDbQueries(ExecutingQueryContext executingQueryContext,
+	protected Set<TableQuery> queryStepsDagToTableQueries(ExecutingQueryContext executingQueryContext,
 			DagHolder dagHolder) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
@@ -675,7 +677,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected DagHolder makeQueryStepsDag(ExecutingQueryContext executingQueryContext) {
-		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext.getQuery());
+		QueryStepsDagsBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext);
 
 		// Add explicitly requested steps
 		Set<IMeasure> queriedMeasures = convertToQueriedSteps(executingQueryContext);
@@ -712,8 +714,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		Set<ReferencedMeasure> measureRefs = executingQueryContext.getQuery().getMeasureRefs();
 		Set<IMeasure> queriedMeasures;
 		if (measureRefs.isEmpty()) {
-			IMeasure countAsterisk = defaultMeasure();
-			queriedMeasures = Set.of(countAsterisk);
+			IMeasure defaultMeasure = defaultMeasure();
+			queriedMeasures = Set.of(defaultMeasure);
 		} else {
 			queriedMeasures = measureRefs.stream()
 					.map(ref -> executingQueryContext.resolveIfRef(ref))
@@ -725,17 +727,18 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	// Not a single measure is selected: we are doing a DISTINCT query
 
 	/**
-	 *
+	 * This measure is used to materialize slices.
+	 * 
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
-		return Aggregator.builder().name("COUNT_ASTERISK").aggregationKey("COUNT").columnName("*").build();
+		return Aggregator.countAsterisk();
 		// return
 		// Aggregator.builder().name("CONSTANT_1").aggregationKey("COUNT").columnName("*").build();
 	}
 
-	protected QueryStepsDagsBuilder makeQueryStepsDagsBuilder(IAdhocQuery adhocQuery) {
-		return new QueryStepsDagsBuilder(adhocQuery);
+	protected QueryStepsDagsBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {
+		return new QueryStepsDagsBuilder(executingQueryContext.getTable().getName(), executingQueryContext.getQuery());
 	}
 
 	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {

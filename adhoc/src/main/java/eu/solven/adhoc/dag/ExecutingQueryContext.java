@@ -28,10 +28,10 @@ import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.measure.EmptyMeasure;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.EmptyMeasure;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -77,9 +77,11 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 
 		if (options.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
 			if (measure instanceof ReferencedMeasure ref) {
-				return this.measures.resolveIfRefOpt(ref).orElseGet(() -> new EmptyMeasure(ref.getRef()));
+				return this.measures.resolveIfRefOpt(ref)
+						.orElseGet(() -> EmptyMeasure.builder().name(ref.getRef()).build());
 			} else {
-				return this.measures.resolveIfRefOpt(measure).orElseGet(() -> new EmptyMeasure(measure.getName()));
+				return this.measures.resolveIfRefOpt(measure)
+						.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
 			}
 		} else {
 			return this.measures.resolveIfRef(measure);

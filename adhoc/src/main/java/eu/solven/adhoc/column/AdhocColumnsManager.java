@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -52,7 +52,6 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
-import eu.solven.adhoc.query.groupby.CalculatedColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecord;
@@ -229,7 +228,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 		List<IAdhocColumn> transcoded = nameToColumn.values().stream().<IAdhocColumn>map(c -> {
 			if (c instanceof ReferencedColumn referencedColumn) {
-				return ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getColumn()));
+				return ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getName()));
 			} else if (c instanceof CalculatedColumn calculatedColumn) {
 				eventBus.post(AdhocLogEvent.builder()
 						.warn(true)

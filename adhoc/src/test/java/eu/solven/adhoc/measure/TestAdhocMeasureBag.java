@@ -27,7 +27,7 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.model.Aggregator;
 
 public class TestAdhocMeasureBag {
 

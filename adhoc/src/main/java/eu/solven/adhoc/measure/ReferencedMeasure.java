@@ -27,6 +27,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import eu.solven.adhoc.measure.model.IMeasure;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

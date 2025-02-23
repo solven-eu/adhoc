@@ -27,7 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -64,6 +65,10 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	 */
 	public AdhocMeasureBag addMeasure(IMeasure measure) {
 		String measureName = measure.getName();
+
+		if (measureName == null) {
+			throw new IllegalArgumentException("m=%s has a null name".formatted(measure));
+		}
 
 		nameToMeasure.put(measureName, measure);
 

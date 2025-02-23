@@ -14,6 +14,8 @@ spring:
                 - inmemory
             default_server:
                 - inject_default_games
+                - self_entrypoint
+                - simple_datasets
             prodmode:
                 - default_server
             heroku:

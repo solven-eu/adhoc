@@ -34,7 +34,6 @@ import org.springframework.session.ReactiveSessionRepository;
 import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
-import eu.solven.adhoc.pivotable.app.InjectPivotableEntrypointsConfig;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
@@ -60,7 +59,7 @@ import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 		ActiveRefreshTokens.class,
 
 		InjectPivotableAccountsConfig.class,
-		InjectPivotableEntrypointsConfig.class,
+// InjectPivotableEntrypointsConfig.class,
 
 })
 public class PivotableServerSecurityApplication {

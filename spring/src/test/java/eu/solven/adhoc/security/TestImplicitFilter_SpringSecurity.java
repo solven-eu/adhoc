@@ -38,7 +38,7 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.InMemoryTable;

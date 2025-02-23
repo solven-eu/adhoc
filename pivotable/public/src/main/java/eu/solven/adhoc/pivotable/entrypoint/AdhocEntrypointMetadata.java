@@ -45,6 +45,10 @@ public class AdhocEntrypointMetadata implements IServerMetadataConstants {
 	String name;
 	String url;
 
+	/**
+	 * 
+	 * @return an entrypoint provided by Pivotable instance itself.
+	 */
 	public static AdhocEntrypointMetadata localhost() {
 		return AdhocEntrypointMetadata.builder()
 				.id(SELF_ENTRYPOINT_ID)

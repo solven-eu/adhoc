@@ -42,7 +42,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -96,10 +96,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	public void testEmptyDb() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table.streamSlices(qK1).toList();
 
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
-		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
+		Assertions.assertThat(tableStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
 	}
 
 	@Test
@@ -107,9 +107,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table.streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}
 
 	@Test
@@ -130,9 +130,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table.streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
+		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
 
 	@Test
@@ -151,12 +151,12 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(TableQuery.edit(qK1)
+		List<Map<String, ?>> tableStream = table.streamSlices(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching("a1").build())
 				.explain(true)
 				.build()).toList();
 
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
 	}
 
 	@Test
@@ -172,12 +172,12 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(TableQuery.edit(qK1)
+		List<Map<String, ?>> tableStream = table.streamSlices(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.explain(true)
 				.build()).toList();
 
-		Assertions.assertThat(dbStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
+		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
 
 	@Test
@@ -193,10 +193,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> dbStream =
+		List<Map<String, ?>> tableStream =
 				table.streamSlices(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
-		Assertions.assertThat(dbStream)
+		Assertions.assertThat(tableStream)
 				.hasSize(3)
 				.anySatisfy(
 						m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", BigDecimal.valueOf(0D + 123))))
@@ -219,11 +219,11 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.values("a1", 123)
 				.execute();
 
-		List<Map<String, ?>> dbStream = table.streamSlices(
+		List<Map<String, ?>> tableStream = table.streamSlices(
 				TableQuery.edit(qK1).filter(ColumnFilter.builder().column("with space").matching("a1").build()).build())
 				.toList();
 
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}
 
 	@Test
@@ -440,6 +440,29 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	}
 
 	@Test
+	public void testAdhocQuery_countAsterisk() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+
+		amb.addMeasure(countAsterisk);
+
+		{
+			AdhocQuery query = AdhocQuery.builder().measure(countAsterisk).build();
+
+			ITabularView result = wrapInCube(amb).execute(query);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.hasSize(1)
+					.containsEntry(Map.of(), Map.of(countAsterisk.getName(), 0L + 2));
+		}
+	}
+
+	@Test
 	public void testDistinct() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
@@ -457,8 +480,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of("a", "a1"), Map.of("COUNT_ASTERISK", 2L))
-				.containsEntry(Map.of("a", "a2"), Map.of("COUNT_ASTERISK", 1L));
+				.containsEntry(Map.of("a", "a1"), Map.of("count(*)", 2L))
+				.containsEntry(Map.of("a", "a2"), Map.of("count(*)", 1L));
 	}
 
 	@Test

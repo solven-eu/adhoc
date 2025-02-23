@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
-import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.storage.ITabularView;

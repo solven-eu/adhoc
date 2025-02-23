@@ -50,7 +50,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, IPivotableSpringProfiles.P_INMEMORY, IPivotableSpringProfiles.P_SELF_ENTRYPOINT })
+@ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE,
+		IPivotableSpringProfiles.P_INMEMORY,
+		IPivotableSpringProfiles.P_SELF_ENTRYPOINT })
 @Slf4j
 public class TestPivotableApiRouter {
 
@@ -118,7 +120,7 @@ public class TestPivotableApiRouter {
 		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
 			webTestClient.get()
 
-					.uri(v1 + "/games?game_id=undefined")
+					.uri(v1 + "/entrypoints?entrypoint_id=undefined")
 					.accept(MediaType.APPLICATION_JSON)
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateAccessToken())
 					.exchange()
@@ -134,7 +136,7 @@ public class TestPivotableApiRouter {
 
 		webTestClient.get()
 
-				.uri(v1 + "/games?game_id=" + AdhocEntrypointMetadata.localhost().getId())
+				.uri(v1 + "/entrypoints?entrypoint_id=" + AdhocEntrypointMetadata.localhost().getId())
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateAccessToken())
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()

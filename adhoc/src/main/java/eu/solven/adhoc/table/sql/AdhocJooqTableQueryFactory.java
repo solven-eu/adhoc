@@ -49,11 +49,12 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -179,7 +180,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	}
 
 	protected Field<Object> columnAsField(IAdhocColumn column, boolean isGroupBy) {
-		String columnName = column.getColumn();
+		String columnName = column.getName();
 		Field<Object> field;
 
 		if (column instanceof IHasSqlExpression hasSql) {
@@ -200,7 +201,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	}
 
 	protected boolean isExpression(String columnName) {
-		if (CountAggregation.ASTERISK.equals(columnName)) {
+		if (ICountMeasuresConstants.ASTERISK.equals(columnName)) {
 			// Typically on `COUNT(*)`
 			return true;
 		} else if (columnName.indexOf('"') >= 0) {
@@ -281,7 +282,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
 
 				sqlAggFunction = DSL.sum(field);
-			} else if (MaxAggregator.KEY.equals(aggregationKey)) {
+			} else if (MaxAggregation.KEY.equals(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.max(field);
 			} else if (CountAggregation.KEY.equals(aggregationKey)) {

@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TestMaxAggregator {
-	MaxAggregator a = new MaxAggregator();
+	MaxAggregation a = new MaxAggregation();
 
 	@Test
 	public void testNull() {

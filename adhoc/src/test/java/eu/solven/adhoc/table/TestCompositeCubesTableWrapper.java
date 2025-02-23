@@ -32,8 +32,8 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
-import eu.solven.adhoc.measure.step.Aggregator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -60,7 +60,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
 	@Test
 	public void testAddUnderlyingMeasures_sameMeasurenameInUnderlyingAndInComposite() {
-		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregator.KEY).build();
+		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
 
 		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 

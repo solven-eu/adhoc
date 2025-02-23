@@ -27,23 +27,34 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.step.ITransformator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.ITransformator;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Used to check the behavior of {@link MeasuresSetFromResource} on a project custom {@link IMeasure}
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties({ "underlyingNames" })
+@Builder
+@Jacksonized
 public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasures {
-	@JsonIgnore
-	@Override
-	public String getName() {
-		return "someCustomName";
-	}
+
+	// This is a standard measure field
+	@Getter
+	@NonNull
+	final String name;
+
+	// This is a custom field
+	final String customProperty;
 
 	@JsonIgnore
 	@Override
@@ -51,6 +62,9 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 		return Set.of("someCustomTag");
 	}
 
+	// It is useful to show underlying names, even if it may not be parsed back
+	// (For documentation purposes)
+	@JsonProperty(access = Access.READ_ONLY)
 	@Override
 	public List<String> getUnderlyingNames() {
 		return List.of();

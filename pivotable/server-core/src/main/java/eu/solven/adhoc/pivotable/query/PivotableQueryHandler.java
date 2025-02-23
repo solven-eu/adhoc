@@ -29,8 +29,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.api.AdhocSchemaForApi;
-import eu.solven.adhoc.beta.api.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
+import eu.solven.adhoc.beta.schema.QueryOnSchema;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -38,6 +38,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -57,9 +58,10 @@ public class PivotableQueryHandler {
 		return queryOnSchemaMono.map(queryOnSchema -> {
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery(), queryOnSchema.getOptions());
 		})
+				.map(view -> ListBasedTabularView.load(view))
 				.flatMap(view -> ServerResponse.ok()
 						.contentType(MediaType.APPLICATION_JSON)
-						.body(BodyInserters.fromValue(schema.getMetadata())));
+						.body(BodyInserters.fromValue(view)));
 	}
 
 	/**
@@ -83,7 +85,7 @@ public class PivotableQueryHandler {
 	public Mono<ServerResponse> executeFlatQuery(ServerRequest serverRequest) {
 		QueryOnSchema.QueryOnSchemaBuilder queryOnSchemaBuilder = QueryOnSchema.builder();
 
-		String cubeName = AdhocHandlerHelper.string(serverRequest, "cube");
+		String cubeName = AdhocHandlerHelper.string(serverRequest, "cube_name");
 		queryOnSchemaBuilder.cube(cubeName);
 
 		AdhocQuery.AdhocQueryBuilder queryBuilder = AdhocQuery.builder();

@@ -44,16 +44,16 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
-import eu.solven.adhoc.pivotable.account.login.IPivottableTestConstants;
+import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
 import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
-import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import eu.solven.adhoc.pivottable.app.PivotableJackson;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
@@ -89,7 +89,7 @@ public class TestSecurity_WithOAuth2User {
 		// login
 		OAuth2LoginMutator oauth2Login;
 		{
-			PivotableUserPreRegister userPreRegister = IPivottableTestConstants.userPreRegister();
+			PivotableUserPreRegister userPreRegister = IPivotableTestConstants.userPreRegister();
 			oauth2Login = SecurityMockServerConfigurers.mockOAuth2Login().attributes(attributes -> {
 				attributes.put("id", userPreRegister.getRawRaw().getSub());
 				attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());
@@ -283,7 +283,7 @@ public class TestSecurity_WithOAuth2User {
 		// login
 		OAuth2LoginMutator oauth2Login;
 		{
-			PivotableUserPreRegister userPreRegister = IPivottableTestConstants.userPreRegister();
+			PivotableUserPreRegister userPreRegister = IPivotableTestConstants.userPreRegister();
 			oauth2Login = SecurityMockServerConfigurers.mockOAuth2Login().attributes(attributes -> {
 				attributes.put("id", userPreRegister.getRawRaw().getSub());
 				attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());

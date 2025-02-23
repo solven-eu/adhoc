@@ -33,8 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -108,16 +107,11 @@ public class TestAdhocJooqTableQueryFactory {
 
 	@Test
 	public void testCountAsterisk() {
-		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
-				.aggregator(Aggregator.builder()
-						.name("countStar")
-						.columnName(CountAggregation.ASTERISK)
-						.aggregationKey(CountAggregation.KEY)
-						.build())
-				.build());
+		ResultQuery<Record> condition =
+				streamOpener.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(*) "countStar" from "someTableName"
+				select count(*) "count(*)" from "someTableName"
 				""".trim());
 	}
 }

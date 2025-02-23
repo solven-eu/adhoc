@@ -28,7 +28,7 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.step.IFilterEditor;
+import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

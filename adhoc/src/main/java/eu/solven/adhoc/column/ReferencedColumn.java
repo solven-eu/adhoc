@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.column;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -35,15 +37,23 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Value
 @Jacksonized
+@JsonSerialize(using = NameSerializer.class)
 public class ReferencedColumn implements IAdhocColumn {
-	String column;
-
-	@Override
-	public String getColumn() {
-		return column;
-	}
+	String name;
 
 	public static ReferencedColumn ref(String column) {
-		return ReferencedColumn.builder().column(column).build();
+		return ReferencedColumn.builder().name(column).build();
+	}
+
+	public static class ReferencedColumnBuilder {
+
+		public ReferencedColumnBuilder() {
+		}
+
+		// Enable Jackson deserialization given a plain String
+		public ReferencedColumnBuilder(String column) {
+
+			this.name(column);
+		}
 	}
 }

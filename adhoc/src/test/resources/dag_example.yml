@@ -3,20 +3,20 @@
   measures:
     # Simple aggregator
     - name: k1
-      type: aggregator
+      type: .Aggregator
     - name: k2
-      type: aggregator
+      type: .Aggregator
     # Simple combinator with underlyings names
     - name: sum
-      type: combinator
+      type: .Combinator
       underlyings: [k1, k2]
     # Simple combinator with one underlying defined on the fly
     - name: ratio
-      type: combinator
+      type: .Combinator
       combinationKey: DIVIDE
       underlyings:
         # Anonymous node
-        - type: filtrator
+        - type: .Filtrator
           underlying: k1
           filter:
             type: column

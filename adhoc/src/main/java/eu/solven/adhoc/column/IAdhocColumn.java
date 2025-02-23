@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.IHasName;
 
 /**
  * A column, typically used in {@link IAdhocGroupBy}
@@ -33,11 +34,10 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
  * @author Benoit Lacelle
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "type",
+		defaultImpl = ReferencedColumn.class)
 @JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
-public interface IAdhocColumn {
-	/**
-	 * @return the name of given column.
-	 */
-	String getColumn();
+public interface IAdhocColumn extends IHasName {
 }

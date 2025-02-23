@@ -29,11 +29,12 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 
 public class QueryStepsDagsBuilder {
+	final String table;
 	final IAdhocQuery query;
 
 	final Set<AdhocQueryStep> roots = new HashSet<>();
@@ -43,7 +44,8 @@ public class QueryStepsDagsBuilder {
 	// Holds the querySteps which underlying steps are pending for processing
 	final LinkedList<AdhocQueryStep> leftOvers = new LinkedList<>();
 
-	public QueryStepsDagsBuilder(IAdhocQuery query) {
+	public QueryStepsDagsBuilder(String cube, IAdhocQuery query) {
+		this.table = cube;
 		this.query = query;
 	}
 
@@ -80,6 +82,6 @@ public class QueryStepsDagsBuilder {
 	}
 
 	public DagHolder getQueryDag() {
-		return DagHolder.builder().dag(queryDag).queried(roots).build();
+		return DagHolder.builder().table(table).dag(queryDag).queried(roots).build();
 	}
 }

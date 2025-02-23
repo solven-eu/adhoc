@@ -142,7 +142,7 @@ public class LinearDecomposition implements IDecomposition {
 		// If we are requested on the dispatched level, we have to groupBy the input level
 		Set<IAdhocColumn> allGroupBys = new HashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
-		allGroupBys.removeIf(c -> c.getColumn().equals(outputColumn));
+		allGroupBys.removeIf(c -> c.getName().equals(outputColumn));
 
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));

@@ -25,12 +25,12 @@ package eu.solven.adhoc.measure.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
-import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.step.Columnator;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Unfiltrator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 

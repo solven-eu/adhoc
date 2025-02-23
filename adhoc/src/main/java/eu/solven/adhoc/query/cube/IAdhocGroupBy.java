@@ -27,8 +27,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -39,8 +38,9 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * @author Benoit Lacelle
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({ @JsonSubTypes.Type(value = GroupByColumns.class, name = "columns"), })
+// @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+// @JsonSubTypes({ @JsonSubTypes.Type(value = GroupByColumns.class, name = "columns"), })
+@JsonDeserialize(as = GroupByColumns.class)
 public interface IAdhocGroupBy {
 	IAdhocGroupBy GRAND_TOTAL = GroupByColumns.grandTotal();
 
@@ -69,5 +69,7 @@ public interface IAdhocGroupBy {
 	 * 
 	 * @return the mapping from the groupedBy column to the definition of given column.
 	 */
+	// @JsonIgnore as only the columns would be serialized. (name->column) is syntactic sugar.
+	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getNameToColumn();
 }

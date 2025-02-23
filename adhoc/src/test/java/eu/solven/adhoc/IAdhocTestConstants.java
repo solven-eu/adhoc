@@ -28,14 +28,13 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Dispatchor;
-import eu.solven.adhoc.measure.step.Filtrator;
-import eu.solven.adhoc.measure.step.Shiftor;
-import eu.solven.adhoc.measure.step.Unfiltrator;
-import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -98,9 +97,5 @@ public interface IAdhocTestConstants {
 			.aggregationKey(SumAggregation.KEY)
 			.build();
 
-	Aggregator countAsterisk = Aggregator.builder()
-			.name("countAsterisk")
-			.aggregationKey(CountAggregation.KEY)
-			.columnName(CountAggregation.ASTERISK)
-			.build();
+	Aggregator countAsterisk = Aggregator.countAsterisk();
 }

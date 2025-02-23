@@ -32,10 +32,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Combinator;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -133,8 +133,8 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregator.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregator.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 

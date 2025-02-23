@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.measure.step.ITransformator;
-import eu.solven.adhoc.measure.step.UnderlyingQueryStepHelpers;
+import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;

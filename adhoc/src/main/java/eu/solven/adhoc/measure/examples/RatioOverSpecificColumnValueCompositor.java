@@ -25,11 +25,11 @@ package eu.solven.adhoc.measure.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Filtrator;
-import eu.solven.adhoc.measure.step.Unfiltrator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 

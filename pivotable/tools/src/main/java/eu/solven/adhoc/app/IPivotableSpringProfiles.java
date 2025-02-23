@@ -49,6 +49,7 @@ public interface IPivotableSpringProfiles {
 
 	// The server hosting pivotable also host an adhoc entrypoint
 	String P_SELF_ENTRYPOINT = "self_entrypoint";
+	String P_SIMPLE_DATASETS = "simple_datasets";
 
 	// Provides unsafe security settings (like DEV OAuth2 providers, and an unsafe JWT signingKey)
 	String P_UNSAFE_SERVER = "unsafe_server";

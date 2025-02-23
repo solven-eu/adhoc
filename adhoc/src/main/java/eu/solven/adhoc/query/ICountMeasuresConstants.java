@@ -24,8 +24,8 @@ package eu.solven.adhoc.query;
 
 public interface ICountMeasuresConstants {
 
-	// Typically used in a COUNT(*) query
-	String STAR = "*";
+	// A marker for the special columnName `*`, typically used in `COUNT(*)`
+	String ASTERISK = "*";
 
 	// IMeasuredAxis COUNT_MEASURE = new MeasuredAxis(STAR, IStandardOperators.COUNT);
 }

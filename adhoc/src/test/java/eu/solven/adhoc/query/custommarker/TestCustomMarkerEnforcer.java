@@ -42,7 +42,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.step.Bucketor;
+import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;

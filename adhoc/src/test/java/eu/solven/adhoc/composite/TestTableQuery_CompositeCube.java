@@ -39,8 +39,8 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.measure.step.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -237,8 +237,8 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				#0 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
 				|\\- #1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
 				\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
-				#0 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
-				#1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+				#0 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+				#1 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
 				#0 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
 		Assertions.assertThat(messages).hasSize(6);
 	}

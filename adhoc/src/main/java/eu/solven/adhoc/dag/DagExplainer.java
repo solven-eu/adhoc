@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +54,23 @@ public class DagExplainer {
 		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
 		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
 
-		dag.getQueried().forEach(rootStep -> {
+		// For each explicit queryStep
+		dag.getQueried().stream().sorted(this.orderForExplain()).forEach(rootStep -> {
 			printStepAndUnderlyings(dag, stepToIndentation, stepToReference, rootStep, Optional.empty(), true);
 		});
 	}
 
-	private void printStepAndUnderlyings(DagHolder dagHolder,
+	/**
+	 * 
+	 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN
+	 */
+	protected Comparator<AdhocQueryStep> orderForExplain() {
+		return Comparator.<AdhocQueryStep, String>comparing(qr -> qr.getMeasure().toString())
+				.thenComparing(qr -> qr.getFilter().toString())
+				.thenComparing(qr -> qr.getGroupBy().toString());
+	}
+
+	protected void printStepAndUnderlyings(DagHolder dagHolder,
 			Map<AdhocQueryStep, String> stepToIndentation,
 			Map<AdhocQueryStep, Integer> stepToReference,
 			AdhocQueryStep step,
@@ -96,7 +108,6 @@ public class DagExplainer {
 		}
 
 		if (!isReferenced) {
-
 			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
 			List<DefaultEdge> underlyings = dag.outgoingEdgesOf(step).stream().toList();
 
@@ -125,7 +136,7 @@ public class DagExplainer {
 		}
 	}
 
-	private String toString(AdhocQueryStep step) {
+	protected String toString(AdhocQueryStep step) {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("m=")

@@ -22,22 +22,20 @@
  */
 package eu.solven.adhoc.pivotable.webflux;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import eu.solven.adhoc.beta.api.AdhocSchemaForApi;
 import eu.solven.adhoc.pivotable.cube.CubesHandler;
 import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
+import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableFakeUserRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
+import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
 import lombok.extern.slf4j.Slf4j;
 
 @Import({
@@ -67,11 +65,5 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Configuration
 public class PivotableWebFluxSpringConfig {
-
-	// A custom project may prepare a schema with relevant tables, measures, etc
-	@Bean
-	AdhocSchemaForApi adhocSchemaForApi() {
-		return AdhocSchemaForApi.builder().build();
-	}
 
 }

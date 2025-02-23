@@ -26,6 +26,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.CountAggregation.CountHolder;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestMultiTypeStorage {
@@ -88,5 +90,24 @@ public class TestMultiTypeStorage {
 		storage.put("k1", null);
 
 		Assertions.assertThat(storage.size()).isEqualTo(0);
+	}
+
+	@Test
+	public void testPurgeAggregationCarriers() {
+		MultiTypeStorage<String> storage =
+				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+
+		storage.merge("k1", 3);
+		storage.merge("k1", 5);
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(CountHolder.class);
+		});
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(Long.class);
+		});
 	}
 }

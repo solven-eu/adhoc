@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.Builder;
 import lombok.Value;
 
@@ -33,12 +34,14 @@ public class CountAggregation implements IAggregation {
 
 	public static final String KEY = "COUNT";
 
-	// A marker for the special columnName `*`, typically used in `COUNT(*)`
-	public static final String ASTERISK = "*";
-
+	/**
+	 * This class holds the count. It is useful to differentiate as input long (which count as `1`) and a count.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
-	public static class CountHolder {
+	public static class CountHolder implements IAggregationCarrier {
 		long count;
 
 		public static CountHolder zero() {
@@ -59,6 +62,11 @@ public class CountAggregation implements IAggregation {
 
 		public CountHolder add(long input) {
 			return new CountHolder(this.count + input);
+		}
+
+		@Override
+		public void acceptValueConsumer(IValueConsumer valueConsumer) {
+			valueConsumer.onLong(count);
 		}
 	}
 

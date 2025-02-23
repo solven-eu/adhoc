@@ -62,7 +62,7 @@ public class AdhocEntrypointsRegistry {
 		return game;
 	}
 
-	public List<AdhocEntrypointMetadata> searchGames(AdhocEntrypointSearchParameters search) {
+	public List<AdhocEntrypointMetadata> search(AdhocEntrypointSearch search) {
 		Stream<AdhocEntrypointMetadata> metaStream;
 
 		if (search.getEntrypointId().isPresent()) {

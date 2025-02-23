@@ -36,6 +36,23 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AdhocEventsFromGuavaEventBusToSfl4j {
+
+	// This must not have `@Subscribe`, else events would be processed multiple times
+	// This is useful when the EventBus is not Guava
+	public void onAdhocEvent(IAdhocEvent event) {
+		if (event instanceof QueryStepIsCompleted queryStepIsCompleted) {
+			onQueryStepIsCompleted(queryStepIsCompleted);
+		} else if (event instanceof AdhocQueryPhaseIsCompleted queryPhaseIsCompleted) {
+			onAdhocQueryPhaseIsCompleted(queryPhaseIsCompleted);
+		} else if (event instanceof QueryStepIsEvaluating queryStepIsEvaluating) {
+			onQueryStepIsEvaluating(queryStepIsEvaluating);
+		} else if (event instanceof AdhocLogEvent logEvent) {
+			onAdhocLogEvent(logEvent);
+		} else {
+			log.warn("Not managed properly: {}", event);
+		}
+	}
+
 	/**
 	 * An {@link eu.solven.adhoc.query.AdhocQuery} is resolved through a DAG of
 	 * {@link eu.solven.adhoc.dag.AdhocQueryStep}. This will log when an {@link eu.solven.adhoc.dag.AdhocQueryStep} is
@@ -62,7 +79,7 @@ public class AdhocEventsFromGuavaEventBusToSfl4j {
 	}
 
 	@Subscribe
-	public void onExplainOrDebugEvent(AdhocLogEvent event) {
+	public void onAdhocLogEvent(AdhocLogEvent event) {
 		BiConsumer<String, Object[]> logMethod;
 		if (event.isWarn()) {
 			logMethod = log::warn;

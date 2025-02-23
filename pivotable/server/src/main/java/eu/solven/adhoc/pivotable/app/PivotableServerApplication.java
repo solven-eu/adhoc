@@ -33,7 +33,7 @@ import org.springframework.session.ReactiveMapSessionRepository;
 import org.springframework.session.ReactiveSessionRepository;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.core.PivotableServerComponentsConfiguration;
+import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
 import eu.solven.adhoc.tools.GitPropertySourceConfig;
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 @Import({
 
 		PivotableWebFluxSpringConfig.class,
-		PivotableServerComponentsConfiguration.class,
+		PivotableComponentsConfiguration.class,
 		PivotableSecuritySpringConfig.class,
 		GitPropertySourceConfig.class,
 

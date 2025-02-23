@@ -28,7 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.pivotable.account.JwtUserContextHolder;
-import eu.solven.adhoc.pivotable.core.PivotableServerComponentsConfiguration;
+import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
 		classes = { PivotableWebFluxSpringConfig.class,
-				PivotableServerComponentsConfiguration.class,
+				PivotableComponentsConfiguration.class,
 				JwtUserContextHolder.class, },
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Slf4j

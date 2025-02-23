@@ -27,8 +27,9 @@ import java.util.Map;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.pepper.core.PepperLogHelper;

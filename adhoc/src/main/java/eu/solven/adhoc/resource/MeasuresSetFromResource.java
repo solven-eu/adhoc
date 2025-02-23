@@ -24,7 +24,6 @@ package eu.solven.adhoc.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -38,34 +37,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.ReflectionUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Dispatchor;
-import eu.solven.adhoc.measure.step.Filtrator;
-import eu.solven.adhoc.measure.step.IHasCombinationKey;
-import eu.solven.adhoc.measure.step.Shiftor;
-import eu.solven.adhoc.measure.step.Unfiltrator;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
-import eu.solven.pepper.mappath.MapPathPut;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +87,7 @@ public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
-	public AdhocMeasureBag measuresToAMS(Collection<? extends Map<String, ?>> measures) {
+	public AdhocMeasureBag loadToBag(Collection<? extends Map<String, ?>> measures) {
 		Map<String, IMeasure> nameToMeasure = measures.stream().flatMap(measure -> {
 			return makeMeasure(measure).stream();
 		}).collect(Collectors.toMap(IMeasure::getName, m -> m));
@@ -109,35 +104,36 @@ public class MeasuresSetFromResource {
 	public List<IMeasure> makeMeasure(Map<String, ?> measureAsMap) {
 		List<IMeasure> measures = new ArrayList<>();
 
-		String type = getStringParameter(measureAsMap, KEY_TYPE);
+		Map<String, Object> mutableMeasureAsMap = new LinkedHashMap<>(measureAsMap);
+
+		// The following section unnest recursive measure definitions
+		{
+			Optional<List<?>> optRawUnderlyings = MapPathGet.getOptionalAs(measureAsMap, "underlyings");
+
+			optRawUnderlyings.ifPresent(rawUnderlyings -> {
+				List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
+					return registerMeasuresReturningMainOne(rawUnderlying, measures);
+				}).collect(Collectors.toList());
+
+				mutableMeasureAsMap.put("underlyings", underlyingNames);
+			});
+		}
+		{
+			Optional<?> optRawUnderlying = MapPathGet.getOptionalAs(measureAsMap, "underlying");
+
+			optRawUnderlying.ifPresent(rawUnderlying -> {
+				String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
+
+				mutableMeasureAsMap.put("underlying", underlyingName);
+			});
+		}
+
 		Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, "name");
 		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
-		IMeasure asMeasure = switch (type) {
-		case "aggregator": {
-			yield makeAggregator(measureAsMap, name);
-		}
-		case "combinator": {
-			yield makeCombinator(measureAsMap, measures, name);
-		}
-		case "filtrator": {
-			yield makeFiltrator(measureAsMap, measures, name);
-		}
-		case "unfiltrator": {
-			yield makeUnfiltrator(measureAsMap, measures, name);
-		}
-		case "shiftor": {
-			yield makeShiftor(measureAsMap, measures, name);
-		}
-		case "bucketor": {
-			yield makeBucketor(measureAsMap, measures, name);
-		}
-		case "dispatchor": {
-			yield makeDispatchor(measureAsMap, measures, name);
-		}
-		default:
-			yield onUnknownType(type, measureAsMap, measures, name);
-		};
+		mutableMeasureAsMap.put("name", name);
+
+		IMeasure asMeasure = new ObjectMapper().convertValue(mutableMeasureAsMap, IMeasure.class);
 
 		// The explicit measureAsMap has to be first in the output List
 		measures.addFirst(asMeasure);
@@ -410,6 +406,10 @@ public class MeasuresSetFromResource {
 		}
 	}
 
+	protected ObjectMapper makeObjectMapper(String format) {
+		return AdhocJackson.makeObjectMapper(format);
+	}
+
 	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
@@ -437,11 +437,8 @@ public class MeasuresSetFromResource {
 	public String asString(String format, AdhocMeasureBag amb) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
-		List<?> asMaps = amb.getNameToMeasure()
-				.values()
-				.stream()
-				.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))
-				.collect(Collectors.toList());
+		List<?> asMaps =
+				amb.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).collect(Collectors.toList());
 
 		try {
 			return objectMapper.writeValueAsString(asMaps);
@@ -461,7 +458,7 @@ public class MeasuresSetFromResource {
 			List<?> asMaps = measures.getNameToMeasure()
 					.values()
 					.stream()
-					.map(m -> removeUselessProperties(m, objectMapper.convertValue(m, Map.class)))
+					.map(m -> asMap(objectMapper, m))
 					.collect(Collectors.toList());
 
 			bagNameToMeasures.add(ImmutableMap.of("name", bagName, "measures", asMaps));
@@ -474,42 +471,16 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	static ObjectMapper makeObjectMapper(String format) {
-		ObjectMapper objectMapper;
-		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
-			String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
-			if (!ClassUtils.isPresent(yamlFactoryClass, null)) {
-				// Adhoc has optional=true, as only a minority of projects uses this library
-				throw new IllegalArgumentException(
-						"Do you miss an explicit dependency over `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`?");
-			}
-
-			String yamlObjectMapperFactoryClass = "eu.solven.adhoc.resource.AdhocYamlObjectMapper";
-			String yamlObjectMapperMethodName = "yamlObjectMapper";
-			try {
-				Method yamlObjectMapper = ReflectionUtils
-						.findMethod(ClassUtils.forName(yamlObjectMapperFactoryClass, null), yamlObjectMapperMethodName);
-				if (yamlObjectMapper == null) {
-					throw new IllegalStateException("Can not find method %s.%s".formatted(yamlObjectMapperFactoryClass,
-							yamlObjectMapperMethodName));
-				}
-				objectMapper = (ObjectMapper) ReflectionUtils.invokeMethod(yamlObjectMapper, null);
-			} catch (ClassNotFoundException e) {
-				// This should have been caught preventively
-				throw new RuntimeException(e);
-			}
-		} else {
-			objectMapper = new ObjectMapper();
-		}
-
-		// We prefer pretty-printing the output
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-		return objectMapper;
+	// https://stackoverflow.com/questions/25387978/how-to-add-custom-deserializer-to-interface-using-jackson
+	// TODO Should we go with a Jackson (De)Serializer?
+	public Map<String, ?> asMap(ObjectMapper objectMapper, IMeasure m) {
+		return simplifyProperties(m, objectMapper.convertValue(m, Map.class));
 	}
 
 	/**
 	 * This is useful to generate human-friendly configuration, not including all implicit configuration.
+	 * 
+	 * It will also add a `type` field indicating the type of measure.
 	 *
 	 * @param measure
 	 *            the {@link IMeasure} object
@@ -517,12 +488,12 @@ public class MeasuresSetFromResource {
 	 *            the initial serialized view of {@link IMeasure}
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
-	protected Map<String, ?> removeUselessProperties(IMeasure measure, Map<String, ?> map) {
-		if (map.containsKey(KEY_TYPE)) {
-			// This may happen with custom IMeasure with a `.getType()`
-			throw new IllegalStateException(
-					"`type` is a reserved getter for IMeasure. Can not handle: %s".formatted(map));
-		}
+	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
+		// if (map.containsKey(KEY_TYPE)) {
+		// // This may happen with custom IMeasure with a `.getType()`
+		// throw new IllegalStateException(
+		// "`type` is a reserved getter for IMeasure. Can not handle: %s".formatted(map));
+		// }
 
 		Comparator<String> comparing =
 				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
@@ -531,7 +502,7 @@ public class MeasuresSetFromResource {
 		clean.putAll(map);
 
 		if (measure instanceof Aggregator a) {
-			clean.put(KEY_TYPE, "aggregator");
+			// clean.put(KEY_TYPE, "aggregator");
 			if (SumAggregation.KEY.equals(a.getAggregationKey())) {
 				clean.remove("aggregationKey");
 			}
@@ -539,7 +510,7 @@ public class MeasuresSetFromResource {
 				clean.remove("columnName");
 			}
 		} else if (measure instanceof Combinator c) {
-			clean.put(KEY_TYPE, "combinator");
+			// clean.put(KEY_TYPE, "combinator");
 
 			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
@@ -550,19 +521,19 @@ public class MeasuresSetFromResource {
 				clean.remove("combinationOptions");
 			}
 		} else if (measure instanceof Filtrator f) {
-			clean.put(KEY_TYPE, "filtrator");
+			// clean.put(KEY_TYPE, "filtrator");
 		} else if (measure instanceof Unfiltrator u) {
-			clean.put(KEY_TYPE, "unfiltrator");
+			// clean.put(KEY_TYPE, "unfiltrator");
 		} else if (measure instanceof Shiftor s) {
-			clean.put(KEY_TYPE, "shiftor");
+			// clean.put(KEY_TYPE, "shiftor");
 		} else if (measure instanceof Dispatchor d) {
-			clean.put(KEY_TYPE, "dispatchor");
+			// clean.put(KEY_TYPE, "dispatchor");
 		} else if (measure instanceof Bucketor b) {
-			clean.put(KEY_TYPE, "bucketor");
+			// clean.put(KEY_TYPE, "bucketor");
 
 			if (b.getGroupBy() instanceof GroupByColumns byColumns) {
 				// We replace Jackson representation by a simple List of String
-				MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
+				// MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
 			}
 
 			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);

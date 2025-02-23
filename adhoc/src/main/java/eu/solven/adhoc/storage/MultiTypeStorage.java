@@ -32,6 +32,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -338,5 +339,37 @@ public class MultiTypeStorage<T> {
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
 				.build();
+	}
+
+	public void purgeAggregationCarriers() {
+		measureToAggregateO.forEach((key, value) -> {
+			if (value instanceof IAggregationCarrier aggregationCarrier) {
+				aggregationCarrier.acceptValueConsumer(new IValueConsumer() {
+
+					@Override
+					public void onLong(long value) {
+						measureToAggregateL.put(key, value);
+						measureToAggregateO.remove(key);
+					}
+
+					@Override
+					public void onDouble(double value) {
+						measureToAggregateD.put(key, value);
+						measureToAggregateO.remove(key);
+					}
+
+					@Override
+					public void onCharsequence(CharSequence value) {
+						measureToAggregateS.put(key, value.toString());
+						measureToAggregateO.remove(key);
+					}
+
+					@Override
+					public void onObject(Object object) {
+						measureToAggregateO.put(key, value.toString());
+					}
+				});
+			}
+		});
 	}
 }

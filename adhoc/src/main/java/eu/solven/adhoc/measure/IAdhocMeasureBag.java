@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IHasName;
 

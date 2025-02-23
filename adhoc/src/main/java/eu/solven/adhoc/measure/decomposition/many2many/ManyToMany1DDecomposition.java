@@ -210,7 +210,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		Set<IAdhocColumn> allGroupBys = new HashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		// The groupColumn is generally meaningless to the underlying measure
-		allGroupBys.removeIf(c -> c.getColumn().equals(groupColumn));
+		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));
 
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
