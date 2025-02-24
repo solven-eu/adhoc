@@ -43,3 +43,6 @@ replay_pid*
 
 # mkdocs
 site
+
+# npm
+node_modules

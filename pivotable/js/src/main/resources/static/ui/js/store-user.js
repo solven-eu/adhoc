@@ -218,11 +218,11 @@ export const useUserStore = defineStore("user", {
 				try {
 					// Rely on session for authentication
 					const response = await fetch(url);
-                    if (response.status === 401) {
-                        // This will update the logout status
-                        store.loadUser();
-                        throw new UserNeedsToLoginError("User needs to login");
-                    } else if (!response.ok) {
+					if (response.status === 401) {
+						// This will update the logout status
+						store.loadUser();
+						throw new UserNeedsToLoginError("User needs to login");
+					} else if (!response.ok) {
 						throw new NetworkError("Rejected request for tokens", url, response);
 					}
 

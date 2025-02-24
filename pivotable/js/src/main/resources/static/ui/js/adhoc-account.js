@@ -24,7 +24,7 @@ export default {
 			},
 		}),
 	},
-	setup(props) {
+	setup() {
 		const userStore = useUserStore();
 
 		userStore.loadUser();

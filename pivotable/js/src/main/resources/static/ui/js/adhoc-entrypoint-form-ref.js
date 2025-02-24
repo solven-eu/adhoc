@@ -1,8 +1,3 @@
-import { ref } from "vue";
-
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
-
 export default {
 	props: {
 		entrypointId: {
@@ -10,12 +5,8 @@ export default {
 			required: true,
 		},
 	},
-	setup(props) {
-		const store = useAdhocStore();
-
+	setup() {
 		return {};
 	},
-	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/entrypoints/' + entrypointId + '/schema'}"><i class="bi bi-node-plus"></i> Show schema</RouterLink>
-    `,
+	template: /* HTML */ ` <RouterLink :to="{path:'/html/entrypoints/' + entrypointId + '/schema'}"><i class="bi bi-node-plus"></i> Show schema</RouterLink> `,
 };

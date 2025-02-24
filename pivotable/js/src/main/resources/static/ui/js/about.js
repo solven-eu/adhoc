@@ -9,7 +9,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <h1>Kumite</h1>
+        <h1>Adhoc</h1>
         This is a plateform for bots/algorithms contests. Links
         <ul>
             <li>

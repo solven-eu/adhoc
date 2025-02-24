@@ -18,6 +18,7 @@ export default [
     ...eslintPluginVue.configs["flat/recommended"],
     {
         files: ["*.html", "**/*.html", "*.js", "**/*.js", "*.vue", "**/*.vue"],
+        // ignores: ["*/target/*"],
         languageOptions: {
             parser: vueEslintParser,
         },

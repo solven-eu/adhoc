@@ -1,9 +1,5 @@
-import { ref, watch } from "vue";
-
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
-
-import { useRouter } from "vue-router";
 
 import LoginOptions from "./login-providers.js";
 import Logout from "./login-logout.js";
@@ -30,7 +26,7 @@ export default {
 			},
 		}),
 	},
-	setup(props) {
+	setup() {
 		const userStore = useUserStore();
 
 		userStore.loadUser();

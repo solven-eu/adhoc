@@ -51,7 +51,7 @@ export default {
 				if (schemas.length == 0) {
 					nbCubes.value = 0;
 				} else {
-					nbCubes.value = Object.keys(schemas[0].schema.cubeToColumns).length;	
+					nbCubes.value = Object.keys(schemas[0].schema.cubeToColumns).length;
 				}
 			});
 		});
@@ -63,51 +63,70 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-        <div v-if="!entrypoint && nbEntrypointFetching > 0">Loading <RouterLink :to="{path:'/html/servers/' + entrypointId}">entrypoint={{entrypointId}}</RouterLink></div>
+        <div v-if="!entrypoint && nbEntrypointFetching > 0">
+            Loading
+            <RouterLink :to="{path:'/html/servers/' + entrypointId}">entrypoint={{entrypointId}}</RouterLink>
+        </div>
         <div v-else-if="entrypoint.error">{{entrypoint.error}}</div>
         <div v-else>
             <AdhocEntrypointHeader :entrypointId="entrypointId" />
 
             <span v-if="metadata.tags">
-                Tags: <span class="badge text-bg-secondary" v-for="tag in entrypoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span
+                Tags:
+                <span class="badge text-bg-secondary" v-for="tag in entrypoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span
                 ><br />
             </span>
-			<span v-if="schema">
-			Tables
-				<ul v-for="(table, name) in schema.tableToColumns">
-				    <li>{{name}}
-						<ul v-for="(ref, name) in table.columnToTypes">
-						    <li>{{name}}: {{ref}}</li>
-						</ul>
-					</li>
-				</ul>
-					Measures
-				<ul v-for="(measureBag, name) in schema.bagToMeasures">
-								    <li>{{name}}
-										<ul v-for="ref in measureBag">
-										    <li>
-												<span v-if="ref.type == '.Aggregator'">
-													{{ref.name}}: {{ref.aggregationKey}}({{ref.columnName}})
-												</span>
-												<span v-else-if="ref.type == '.Combinator'">
-													{{ref.name}}: {{ref.combinationKey}}({{ref.underlyings.join(', ')}})
-												</span>
-												<span v-else>
-													{{ref.name}}: {{ref}}
-												</span>
-											</li>
-										</ul>
-									</li>
-				</ul>
-				Cubes
-				<ul v-for="(cube, name) in schema.cubeToColumns">
-				<li>{{name}}
-					<ul v-for="(ref, name) in cube.columnToTypes">
-					    <li>{{name}}: {{ref}}</li>
-					</ul>
-				</li>
-				</ul>
-			</span>
+            <span v-if="schema">
+                <span v-if="showSchema">
+                    Tables:
+                    <ul v-for="(table, name) in schema.tableToColumns">
+                        <li>
+                            {{name}}
+                            <ul v-for="(ref, name) in table.columnToTypes">
+                                <li>{{name}}: {{ref}}</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    Measures
+                    <ul v-for="(measureBag, name) in schema.bagToMeasures">
+                        <li>
+                            {{name}}
+                            <ul v-for="ref in measureBag">
+                                <li>
+                                    <span v-if="ref.type == '.Aggregator'"> {{ref.name}}: {{ref.aggregationKey}}({{ref.columnName}}) </span>
+                                    <span v-else-if="ref.type == '.Combinator'"> {{ref.name}}: {{ref.combinationKey}}({{ref.underlyings.join(', ')}}) </span>
+                                    <span v-else> {{ref.name}}: {{ref}} </span>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    Cubes
+                    <ul v-for="(cube, name) in schema.cubeToColumns">
+                        <li>
+                            {{name}}
+                            <ul v-for="(ref, name) in cube.columnToTypes">
+                                <li>{{name}}: {{ref}}</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </span>
+                <span v-else>
+                    <div>
+                        Tables:
+                        <span v-for="(table, name) in schema.tableToColumns"> {{name}} </span>
+                    </div>
+                    <div>
+                        Measures
+                        <span v-for="(measureBag, name) in schema.bagToMeasures"> {{name}} </span>
+                    </div>
+
+                    <div>
+                        Cubes
+                        <span v-for="(cube, name) in schema.cubeToColumns">{{name}} </span>
+                    </div>
+                </span>
+            </span>
 
             <!--span v-if="showContests">
                 <AdhocCubes :entrypointId="entrypointId" :showserver="false" />

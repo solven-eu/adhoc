@@ -128,8 +128,6 @@
 							<excludes>
 								<!-- TestCases needs to remains not formatted/cleaned -->
 								<exclude>**/do_not_format_me/**</exclude>
-								<!-- `mat` is essentially forked from another repository -->
-								<exclude>**/mat/**</exclude>
 							</excludes>
 
 							<cleanthat>
@@ -184,7 +182,29 @@
 
 							<gson />
 						</json>
-						<!--yaml/-->
+						
+						<!-- yaml formatting is disabled as it drops comments -->
+						
+						<javascript>
+							<includes>
+								<!-- Do not include HTML and Vue files -->
+								<!-- https://biomejs.dev/internals/language-support/#html-super-languages-support -->
+								<include>src/**/*.js</include>
+							</includes>
+
+							<!-- https://biomejs.dev/ -->
+							<biome>
+								<!-- Download Biome from the network if not already downloaded, see below for more info  -->
+								<version>1.9.4</version>
+
+								<!-- (optional) Path to the directory with the biome.json config file -->
+								<configPath>${maven.multiModuleProjectDirectory}/.cleanthat/</configPath>
+
+								<!-- (optional) Biome will auto detect the language based on the file extension. -->
+								<!-- See below for possible values. -->
+								<!--        <language>js</language>-->
+							</biome>
+						</javascript>
 					</configuration>
 
 					<executions>

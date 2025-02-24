@@ -3,6 +3,8 @@
     npm audit
     npm run lint
 
+    npm run format & mvn spotless:apply
+
     npm outdated
     npm update
 

@@ -1,4 +1,4 @@
-import { ref, computed, watch } from "vue";
+import { watch } from "vue";
 
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
@@ -25,7 +25,7 @@ export default {
 			},
 		}),
 	},
-	setup(props) {
+	setup() {
 		const userStore = useUserStore();
 
 		userStore.loadUser();

@@ -1,5 +1,3 @@
-import { watch } from "vue";
-
 import { defineStore } from "pinia";
 
 import { useUserStore } from "./store-user.js";
@@ -20,7 +18,7 @@ export const useAdhocStore = defineStore("adhoc", {
 	state: () => ({
 		// Various metadata to enrich the UX
 		metadata: {},
-		
+
 		// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
 		accounts: {},
 		nbAccountFetching: 0,
@@ -28,22 +26,21 @@ export const useAdhocStore = defineStore("adhoc", {
 		// The loaded entrypoints and schemas
 		entrypoints: {},
 		nbEntrypointFetching: 0,
-		
+
 		schemas: {},
 		nbSchemaFetching: 0,
-		
+
 		queries: {},
 		nbQueryFetching: 0,
-
 	}),
 	getters: {
 		// isLoggedIn is often used when manipulating schemas
-		isLoggedIn: (store) => {
+		isLoggedIn: () => {
 			const userStore = useUserStore();
 			return userStore.isLoggedIn;
 		},
 		// account is often used when manipulating schemas
-		account: (store) => {
+		account: () => {
 			const userStore = useUserStore();
 			return userStore.account;
 		},

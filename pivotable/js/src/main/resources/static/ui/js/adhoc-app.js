@@ -68,7 +68,9 @@ export default {
 
             <div v-else>
                 <ul>
-                    <li v-if="account.accountId"><AdhocAccountRef :accountId="account.accountId" /></li>
+                    <li v-if="account.accountId">
+                        <AdhocAccountRef :accountId="account.accountId" />
+                    </li>
                 </ul>
             </div>
         </div>

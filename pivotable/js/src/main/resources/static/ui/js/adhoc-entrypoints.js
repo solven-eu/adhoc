@@ -33,7 +33,7 @@ export default {
         </div>
         <div v-else class="container">
             <div class="row border" v-for="entrypoint in entrypoints">
-                <AdhocEntrypoint :entrypointId="entrypoint.id" :showContests="false" v-if="!entrypoint.error" />
+                <AdhocEntrypoint :entrypointId="entrypoint.id" :showSchema="false" v-if="!entrypoint.error" />
             </div>
         </div>
     `,

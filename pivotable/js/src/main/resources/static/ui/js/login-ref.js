@@ -1,5 +1,3 @@
-import { ref, watch } from "vue";
-
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
 
@@ -7,7 +5,7 @@ export default {
 	computed: {
 		...mapState(useUserStore, ["needsToCheckLogin", "nbAccountFetching", "isLoggedIn", "isLoggedOut"]),
 	},
-	setup(props) {
+	setup() {
 		return {};
 	},
 	template: /* HTML */ `
