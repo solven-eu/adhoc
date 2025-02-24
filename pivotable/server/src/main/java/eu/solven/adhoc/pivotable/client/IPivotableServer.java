@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.pivotable.client;
 
-import eu.solven.adhoc.beta.schema.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
@@ -41,6 +41,6 @@ public interface IPivotableServer {
 
 	Flux<SchemaMetadata> searchSchemas(AdhocEntrypointSearch search);
 
-	Mono<ITabularView> executeQuery(QueryOnSchema query);
+	Mono<ITabularView> executeQuery(TargetedAdhocQuery query);
 
 }

@@ -1,14 +1,14 @@
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store.js";
 
-import AdhocServerRef from "./adhoc-server-ref.js";
+import AdhocEntrypointRef from "./adhoc-entrypoint-ref.js";
 
 export default {
 	components: {
-		AdhocServerRef,
+		AdhocEntrypointRef,
 	},
 	props: {
-		gameId: {
+		entrypointId: {
 			type: String,
 			required: true,
 		},
@@ -18,39 +18,38 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbGameFetching"]),
+		...mapState(useAdhocStore, ["nbEntrypointFetching"]),
 		...mapState(useAdhocStore, {
-			game(store) {
-				return store.games[this.gameId];
+			entrypoint(store) {
+				return store.entrypoints[this.entrypointId];
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
-		store.loadGameIfMissing(props.gameId);
+		store.loadEntrypointIfMissing(props.entrypointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!game) && (nbGameFetching > 0)">
+        <div v-if="(!entrypoint) && (nbEntrypointFetching > 0)">
             <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading gameId={{gameId}}</span>
+                <span class="visually-hidden">Loading entrypointId={{entrypointId}}</span>
             </div>
         </div>
-        <div v-else-if="game.error">game.error={{game.error}}</div>
+        <div v-else-if="entrypoint.error">entrypoint.error={{entrypoint.error}}</div>
         <div v-else>
             <span>
                 <span v-if="withDescription">
                     <h1>
-                        <AdhocServerRef :gameId="game.gameId" />
-                        <!--RouterLink :to="{path:'/html/games'}"><i class="bi bi-arrow-90deg-left"></i></RouterLink-->
+                        <AdhocEntrypointRef :entrypointId="entrypoint.id" />
                     </h1>
-                    Game-Description: {{game.shortDescription}}
+                    Entrypoint-Description: {{entrypoint.name}}
                 </span>
                 <span v-else>
                     <h5>
-                        <AdhocServerRef :gameId="gameId" />
+                        <AdhocEntrypointRef :entrypointId="entrypointId" />
                     </h5>
                 </span>
             </span>

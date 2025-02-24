@@ -33,7 +33,7 @@ export const useUserStore = defineStore("user", {
 		// Typically turned to true by an `authenticatedFetch` while loggedOut
 		expectedToBeLoggedIn: false,
 
-		// We loads information about various players (e.g. current account, through contests and leaderboards)
+		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
 		// Playing players are stores in contests
 		nbAccountLoading: 0,
 	}),
@@ -53,8 +53,6 @@ export const useUserStore = defineStore("user", {
 			// Not logged-in and login-status is checked explicitly
 			return true;
 		},
-		// There will be a way to choose a different playerId amongst the account playerIds
-		playingPlayerId: (store) => store.account.playerId,
 		// Default headers: we authenticate ourselves
 		apiHeaders: (store) => {
 			if (store.needsToRefreshAccessToken) {
@@ -77,12 +75,12 @@ export const useUserStore = defineStore("user", {
 			}
 		},
 		newNetworkError(msg, url, response) {
-			return new NetworkError("Rejected request for games url" + url, url, response);
+			return new NetworkError("Rejected request for entrypoints url" + url, url, response);
 		},
 
 		async fetchCsrfToken() {
 			// https://www.baeldung.com/spring-security-csrf
-			// If we relied on Cookie, `.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse())` we could get the csrfToken with:
+			// If we relied on Cookie, `.csrfTokenRepository(CookieEntrypointCsrfTokenRepository.withHttpOnlyFalse())` we could get the csrfToken with:
 			// const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, '$1');
 
 			const response = await fetch(`/api/login/v1/csrf`);
@@ -141,8 +139,8 @@ export const useUserStore = defineStore("user", {
 				if (response.status === 401) {
 					throw new UserNeedsToLoginError("User needs to login");
 				} else if (!response.ok) {
-					// What is this scenario? ServerInternalError?
-					throw new NetworkError("Rejected request for games url" + url, url, response);
+					// What is this scenario? EntrypointInternalError?
+					throw new NetworkError("Rejected request for entrypoints url" + url, url, response);
 				}
 
 				// We can typically get a Network error while fetching the json
@@ -260,7 +258,7 @@ export const useUserStore = defineStore("user", {
 			return this.loadUser().then((user) => {
 				if (store.isLoggedIn) {
 					console.log("We do have a User. Let's fetch tokens", user);
-					return fetchFromUrl(`/api/login/v1/oauth2/token?player_id=${this.playingPlayerId}`);
+					return fetchFromUrl(`/api/login/v1/oauth2/token`);
 				} else {
 					return { error: "not_logged_in" };
 				}
@@ -318,46 +316,6 @@ export const useUserStore = defineStore("user", {
 				.catch((e) => {
 					throw e;
 				});
-		},
-
-		async loadCurrentAccountPlayers() {
-			const store = this;
-
-			async function fetchFromUrl(url) {
-				store.nbAccountLoading++;
-				try {
-					const response = await store.authenticatedFetch(url);
-					if (!response.ok) {
-						throw new Error("Rejected request for current account players" + url);
-					}
-
-					const responseJson = await response.json();
-					const players = responseJson;
-
-					players.forEach((player) => {
-						console.log("Registering playerId", player.playerId);
-						store.$patch({
-							players: {
-								...store.players,
-								[player.playerId]: player,
-							},
-						});
-					});
-				} catch (e) {
-					store.onSwallowedError(e);
-				} finally {
-					store.nbAccountLoading--;
-				}
-			}
-
-			return store.loadUserIfMissing().then(() => {
-				if (store.isLoggedIn) {
-					return fetchFromUrl(`/players?account_id=${store.account.accountId}`);
-				} else {
-					console.log("Can not load account players as not logged-in");
-					this.expectedToBeLoggedIn = true;
-				}
-			});
 		},
 	},
 });

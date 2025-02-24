@@ -18,16 +18,9 @@ export default {
 	},
 	computed: {
 		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
-		...mapState(useAdhocStore, {
-			players(store) {
-				return Object.values(store.players).filter((p) => p.accountId == this.account.accountId);
-			},
-		}),
 	},
 	setup(props) {
 		const userStore = useUserStore();
-
-		userStore.loadCurrentAccountPlayers();
 
 		const countries = ref({});
 		// https://flagpedia.net/download/api
@@ -145,11 +138,6 @@ export default {
                     </span>
                 </div>
             </div>
-
-            You manage {{players.length}} players:
-            <ul>
-                <li v-for="player in players"><AdhocPlayerRef :playerId="player.playerId" /></li>
-            </ul>
         </span>
     `,
 };

@@ -36,9 +36,9 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.QueryOnSchema;
-import eu.solven.adhoc.beta.schema.SchemaMetadata;
+import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
+import eu.solven.adhoc.pivotable.entrypoint.EntrypointSchema;
 import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.storage.ListBasedTabularView;
@@ -65,6 +65,10 @@ public class PivotableApiRouter {
 	public RouterFunction<ServerResponse> apiRoutes(PivotableEntrypointsHandler entrypointsHandler,
 			PivotableQueryHandler queryHandler) {
 
+		var entrypointId = parameterBuilder().name("entrypoint_id")
+				.description("Search for a specific entrypointId")
+				.example("12345678-1234-1234-1234-123456789012");
+
 		var cubeId = parameterBuilder().name("cube_id")
 				.description("Search for a specific cubeId")
 				.example("12345678-1234-1234-1234-123456789012");
@@ -77,15 +81,15 @@ public class PivotableApiRouter {
 				.GET(json("/entrypoints"),
 						entrypointsHandler::listEntrypoints,
 						ops -> ops.operationId("loadEntrypoints")
-								// .parameter(gameId)
+								.parameter(entrypointId)
 								.response(responseBuilder().responseCode("200")
 										.implementationArray(AdhocEntrypointMetadata.class)))
-				.GET(json("/schemas"),
+				.GET(json("/entrypoints/schemas"),
 						entrypointsHandler::entrypointSchema,
 						ops -> ops.operationId("loadMetadata")
-								// .parameter(gameId)
+								.parameter(entrypointId)
 								.response(responseBuilder().responseCode("200")
-										.implementationArray(SchemaMetadata.class)))
+										.implementationArray(EntrypointSchema.class)))
 
 				.GET(json("/cubes/metadata"),
 						queryHandler::loadMetadata,
@@ -118,7 +122,7 @@ public class PivotableApiRouter {
 						queryHandler::executeQuery,
 						ops -> ops.operationId("executeQuery")
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
-										.implementation(QueryOnSchema.class))
+										.implementation(TargetedAdhocQuery.class))
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
 

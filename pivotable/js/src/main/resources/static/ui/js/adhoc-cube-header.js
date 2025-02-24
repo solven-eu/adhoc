@@ -16,16 +16,16 @@ export default {
 			type: String,
 			required: true,
 		},
-		gameId: {
+		entrypointId: {
 			type: String,
 			required: true,
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbGameFetching", "nbCubeFetching", "isLoggedIn", "account"]),
+		...mapState(useAdhocStore, ["nbEntrypointFetching", "nbCubeFetching", "isLoggedIn", "account"]),
 		...mapState(useAdhocStore, {
-			game(store) {
-				return store.games[this.gameId];
+			entrypoint(store) {
+				return store.entrypoints[this.entrypointId];
 			},
 			Cube(store) {
 				return store.Cubes[this.CubeId];
@@ -58,7 +58,7 @@ export default {
 
 			const nextInterval = setInterval(() => {
 				console.log("Intervalled shortPollCubeDynamic");
-				store.loadCube(props.CubeId, props.gameId);
+				store.loadCube(props.CubeId, props.entrypointId);
 			}, intervalPeriodMs);
 			shortPollCubeDynamicInterval.value = nextInterval;
 
@@ -73,28 +73,28 @@ export default {
 			clearShortPollCubeDynamic();
 		});
 
-		store.loadCubeIfMissing(props.CubeId, props.gameId);
+		store.loadCubeIfMissing(props.CubeId, props.entrypointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!game || !cube) && (nbGameFetching > 0 || nbCubeFetching > 0)">
+        <div v-if="(!entrypoint || !cube) && (nbEntrypointFetching > 0 || nbCubeFetching > 0)">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading CubeId={{CubeId}}</span>
             </div>
         </div>
-        <div v-else-if="game.error || cube.error">{{game.error || cube.error}}</div>
+        <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
         <span v-else>
             <h2>
                 <AdhocCubeRef :CubeId="CubeId" />
-                <RouterLink :to="{path:'/html/games/' + gameId}"><i class="bi bi-arrow-90deg-left"></i></RouterLink>
+                <RouterLink :to="{path:'/html/entrypoints/' + entrypointId}"><i class="bi bi-arrow-90deg-left"></i></RouterLink>
             </h2>
 
             <ul>
                 <li>author: <AdhocAccountRef :accountId="cube.constantMetadata.author" /></li>
                 <li>created: {{cube.constantMetadata.created}}</li>
                 <li v-if="isLoggedIn && cube.constantMetadata.author == account.accountId">
-                    <AdhocCubeDelete :gameId="gameId" :CubeId="CubeId" />
+                    <AdhocCubeDelete :entrypointId="entrypointId" :CubeId="CubeId" />
                 </li>
                 <li>
                     {{cube.dynamicMetadata.contenders.length}} contenders / {{ cube.constantMetadata.minPlayers }} required players / {{

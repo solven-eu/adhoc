@@ -12,13 +12,13 @@ export default {
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
-		gameId: {
+		entrypointId: {
 			type: String,
 			// required: true,
 		},
-		showGame: {
+		showEntrypoint: {
 			type: Boolean,
-			// As we show multiple contests, we do not show the game (by default)
+			// As we show multiple contests, we do not show the entrypoint (by default)
 			default: false,
 		},
 		showLeaderboard: {
@@ -28,16 +28,16 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["isLoggedIn", "nbGameFetching", "nbCubeFetching"]),
+		...mapState(useAdhocStore, ["isLoggedIn", "nbEntrypointFetching", "nbCubeFetching"]),
 		...mapState(useAdhocStore, {
 			contests(store) {
 				const allContests = Object.values(store.contests);
 
 				console.debug("allContests", allContests);
 
-				if (this.gameId) {
+				if (this.entrypointId) {
 					// https://stackoverflow.com/questions/69091869/how-to-filter-an-array-in-array-of-objects-in-javascript
-					return allContests.filter((contest) => contest.constantMetadata.gameId === this.gameId);
+					return allContests.filter((contest) => contest.constantMetadata.entrypointId === this.entrypointId);
 				} else {
 					return allContests;
 				}
@@ -47,12 +47,12 @@ export default {
 	setup(props) {
 		const store = useAdhocStore();
 
-		if (props.gameId) {
-			// The contests of a specific game
-			store.loadContests(props.gameId);
+		if (props.entrypointId) {
+			// The contests of a specific entrypoint
+			store.loadSchemas(props.entrypointId);
 		} else {
 			// Cross-through contests
-			store.loadContests();
+			store.loadSchemas();
 		}
 
 		return {};
@@ -64,9 +64,9 @@ export default {
         <div v-else class="container">
             <div class="row border" v-for="contest in contests">
                 <AdhocCube
-                    :gameId="contest.constantMetadata.gameId"
+                    :entrypointId="contest.constantMetadata.entrypointId"
                     :contestId="contest.contestId"
-                    :showServer="showServer"
+                    :showEntrypoint="showEntrypoint"
                     :showLeaderboard="showLeaderboard"
                 />
             </div>

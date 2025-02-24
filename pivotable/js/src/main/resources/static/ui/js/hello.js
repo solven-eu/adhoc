@@ -8,7 +8,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <h1>Welcome to Kumite</h1>
+        <h1>Welcome to Pivotable (Adhoc)</h1>
         <Whatnow />
     `,
 };

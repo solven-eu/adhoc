@@ -5,7 +5,7 @@ import { useAdhocStore } from "./store.js";
 
 export default {
 	props: {
-		gameId: {
+		entrypointId: {
 			type: String,
 			required: true,
 		},
@@ -16,6 +16,6 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/games/' + gameId + '/contest-form'}"><i class="bi bi-node-plus"></i> Create your own contest</RouterLink>
+        <RouterLink :to="{path:'/html/entrypoints/' + entrypointId + '/schema'}"><i class="bi bi-node-plus"></i> Show schema</RouterLink>
     `,
 };

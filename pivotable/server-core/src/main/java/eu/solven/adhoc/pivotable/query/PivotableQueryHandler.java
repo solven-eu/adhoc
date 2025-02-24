@@ -30,7 +30,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
-import eu.solven.adhoc.beta.schema.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -54,7 +54,7 @@ public class PivotableQueryHandler {
 				.body(BodyInserters.fromValue(schema.getMetadata()));
 	}
 
-	private Mono<ServerResponse> executeQuery(Mono<QueryOnSchema> queryOnSchemaMono) {
+	private Mono<ServerResponse> executeQuery(Mono<TargetedAdhocQuery> queryOnSchemaMono) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery(), queryOnSchema.getOptions());
 		})
@@ -71,7 +71,7 @@ public class PivotableQueryHandler {
 	 * @return
 	 */
 	public Mono<ServerResponse> executeQuery(ServerRequest serverRequest) {
-		Mono<QueryOnSchema> queryOnSchemaMono = serverRequest.bodyToMono(QueryOnSchema.class);
+		Mono<TargetedAdhocQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedAdhocQuery.class);
 		return executeQuery(queryOnSchemaMono);
 	}
 
@@ -83,7 +83,7 @@ public class PivotableQueryHandler {
 	 */
 	// cube=someCube&measure=k1.SUM&column_a=a1,a2&column_b>123&group_by=c
 	public Mono<ServerResponse> executeFlatQuery(ServerRequest serverRequest) {
-		QueryOnSchema.QueryOnSchemaBuilder queryOnSchemaBuilder = QueryOnSchema.builder();
+		TargetedAdhocQuery.TargetedAdhocQueryBuilder queryOnSchemaBuilder = TargetedAdhocQuery.builder();
 
 		String cubeName = AdhocHandlerHelper.string(serverRequest, "cube_name");
 		queryOnSchemaBuilder.cube(cubeName);

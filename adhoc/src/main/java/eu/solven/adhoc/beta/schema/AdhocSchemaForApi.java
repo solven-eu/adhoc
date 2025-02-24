@@ -89,7 +89,7 @@ public class AdhocSchemaForApi {
 		});
 
 		nameToTable.forEach((name, table) -> {
-			metadata.cubeToColumn(name, ColumnarMetadata.from(table.getColumns()));
+			metadata.tableToColumn(name, ColumnarMetadata.from(table.getColumns()));
 		});
 
 		nameToQuery.forEach((name, query) -> {

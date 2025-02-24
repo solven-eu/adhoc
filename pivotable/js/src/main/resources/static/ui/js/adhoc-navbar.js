@@ -8,7 +8,7 @@ export default {
 		Logout,
 	},
 	computed: {
-		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching", "playingPlayerId"]),
+		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching"]),
 	},
 	setup() {
 		const userStore = useUserStore();
@@ -35,11 +35,11 @@ export default {
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="/html/server_info"><i class="bi bi-puzzle" />Server info</RouterLink>
+                            <RouterLink class="nav-link" to="/html/entrypoints"><i class="bi bi-puzzle" />Entrypoints</RouterLink>
                         </li>
-                        <li class="nav-item">
-                            <RouterLink class="nav-link" to="/html/query"><i class="bi bi-trophy" />Query</RouterLink>
-                        </li>
+                        <!--li class="nav-item">
+                            <RouterLink class="nav-link" to="/html/entrypoints/xxx/schemas"><i class="bi bi-trophy" />Schemas</RouterLink>
+                        </li-->
                     </ul>
                     <span v-if="isLoggedIn">
                         {{account.details.name}}<img

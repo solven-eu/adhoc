@@ -38,19 +38,19 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**
- * Factory that creates a {@link AdhocSchema}.
+ * Factory that creates a {@link AdhocCalciteSchema}.
  *
  * <p>
  * Allows a custom schema to be included in a <code><i>model</i>.json</code> file.
  */
-public class AdhocSchemaFactory implements SchemaFactory {
+public class AdhocCalciteSchemaFactory implements SchemaFactory {
 	/** Public singleton, per factory contract. */
-	public static final AdhocSchemaFactory INSTANCE = new AdhocSchemaFactory();
+	public static final AdhocCalciteSchemaFactory INSTANCE = new AdhocCalciteSchemaFactory();
 
 	final EventBus eventBus;
 
 	// Public default constructor required to instantiate a factory from
-	public AdhocSchemaFactory() {
+	public AdhocCalciteSchemaFactory() {
 		this.eventBus = new EventBus();
 	}
 
@@ -59,15 +59,15 @@ public class AdhocSchemaFactory implements SchemaFactory {
 		AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-		IAdhocTableWrapper adw = makeDbWrapper(operand);
+		IAdhocTableWrapper adw = makeTableWrapper(operand);
 
 		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(adw).build();
 
-		return new AdhocSchema(aqw);
+		return new AdhocCalciteSchema(aqw);
 	}
 
-	private IAdhocTableWrapper makeDbWrapper(Map<String, ?> operand) {
-		String dbWrapperClass = MapPathGet.getRequiredString(operand, "dbWrapperFactoryClass");
+	private IAdhocTableWrapper makeTableWrapper(Map<String, ?> operand) {
+		String dbWrapperClass = MapPathGet.getRequiredString(operand, "tableWrapperFactoryClass");
 
 		Class<?> clazz;
 		try {

@@ -31,7 +31,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
-import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -71,12 +70,12 @@ public class PivotableEntrypointsHandler {
 	public Mono<ServerResponse> entrypointSchema(ServerRequest request) {
 		List<AdhocEntrypointMetadata> entrypoints = matchingEntrypoints(request);
 
-		List<SchemaMetadata> schemas = entrypoints.stream().map(entrypoint -> {
+		List<EntrypointSchema> schemas = entrypoints.stream().map(entrypoint -> {
 			if (!"http://localhost:self".equals(entrypoint.getUrl())) {
 				throw new NotYetImplementedException("%s".formatted(PepperLogHelper.getObjectAndClass(entrypoint)));
 			}
 
-			return schemaForApi.getMetadata();
+			return EntrypointSchema.builder().entrypoint(entrypoint).schema(schemaForApi.getMetadata()).build();
 		}).toList();
 
 		log.debug("Schemas for {}: {}", entrypoints, schemas);

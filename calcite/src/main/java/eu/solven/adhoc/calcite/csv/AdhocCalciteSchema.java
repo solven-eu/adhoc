@@ -20,20 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.app;
+package eu.solven.adhoc.calcite.csv;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Import;
+import java.util.Collections;
+import java.util.Map;
 
-import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.impl.AbstractSchema;
 
-@SpringBootApplication
-@Import({ PivotableWebFluxSpringConfig.class })
-public class AdhocMonolithApplication {
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 
-	public static void main(String[] args) {
-		SpringApplication.run(AdhocMonolithApplication.class, args);
+/**
+ * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
+ */
+public class AdhocCalciteSchema extends AbstractSchema {
+
+	final IAdhocCubeWrapper aqe;
+
+	@Override
+	public boolean isMutable() {
+		// Adhoc enables only queries to its own underlying database
+		return false;
 	}
 
+	/**
+	 * Creates a CSV schema.
+	 *
+	 * @param aqe
+	 */
+	public AdhocCalciteSchema(IAdhocCubeWrapper aqe) {
+		this.aqe = aqe;
+	}
+
+	@Override
+	protected Map<String, Table> getTableMap() {
+		return Collections.singletonMap(aqe.getName(), new MongoTable(aqe));
+	}
 }

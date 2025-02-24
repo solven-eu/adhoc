@@ -18,7 +18,7 @@ export default {
         <div v-if="!isLoggedIn"><LoginRef /></div>
         <span v-else>
             <ul>
-                <li><RouterLink to="/html/servers">Browse through servers</RouterLink></li>
+                <li><RouterLink to="/html/entrypoints">Browse through entrypoints</RouterLink></li>
                 <li><RouterLink to="/html/me">About me</RouterLink></li>
             </ul>
         </span>

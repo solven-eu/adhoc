@@ -26,7 +26,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/servers/' + contest.constantMetadata.gameId + '/cubes/' + contestId}">
+        <RouterLink :to="{path:'/html/servers/' + contest.constantMetadata.entrypointId + '/cubes/' + contestId}">
             <i class="bi bi-trophy"></i> {{contest.constantMetadata.name}}
         </RouterLink>
     `,

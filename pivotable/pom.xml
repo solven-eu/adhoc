@@ -20,17 +20,5 @@
 
 		<!-- Following modules are bootable-->
 		<module>server</module>
-		<module>monolith</module>
 	</modules>
-
-	<profiles>
-		<profile>
-			<!-- mvn clean install -Pjs -->
-			<!-- JS user-interface is WIP, and broken most of the time -->
-			<id>js</id>
-			<modules>
-				<module>monolith</module>
-			</modules>
-		</profile>
-	</profiles>
 </project>

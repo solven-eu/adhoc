@@ -96,7 +96,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))
 				.combinationKey(ForeignExchangeCombination.KEY)
-				// This tests we can refer an aggregation key but its class
+				// Error codes (e.g. lack of FX) are aggregated in a Set
 				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 

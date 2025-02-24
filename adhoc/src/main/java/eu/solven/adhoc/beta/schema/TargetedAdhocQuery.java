@@ -41,7 +41,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class QueryOnSchema {
+public class TargetedAdhocQuery {
 	@NonNull
 	String cube;
 

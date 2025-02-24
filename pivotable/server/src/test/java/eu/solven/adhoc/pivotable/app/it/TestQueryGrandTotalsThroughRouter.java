@@ -38,7 +38,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.client.IPivotableServer;
 import eu.solven.adhoc.pivotable.client.PivotableWebclientServer;
@@ -101,7 +101,7 @@ public class TestQueryGrandTotalsThroughRouter {
 						return Flux.fromIterable(schema.getCubeToColumns().keySet()).flatMap(cubeName -> {
 							AdhocQuery query = AdhocQuery.builder().build();
 							return pivotableServer
-									.executeQuery(QueryOnSchema.builder().query(query).cube(cubeName).build())
+									.executeQuery(TargetedAdhocQuery.builder().query(query).cube(cubeName).build())
 									.map(view -> {
 										log.info("cubeName={} grandTotal={}", cubeName, view);
 

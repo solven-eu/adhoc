@@ -35,7 +35,7 @@ import org.springframework.web.reactive.function.client.WebClient.RequestHeaders
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import eu.solven.adhoc.beta.schema.QueryOnSchema;
+import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
@@ -181,7 +181,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	}
 
 	@Override
-	public Mono<ITabularView> executeQuery(QueryOnSchema query) {
+	public Mono<ITabularView> executeQuery(TargetedAdhocQuery query) {
 		return accessToken().map(accessToken -> {
 			RequestBodySpec spec = getWebClient().post().uri(uriBuilder -> {
 				return uriBuilder.path(PREFIX + "/cubes/query").build();

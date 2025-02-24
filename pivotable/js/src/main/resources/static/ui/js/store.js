@@ -20,21 +20,29 @@ export const useAdhocStore = defineStore("adhoc", {
 	state: () => ({
 		// Various metadata to enrich the UX
 		metadata: {},
+		
+		// May load other accounts, for multi-accounts scenarios (e.g. query sharing)
+		accounts: {},
+		nbAccountFetching: 0,
 
-		// The loaded servers and cubes
-		servers: {},
-		cubes: {},
-		nbServerFetching: 0,
-		nbCubeFetching: 0,
+		// The loaded entrypoints and schemas
+		entrypoints: {},
+		nbEntrypointFetching: 0,
+		
+		schemas: {},
+		nbSchemaFetching: 0,
+		
+		queries: {},
+		nbQueryFetching: 0,
 
 	}),
 	getters: {
-		// isLoggedIn is often used when manipulating contests
+		// isLoggedIn is often used when manipulating schemas
 		isLoggedIn: (store) => {
 			const userStore = useUserStore();
 			return userStore.isLoggedIn;
 		},
-		// account is often used when manipulating contests
+		// account is often used when manipulating schemas
 		account: (store) => {
 			const userStore = useUserStore();
 			return userStore.account;
@@ -50,7 +58,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 		newNetworkError(msg, url, response) {
-			return new NetworkError("Rejected request for games url" + url, url, response);
+			return new NetworkError("Rejected request for url" + url, url, response);
 		},
 
 		async authenticatedFetch(url, fetchOptions) {
@@ -65,7 +73,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			async function fetchFromUrl(url) {
 				const response = await fetch(url);
 				if (!response.ok) {
-					throw new NetworkError("Rejected request for games url" + url, url, response);
+					throw new NetworkError("Rejected request for url" + url, url, response);
 				}
 
 				const responseJson = await response.json();
@@ -81,7 +89,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbPlayersLoading++;
+				store.nbAccountFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
@@ -102,7 +110,7 @@ export const useAdhocStore = defineStore("adhoc", {
 				} catch (e) {
 					store.onSwallowedError(e);
 				} finally {
-					store.nbPlayersLoading--;
+					store.nbAccountFetching--;
 				}
 			}
 
@@ -118,179 +126,96 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
-		async loadPlayer(playerId) {
+		async loadEntrypoints() {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbPlayersLoading++;
-				try {
-					const response = await store.authenticatedFetch(url);
-					if (!response.ok) {
-						throw new Error("Rejected request for players of playerId=" + playerId);
-					}
-
-					const responseJson = await response.json();
-					const players = responseJson;
-
-					players.forEach((player) => {
-						console.log("Storing playerId", player.playerId);
-						store.$patch({
-							players: { ...store.players, [player.playerId]: player },
-						});
-
-						store.loadAccountIfMissing(player.accountId);
-					});
-				} catch (e) {
-					store.onSwallowedError(e);
-				} finally {
-					store.nbPlayersLoading--;
-				}
-			}
-
-			return fetchFromUrl(`/players?player_id=${playerId}`);
-		},
-
-		async loadPlayerIfMissing(playerId) {
-			if (this.players[playerId]) {
-				console.debug("Skip loading playerId=", playerId);
-				return Promise.resolve(this.players[playerId]);
-			} else {
-				return this.loadPlayer(playerId);
-			}
-		},
-
-		async loadContestPlayers(contestId) {
-			const store = this;
-
-			async function fetchFromUrl(url) {
-				store.nbPlayersLoading++;
-				try {
-					const response = await store.authenticatedFetch(url);
-					if (!response.ok) {
-						throw new Error("Rejected request for players of contest=" + contestId);
-					}
-
-					const responseJson = await response.json();
-					const players = responseJson;
-
-					players.forEach((player) => {
-						console.log("Storing playerId", player.playerId);
-						store.$patch({
-							players: { ...store.players, [player.playerId]: player },
-						});
-					});
-
-					console.log("Storing players for contestId", contestId, players);
-					const mutatedContest = {
-						...store.contests[contestId],
-						players: players,
-					};
-					store.$patch({
-						contests: {
-							...store.contests,
-							[contestId]: mutatedContest,
-						},
-					});
-				} catch (e) {
-					store.onSwallowedError(e);
-				} finally {
-					store.nbPlayersLoading--;
-				}
-			}
-
-			return fetchFromUrl(`/players?contest_id=${contestId}`);
-		},
-
-		async loadGames() {
-			const store = this;
-
-			async function fetchFromUrl(url) {
-				store.nbGameFetching++;
+				store.nbEntrypointFetching++;
 
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
-						throw new Error("Rejected request for games url" + url);
+						throw new Error("Rejected request for entrypoints url" + url);
 					}
 					const responseJson = await response.json();
 
 					responseJson.forEach((item) => {
-						console.log("Registering gameId", item.gameId);
+						console.log("Registering entrypointId", item.id);
 						store.$patch({
-							games: { ...store.games, [item.gameId]: item },
+							entrypoints: { ...store.entrypoints, [item.id]: item },
 						});
 					});
 				} catch (e) {
 					store.onSwallowedError(e);
 				} finally {
-					store.nbGameFetching--;
+					store.nbEntrypointFetching--;
 				}
 			}
 
-			return fetchFromUrl("/games");
+			return fetchFromUrl("/entrypoints");
 		},
 
-		async loadGame(gameId) {
-			console.log("About to load gameId", gameId);
+		async loadEntrypoint(entrypointId) {
+			console.log("About to load entrypointId", entrypointId);
 
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbGameFetching++;
+				store.nbEntrypointFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
-						throw new Error("Rejected request for gameId=" + gameId);
+						throw new Error("Rejected request for entrypointId=" + entrypointId);
 					}
 
 					const responseJson = await response.json();
 
-					let game;
+					let entrypoint;
 					if (responseJson.length === 0) {
-						// the gameId does not exist
-						game = { error: "unknown" };
+						// the entrypointId does not exist
+						entrypoint = { error: "unknown" };
 					} else if (responseJson.length !== 1) {
-						throw new NetworkError("We expected a single game", url, response);
+						throw new NetworkError("We expected a single entrypoint", url, response);
 					} else {
-						game = responseJson[0];
+						entrypoint = responseJson[0];
 					}
 
 					// https://github.com/vuejs/pinia/discussions/440
-					console.log("Registering gameId", gameId);
+					console.log("Registering entrypointId", entrypointId);
 					store.$patch({
-						games: { ...store.games, [gameId]: game },
+						entrypoints: { ...store.entrypoints, [entrypointId]: entrypoint },
 					});
 
-					return game;
+					return entrypoint;
 				} catch (e) {
 					store.onSwallowedError(e);
 
-					const game = {
-						gameId: gameId,
+					const entrypoint = {
+						entrypointId: entrypointId,
 						error: e,
 					};
 					store.$patch({
-						games: { ...store.games, [gameId]: game },
+						entrypoints: { ...store.entrypoints, [entrypointId]: entrypoint },
 					});
 
-					return game;
+					return entrypoint;
 				} finally {
-					store.nbGameFetching--;
+					store.nbEntrypointFetching--;
 				}
 			}
-			return fetchFromUrl(`/games?game_id=${gameId}`);
+			return fetchFromUrl(`/entrypoints?entrypoint_id=${entrypointId}`);
 		},
 
-		async loadGameIfMissing(gameId) {
-			if (this.games[gameId]) {
-				console.debug("Skip loading gameId=", gameId);
-				return Promise.resolve(this.games[gameId]);
+		async loadEntrypointIfMissing(entrypointId) {
+			if (this.entrypoints[entrypointId]) {
+				console.debug("Skip loading entrypointId=", entrypointId);
+				return Promise.resolve(this.entrypoints[entrypointId]);
 			} else {
-				return this.loadGame(gameId);
+				return this.loadEntrypoint(entrypointId);
 			}
 		},
 
-		async loadContests(gameId) {
+		async loadSchemas(entrypointId) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -301,17 +226,17 @@ export const useAdhocStore = defineStore("adhoc", {
 
 					console.debug("responseJson", responseJson);
 
-					const contests = responseJson;
-					contests.forEach((contest) => {
-						console.log("Registering contestId", contest.contestId);
+					const schemas = responseJson;
+					schemas.forEach((schema) => {
+						console.log("Registering schemaId", schema.entrypoint.id);
 						store.$patch({
-							contests: {
-								...store.contests,
-								[contest.contestId]: contest,
+							schemas: {
+								...store.schemas,
+								[schema.entrypoint.id]: schema,
 							},
 						});
 					});
-					return contests;
+					return schemas;
 				} catch (e) {
 					store.onSwallowedError(e);
 					return [];
@@ -320,10 +245,10 @@ export const useAdhocStore = defineStore("adhoc", {
 				}
 			}
 
-			let url = "/contests";
-			if (gameId) {
-				// The contests of a specific game
-				url += "?game_id=" + gameId;
+			let url = "/entrypoints/schemas";
+			if (entrypointId) {
+				// The schemas of a specific entrypoint
+				url += "?entrypoint_id=" + entrypointId;
 			}
 			return fetchFromUrl(url);
 		},
@@ -331,7 +256,7 @@ export const useAdhocStore = defineStore("adhoc", {
 		mergeContest(contestUpdate) {
 			const contestId = contestUpdate.contestId;
 			// The contest may be empty on first load
-			const oldContest = this.contests[contestId] || {};
+			const oldContest = this.schemas[contestId] || {};
 			// This this property right-away as it is watched
 			const mergedContest = {
 				...oldContest,
@@ -342,21 +267,21 @@ export const useAdhocStore = defineStore("adhoc", {
 			// BEWARE This is broken if we consider a user can manage multiple playerIds
 			console.log("Storing board for contestId", contestId, mergedContest);
 			this.$patch({
-				contests: { ...this.contests, [contestId]: mergedContest },
+				schemas: { ...this.schemas, [contestId]: mergedContest },
 			});
 
 			return mergedContest;
 		},
 
-		async loadContest(contestId, gameId) {
-			let gamePromise;
-			if (gameId) {
-				gamePromise = this.loadGameIfMissing(gameId);
+		async loadSchema(contestId, entrypointId) {
+			let entrypointPromise;
+			if (entrypointId) {
+				entrypointPromise = this.loadEntrypointIfMissing(entrypointId);
 			} else {
-				gamePromise = Promise.resolve();
+				entrypointPromise = Promise.resolve();
 			}
 
-			return gamePromise.then(() => {
+			return entrypointPromise.then(() => {
 				console.log("About to load/refresh contestId", contestId);
 
 				const store = this;
@@ -395,31 +320,31 @@ export const useAdhocStore = defineStore("adhoc", {
 						store.nbContestFetching--;
 					}
 				}
-				return fetchFromUrl(`/contests?contest_id=${contestId}`).then((contest) => {
+				return fetchFromUrl(`/schemas?contest_id=${contestId}`).then((contest) => {
 					return this.mergeContest(contest);
 				});
 			});
 		},
 
-		async loadContestIfMissing(contestId, gameId) {
-			let gamePromise;
-			if (gameId) {
-				gamePromise = this.loadGameIfMissing(gameId);
+		async loadSchemaIfMissing(contestId, entrypointId) {
+			let entrypointPromise;
+			if (entrypointId) {
+				entrypointPromise = this.loadEntrypointIfMissing(entrypointId);
 			} else {
-				gamePromise = Promise.resolve();
+				entrypointPromise = Promise.resolve();
 			}
-			return gamePromise.then(() => {
-				if (this.contests[contestId]) {
+			return entrypointPromise.then(() => {
+				if (this.schemas[contestId]) {
 					console.debug("Skip loading contestId=", contestId);
-					return Promise.resolve(this.contests[contestId]);
+					return Promise.resolve(this.schemas[contestId]);
 				} else {
-					return this.loadContest(contestId, gameId);
+					return this.loadSchema(contestId, entrypointId);
 				}
 			});
 		},
 
-		async loadBoard(gameId, contestId, playerId) {
-			console.debug("gameId", gameId);
+		async loadBoard(entrypointId, contestId, playerId) {
+			console.debug("entrypointId", entrypointId);
 			if (!playerId) {
 				playerId = useUserStore().playingPlayerId;
 			}
@@ -429,7 +354,7 @@ export const useAdhocStore = defineStore("adhoc", {
 
 			const store = this;
 
-			return this.loadContestIfMissing(contestId, gameId).then((contest) => {
+			return this.loadSchemaIfMissing(contestId, entrypointId).then((contest) => {
 				if (contest.error === "unknown") {
 					return contest;
 				}
@@ -458,13 +383,13 @@ export const useAdhocStore = defineStore("adhoc", {
 					}
 				}
 
-				return fetchFromUrl(`/board?game_id=${gameId}&contest_id=${contestId}&player_id=${playerId}`).then((contestWithBoard) =>
+				return fetchFromUrl(`/board?entrypoint_id=${entrypointId}&contest_id=${contestId}&player_id=${playerId}`).then((contestWithBoard) =>
 					this.mergeContest(contestWithBoard),
 				);
 			});
 		},
 
-		async loadLeaderboard(gameId, contestId) {
+		async loadLeaderboard(entrypointId, contestId) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -511,7 +436,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 
 			store.nbLeaderboardFetching++;
-			return this.loadContestIfMissing(contestId, gameId)
+			return this.loadSchemaIfMissing(contestId, entrypointId)
 				.then(() => fetchFromUrl("/leaderboards?contest_id=" + contestId))
 				.finally(() => {
 					store.nbLeaderboardFetching--;

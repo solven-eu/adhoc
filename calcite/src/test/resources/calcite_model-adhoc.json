@@ -7,7 +7,7 @@
             "name": "mongo_raw",
             "factory": "eu.solven.adhoc.calcite.csv.AdhocSchemaFactory",
             "operand": {
-                "dbWrapperFactoryClass": "eu.solven.adhoc.database.InMemoryDatabase"
+                "tableWrapperFactoryClass": "eu.solven.adhoc.database.InMemoryDatabase"
             }
         }
     ]
