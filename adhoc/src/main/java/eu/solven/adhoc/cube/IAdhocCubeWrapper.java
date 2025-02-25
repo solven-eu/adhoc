@@ -24,7 +24,7 @@ package eu.solven.adhoc.cube;
 
 import java.util.Set;
 
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -38,9 +38,7 @@ import eu.solven.adhoc.util.IHasName;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName {
-	IAdhocMeasureBag getMeasures();
-
+public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 	default ITabularView execute(IAdhocQuery query) {
 		return execute(query, Set.of());
 	}

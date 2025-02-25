@@ -5,14 +5,16 @@ import { useAdhocStore } from "./store.js";
 
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 import AdhocAccountRef from "./adhoc-account-ref.js";
+import AdhocEntrypointRef from "./adhoc-entrypoint-ref.js";
 
 export default {
 	components: {
 		AdhocCubeRef,
 		AdhocAccountRef,
+		AdhocEntrypointRef,
 	},
 	props: {
-		CubeId: {
+		cubeId: {
 			type: String,
 			required: true,
 		},
@@ -22,85 +24,37 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbEntrypointFetching", "nbCubeFetching", "isLoggedIn", "account"]),
+		...mapState(useAdhocStore, ["nbSchemaFetching", "nbCubeFetching", "isLoggedIn", "account"]),
 		...mapState(useAdhocStore, {
 			entrypoint(store) {
-				return store.entrypoints[this.entrypointId];
+				return store.entrypoints[this.entrypointId] || { error: "not_loaded" };
 			},
-			Cube(store) {
-				return store.Cubes[this.CubeId];
+			cube(store) {
+				return store.schemas[this.entrypointId]?.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
-		const shortPollCubeDynamicInterval = ref(null);
-
-		function clearShortPollCubeDynamic() {
-			if (shortPollCubeDynamicInterval.value) {
-				console.log("Cancelling setInterval shortPollCubeDynamic");
-				clearInterval(shortPollCubeDynamicInterval.value);
-				shortPollCubeDynamicInterval.value = null;
-			}
-		}
-
-		/*
-		 * Polling the Cube status every 5seconds.
-		 * The output can be used to cancel the polling.
-		 */
-		function shortPollCubeDynamic() {
-			// Cancel any existing related setInterval
-			clearShortPollCubeDynamic();
-
-			const intervalPeriodMs = 50000;
-			console.log("setInterval", "shortPollCubeDynamic", intervalPeriodMs);
-
-			const nextInterval = setInterval(() => {
-				console.log("Intervalled shortPollCubeDynamic");
-				store.loadCube(props.CubeId, props.entrypointId);
-			}, intervalPeriodMs);
-			shortPollCubeDynamicInterval.value = nextInterval;
-
-			return nextInterval;
-		}
-
-		onMounted(() => {
-			shortPollCubeDynamic();
-		});
-
-		onUnmounted(() => {
-			clearShortPollCubeDynamic();
-		});
-
-		store.loadCubeIfMissing(props.CubeId, props.entrypointId);
+		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!entrypoint || !cube) && (nbEntrypointFetching > 0 || nbCubeFetching > 0)">
+        <div v-if="(!entrypoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
             <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading CubeId={{CubeId}}</span>
+                <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
             </div>
         </div>
         <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
         <span v-else>
             <h2>
-                <AdhocCubeRef :CubeId="CubeId" />
-                <RouterLink :to="{path:'/html/entrypoints/' + entrypointId}"><i class="bi bi-arrow-90deg-left"></i></RouterLink>
+                <AdhocCubeRef :cubeId="cubeId" :entrypointId="entrypointId" />
+				<AdhocEntrypointRef :entrypointId="entrypointId" />
             </h2>
 
-            <ul>
-                <li>author: <AdhocAccountRef :accountId="cube.constantMetadata.author" /></li>
-                <li>created: {{cube.constantMetadata.created}}</li>
-                <li v-if="isLoggedIn && cube.constantMetadata.author == account.accountId">
-                    <AdhocCubeDelete :entrypointId="entrypointId" :CubeId="CubeId" />
-                </li>
-                <li>
-                    {{cube.dynamicMetadata.contenders.length}} contenders / {{ cube.constantMetadata.minPlayers }} required players / {{
-                    cube.constantMetadata.maxPlayers }} maximum players
-                </li>
-            </ul>
+            {{cubeId}}
         </span>
     `,
 };

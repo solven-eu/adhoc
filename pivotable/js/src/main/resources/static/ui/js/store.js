@@ -25,8 +25,6 @@ export const useAdhocStore = defineStore("adhoc", {
 
 		// The loaded entrypoints and schemas
 		entrypoints: {},
-		nbEntrypointFetching: 0,
-
 		schemas: {},
 		nbSchemaFetching: 0,
 
@@ -127,7 +125,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbEntrypointFetching++;
+				store.nbSchemaFetching++;
 
 				try {
 					const response = await store.authenticatedFetch(url);
@@ -145,7 +143,7 @@ export const useAdhocStore = defineStore("adhoc", {
 				} catch (e) {
 					store.onSwallowedError(e);
 				} finally {
-					store.nbEntrypointFetching--;
+					store.nbSchemaFetching--;
 				}
 			}
 
@@ -158,7 +156,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbEntrypointFetching++;
+				store.nbSchemaFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
@@ -197,7 +195,7 @@ export const useAdhocStore = defineStore("adhoc", {
 
 					return entrypoint;
 				} finally {
-					store.nbEntrypointFetching--;
+					store.nbSchemaFetching--;
 				}
 			}
 			return fetchFromUrl(`/entrypoints?entrypoint_id=${entrypointId}`);
@@ -212,7 +210,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
-		async loadSchemas(entrypointId) {
+		async loadEntrypointSchemas(entrypointId) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -224,19 +222,19 @@ export const useAdhocStore = defineStore("adhoc", {
 					console.debug("responseJson", responseJson);
 
 					const schemas = responseJson;
-					schemas.forEach((schema) => {
-						console.log("Registering schemaId", schema.entrypoint.id);
+					schemas.forEach((schemaAndEntrypoint) => {
+						console.log("Registering schemaId", schemaAndEntrypoint.entrypoint.id);
 						store.$patch({
 							schemas: {
 								...store.schemas,
-								[schema.entrypoint.id]: schema,
+								[schemaAndEntrypoint.entrypoint.id]: schemaAndEntrypoint.schema,
 							},
 						});
 					});
-					return schemas;
+					return store.schemas;
 				} catch (e) {
 					store.onSwallowedError(e);
-					return [];
+					return {};
 				} finally {
 					store.nbContestFetching--;
 				}
@@ -247,111 +245,51 @@ export const useAdhocStore = defineStore("adhoc", {
 				// The schemas of a specific entrypoint
 				url += "?entrypoint_id=" + entrypointId;
 			}
-			return fetchFromUrl(url);
-		},
-
-		mergeContest(contestUpdate) {
-			const contestId = contestUpdate.contestId;
-			// The contest may be empty on first load
-			const oldContest = this.schemas[contestId] || {};
-			// This this property right-away as it is watched
-			const mergedContest = {
-				...oldContest,
-				...contestUpdate,
-				stale: false,
-			};
-
-			// BEWARE This is broken if we consider a user can manage multiple playerIds
-			console.log("Storing board for contestId", contestId, mergedContest);
-			this.$patch({
-				schemas: { ...this.schemas, [contestId]: mergedContest },
+			return this.loadEntrypointIfMissing(entrypointId).then(() => {
+				return fetchFromUrl(url);
 			});
-
-			return mergedContest;
 		},
 
-		async loadSchema(contestId, entrypointId) {
-			let entrypointPromise;
-			if (entrypointId) {
-				entrypointPromise = this.loadEntrypointIfMissing(entrypointId);
+		async loadEntrypointSchemaIfMissing(entrypointId) {
+			if (this.schemas[entrypointId]) {
+				console.debug("Skip loading schema for entrypointId=", entrypointId);
+				return Promise.resolve(this.schemas[entrypointId]);
 			} else {
-				entrypointPromise = Promise.resolve();
-			}
-
-			return entrypointPromise.then(() => {
-				console.log("About to load/refresh contestId", contestId);
-
-				const store = this;
-
-				async function fetchFromUrl(url) {
-					store.nbContestFetching++;
-					try {
-						const response = await store.authenticatedFetch(url);
-						if (!response.ok) {
-							throw new NetworkError("Rejected request for contest: " + contestId, url, response);
-						}
-
-						const responseJson = await response.json();
-
-						if (responseJson.length === 0) {
-							return { contestId: contestId, error: "unknown" };
-						} else if (responseJson.length !== 1) {
-							// This should not happen as we provided an input contestId
-							console.error("We expected a single contest", responseJson);
-							return { contestId: contestId, error: "unknown" };
-						}
-
-						const contest = responseJson[0];
-
-						return contest;
-					} catch (e) {
-						store.onSwallowedError(e);
-
-						const contest = {
-							contestId: contestId,
-							error: e,
-						};
-
-						return contest;
-					} finally {
-						store.nbContestFetching--;
-					}
-				}
-				return fetchFromUrl(`/schemas?contest_id=${contestId}`).then((contest) => {
-					return this.mergeContest(contest);
+				return this.loadEntrypointSchemas(entrypointId).then((schemas) => {
+					return schemas[entrypointId];
 				});
-			});
+			}
 		},
 
-		async loadSchemaIfMissing(contestId, entrypointId) {
-			let entrypointPromise;
-			if (entrypointId) {
-				entrypointPromise = this.loadEntrypointIfMissing(entrypointId);
-			} else {
-				entrypointPromise = Promise.resolve();
-			}
-			return entrypointPromise.then(() => {
-				if (this.schemas[contestId]) {
-					console.debug("Skip loading contestId=", contestId);
-					return Promise.resolve(this.schemas[contestId]);
+		async loadCubeSchema(cubeId, entrypointId) {
+			return this.loadEntrypointSchemas(entrypointId).then((schemas) => {
+				if (schemas.length == 0) {
+					const schema = {
+						entrypointId: entrypointId,
+						entrypointId: entrypointId,
+						error: "None matching",
+					};
+
+					return schema;
 				} else {
-					return this.loadSchema(contestId, entrypointId);
+					return schemas[entrypointId]?.cubes[cubeId];
 				}
 			});
 		},
 
-		async loadBoard(entrypointId, contestId, playerId) {
-			console.debug("entrypointId", entrypointId);
-			if (!playerId) {
-				playerId = useUserStore().playingPlayerId;
-			}
-			if (!playerId) {
-				throw new Error("playingPlayerId is undefined");
-			}
+		async loadCubeSchemaIfMissing(cubeId, entrypointId) {
+			return this.loadEntrypointIfMissing(entrypointId).then(() => {
+				if (this.schemas[cubeId]) {
+					console.debug("Skip loading cubeId=", cubeId);
+					return Promise.resolve(this.schemas[cubeId]);
+				} else {
+					return this.loadCubeSchema(cubeId, entrypointId);
+				}
+			});
+		},
 
-			const store = this;
-
-			return this.loadSchemaIfMissing(contestId, entrypointId).then((contest) => {
+		async executeQuery(cubeId, entrypointId, query) {
+			return this.loadCubeSchemaIfMissing(cubeId, entrypointId).then((contest) => {
 				if (contest.error === "unknown") {
 					return contest;
 				}
@@ -384,60 +322,6 @@ export const useAdhocStore = defineStore("adhoc", {
 					this.mergeContest(contestWithBoard),
 				);
 			});
-		},
-
-		async loadLeaderboard(entrypointId, contestId) {
-			const store = this;
-
-			async function fetchFromUrl(url) {
-				try {
-					const response = await store.authenticatedFetch(url);
-					if (!response.ok) {
-						throw new NetworkError("Rejected request for leaderboard: " + contestId, url, response);
-					}
-
-					const responseJson = await response.json();
-
-					const leaderboard = responseJson;
-
-					// We need to configure all object properties right-away
-					// Else, `stale` would not be reset/removed by a fresh leaderboard (i.e. without `stale` property)
-					// https://stackoverflow.com/questions/76709501/pinia-state-not-updating-when-using-spread-operator-object-in-patch
-					// https://github.com/vuejs/pinia/issues/43
-					leaderboard.stale = false;
-
-					// https://github.com/vuejs/pinia/discussions/440
-					console.log("Storing leaderboard for contestId", contestId);
-					store.$patch({
-						leaderboards: {
-							...store.leaderboards,
-							[contestId]: leaderboard,
-						},
-					});
-				} catch (e) {
-					store.onSwallowedError(e);
-
-					const leaderboard = {
-						contestId: contestId,
-						error: e,
-						stale: false,
-					};
-					store.$patch({
-						leaderboards: {
-							...store.leaderboards,
-							[contestId]: leaderboard,
-						},
-					});
-					return leaderboard;
-				}
-			}
-
-			store.nbLeaderboardFetching++;
-			return this.loadSchemaIfMissing(contestId, entrypointId)
-				.then(() => fetchFromUrl("/leaderboards?contest_id=" + contestId))
-				.finally(() => {
-					store.nbLeaderboardFetching--;
-				});
 		},
 	},
 });

@@ -18,7 +18,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbEntrypointFetching"]),
+		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			entrypoint(store) {
 				return store.entrypoints[this.entrypointId];
@@ -33,7 +33,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!entrypoint) && (nbEntrypointFetching > 0)">
+        <div v-if="(!entrypoint) && (nbSchemaFetching > 0)">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading entrypointId={{entrypointId}}</span>
             </div>

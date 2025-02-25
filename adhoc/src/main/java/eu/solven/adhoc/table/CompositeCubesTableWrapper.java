@@ -119,7 +119,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 
 			IAdhocFilter underlyingFilter = filterForColumns(compositeFilter, cubeColumns);
 
-			Set<String> cubeMeasures = cube.getMeasures().getNameToMeasure().keySet();
+			Set<String> cubeMeasures = cube.getNameToMeasure().keySet();
 			Set<String> underlyingQueryMeasure = Sets.intersection(compositeQueryMeasures, cubeMeasures);
 
 			IAdhocQuery query = AdhocQuery.builder()
@@ -225,7 +225,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 		Set<IMeasure> measuresToAdd = new HashSet<>();
 
 		cubes.forEach(cube -> {
-			cube.getMeasures().getNameToMeasure().values().stream().forEach(underlyingMeasure -> {
+			cube.getNameToMeasure().values().stream().forEach(underlyingMeasure -> {
 				String measureName = underlyingMeasure.getName();
 
 				String compositeMeasureName;

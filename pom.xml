@@ -182,9 +182,9 @@
 
 							<gson />
 						</json>
-						
+
 						<!-- yaml formatting is disabled as it drops comments -->
-						
+
 						<javascript>
 							<includes>
 								<!-- Do not include HTML and Vue files -->

@@ -32,6 +32,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -67,6 +68,11 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
 	@Default
 	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
+	
+	@Override
+	public Map<String, IMeasure> getNameToMeasure() {
+		return measures.getNameToMeasure();
+	}
 
 	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
@@ -79,14 +85,6 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 		// First we register table columns
 		columnToType.putAll(table.getColumns());
-
-		// Then we override we measures: some measureName may take over an underlying column (e.g. `k1.sum` aliased as
-		// `k1` would hide the column `k1`)
-		measures.getNameToMeasure().forEach((measureName, measure) -> {
-			// TODO How can a measure express this type? This is even more complicated as it may actually depends on the
-			// underlying table types and the underlying querySteps
-			columnToType.put(measureName, Double.class);
-		});
 
 		return columnToType;
 	}

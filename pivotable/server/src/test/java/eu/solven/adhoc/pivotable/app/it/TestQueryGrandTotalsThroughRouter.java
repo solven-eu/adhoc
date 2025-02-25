@@ -94,11 +94,9 @@ public class TestQueryGrandTotalsThroughRouter {
 					AdhocEntrypointSearch search =
 							AdhocEntrypointSearch.builder().entrypointId(Optional.of(entrypoint.getId())).build();
 					return pivotableServer.searchSchemas(search).flatMap(schema -> {
-						log.info("Considering entrypoint={} cubeNames={}",
-								entrypoint,
-								schema.getCubeToColumns().keySet());
+						log.info("Considering entrypoint={} cubeNames={}", entrypoint, schema.getCubes().keySet());
 
-						return Flux.fromIterable(schema.getCubeToColumns().keySet()).flatMap(cubeName -> {
+						return Flux.fromIterable(schema.getCubes().keySet()).flatMap(cubeName -> {
 							AdhocQuery query = AdhocQuery.builder().build();
 							return pivotableServer
 									.executeQuery(TargetedAdhocQuery.builder().query(query).cube(cubeName).build())

@@ -35,8 +35,8 @@ import org.springframework.web.reactive.function.client.WebClient.RequestHeaders
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import eu.solven.adhoc.beta.schema.EntrypointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
@@ -159,7 +159,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	}
 
 	@Override
-	public Flux<SchemaMetadata> searchSchemas(AdhocEntrypointSearch search) {
+	public Flux<EntrypointSchemaMetadata> searchSchemas(AdhocEntrypointSearch search) {
 		return accessToken().map(accessToken -> {
 			RequestHeadersSpec<?> spec = getWebClient().get()
 					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/schemas")
@@ -175,7 +175,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
 				}
 				log.info("Search for schemas: {}", r.statusCode());
-				return r.bodyToFlux(SchemaMetadata.class);
+				return r.bodyToFlux(EntrypointSchemaMetadata.class);
 			});
 		});
 	}

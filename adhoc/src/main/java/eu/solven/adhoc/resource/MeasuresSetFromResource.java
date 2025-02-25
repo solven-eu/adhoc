@@ -472,9 +472,20 @@ public class MeasuresSetFromResource {
 	}
 
 	// https://stackoverflow.com/questions/25387978/how-to-add-custom-deserializer-to-interface-using-jackson
-	// TODO Should we go with a Jackson (De)Serializer?
 	public Map<String, ?> asMap(ObjectMapper objectMapper, IMeasure m) {
-		return simplifyProperties(m, objectMapper.convertValue(m, Map.class));
+		// try {
+		// https://github.com/FasterXML/jackson-databind/issues/4983
+		Map rawMap = objectMapper.convertValue(m, Map.class);
+		// objectMapper.readValue(objectMapper.writerFor(IMeasure.class).writeValueAsString(m), Map.class);
+
+		// Let's remove some redundant properties, as the output Map will typically be read by humans
+		return simplifyProperties(m, rawMap);
+		// }
+		// catch (JsonMappingException e) {
+		// throw new RuntimeException(e);
+		// } catch (JsonProcessingException e) {
+		// throw new RuntimeException(e);
+		// }
 	}
 
 	/**

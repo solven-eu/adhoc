@@ -11,7 +11,7 @@ export default {
 		AdhocEntrypoint,
 	},
 	computed: {
-		...mapState(useAdhocStore, ["isLoggedIn", "nbEntrypointFetching"]),
+		...mapState(useAdhocStore, ["isLoggedIn", "nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			entrypoints(store) {
 				return Object.values(store.entrypoints);
@@ -28,7 +28,7 @@ export default {
 	template: /* HTML */ `
         <div v-if="!isLoggedIn"><LoginRef /></div>
         <div v-if="Object.keys(entrypoints).length == 0">
-            <div v-if="nbEntrypointFetching > 0">Loading entrypoints</div>
+            <div v-if="nbSchemaFetching > 0">Loading entrypoints</div>
             <div v-else>Issue loading entrypoints (or no entrypoints at all)</div>
         </div>
         <div v-else class="container">

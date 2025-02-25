@@ -47,7 +47,9 @@
             import AdhocAccount from "./ui/js/adhoc-account.js";
             import AdhocMe from "./ui/js/adhoc-account-me.js";
             import AdhocEntrypoints from "./ui/js/adhoc-entrypoints.js";
-            import AdhocEntrypoint from "./ui/js/adhoc-entrypoint.js";
+			import AdhocEntrypoint from "./ui/js/adhoc-entrypoint.js";
+			import AdhocCube from "./ui/js/adhoc-cube.js";
+			import AdhocQuery from "./ui/js/adhoc-query.js";
             import Login from "./ui/js/login.js";
             import LoginBasic from "./ui/js/login-basic.js";
             import AboutView from "./ui/js/about.js";
@@ -66,6 +68,18 @@
                     component: AdhocAccount,
                     props: true,
                 },
+					{
+					    path: "/html/login",
+					    component: Login,
+					    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
+					    // props: route => Object.assign({}, route.query, route.params)
+					},
+					{
+					    path: "/html/login/basic",
+					    component: LoginBasic,
+					    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
+					    // props: route => Object.assign({}, route.query, route.params)
+					},
                 { path: "/html/entrypoints", component: AdhocEntrypoints },
                 // https://router.vuejs.org/guide/essentials/passing-props
                 {
@@ -73,27 +87,33 @@
                     component: AdhocEntrypoint,
                     props: true,
                 },
-                {
-                    path: "/html/entrypoints/:entrypointId/schema",
-                    component: AdhocEntrypoint,
-                    // https://stackoverflow.com/questions/47869676/combine-parameters-from-url-with-props-object-in-vue-router-config
-                    props: (route) => ({
-                        entrypointId: route.params.entrypointId,
-                        showSchema: true,
-                    }),
-                },
-                {
-                    path: "/html/login",
-                    component: Login,
-                    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
-                    // props: route => Object.assign({}, route.query, route.params)
-                },
-                {
-                    path: "/html/login/basic",
-                    component: LoginBasic,
-                    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
-                    // props: route => Object.assign({}, route.query, route.params)
-                },
+					{
+					    path: "/html/entrypoints/:entrypointId/schema",
+					    component: AdhocEntrypoint,
+					    props: (route) => ({
+							entrypointId: route.params.entrypointId,
+					        showSchema: true,
+					    }),
+					},
+					{
+					    path: "/html/entrypoints/:entrypointId/cubes/:cubeId",
+					    component: AdhocCube,
+					    props: (route) => ({
+							cubeId: route.params.cubeId,
+							entrypointId: route.params.entrypointId,
+					        showSchema: false,
+					    }),
+					},
+					{
+					    path: "/html/entrypoints/:entrypointId/cubes/:cubeId/query",
+					    component: AdhocQuery,
+					    props: (route) => ({
+							cubeId: route.params.cubeId,
+							entrypointId: route.params.entrypointId,
+					    }),
+					},
+				
+				
             ];
 
             const router = createRouter({

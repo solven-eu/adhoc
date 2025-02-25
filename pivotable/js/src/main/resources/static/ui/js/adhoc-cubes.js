@@ -28,7 +28,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["isLoggedIn", "nbEntrypointFetching", "nbCubeFetching"]),
+		...mapState(useAdhocStore, ["isLoggedIn", "nbSchemaFetching", "nbCubeFetching"]),
 		...mapState(useAdhocStore, {
 			contests(store) {
 				const allContests = Object.values(store.contests);

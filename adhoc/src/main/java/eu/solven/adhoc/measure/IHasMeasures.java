@@ -20,45 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.measure;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
- * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag},
- * {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-@Jacksonized
-public class SchemaMetadata {
+public interface IHasMeasures {
 
-	@Singular
-	Map<String, ColumnarMetadata> tableToColumns;
+	Map<String, IMeasure> getNameToMeasure();
 
-	@Singular
-	Map<String, List<IMeasure>> bagToMeasures;
-
-	@Singular
-	Map<String, ColumnarMetadata> cubeToColumns;
-
-	@Singular
-	Map<String, AdhocQuery> nameToQueries;
-
-	@Singular
-	Map<String, Object> nameToCustomMarkers;
 }

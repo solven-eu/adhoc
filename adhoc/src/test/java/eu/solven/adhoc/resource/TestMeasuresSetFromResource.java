@@ -73,7 +73,6 @@ public class TestMeasuresSetFromResource {
 				.hasMessageNotContaining("instead of");
 	}
 
-	// @Disabled("The actual feature+usecase is unclear")
 	@Test
 	public void testDeepMeasuresAsUnderlyings() {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()

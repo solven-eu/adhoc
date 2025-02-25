@@ -20,36 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.beta.schema;
 
-import java.util.Optional;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
+ * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag},
+ * {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMeasureBag extends IHasName, IHasMeasures {
+@Value
+@Builder
+@Jacksonized
+public class EntrypointSchemaMetadata {
 
-	/**
-	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}
-	 * 
-	 * @param measure
-	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
-	 */
-	IMeasure resolveIfRef(IMeasure measure);
+	@Singular
+	Map<String, ColumnarMetadata> tables;
 
-	/**
-	 * 
-	 * @param measure
-	 *            a measure, possibly a {@link ReferencedMeasure}.
-	 * @return the optional plain {@link IMeasure}
-	 */
-	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
+	@Singular
+	Map<String, List<IMeasure>> measureBags;
 
+	@Singular
+	Map<String, CubeSchemaMetadata> cubes;
+
+	@Singular
+	Map<String, AdhocQuery> queries;
+
+	@Singular
+	Map<String, Object> customMarkers;
 }

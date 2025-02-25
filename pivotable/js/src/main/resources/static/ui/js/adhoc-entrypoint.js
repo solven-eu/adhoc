@@ -12,16 +12,25 @@ import AdhocCubes from "./adhoc-cubes.js";
 
 import AdhocEntrypointFormRef from "./adhoc-entrypoint-form-ref.js";
 
+import AdhocCube from "./adhoc-cube.js";
+import AdhocCubeRef from "./adhoc-cube-ref.js";
+
 export default {
 	components: {
 		AdhocEntrypointHeader,
 		AdhocCubes,
 		AdhocEntrypointFormRef,
+		AdhocCube,
+		AdhocCubeRef,
 	},
 	props: {
 		entrypointId: {
 			type: String,
 			required: true,
+		},
+		cubeId: {
+			type: String,
+			required: false,
 		},
 		showSchema: {
 			type: Boolean,
@@ -29,15 +38,15 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbEntrypointFetching", "metadata"]),
+		...mapState(useAdhocStore, ["nbSchemaFetching", "metadata"]),
 		...mapState(useAdhocStore, {
 			entrypoint(store) {
-				return store.entrypoints[this.entrypointId];
+				return store.entrypoints[this.entrypointId] || { error: "not_loaded" };
 			},
 		}),
 		...mapState(useAdhocStore, {
 			schema(store) {
-				return store.schemas[this.entrypointId]?.schema;
+				return store.schemas[this.entrypointId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -46,14 +55,9 @@ export default {
 
 		const nbCubes = ref("...");
 
-		store.loadEntrypointIfMissing(props.entrypointId).then(() => {
-			store.loadSchemas(props.entrypointId).then((schemas) => {
-				if (schemas.length == 0) {
-					nbCubes.value = 0;
-				} else {
-					nbCubes.value = Object.keys(schemas[0].schema.cubeToColumns).length;
-				}
-			});
+		store.loadEntrypointSchemaIfMissing(props.entrypointId).then((schema) => {
+			var entrypointSchema = schema || { cubes: {} };
+			nbCubes.value = Object.keys(entrypointSchema.cubes).length;
 		});
 
 		// https://getbootstrap.com/docs/5.3/components/tooltips/
@@ -63,9 +67,9 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-        <div v-if="!entrypoint && nbEntrypointFetching > 0">
+        <div v-if="!entrypoint && nbSchemaFetching > 0">
             Loading
-            <RouterLink :to="{path:'/html/servers/' + entrypointId}">entrypoint={{entrypointId}}</RouterLink>
+            <RouterLink :to="{path:'/html/entrypoints/' + entrypointId}">entrypoint={{entrypointId}}</RouterLink>
         </div>
         <div v-else-if="entrypoint.error">{{entrypoint.error}}</div>
         <div v-else>
@@ -79,7 +83,7 @@ export default {
             <span v-if="schema">
                 <span v-if="showSchema">
                     Tables:
-                    <ul v-for="(table, name) in schema.tableToColumns">
+                    <ul v-for="(table, name) in schema.tables">
                         <li>
                             {{name}}
                             <ul v-for="(ref, name) in table.columnToTypes">
@@ -88,7 +92,7 @@ export default {
                         </li>
                     </ul>
                     Measures
-                    <ul v-for="(measureBag, name) in schema.bagToMeasures">
+                    <ul v-for="(measureBag, name) in schema.measureBags">
                         <li>
                             {{name}}
                             <ul v-for="ref in measureBag">
@@ -102,10 +106,10 @@ export default {
                     </ul>
 
                     Cubes
-                    <ul v-for="(cube, name) in schema.cubeToColumns">
+                    <ul v-for="(cube, cubeName) in schema.cubes">
                         <li>
-                            {{name}}
-                            <ul v-for="(ref, name) in cube.columnToTypes">
+							<AdhocCubeRef :entrypointId="entrypointId" :cubeId="cubeName" />
+                            <ul v-for="(ref, name) in cube.columns.columnToTypes">
                                 <li>{{name}}: {{ref}}</li>
                             </ul>
                         </li>
@@ -114,16 +118,18 @@ export default {
                 <span v-else>
                     <div>
                         Tables:
-                        <span v-for="(table, name) in schema.tableToColumns"> {{name}} </span>
+                        <span v-for="(table, name) in schema.tables"> {{name}} </span>
                     </div>
                     <div>
                         Measures
-                        <span v-for="(measureBag, name) in schema.bagToMeasures"> {{name}} </span>
+                        <span v-for="(measureBag, name) in schema.measureBags"> {{name}} </span>
                     </div>
 
                     <div>
                         Cubes
-                        <span v-for="(cube, name) in schema.cubeToColumns">{{name}} </span>
+                        <span v-for="(cube, cubeName) in schema.cubes">
+							<AdhocCubeRef :entrypointId="entrypointId" :cubeId="cubeName" />
+						</span>
                     </div>
                 </span>
             </span>
@@ -138,6 +144,8 @@ export default {
             </span-->
 
             <AdhocEntrypointFormRef :entrypointId="entrypointId" />
+			
+			<AdhocCube :entrypointId="entrypointId" :cubeId="cubeId" v-if="cubeId" />
         </div>
     `,
 };

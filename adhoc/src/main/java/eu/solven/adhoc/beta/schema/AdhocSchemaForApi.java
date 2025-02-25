@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.beta.schema.SchemaMetadata.SchemaMetadataBuilder;
+import eu.solven.adhoc.beta.schema.CubeSchemaMetadata.CubeSchemaMetadataBuilder;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
@@ -76,24 +76,29 @@ public class AdhocSchemaForApi {
 		nameToCube.put(cubeName, cube);
 	}
 
-	public SchemaMetadata getMetadata() {
-		SchemaMetadataBuilder metadata = SchemaMetadata.builder();
+	public EntrypointSchemaMetadata getMetadata() {
+		EntrypointSchemaMetadata.EntrypointSchemaMetadataBuilder metadata = EntrypointSchemaMetadata.builder();
 
 		nameToCube.forEach((name, cube) -> {
-			metadata.cubeToColumn(name, ColumnarMetadata.from(cube.getColumns()));
+			CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+
+			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
+			cubeSchema.measures(cube.getNameToMeasure());
+
+			metadata.cube(name, cubeSchema.build());
 		});
 
 		nameToMeasure.forEach((name, measureBag) -> {
 			List<IMeasure> measures = ImmutableList.copyOf(measureBag.getNameToMeasure().values());
-			metadata.bagToMeasure(name, measures);
+			metadata.measureBag(name, measures);
 		});
 
 		nameToTable.forEach((name, table) -> {
-			metadata.tableToColumn(name, ColumnarMetadata.from(table.getColumns()));
+			metadata.table(name, ColumnarMetadata.from(table.getColumns()));
 		});
 
 		nameToQuery.forEach((name, query) -> {
-			metadata.nameToQuery(name, AdhocQuery.edit(query).build());
+			metadata.query(name, AdhocQuery.edit(query).build());
 		});
 
 		return metadata.build();

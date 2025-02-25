@@ -25,5 +25,5 @@ export default {
 
 		return {};
 	},
-	template: /* HTML */ ` <RouterLink :to="{path:'/html/entrypoints/' + entrypoint.id}"><i class="bi bi-puzzle"></i> {{entrypoint.name}}</RouterLink> `,
+	template: /* HTML */ ` <RouterLink :to="{path:'/html/entrypoints/' + entrypoint.id}"><i class="bi bi-cloud-check"></i> {{entrypoint.name}}</RouterLink> `,
 };

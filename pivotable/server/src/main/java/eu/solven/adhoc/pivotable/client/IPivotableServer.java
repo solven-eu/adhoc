@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.pivotable.client;
 
+import eu.solven.adhoc.beta.schema.EntrypointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.beta.schema.SchemaMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
 import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
 import eu.solven.adhoc.storage.ITabularView;
@@ -39,7 +39,7 @@ import reactor.core.publisher.Mono;
 public interface IPivotableServer {
 	Flux<AdhocEntrypointMetadata> searchEntrypoints(AdhocEntrypointSearch search);
 
-	Flux<SchemaMetadata> searchSchemas(AdhocEntrypointSearch search);
+	Flux<EntrypointSchemaMetadata> searchSchemas(AdhocEntrypointSearch search);
 
 	Mono<ITabularView> executeQuery(TargetedAdhocQuery query);
 
