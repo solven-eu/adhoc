@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
+  <title>SlickGrid example: Grouping</title>
+  <link rel="stylesheet" href="../dist/styles/css/slick-alpine-theme.css" type="text/css"/>
+</head>
+<body>
+<h2 class="title">Example Grouping - ESM</h2>
+<div style="position:relative">
+  <div style="width:600px;">
+    <div class="grid-header" style="width:100%">
+      <label>SlickGrid</label>
+    </div>
+    <div id="myGrid" style="width:100%;height:500px;"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs/Sortable.min.js"></script>
+
+<script type="module">
+import {
+  SlickDataView,
+  SlickGrid,
+} from 'https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/esm/index.mjs';
+// OR preferably use the code below when installing from npm
+// import { SlickGrid, ... } from 'slickgrid';
+
+let dataView;
+let grid;
+let data = [];
+let columns = [
+  {id: "sel", name: "#", field: "num", width: 40, resizable: false, selectable: false, focusable: false },
+  {id: "title", name: "Title", field: "title", width: 70, minWidth: 50,  sortable: true},
+  {id: "duration", name: "Duration", field: "duration", width: 75, sortable: true},
+  {id: "%", name: "% Complete", field: "percentComplete", width: 95,  sortable: true},
+  {id: "start", name: "Start", field: "start", minWidth: 60, sortable: true},
+  {id: "effort-driven", name: "Effort-Driven", width: 100, minWidth: 20, field: "effortDriven", sortable: true}
+];
+
+let options = {
+};
+
+function loadData(count) {
+  let someDates = ["01/01/2009", "02/02/2009", "03/03/2009"];
+  data = [];
+  // prepare the data
+  for (let i = 0; i < count; i++) {
+    let d = (data[i] = {});
+
+    d["id"] = "id_" + i;
+    d["num"] = i;
+    d["title"] = "Task " + i;
+    d["duration"] = Math.round(Math.random() * 30);
+    d["percentComplete"] = Math.round(Math.random() * 100);
+    d["start"] = someDates[ Math.floor((Math.random()*2)) ];
+    d["finish"] = someDates[ Math.floor((Math.random()*2)) ];
+    d["cost"] = Math.round(Math.random() * 10000) / 100;
+    d["effortDriven"] = (i % 5 == 0);
+  }
+  dataView.setItems(data);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  dataView = new SlickDataView({
+  });
+  grid = new SlickGrid("#myGrid", dataView, columns, options);
+
+  dataView.onRowsChanged.subscribe(function (e, args) {
+    grid.invalidateRows(args.rows);
+    grid.render();
+  });
+
+
+
+  // initialize the model after all the events have been hooked up
+  loadData(50);
+
+});
+</script>
+</body>
+</html>

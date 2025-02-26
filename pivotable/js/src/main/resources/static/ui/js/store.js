@@ -28,7 +28,7 @@ export const useAdhocStore = defineStore("adhoc", {
 		schemas: {},
 		nbSchemaFetching: 0,
 
-		queries: {},
+		queries: { nextQuery: 0 },
 		nbQueryFetching: 0,
 	}),
 	getters: {

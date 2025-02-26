@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.resource.AdhocJackson;
 
 public class TestAdhocQueryBuilder {
 	@Test
@@ -79,6 +80,36 @@ public class TestAdhocQueryBuilder {
 	}
 
 	@Test
+	public void testCustomMarker() {
+		Assertions.assertThat(AdhocQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
+		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
+
+		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker())
+				.isEqualTo("someCustom");
+		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
+				.isEqualTo("someCustom");
+	}
+
+	@Test
+	public void testEdit() {
+		AdhocQuery query = fullyCustomized();
+		AdhocQuery edited = AdhocQuery.edit(query).build();
+
+		Assertions.assertThat(edited).isEqualTo(query);
+	}
+
+	private AdhocQuery fullyCustomized() {
+		return AdhocQuery.builder()
+				.measure("k1.SUM")
+				.groupByAlso("c1")
+				.andFilter("c2", "v2")
+				.customMarker("somethingCustom")
+				.debug(true)
+				.explain(true)
+				.build();
+	}
+
+	@Test
 	public void testJackson_empty() throws JsonProcessingException {
 		AdhocQuery q1 = AdhocQuery.builder().build();
 
@@ -101,28 +132,33 @@ public class TestAdhocQueryBuilder {
 	}
 
 	@Test
-	public void testCustomMarker() {
-		Assertions.assertThat(AdhocQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
-		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
+	public void testJackson_complex() throws JsonProcessingException {
+		AdhocQuery query = fullyCustomized();
 
-		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker())
-				.isEqualTo("someCustom");
-		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
-				.isEqualTo("someCustom");
-	}
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
+		String asString = objectMapper.writeValueAsString(query);
+		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
 
-	@Test
-	public void testEdit() {
-		AdhocQuery query = AdhocQuery.builder()
-				.measure("k1.SUM")
-				.groupByAlso("c1")
-				.andFilter("c2", "v2")
-				.customMarker("somethingCustom")
-				.debug(true)
-				.explain(true)
-				.build();
-		AdhocQuery edited = AdhocQuery.edit(query).build();
+		Assertions.assertThat(fromString).isEqualTo(query);
 
-		Assertions.assertThat(edited).isEqualTo(query);
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "filter" : {
+				    "type" : "column",
+				    "column" : "c2",
+				    "valueMatcher" : {
+				      "type" : "equals",
+				      "operand" : "v2"
+				    },
+				    "nullIfAbsent" : true
+				  },
+				  "groupBy" : {
+				    "columns" : [ "c1" ]
+				  },
+				  "measureRefs" : [ "k1.SUM" ],
+				  "customMarker" : "somethingCustom",
+				  "debug" : true,
+				  "explain" : true
+				}""");
 	}
 }

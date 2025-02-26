@@ -25,9 +25,13 @@ package eu.solven.adhoc.measure.model;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.util.IHasName;
 
 /**
  * A node in a DAG of measures. Typically an {@link Aggregator} or a {@link Combinator}.
@@ -40,8 +44,9 @@ import eu.solven.adhoc.measure.AdhocMeasureBag;
 // https://dax.guide/st/measure/
 // `@JsonTypeInfo` is ambiguous given MeasureSetFromResources. But it is useful for SchemaMetadata
 // https://github.com/FasterXML/jackson-annotations/issues/279
-@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type")
-public interface IMeasure {
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type", defaultImpl = ReferencedMeasure.class)
+@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
+public interface IMeasure extends IHasName {
 
 	/**
 	 * 

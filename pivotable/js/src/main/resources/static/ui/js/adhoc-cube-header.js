@@ -53,8 +53,6 @@ export default {
                 <AdhocCubeRef :cubeId="cubeId" :entrypointId="entrypointId" />
 				<AdhocEntrypointRef :entrypointId="entrypointId" />
             </h2>
-
-            {{cubeId}}
         </span>
     `,
 };

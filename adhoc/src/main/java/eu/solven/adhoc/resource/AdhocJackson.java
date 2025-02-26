@@ -30,9 +30,20 @@ import org.springframework.util.ReflectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+/**
+ * Jackson specific classes for Adhoc classes.
+ * 
+ * @author Benoit Lacelle
+ */
 public class AdhocJackson {
 
-	static ObjectMapper makeObjectMapper(String format) {
+	/**
+	 * 
+	 * @param format
+	 *            `json` or `yaml`
+	 * @return an {@link ObjectMapper} configured properly for Adhoc classes
+	 */
+	public static ObjectMapper makeObjectMapper(String format) {
 		ObjectMapper objectMapper;
 		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
 			String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";

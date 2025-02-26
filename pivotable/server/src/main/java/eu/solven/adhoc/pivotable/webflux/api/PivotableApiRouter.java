@@ -70,12 +70,8 @@ public class PivotableApiRouter {
 				.example("12345678-1234-1234-1234-123456789012");
 
 		var cubeId = parameterBuilder().name("cube_id")
-				.description("Search for a specific cubeId")
-				.example("12345678-1234-1234-1234-123456789012");
-
-		var cubeName = parameterBuilder().name("cube_name")
 				.description("Search for a specific cubeName")
-				.example("someCubeName");
+				.example("somreCubeName");
 
 		return SpringdocRouteBuilder.route()
 				.GET(json("/entrypoints"),
@@ -102,8 +98,8 @@ public class PivotableApiRouter {
 						queryHandler::executeFlatQuery,
 						ops -> ops.operationId("executeQuery")
 								// the targeted cube can be referred through id or name
+								.parameter(entrypointId)
 								.parameter(cubeId)
-								.parameter(cubeName)
 
 								.parameter(parameterBuilder().name("measure")
 										.description("Some pre-aggregated or transformed measure")

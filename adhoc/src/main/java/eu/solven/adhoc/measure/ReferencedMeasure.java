@@ -26,7 +26,9 @@ import java.util.Comparator;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import eu.solven.adhoc.column.NameSerializer;
 import eu.solven.adhoc.measure.model.IMeasure;
 import lombok.Builder;
 import lombok.Value;
@@ -42,13 +44,17 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@JsonSerialize(using = NameSerializer.class)
 public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure> {
 	String ref;
 
+	/**
+	 * The name is the same of the ref, so a measure and its reference would conflict.
+	 */
 	@Override
 	@JsonIgnore
 	public String getName() {
-		return "ref-" + getRef();
+		return getRef();
 	}
 
 	@Override
@@ -68,5 +74,16 @@ public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure
 
 	public static ReferencedMeasure ref(String name) {
 		return ReferencedMeasure.builder().ref(name).build();
+	}
+
+	public static class ReferencedMeasureBuilder {
+
+		public ReferencedMeasureBuilder() {
+		}
+
+		// Enable Jackson deserialization given a plain String
+		public ReferencedMeasureBuilder(String measure) {
+			this.ref(measure);
+		}
 	}
 }

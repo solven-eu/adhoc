@@ -31,7 +31,7 @@ export default {
 	},
 	template: /* HTML */ `
         <RouterLink :to="{path:'/html/entrypoints/' + entrypointId + '/cubes/' + cubeId + '/query'}">
-            <i class="bi bi-bar-chart"></i> {{cubeId}}
+            <i class="bi bi-bar-chart"></i> Query {{cubeId}}
         </RouterLink>
     `,
 };

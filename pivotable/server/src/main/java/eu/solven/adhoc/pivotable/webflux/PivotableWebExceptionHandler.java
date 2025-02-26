@@ -30,11 +30,13 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.RequestPath;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.resource.NoResourceFoundException;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.server.WebExceptionHandler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -75,18 +77,20 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 			httpStatus = HttpStatus.UNAUTHORIZED;
 		} else if (e instanceof AccountForbiddenOperation) {
 			httpStatus = HttpStatus.FORBIDDEN;
-		} else if (e instanceof IllegalArgumentException) {
+		} else if (e instanceof IllegalArgumentException || e instanceof ServerWebInputException) {
 			httpStatus = HttpStatus.BAD_REQUEST;
 		} else {
 			httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
 
 		ServerHttpResponse response = exchange.getResponse();
+		RequestPath requestPath = exchange.getRequest().getPath();
+
 		response.setStatusCode(httpStatus);
 		if (log.isDebugEnabled() || PepperEnvHelper.inUnitTest()) {
-			log.warn("Returning a {} given {} ({})", httpStatus, e.getClass(), e.getMessage(), e);
+			log.warn("Returning a {} on path={} given {} ({})", httpStatus, requestPath, e.getClass(), e.getMessage(), e);
 		} else {
-			log.warn("Returning a {} given {} ({})", httpStatus, e.getClass(), e.getMessage());
+			log.warn("Returning a {} on path={} given {} ({})", httpStatus, requestPath, e.getClass(), e.getMessage());
 		}
 
 		Map<String, Object> responseBody = new LinkedHashMap<>();

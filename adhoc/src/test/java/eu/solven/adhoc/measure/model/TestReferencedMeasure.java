@@ -20,38 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.measure.model;
 
-import java.util.Set;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.IQueryOption;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
-/**
- * Wraps an {@link AdhocQuery} with additional information like the targeted cubeId, and the optional
- * {@link IQueryOption}.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder
-@Jacksonized
-public class TargetedAdhocQuery {
-	@NonNull
-	String entrypointId;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.storage.TestMapBasedTabularView;
 
-	@NonNull
-	String cube;
+public class TestReferencedMeasure {
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		String asString =
+				TestMapBasedTabularView.verifyJackson(ReferencedMeasure.class, ReferencedMeasure.ref("someMeasure"));
 
-	@NonNull
-	AdhocQuery query;
+		Assertions.assertThat(asString).isEqualTo("""
+				"someMeasure"
+				""".strip());
+	}
 
-	@Singular
-	@NonNull
-	Set<IQueryOption> options;
+	@Test
+	public void testGetName() throws JsonProcessingException {
+		ReferencedMeasure ref = ReferencedMeasure.ref("someMeasure");
+
+		Assertions.assertThat(ref.getRef()).isEqualTo("someMeasure");
+		Assertions.assertThat(ref.getName()).isEqualTo(ref.getRef());
+	}
 }
