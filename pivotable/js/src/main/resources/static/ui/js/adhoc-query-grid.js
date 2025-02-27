@@ -47,7 +47,7 @@ export default {
 
 			// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 			columns = [];
-			data.length = 0;
+			data = [];
 
 			if (!view.coordinates) {
 				const column = { id: "empty", name: "empty", field: "empty", sortable: true };
@@ -86,6 +86,9 @@ export default {
 			}
 
 			grid.setColumns(columns);
+			grid.setData(data);
+			
+			dataView.refresh();
 		};
 
 		watch(
@@ -114,9 +117,6 @@ export default {
 			dataView.refresh();
 		});
 
-		// dataView.refresh();
-		// grid.invalidate();
-
 		return {};
 	},
 	template: /* HTML */ `
@@ -129,11 +129,11 @@ export default {
 				{{row}} -> {{tabularView.value.values[index]}}
 			</div>
 			
-			<div style="width:600px;">
+			<div >
 			  <div class="grid-header" style="width:100%">
-			    <label>SlickGrid</label>
+			    <label>Pivotable SlickGrid</label>
 			  </div>
-			  <div :id="domId" style="width:100%;height:500px;"></div>
+			  <div :id="domId" style="width:100%;height:100;"></div>
 			</div>
         </div>
     `,

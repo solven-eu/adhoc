@@ -10,7 +10,9 @@ import AdhocMeasure from "./adhoc-measure.js";
 
 import { useUserStore } from "./store-user.js";
 
-import AdhocQueryView from "./adhoc-query-view.js";
+import AdhocQueryWizard from "./adhoc-query-wizard.js";
+import AdhocQueryExecutor from "./adhoc-query-executor.js";
+import AdhocQueryView from "./adhoc-query-grid.js";
 
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
 String.prototype.hashCode = function () {
@@ -44,6 +46,8 @@ export default {
 		AdhocEntrypointHeader,
 		AdhocCubeHeader,
 		AdhocMeasure,
+		AdhocQueryWizard,
+		AdhocQueryExecutor,
 		AdhocQueryView,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -55,10 +59,6 @@ export default {
 		entrypointId: {
 			type: String,
 			required: true,
-		},
-		showEntrypoint: {
-			type: Boolean,
-			default: true,
 		},
 	},
 	computed: {
@@ -81,137 +81,18 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
 
-		const debugQuery = ref(false);
-		const explainQuery = ref(false);
-
-		const autoQuery = ref(true);
 		const loading = ref(false);
-
-		const search = ref("");
-
-		const selectedColumns = reactive({});
-		const selectedMeasures = reactive({});
-
-		const queryJson = computed(() => {
-			const columns = Object.keys(selectedColumns).filter((column) => selectedColumns[column] === true);
-			const measures = Object.keys(selectedMeasures).filter((measure) => selectedMeasures[measure] === true);
-
-			return { groupBy: { columns: columns }, measureRefs: measures, debug: debugQuery.value, explain: explainQuery.value };
-		});
-
-		// Used for manual input of a JSON
-		const queryJsonInput = ref("");
-
+		const queryModel = reactive({selectedColumns: {}, selectedMeasures: {}});
 		const tabularView = reactive({});
-
-		const sendMoveError = ref("");
-		function sendMove() {
-			let move = {};
-
-			move.entrypointId = props.entrypointId;
-			move.cube = props.cubeId;
-			move.query = queryJson.value;
-			//			try {
-			//				move = JSON.parse(this.queryJson);
-			//			} catch (e) {
-			//				console.error("Issue parsing json: ", e);
-			//				sendMoveError.value = e.message;
-			//				return;
-			//			}
-
-			async function postFromUrl(url) {
-				try {
-					loading.value = true;
-					const stringifiedQuery = JSON.stringify(move);
-
-					// console.log("Submitting move", move);
-					// console.log("Submitting move", stringifiedQuery);
-
-					if (!store.queries["" + stringifiedQuery.hashCode()]) {
-						store.queries["" + stringifiedQuery.hashCode()] = {};
-					}
-					store.queries["" + stringifiedQuery.hashCode()].query = move;
-
-					const fetchOptions = {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: stringifiedQuery,
-					};
-					const response = await userStore.authenticatedFetch(url, fetchOptions);
-					if (!response.ok) {
-						throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
-					}
-
-					const responseTabularView = await response.json();
-
-					// The submitted move may have impacted the leaderboard
-					store.$patch((state) => {
-						store.queries["" + stringifiedQuery.hashCode()].result = responseTabularView;
-						//state.contests[contestId].stale = true;
-					});
-					sendMoveError.value = "";
-
-					// console.log(responseTabularView);
-					tabularView.value = responseTabularView;
-
-					// TODO Rely on a named route and params
-					// router.push({ name: "board" });
-				} catch (e) {
-					console.error("Issue on Network:", e);
-					sendMoveError.value = e.message;
-				} finally {
-					loading.value = false;
-				}
-			}
-
-			return postFromUrl(`/cubes/query`);
-		}
-
-		const queryResult = computed(() => {
-			return { selectedColumns: selectedColumns, selectedMeasures: selectedMeasures };
-		});
-
-		const filtered = function (input) {
-			const filter = {};
-
-			for (const column in input) {
-				if (column.includes(search.value) || JSON.stringify(input[column]).includes(search.value)) {
-					filter[column] = input[column];
-				}
-			}
-
-			return filter;
-		};
-
-		watch(
-			() => queryJson.value,
-			() => {
-				if (autoQuery.value) {
-					sendMove();
-				}
-			},
-		);
 
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
 
+
 		return {
-			queryJson,
-
-			search,
-			selectedColumns,
-			selectedMeasures,
-			filtered,
-
-			sendMove,
-			sendMoveError,
-
-			debugQuery,
-			explainQuery,
-			autoQuery,
-
-			tabularView,
 			loading,
+			queryModel,
+			tabularView,
 			domId,
 		};
 	},
@@ -229,65 +110,22 @@ export default {
         <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
         <div v-else>
             <AdhocCubeHeader :entrypointId="entrypointId" :cubeId="cubeId" />
-
-			Build the query
 			
-			<form>
+			<div class="row">
+			  <div class="col">
+			<div class="row">
+			<AdhocQueryWizard :entrypointId="entrypointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
+			  </div>
 
-				Search: <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search">
-			
-				Columns
-				<ul v-for="(type, name) in filtered(cube.columns.columnToTypes)">
-				    <li>
-						<div class="form-check form-switch">
-						  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + name" v-model="selectedColumns[name]">
-						  <label class="form-check-label" :for="'column_' + name">{{name}}: {{type}}</label>
-						</div>
-					</li>
-				</ul>
-	
-				Measures 
-				<ul v-for="(measure, name) in filtered(cube.measures)">
-				    <li>
-						<div class="form-check form-switch">
-						  <input class="form-check-input" type="checkbox" role="switch" :id="'measure_' + name" v-model="selectedMeasures[name]">
-						  <label class="form-check-label" :for="'measure_' + name">
-							  <AdhocMeasure :measure='measure' />
-						  </label>
-						</div>
-				    </li>
-				</ul>
-
-				<div class="form-check form-switch">
-				  <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery">
-				  <label class="form-check-label" for="debugQuery">debug</label>
-				</div>
-				  <div class="form-check form-switch">
-				    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery">
-				    <label class="form-check-label" for="explainQuery">explain</label>
-				  </div>
-				
-			</form>
-
-			<div>
-			    <pre style="height: 10pc; overflow-y: scroll;" class="border text-start">{{queryJson}}</pre>
+			  <div class="row">
+			  <AdhocQueryExecutor :entrypointId="entrypointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
+			    </div>
+			  </div>
+			  <div class="col-9">
+			  <AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
+			  </div>
 			</div>
 
-			<!-- Move Submitter-->
-			<span>
-				<div>
-				    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit
-					</button>
-				    <span v-if="sendMoveError" class="alert alert-warning" role="alert">{{sendMoveError}}</span>
-				</div>
-
-				<div class="form-check form-switch">
-				  <input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery">
-				  <label class="form-check-label" for="autoQuery">autoQuery</label>
-				</div>
-			</span>
-			loading = {{loading}}
-			<AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
         </div>
     `,
 };
