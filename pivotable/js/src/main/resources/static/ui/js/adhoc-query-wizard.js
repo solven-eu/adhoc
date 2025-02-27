@@ -17,15 +17,15 @@ export default {
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
-	cubeId: {
-		type: String,
-		required: true,
-	},
-	entrypointId: {
-		type: String,
-		required: true,
-	},
-	
+		cubeId: {
+			type: String,
+			required: true,
+		},
+		entrypointId: {
+			type: String,
+			required: true,
+		},
+
 		queryModel: {
 			type: Object,
 			required: true,
@@ -102,18 +102,21 @@ export default {
 			<form>
 
 				Search: <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search">
-			
-				Columns
-				<ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
-				    <li class="list-group-item  d-flex justify-content-between align-items-center">
-						<div class="form-check form-switch">
-						  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + name" v-model="queryModel.selectedColumns[name]">
-						  <label class="form-check-label" :for="'column_' + name">{{name}}: {{type}}</label>
-						</div>
-						  <span class="badge bg-primary rounded-pill">?</span>
-					</li>
-				</ul>
-	
+				
+				<div class="h-25 d-inline-block">
+					Columns
+					<ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
+					    <li class="list-group-item  d-flex justify-content-between align-items-center">
+							<div class="form-check form-switch">
+							  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + name" v-model="queryModel.selectedColumns[name]">
+							  <label class="form-check-label" :for="'column_' + name">{{name}}: {{type}}</label>
+							</div>
+							  <span class="badge bg-primary rounded-pill">?</span>
+						</li>
+					</ul>
+				</div>
+
+				<div class="h-25 d-inline-block">
 				Measures 
 				<ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
 				    <li class="list-group-item">
@@ -125,6 +128,7 @@ export default {
 						</div>
 				    </li>
 				</ul>
+				</div>
 
 				<div class="form-check form-switch">
 				  <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery">

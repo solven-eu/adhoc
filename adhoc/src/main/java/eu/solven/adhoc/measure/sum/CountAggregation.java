@@ -73,9 +73,9 @@ public class CountAggregation implements IAggregation {
 	@Override
 	public Object aggregate(Object l, Object r) {
 		if (l == null) {
-			return r;
+			return aggregateOne(r);
 		} else if (r == null) {
-			return l;
+			return aggregateOne(l);
 		} else {
 			if (l instanceof CountHolder countHolder) {
 				return countHolder.aggregate(r);
@@ -84,6 +84,14 @@ public class CountAggregation implements IAggregation {
 			} else {
 				return CountHolder.zero().aggregate(l).aggregate(r);
 			}
+		}
+	}
+
+	protected Object aggregateOne(Object one) {
+		if (one instanceof CountHolder) {
+			return one;
+		} else {
+			return CountHolder.zero().increment();
 		}
 	}
 

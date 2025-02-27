@@ -22,21 +22,31 @@
  */
 package eu.solven.adhoc.pivotable.app;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
+import net.datafaker.providers.base.Country;
 
 /**
  * Add a simple cube for tests and demo purposes.
@@ -52,20 +62,60 @@ public class InjectSimpleCubesConfig {
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
 		InMemoryTable table = InMemoryTable.builder().name("simple").build();
-		table.add(Map.of("ccy", "EUR", "delta", 12.34, "gamma", 123.4));
-		table.add(Map.of("ccy", "USD", "delta", 23.45, "gamma", 234.5));
+
+		Random r = new Random(0);
+		Faker faker = new Faker(r);
+
+		AtomicLong rowIndex = new AtomicLong();
+
+		IntStream.range(0, 16 * 1024).forEach(index -> {
+			double delta = r.nextInt(128) / 100D;
+			double gamma = r.nextInt(1024 * 16) / 100D;
+
+			Country country = faker.country();
+			table.add(ImmutableMap.<String, Object>builder()
+
+					// This is useful to force large tables
+					.put("rowIndex", rowIndex.getAndIncrement())
+
+					.put("ccy", country.currencyCode())
+					.put("country", country.name())
+					.put("capital_city", country.capital())
+
+					.put("gender", faker.gender().binaryTypes())
+					.put("city", faker.address().city())
+
+					.put("delta", delta)
+					.put("gamma", gamma)
+
+					.build());
+		});
 
 		schemaForApi.registerTable(table);
 
-		schemaForApi.registerMeasureBag(AdhocMeasureBag.fromMeasures("simple",
-				Arrays.asList(Aggregator.sum("delta"),
-						Aggregator.sum("gamma"),
-						Combinator.builder()
-								.name("delta+gamma")
-								.underlying("delta")
-								.underlying("gamma")
-								.combinationKey(SumCombination.KEY)
-								.build())));
+		List<IMeasure> measures = new ArrayList<>();
+
+		measures.add(Aggregator.sum("delta"));
+		measures.add(Aggregator.sum("gamma"));
+
+		measures.add(Combinator.builder()
+				.name("delta+gamma")
+				.underlying("delta")
+				.underlying("gamma")
+				.combinationKey(SumCombination.KEY)
+				.build());
+		measures.add(Combinator.builder()
+				.name("% delta / delta+gamma")
+				.underlying("delta")
+				.underlying("gamma")
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put(ExpressionCombination.KEY_EXPRESSION,
+								"IF(delta == null, 0, IF(gamma == null, 1, delta / (delta + gamma)))")
+						.build())
+				.build());
+
+		schemaForApi.registerMeasureBag(AdhocMeasureBag.fromMeasures("simple", measures));
 
 		schemaForApi.registerCube("simple", "simple", "simple");
 

@@ -44,8 +44,9 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class ExpressionCombination implements ICombination {
-
 	public static final String KEY = "EXPRESSION";
+
+	public static final String KEY_EXPRESSION = "expression";
 
 	@NonNull
 	final String expression;
@@ -67,14 +68,14 @@ public class ExpressionCombination implements ICombination {
 			result = exp.withValues(nameToValue).evaluate();
 
 		} catch (EvaluationException | ParseException e) {
-			throw new IllegalArgumentException(e);
+			throw new IllegalArgumentException("Issue with expression=`%s`".formatted(expression), e);
 		}
 
 		return result.getValue();
 	}
 
 	public static ExpressionCombination parse(Map<String, ?> options) {
-		String expression = MapPathGet.getRequiredString(options, "expression");
+		String expression = MapPathGet.getRequiredString(options, KEY_EXPRESSION);
 		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 		return new ExpressionCombination(expression, underlyingIndexToName);
 	}

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.storage;
 
+import java.util.stream.IntStream;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -107,7 +109,47 @@ public class TestMultiTypeStorage {
 		storage.purgeAggregationCarriers();
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Long.class);
+			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(2L);
+		});
+	}
+
+	@Test
+	public void testPurgeAggregationCarriers_singleEntry() {
+		MultiTypeStorage<String> storage =
+				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+
+		storage.merge("k1", 3);
+
+		// storage.onValue("k1", o -> {
+		// Assertions.assertThat(o).isInstanceOf(CountHolder.class);
+		// });
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(1L);
+		});
+	}
+
+	// For consider a large problem, to pop issues around hashMap and non-linearities due to buckets
+	@Test
+	public void testPurgeAggregationCarriers_large() {
+		MultiTypeStorage<String> storage =
+				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+
+		int size = 16 * 1024;
+
+		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, i));
+		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, 2 * i));
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(CountHolder.class);
+		});
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(2L);
 		});
 	}
 }

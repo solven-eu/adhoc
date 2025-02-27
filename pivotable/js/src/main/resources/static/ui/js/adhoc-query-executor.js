@@ -48,15 +48,15 @@ export default {
 			type: String,
 			required: true,
 		},
-				
+
 		queryModel: {
 			type: Object,
 			required: true,
-		}				,
+		},
 		tabularView: {
 			type: Object,
 			required: true,
-		}
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
@@ -80,6 +80,8 @@ export default {
 
 		const autoQuery = ref(true);
 		const loading = ref(false);
+
+		const queryStatus = ref("");
 
 		if (!props.queryModel.selectedColumns) {
 			props.queryModel.selectedColumns = {};
@@ -116,6 +118,7 @@ export default {
 			async function postFromUrl(url) {
 				try {
 					loading.value = true;
+					queryStatus.value = "Preparing";
 					const stringifiedQuery = JSON.stringify(move);
 
 					// console.log("Submitting move", move);
@@ -131,12 +134,19 @@ export default {
 						headers: { "Content-Type": "application/json" },
 						body: stringifiedQuery,
 					};
+
+					queryStatus.value = "Submitted";
 					const response = await userStore.authenticatedFetch(url, fetchOptions);
 					if (!response.ok) {
 						throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
 					}
 
+					queryStatus.value = "Downloading";
+
 					const responseTabularView = await response.json();
+
+					// This will be cancelled i nthe finally block: the rendering status is managed autonomously by the grid
+					queryStatus.value = "Rendering";
 
 					// The submitted move may have impacted the leaderboard
 					store.$patch((state) => {
@@ -155,6 +165,7 @@ export default {
 					sendMoveError.value = e.message;
 				} finally {
 					loading.value = false;
+					queryStatus.value = "";
 				}
 			}
 
@@ -197,6 +208,7 @@ export default {
 			sendMoveError,
 
 			loading,
+			queryStatus,
 			domId,
 		};
 	},
@@ -213,10 +225,8 @@ export default {
         </div>
         <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
         <div v-else>
-			<div>
-			    <pre style="height: 10pc; overflow-y: scroll;" class="border text-start">{{queryJson}}</pre>
-			</div>
-
+		queryStatus={{queryStatus}}
+		
 			<!-- Move Submitter-->
 			<span>
 				<div>
@@ -230,6 +240,10 @@ export default {
 				  <label class="form-check-label" for="autoQuery">autoQuery</label>
 				</div>
 			</span>
+
+			<div>
+			    <pre style="height: 10pc; overflow-y: scroll;" class="border text-start">{{queryJson}}</pre>
+			</div>
         </div>
     `,
 };

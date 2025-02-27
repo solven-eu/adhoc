@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.storage;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -342,6 +344,9 @@ public class MultiTypeStorage<T> {
 	}
 
 	public void purgeAggregationCarriers() {
+		// We collect entries to remove, not to modify `measureToAggregateO` while iterating over it
+		List<T> toRemove = new ArrayList<>(); 
+		
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				aggregationCarrier.acceptValueConsumer(new IValueConsumer() {
@@ -349,27 +354,30 @@ public class MultiTypeStorage<T> {
 					@Override
 					public void onLong(long value) {
 						measureToAggregateL.put(key, value);
-						measureToAggregateO.remove(key);
+						toRemove.add(key);
 					}
 
 					@Override
 					public void onDouble(double value) {
 						measureToAggregateD.put(key, value);
-						measureToAggregateO.remove(key);
+						toRemove.add(key);
 					}
 
 					@Override
 					public void onCharsequence(CharSequence value) {
 						measureToAggregateS.put(key, value.toString());
-						measureToAggregateO.remove(key);
+						toRemove.add(key);
 					}
 
 					@Override
 					public void onObject(Object object) {
-						measureToAggregateO.put(key, value.toString());
+						// Replace current value
+						measureToAggregateO.put(key, value);
 					}
 				});
 			}
 		});
+		
+		toRemove.forEach(measureToAggregateO::remove);
 	}
 }

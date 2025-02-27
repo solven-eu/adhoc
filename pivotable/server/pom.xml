@@ -32,6 +32,13 @@
 		<!--            <artifactId>redis</artifactId>-->
 		<!--            <version>${project.version}</version>-->
 		<!--        </dependency>-->
+		
+		<dependency>
+			<!-- EvaluationExpression -->
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>3.4.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

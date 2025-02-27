@@ -63,7 +63,7 @@ public interface IAdhocTestConstants {
 			// We may process ternary into IF
 			// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
 			.combinationOptions(ImmutableMap.<String, Object>builder()
-					.put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
+					.put(ExpressionCombination.KEY_EXPRESSION, "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
 					.build())
 			.build();
 

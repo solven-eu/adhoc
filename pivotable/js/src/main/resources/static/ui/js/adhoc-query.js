@@ -82,12 +82,11 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
 
 		const loading = ref(false);
-		const queryModel = reactive({selectedColumns: {}, selectedMeasures: {}});
+		const queryModel = reactive({ selectedColumns: {}, selectedMeasures: {} });
 		const tabularView = reactive({});
 
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
-
 
 		return {
 			loading,
@@ -121,8 +120,8 @@ export default {
 			  <AdhocQueryExecutor :entrypointId="entrypointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
 			    </div>
 			  </div>
-			  <div class="col-9">
-			  <AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
+			  <div class="col-9" style="height: 600px;">
+			  	<AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
 			  </div>
 			</div>
 

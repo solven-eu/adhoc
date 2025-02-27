@@ -10,7 +10,7 @@ import AdhocEntrypointHeader from "./adhoc-entrypoint-header.js";
 
 import AdhocCubes from "./adhoc-cubes.js";
 
-import AdhocEntrypointFormRef from "./adhoc-entrypoint-form-ref.js";
+import AdhocEntrypointSchemaRef from "./adhoc-entrypoint-schema-ref.js";
 
 import AdhocCube from "./adhoc-cube.js";
 import AdhocCubeRef from "./adhoc-cube-ref.js";
@@ -19,7 +19,7 @@ export default {
 	components: {
 		AdhocEntrypointHeader,
 		AdhocCubes,
-		AdhocEntrypointFormRef,
+		AdhocEntrypointSchemaRef,
 		AdhocCube,
 		AdhocCubeRef,
 	},
@@ -131,6 +131,7 @@ export default {
 							<AdhocCubeRef :entrypointId="entrypointId" :cubeId="cubeName" />
 						</span>
                     </div>
+					<AdhocEntrypointSchemaRef :entrypointId="entrypointId" />
                 </span>
             </span>
 
@@ -142,8 +143,6 @@ export default {
                     ><i class="bi bi-trophy"></i> Join an existing contest ({{nbContests}})
                 </RouterLink>
             </span-->
-
-            <AdhocEntrypointFormRef :entrypointId="entrypointId" />
 			
 			<AdhocCube :entrypointId="entrypointId" :cubeId="cubeId" v-if="cubeId" />
         </div>

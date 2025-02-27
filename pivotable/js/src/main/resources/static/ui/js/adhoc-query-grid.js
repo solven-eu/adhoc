@@ -7,7 +7,7 @@ import AdhocMeasure from "./adhoc-measure.js";
 
 import { useUserStore } from "./store-user.js";
 
-import { SlickGrid, SlickDataView } from "slickgrid";
+import { SlickGrid, SlickDataView, Formatters } from "slickgrid";
 import Sortable from "sortablejs";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
@@ -42,6 +42,26 @@ export default {
 
 		let columns = [];
 
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
+		const numberFormat = new Intl.NumberFormat({ maximumSignificantDigits: 3 });
+
+		// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
+		function percentFormatter(row, cell, value, columnDef, dataContext) {
+			var rtn = {};
+
+			rtn.text = numberFormat.format(value * 100) + "%";
+			rtn.toolTip = value;
+
+			return rtn;
+		}
+
+		const rendering = ref(false);
+
+		function renderSparkline(cellNode, row, dataContext, colDef) {
+			rendering.value = false;
+		}
+
+		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.value;
 
@@ -49,8 +69,11 @@ export default {
 			columns = [];
 			data = [];
 
+			rendering.value = true;
+
 			if (!view.coordinates) {
-				const column = { id: "empty", name: "empty", field: "empty", sortable: true };
+				const column = { id: "empty", name: "empty", field: "empty", sortable: true, asyncPostRender: renderSparkline };
+
 				columns.push(column);
 				data.push({ id: "0", empty: "empty" });
 			} else {
@@ -61,11 +84,16 @@ export default {
 
 					if (i == 0) {
 						for (const property of Object.keys(coordinatesRow)) {
-							const column = { id: property, name: property, field: property, sortable: true };
+							const column = { id: property, name: property, field: property, sortable: true, asyncPostRender: renderSparkline };
 							columns.push(column);
 						}
 						for (const property of Object.keys(measuresRow)) {
-							const column = { id: property, name: property, field: property, sortable: true };
+							const column = { id: property, name: property, field: property, sortable: true, asyncPostRender: renderSparkline };
+
+							if (property.indexOf("%") >= 0) {
+								column["formatter"] = percentFormatter;
+							}
+
 							columns.push(column);
 						}
 					}
@@ -86,8 +114,11 @@ export default {
 			}
 
 			grid.setColumns(columns);
-			grid.setData(data);
-			
+
+			// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view
+			//grid.setData(data);
+			dataView.setItems(data);
+
 			dataView.refresh();
 		};
 
@@ -107,17 +138,45 @@ export default {
 
 		dataView.setItems(data);
 
+		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
-			rowHeight: 28,
+			enableColumnReorder: true,
+			enableAutoSizeColumns: true,
+			//			autoHeight: true,
+			fullWidthRows: true,
+			forceFitColumns: true,
+			// https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html		,
+			enableAsyncPostRender: true,
 		};
+
+		// Use AutoResizer?
+		// https://6pac.github.io/SlickGrid/examples/example15-auto-resize.html
 
 		onMounted(() => {
 			// SlickGrid requires the DOM to be ready: `onMounted` is needed
 			grid = new SlickGrid("#" + props.domId, dataView, columns, options);
 			dataView.refresh();
+
+			// TODO comparer function is never called?
+			function comparer(a, b) {
+				let x = a[sortcol],
+					y = b[sortcol];
+				return x == y ? 0 : x > y ? 1 : -1;
+			}
+
+			let sortdir = 1;
+			let sortcol = "unknown";
+			grid.onSort.subscribe(function (e, args) {
+				sortdir = args.sortAsc ? 1 : -1;
+				sortcol = args.sortCol.field;
+
+				// using native sort with comparer
+				// preferred method but can be very slow in IE with huge datasets
+				dataView.sort(comparer, args.sortAsc);
+			});
 		});
 
-		return {};
+		return { rendering };
 	},
 	template: /* HTML */ `
 		<div>
@@ -125,15 +184,16 @@ export default {
 			  <span class="visually-hidden">Loading...</span>
 			</div>
 			
-			<div v-for="(row, index) in tabularView.value?.coordinates">
+			<!--div v-for="(row, index) in tabularView.value?.coordinates">
 				{{row}} -> {{tabularView.value.values[index]}}
-			</div>
+			</div-->
 			
-			<div >
-			  <div class="grid-header" style="width:100%">
-			    <label>Pivotable SlickGrid</label>
+			rendering = {{rendering}}
+			<div>
+			  <div class="grid-header" style="width:100%;">
+			    <label>SlickGrid</label>
 			  </div>
-			  <div :id="domId" style="width:100%;height:100;"></div>
+			  <div :id="domId" style="width:100%;height:500px;"></div>
 			</div>
         </div>
     `,

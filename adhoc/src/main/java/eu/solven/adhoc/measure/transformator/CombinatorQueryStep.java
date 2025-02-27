@@ -115,7 +115,8 @@ public class CombinatorQueryStep extends ATransformator {
 			value = combination.combine(slice, underlyingVs);
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException(
-					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), underlyingVs, slice));
+					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), underlyingVs, slice),
+					e);
 		}
 
 		if (isDebug()) {
