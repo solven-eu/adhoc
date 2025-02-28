@@ -44,6 +44,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapperParameters;
 import eu.solven.adhoc.table.google.bigquery.AdhocGoogleBigQueryTableWrapper;
+import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -62,6 +63,11 @@ public class TestTableGoogleBigQuery {
 			log.warn("Lacking GCP credentials", e);
 			Assumptions.assumeTrue(false, e.getMessage());
 		}
+	}
+
+	@BeforeAll
+	public static void assumeInternetIdOk() {
+		PepperTestHelper.assumeInternetIsAvailable();
 	}
 
 	// @Test

@@ -44,7 +44,7 @@ export default {
 			type: String,
 			required: true,
 		},
-		entrypointId: {
+		endpointId: {
 			type: String,
 			required: true,
 		},
@@ -61,14 +61,14 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
-			entrypoint(store) {
-				return store.entrypoints[this.entrypointId] || { error: "not_loaded" };
+			endpoint(store) {
+				return store.endpoints[this.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.entrypointId] || { error: "not_loaded" };
+				return store.schemas[this.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.entrypointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -76,7 +76,7 @@ export default {
 		const store = useAdhocStore();
 		const userStore = useUserStore();
 
-		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
+		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const autoQuery = ref(true);
 		const loading = ref(false);
@@ -104,7 +104,7 @@ export default {
 		function sendMove() {
 			let move = {};
 
-			move.entrypointId = props.entrypointId;
+			move.endpointId = props.endpointId;
 			move.cube = props.cubeId;
 			move.query = queryJson.value;
 			//			try {
@@ -213,7 +213,7 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!entrypoint || !cube)">
+        <div v-if="(!endpoint || !cube)">
             <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
                 <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
@@ -223,7 +223,7 @@ export default {
                 <span>Issue loading cubeId={{cubeId}}</span>
             </div>
         </div>
-        <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
+        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
 		queryStatus={{queryStatus}}
 		

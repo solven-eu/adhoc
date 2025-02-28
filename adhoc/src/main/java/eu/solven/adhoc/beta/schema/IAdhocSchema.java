@@ -20,44 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube;
+package eu.solven.adhoc.beta.schema;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.util.IHasColumns;
-import eu.solven.adhoc.util.IHasName;
 
 /**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
+ * Wraps together the core structures of Adhoc
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
-	}
+public interface IAdhocSchema {
 
-	/**
-	 * 
-	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
-	 * @return
-	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
+	EndpointSchemaMetadata getMetadata();
 
-	default Set<Object> getCoordinates(String column) {
-		ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
-
-		return view.slices().map(slice -> slice.getRawSliced(column)).collect(Collectors.toSet());
-	}
+	ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options);
 
 }

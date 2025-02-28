@@ -20,18 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.entrypoint;
+package eu.solven.adhoc.pivottable.api;
 
-import eu.solven.adhoc.beta.schema.EntrypointSchemaMetadata;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
-
-@Value
-@Builder
-@Jacksonized
-public class EntrypointSchema {
-	AdhocEntrypointMetadata entrypoint;
-
-	EntrypointSchemaMetadata schema;
+/**
+ * Constants related to Pivotable API
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IPivotableApiConstants {
+	String PREFIX_V1 = "/api/v1";
+	String PREFIX = PREFIX_V1;
 }

@@ -47,6 +47,7 @@ import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.tools.IUuidGenerator;
 import eu.solven.adhoc.tools.JdkUuidGenerator;
 import lombok.SneakyThrows;
@@ -140,7 +141,7 @@ public class PivotableTokenService {
 			throw new IllegalStateException("Need to setup %s".formatted(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER));
 		}
 		// This matches `/api/v1/oauth2/token` as route for token generation
-		return issuerBaseUrl + "/api/v1" + "/oauth2";
+		return issuerBaseUrl + IPivotableApiConstants.PREFIX + "/oauth2";
 	}
 
 	/**

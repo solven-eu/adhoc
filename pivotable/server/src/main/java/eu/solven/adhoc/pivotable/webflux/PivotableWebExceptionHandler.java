@@ -88,9 +88,19 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 
 		response.setStatusCode(httpStatus);
 		if (log.isDebugEnabled() || PepperEnvHelper.inUnitTest()) {
-			log.warn("Returning a {} on path={} given {} ({})", httpStatus, requestPath, e.getClass(), e.getMessage(), e);
+			log.warn("Returning a {} on path={} given {} ({})",
+					httpStatus,
+					requestPath,
+					e.getClass(),
+					e.getMessage(),
+					e);
 		} else {
-			log.warn("Returning a {} on path={} given {} ({})", httpStatus, requestPath, e.getClass(), e.getMessage(), e);
+			log.warn("Returning a {} on path={} given {} ({})",
+					httpStatus,
+					requestPath,
+					e.getClass(),
+					e.getMessage(),
+					e);
 		}
 
 		Map<String, Object> responseBody = new LinkedHashMap<>();

@@ -10,7 +10,7 @@ export default {
 			type: String,
 			required: true,
 		},
-		entrypointId: {
+		endpointId: {
 			type: String,
 			required: true,
 		},
@@ -18,19 +18,19 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, {
 			cube(store) {
-				return store.schemas[this.entrypointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
-		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
+		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/entrypoints/' + entrypointId + '/cubes/' + cubeId}">
+        <RouterLink :to="{path:'/html/endpoints/' + endpointId + '/cubes/' + cubeId}">
             <i class="bi bi-box"></i> {{cubeId}}
         </RouterLink>
     `,

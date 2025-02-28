@@ -20,68 +20,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.cube;
+package eu.solven.adhoc.pivotable.endpoint;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class AdhocCubesRegistry {
+public class PivotableAdhocSchemaRegistry {
 	// One day, we could register externalized games, interacting by API. It will be a way not to concentrate all Games
 	// in this project.
-	final Map<PivotableCubeId, PivotableCubeMetadata> idToCube = new ConcurrentHashMap<>();
+	final Map<UUID, AdhocSchema> idToSchema = new ConcurrentHashMap<>();
 
-	public void registerGame(PivotableCubeMetadata cube) {
-		PivotableCubeId cubeId = cube.getId();
-
-		if (cubeId == null) {
-			throw new IllegalArgumentException("Missing gameId: " + cube);
+	public void registerEntrypoint(UUID endpointId, AdhocSchema schema) {
+		if (endpointId == null) {
+			throw new IllegalArgumentException("Missing endpointId: " + schema);
 		}
 
-		PivotableCubeMetadata alreadyIn = idToCube.putIfAbsent(cubeId, cube);
+		AdhocSchema alreadyIn = idToSchema.putIfAbsent(endpointId, schema);
 		if (alreadyIn != null) {
-			throw new IllegalArgumentException("cubeId already registered: " + cube);
+			throw new IllegalArgumentException(
+					"schema for endpointId=%s already registered: %s".formatted(endpointId, schema));
 		}
-		log.info("Registering cubeId={}", cubeId);
+		log.info("Registering schema for endpointId={}", endpointId);
 	}
 
-	public PivotableCubeMetadata getCube(PivotableCubeId cubeId) {
-		PivotableCubeMetadata cube = idToCube.get(cubeId);
-		if (cube == null) {
-			throw new IllegalArgumentException("No cube registered for id=" + cubeId);
+	public AdhocSchema getSchema(UUID endpointId) {
+		AdhocSchema schema = idToSchema.get(endpointId);
+		if (schema == null) {
+			throw new IllegalArgumentException("No schema registered for id=" + endpointId);
 		}
-		return cube;
+		return schema;
 	}
 
-	public List<PivotableCubeMetadata> searchCubes(PivotableCubeSearchParameters search) {
-		Stream<PivotableCubeMetadata> metaStream;
+	public List<AdhocSchema> search(AdhocEndpointSearch search) {
+		Stream<AdhocSchema> metaStream;
 
-		if (search.getEndpointId().isPresent() && search.getCube().isPresent()) {
-			PivotableCubeId cubeId = PivotableCubeId.of(search.getEndpointId().get(), search.getCube().get());
-			metaStream = Optional.ofNullable(idToCube.get(cubeId)).stream();
+		if (search.getEndpointId().isPresent()) {
+			UUID uuid = search.getEndpointId().get();
+			metaStream = Optional.ofNullable(idToSchema.get(uuid)).stream();
 		} else {
-			metaStream = idToCube.values().stream();
+			metaStream = idToSchema.values().stream();
 		}
 
 		if (search.getKeyword().isPresent()) {
 			String keyword = search.getKeyword().get();
-			metaStream = metaStream.filter(
-					g -> g.getId().getCube().contains(keyword) || g.getId().getEndpointId().toString().contains(keyword)
-							|| g.getMeasures().stream().anyMatch(measure -> measure.contains(keyword)));
+			metaStream = metaStream.filter(g -> g.toString().contains(keyword));
 		}
 
 		return metaStream.collect(Collectors.toList());
 	}
 
-	// public Stream<? extends AdhocEntrypointMetadata> getGames() {
-	// return idToCube.values().stream();
-	// }
+	public Stream<? extends AdhocSchema> getSchemas() {
+		return idToSchema.values().stream();
+	}
 }

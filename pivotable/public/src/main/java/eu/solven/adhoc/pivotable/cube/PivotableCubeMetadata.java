@@ -23,16 +23,15 @@
 package eu.solven.adhoc.pivotable.cube;
 
 import java.util.Set;
-import java.util.UUID;
 
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Each {@link AdhocEntrypointMetadata} has a {@link Set} of available cubes. This is one of such cube.
+ * Each {@link PivotableAdhocEndpointMetadata} has a {@link Set} of available cubes. This is one of such cube.
  * 
  * @author Benoit Lacelle
  *
@@ -43,13 +42,7 @@ import lombok.extern.jackson.Jacksonized;
 public class PivotableCubeMetadata {
 
 	@NonNull
-	UUID entrypointId;
-
-	@NonNull
-	UUID id;
-
-	@NonNull
-	String name;
+	PivotableCubeId id;
 
 	@NonNull
 	Set<String> measures;
@@ -57,9 +50,9 @@ public class PivotableCubeMetadata {
 	@NonNull
 	Set<String> columns;
 
-	public static PivotableCubeMetadataBuilder fromEntrypoint(AdhocEntrypointMetadata game) {
-		return PivotableCubeMetadata.builder().entrypointId(game.getId());
-	}
+	// public static PivotableCubeMetadataBuilder fromEntrypoint(AdhocEntrypointMetadata game) {
+	// return PivotableCubeMetadata.builder().endpointId(game.getId());
+	// }
 
 	/**
 	 * 

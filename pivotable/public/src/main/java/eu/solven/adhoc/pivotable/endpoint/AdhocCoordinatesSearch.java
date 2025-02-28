@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.entrypoint;
+package eu.solven.adhoc.pivotable.endpoint;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,21 +30,30 @@ import lombok.Builder.Default;
 import lombok.Value;
 
 /**
- * Options to search through entrypoints (i.e. URLs serving the standard Adhoc API).
+ * Options to search through coordinates of a column.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-public class AdhocEntrypointSearch {
+public class AdhocCoordinatesSearch {
 	@Default
-	Optional<UUID> entrypointId = Optional.empty();
+	Optional<UUID> endpointId = Optional.empty();
 
-	// May be searched in id, else name, else url, potentially case-insensitive
+	// If both table and cube are expressed, we search through both of them
 	@Default
-	Optional<String> keyword = Optional.empty();
+	Optional<String> table = Optional.empty();
 
-	public static AdhocEntrypointSearch byServerId(UUID gameId) {
-		return AdhocEntrypointSearch.builder().entrypointId(Optional.of(gameId)).build();
-	}
+	// If both table and cube are expressed, we search through both of them
+	@Default
+	Optional<String> cube = Optional.empty();
+
+	// Search for a specific name
+	@Default
+	Optional<String> column = Optional.empty();
+
+	// Search for a matching name
+	// @Default
+	// Optional<IValueMatcher> name = Optional.empty();
+
 }

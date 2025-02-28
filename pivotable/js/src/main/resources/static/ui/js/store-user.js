@@ -75,12 +75,12 @@ export const useUserStore = defineStore("user", {
 			}
 		},
 		newNetworkError(msg, url, response) {
-			return new NetworkError("Rejected request for entrypoints url" + url, url, response);
+			return new NetworkError("Rejected request for endpoints url" + url, url, response);
 		},
 
 		async fetchCsrfToken() {
 			// https://www.baeldung.com/spring-security-csrf
-			// If we relied on Cookie, `.csrfTokenRepository(CookieEntrypointCsrfTokenRepository.withHttpOnlyFalse())` we could get the csrfToken with:
+			// If we relied on Cookie, `.csrfTokenRepository(CookieEndpointCsrfTokenRepository.withHttpOnlyFalse())` we could get the csrfToken with:
 			// const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, '$1');
 
 			const response = await fetch(`/api/login/v1/csrf`);
@@ -139,8 +139,8 @@ export const useUserStore = defineStore("user", {
 				if (response.status === 401) {
 					throw new UserNeedsToLoginError("User needs to login");
 				} else if (!response.ok) {
-					// What is this scenario? EntrypointInternalError?
-					throw new NetworkError("Rejected request for entrypoints url" + url, url, response);
+					// What is this scenario? EndpointInternalError?
+					throw new NetworkError("Rejected request for endpoints url" + url, url, response);
 				}
 
 				// We can typically get a Network error while fetching the json

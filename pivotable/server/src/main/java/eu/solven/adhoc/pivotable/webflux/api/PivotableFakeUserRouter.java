@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -61,12 +62,12 @@ public class PivotableFakeUserRouter {
 	@Bean
 	public RouterFunction<ServerResponse> fakeUserRoutes(PivotableClearHandler kumiteResetHandler) {
 		return SpringdocRouteBuilder.route()
-				.POST(json("/api/v1/clear"),
+				.POST(json(IPivotableApiConstants.PREFIX + "/clear"),
 						kumiteResetHandler::clear,
 						ops -> ops.operationId("clear")
 								.response(responseBuilder().responseCode("200").description("Cleared")))
 				// One can clear with GET to make it easier for a human
-				.GET(json("/api/v1/clear"),
+				.GET(json(IPivotableApiConstants.PREFIX + "/clear"),
 						kumiteResetHandler::clear,
 						ops -> ops.operationId("clear")
 								.response(responseBuilder().responseCode("200").description("Cleared")))

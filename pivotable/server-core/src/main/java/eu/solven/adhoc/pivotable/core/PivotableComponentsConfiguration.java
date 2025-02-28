@@ -28,15 +28,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
-import eu.solven.adhoc.pivotable.app.InjectPivotableEntrypointsConfig;
+import eu.solven.adhoc.pivotable.app.InjectPivotableSelfEndpointConfig;
 import eu.solven.adhoc.pivotable.app.InjectSimpleCubesConfig;
 import eu.solven.adhoc.pivotable.app.persistence.InMemoryPivotableConfiguration;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import lombok.extern.slf4j.Slf4j;
@@ -47,14 +46,18 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableRandomConfiguration.class,
 
 		PivotableUsersRegistry.class,
-		AdhocEntrypointsRegistry.class,
+		// Holds the Entrypoints definitions (e.g. URLs)
+		PivotableEndpointsRegistry.class,
+		// Holds the Entrypoints schemas
+		PivotableAdhocSchemaRegistry.class,
+		// Holds the Cubes, through endpoints
 		AdhocCubesRegistry.class,
 
 		// Only one of the following persistence options will actually kicks-in
 		InMemoryPivotableConfiguration.class,
 
 		InjectPivotableAccountsConfig.class,
-		InjectPivotableEntrypointsConfig.class,
+		InjectPivotableSelfEndpointConfig.class,
 		InjectSimpleCubesConfig.class,
 
 })
@@ -83,11 +86,5 @@ public class PivotableComponentsConfiguration {
 		eventBus.register(new AdhocEventFromGreenrobotToSlf4j());
 
 		return null;
-	}
-
-	// A custom project may prepare a schema with relevant tables, measures, etc
-	@Bean
-	AdhocSchemaForApi adhocSchemaForApi(EventBus eventBus) {
-		return AdhocSchemaForApi.builder().engine(AdhocQueryEngine.builder().eventBus(eventBus::post).build()).build();
 	}
 }

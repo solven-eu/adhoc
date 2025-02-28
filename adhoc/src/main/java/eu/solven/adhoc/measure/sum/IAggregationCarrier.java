@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
  * This is used by {@link IAggregation} which need to differentiate clearly from inputs and a stateful-but-intermediate
@@ -32,5 +33,18 @@ import eu.solven.adhoc.storage.IValueConsumer;
  * @author Benoit Lacelle
  */
 public interface IAggregationCarrier {
+
+	interface IHasCarriers {
+
+		/**
+		 * 
+		 * @param v
+		 *            some pre-aggregated value, typically computed by the {@link IAdhocTableWrapper}.
+		 * @return an {@link IAggregationCarrier}
+		 */
+		IAggregationCarrier wrap(Object v);
+
+	}
+
 	void acceptValueConsumer(IValueConsumer valueConsumer);
 }

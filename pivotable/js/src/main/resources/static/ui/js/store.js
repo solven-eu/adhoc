@@ -23,8 +23,8 @@ export const useAdhocStore = defineStore("adhoc", {
 		accounts: {},
 		nbAccountFetching: 0,
 
-		// The loaded entrypoints and schemas
-		entrypoints: {},
+		// The loaded endpoints and schemas
+		endpoints: {},
 		schemas: {},
 		nbSchemaFetching: 0,
 
@@ -121,7 +121,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
-		async loadEntrypoints() {
+		async loadEndpoints() {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -130,14 +130,14 @@ export const useAdhocStore = defineStore("adhoc", {
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
-						throw new Error("Rejected request for entrypoints url" + url);
+						throw new Error("Rejected request for endpoints url" + url);
 					}
 					const responseJson = await response.json();
 
 					responseJson.forEach((item) => {
-						console.log("Registering entrypointId", item.id);
+						console.log("Registering endpointId", item.id);
 						store.$patch({
-							entrypoints: { ...store.entrypoints, [item.id]: item },
+							endpoints: { ...store.endpoints, [item.id]: item },
 						});
 					});
 				} catch (e) {
@@ -147,11 +147,11 @@ export const useAdhocStore = defineStore("adhoc", {
 				}
 			}
 
-			return fetchFromUrl("/entrypoints");
+			return fetchFromUrl("/endpoints");
 		},
 
-		async loadEntrypoint(entrypointId) {
-			console.log("About to load entrypointId", entrypointId);
+		async loadEndpoint(endpointId) {
+			console.log("About to load endpointId", endpointId);
 
 			const store = this;
 
@@ -160,57 +160,57 @@ export const useAdhocStore = defineStore("adhoc", {
 				try {
 					const response = await store.authenticatedFetch(url);
 					if (!response.ok) {
-						throw new Error("Rejected request for entrypointId=" + entrypointId);
+						throw new Error("Rejected request for endpointId=" + endpointId);
 					}
 
 					const responseJson = await response.json();
 
-					let entrypoint;
+					let endpoint;
 					if (responseJson.length === 0) {
-						// the entrypointId does not exist
-						entrypoint = { error: "unknown" };
+						// the endpointId does not exist
+						endpoint = { error: "unknown" };
 					} else if (responseJson.length !== 1) {
-						throw new NetworkError("We expected a single entrypoint", url, response);
+						throw new NetworkError("We expected a single endpoint", url, response);
 					} else {
-						entrypoint = responseJson[0];
+						endpoint = responseJson[0];
 					}
 
 					// https://github.com/vuejs/pinia/discussions/440
-					console.log("Registering entrypointId", entrypointId);
+					console.log("Registering endpointId", endpointId);
 					store.$patch({
-						entrypoints: { ...store.entrypoints, [entrypointId]: entrypoint },
+						endpoints: { ...store.endpoints, [endpointId]: endpoint },
 					});
 
-					return entrypoint;
+					return endpoint;
 				} catch (e) {
 					store.onSwallowedError(e);
 
-					const entrypoint = {
-						entrypointId: entrypointId,
+					const endpoint = {
+						endpointId: endpointId,
 						error: e,
 					};
 					store.$patch({
-						entrypoints: { ...store.entrypoints, [entrypointId]: entrypoint },
+						endpoints: { ...store.endpoints, [endpointId]: endpoint },
 					});
 
-					return entrypoint;
+					return endpoint;
 				} finally {
 					store.nbSchemaFetching--;
 				}
 			}
-			return fetchFromUrl(`/entrypoints?entrypoint_id=${entrypointId}`);
+			return fetchFromUrl(`/endpoints?endpoint_id=${endpointId}`);
 		},
 
-		async loadEntrypointIfMissing(entrypointId) {
-			if (this.entrypoints[entrypointId]) {
-				console.debug("Skip loading entrypointId=", entrypointId);
-				return Promise.resolve(this.entrypoints[entrypointId]);
+		async loadEndpointIfMissing(endpointId) {
+			if (this.endpoints[endpointId]) {
+				console.debug("Skip loading endpointId=", endpointId);
+				return Promise.resolve(this.endpoints[endpointId]);
 			} else {
-				return this.loadEntrypoint(entrypointId);
+				return this.loadEndpoint(endpointId);
 			}
 		},
 
-		async loadEntrypointSchemas(entrypointId) {
+		async loadEndpointSchemas(endpointId) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -222,12 +222,12 @@ export const useAdhocStore = defineStore("adhoc", {
 					console.debug("responseJson", responseJson);
 
 					const schemas = responseJson;
-					schemas.forEach((schemaAndEntrypoint) => {
-						console.log("Registering schemaId", schemaAndEntrypoint.entrypoint.id);
+					schemas.forEach((schemaAndEndpoint) => {
+						console.log("Registering schemaId", schemaAndEndpoint.endpoint.id);
 						store.$patch({
 							schemas: {
 								...store.schemas,
-								[schemaAndEntrypoint.entrypoint.id]: schemaAndEntrypoint.schema,
+								[schemaAndEndpoint.endpoint.id]: schemaAndEndpoint.schema,
 							},
 						});
 					});
@@ -240,56 +240,56 @@ export const useAdhocStore = defineStore("adhoc", {
 				}
 			}
 
-			let url = "/entrypoints/schemas";
-			if (entrypointId) {
-				// The schemas of a specific entrypoint
-				url += "?entrypoint_id=" + entrypointId;
+			let url = "/endpoints/schemas";
+			if (endpointId) {
+				// The schemas of a specific endpoint
+				url += "?endpoint_id=" + endpointId;
 			}
-			return this.loadEntrypointIfMissing(entrypointId).then(() => {
+			return this.loadEndpointIfMissing(endpointId).then(() => {
 				return fetchFromUrl(url);
 			});
 		},
 
-		async loadEntrypointSchemaIfMissing(entrypointId) {
-			if (this.schemas[entrypointId]) {
-				console.debug("Skip loading schema for entrypointId=", entrypointId);
-				return Promise.resolve(this.schemas[entrypointId]);
+		async loadEndpointSchemaIfMissing(endpointId) {
+			if (this.schemas[endpointId]) {
+				console.debug("Skip loading schema for endpointId=", endpointId);
+				return Promise.resolve(this.schemas[endpointId]);
 			} else {
-				return this.loadEntrypointSchemas(entrypointId).then((schemas) => {
-					return schemas[entrypointId];
+				return this.loadEndpointSchemas(endpointId).then((schemas) => {
+					return schemas[endpointId];
 				});
 			}
 		},
 
-		async loadCubeSchema(cubeId, entrypointId) {
-			return this.loadEntrypointSchemas(entrypointId).then((schemas) => {
+		async loadCubeSchema(cubeId, endpointId) {
+			return this.loadEndpointSchemas(endpointId).then((schemas) => {
 				if (schemas.length == 0) {
 					const schema = {
-						entrypointId: entrypointId,
-						entrypointId: entrypointId,
+						endpointId: endpointId,
+						endpointId: endpointId,
 						error: "None matching",
 					};
 
 					return schema;
 				} else {
-					return schemas[entrypointId]?.cubes[cubeId];
+					return schemas[endpointId]?.cubes[cubeId];
 				}
 			});
 		},
 
-		async loadCubeSchemaIfMissing(cubeId, entrypointId) {
-			return this.loadEntrypointIfMissing(entrypointId).then(() => {
+		async loadCubeSchemaIfMissing(cubeId, endpointId) {
+			return this.loadEndpointIfMissing(endpointId).then(() => {
 				if (this.schemas[cubeId]) {
 					console.debug("Skip loading cubeId=", cubeId);
 					return Promise.resolve(this.schemas[cubeId]);
 				} else {
-					return this.loadCubeSchema(cubeId, entrypointId);
+					return this.loadCubeSchema(cubeId, endpointId);
 				}
 			});
 		},
 
-		async executeQuery(cubeId, entrypointId, query) {
-			return this.loadCubeSchemaIfMissing(cubeId, entrypointId).then((contest) => {
+		async executeQuery(cubeId, endpointId, query) {
+			return this.loadCubeSchemaIfMissing(cubeId, endpointId).then((contest) => {
 				if (contest.error === "unknown") {
 					return contest;
 				}
@@ -318,7 +318,7 @@ export const useAdhocStore = defineStore("adhoc", {
 					}
 				}
 
-				return fetchFromUrl(`/board?entrypoint_id=${entrypointId}&contest_id=${contestId}&player_id=${playerId}`).then((contestWithBoard) =>
+				return fetchFromUrl(`/board?endpoint_id=${endpointId}&contest_id=${contestId}&player_id=${playerId}`).then((contestWithBoard) =>
 					this.mergeContest(contestWithBoard),
 				);
 			});

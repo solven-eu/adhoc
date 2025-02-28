@@ -12,13 +12,13 @@ export default {
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
-		entrypointId: {
+		endpointId: {
 			type: String,
 			// required: true,
 		},
-		showEntrypoint: {
+		showEndpoint: {
 			type: Boolean,
-			// As we show multiple contests, we do not show the entrypoint (by default)
+			// As we show multiple contests, we do not show the endpoint (by default)
 			default: false,
 		},
 		showLeaderboard: {
@@ -35,9 +35,9 @@ export default {
 
 				console.debug("allContests", allContests);
 
-				if (this.entrypointId) {
+				if (this.endpointId) {
 					// https://stackoverflow.com/questions/69091869/how-to-filter-an-array-in-array-of-objects-in-javascript
-					return allContests.filter((contest) => contest.constantMetadata.entrypointId === this.entrypointId);
+					return allContests.filter((contest) => contest.constantMetadata.endpointId === this.endpointId);
 				} else {
 					return allContests;
 				}
@@ -47,9 +47,9 @@ export default {
 	setup(props) {
 		const store = useAdhocStore();
 
-		if (props.entrypointId) {
-			// The contests of a specific entrypoint
-			store.loadSchemas(props.entrypointId);
+		if (props.endpointId) {
+			// The contests of a specific endpoint
+			store.loadSchemas(props.endpointId);
 		} else {
 			// Cross-through contests
 			store.loadSchemas();
@@ -64,9 +64,9 @@ export default {
         <div v-else class="container">
             <div class="row border" v-for="contest in contests">
                 <AdhocCube
-                    :entrypointId="contest.constantMetadata.entrypointId"
+                    :endpointId="contest.constantMetadata.endpointId"
                     :contestId="contest.contestId"
-                    :showEntrypoint="showEntrypoint"
+                    :showEndpoint="showEndpoint"
                     :showLeaderboard="showLeaderboard"
                 />
             </div>

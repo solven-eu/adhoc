@@ -159,10 +159,16 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				.containsEntry("b", String.class)
 				.containsEntry("c", String.class)
 				.containsEntry(k1Sum.getColumnName(), Double.class)
-				.containsEntry(k1PlusK2AsExpr.getName(), Double.class)
 				.containsEntry(k2Sum.getColumnName(), Double.class)
 				.containsEntry(k3Sum.getColumnName(), Double.class)
-				.hasSize(7);
+				.hasSize(6);
+
+		Assertions.assertThat(cube3.getNameToMeasure().keySet())
+				.contains(k1Sum.getColumnName())
+				.contains(k1PlusK2AsExpr.getName())
+				.contains(k2Sum.getColumnName())
+				.contains(k3Sum.getColumnName())
+				.hasSize(4);
 	}
 
 	@Test

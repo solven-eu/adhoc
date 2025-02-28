@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import eu.solven.adhoc.pivotable.cube.CubesHandler;
-import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
+import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableFakeUserRouter.class,
 
 		GreetingHandler.class,
-		PivotableEntrypointsHandler.class,
+		PivotableEndpointsHandler.class,
 		CubesHandler.class,
 		PivotableQueryHandler.class,
 		// AdhocSchemaForApi.class,

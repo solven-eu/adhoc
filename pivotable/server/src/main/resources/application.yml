@@ -14,7 +14,7 @@ spring:
                 - inmemory
             default_server:
                 - inject_default_games
-                - self_entrypoint
+                - self_endpoint
                 - simple_datasets
             prodmode:
                 - default_server

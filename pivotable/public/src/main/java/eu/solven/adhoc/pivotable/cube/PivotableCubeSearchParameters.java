@@ -38,16 +38,16 @@ import lombok.Value;
 @Builder
 public class PivotableCubeSearchParameters {
 	@Default
-	Optional<UUID> entrypointId = Optional.empty();
+	Optional<UUID> endpointId = Optional.empty();
 
 	@Default
-	Optional<UUID> cubeId = Optional.empty();
+	Optional<String> cube = Optional.empty();
 
 	// May be search in id, else name, else url, potentially case-insensitive
 	@Default
 	Optional<String> keyword = Optional.empty();
 
-	public static PivotableCubeSearchParameters byCubeId(UUID cubeId) {
-		return PivotableCubeSearchParameters.builder().cubeId(Optional.of(cubeId)).build();
-	}
+	// public static PivotableCubeSearchParameters byCubeId(UUID cubeId) {
+	// return PivotableCubeSearchParameters.builder().cubeId(Optional.of(cubeId)).build();
+	// }
 }

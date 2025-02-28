@@ -22,43 +22,42 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
-/**
- * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag},
- * {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
- * 
- * @author Benoit Lacelle
- */
 @Value
 @Builder
 @Jacksonized
-public class EntrypointSchemaMetadata {
+@Slf4j
+public class ColumnMetadata {
+	// May be null, in context where there is no entrypoint
+	UUID entrypointId;
 
-	@Singular
-	Map<String, ColumnarMetadata> tables;
+	// Typically a cube or a table
+	@NonNull
+	String holder;
 
-	@Singular
-	Map<String, List<IMeasure>> measureBags;
+	@NonNull
+	String column;
 
-	@Singular
-	Map<String, CubeSchemaMetadata> cubes;
+	@NonNull
+	String type;
 
-	@Singular
-	Map<String, AdhocQuery> queries;
+	// The number of different coordinates. This is contextual to a cube/table.
+	// -1 means the cardinality has not been estimated
+	@Default
+	long estimatedCardinality = -1;
 
+	// A subset of matching coordinates. Typically not exhaustive.
 	@Singular
-	Map<String, Object> customMarkers;
+	Set<?> coordinates;
+
 }

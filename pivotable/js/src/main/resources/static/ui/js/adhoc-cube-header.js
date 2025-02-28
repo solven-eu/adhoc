@@ -5,20 +5,20 @@ import { useAdhocStore } from "./store.js";
 
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 import AdhocAccountRef from "./adhoc-account-ref.js";
-import AdhocEntrypointRef from "./adhoc-entrypoint-ref.js";
+import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
 
 export default {
 	components: {
 		AdhocCubeRef,
 		AdhocAccountRef,
-		AdhocEntrypointRef,
+		AdhocEndpointRef,
 	},
 	props: {
 		cubeId: {
 			type: String,
 			required: true,
 		},
-		entrypointId: {
+		endpointId: {
 			type: String,
 			required: true,
 		},
@@ -26,32 +26,32 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "nbCubeFetching", "isLoggedIn", "account"]),
 		...mapState(useAdhocStore, {
-			entrypoint(store) {
-				return store.entrypoints[this.entrypointId] || { error: "not_loaded" };
+			endpoint(store) {
+				return store.endpoints[this.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.entrypointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
-		store.loadCubeSchemaIfMissing(props.cubeId, props.entrypointId);
+		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!entrypoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
+        <div v-if="(!endpoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
             </div>
         </div>
-        <div v-else-if="entrypoint.error || cube.error">{{entrypoint.error || cube.error}}</div>
+        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <span v-else>
             <h2>
-                <AdhocCubeRef :cubeId="cubeId" :entrypointId="entrypointId" />
-				<AdhocEntrypointRef :entrypointId="entrypointId" />
+                <AdhocCubeRef :cubeId="cubeId" :endpointId="endpointId" />
+				<AdhocEndpointRef :endpointId="endpointId" />
             </h2>
         </span>
     `,

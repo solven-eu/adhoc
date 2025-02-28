@@ -37,7 +37,6 @@ import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -53,7 +52,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class AdhocSchemaForApi {
+public class AdhocSchema implements IAdhocSchema {
 	@Builder.Default
 	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 
@@ -63,7 +62,7 @@ public class AdhocSchemaForApi {
 
 	final Map<String, IAdhocCubeWrapper> nameToCube = new ConcurrentHashMap<>();
 
-	final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
+	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
 	public void registerCube(String cubeName, String tableName, String measuresName) {
 		AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
@@ -76,8 +75,9 @@ public class AdhocSchemaForApi {
 		nameToCube.put(cubeName, cube);
 	}
 
-	public EntrypointSchemaMetadata getMetadata() {
-		EntrypointSchemaMetadata.EntrypointSchemaMetadataBuilder metadata = EntrypointSchemaMetadata.builder();
+	@Override
+	public EndpointSchemaMetadata getMetadata() {
+		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
 		nameToCube.forEach((name, cube) -> {
 			CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
@@ -97,13 +97,14 @@ public class AdhocSchemaForApi {
 			metadata.table(name, ColumnarMetadata.from(table.getColumns()));
 		});
 
-		nameToQuery.forEach((name, query) -> {
-			metadata.query(name, AdhocQuery.edit(query).build());
-		});
+		// nameToQuery.forEach((name, query) -> {
+		// metadata.query(name, AdhocQuery.edit(query).build());
+		// });
 
 		return metadata.build();
 	}
 
+	@Override
 	public ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options) {
 		return nameToCube.get(cube).execute(query, options);
 	}
@@ -122,7 +123,16 @@ public class AdhocSchemaForApi {
 		measureBag.addMeasure(measure);
 	}
 
-	public void registerQuery(String name, IAdhocQuery query) {
-		nameToQuery.put(name, query);
+	public Set<?> getCoordinates(ColumnIdentifier columnId) {
+		if (columnId.isCubeElseTable()) {
+			nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
+		} else {
+
+		}
+		return Set.of();
 	}
+
+	// public void registerQuery(String name, IAdhocQuery query) {
+	// nameToQuery.put(name, query);
+	// }
 }

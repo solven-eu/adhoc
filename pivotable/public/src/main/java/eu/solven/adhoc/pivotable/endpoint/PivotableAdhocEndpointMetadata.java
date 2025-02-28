@@ -20,44 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube;
+package eu.solven.adhoc.pivotable.endpoint;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.util.IHasColumns;
-import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
+ * Wraps an URL holding a standard Adhoc API.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
-	}
+@Value
+@Builder
+@Jacksonized
+// Entrypoint is better wording than server, as we just need an URL: some API may be served by FaaS anything else than a
+// plain server
+public class PivotableAdhocEndpointMetadata implements IServerMetadataConstants {
+	public static final UUID SELF_ENTRYPOINT_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+	UUID id;
+	String name;
+	String url;
 
 	/**
 	 * 
-	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
-	 * @return
+	 * @return an endpoint provided by Pivotable instance itself.
 	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
-
-	default Set<Object> getCoordinates(String column) {
-		ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
-
-		return view.slices().map(slice -> slice.getRawSliced(column)).collect(Collectors.toSet());
+	public static PivotableAdhocEndpointMetadata localhost() {
+		return PivotableAdhocEndpointMetadata.builder()
+				.id(SELF_ENTRYPOINT_ID)
+				.name("localhost:self")
+				.url("http://localhost:self")
+				.build();
 	}
-
 }

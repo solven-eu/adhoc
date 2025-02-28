@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -50,7 +51,7 @@ public class PivotableLoginRouter {
 
 	private static final RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
-		return RequestPredicates.path("/api/v1" + path).and(json);
+		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
 	}
 
 	@Bean

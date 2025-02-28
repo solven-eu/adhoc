@@ -25,8 +25,6 @@ package eu.solven.adhoc.pivotable.webflux.api;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import java.util.Map;
-
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,11 +34,14 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
-import eu.solven.adhoc.pivotable.entrypoint.EntrypointSchema;
-import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
+import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
+import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,49 +57,73 @@ public class PivotableApiRouter {
 
 	private static final RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
-		return RequestPredicates.path("/api/v1" + path).and(json);
+		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
 	}
 
 	// https://github.com/springdoc/springdoc-openapi-demos/tree/2.x/springdoc-openapi-spring-boot-2-webflux-functional
 	// https://stackoverflow.com/questions/6845772/should-i-use-singular-or-plural-name-convention-for-rest-resources
 	@Bean
-	public RouterFunction<ServerResponse> apiRoutes(PivotableEntrypointsHandler entrypointsHandler,
+	public RouterFunction<ServerResponse> apiRoutes(PivotableEndpointsHandler endpointsHandler,
 			PivotableQueryHandler queryHandler) {
 
-		var entrypointId = parameterBuilder().name("entrypoint_id")
-				.description("Search for a specific entrypointId")
+		var endpointId = parameterBuilder().name("endpoint_id")
+				.description("Search for a specific endpointId")
 				.example("12345678-1234-1234-1234-123456789012");
 
-		var cubeId = parameterBuilder().name("cube_id")
-				.description("Search for a specific cubeName")
+		var cubeId = parameterBuilder().name("cube")
+				.description("Search for a specific cube by its name")
 				.example("somreCubeName");
 
-		return SpringdocRouteBuilder.route()
-				.GET(json("/entrypoints"),
-						entrypointsHandler::listEntrypoints,
-						ops -> ops.operationId("loadEntrypoints")
-								.parameter(entrypointId)
-								.response(responseBuilder().responseCode("200")
-										.implementationArray(AdhocEntrypointMetadata.class)))
-				.GET(json("/entrypoints/schemas"),
-						entrypointsHandler::entrypointSchema,
-						ops -> ops.operationId("loadMetadata")
-								.parameter(entrypointId)
-								.response(responseBuilder().responseCode("200")
-										.implementationArray(EntrypointSchema.class)))
+		var table =
+				parameterBuilder().name("table").description("Search for a specific table").example("somreCubeName");
 
-				.GET(json("/cubes/metadata"),
-						queryHandler::loadMetadata,
+		var name = parameterBuilder().name("name")
+				.description("A specific name, for the main requested type")
+				.example("somreCubeName");
+
+		var coordinate = parameterBuilder().name("coordinate")
+				.description("Search for a specific coordinate, along a column")
+				.example("someCoordinate");
+
+		return SpringdocRouteBuilder.route()
+				.GET(json("/endpoints"),
+						endpointsHandler::listEntrypoints,
+						ops -> ops.operationId("loadEntrypoints")
+								.parameter(endpointId)
+								.response(responseBuilder().responseCode("200")
+										.implementationArray(PivotableAdhocEndpointMetadata.class)))
+				.GET(json("/endpoints/schemas"),
+						endpointsHandler::endpointSchema,
 						ops -> ops.operationId("loadMetadata")
-								// .parameter(gameId)
-								.response(responseBuilder().responseCode("200").implementation(Map.class)))
+								.parameter(endpointId)
+								.response(responseBuilder().responseCode("200")
+										.implementationArray(TargetedEndpointSchemaMetadata.class)))
+
+				.GET(json("/endpoints/schemas/columns"),
+						endpointsHandler::searchColumns,
+						ops -> ops.operationId("listColumns")
+								.parameter(endpointId)
+								.parameter(cubeId)
+								.parameter(table)
+								.parameter(name)
+								.parameter(coordinate)
+								.response(responseBuilder().responseCode("200")
+										.implementationArray(ColumnMetadata.class)))
+
+				.GET(json("/cubes/schemas"),
+						queryHandler::loadCubeSchema,
+						ops -> ops.operationId("loadMetadata")
+								.parameter(endpointId.required(true))
+								.parameter(cubeId.required(true))
+								.response(responseBuilder().responseCode("200")
+										.implementationArray(PivotableCubeMetadata.class)))
 
 				// simple AdhocQuery with a GET
 				.GET(json("/cubes/query"),
 						queryHandler::executeFlatQuery,
 						ops -> ops.operationId("executeQuery")
 								// the targeted cube can be referred through id or name
-								.parameter(entrypointId)
+								.parameter(endpointId)
 								.parameter(cubeId)
 
 								.parameter(parameterBuilder().name("measure")

@@ -35,10 +35,10 @@ export default {
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="/html/entrypoints"><i class="bi bi-puzzle" />Entrypoints</RouterLink>
+                            <RouterLink class="nav-link" to="/html/endpoints"><i class="bi bi-puzzle" />Endpoints</RouterLink>
                         </li>
                         <!--li class="nav-item">
-                            <RouterLink class="nav-link" to="/html/entrypoints/xxx/schemas"><i class="bi bi-trophy" />Schemas</RouterLink>
+                            <RouterLink class="nav-link" to="/html/endpoints/xxx/schemas"><i class="bi bi-trophy" />Schemas</RouterLink>
                         </li-->
                     </ul>
                     <span v-if="isLoggedIn">

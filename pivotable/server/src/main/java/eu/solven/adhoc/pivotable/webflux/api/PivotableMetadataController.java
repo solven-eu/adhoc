@@ -29,13 +29,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+
 /**
  * Holds various details/metadata/enrichment about the application.
  */
 @RestController
 public class PivotableMetadataController {
 
-	@GetMapping("/api/v1/public/metadata")
+	@GetMapping(IPivotableApiConstants.PREFIX + "/public/metadata")
 	@Bean
 	public Map<String, ?> getMetadata() {
 		Map<String, Object> metadata = new LinkedHashMap<>();

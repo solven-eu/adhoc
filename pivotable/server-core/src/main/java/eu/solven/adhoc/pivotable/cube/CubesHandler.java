@@ -44,8 +44,8 @@ public class CubesHandler {
 		PivotableCubeSearchParameters.PivotableCubeSearchParametersBuilder parameters =
 				PivotableCubeSearchParameters.builder();
 
-		AdhocHandlerHelper.optUuid(request, "entrypoint_id").ifPresent(id -> parameters.entrypointId(Optional.of(id)));
-		AdhocHandlerHelper.optUuid(request, "cube_id").ifPresent(id -> parameters.cubeId(Optional.of(id)));
+		AdhocHandlerHelper.optUuid(request, "endpoint_id").ifPresent(id -> parameters.endpointId(Optional.of(id)));
+		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> parameters.cube(Optional.of(id)));
 
 		Optional<String> optKeyword = request.queryParam("keyword");
 		optKeyword.ifPresent(rawKeyword -> parameters.keyword(Optional.of(rawKeyword)));

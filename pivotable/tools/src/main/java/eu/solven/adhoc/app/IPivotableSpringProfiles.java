@@ -47,8 +47,8 @@ public interface IPivotableSpringProfiles {
 	// `fake_player` will enable relying on the fakePlayer but it will not tweat security related to
 	// String P_FAKE_PLAYER = "fake_player";
 
-	// The server hosting pivotable also host an adhoc entrypoint
-	String P_SELF_ENTRYPOINT = "self_entrypoint";
+	// The server hosting pivotable also host an adhoc endpoint
+	String P_SELF_ENDPOINT = "self_endpoint";
 	String P_SIMPLE_DATASETS = "simple_datasets";
 
 	// Provides unsafe security settings (like DEV OAuth2 providers, and an unsafe JWT signingKey)

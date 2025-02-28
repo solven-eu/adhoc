@@ -6,25 +6,25 @@ import { useAdhocStore } from "./store.js";
 // https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 import { Tooltip } from "bootstrap";
 
-import AdhocEntrypointHeader from "./adhoc-entrypoint-header.js";
+import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 
 import AdhocCubes from "./adhoc-cubes.js";
 
-import AdhocEntrypointSchemaRef from "./adhoc-entrypoint-schema-ref.js";
+import AdhocEndpointSchemaRef from "./adhoc-endpoint-schema-ref.js";
 
 import AdhocCube from "./adhoc-cube.js";
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 
 export default {
 	components: {
-		AdhocEntrypointHeader,
+		AdhocEndpointHeader,
 		AdhocCubes,
-		AdhocEntrypointSchemaRef,
+		AdhocEndpointSchemaRef,
 		AdhocCube,
 		AdhocCubeRef,
 	},
 	props: {
-		entrypointId: {
+		endpointId: {
 			type: String,
 			required: true,
 		},
@@ -40,13 +40,13 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "metadata"]),
 		...mapState(useAdhocStore, {
-			entrypoint(store) {
-				return store.entrypoints[this.entrypointId] || { error: "not_loaded" };
+			endpoint(store) {
+				return store.endpoints[this.endpointId] || { error: "not_loaded" };
 			},
 		}),
 		...mapState(useAdhocStore, {
 			schema(store) {
-				return store.schemas[this.entrypointId] || { error: "not_loaded" };
+				return store.schemas[this.endpointId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -55,9 +55,9 @@ export default {
 
 		const nbCubes = ref("...");
 
-		store.loadEntrypointSchemaIfMissing(props.entrypointId).then((schema) => {
-			var entrypointSchema = schema || { cubes: {} };
-			nbCubes.value = Object.keys(entrypointSchema.cubes).length;
+		store.loadEndpointSchemaIfMissing(props.endpointId).then((schema) => {
+			var endpointSchema = schema || { cubes: {} };
+			nbCubes.value = Object.keys(endpointSchema.cubes).length;
 		});
 
 		// https://getbootstrap.com/docs/5.3/components/tooltips/
@@ -67,17 +67,17 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-        <div v-if="!entrypoint && nbSchemaFetching > 0">
+        <div v-if="!endpoint && nbSchemaFetching > 0">
             Loading
-            <RouterLink :to="{path:'/html/entrypoints/' + entrypointId}">entrypoint={{entrypointId}}</RouterLink>
+            <RouterLink :to="{path:'/html/endpoints/' + endpointId}">endpoint={{endpointId}}</RouterLink>
         </div>
-        <div v-else-if="entrypoint.error">{{entrypoint.error}}</div>
+        <div v-else-if="endpoint.error">{{endpoint.error}}</div>
         <div v-else>
-            <AdhocEntrypointHeader :entrypointId="entrypointId" />
+            <AdhocEndpointHeader :endpointId="endpointId" />
 
             <span v-if="metadata.tags">
                 Tags:
-                <span class="badge text-bg-secondary" v-for="tag in entrypoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span
+                <span class="badge text-bg-secondary" v-for="tag in endpoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span
                 ><br />
             </span>
             <span v-if="schema">
@@ -108,7 +108,7 @@ export default {
                     Cubes
                     <ul v-for="(cube, cubeName) in schema.cubes">
                         <li>
-							<AdhocCubeRef :entrypointId="entrypointId" :cubeId="cubeName" />
+							<AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
                             <ul v-for="(ref, name) in cube.columns.columnToTypes">
                                 <li>{{name}}: {{ref}}</li>
                             </ul>
@@ -128,23 +128,23 @@ export default {
                     <div>
                         Cubes
                         <span v-for="(cube, cubeName) in schema.cubes">
-							<AdhocCubeRef :entrypointId="entrypointId" :cubeId="cubeName" />
+							<AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
 						</span>
                     </div>
-					<AdhocEntrypointSchemaRef :entrypointId="entrypointId" />
+					<AdhocEndpointSchemaRef :endpointId="endpointId" />
                 </span>
             </span>
 
             <!--span v-if="showContests">
-                <AdhocCubes :entrypointId="entrypointId" :showserver="false" />
+                <AdhocCubes :endpointId="endpointId" :showserver="false" />
             </span>
             <span v-else>
-                <RouterLink :to="{path:'/html/servers/' + entrypoint.entrypointId + '/contests'}"
+                <RouterLink :to="{path:'/html/servers/' + endpoint.endpointId + '/contests'}"
                     ><i class="bi bi-trophy"></i> Join an existing contest ({{nbContests}})
                 </RouterLink>
             </span-->
 			
-			<AdhocCube :entrypointId="entrypointId" :cubeId="cubeId" v-if="cubeId" />
+			<AdhocCube :endpointId="endpointId" :cubeId="cubeId" v-if="cubeId" />
         </div>
     `,
 };

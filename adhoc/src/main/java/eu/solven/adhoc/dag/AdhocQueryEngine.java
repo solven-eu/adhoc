@@ -549,12 +549,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
 
 					optAgg.ifPresent(agg -> {
-						coordinatesToAgg.contribute(agg, coordinates, v);
+						coordinatesToAgg.contributeAggregate(agg, coordinates, v);
 					});
 				} else {
 					// The DB provides the column raw value, and not an aggregated value
 					// So we aggregate row values ourselves (e.g. InMemoryTable)
-					aggs.forEach(agg -> coordinatesToAgg.contribute(agg, coordinates, v));
+					aggs.forEach(agg -> coordinatesToAgg.contributeRaw(agg, coordinates, v));
 				}
 			}
 		}

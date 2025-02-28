@@ -20,31 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app;
+package eu.solven.adhoc.beta.schema;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointsRegistry;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+import lombok.Builder;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-@Configuration
-@Slf4j
-public class InjectPivotableEntrypointsConfig {
+/**
+ * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag},
+ * {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
+ * 
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder
+@Jacksonized
+public class EndpointSchemaMetadata {
 
-	@Profile(IPivotableSpringProfiles.P_SELF_ENTRYPOINT)
-	@Qualifier(IPivotableSpringProfiles.P_SELF_ENTRYPOINT)
-	@Bean
-	public AdhocEntrypointMetadata initSelfEntrypoint(AdhocEntrypointsRegistry entrypointsRegistry) {
-		log.info("Registering the {} entrypoint", IPivotableSpringProfiles.P_SELF_ENTRYPOINT);
+	@Singular
+	Map<String, ColumnarMetadata> tables;
 
-		AdhocEntrypointMetadata self = AdhocEntrypointMetadata.localhost();
-		entrypointsRegistry.registerGame(self);
+	@Singular
+	Map<String, List<IMeasure>> measureBags;
 
-		return self;
-	}
+	@Singular
+	Map<String, CubeSchemaMetadata> cubes;
+
+	@Singular
+	Map<String, AdhocQuery> queries;
+
+	@Singular
+	Map<String, Object> customMarkers;
 }

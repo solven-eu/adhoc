@@ -1,14 +1,14 @@
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store.js";
 
-import AdhocEntrypointRef from "./adhoc-entrypoint-ref.js";
+import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
 
 export default {
 	components: {
-		AdhocEntrypointRef,
+		AdhocEndpointRef,
 	},
 	props: {
-		entrypointId: {
+		endpointId: {
 			type: String,
 			required: true,
 		},
@@ -20,36 +20,36 @@ export default {
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
-			entrypoint(store) {
-				return store.entrypoints[this.entrypointId];
+			endpoint(store) {
+				return store.endpoints[this.endpointId];
 			},
 		}),
 	},
 	setup(props) {
 		const store = useAdhocStore();
 
-		store.loadEntrypointIfMissing(props.entrypointId);
+		store.loadEndpointIfMissing(props.endpointId);
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!entrypoint) && (nbSchemaFetching > 0)">
+        <div v-if="(!endpoint) && (nbSchemaFetching > 0)">
             <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading entrypointId={{entrypointId}}</span>
+                <span class="visually-hidden">Loading endpointId={{endpointId}}</span>
             </div>
         </div>
-        <div v-else-if="entrypoint.error">entrypoint.error={{entrypoint.error}}</div>
+        <div v-else-if="endpoint.error">endpoint.error={{endpoint.error}}</div>
         <div v-else>
             <span>
                 <span v-if="withDescription">
                     <h1>
-                        <AdhocEntrypointRef :entrypointId="entrypoint.id" />
+                        <AdhocEndpointRef :endpointId="endpoint.id" />
                     </h1>
-                    Entrypoint-Description: {{entrypoint.name}}
+                    Endpoint-Description: {{endpoint.name}}
                 </span>
                 <span v-else>
                     <h5>
-                        <AdhocEntrypointRef :entrypointId="entrypointId" />
+                        <AdhocEndpointRef :endpointId="endpointId" />
                     </h5>
                 </span>
             </span>

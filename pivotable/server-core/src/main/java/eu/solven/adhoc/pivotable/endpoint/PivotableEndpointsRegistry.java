@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.entrypoint;
+package eu.solven.adhoc.pivotable.endpoint;
 
 import java.util.List;
 import java.util.Map;
@@ -35,38 +35,38 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class AdhocEntrypointsRegistry {
+public class PivotableEndpointsRegistry {
 	// One day, we could register externalized games, interacting by API. It will be a way not to concentrate all Games
 	// in this project.
-	final Map<UUID, AdhocEntrypointMetadata> idToServer = new ConcurrentHashMap<>();
+	final Map<UUID, PivotableAdhocEndpointMetadata> idToServer = new ConcurrentHashMap<>();
 
-	public void registerGame(AdhocEntrypointMetadata game) {
-		UUID serverId = game.getId();
+	public void registerEntrypoint(PivotableAdhocEndpointMetadata endpoint) {
+		UUID serverId = endpoint.getId();
 
 		if (serverId == null) {
-			throw new IllegalArgumentException("Missing gameId: " + game);
+			throw new IllegalArgumentException("Missing gameId: " + endpoint);
 		}
 
-		AdhocEntrypointMetadata alreadyIn = idToServer.putIfAbsent(serverId, game);
+		PivotableAdhocEndpointMetadata alreadyIn = idToServer.putIfAbsent(serverId, endpoint);
 		if (alreadyIn != null) {
-			throw new IllegalArgumentException("gameId already registered: " + game);
+			throw new IllegalArgumentException("gameId already registered: " + endpoint);
 		}
-		log.info("Registering serverId={} serverName={}", serverId, game.getName());
+		log.info("Registering serverId={} serverName={}", serverId, endpoint.getName());
 	}
 
-	public AdhocEntrypointMetadata getGame(UUID gameId) {
-		AdhocEntrypointMetadata game = idToServer.get(gameId);
-		if (game == null) {
-			throw new IllegalArgumentException("No game registered for id=" + gameId);
+	public PivotableAdhocEndpointMetadata getEntrypoint(UUID endpointId) {
+		PivotableAdhocEndpointMetadata endpoint = idToServer.get(endpointId);
+		if (endpoint == null) {
+			throw new IllegalArgumentException("No endpoint registered for id=" + endpointId);
 		}
-		return game;
+		return endpoint;
 	}
 
-	public List<AdhocEntrypointMetadata> search(AdhocEntrypointSearch search) {
-		Stream<AdhocEntrypointMetadata> metaStream;
+	public List<PivotableAdhocEndpointMetadata> search(AdhocEndpointSearch search) {
+		Stream<PivotableAdhocEndpointMetadata> metaStream;
 
-		if (search.getEntrypointId().isPresent()) {
-			UUID uuid = search.getEntrypointId().get();
+		if (search.getEndpointId().isPresent()) {
+			UUID uuid = search.getEndpointId().get();
 			metaStream = Optional.ofNullable(idToServer.get(uuid)).stream();
 		} else {
 			metaStream = idToServer.values().stream();
@@ -81,7 +81,7 @@ public class AdhocEntrypointsRegistry {
 		return metaStream.collect(Collectors.toList());
 	}
 
-	public Stream<? extends AdhocEntrypointMetadata> getGames() {
+	public Stream<? extends PivotableAdhocEndpointMetadata> getGames() {
 		return idToServer.values().stream();
 	}
 }

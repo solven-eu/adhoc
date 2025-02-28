@@ -19,7 +19,7 @@ export default {
         <span v-else>
             <ul>
                 <li>
-                    <RouterLink to="/html/entrypoints">Browse through entrypoints</RouterLink>
+                    <RouterLink to="/html/endpoints">Browse through endpoints</RouterLink>
                 </li>
                 <li><RouterLink to="/html/me">About me</RouterLink></li>
             </ul>

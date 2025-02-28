@@ -23,14 +23,19 @@
 package eu.solven.adhoc.pivotable.query;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.AdhocSchemaForApi;
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
+import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
+import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -46,16 +51,22 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableQueryHandler {
-	final AdhocSchemaForApi schema;
+	final PivotableAdhocSchemaRegistry schemaRegistry;
+	final AdhocCubesRegistry cubesRegistry;
 
-	public Mono<ServerResponse> loadMetadata(ServerRequest serverRequest) {
-		return ServerResponse.ok()
-				.contentType(MediaType.APPLICATION_JSON)
-				.body(BodyInserters.fromValue(schema.getMetadata()));
+	public Mono<ServerResponse> loadCubeSchema(ServerRequest serverRequest) {
+		UUID endpointId = AdhocHandlerHelper.uuid(serverRequest, "endpoint_id");
+		String cubeName = AdhocHandlerHelper.string(serverRequest, "cube");
+
+		PivotableCubeMetadata cube = cubesRegistry.getCube(PivotableCubeId.of(endpointId, cubeName));
+
+		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(cube));
 	}
 
 	private Mono<ServerResponse> executeQuery(Mono<TargetedAdhocQuery> queryOnSchemaMono) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
+			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery(), queryOnSchema.getOptions());
 		})
 				.map(view -> ListBasedTabularView.load(view))

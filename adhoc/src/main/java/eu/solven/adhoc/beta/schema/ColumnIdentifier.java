@@ -20,40 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.entrypoint;
-
-import java.util.UUID;
+package eu.solven.adhoc.beta.schema;
 
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
-/**
- * Wraps an URL holding a standard Adhoc API.
- * 
- * @author Benoit Lacelle
- */
 @Value
-@Builder
-@Jacksonized
-// Entrypoint is better wording than server, as we just need an URL: some API may be served by FaaS anything else than a
-// plain server
-public class AdhocEntrypointMetadata implements IServerMetadataConstants {
-	public static final UUID SELF_ENTRYPOINT_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+@Builder(toBuilder = true)
+public class ColumnIdentifier {
+	// Is this a cube (else a table) column
+	@Default
+	boolean isCubeElseTable = true;
 
-	UUID id;
-	String name;
-	String url;
+	// The name of the cube/table
+	@NonNull
+	String holder;
 
-	/**
-	 * 
-	 * @return an entrypoint provided by Pivotable instance itself.
-	 */
-	public static AdhocEntrypointMetadata localhost() {
-		return AdhocEntrypointMetadata.builder()
-				.id(SELF_ENTRYPOINT_ID)
-				.name("localhost:self")
-				.url("http://localhost:self")
-				.build();
-	}
+	String column;
 }

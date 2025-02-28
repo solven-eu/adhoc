@@ -37,6 +37,7 @@ import org.springframework.security.web.server.savedrequest.NoOpServerRequestCac
 import com.nimbusds.jwt.JWT;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -92,7 +93,7 @@ public class PivotableJwtWebFluxSecurity {
 						.pathMatchers("/v3/api-docs/**")
 						.permitAll()
 						// public API is public
-						.pathMatchers("/api/v1/public/**")
+						.pathMatchers(IPivotableApiConstants.PREFIX + "/public/**")
 						.permitAll()
 
 						// WebSocket: the authentication is done manually on the CONNECT frame
@@ -100,7 +101,7 @@ public class PivotableJwtWebFluxSecurity {
 						.permitAll()
 
 						// If fakeUser==true, we allow the reset route (for integration tests)
-						.pathMatchers(isFakeUser ? "/api/v1/clear" : "nonono")
+						.pathMatchers(isFakeUser ? IPivotableApiConstants.PREFIX + "/clear" : "nonono")
 						.permitAll()
 
 						// The rest needs to be authenticated
@@ -112,7 +113,7 @@ public class PivotableJwtWebFluxSecurity {
 				.exceptionHandling(e -> {
 					BearerTokenServerAuthenticationEntryPoint authenticationEntryPoint =
 							new BearerTokenServerAuthenticationEntryPoint();
-					authenticationEntryPoint.setRealmName("Pivottable Realm");
+					authenticationEntryPoint.setRealmName("Pivotable Realm");
 					e.authenticationEntryPoint(authenticationEntryPoint);
 				})
 

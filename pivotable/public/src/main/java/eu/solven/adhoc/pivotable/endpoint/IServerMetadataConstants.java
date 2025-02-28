@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.entrypoint;
+package eu.solven.adhoc.pivotable.endpoint;
 
 import java.util.UUID;
 

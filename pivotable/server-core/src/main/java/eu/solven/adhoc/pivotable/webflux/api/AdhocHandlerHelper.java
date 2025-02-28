@@ -60,6 +60,12 @@ public class AdhocHandlerHelper {
 		return optUuid.map(rawUuid -> uuid(rawUuid, idKey));
 	}
 
+	public static Optional<String> optString(ServerRequest request, String idKey) {
+		Optional<String> optUuid = request.queryParam(idKey);
+
+		return optUuid.map(rawUuid -> string(rawUuid, idKey));
+	}
+
 	public static Optional<UUID> optUuid(Optional<String> optRaw, String idKey) {
 		return optRaw.map(raw -> uuid(raw, idKey));
 	}

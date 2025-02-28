@@ -68,7 +68,7 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
 	@Default
 	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
-	
+
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
 		return measures.getNameToMeasure();

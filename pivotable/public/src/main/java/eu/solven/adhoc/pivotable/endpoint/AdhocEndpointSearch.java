@@ -20,44 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube;
+package eu.solven.adhoc.pivotable.endpoint;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.UUID;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.util.IHasColumns;
-import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Value;
 
 /**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
+ * Options to search through endpoints (i.e. URLs serving the standard Adhoc API).
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
+@Value
+@Builder
+public class AdhocEndpointSearch {
+	@Default
+	Optional<UUID> endpointId = Optional.empty();
+
+	// May be searched in id, else name, else url, potentially case-insensitive
+	@Default
+	Optional<String> keyword = Optional.empty();
+
+	public static AdhocEndpointSearch byServerId(UUID gameId) {
+		return AdhocEndpointSearch.builder().endpointId(Optional.of(gameId)).build();
 	}
-
-	/**
-	 * 
-	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
-	 * @return
-	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
-
-	default Set<Object> getCoordinates(String column) {
-		ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
-
-		return view.slices().map(slice -> slice.getRawSliced(column)).collect(Collectors.toSet());
-	}
-
 }

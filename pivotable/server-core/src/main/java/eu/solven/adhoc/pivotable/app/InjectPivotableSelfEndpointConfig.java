@@ -22,41 +22,52 @@
  */
 package eu.solven.adhoc.pivotable.app;
 
+import org.greenrobot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
-import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
-import eu.solven.adhoc.pivotable.account.fake_user.RandomUser;
-import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
+import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Register a {@link FakeUser}, for simpler authentication scenarios.
+ * Register `http://localhost:self` as an endpoint, so that Pivotable server is also a Adhoc server.
  * 
  * @author Benoit Lacelle
  */
 @Configuration
 @Slf4j
-public class InjectPivotableAccountsConfig {
+public class InjectPivotableSelfEndpointConfig {
 
-	@Profile(IPivotableSpringProfiles.P_FAKEUSER)
-	@Qualifier(IPivotableSpringProfiles.P_FAKEUSER)
+	@Profile(IPivotableSpringProfiles.P_SELF_ENDPOINT)
+	@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Bean
-	public PivotableUser initFakePlayer(PivotableUsersRegistry usersRegistry) {
-		log.info("Registering the {} account and players", IPivotableSpringProfiles.P_FAKEUSER);
+	public PivotableAdhocEndpointMetadata initSelfEntrypoint(PivotableEndpointsRegistry endpointsRegistry) {
+		log.info("Registering the {} endpoint", IPivotableSpringProfiles.P_SELF_ENDPOINT);
 
-		return usersRegistry.registerOrUpdate(FakeUser.pre());
+		PivotableAdhocEndpointMetadata self = PivotableAdhocEndpointMetadata.localhost();
+		endpointsRegistry.registerEntrypoint(self);
+
+		return self;
 	}
 
-	@Qualifier("random")
+	@Profile(IPivotableSpringProfiles.P_SELF_ENDPOINT)
+	@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Bean
-	public PivotableUser initRandomPlayer(PivotableUsersRegistry usersRegistry) {
-		log.info("Registering the random account and players");
+	public AdhocSchema registerSelfSchema(EventBus eventBus, PivotableAdhocSchemaRegistry schemaRegistry) {
+		AdhocSchema selfSchema =
+				AdhocSchema.builder().engine(AdhocQueryEngine.builder().eventBus(eventBus::post).build()).build();
 
-		return usersRegistry.registerOrUpdate(RandomUser.pre());
+		PivotableAdhocEndpointMetadata self = PivotableAdhocEndpointMetadata.localhost();
+		schemaRegistry.registerEntrypoint(self.getId(), selfSchema);
+
+		log.info("Registering the {} schema", IPivotableSpringProfiles.P_SELF_ENDPOINT);
+		return selfSchema;
 	}
 }

@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.webflux.api;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.AllArgsConstructor;
 
 /**
@@ -34,12 +35,12 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class GreetingController {
 
-	@GetMapping("/api/v1/public")
+	@GetMapping(IPivotableApiConstants.PREFIX + "/public")
 	public String publicEndpoint() {
 		return "This is a public endpoint";
 	}
 
-	@GetMapping("/api/v1/private")
+	@GetMapping(IPivotableApiConstants.PREFIX + "/private")
 	public String privateEndpoint() {
 		return "This is a private endpoint";
 	}

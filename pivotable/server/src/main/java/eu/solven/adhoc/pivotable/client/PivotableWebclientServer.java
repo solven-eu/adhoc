@@ -35,11 +35,16 @@ import org.springframework.web.reactive.function.client.WebClient.RequestHeaders
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import eu.solven.adhoc.beta.schema.EntrypointSchemaMetadata;
+import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
+import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
+import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
+import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
+import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +52,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * See routes as defined in KumiteRouter
+ * See routes as defined in {@link PivotableApiRouter}.
  * 
  * @author Benoit Lacelle
  *
@@ -55,7 +60,7 @@ import reactor.core.publisher.Mono;
 // https://www.baeldung.com/spring-5-webclient
 @Slf4j
 public class PivotableWebclientServer implements IPivotableServer {
-	final String PREFIX = "/api/v1";
+	final String PREFIX = IPivotableApiConstants.PREFIX;
 
 	final String baseUrl;
 	final String refreshToken;
@@ -137,11 +142,11 @@ public class PivotableWebclientServer implements IPivotableServer {
 
 	// see PivotableEntrypointsHandler
 	@Override
-	public Flux<AdhocEntrypointMetadata> searchEntrypoints(AdhocEntrypointSearch search) {
+	public Flux<PivotableAdhocEndpointMetadata> searchEntrypoints(AdhocEndpointSearch search) {
 		return accessToken().map(accessToken -> {
 			RequestHeadersSpec<?> spec = getWebClient().get()
-					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/entrypoints")
-							.queryParamIfPresent("entrypoint_id", search.getEntrypointId())
+					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints")
+							.queryParamIfPresent("endpoint_id", search.getEndpointId())
 							.queryParamIfPresent("keyword", search.getKeyword())
 							.build())
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
@@ -152,18 +157,18 @@ public class PivotableWebclientServer implements IPivotableServer {
 				if (!r.statusCode().is2xxSuccessful()) {
 					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
 				}
-				log.info("Search for entrypoints: {}", r.statusCode());
-				return r.bodyToFlux(AdhocEntrypointMetadata.class);
+				log.info("Search for endpoints: {}", r.statusCode());
+				return r.bodyToFlux(PivotableAdhocEndpointMetadata.class);
 			});
 		});
 	}
 
 	@Override
-	public Flux<EntrypointSchemaMetadata> searchSchemas(AdhocEntrypointSearch search) {
+	public Flux<TargetedEndpointSchemaMetadata> searchSchemas(AdhocEndpointSearch search) {
 		return accessToken().map(accessToken -> {
 			RequestHeadersSpec<?> spec = getWebClient().get()
-					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/schemas")
-							.queryParamIfPresent("entrypoint_id", search.getEntrypointId())
+					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints/schemas")
+							.queryParamIfPresent("endpoint_id", search.getEndpointId())
 							.queryParamIfPresent("keyword", search.getKeyword())
 							.build())
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
@@ -175,9 +180,40 @@ public class PivotableWebclientServer implements IPivotableServer {
 					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
 				}
 				log.info("Search for schemas: {}", r.statusCode());
-				return r.bodyToFlux(EntrypointSchemaMetadata.class);
+				return r.bodyToFlux(TargetedEndpointSchemaMetadata.class);
 			});
 		});
+	}
+
+	@Override
+	public Flux<ColumnMetadata> columnMetadata(AdhocColumnSearch search) {
+		return accessToken().map(accessToken -> {
+			RequestHeadersSpec<?> spec = getWebClient().get()
+					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints/schemas/columns")
+							.queryParamIfPresent("endpoint_id", search.getEndpointId())
+							.queryParamIfPresent("cube", search.getCube())
+							.queryParamIfPresent("table", search.getTable())
+							.queryParamIfPresent("name", search.getName())
+							.queryParamIfPresent("coordinate", search.getCoordinate())
+							.build())
+					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
+
+			return spec;
+		}).flatMapMany(spec -> {
+			return spec.exchangeToFlux(r -> {
+				if (!r.statusCode().is2xxSuccessful()) {
+					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
+				}
+				log.info("Search for columns: {}", r.statusCode());
+				return r.bodyToFlux(ColumnMetadata.class);
+			});
+		});
+	}
+
+	@Override
+	public Flux<ColumnMetadata> searchMembers(AdhocCoordinatesSearch search) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

@@ -38,12 +38,13 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
-import eu.solven.adhoc.pivotable.entrypoint.PivotableEntrypointsHandler;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
+import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -52,11 +53,11 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE,
 		IPivotableSpringProfiles.P_INMEMORY,
-		IPivotableSpringProfiles.P_SELF_ENTRYPOINT })
+		IPivotableSpringProfiles.P_SELF_ENDPOINT })
 @Slf4j
 public class TestPivotableApiRouter {
 
-	String v1 = "/api/v1";
+	String v1 = IPivotableApiConstants.PREFIX_V1;
 
 	@Autowired
 	private WebTestClient webTestClient;
@@ -90,19 +91,19 @@ public class TestPivotableApiRouter {
 
 	@Test
 	public void testSearchEntrypoints() {
-		log.debug("About {}", PivotableEntrypointsHandler.class);
+		log.debug("About {}", PivotableEndpointsHandler.class);
 
 		webTestClient
 
 				.get()
-				.uri(v1 + "/entrypoints")
+				.uri(v1 + "/endpoints")
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateAccessToken())
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
 
 				.expectStatus()
 				.isOk()
-				.expectBodyList(AdhocEntrypointMetadata.class)
+				.expectBodyList(PivotableAdhocEndpointMetadata.class)
 				.value(games -> {
 					Assertions.assertThat(games)
 							.hasSizeGreaterThanOrEqualTo(1)
@@ -115,12 +116,12 @@ public class TestPivotableApiRouter {
 
 	@Test
 	public void testSearchGames_gameId_undefined() {
-		log.debug("About {}", PivotableEntrypointsHandler.class);
+		log.debug("About {}", PivotableEndpointsHandler.class);
 
 		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebExceptionHandler.class)) {
 			webTestClient.get()
 
-					.uri(v1 + "/entrypoints?entrypoint_id=undefined")
+					.uri(v1 + "/endpoints?endpoint_id=undefined")
 					.accept(MediaType.APPLICATION_JSON)
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateAccessToken())
 					.exchange()
@@ -132,11 +133,11 @@ public class TestPivotableApiRouter {
 
 	@Test
 	public void testSearchGames_gameId_tsp() {
-		log.debug("About {}", PivotableEntrypointsHandler.class);
+		log.debug("About {}", PivotableEndpointsHandler.class);
 
 		webTestClient.get()
 
-				.uri(v1 + "/entrypoints?entrypoint_id=" + AdhocEntrypointMetadata.localhost().getId())
+				.uri(v1 + "/endpoints?endpoint_id=" + PivotableAdhocEndpointMetadata.localhost().getId())
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateAccessToken())
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()

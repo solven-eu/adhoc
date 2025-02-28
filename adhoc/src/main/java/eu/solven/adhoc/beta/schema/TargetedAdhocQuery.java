@@ -23,6 +23,7 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.util.Set;
+import java.util.UUID;
 
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
@@ -43,7 +44,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class TargetedAdhocQuery {
 	@NonNull
-	String entrypointId;
+	UUID endpointId;
 
 	@NonNull
 	String cube;

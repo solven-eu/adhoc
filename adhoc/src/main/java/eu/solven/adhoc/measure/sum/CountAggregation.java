@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.Builder;
 import lombok.Value;
@@ -30,7 +31,7 @@ import lombok.Value;
 /**
  * Keep the highest value amongst encountered values
  */
-public class CountAggregation implements IAggregation {
+public class CountAggregation implements IAggregation, IHasCarriers {
 
 	public static final String KEY = "COUNT";
 
@@ -93,6 +94,11 @@ public class CountAggregation implements IAggregation {
 		} else {
 			return CountHolder.zero().increment();
 		}
+	}
+
+	@Override
+	public CountHolder wrap(Object v) {
+		return CountHolder.builder().count(((Number) v).longValue()).build();
 	}
 
 	// @Override

@@ -345,8 +345,8 @@ public class MultiTypeStorage<T> {
 
 	public void purgeAggregationCarriers() {
 		// We collect entries to remove, not to modify `measureToAggregateO` while iterating over it
-		List<T> toRemove = new ArrayList<>(); 
-		
+		List<T> toRemove = new ArrayList<>();
+
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				aggregationCarrier.acceptValueConsumer(new IValueConsumer() {
@@ -377,7 +377,7 @@ public class MultiTypeStorage<T> {
 				});
 			}
 		});
-		
+
 		toRemove.forEach(measureToAggregateO::remove);
 	}
 }

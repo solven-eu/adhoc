@@ -24,6 +24,7 @@ package eu.solven.adhoc.pivotable.app.it;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
@@ -38,13 +39,15 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.client.IPivotableServer;
 import eu.solven.adhoc.pivotable.client.PivotableWebclientServer;
 import eu.solven.adhoc.pivotable.client.PivotableWebclientServerProperties;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointMetadata;
-import eu.solven.adhoc.pivotable.entrypoint.AdhocEntrypointSearch;
+import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
+import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -75,7 +78,7 @@ public class TestQueryGrandTotalsThroughRouter {
 	Environment env;
 
 	@Test
-	public void testSinglePlayer() {
+	public void testQueryGrandTotal() {
 		PivotableWebclientServerProperties properties =
 				PivotableWebclientServerProperties.forTests(env, randomServerPort);
 		IPivotableServer pivotableServer = PivotableWebclientServer.fromProperties(properties);
@@ -83,30 +86,34 @@ public class TestQueryGrandTotalsThroughRouter {
 		AtomicInteger nbViews = new AtomicInteger();
 
 		ITabularView lastView = pivotableServer
-				// Search for self entrypoint
-				.searchEntrypoints(AdhocEntrypointSearch.builder()
-						.entrypointId(Optional.of(AdhocEntrypointMetadata.SELF_ENTRYPOINT_ID))
+				// Search for self endpoint
+				.searchEntrypoints(AdhocEndpointSearch.builder()
+						.endpointId(Optional.of(PivotableAdhocEndpointMetadata.SELF_ENTRYPOINT_ID))
 						.build())
-				.flatMap(entrypoint -> {
-					log.info("Processing entrypoint={}", entrypoint);
+				.flatMap(endpoint -> {
+					log.info("Processing endpoint={}", endpoint);
 
-					// Search for the entrypoint schema
-					AdhocEntrypointSearch search =
-							AdhocEntrypointSearch.builder().entrypointId(Optional.of(entrypoint.getId())).build();
+					// Search for the endpoint schema
+					AdhocEndpointSearch search =
+							AdhocEndpointSearch.builder().endpointId(Optional.of(endpoint.getId())).build();
 					return pivotableServer.searchSchemas(search).flatMap(schema -> {
-						log.info("Considering entrypoint={} cubeNames={}", entrypoint, schema.getCubes().keySet());
+						Set<String> cubes = schema.getSchema().getCubes().keySet();
+						log.info("Considering endpoint={} cubes={}", endpoint, cubes);
 
-						return Flux.fromIterable(schema.getCubes().keySet()).flatMap(cubeName -> {
+						return Flux.fromIterable(cubes).flatMap(cubeName -> {
 							AdhocQuery query = AdhocQuery.builder().build();
-							return pivotableServer
-									.executeQuery(TargetedAdhocQuery.builder().query(query).cube(cubeName).build())
-									.map(view -> {
-										log.info("cubeName={} grandTotal={}", cubeName, view);
+							TargetedAdhocQuery targetedQuery = TargetedAdhocQuery.builder()
+									.endpointId(schema.getEndpoint().getId())
+									.query(query)
+									.cube(cubeName)
+									.build();
+							return pivotableServer.executeQuery(targetedQuery).map(view -> {
+								log.info("cubeName={} grandTotal={}", cubeName, view);
 
-										nbViews.incrementAndGet();
+								nbViews.incrementAndGet();
 
-										return view;
-									});
+								return view;
+							});
 						});
 					});
 				})
@@ -123,6 +130,60 @@ public class TestQueryGrandTotalsThroughRouter {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of(), Map.of("count(*)", 2));
+				.containsEntry(Map.of(), Map.of("count(*)", 16384));
+	}
+
+	@Test
+	public void testQueryColumns() {
+		PivotableWebclientServerProperties properties =
+				PivotableWebclientServerProperties.forTests(env, randomServerPort);
+		IPivotableServer pivotable = PivotableWebclientServer.fromProperties(properties);
+
+		AtomicInteger nbColumns = new AtomicInteger();
+
+		ColumnMetadata lastColumn = pivotable
+				// Search for self endpoint
+				.searchEntrypoints(AdhocEndpointSearch.builder()
+						.endpointId(Optional.of(PivotableAdhocEndpointMetadata.SELF_ENTRYPOINT_ID))
+						.build())
+				.flatMap(endpoint -> {
+					log.info("Processing endpoint={}", endpoint);
+
+					// Search for the endpoint schema
+					AdhocEndpointSearch search =
+							AdhocEndpointSearch.builder().endpointId(Optional.of(endpoint.getId())).build();
+					return pivotable.searchSchemas(search).flatMap(schema -> {
+						Set<String> cubes = schema.getSchema().getCubes().keySet();
+						log.info("Considering endpoint={} cubes={}", endpoint, cubes);
+
+						return Flux.fromIterable(cubes).flatMap(cube -> {
+							log.info("Considering endpoint={} cube={}", endpoint, cube);
+
+							return pivotable
+									.columnMetadata(AdhocColumnSearch.builder()
+											.endpointId(Optional.of(endpoint.getId()))
+											.cube(Optional.of(cube))
+											.build())
+
+									.map(column -> {
+										log.info("cube={} column={}", cube, column);
+
+										nbColumns.incrementAndGet();
+
+										return column;
+									});
+
+						});
+					});
+				})
+
+				.doOnError(t -> {
+					log.error("Something went wrong", t);
+				})
+				// .then()
+				.blockLast();
+
+		Assertions.assertThat(nbColumns.get()).isGreaterThan(0);
+		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("gamma");
 	}
 }
