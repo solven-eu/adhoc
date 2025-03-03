@@ -54,7 +54,7 @@ public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 	 */
 	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
 
-	default Set<Object> getCoordinates(String column) {
+	default Set<?> getCoordinates(String column) {
 		ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
 
 		return view.slices().map(slice -> slice.getRawSliced(column)).collect(Collectors.toSet());

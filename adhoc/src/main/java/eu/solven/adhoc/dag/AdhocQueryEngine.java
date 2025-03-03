@@ -74,11 +74,12 @@ import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
+import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
 import eu.solven.adhoc.storage.IRowScanner;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
-import eu.solven.adhoc.storage.MultiTypeStorage;
+import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
@@ -318,13 +319,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		tableQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
 
-			MultiTypeStorage<AdhocSliceAsMap> storage =
+			IMergeableMultitypeColumn<AdhocSliceAsMap> storage =
 					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
 			if (storage == null) {
 				// Typically happens when a filter reject completely one of the underlying
 				// measure
-				storage = MultiTypeStorage.empty();
+				storage = MergeableMultiTypeStorage.empty();
 			} else {
 				// Typically converts a CountHolder into the count as a `long`
 				storage.purgeAggregationCarriers();

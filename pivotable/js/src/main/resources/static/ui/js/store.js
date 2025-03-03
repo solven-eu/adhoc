@@ -214,7 +214,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbContestFetching++;
+				store.nbSchemaFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
 					const responseJson = await response.json();
@@ -224,6 +224,7 @@ export const useAdhocStore = defineStore("adhoc", {
 					const schemas = responseJson;
 					schemas.forEach((schemaAndEndpoint) => {
 						console.log("Registering schemaId", schemaAndEndpoint.endpoint.id);
+
 						store.$patch({
 							schemas: {
 								...store.schemas,
@@ -236,7 +237,7 @@ export const useAdhocStore = defineStore("adhoc", {
 					store.onSwallowedError(e);
 					return {};
 				} finally {
-					store.nbContestFetching--;
+					store.nbSchemaFetching--;
 				}
 			}
 
@@ -285,6 +286,49 @@ export const useAdhocStore = defineStore("adhoc", {
 				} else {
 					return this.loadCubeSchema(cubeId, endpointId);
 				}
+			});
+		},
+
+		async loadColumnCoordinates(cubeId, endpointId, column) {
+			const store = this;
+
+			async function fetchFromUrl(url) {
+				store.nbSchemaFetching++;
+				try {
+					const response = await store.authenticatedFetch(url);
+					const responseJson = await response.json();
+
+					console.debug("responseJson", responseJson);
+
+					const schemas = responseJson;
+
+					schemas.forEach((column) => {
+						console.log("Registering column", column.column);
+
+						//						store.$patch({
+						//							schemas: {
+						//								...store.schemas,
+						//								[schemaAndEndpoint.endpoint.id]: schemaAndEndpoint.schema,
+						//							},
+						//						});
+					});
+					return responseJson[0].coordinates;
+				} catch (e) {
+					store.onSwallowedError(e);
+					return {};
+				} finally {
+					store.nbSchemaFetching--;
+				}
+			}
+
+			let url = "/endpoints/schemas/columns";
+
+			url += "?endpoint_id=" + endpointId;
+			url += "&cube=" + cubeId;
+			url += "&name=" + column;
+
+			return this.loadEndpointIfMissing(endpointId).then(() => {
+				return fetchFromUrl(url);
 			});
 		},
 

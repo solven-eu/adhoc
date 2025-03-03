@@ -8,12 +8,15 @@ import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocMeasure from "./adhoc-measure.js";
 
+import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
+
 import { useUserStore } from "./store-user.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocMeasure,
+		AdhocQueryWizardColumn,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -107,11 +110,7 @@ export default {
 					Columns
 					<ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
 					    <li class="list-group-item  d-flex justify-content-between align-items-center">
-							<div class="form-check form-switch">
-							  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + name" v-model="queryModel.selectedColumns[name]">
-							  <label class="form-check-label" :for="'column_' + name">{{name}}: {{type}}</label>
-							</div>
-							  <span class="badge bg-primary rounded-pill">?</span>
+							<AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
 						</li>
 					</ul>
 				</div>

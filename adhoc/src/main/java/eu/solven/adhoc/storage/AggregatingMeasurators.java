@@ -32,14 +32,14 @@ import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
 import lombok.Value;
 
 /**
- * A data-structure associating each {@link Aggregator} with a {@link MultiTypeStorage}
+ * A data-structure associating each {@link Aggregator} with a {@link MergeableMultiTypeStorage}
  * 
  * @param <T>
  */
 @Value
 public class AggregatingMeasurators<T> {
 
-	Map<Aggregator, MultiTypeStorage<T>> aggregatorToStorage = new HashMap<>();
+	Map<Aggregator, IMergeableMultitypeColumn<T>> aggregatorToStorage = new HashMap<>();
 
 	IOperatorsFactory transformationFactory;
 
@@ -54,8 +54,8 @@ public class AggregatingMeasurators<T> {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
+		IMergeableMultitypeColumn<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
+				k -> MergeableMultiTypeStorage.<T>builder().aggregation(agg).build());
 
 		storage.merge(key, v);
 	}
@@ -73,8 +73,8 @@ public class AggregatingMeasurators<T> {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 
-		MultiTypeStorage<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
-				k -> MultiTypeStorage.<T>builder().aggregation(agg).build());
+		IMergeableMultitypeColumn<T> storage = aggregatorToStorage.computeIfAbsent(aggregator,
+				k -> MergeableMultiTypeStorage.<T>builder().aggregation(agg).build());
 
 		if (agg instanceof IHasCarriers hasCarriers) {
 			v = hasCarriers.wrap(v);
@@ -84,7 +84,7 @@ public class AggregatingMeasurators<T> {
 	}
 
 	public long size(Aggregator aggregator) {
-		MultiTypeStorage<T> storage = aggregatorToStorage.get(aggregator);
+		IMergeableMultitypeColumn<T> storage = aggregatorToStorage.get(aggregator);
 		if (storage == null) {
 			return 0L;
 		} else {

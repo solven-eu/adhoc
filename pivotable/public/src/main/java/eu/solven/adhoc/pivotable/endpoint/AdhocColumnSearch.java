@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.endpoint;
 import java.util.Optional;
 import java.util.UUID;
 
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Value;
@@ -50,14 +51,10 @@ public class AdhocColumnSearch {
 
 	// Search for a matching name
 	@Default
-	Optional<String> name = Optional.empty();
-
-	// Search for a matching name
-	// @Default
-	// Optional<IValueMatcher> name = Optional.empty();
+	Optional<IValueMatcher> name = Optional.empty();
 
 	// Search for columns with a matching coordinate
 	@Default
-	Optional<String> coordinate = Optional.empty();
+	Optional<IValueMatcher> coordinate = Optional.empty();
 
 }

@@ -20,14 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.storage;
 
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+public interface IMergeableMultitypeColumn<T> extends IMultitypeColumn<T> {
 
-public class AdhocObject2IntArrayMap<T> extends Object2IntArrayMap<T> {
-	private static final long serialVersionUID = 752967366104172327L;
+	void onValue(T coordinateAsSlice, IValueConsumer valueConsumer);
 
-	public AdhocObject2IntArrayMap(int capacity) {
-		super(capacity);
-	}
+	void merge(T coordinateAsSlice, Object fragmentValue);
+
 }

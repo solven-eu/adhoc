@@ -14,6 +14,12 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<!-- Resource -->
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
@@ -30,13 +36,6 @@
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper</artifactId>
 			<version>${pepper.version}</version>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>33.3.1-jre</version>
 		</dependency>
 
 		<dependency>

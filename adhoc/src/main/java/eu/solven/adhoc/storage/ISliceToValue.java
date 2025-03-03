@@ -23,10 +23,12 @@
 package eu.solven.adhoc.storage;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 
 public interface ISliceToValue extends ISliceAndValueConsumer {
 	Set<AdhocSliceAsMap> slicesSet();
@@ -38,4 +40,12 @@ public interface ISliceToValue extends ISliceAndValueConsumer {
 	void forEachSlice(IRowScanner<AdhocSliceAsMap> rowScanner);
 
 	<U> Stream<U> stream(IRowConverter<AdhocSliceAsMap, U> rowScanner);
+
+	static <T> Object getValue(ISliceToValue storage, IAdhocSliceWithStep slice) {
+		AtomicReference<Object> refV = new AtomicReference<>();
+
+		storage.onValue(slice, refV::set);
+
+		return refV.get();
+	}
 }

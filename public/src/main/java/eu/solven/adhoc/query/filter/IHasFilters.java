@@ -20,37 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.query.filter;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.List;
+import java.util.Map;
 
 /**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
+ * A {@link List} of filters. Typically used by {@link IAdhocQuery}, or {@link NotFilter}.
  * 
  * @author Benoit Lacelle
  *
  */
-@Value
-@Builder
-@Jacksonized
-public class EqualsMatcher implements IValueMatcher {
-	@NonNull
-	Object operand;
+public interface IHasFilters {
+	IHasFilters MATCH_ALL = () -> IAdhocFilter.MATCH_ALL;
 
-	@Override
-	public boolean match(Object value) {
-		return operand == value || operand.equals(value);
-	}
-
-	public static IValueMatcher isEqualTo(Object operand) {
-		if (operand == null) {
-			return NullMatcher.matchNull();
-		} else {
-			return EqualsMatcher.builder().operand(operand).build();
-		}
-	}
+	/**
+	 * An empty {@link Map} would match any rows.
+	 * 
+	 * @return the {@link List} of filters. To be interpreted as an OR over AND conditions.
+	 */
+	IAdhocFilter getFilter();
 }

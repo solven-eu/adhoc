@@ -1,4 +1,4 @@
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, reactive } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store.js";
@@ -39,6 +39,7 @@ export default {
 
 		let grid;
 		let data = [];
+		const gridMetadata = reactive({});
 
 		let columns = [];
 
@@ -76,6 +77,7 @@ export default {
 
 				columns.push(column);
 				data.push({ id: "0", empty: "empty" });
+				gridMetadata.nb_rows = 0;
 			} else {
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
 				for (let i = 0; i < view.coordinates.length; i++) {
@@ -118,6 +120,7 @@ export default {
 			// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view
 			//grid.setData(data);
 			dataView.setItems(data);
+			gridMetadata.nb_rows = data.length;
 
 			dataView.refresh();
 		};
@@ -176,7 +179,7 @@ export default {
 			});
 		});
 
-		return { rendering };
+		return { rendering, gridMetadata };
 	},
 	template: /* HTML */ `
 		<div>
@@ -188,7 +191,7 @@ export default {
 				{{row}} -> {{tabularView.value.values[index]}}
 			</div-->
 			
-			rendering = {{rendering}}
+			rendering = {{rendering}} ({{gridMetadata}} rows)
 			<div>
 			  <div class="grid-header" style="width:100%;">
 			    <label>SlickGrid</label>

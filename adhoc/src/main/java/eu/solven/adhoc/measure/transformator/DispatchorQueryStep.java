@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
@@ -42,9 +41,10 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorage;
+import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.NonNull;
@@ -109,8 +109,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
 
-		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
-				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
+		IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView =
+				MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
 		IDecomposition decomposition = makeDecomposition();
 
@@ -122,14 +122,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
 			IAdhocSliceWithStep slice,
 			IDecomposition decomposition,
-			MultiTypeStorage<AdhocSliceAsMap> aggregatingView) {
-		List<Object> underlyingVs = underlyings.stream().map(storage -> {
-			AtomicReference<Object> refV = new AtomicReference<>();
-
-			storage.onValue(slice, refV::set);
-
-			return refV.get();
-		}).toList();
+			IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView) {
+		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
 
 		Object value = underlyingVs.getFirst();
 

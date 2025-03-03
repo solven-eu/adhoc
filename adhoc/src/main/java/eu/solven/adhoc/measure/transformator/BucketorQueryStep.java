@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -42,9 +41,10 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorage;
+import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -93,8 +93,8 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 		IAggregation agg = getMakeAggregation();
 
-		MultiTypeStorage<AdhocSliceAsMap> aggregatingView =
-				MultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
+		IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView =
+				MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
 
 		ICombination combinator = combinationSupplier.get();
 
@@ -108,13 +108,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 			IAdhocSliceWithStep slice,
 			ICombination combinator,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(storage -> {
-			AtomicReference<Object> refV = new AtomicReference<>();
-
-			storage.onValue(slice.getAdhocSliceAsMap(), refV::set);
-
-			return refV.get();
-		}).collect(Collectors.toList());
+		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
 
 		Object value;
 		try {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.storage;
 
-import java.util.List;
-import java.util.Map;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+public interface IMultitypeColumn<T> {
 
-/**
- * A {@link List} of filters. Typically used by {@link IAdhocQuery}, or {@link NotFilter}.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IHasFilters {
-	IHasFilters MATCH_ALL = () -> IAdhocFilter.MATCH_ALL;
+	long size();
 
-	/**
-	 * An empty {@link Map} would match any rows.
-	 * 
-	 * @return the {@link List} of filters. To be interpreted as an OR over AND conditions.
-	 */
-	IAdhocFilter getFilter();
+	void purgeAggregationCarriers();
+
+	void put(T coordinate, Object value);
+
+	void scan(IRowScanner<T> rowScanner);
+
+	<U> Stream<U> stream(IRowConverter<T, U> converter);
+
+	Stream<T> keySetStream();
+
 }

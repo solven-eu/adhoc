@@ -40,11 +40,11 @@ import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.AggregatedRecordOverMaps;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
+import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
@@ -89,7 +89,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
 		return new SuppliedAggregatedRecordStream(tableQuery, () -> this.stream().filter(row -> {
-			return FilterHelpers.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
+			return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 		}).map(row -> {
 			Map<String, Object> aggregates = new LinkedHashMap<>();
 			// Transcode from columnName to aggregatorName, supposing all aggregation functions does not change a not

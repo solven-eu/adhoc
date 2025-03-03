@@ -52,8 +52,8 @@
             import HelloView from "./ui/js/hello.js";
             import AdhocAccount from "./ui/js/adhoc-account.js";
             import AdhocMe from "./ui/js/adhoc-account-me.js";
-            import AdhocEntrypoints from "./ui/js/adhoc-entrypoints.js";
-			import AdhocEntrypoint from "./ui/js/adhoc-entrypoint.js";
+            import AdhocEndpoints from "./ui/js/adhoc-endpoints.js";
+			import AdhocEndpoint from "./ui/js/adhoc-endpoint.js";
 			import AdhocCube from "./ui/js/adhoc-cube.js";
 			import AdhocQuery from "./ui/js/adhoc-query.js";
             import Login from "./ui/js/login.js";
@@ -86,36 +86,36 @@
 					    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
 					    // props: route => Object.assign({}, route.query, route.params)
 					},
-                { path: "/html/entrypoints", component: AdhocEntrypoints },
+                { path: "/html/endpoints", component: AdhocEndpoints },
                 // https://router.vuejs.org/guide/essentials/passing-props
                 {
-                    path: "/html/entrypoints/:entrypointId",
-                    component: AdhocEntrypoint,
+                    path: "/html/endpoints/:endpointId",
+                    component: AdhocEndpoint,
                     props: true,
                 },
 					{
-					    path: "/html/entrypoints/:entrypointId/schema",
-					    component: AdhocEntrypoint,
+					    path: "/html/endpoints/:endpointId/schema",
+					    component: AdhocEndpoint,
 					    props: (route) => ({
-							entrypointId: route.params.entrypointId,
+							endpointId: route.params.endpointId,
 					        showSchema: true,
 					    }),
 					},
 					{
-					    path: "/html/entrypoints/:entrypointId/cubes/:cubeId",
+					    path: "/html/endpoints/:endpointId/cubes/:cubeId",
 					    component: AdhocCube,
 					    props: (route) => ({
 							cubeId: route.params.cubeId,
-							entrypointId: route.params.entrypointId,
+							endpointId: route.params.endpointId,
 					        showSchema: false,
 					    }),
 					},
 					{
-					    path: "/html/entrypoints/:entrypointId/cubes/:cubeId/query",
+					    path: "/html/endpoints/:endpointId/cubes/:cubeId/query",
 					    component: AdhocQuery,
 					    props: (route) => ({
 							cubeId: route.params.cubeId,
-							entrypointId: route.params.entrypointId,
+							endpointId: route.params.endpointId,
 					    }),
 					},
 				

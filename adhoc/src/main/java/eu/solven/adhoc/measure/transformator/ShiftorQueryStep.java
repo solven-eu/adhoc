@@ -35,6 +35,7 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.transformator.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.slice.AdhocSliceAsMap;
@@ -71,10 +72,9 @@ public class ShiftorQueryStep implements ITransformator {
 		// This will provide underlying values from the shifted slice
 		String underlyingMeasure = shiftor.getUnderlying();
 
-		AdhocQueryStep whereToRead = AdhocQueryStep.edit(step)
-				.filter(shift(step.getFilter(), step.getCustomMarker()))
-				.measureNamed(underlyingMeasure)
-				.build();
+		IAdhocFilter shiftedFilter = shift(step.getFilter(), step.getCustomMarker());
+		AdhocQueryStep whereToRead =
+				AdhocQueryStep.edit(step).filter(shiftedFilter).measureNamed(underlyingMeasure).build();
 		AdhocQueryStep whereToWrite = AdhocQueryStep.edit(step).measureNamed(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
@@ -82,9 +82,9 @@ public class ShiftorQueryStep implements ITransformator {
 	}
 
 	protected IAdhocFilter shift(IAdhocFilter filter, Object customMarker) {
-		return filterEditorSupplier.get()
-				.editFilter(
-						IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build());
+		FilterEditorContext filterEditorContext =
+				IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build();
+		return filterEditorSupplier.get().editFilter(filterEditorContext);
 	}
 
 	// @Override

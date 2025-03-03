@@ -10,6 +10,14 @@
 	<description>Resources shared between server and clients</description>
 
 	<dependencies>
+		<!-- This module should have a strict minimal set of dependencies -->
+		<dependency>
+			<!-- IValueMatcher-->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
@@ -21,7 +29,7 @@
 		</dependency>
 
 		<dependency>
-			<!-- ConstantCreationMetadata holds some OffsetDateTime fields -->
+			<!-- PivotableJackson -->
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>

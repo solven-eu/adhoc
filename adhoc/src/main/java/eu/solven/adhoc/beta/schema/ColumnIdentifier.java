@@ -38,5 +38,6 @@ public class ColumnIdentifier {
 	@NonNull
 	String holder;
 
+	@NonNull
 	String column;
 }

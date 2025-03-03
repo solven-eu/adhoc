@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-public class MultiTypeStorage<T> {
+public class MergeableMultiTypeStorage<T> implements IMergeableMultitypeColumn<T> {
 
 	@Default
 	@NonNull
@@ -94,6 +94,7 @@ public class MultiTypeStorage<T> {
 	 * @param v
 	 *            if null, this behave like `.clear`
 	 */
+	@Override
 	public void put(T key, Object v) {
 		// We clear all keys, to prevent storing different types for the same key
 		clearKey(key);
@@ -120,6 +121,7 @@ public class MultiTypeStorage<T> {
 		measureToAggregateO.remove(key);
 	}
 
+	@Override
 	public void onValue(T key, IValueConsumer consumer) {
 		if (measureToAggregateL.containsKey(key)) {
 			consumer.onLong(measureToAggregateL.getLong(key));
@@ -133,6 +135,7 @@ public class MultiTypeStorage<T> {
 		}
 	}
 
+	@Override
 	public void scan(IRowScanner<T> rowScanner) {
 		// Consider each column is much faster than going with `keySetStream` as
 		// it would require searching the column providing given type
@@ -152,6 +155,7 @@ public class MultiTypeStorage<T> {
 		});
 	}
 
+	@Override
 	public <U> Stream<U> stream(IRowConverter<T, U> converter) {
 		Stream<U> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
 				.map(entry -> converter.convertLong(entry.getKey(), entry.getLongValue()));
@@ -166,6 +170,7 @@ public class MultiTypeStorage<T> {
 				.flatMap(Functions.identity());
 	}
 
+	@Override
 	public long size() {
 		long size = 0;
 
@@ -178,6 +183,7 @@ public class MultiTypeStorage<T> {
 		return size;
 	}
 
+	@Override
 	public void merge(T key, Object v) {
 		// BEWARE This must not assumes doubles necessarily aggregates into a double, longs into a long, etc
 		// It is for instance not true in SumElseSetAggregator which turns input String into a collecting Set
@@ -294,6 +300,7 @@ public class MultiTypeStorage<T> {
 	// put(key, valueToStore);
 	// }
 
+	@Override
 	public Stream<T> keySetStream() {
 		return Stream
 				.of(measureToAggregateD.keySet(),
@@ -336,13 +343,14 @@ public class MultiTypeStorage<T> {
 	/**
 	 * @return an empty and immutable MultiTypeStorage
 	 */
-	public static <T> MultiTypeStorage<T> empty() {
-		return MultiTypeStorage.<T>builder()
+	public static <T> MergeableMultiTypeStorage<T> empty() {
+		return MergeableMultiTypeStorage.<T>builder()
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
 				.build();
 	}
 
+	@Override
 	public void purgeAggregationCarriers() {
 		// We collect entries to remove, not to modify `measureToAggregateO` while iterating over it
 		List<T> toRemove = new ArrayList<>();

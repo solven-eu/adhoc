@@ -38,12 +38,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.Ints;
 
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 
 // `extends AbstractMap` enables not duplicating `.toString`
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	// This is mandatory for fast `.get`
-	final AdhocObject2IntArrayMap<String> keyToIndex;
+	final Object2IntArrayMap<String> keyToIndex;
 	// final List<String> keys;
 	final List<Object> values;
 
@@ -59,7 +60,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
-	private AdhocMap(AdhocObject2IntArrayMap<String> keyToIndex, List<Object> values) {
+	private AdhocMap(Object2IntArrayMap<String> keyToIndex, List<Object> values) {
 		this.keyToIndex = keyToIndex;
 		this.values = values;
 	}
@@ -237,7 +238,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 
 		public IAdhocMap build() {
-			AdhocObject2IntArrayMap<String> keyToIndex = new AdhocObject2IntArrayMap<>(keys.size());
+			Object2IntArrayMap<String> keyToIndex = new Object2IntArrayMap<>(keys.size());
 
 			// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)
 			keyToIndex.defaultReturnValue(-1);

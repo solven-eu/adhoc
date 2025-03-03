@@ -22,7 +22,11 @@
  */
 package eu.solven.adhoc.table;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.util.IHasColumns;
@@ -42,5 +46,10 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 	 * @return a {@link IAggregatedRecordStream} matching the input dpQuery
 	 */
 	IAggregatedRecordStream streamSlices(TableQuery tableQuery);
+
+	default Set<Object> getCoordinates(String column) {
+		TableQuery tableQuery = TableQuery.builder().groupBy(GroupByColumns.named(column)).build();
+		return this.streamSlices(tableQuery).asMap().map(r -> r.getGroupBy(column)).collect(Collectors.toSet());
+	}
 
 }

@@ -24,8 +24,6 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -100,13 +98,7 @@ public class FiltratorQueryStep extends ATransformator {
 			IAdhocSliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(storage -> {
-			AtomicReference<Object> refV = new AtomicReference<>();
-
-			storage.onValue(slice, refV::set);
-
-			return refV.get();
-		}).collect(Collectors.toList());
+		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
 
 		Object value = combination.combine(slice, underlyingVs);
 

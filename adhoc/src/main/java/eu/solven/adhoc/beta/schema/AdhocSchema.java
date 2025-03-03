@@ -125,11 +125,11 @@ public class AdhocSchema implements IAdhocSchema {
 
 	public Set<?> getCoordinates(ColumnIdentifier columnId) {
 		if (columnId.isCubeElseTable()) {
-			nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
+			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
 		} else {
+			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
 
 		}
-		return Set.of();
 	}
 
 	// public void registerQuery(String name, IAdhocQuery query) {

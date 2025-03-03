@@ -23,13 +23,10 @@
 package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.measure.transformator.UnderlyingQueryStepHelpers;
 import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
-import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.IAdhocSliceWithStep;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -64,27 +61,23 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 
 		ISliceToValue output = makeCoordinateToValues();
 
-		boolean debug = customMarkerEditor.isDebug() || step.isDebug();
-
 		ISliceToValue singleUnderlying = underlyings.getFirst();
 
-		for (IAdhocSlice rawSlice : UnderlyingQueryStepHelpers.distinctSlices(customMarkerEditor.isDebug(),
-				underlyings)) {
+		singleUnderlying.forEachSlice(rawSlice -> {
 			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
-			onSlice(singleUnderlying, slice, debug, output);
-		}
+
+			return v -> onSlice(slice, v, output);
+		});
 
 		return output;
 	}
 
-	protected void onSlice(ISliceToValue underlying, IAdhocSliceWithStep slice, boolean debug, ISliceToValue output) {
-		AtomicReference<Object> refV = new AtomicReference<>();
+	private boolean isDebug() {
+		return customMarkerEditor.isDebug() || step.isDebug();
+	}
 
-		underlying.onValue(slice, refV::set);
-
-		Object value = refV.get();
-
-		if (debug) {
+	protected void onSlice(IAdhocSliceWithStep slice, Object value, ISliceToValue output) {
+		if (isDebug()) {
 			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
 

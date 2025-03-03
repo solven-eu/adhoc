@@ -130,7 +130,7 @@ public class TestQueryGrandTotalsThroughRouter {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of(), Map.of("count(*)", 16384));
+				.containsEntry(Map.of(), Map.of("count(*)", 16_384));
 	}
 
 	@Test
@@ -166,7 +166,10 @@ public class TestQueryGrandTotalsThroughRouter {
 											.build())
 
 									.map(column -> {
-										log.info("cube={} column={}", cube, column);
+										log.info("cube={} column={} cardinality={}",
+												cube,
+												column.getColumn(),
+												column.getEstimatedCardinality());
 
 										nbColumns.incrementAndGet();
 

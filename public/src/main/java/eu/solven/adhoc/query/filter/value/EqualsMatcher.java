@@ -20,60 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.query.filter.value;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.IAdhocSlice;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * This is a simple way to storage the value for a {@link java.util.Set} of {@link IAdhocSlice}.
+ * To be used with {@link ColumnFilter}, for equality-based matchers.
+ * 
+ * @author Benoit Lacelle
+ *
  */
 @Value
 @Builder
-public class SliceToValue implements ISliceToValue {
+@Jacksonized
+public class EqualsMatcher implements IValueMatcher {
 	@NonNull
-	@Default
-	IMergeableMultitypeColumn<AdhocSliceAsMap> storage = MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().build();
-
-	public static SliceToValue empty() {
-		return SliceToValue.builder().build();
-	}
+	Object operand;
 
 	@Override
-	public void onValue(IAdhocSlice slice, IValueConsumer consumer) {
-		storage.onValue(slice.getAdhocSliceAsMap(), consumer);
+	public boolean match(Object value) {
+		return operand == value || operand.equals(value);
 	}
 
-	@Override
-	public Set<AdhocSliceAsMap> slicesSet() {
-		return getStorage().keySetStream().collect(Collectors.toSet());
-	}
-
-	@Override
-	public void putSlice(AdhocSliceAsMap coordinate, Object value) {
-		storage.put(coordinate, value);
-	}
-
-	@Override
-	public void forEachSlice(IRowScanner<AdhocSliceAsMap> rowScanner) {
-		storage.scan(rowScanner);
-	}
-
-	@Override
-	public <U> Stream<U> stream(IRowConverter<AdhocSliceAsMap, U> rowScanner) {
-		return storage.stream(rowScanner);
-	}
-
-	@Override
-	public long size() {
-		return storage.size();
+	public static IValueMatcher isEqualTo(Object operand) {
+		if (operand == null) {
+			return NullMatcher.matchNull();
+		} else {
+			return EqualsMatcher.builder().operand(operand).build();
+		}
 	}
 }

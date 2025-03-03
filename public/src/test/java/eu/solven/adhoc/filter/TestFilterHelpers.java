@@ -32,55 +32,12 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestFilterHelpers {
-	@Test
-	public void testIn() {
-		ColumnFilter inV1OrV2 = ColumnFilter.builder().column("c").matching(Set.of("v1", "v2")).build();
-		Assertions.assertThat(FilterHelpers.match(inV1OrV2, Map.of())).isFalse();
-		Assertions.assertThat(FilterHelpers.match(inV1OrV2, Map.of("c", "v3"))).isFalse();
-
-		Assertions.assertThat(FilterHelpers.match(inV1OrV2, Map.of("c", "v1"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(inV1OrV2, Map.of("c", "v2"))).isTrue();
-	}
-
-	@Test
-	public void testLike() {
-		ColumnFilter startsWithV1 =
-				ColumnFilter.builder().column("c").valueMatcher(LikeMatcher.builder().like("v1%").build()).build();
-
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of())).isFalse();
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of("c", "v3"))).isFalse();
-
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of("c", "v1"))).isTrue();
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of("c", "v2"))).isFalse();
-
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of("c", "p_v1"))).isFalse();
-		Assertions.assertThat(FilterHelpers.match(startsWithV1, Map.of("c", "v1_s"))).isTrue();
-	}
-
-	@Test
-	public void testIn_Transcoded() {
-		IAdhocTableTranscoder transcoder = PrefixTranscoder.builder().prefix("p_").build();
-
-		Assertions.assertThat(FilterHelpers.match(transcoder, ColumnFilter.isIn("c", "c1", "c2"), Map.of("p_c", "c1")))
-				.isTrue();
-
-		Assertions.assertThat(FilterHelpers.match(transcoder,
-				AndFilter.and(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")),
-				Map.of("p_c", "a"))).isTrue();
-
-		Assertions.assertThat(FilterHelpers.match(transcoder,
-				OrFilter.or(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")),
-				Map.of("p_c", "azerty"))).isTrue();
-	}
 
 	@Test
 	public void testGetValueMatcher_in() {

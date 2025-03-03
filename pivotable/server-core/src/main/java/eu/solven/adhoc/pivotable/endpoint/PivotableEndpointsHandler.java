@@ -40,6 +40,7 @@ import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.RequiredArgsConstructor;
@@ -106,9 +107,11 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "table").ifPresent(id -> parameters.table(Optional.of(id)));
 		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> parameters.cube(Optional.of(id)));
 
-		AdhocHandlerHelper.optString(request, "name").ifPresent(id -> parameters.name(Optional.of(id)));
+		AdhocHandlerHelper.optString(request, "name")
+				.ifPresent(id -> parameters.name(Optional.of(EqualsMatcher.isEqualTo(id))));
 		// TODO How to turn from String to Object? (e.g. LocalDate)
-		AdhocHandlerHelper.optString(request, "coordinate").ifPresent(id -> parameters.coordinate(Optional.of(id)));
+		AdhocHandlerHelper.optString(request, "coordinate")
+				.ifPresent(id -> parameters.coordinate(Optional.of(EqualsMatcher.isEqualTo(id))));
 
 		AdhocColumnSearch columnSearch = parameters.build();
 
@@ -116,11 +119,16 @@ public class PivotableEndpointsHandler {
 			throw new NotYetImplementedException("Searching for columns given coordinate=%s".formatted(coordinate));
 		});
 
+		if (columnSearch.getTable().isEmpty() && columnSearch.getCube().isEmpty()) {
+			throw new NotYetImplementedException("Need to explicit a table or acube");
+		}
+
 		List<ColumnMetadata> matchingColumns = schemas.stream().flatMap(endpointSchema -> {
 			EndpointSchemaMetadata schema = endpointSchema.getSchema();
 
 			List<ColumnMetadata> endpointColumns = new ArrayList<>();
 
+			// If neither table nor cube, search all?
 			columnSearch.getTable().ifPresent(tableName -> {
 				ColumnarMetadata tableColumns = schema.getTables().get(tableName);
 
@@ -160,29 +168,29 @@ public class PivotableEndpointsHandler {
 			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
 			Map<String, String> columnToTypes = holderColumns.getColumnToTypes();
-			columnSearch.getName().ifPresentOrElse(searchedColumnName -> {
-				String matchingColumnType = columnToTypes.get(searchedColumnName);
+			// columnSearch.getName().ifPresent(searchedColumnName -> {
 
-				ColumnIdentifier columnId = tableId.toBuilder().column(searchedColumnName).build();
+			columnToTypes.entrySet()
+					.stream()
+					.filter(e -> columnSearch.getName().isEmpty() || columnSearch.getName().get().match(e.getKey()))
+					.forEach(e -> {
+						String column = e.getKey();
+						String type = e.getValue();
 
-				Set<?> coordinates = schema.getCoordinates(columnId);
+						ColumnIdentifier columnId = tableId.toBuilder().column(column).build();
 
-				columns.add(ColumnMetadata.builder()
-						.entrypointId(endpointId)
-						.holder(tableId.getHolder())
-						.column(searchedColumnName)
-						.type(matchingColumnType)
-						.build());
-			}, () -> {
-				columnToTypes.forEach((column, type) -> {
-					columns.add(ColumnMetadata.builder()
-							.entrypointId(endpointId)
-							.holder(tableId.getHolder())
-							.column(column)
-							.type(type)
-							.build());
-				});
-			});
+						Set<?> coordinates = schema.getCoordinates(columnId);
+
+						columns.add(ColumnMetadata.builder()
+								.entrypointId(endpointId)
+								.holder(tableId.getHolder())
+								.column(column)
+								.type(type)
+								.coordinates(coordinates)
+								.estimatedCardinality(coordinates.size())
+								.build());
+					});
+			// });
 		}
 
 		return columns;

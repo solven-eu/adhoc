@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 public class TestMultiTypeStorage {
 	IAggregation sum = new SumAggregation();
 
-	MultiTypeStorage<String> storage = MultiTypeStorage.<String>builder().aggregation(sum).build();
+	MergeableMultiTypeStorage<String> storage = MergeableMultiTypeStorage.<String>builder().aggregation(sum).build();
 
 	@Test
 	public void testIntAndLong() {
@@ -96,8 +96,8 @@ public class TestMultiTypeStorage {
 
 	@Test
 	public void testPurgeAggregationCarriers() {
-		MultiTypeStorage<String> storage =
-				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+		MergeableMultiTypeStorage<String> storage =
+				MergeableMultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
 
 		storage.merge("k1", 3);
 		storage.merge("k1", 5);
@@ -115,8 +115,8 @@ public class TestMultiTypeStorage {
 
 	@Test
 	public void testPurgeAggregationCarriers_singleEntry() {
-		MultiTypeStorage<String> storage =
-				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+		MergeableMultiTypeStorage<String> storage =
+				MergeableMultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
 
 		storage.merge("k1", 3);
 
@@ -134,8 +134,8 @@ public class TestMultiTypeStorage {
 	// For consider a large problem, to pop issues around hashMap and non-linearities due to buckets
 	@Test
 	public void testPurgeAggregationCarriers_large() {
-		MultiTypeStorage<String> storage =
-				MultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
+		MergeableMultiTypeStorage<String> storage =
+				MergeableMultiTypeStorage.<String>builder().aggregation(new CountAggregation()).build();
 
 		int size = 16 * 1024;
 
