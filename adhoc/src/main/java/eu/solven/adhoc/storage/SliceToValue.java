@@ -26,22 +26,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.SliceAsMap;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.Value;
 
 /**
- * This is a simple way to storage the value for a {@link java.util.Set} of {@link IAdhocSlice}.
+ * This is a simple way to storage the value for a {@link java.util.Set} of {@link SliceAsMap}.
  */
-@Value
 @Builder
 public class SliceToValue implements ISliceToValue {
 	@NonNull
 	@Default
-	IMergeableMultitypeColumn<AdhocSliceAsMap> storage = MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().build();
+	final IMultitypeColumnFastGet<SliceAsMap> storage = MultiTypeStorageFastGet.<SliceAsMap>builder().build();
 
 	public static SliceToValue empty() {
 		return SliceToValue.builder().build();
@@ -53,22 +51,17 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public Set<AdhocSliceAsMap> slicesSet() {
-		return getStorage().keySetStream().collect(Collectors.toSet());
+	public Set<SliceAsMap> slicesSet() {
+		return storage.keySetStream().collect(Collectors.toSet());
 	}
 
 	@Override
-	public void putSlice(AdhocSliceAsMap coordinate, Object value) {
-		storage.put(coordinate, value);
-	}
-
-	@Override
-	public void forEachSlice(IRowScanner<AdhocSliceAsMap> rowScanner) {
+	public void forEachSlice(IRowScanner<SliceAsMap> rowScanner) {
 		storage.scan(rowScanner);
 	}
 
 	@Override
-	public <U> Stream<U> stream(IRowConverter<AdhocSliceAsMap, U> rowScanner) {
+	public <U> Stream<U> stream(IRowConverter<SliceAsMap, U> rowScanner) {
 		return storage.stream(rowScanner);
 	}
 

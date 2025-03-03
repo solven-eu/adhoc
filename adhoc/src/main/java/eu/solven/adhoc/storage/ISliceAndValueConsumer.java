@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.storage;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMap;
 
 /**
  * For data-structure in which we an associate a slice to a value.
@@ -30,5 +30,10 @@ import eu.solven.adhoc.slice.AdhocSliceAsMap;
  * @author Benoit Lacelle
  */
 public interface ISliceAndValueConsumer {
-	void putSlice(AdhocSliceAsMap coordinate, Object value);
+	@Deprecated(since = "Should rely on `IValueConsumer putSlice(AdhocSliceAsMap slice)`")
+	default void putSlice(SliceAsMap slice, Object value) {
+		putSlice(slice).onObject(value);
+	}
+
+	IValueConsumer putSlice(SliceAsMap slice);
 }

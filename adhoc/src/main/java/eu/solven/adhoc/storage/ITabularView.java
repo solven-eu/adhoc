@@ -48,7 +48,7 @@ public interface ITabularView {
 	 *
 	 * @return the number of slices in this view
 	 */
-	int size();
+	long size();
 
 	/**
 	 *

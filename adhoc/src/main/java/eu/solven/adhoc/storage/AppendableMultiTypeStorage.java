@@ -75,14 +75,16 @@ public class AppendableMultiTypeStorage<T> implements IMultitypeColumn<T> {
 	 *            if null, this behave like `.clear`
 	 */
 	@Override
-	public void put(T key, Object v) {
-		keys.add(key);
-		valuesO.add(v);
+	public IValueConsumer append(T key) {
+		return v -> {
+			keys.add(key);
+			valuesO.add(v);
 
-		// Do not check the assertion on each .put else it would get wuite slow
-		if (Integer.bitCount(keys.size()) == 1) {
-			assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
-		}
+			// Do not check the assertion on each .put else it would get wuite slow
+			if (Integer.bitCount(keys.size()) == 1) {
+				assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
+			}
+		};
 	}
 
 	@Override

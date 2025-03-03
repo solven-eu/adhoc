@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMap;
 
 public class TestMapBasedTabularView {
 
@@ -39,7 +39,7 @@ public class TestMapBasedTabularView {
 	public void testJackson_KO() throws JsonProcessingException {
 		MapBasedTabularView view = MapBasedTabularView.builder().build();
 
-		view.appendSlice(AdhocSliceAsMap.fromMap(Map.of("c1", "v1")), "m", 123);
+		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), "m", 123);
 
 		Assertions.assertThatThrownBy(() -> verifyJackson(MapBasedTabularView.class, view))
 				.isInstanceOf(InvalidDefinitionException.class);

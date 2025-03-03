@@ -33,7 +33,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Streams;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -47,26 +46,19 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This data-structures aggregates input value on a per-key basis. Different keys are allowed to be associated to
- * different types (e.g. we may have some keys holding a functional double, while other keys may hold an error String).
- * <p>
- * This data-structure does not maintain order. Typically `SUM(123, 'a', 234)` could lead to `'123a234'` or `'357a'`.
+ * Enable storing data with different types, while storing primitive value into primitive arrays.
  *
  * @param <T>
  */
-@Builder
+@SuperBuilder
 @Slf4j
-public class MergeableMultiTypeStorage<T> implements IMergeableMultitypeColumn<T> {
-
-	@Default
-	@NonNull
-	IAggregation aggregation = new SumAggregation();
+public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
@@ -95,23 +87,45 @@ public class MergeableMultiTypeStorage<T> implements IMergeableMultitypeColumn<T
 	 *            if null, this behave like `.clear`
 	 */
 	@Override
-	public void put(T key, Object v) {
+	public IValueConsumer append(T key) {
 		// We clear all keys, to prevent storing different types for the same key
 		clearKey(key);
 
-		if (SumAggregation.isLongLike(v)) {
-			long vAsPrimitive = SumAggregation.asLong(v);
-			measureToAggregateL.put(key, vAsPrimitive);
-		} else if (SumAggregation.isDoubleLike(v)) {
-			double vAsPrimitive = SumAggregation.asDouble(v);
-			measureToAggregateD.put(key, vAsPrimitive);
-		} else if (v instanceof CharSequence) {
-			String vAsString = v.toString();
-			measureToAggregateS.put(key, vAsString);
-		} else if (v != null) {
-			// throw new UnsupportedOperationException("Received: %s".formatted(PepperLogHelper.getObjectAndClass(v)));
-			measureToAggregateO.put(key, v);
-		}
+		return new IValueConsumer() {
+			@Override
+			public void onLong(long v) {
+				long vAsPrimitive = SumAggregation.asLong(v);
+				measureToAggregateL.put(key, vAsPrimitive);
+			}
+
+			@Override
+			public void onDouble(double v) {
+				double vAsPrimitive = SumAggregation.asDouble(v);
+				measureToAggregateD.put(key, vAsPrimitive);
+			}
+
+			@Override
+			public void onCharsequence(CharSequence v) {
+				String vAsString = v.toString();
+				measureToAggregateS.put(key, vAsString);
+			}
+
+			@Override
+			public void onObject(Object v) {
+				if (SumAggregation.isLongLike(v)) {
+					long vAsPrimitive = SumAggregation.asLong(v);
+					measureToAggregateL.put(key, vAsPrimitive);
+				} else if (SumAggregation.isDoubleLike(v)) {
+					double vAsPrimitive = SumAggregation.asDouble(v);
+					measureToAggregateD.put(key, vAsPrimitive);
+				} else if (v instanceof CharSequence) {
+					String vAsString = v.toString();
+					measureToAggregateS.put(key, vAsString);
+				} else if (v != null) {
+					measureToAggregateO.put(key, v);
+				}
+			}
+		};
 	}
 
 	protected void clearKey(T key) {
@@ -184,123 +198,6 @@ public class MergeableMultiTypeStorage<T> implements IMergeableMultitypeColumn<T
 	}
 
 	@Override
-	public void merge(T key, Object v) {
-		// BEWARE This must not assumes doubles necessarily aggregates into a double, longs into a long, etc
-		// It is for instance not true in SumElseSetAggregator which turns input String into a collecting Set
-		// onValue(key, new ValueConsumer() {
-		//
-		// @Override
-		// public void onLong(long l) {
-		//
-		// }
-		// @Override
-		// public void onDouble(double d) {
-		//
-		// }
-		//
-		// @Override
-		// public void onCharsequence(CharSequence charSequence) {
-		//
-		// }
-		//
-		// @Override
-		// public void onObject(Object object) {
-		//
-		// }
-		// });
-		onValue(key, existingAggregate -> {
-			Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-			if (existingAggregate != null) {
-				clearKey(key);
-			}
-			put(key, newAggregate);
-		});
-
-		// Aggregate received longs together
-		// if (SumAggregator.isLongLike(v)) {
-		// long vAsPrimitive = SumAggregator.asLong(v);
-		//
-		// mergeLong(key, vAsPrimitive);
-		// }
-		// // Aggregate received doubles together
-		// else if (SumAggregator.isDoubleLike(v)) {
-		// double vAsPrimitive = SumAggregator.asDouble(v);
-		//
-		// mergeDouble(key, vAsPrimitive);
-		// }
-		// // Aggregate received objects together
-		//
-		// else if (v instanceof CharSequence vAsCharSequence) {
-		// mergeCharSequence(key, vAsCharSequence);
-		// } else {
-		// mergeObject(key, v);
-		// }
-	}
-
-	// private void mergeObject(T key, Object v) {
-	// Object valueToStore;
-	//
-	// if (measureToAggregateO.containsKey(key)) {
-	// Object aggregatedV = aggregation.aggregate(measureToAggregateO.get(key), v);
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered String
-	// valueToStore = v;
-	// }
-	//
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeCharSequence(T key, CharSequence vAsCharSequence) {
-	// CharSequence valueToStore;
-	//
-	// if (measureToAggregateS.containsKey(key)) {
-	// CharSequence aggregatedV = aggregation.aggregateStrings(measureToAggregateS.get(key), vAsCharSequence);
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered String
-	// valueToStore = vAsCharSequence;
-	// }
-	//
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeDouble(T key, double vAsPrimitive) {
-	// double valueToStore;
-	// if (measureToAggregateD.containsKey(key)) {
-	// double currentV = measureToAggregateD.getDouble(key);
-	// // BEWARE What if longs are not aggregated as long?
-	// double aggregatedV = aggregation.aggregateDoubles(currentV, vAsPrimitive);
-	//
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered long
-	// valueToStore = vAsPrimitive;
-	// }
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeLong(T key, long vAsPrimitive) {
-	// long valueToStore;
-	// if (measureToAggregateL.containsKey(key)) {
-	// long currentV = measureToAggregateL.getLong(key);
-	// // BEWARE What if longs are not aggregated as long?
-	// long aggregatedV = aggregation.aggregateLongs(currentV, vAsPrimitive);
-	//
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered long
-	// valueToStore = vAsPrimitive;
-	// }
-	// put(key, valueToStore);
-	// }
-
-	@Override
 	public Stream<T> keySetStream() {
 		return Stream
 				.of(measureToAggregateD.keySet(),
@@ -343,10 +240,12 @@ public class MergeableMultiTypeStorage<T> implements IMergeableMultitypeColumn<T
 	/**
 	 * @return an empty and immutable MultiTypeStorage
 	 */
-	public static <T> MergeableMultiTypeStorage<T> empty() {
-		return MergeableMultiTypeStorage.<T>builder()
+	public static <T> MultiTypeStorageFastGet<T> empty() {
+		return MultiTypeStorageFastGet.<T>builder()
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
+				.measureToAggregateS(Object2ObjectMaps.emptyMap())
+				.measureToAggregateO(Object2ObjectMaps.emptyMap())
 				.build();
 	}
 

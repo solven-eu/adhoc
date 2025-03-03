@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
@@ -41,7 +41,7 @@ public interface ICombination {
 	 *            the underlying measures values for current slice.
 	 * @return the combined result at given given coordinate.
 	 */
-	default Object combine(IAdhocSliceWithStep slice, List<?> underlyingValues) {
+	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		// The simplest logic does not rely on the coordinates
 		return combine(underlyingValues);
 	}

@@ -39,12 +39,12 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnMergeable;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
+import eu.solven.adhoc.storage.MultiTypeStorageMergeable;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.NonNull;
@@ -92,7 +92,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		throw new UnsupportedOperationException(
@@ -109,8 +109,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
 
-		IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView =
-				MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
+		IMultitypeColumnMergeable<SliceAsMap> aggregatingView =
+				MultiTypeStorageMergeable.<SliceAsMap>builder().aggregation(agg).build();
 
 		IDecomposition decomposition = makeDecomposition();
 
@@ -120,9 +120,9 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	}
 
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			IDecomposition decomposition,
-			IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView) {
+			IMultitypeColumnMergeable<SliceAsMap> aggregatingView) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
 
 		Object value = underlyingVs.getFirst();
@@ -166,8 +166,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 				!isMultiGroupSlice
 						// multiGroupSlice: ensure current element has not already been contributed
 						|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
-					AdhocSliceAsMap coordinateAsSlice = AdhocSliceAsMap.fromMap(outputCoordinate);
-					aggregatingView.merge(coordinateAsSlice, fragmentValue);
+					SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
+					aggregatingView.merge(coordinateAsSlice).onObject(fragmentValue);
 
 					if (isDebug()) {
 						aggregatingView.onValue(coordinateAsSlice,
@@ -186,7 +186,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	}
 
 	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy queryGroupBy,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
 		AdhocMap.AdhocMapBuilder queryCoordinatesBuilder = AdhocMap.builder(queryGroupBy.getGroupedByColumns());
 

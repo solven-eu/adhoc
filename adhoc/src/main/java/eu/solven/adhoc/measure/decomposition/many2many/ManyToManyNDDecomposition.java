@@ -50,7 +50,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -102,7 +102,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return ImmutableSet.copyOf(rawInputColumns);
 	}
 
-	protected Set<Object> getQueryMatchingGroups(IAdhocSliceWithStep slice) {
+	protected Set<Object> getQueryMatchingGroups(ISliceWithStep slice) {
 		Map<Object, Object> queryStepCache = slice.getQueryStep().getCache();
 
 		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
@@ -113,7 +113,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return queryMatchingGroups;
 	}
 
-	protected Set<?> getQueryStepMatchingGroupsNoCache(IAdhocSliceWithStep slice) {
+	protected Set<?> getQueryStepMatchingGroupsNoCache(ISliceWithStep slice) {
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
 		IAdhocFilter filter = slice.getQueryStep().getFilter();
@@ -122,7 +122,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
 		Set<String> elementColumns = getInputColumns(options);
 
 		Map<String, ?> elementCoordinates = slice.optSliced(elementColumns);
@@ -151,7 +151,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return output;
 	}
 
-	protected Set<Object> getGroups(IAdhocSliceWithStep slice, Map<String, ?> columnToElement) {
+	protected Set<Object> getGroups(ISliceWithStep slice, Map<String, ?> columnToElement) {
 		Set<Object> queryMatchingGroups = getQueryMatchingGroups(slice);
 
 		Set<Object> groupsMayBeFilteredOut = manyToManyDefinition

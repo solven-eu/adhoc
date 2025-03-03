@@ -35,9 +35,10 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -47,13 +48,13 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * A simple {@link ITabularView} based on a {@link ArrayList}. it is especially useful for Jackson (de)serialization.
+ * 
+ * {@link MapBasedTabularView} may be simpler to manipulate.
  */
 @Builder
 @Jacksonized
 @EqualsAndHashCode
 public class ListBasedTabularView implements ITabularView {
-	// @Default
-	// final List<Map.Entry<Map<String, ?>, Map<String, ?>>> coordinatesToValues = new ArrayList<>();
 
 	// Split into 2 lists as a List of Map.Entry is not easy to serialize
 	@Default
@@ -64,7 +65,7 @@ public class ListBasedTabularView implements ITabularView {
 	final List<Map<String, ?>> values = new ArrayList<>();
 
 	public static ListBasedTabularView load(ITabularView from) {
-		int capacity = from.size();
+		int capacity = Ints.checkedCast(from.size());
 		ListBasedTabularView newView = ListBasedTabularView.builder()
 				.coordinates(new ArrayList<>(capacity))
 				.values(new ArrayList<>(capacity))
@@ -96,11 +97,11 @@ public class ListBasedTabularView implements ITabularView {
 
 	@Override
 	public Stream<IAdhocSlice> slices() {
-		return coordinates.stream().map(AdhocSliceAsMap::fromMap);
+		return coordinates.stream().map(SliceAsMap::fromMap);
 	}
 
 	@Override
-	public int size() {
+	public long size() {
 		return coordinates.size();
 	}
 
@@ -115,17 +116,17 @@ public class ListBasedTabularView implements ITabularView {
 		for (int i = 0; i < size(); i++) {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
-			rowScanner.onKey(AdhocSliceAsMap.fromMap(k)).onObject(v);
+			rowScanner.onKey(SliceAsMap.fromMap(k)).onObject(v);
 		}
 	}
 
 	@Override
 	public <U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner) {
-		return IntStream.range(0, size()).mapToObj(i -> {
+		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
 
-			return rowScanner.convertObject(AdhocSliceAsMap.fromMap(k), v);
+			return rowScanner.convertObject(SliceAsMap.fromMap(k), v);
 		});
 	}
 
@@ -150,7 +151,7 @@ public class ListBasedTabularView implements ITabularView {
 		return toStringHelper.toString();
 	}
 
-	public void appendSlice(AdhocSliceAsMap slice, Map<String, ?> mToValues) {
+	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {
 		coordinates.add(slice.getCoordinates());
 		values.add(mToValues);
 	}

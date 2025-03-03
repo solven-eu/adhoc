@@ -39,12 +39,12 @@ import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
-import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnMergeable;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
+import eu.solven.adhoc.storage.MultiTypeStorageMergeable;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -93,8 +93,8 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 		IAggregation agg = getMakeAggregation();
 
-		IMergeableMultitypeColumn<AdhocSliceAsMap> aggregatingView =
-				MergeableMultiTypeStorage.<AdhocSliceAsMap>builder().aggregation(agg).build();
+		IMultitypeColumnMergeable<SliceAsMap> aggregatingView =
+				MultiTypeStorageMergeable.<SliceAsMap>builder().aggregation(agg).build();
 
 		ICombination combinator = combinationSupplier.get();
 
@@ -105,7 +105,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combinator,
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
@@ -142,11 +142,11 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
-			output.putSlice(AdhocSliceAsMap.fromMap(outputCoordinate), value);
+			output.putSlice(SliceAsMap.fromMap(outputCoordinate), value);
 		}
 	}
 
-	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, IAdhocSliceWithStep slice) {
+	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, ISliceWithStep slice) {
 		Map<String, Object> queryCoordinates = new HashMap<>();
 
 		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {

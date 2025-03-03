@@ -31,11 +31,12 @@ import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.measure.aggregation.collection.MapAggregator;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -43,6 +44,8 @@ import lombok.Getter;
 
 /**
  * A simple {@link ITabularView} based on a {@link TreeMap}. it is especially useful for debugging purposes.
+ * 
+ * This is NOT serializable with Jackson. {@link ListBasedTabularView} is a serializable alternative.
  */
 @Builder
 public class MapBasedTabularView implements ITabularView {
@@ -51,7 +54,7 @@ public class MapBasedTabularView implements ITabularView {
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
 
 	public static MapBasedTabularView load(ITabularView from) {
-		int capacity = from.size();
+		int capacity = Ints.checkedCast(from.size());
 		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new HashMap<>(capacity);
 		MapBasedTabularView newView = MapBasedTabularView.builder().coordinatesToValues(coordinatesToValues).build();
 
@@ -83,11 +86,11 @@ public class MapBasedTabularView implements ITabularView {
 
 	@Override
 	public Stream<IAdhocSlice> slices() {
-		return coordinatesToValues.keySet().stream().map(AdhocSliceAsMap::fromMap);
+		return coordinatesToValues.keySet().stream().map(SliceAsMap::fromMap);
 	}
 
 	@Override
-	public int size() {
+	public long size() {
 		return coordinatesToValues.size();
 	}
 
@@ -99,7 +102,7 @@ public class MapBasedTabularView implements ITabularView {
 	@Override
 	public void acceptScanner(IRowScanner<IAdhocSlice> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
-			rowScanner.onKey(AdhocSliceAsMap.fromMap(k)).onObject(v);
+			rowScanner.onKey(SliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
@@ -107,18 +110,18 @@ public class MapBasedTabularView implements ITabularView {
 	public <U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner) {
 		return coordinatesToValues.entrySet()
 				.stream()
-				.map(e -> rowScanner.convertObject(AdhocSliceAsMap.fromMap(e.getKey()), e.getValue()));
+				.map(e -> rowScanner.convertObject(SliceAsMap.fromMap(e.getKey()), e.getValue()));
 	}
 
-	public void appendSlice(AdhocSliceAsMap slice, Map<String, ?> mToValues) {
+	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {
 		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregator::aggregateMaps);
 	}
 
-	public void appendSlice(AdhocSliceAsMap slice, String measure, Object value) {
+	public void appendSlice(SliceAsMap slice, String measure, Object value) {
 		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregator::aggregateMaps);
 	}
 
-	public IValueConsumer sliceFeeder(AdhocSliceAsMap slice, String measureName) {
+	public IValueConsumer sliceFeeder(SliceAsMap slice, String measureName) {
 		return o -> appendSlice(slice, Map.of(measureName, o));
 	}
 

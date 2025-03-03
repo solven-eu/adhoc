@@ -29,14 +29,14 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 
 /**
  * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
  */
 public class CustomDecomposition implements IDecomposition {
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
 		return Map.of();
 	}
 

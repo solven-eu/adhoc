@@ -31,13 +31,13 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 
 public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
 		return Collections.singletonMap(Map.of(), value);
 	}
 

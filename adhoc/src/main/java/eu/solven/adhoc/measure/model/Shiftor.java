@@ -144,8 +144,4 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 		}
 	}
 
-	// public static IFilterEditor shift(String column, Object value) {
-	// return filter -> shift(column, value, filter);
-	// }
-
 }

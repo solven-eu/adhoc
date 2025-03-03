@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class ForeignExchangeCombination implements ICombination {
 	}
 
 	@Override
-	public Object combine(IAdhocSliceWithStep slice, List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		Object beforeFx = underlyingValues.getFirst();
 
 		if (!SumAggregation.isDoubleLike(beforeFx)) {
@@ -86,7 +86,7 @@ public class ForeignExchangeCombination implements ICombination {
 		return new ProductAggregation();
 	}
 
-	protected String getCcyTo(IAdhocSliceWithStep slice) {
+	protected String getCcyTo(ISliceWithStep slice) {
 		// First, we consider a ccyTo configured as a customMarker: these are
 		// configurable dynamically by the user
 		Optional<?> optCustomMarker = slice.getQueryStep().optCustomMarker();

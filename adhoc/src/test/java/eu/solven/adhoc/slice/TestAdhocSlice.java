@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 public class TestAdhocSlice {
 	@Test
 	public void testRequireFilter_String() {
-		IAdhocSlice slice = AdhocSliceAsMap.fromMap(Map.of("k", "v"));
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		Assertions.assertThat(slice.getColumns()).containsExactly("k");
 
@@ -60,7 +60,7 @@ public class TestAdhocSlice {
 	@Disabled("AdhocSliceAsMap does not accept Collection sliced")
 	@Test
 	public void testRequireFilter_Collection() {
-		IAdhocSlice slice = AdhocSliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
 
 		Assertions.assertThat(slice.getColumns()).containsExactly("k");
 

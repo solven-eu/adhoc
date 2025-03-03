@@ -72,14 +72,14 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.AggregatingMeasurators;
-import eu.solven.adhoc.storage.IMergeableMultitypeColumn;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.IRowScanner;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
-import eu.solven.adhoc.storage.MergeableMultiTypeStorage;
+import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
@@ -292,7 +292,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
-				IRowScanner<AdhocSliceAsMap> rowScanner = slice -> {
+				IRowScanner<SliceAsMap> rowScanner = slice -> {
 					return mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName());
 				};
 
@@ -307,25 +307,25 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates =
+		AggregatingMeasurators<SliceAsMap> coordinatesToAggregates =
 				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
 
 		return toImmutableChunks(query, coordinatesToAggregates);
 	}
 
 	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery tableQuery,
-			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAggregates) {
+			AggregatingMeasurators<SliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, SliceToValue> queryStepToValues = new HashMap<>();
 		tableQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
 
-			IMergeableMultitypeColumn<AdhocSliceAsMap> storage =
+			IMultitypeColumnFastGet<SliceAsMap> storage =
 					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
 
 			if (storage == null) {
 				// Typically happens when a filter reject completely one of the underlying
 				// measure
-				storage = MergeableMultiTypeStorage.empty();
+				storage = MultiTypeStorageFastGet.empty();
 			} else {
 				// Typically converts a CountHolder into the count as a `long`
 				storage.purgeAggregationCarriers();
@@ -455,12 +455,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected AggregatingMeasurators<AdhocSliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
+	protected AggregatingMeasurators<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
 			IAggregatedRecordStream stream,
 			Map<String, Set<Aggregator>> columnToAggregators) {
 
-		AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
+		AggregatingMeasurators<SliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
 
 		Set<String> relevantColumns = new HashSet<>();
 		// We may receive raw columns,to be aggregated by ourselves
@@ -474,7 +474,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		// TODO We'd like to log on the last row, to have the number if row actually
 		// streamed
-		BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
+		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
 		try {
@@ -495,15 +495,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
-	private AggregatingMeasurators<AdhocSliceAsMap> makeAggregatingMeasures() {
+	private AggregatingMeasurators<SliceAsMap> makeAggregatingMeasures() {
 		return new AggregatingMeasurators<>(operatorsFactory);
 	}
 
-	protected BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
+	protected BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
 		AtomicInteger nbIn = new AtomicInteger();
 		AtomicInteger nbOut = new AtomicInteger();
 
-		BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
+		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
 
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy
@@ -527,10 +527,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			IHasGroupBy tableQuery,
 			Map<String, Set<Aggregator>> columnToAggregators,
 			IAggregatedRecord tableRow,
-			BiConsumer<IAggregatedRecord, Optional<AdhocSliceAsMap>> peekOnCoordinate,
+			BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate,
 			Set<String> aggregatorColumns,
-			AggregatingMeasurators<AdhocSliceAsMap> coordinatesToAgg) {
-		Optional<AdhocSliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
+			AggregatingMeasurators<SliceAsMap> coordinatesToAgg) {
+		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
 
@@ -538,7 +538,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			return;
 		}
 
-		AdhocSliceAsMap coordinates = optCoordinates.get();
+		SliceAsMap coordinates = optCoordinates.get();
 
 		for (String aggregatedColumn : aggregatorColumns) {
 			Object v = tableRow.getAggregate(aggregatedColumn);
@@ -575,12 +575,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<AdhocSliceAsMap> makeCoordinate(ExecutingQueryContext executingQueryContext,
+	protected Optional<SliceAsMap> makeCoordinate(ExecutingQueryContext executingQueryContext,
 			IHasGroupBy tableQuery,
 			IAggregatedRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
-			return Optional.of(AdhocSliceAsMap.fromMap(Collections.emptyMap()));
+			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));
 		}
 
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
@@ -607,7 +607,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			coordinatesBuilder.append(value);
 		}
 
-		return Optional.of(AdhocSliceAsMap.fromMap(coordinatesBuilder.build()));
+		return Optional.of(SliceAsMap.fromMap(coordinatesBuilder.build()));
 	}
 
 	/**

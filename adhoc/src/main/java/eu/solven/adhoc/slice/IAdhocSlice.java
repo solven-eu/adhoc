@@ -97,5 +97,5 @@ public interface IAdhocSlice {
 		return asMap;
 	}
 
-	AdhocSliceAsMap getAdhocSliceAsMap();
+	SliceAsMap getAdhocSliceAsMap();
 }

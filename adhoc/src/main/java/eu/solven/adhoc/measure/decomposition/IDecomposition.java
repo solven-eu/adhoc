@@ -27,7 +27,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 
 /**
  * Used for {@link eu.solven.adhoc.measure.model.IMeasure} which generates/contributes into multiple slices given an
@@ -44,7 +44,7 @@ public interface IDecomposition {
 	 * @param value
 	 * @return the target/pillars/groups slices
 	 */
-	Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value);
+	Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value);
 
 	/**
 	 * @param step

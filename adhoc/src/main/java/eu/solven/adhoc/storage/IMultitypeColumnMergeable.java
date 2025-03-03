@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.slice;
+package eu.solven.adhoc.storage;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.measure.model.Bucketor;
 
 /**
- * An {@link IAdhocSlice} combined with an {@link AdhocQueryStep}. It is useful to provide more contact to
- * {@link eu.solven.adhoc.measure.model.IMeasure}.
+ * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
+ * 
+ * Typically used by {@link Bucketor}.
+ * 
+ * @param <T>
+ * @author Benoit Lacelle
  */
-public interface IAdhocSliceWithStep extends IAdhocSlice {
+public interface IMultitypeColumnMergeable<T> extends IMultitypeColumnFastGet<T> {
+
+	@Deprecated(since = "Should rely on `IValueConsumer merge(T slice)`")
+	default void merge(T slice, Object v) {
+		merge(slice).onObject(v);
+	}
+
 	/**
+	 * Either the slice is missing, and this is similar to a `.append`, or the input value will be aggregated in the
+	 * already present aggregate.
 	 * 
-	 * @return the queryStep owning this slice. The slice should express only the groupBy in the queryStep.
+	 * The aggregation is defined at column instantiation.
+	 * 
+	 * @param slice
+	 * @param fragmentValue
 	 */
-	AdhocQueryStep getQueryStep();
+	IValueConsumer merge(T slice);
 
 }

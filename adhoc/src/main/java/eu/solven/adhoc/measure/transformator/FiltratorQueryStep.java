@@ -32,7 +32,9 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -72,15 +74,11 @@ public class FiltratorQueryStep extends ATransformator {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
-		forEachDistinctSlice(underlyings, new FindFirstCombination(), output::putSlice);
+		forEachDistinctSlice(underlyings, new FindFirstCombination(), storage::append);
 
-		return output;
-	}
-
-	protected ISliceToValue makeCoordinateToValues() {
-		return SliceToValue.builder().build();
+		return SliceToValue.builder().storage(storage).build();
 	}
 
 	@Override
@@ -95,7 +93,7 @@ public class FiltratorQueryStep extends ATransformator {
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();

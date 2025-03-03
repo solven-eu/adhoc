@@ -31,7 +31,9 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -80,18 +82,18 @@ public class CombinatorQueryStep extends ATransformator {
 			return SliceToValue.empty();
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
 		ICombination transformation = combinationSupplier.get();
 
-		forEachDistinctSlice(underlyings, transformation, output);
+		forEachDistinctSlice(underlyings, transformation, storage::append);
 
-		return output;
+		return SliceToValue.builder().storage(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
@@ -101,7 +103,7 @@ public class CombinatorQueryStep extends ATransformator {
 		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected Object combine(IAdhocSliceWithStep slice, ICombination combination, List<Object> underlyingVs) {
+	protected Object combine(ISliceWithStep slice, ICombination combination, List<Object> underlyingVs) {
 		Object value;
 		try {
 			value = combination.combine(slice, underlyingVs);
@@ -115,10 +117,6 @@ public class CombinatorQueryStep extends ATransformator {
 			log.info("[DEBUG] Write {} (given {} over {}) in {}", value, combinator.getName(), underlyingVs, slice);
 		}
 		return value;
-	}
-
-	protected ISliceToValue makeCoordinateToValues() {
-		return SliceToValue.builder().build();
 	}
 
 }

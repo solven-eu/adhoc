@@ -28,11 +28,13 @@ import java.util.function.Consumer;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMapWithStep;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +53,10 @@ public abstract class ATransformator implements ITransformator {
 		return getMeasure().isDebug() || getStep().isDebug();
 	}
 
+	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
+	}
+
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
@@ -58,13 +64,12 @@ public abstract class ATransformator implements ITransformator {
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
-			Consumer<AdhocSliceAsMapWithStep> sliceConsumer) {
-		Iterable<? extends AdhocSliceAsMap> distinctSlices = distinctSlices(underlyings);
+			Consumer<SliceAsMapWithStep> sliceConsumer) {
+		Iterable<? extends SliceAsMap> distinctSlices = distinctSlices(underlyings);
 
 		int slicesDone = 0;
-		for (AdhocSliceAsMap coordinates : distinctSlices) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(coordinates).queryStep(getStep()).build();
+		for (SliceAsMap coordinates : distinctSlices) {
+			SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(coordinates).queryStep(getStep()).build();
 
 			try {
 				sliceConsumer.accept(slice);
@@ -82,12 +87,12 @@ public abstract class ATransformator implements ITransformator {
 		}
 	}
 
-	protected Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
+	protected Iterable<? extends SliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
 		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
 	}
 
 	protected abstract void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output);
 }

@@ -22,10 +22,20 @@
  */
 package eu.solven.adhoc.storage;
 
-public interface IMergeableMultitypeColumn<T> extends IMultitypeColumn<T> {
+/**
+ * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * 
+ * @param <T>
+ * @author Benoit Lacelle
+ */
+public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 
-	void onValue(T coordinateAsSlice, IValueConsumer valueConsumer);
-
-	void merge(T coordinateAsSlice, Object fragmentValue);
+	/**
+	 * Similar to a `.get` but the value is available through a {@link IValueConsumer}
+	 * 
+	 * @param slice
+	 * @param valueConsumer
+	 */
+	void onValue(T slice, IValueConsumer valueConsumer);
 
 }

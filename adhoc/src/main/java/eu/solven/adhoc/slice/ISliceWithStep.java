@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.slice;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
+import eu.solven.adhoc.dag.AdhocQueryStep;
 
-import eu.solven.adhoc.slice.IAdhocSlice;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.slice.SliceAsMap;
+/**
+ * An {@link IAdhocSlice} combined with an {@link AdhocQueryStep}. It is useful to provide more contact to
+ * {@link eu.solven.adhoc.measure.model.IMeasure}.
+ */
+public interface ISliceWithStep extends IAdhocSlice {
+	/**
+	 * 
+	 * @return the queryStep owning this slice. The slice should express only the groupBy in the queryStep.
+	 */
+	AdhocQueryStep getQueryStep();
 
-public interface ISliceToValue
-// extends ISliceAndValueConsumer
-{
-	Set<SliceAsMap> slicesSet();
-
-	long size();
-
-	void onValue(IAdhocSlice slice, IValueConsumer consumer);
-
-	void forEachSlice(IRowScanner<SliceAsMap> rowScanner);
-
-	<U> Stream<U> stream(IRowConverter<SliceAsMap, U> rowScanner);
-
-	static <T> Object getValue(ISliceToValue storage, ISliceWithStep slice) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		storage.onValue(slice, refV::set);
-
-		return refV.get();
-	}
 }

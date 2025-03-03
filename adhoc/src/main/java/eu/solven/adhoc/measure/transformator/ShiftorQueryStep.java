@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -38,11 +39,13 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMapWithStep;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -73,12 +76,15 @@ public class ShiftorQueryStep implements ITransformator {
 		String underlyingMeasure = shiftor.getUnderlying();
 
 		IAdhocFilter shiftedFilter = shift(step.getFilter(), step.getCustomMarker());
-		AdhocQueryStep whereToRead =
+
+		// Read values from the shifted underlyingStep
+		AdhocQueryStep whereToReadShifted =
 				AdhocQueryStep.edit(step).filter(shiftedFilter).measureNamed(underlyingMeasure).build();
-		AdhocQueryStep whereToWrite = AdhocQueryStep.edit(step).measureNamed(underlyingMeasure).build();
+		// Read slices from the natural undelryingStep, as the natural slices to write
+		AdhocQueryStep whereToReadForWrite = AdhocQueryStep.edit(step).measureNamed(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
-		return Arrays.asList(whereToRead, whereToWrite);
+		return Arrays.asList(whereToReadShifted, whereToReadForWrite);
 	}
 
 	protected IAdhocFilter shift(IAdhocFilter filter, Object customMarker) {
@@ -89,16 +95,14 @@ public class ShiftorQueryStep implements ITransformator {
 
 	// @Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ISliceAndValueConsumer output) {
-		ISliceToValue whereToRead = underlyings.getFirst();
+		ISliceToValue whereToReadShifted = underlyings.getFirst();
 
-		AdhocSliceAsMap shiftedSlice = shiftSlice(slice);
+		SliceAsMap shiftedSlice = shiftSlice(slice);
 
-		// Read the value from the whereToRead, on the slice recomputed from the whereToWrite
-		whereToRead.onValue(shiftedSlice, value -> {
-			output.putSlice(slice.getAdhocSliceAsMap(), value);
-		});
+		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
+		whereToReadShifted.onValue(shiftedSlice, output.putSlice(slice.getAdhocSliceAsMap()));
 	}
 
 	/**
@@ -107,7 +111,7 @@ public class ShiftorQueryStep implements ITransformator {
 	 * @param slice
 	 * @return
 	 */
-	protected AdhocSliceAsMap shiftSlice(IAdhocSliceWithStep slice) {
+	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
 		IAdhocFilter editedSlice = shift(slice.asFilter(), step.getCustomMarker());
 		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
@@ -118,44 +122,48 @@ public class ShiftorQueryStep implements ITransformator {
 			editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
 		}
 
-		return AdhocSliceAsMap.fromMap(editedAsMap);
+		return SliceAsMap.fromMap(editedAsMap);
 	}
 
 	protected boolean isDebug() {
 		return shiftor.isDebug() || getStep().isDebug();
 	}
 
-	protected Iterable<? extends AdhocSliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
+	protected Iterable<? extends SliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
 		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
 	}
 
-	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {
-		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, output));
+	protected void forEachDistinctSlice1(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {
+		forEachDistinctSlice2(underlyings, slice -> onSlice(underlyings, slice, output));
 	}
 
-	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
-			Consumer<AdhocSliceAsMapWithStep> sliceConsumer) {
-		ISliceToValue whereToWrite = underlyings.getLast();
-		Iterable<? extends AdhocSliceAsMap> distinctSlices = whereToWrite.slicesSet();
+	protected void forEachDistinctSlice2(List<? extends ISliceToValue> underlyings,
+			Consumer<SliceAsMapWithStep> sliceConsumer) {
+		ISliceToValue whereToReadForWrite = underlyings.getLast();
 
-		int slicesDone = 0;
-		for (AdhocSliceAsMap coordinates : distinctSlices) {
-			AdhocSliceAsMapWithStep slice =
-					AdhocSliceAsMapWithStep.builder().slice(coordinates).queryStep(getStep()).build();
+		AtomicInteger slicesDone = new AtomicInteger();
+		whereToReadForWrite.forEachSlice(rawSlice -> {
+			return v -> {
+				// All we need is the slice, to know where to write
+				log.debug("v={} is not used", v);
 
-			try {
-				sliceConsumer.accept(slice);
-			} catch (RuntimeException e) {
-				throw new IllegalArgumentException("Issue processing m=%s slice=%s".formatted(shiftor.getName(), slice),
-						e);
-			}
+				SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(getStep()).build();
 
-			if (Integer.bitCount(++slicesDone) == 1) {
-				if (isDebug()) {
-					log.info("[DEBUG] Done processing {} slices", slicesDone);
+				try {
+					sliceConsumer.accept(slice);
+				} catch (RuntimeException e) {
+					throw new IllegalArgumentException(
+							"Issue processing m=%s slice=%s".formatted(shiftor.getName(), slice),
+							e);
 				}
-			}
-		}
+
+				if (Integer.bitCount(slicesDone.incrementAndGet()) == 1) {
+					if (isDebug()) {
+						log.info("[DEBUG] Done processing {} slices", slicesDone);
+					}
+				}
+			};
+		});
 	}
 
 	@Override
@@ -166,14 +174,14 @@ public class ShiftorQueryStep implements ITransformator {
 			throw new IllegalArgumentException("underlyings.size() != 2");
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
-		forEachDistinctSlice(underlyings, output);
+		forEachDistinctSlice1(underlyings, storage::append);
 
-		return output;
+		return SliceToValue.builder().storage(storage).build();
 	}
 
-	protected ISliceToValue makeCoordinateToValues() {
-		return SliceToValue.builder().build();
+	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
 	}
 }

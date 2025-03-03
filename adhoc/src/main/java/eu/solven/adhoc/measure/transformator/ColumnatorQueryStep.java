@@ -32,7 +32,9 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
@@ -59,11 +61,11 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		return super.getUnderlyingSteps();
 	}
 
-	private boolean isMissing(String c) {
-		return !step.getGroupBy().getGroupedByColumns().contains(c) && !(isMonoSelected(c, step.getFilter()));
+	protected boolean isMissing(String column) {
+		return !step.getGroupBy().getGroupedByColumns().contains(column) && !(isMonoSelected(column, step.getFilter()));
 	}
 
-	private boolean isMonoSelected(String column, IAdhocFilter filter) {
+	protected boolean isMonoSelected(String column, IAdhocFilter filter) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter
 				&& columnFilter.getColumn().equals(column)) {
 			return true;
@@ -80,18 +82,18 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			return SliceToValue.empty();
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
 		ICombination transformation = operatorsFactory.makeCombination(combinator);
 
-		forEachDistinctSlice(underlyings, transformation, output);
+		forEachDistinctSlice(underlyings, transformation, storage::append);
 
-		return output;
+		return SliceToValue.builder().storage(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();

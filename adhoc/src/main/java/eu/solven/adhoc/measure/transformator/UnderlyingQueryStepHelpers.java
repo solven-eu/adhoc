@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import eu.solven.adhoc.map.MapComparators;
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.ISliceToValue;
 
 public class UnderlyingQueryStepHelpers {
@@ -43,18 +43,17 @@ public class UnderlyingQueryStepHelpers {
 	 * @param underlyings
 	 * @return the union-Set of slices
 	 */
-	public static Iterable<? extends AdhocSliceAsMap> distinctSlices(boolean debug,
+	public static Iterable<? extends SliceAsMap> distinctSlices(boolean debug,
 			List<? extends ISliceToValue> underlyings) {
 		if (!debug && underlyings.size() == 1) {
 			// Fast track
 			return underlyings.getFirst().slicesSet();
 		}
 
-		Set<AdhocSliceAsMap> keySet;
+		Set<SliceAsMap> keySet;
 		if (debug) {
 			// Enforce an iteration order for debugging-purposes
-			keySet = new TreeSet<>(
-					Comparator.comparing(AdhocSliceAsMap::getCoordinates, MapComparators.mapComparator()));
+			keySet = new TreeSet<>(Comparator.comparing(SliceAsMap::getCoordinates, MapComparators.mapComparator()));
 		} else {
 			keySet = new HashSet<>();
 		}

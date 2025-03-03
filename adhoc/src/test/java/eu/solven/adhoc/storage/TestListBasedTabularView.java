@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.slice.AdhocSliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMap;
 
 public class TestListBasedTabularView {
 
@@ -37,7 +37,7 @@ public class TestListBasedTabularView {
 	public void testJackson() throws JsonProcessingException {
 		ListBasedTabularView view = ListBasedTabularView.builder().build();
 
-		view.appendSlice(AdhocSliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
+		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
 		String asString = TestMapBasedTabularView.verifyJackson(ListBasedTabularView.class, view);
 
@@ -45,7 +45,7 @@ public class TestListBasedTabularView {
 				{"coordinates":[{"c1":"v1"}],"values":[{"m":123}]}""");
 
 		Assertions.assertThat(view.toString()).isEqualTo("""
-				ListBasedTabularView{size=1, #0=AdhocSliceAsMap(asMap={c1=v1})={m=123}}""");
+				ListBasedTabularView{size=1, #0=SliceAsMap(asMap={c1=v1})={m=123}}""");
 	}
 
 }

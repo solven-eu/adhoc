@@ -46,7 +46,7 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -93,7 +93,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(IAdhocSliceWithStep slice, Object value) {
+	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
 		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.optSliced(elementColumn);
@@ -123,7 +123,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 				.collect(Collectors.toMap(group -> Map.of(groupColumn, group), group -> scale(element, value)));
 	}
 
-	protected Set<Object> getGroups(IAdhocSliceWithStep slice, Object element) {
+	protected Set<Object> getGroups(ISliceWithStep slice, Object element) {
 		Set<Object> groupsMayBeFilteredOut = manyToManyDefinition.getGroups(element);
 
 		Set<String> queryMatchingGroups = getQueryMatchingGroups(slice);
@@ -136,7 +136,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return matchingGroups;
 	}
 
-	protected Set<String> getQueryMatchingGroups(IAdhocSliceWithStep slice) {
+	protected Set<String> getQueryMatchingGroups(ISliceWithStep slice) {
 		Map<Object, Object> queryStepCache = slice.getQueryStep().getCache();
 
 		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
@@ -147,7 +147,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return queryMatchingGroups;
 	}
 
-	private Set<?> getQueryMatchingGroupsNoCache(IAdhocSliceWithStep slice) {
+	private Set<?> getQueryMatchingGroupsNoCache(ISliceWithStep slice) {
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
 		IAdhocFilter filter = slice.getQueryStep().getFilter();

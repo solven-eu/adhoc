@@ -22,15 +22,36 @@
  */
 package eu.solven.adhoc.storage;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
+
+/**
+ * This is similar to a {@link Map}, but it is specialized for full-scan read operations and `.append`.
+ * 
+ * @param <T>
+ * @author Benoit Lacelle
+ */
 public interface IMultitypeColumn<T> {
 
 	long size();
 
+	/**
+	 * Typically called by {@link AdhocQueryEngine} once an {@link IAdhocTableWrapper} measure is fully received, to
+	 * turn {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
+	 * differentiated with a column holding longs).
+	 */
 	void purgeAggregationCarriers();
 
-	void put(T coordinate, Object value);
+	IValueConsumer append(T slice);
+
+	@Deprecated(since = "Should rely on `IValueConsumer append(T slice)`")
+	default void append(T slice, Object o) {
+		append(slice).onObject(o);
+	}
 
 	void scan(IRowScanner<T> rowScanner);
 

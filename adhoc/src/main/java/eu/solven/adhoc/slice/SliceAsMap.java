@@ -39,16 +39,16 @@ import lombok.ToString;
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
 @ToString
-public class AdhocSliceAsMap implements IAdhocSlice {
+public class SliceAsMap implements IAdhocSlice {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	final Map<String, ?> asMap;
 
-	protected AdhocSliceAsMap(Map<String, ?> asMap) {
+	protected SliceAsMap(Map<String, ?> asMap) {
 		this.asMap = asMap;
 	}
 
-	public static AdhocSliceAsMap fromMap(Map<String, ?> asMap) {
+	public static SliceAsMap fromMap(Map<String, ?> asMap) {
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
 		Map<String, ?> safeMap = AdhocMap.immutableCopyOf(asMap);
 
@@ -66,7 +66,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
 				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
 
-		return new AdhocSliceAsMap(safeMap);
+		return new SliceAsMap(safeMap);
 	}
 
 	@Override
@@ -85,7 +85,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public AdhocSliceAsMap getAdhocSliceAsMap() {
+	public SliceAsMap getAdhocSliceAsMap() {
 		return this;
 	}
 
@@ -121,7 +121,7 @@ public class AdhocSliceAsMap implements IAdhocSlice {
 		} else if (getClass() != obj.getClass()) {
 			return false;
 		}
-		AdhocSliceAsMap other = (AdhocSliceAsMap) obj;
+		SliceAsMap other = (SliceAsMap) obj;
 		return Objects.equals(asMap, other.asMap);
 	}
 }

@@ -31,9 +31,12 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.ATransformator;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -81,18 +84,18 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
 		ICombination transformation = transformationFactory.makeCombination(combinator);
 
-		forEachDistinctSlice(underlyings, transformation, output);
+		forEachDistinctSlice(underlyings, transformation, storage::append);
 
-		return output;
+		return SliceToValue.builder().storage(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			IAdhocSliceWithStep slice,
+			ISliceWithStep slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
@@ -106,8 +109,8 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected ISliceToValue makeCoordinateToValues() {
-		return SliceToValue.builder().build();
+	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
 	}
 
 }

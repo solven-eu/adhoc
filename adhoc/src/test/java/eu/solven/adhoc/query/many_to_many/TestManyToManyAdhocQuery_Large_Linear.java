@@ -37,6 +37,7 @@ import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -298,7 +299,7 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output,
 				MapBasedTabularView.builder()
 						// HashMap as this is a performance test
-						.coordinatesToValues(new HashMap<>(output.size()))
+						.coordinatesToValues(new HashMap<>(Ints.checkedCast(output.size())))
 						.build());
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

@@ -40,9 +40,9 @@ public class TestAdhocSliceAsMapWithStep implements IAdhocTestConstants {
 		IAdhocFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
 		AdhocQueryStep step =
 				AdhocQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
-		IAdhocSlice parentSlice = AdhocSliceAsMap.fromMap(Map.of("c2", "v2"));
+		IAdhocSlice parentSlice = SliceAsMap.fromMap(Map.of("c2", "v2"));
 
-		AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
+		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 
 		Assertions.assertThat(slice.asFilter()).isEqualTo(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
 	}

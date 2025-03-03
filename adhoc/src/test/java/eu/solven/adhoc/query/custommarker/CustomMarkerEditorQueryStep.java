@@ -25,10 +25,15 @@ package eu.solven.adhoc.query.custommarker;
 import java.util.List;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.AdhocQueryStep.AdhocQueryStepBuilder;
 import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.slice.AdhocSliceAsMapWithStep;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.slice.SliceAsMapWithStep;
+import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
+import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +50,11 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
+		AdhocQueryStepBuilder stepBuilder =
+				AdhocQueryStep.edit(step).customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
+
 		return getUnderlyingNames().stream().map(underlyingName -> {
-			return AdhocQueryStep.edit(step)
-					.measureNamed(underlyingName)
-					.customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()))
-					.build();
+			return stepBuilder.measureNamed(underlyingName).build();
 		}).toList();
 	}
 
@@ -59,24 +64,24 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 			throw new IllegalArgumentException("underlyingNames.size() != 1");
 		}
 
-		ISliceToValue output = makeCoordinateToValues();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
 		ISliceToValue singleUnderlying = underlyings.getFirst();
 
 		singleUnderlying.forEachSlice(rawSlice -> {
-			AdhocSliceAsMapWithStep slice = AdhocSliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
+			SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 
-			return v -> onSlice(slice, v, output);
+			return v -> onSlice(slice, v, storage::append);
 		});
 
-		return output;
+		return SliceToValue.builder().storage(storage).build();
 	}
 
 	private boolean isDebug() {
 		return customMarkerEditor.isDebug() || step.isDebug();
 	}
 
-	protected void onSlice(IAdhocSliceWithStep slice, Object value, ISliceToValue output) {
+	protected void onSlice(ISliceWithStep slice, Object value, ISliceAndValueConsumer output) {
 		if (isDebug()) {
 			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
@@ -84,7 +89,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 		output.putSlice(slice.getAdhocSliceAsMap(), value);
 	}
 
-	protected ISliceToValue makeCoordinateToValues() {
-		return SliceToValue.builder().build();
+	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
 	}
 }

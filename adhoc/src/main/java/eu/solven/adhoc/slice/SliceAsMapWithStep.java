@@ -38,7 +38,7 @@ import lombok.ToString;
  */
 @Builder
 @ToString
-public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
+public class SliceAsMapWithStep implements ISliceWithStep {
 	@NonNull
 	final IAdhocSlice slice;
 
@@ -68,8 +68,8 @@ public class AdhocSliceAsMapWithStep implements IAdhocSliceWithStep {
 	}
 
 	@Override
-	public AdhocSliceAsMap getAdhocSliceAsMap() {
-		return AdhocSliceAsMap.fromMap(slice.getCoordinates());
+	public SliceAsMap getAdhocSliceAsMap() {
+		return SliceAsMap.fromMap(slice.getCoordinates());
 	}
 
 	@Override
