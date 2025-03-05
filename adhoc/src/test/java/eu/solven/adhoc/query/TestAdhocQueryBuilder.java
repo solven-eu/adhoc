@@ -42,7 +42,7 @@ public class TestAdhocQueryBuilder {
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getMeasureRefs()).isEmpty();
+		Assertions.assertThat(q.getMeasures()).isEmpty();
 
 		// Make sure the .toString returns actual values, and not the lambda toString
 		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
@@ -54,7 +54,7 @@ public class TestAdhocQueryBuilder {
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getMeasureRefs()).isEmpty();
+		Assertions.assertThat(q.getMeasures()).isEmpty();
 	}
 
 	@Test
@@ -152,7 +152,7 @@ public class TestAdhocQueryBuilder {
 				  "groupBy" : {
 				    "columns" : [ "c1" ]
 				  },
-				  "measureRefs" : [ "k1.SUM" ],
+				  "measures" : [ "k1.SUM" ],
 				  "customMarker" : "somethingCustom",
 				  "debug" : true,
 				  "explain" : true

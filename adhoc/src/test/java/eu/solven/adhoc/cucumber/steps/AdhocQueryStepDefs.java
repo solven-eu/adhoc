@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
@@ -82,8 +81,7 @@ public class AdhocQueryStepDefs {
 
 	@When("Query measure={word} debug={word}")
 	public void aUserPublishANewKata(String measure, String debug) {
-		AdhocQueryBuilder queryBuilder =
-				AdhocQuery.builder().measureRef(ReferencedMeasure.builder().ref(measure).build());
+		AdhocQueryBuilder queryBuilder = AdhocQuery.builder().measure(measure);
 
 		if (Boolean.valueOf(debug)) {
 			queryBuilder.debug(true);

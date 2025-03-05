@@ -74,6 +74,29 @@ export default {
 					loading.value = false;
 				});
 		}
+		
+		watch(() => props.queryModel.selectedColumns[props.column], (newX) => {
+			if (!props.queryModel.selectedColumns2) {
+				props.queryModel.selectedColumns2 = [];
+			}
+
+			const array = props.queryModel.selectedColumns2;
+			const index = array.indexOf(props.column);
+			if (newX) {
+				if (index < 0) {
+					props.queryModel.selectedColumns2.push(props.column);	
+				}
+			} else {
+				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+				// only splice array when item is found
+				if (index >= 0) { 
+					// 2nd parameter means remove one item only
+				  array.splice(index, 1); 
+				}
+			}
+			
+		  console.log(`${props.column} is ${newX}`)
+		});
 
 		return {
 			loadColumnCoordinates,
@@ -83,7 +106,7 @@ export default {
 	},
 	template: /* HTML */ `
 	<div class="form-check form-switch">
-	  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]">
+	  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
 	  <label class="form-check-label" :for="'column_' + column">{{column}}: {{type}}</label>
 	</div>
 	

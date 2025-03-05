@@ -91,12 +91,20 @@ export default {
 		if (!props.queryModel.selectedMeasures) {
 			props.queryModel.selectedMeasures = {};
 		}
-
+		
+		// This computed property does snapshots of the query
 		const queryJson = computed(() => {
 			const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
 			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
+			
+			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
+			// We do a copy as this must not changed when playing with the wizard.
+			if (!props.queryModel.selectedColumns2) {
+				props.queryModel.selectedColumns2 = [];
+			}
+			const orderedColumns = props.queryModel.selectedColumns2.slice(0);
 
-			return { groupBy: { columns: columns }, measureRefs: measures, debug: props.queryModel.debugQuery?.value, explain: props.queryModel.explainQuery?.value };
+			return { groupBy: { columns: orderedColumns }, measureRefs: measures, debug: props.queryModel.debugQuery?.value, explain: props.queryModel.explainQuery?.value };
 		});
 
 		// Used for manual input of a JSON
@@ -157,8 +165,11 @@ export default {
 					});
 					sendMoveError.value = "";
 
-					// console.log(responseTabularView);
-					props.tabularView.value = responseTabularView;
+					// We need to couple the columns with the result
+					// as the wizard may have been edited while receiving the result
+					// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
+					Object.assign(props.tabularView, {query: move.query, view: responseTabularView});
+					// props.tabularView.value = {query: move.query, view: responseTabularView};
 
 					// TODO Rely on a named route and params
 					// router.push({ name: "board" });
@@ -174,22 +185,7 @@ export default {
 			return postFromUrl(`/cubes/query`);
 		}
 
-		const queryResult = computed(() => {
-			return { selectedColumns: selectedColumns, selectedMeasures: selectedMeasures };
-		});
-
-		const filtered = function (input) {
-			const filter = {};
-
-			for (const column in input) {
-				if (column.includes(search.value) || JSON.stringify(input[column]).includes(search.value)) {
-					filter[column] = input[column];
-				}
-			}
-
-			return filter;
-		};
-
+		// Watch for the query as a JSON: if it changes, we may trigger the query
 		watch(
 			() => queryJson.value,
 			() => {
@@ -198,9 +194,6 @@ export default {
 				}
 			},
 		);
-
-		// SlickGrid requires a cssSelector
-		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
 
 		return {
 			queryJson,
@@ -211,7 +204,6 @@ export default {
 
 			loading,
 			queryStatus,
-			domId,
 		};
 	},
 	template: /* HTML */ `

@@ -107,7 +107,7 @@ public class PivotableQueryHandler {
 		// `tag=a,b&tag=c` means we are looking for `(a AND b) OR c`
 		List<String> measures = serverRequest.queryParams().get("measure");
 		if (measures != null) {
-			queryBuilder.measures(measures);
+			queryBuilder.measureNames(measures);
 		}
 		List<String> groupBys = serverRequest.queryParams().get("group_by");
 		if (measures != null) {

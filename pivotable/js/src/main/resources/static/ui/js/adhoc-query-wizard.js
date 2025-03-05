@@ -138,6 +138,10 @@ export default {
 				    <label class="form-check-label" for="explainQuery">explain</label>
 				  </div>
 			</form>
+			
+			<div>
+			
+			</div>
         </div>
     `,
 };

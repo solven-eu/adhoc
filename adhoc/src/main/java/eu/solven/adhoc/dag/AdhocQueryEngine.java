@@ -49,7 +49,6 @@ import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -698,16 +697,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepsDagBuilder.getQueryDag();
 	}
 
-	private Set<IMeasure> convertToQueriedSteps(ExecutingQueryContext executingQueryContext) {
-		Set<ReferencedMeasure> measureRefs = executingQueryContext.getQuery().getMeasureRefs();
+	protected Set<IMeasure> convertToQueriedSteps(ExecutingQueryContext executingQueryContext) {
+		Set<IMeasure> measures = executingQueryContext.getQuery().getMeasures();
 		Set<IMeasure> queriedMeasures;
-		if (measureRefs.isEmpty()) {
+		if (measures.isEmpty()) {
 			IMeasure defaultMeasure = defaultMeasure();
 			queriedMeasures = Set.of(defaultMeasure);
 		} else {
-			queriedMeasures = measureRefs.stream()
-					.map(ref -> executingQueryContext.resolveIfRef(ref))
-					.collect(Collectors.toSet());
+			queriedMeasures =
+					measures.stream().map(ref -> executingQueryContext.resolveIfRef(ref)).collect(Collectors.toSet());
 		}
 		return queriedMeasures;
 	}

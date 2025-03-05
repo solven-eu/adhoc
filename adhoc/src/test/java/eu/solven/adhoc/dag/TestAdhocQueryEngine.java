@@ -48,7 +48,7 @@ public class TestAdhocQueryEngine {
 		amg.addMeasure(Aggregator.builder().name("n3").aggregationKey("C").build());
 		amg.addMeasure(Aggregator.builder().name("n4").build());
 
-		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().keySet()).build();
+		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().values()).build();
 		ExecutingQueryContext queryWithContext = ExecutingQueryContext.builder()
 				.measures(amg)
 				.query(adhocQuery)

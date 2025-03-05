@@ -34,6 +34,6 @@ import eu.solven.adhoc.debug.IIsExplainable;
  *
  */
 public interface IAdhocQuery
-		extends IWhereGroupbyAdhocQuery, IHasRefMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable {
+		extends IWhereGroupbyAdhocQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 }

@@ -25,15 +25,15 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * A {@link List} of {@link IMeasuredAxis}. Typically used by {@link IAdhocQuery}.
+ * A {@link List} of {@link IMeasure}. Typically used by {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IHasRefMeasures {
+public interface IHasMeasures {
 
-	Set<ReferencedMeasure> getMeasureRefs();
+	Set<IMeasure> getMeasures();
 }

@@ -125,7 +125,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 			IAdhocQuery query = AdhocQuery.builder()
 					.filter(underlyingFilter)
 					.groupBy(GroupByColumns.of(underlyingGroupBy.values()))
-					.measures(underlyingQueryMeasure)
+					.measureNames(underlyingQueryMeasure)
 					.customMarker(compositeQuery.getCustomMarker())
 					.debug(compositeQuery.isDebug())
 					.explain(compositeQuery.isExplain())

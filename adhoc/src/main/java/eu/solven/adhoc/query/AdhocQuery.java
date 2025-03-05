@@ -26,7 +26,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -44,7 +46,6 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -64,8 +65,8 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
-	@Singular
-	Set<ReferencedMeasure> measureRefs;
+	// @Singular
+	ImmutableSet<IMeasure> measures;
 
 	// This property is transported down to the DatabaseQuery
 	// Not an Optional as JDK consider Optional are good only as return value
@@ -85,15 +86,25 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	}
 
 	@Override
-	public Set<ReferencedMeasure> getMeasureRefs() {
-		return measureRefs;
+	public Set<IMeasure> getMeasures() {
+		return measures;
 	}
 
 	public static class AdhocQueryBuilder {
+		// @Singular
+		ImmutableSet<IMeasure> measures = ImmutableSet.of();
+
+		// https://github.com/projectlombok/lombok/pull/3193
 		public AdhocQueryBuilder measure(String firstName, String... moreNames) {
 			Lists.asList(firstName, moreNames).forEach(measureName -> {
-				this.measureRef(ReferencedMeasure.ref(measureName));
+				this.measure(ReferencedMeasure.ref(measureName));
 			});
+
+			return this;
+		}
+
+		public AdhocQueryBuilder measureNames(Collection<String> measureNames) {
+			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measure);
 
 			return this;
 		}
@@ -107,15 +118,19 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		 * @return
 		 */
 		public AdhocQueryBuilder measure(IMeasure first, IMeasure... more) {
-			Lists.asList(first, more).forEach(measure -> {
-				this.measureRef(ReferencedMeasure.ref(measure.getName()));
-			});
-
-			return this;
+			return measures(Lists.asList(first, more));
 		}
 
-		public AdhocQueryBuilder measures(Collection<String> measureNames) {
-			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measureRef);
+		/**
+		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
+		 * This may be lifted in a later version.
+		 * 
+		 * @param measures
+		 * @return
+		 */
+		public AdhocQueryBuilder measures(Collection<IMeasure> measures) {
+			this.measures =
+					Stream.concat(this.measures.stream(), measures.stream()).collect(ImmutableSet.toImmutableSet());
 
 			return this;
 		}
@@ -174,7 +189,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 
 	public static AdhocQueryBuilder edit(IAdhocQuery query) {
 		return AdhocQuery.builder()
-				.measureRefs(query.getMeasureRefs())
+				.measures(query.getMeasures())
 				.filter(query.getFilter())
 				.groupBy(query.getGroupBy())
 				.customMarker(query.getCustomMarker())
