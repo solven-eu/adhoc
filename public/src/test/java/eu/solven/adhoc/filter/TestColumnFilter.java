@@ -44,7 +44,7 @@ public class TestColumnFilter {
 
 		String asString = objectMapper.writeValueAsString(ksEqualsV);
 		Assertions.assertThat(asString).isEqualTo("""
-				{"type":"column","column":"k","valueMatcher":{"type":"equals","operand":"v"},"nullIfAbsent":true}
+				{"type":"column","column":"k","valueMatcher":"v","nullIfAbsent":true}
 				""".strip());
 		ColumnFilter fromString = objectMapper.readValue(asString, ColumnFilter.class);
 

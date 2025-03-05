@@ -24,6 +24,8 @@ package eu.solven.adhoc.column;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import eu.solven.adhoc.query.filter.value.IHasWrapped;
+import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -37,9 +39,14 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Value
 @Jacksonized
-@JsonSerialize(using = NameSerializer.class)
-public class ReferencedColumn implements IAdhocColumn {
+@JsonSerialize(using = HasWrappedSerializer.class)
+public class ReferencedColumn implements IAdhocColumn, IHasWrapped {
 	String name;
+
+	@Override
+	public Object getWrapped() {
+		return name;
+	}
 
 	public static ReferencedColumn ref(String column) {
 		return ReferencedColumn.builder().name(column).build();

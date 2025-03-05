@@ -198,7 +198,7 @@ public class AndFilter implements IAndFilter {
 
 					if (columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher) {
 						hadSomeAllowedValues.set(true);
-						Object operand = equalsMatcher.getOperand();
+						Object operand = equalsMatcher.getWrapped();
 
 						if (allowedValues.isEmpty()) {
 							// This is the first accepted values

@@ -55,7 +55,7 @@ public class TestAdhocQueryEngine {
 				.table(InMemoryTable.builder().build())
 				.columnsManager(AdhocColumnsManager.builder().build())
 				.build();
-		DagHolder fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
+		QueryStepsDag fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
 		Map<String, Set<Aggregator>> columnToAggregators =
 				aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates);
 

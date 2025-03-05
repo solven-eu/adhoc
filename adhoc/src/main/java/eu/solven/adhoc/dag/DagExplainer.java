@@ -50,7 +50,7 @@ public class DagExplainer {
 	@NonNull
 	IAdhocEventBus eventBus;
 
-	public void explain(DagHolder dag) {
+	public void explain(QueryStepsDag dag) {
 		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
 		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
 
@@ -70,7 +70,7 @@ public class DagExplainer {
 				.thenComparing(qr -> qr.getGroupBy().toString());
 	}
 
-	protected void printStepAndUnderlyings(DagHolder dagHolder,
+	protected void printStepAndUnderlyings(QueryStepsDag dagHolder,
 			Map<AdhocQueryStep, String> stepToIndentation,
 			Map<AdhocQueryStep, Integer> stepToReference,
 			AdhocQueryStep step,

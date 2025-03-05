@@ -24,9 +24,7 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
@@ -38,7 +36,6 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -78,7 +75,7 @@ public class ColumnFilter implements IColumnFilter {
 
 	public String toString() {
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return "%s=%s".formatted(column, equalsMatcher.getOperand());
+			return "%s=%s".formatted(column, equalsMatcher.getWrapped());
 		} else {
 			if (valueMatcher.match(null)) {
 				return "%s matches `%s` (nullIfAbsent=%s)".formatted(column, valueMatcher, nullIfAbsent);
@@ -95,21 +92,13 @@ public class ColumnFilter implements IColumnFilter {
 		 *
 		 * @return
 		 */
+		// Better than `.matching(null)` for not forcing called to use null-references.
 		public ColumnFilterBuilder matchNull() {
 			this.valueMatcher = NullMatcher.matchNull();
 			return this;
 		}
 
-		public ColumnFilterBuilder matchIn(Collection<?> collection) {
-			// One important edge-case is getting away from java.util.Set which generates NPE on .contains(null)
-			// https://github.com/adoptium/adoptium-support/issues/1186
-			Set<Object> operands = collection.stream().map(o -> {
-				if (o == null) {
-					return NullMatcher.matchNull();
-				} else {
-					return o;
-				}
-			}).collect(Collectors.toSet());
+		public ColumnFilterBuilder matchIn(Collection<?> operands) {
 			this.valueMatcher = InMatcher.isIn(operands);
 			return this;
 		}
@@ -119,24 +108,16 @@ public class ColumnFilter implements IColumnFilter {
 			return this;
 		}
 
+		/**
+		 * 
+		 * @param matching
+		 *            may be null, a {@link Collection}, a {@link IValueMatcher}, or any other value for a
+		 *            {@link EqualsMatcher}.
+		 * @return the {@link ColumnFilterBuilder} instance
+		 */
 		public ColumnFilterBuilder matching(Object matching) {
-			if (matching == null) {
-				return matchNull();
-			} else if (matching instanceof IValueMatcher vm) {
-				return this.valueMatcher(vm);
-			} else if (matching instanceof Collection<?> c) {
-				return matchIn(c);
-			} else if (matching instanceof IColumnFilter) {
-				throw new IllegalArgumentException("Can not use a IColumnFilter as valueFilter: %s"
-						.formatted(PepperLogHelper.getObjectAndClass(matching)));
-			} else {
-				if (matching instanceof Pattern) {
-					// May happen due to sick API in LikeMatcher
-					throw new IllegalArgumentException(
-							"Invalid matching: %s".formatted(PepperLogHelper.getObjectAndClass(matching)));
-				}
-				return matchEquals(matching);
-			}
+			this.valueMatcher = IValueMatcher.matching(matching);
+			return this;
 		}
 	}
 

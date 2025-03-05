@@ -117,7 +117,7 @@ public class FilterHelpers {
 		} else if (slice.isColumnFilter() && slice instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 			if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-				return Map.of(columnFilter.getColumn(), equalsMatcher.getOperand());
+				return Map.of(columnFilter.getColumn(), equalsMatcher.getWrapped());
 			} else {
 				throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
 			}
@@ -132,7 +132,7 @@ public class FilterHelpers {
 			Map<String, Object> asMap = new HashMap<>();
 
 			columnMatchers.forEach(columnFilter -> asMap.put(columnFilter.getColumn(),
-					((EqualsMatcher) columnFilter.getValueMatcher()).getOperand()));
+					((EqualsMatcher) columnFilter.getValueMatcher()).getWrapped()));
 
 			return asMap;
 		} else if (slice.isOr()) {

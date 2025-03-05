@@ -140,18 +140,12 @@ public class TestAndFilter {
 				  "filters" : [ {
 				    "type" : "column",
 				    "column" : "a",
-				    "valueMatcher" : {
-				      "type" : "equals",
-				      "operand" : "a1"
-				    },
+				    "valueMatcher" : "a1",
 				    "nullIfAbsent" : true
 				  }, {
 				    "type" : "column",
 				    "column" : "b",
-				    "valueMatcher" : {
-				      "type" : "equals",
-				      "operand" : "b2"
-				    },
+				    "valueMatcher" : "b2",
 				    "nullIfAbsent" : true
 				  } ]
 				}

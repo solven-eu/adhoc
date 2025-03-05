@@ -39,7 +39,7 @@ import lombok.ToString;
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
 @ToString
-public class SliceAsMap implements IAdhocSlice {
+public final class SliceAsMap implements IAdhocSlice {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	final Map<String, ?> asMap;

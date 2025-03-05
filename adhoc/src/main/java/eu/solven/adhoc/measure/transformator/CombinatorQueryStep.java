@@ -77,7 +77,8 @@ public class CombinatorQueryStep extends ATransformator {
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() != getUnderlyingNames().size()) {
-			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
+			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
+					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
 			return SliceToValue.empty();
 		}
@@ -100,7 +101,7 @@ public class CombinatorQueryStep extends ATransformator {
 
 		Object value = combine(slice, combination, underlyingVs);
 
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap()).onObject(value);
 	}
 
 	protected Object combine(ISliceWithStep slice, ICombination combination, List<Object> underlyingVs) {

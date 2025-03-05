@@ -28,8 +28,9 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import eu.solven.adhoc.column.NameSerializer;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.filter.value.IHasWrapped;
+import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -44,17 +45,22 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-@JsonSerialize(using = NameSerializer.class)
-public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure> {
+@JsonSerialize(using = HasWrappedSerializer.class)
+public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure>, IHasWrapped {
 	String ref;
 
 	/**
-	 * The name is the same of the ref, so a measure and its reference would conflict.
+	 * The name is the same as the ref, so a measure and its reference would conflict.
 	 */
 	@Override
 	@JsonIgnore
 	public String getName() {
-		return getRef();
+		return ref;
+	}
+
+	@Override
+	public Object getWrapped() {
+		return ref;
 	}
 
 	@Override

@@ -35,14 +35,7 @@ import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.ShiftorQueryStep;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -91,57 +84,6 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	@Override
 	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep step) {
 		return new ShiftorQueryStep(this, operatorsFactory, step);
-	}
-
-	/**
-	 *
-	 * @param column
-	 * @param value
-	 * @param filter
-	 * @return a filter equivalent to input filter, except the column is filtered on given value
-	 */
-	public static IAdhocFilter shift(String column, Object value, IAdhocFilter filter) {
-		if (filter.isMatchNone()) {
-			return filter;
-		} else if (filter.isMatchAll()) {
-			return ColumnFilter.isEqualTo(column, value);
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			ColumnFilter shiftColumn = ColumnFilter.isEqualTo(column, value);
-			if (columnFilter.getColumn().equals(column)) {
-				// Replace the valueMatcher by the shift
-				return shiftColumn;
-			} else {
-				// Combine both columns
-				return AndFilter.and(columnFilter, shiftColumn);
-			}
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IAdhocFilter> operands = andFilter.getOperands();
-
-			List<IAdhocFilter> shiftedOperands = operands.stream().map(f -> shift(column, value, f)).toList();
-
-			return AndFilter.and(shiftedOperands);
-		} else {
-			throw new NotYetImplementedException("filter=%s".formatted(filter));
-		}
-	}
-
-	/**
-	 *
-	 * @param column
-	 *            the column to filter. If it is not already expressed, the filter is not shited.
-	 * @param value
-	 * @param filter
-	 * @return like {@link #shift(String, Object, IAdhocFilter)} but only if the column is expressed
-	 */
-	public static IAdhocFilter shiftIfPresent(String column, Object value, IAdhocFilter filter) {
-		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
-
-		if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-			// Do not shift if there is no filter
-			return filter;
-		} else {
-			return shift(column, value, filter);
-		}
 	}
 
 }

@@ -34,9 +34,10 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.transformator.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.slice.ISliceWithStep;
@@ -127,10 +128,6 @@ public class ShiftorQueryStep implements ITransformator {
 
 	protected boolean isDebug() {
 		return shiftor.isDebug() || getStep().isDebug();
-	}
-
-	protected Iterable<? extends SliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
 	}
 
 	protected void forEachDistinctSlice1(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {

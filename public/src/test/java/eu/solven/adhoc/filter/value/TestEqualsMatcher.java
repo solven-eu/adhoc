@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -31,46 +33,30 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
-public class TestOrMatcher {
+public class TestEqualsMatcher {
 	@Test
-	public void testAndInEq() {
-		OrMatcher a_and_aandb =
-				OrMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
+	public void testSimple() {
+		IValueMatcher equalsMatcher = EqualsMatcher.isEqualTo("a");
 
-		// TODO Improve this when relevant
-		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
-		Assertions.assertThat(a_and_aandb).isEqualTo(a_and_aandb);
+		Assertions.assertThat(equalsMatcher.match("a")).isEqualTo(true);
+		Assertions.assertThat(equalsMatcher.match(Set.of("a"))).isEqualTo(false);
+
+		Assertions.assertThat(equalsMatcher.match(null)).isEqualTo(false);
 	}
 
 	@Test
-	public void testAnd_all() {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
-		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_ALL);
-	}
+	public void testNull() {
+		Assertions.assertThatThrownBy(() -> EqualsMatcher.builder().operand(null).build())
+				.isInstanceOf(IllegalArgumentException.class);
 
-	@Test
-	public void testAnd_none() {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
-		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
-	}
-
-	@Test
-	public void testEqualsDifferentOrder() {
-		OrMatcher aThenB =
-				OrMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
-		OrMatcher bThenA =
-				OrMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
-
-		Assertions.assertThat(aThenB).isEqualTo(bThenA);
+		Assertions.assertThat(EqualsMatcher.isEqualTo(null)).isInstanceOf(NullMatcher.class);
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%"));
+		IValueMatcher matcher = EqualsMatcher.isEqualTo("azerty");
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -78,21 +64,30 @@ public class TestOrMatcher {
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
-				{
-				  "type" : "or",
-				  "operands" : [ {
-				    "type" : "equals",
-				    "operand" : "azerty"
-				  }, {
-				    "type" : "like",
-				    "like" : "b%"
-				  } ]
-				}
-												""".trim());
+								"azerty"
+				""".trim());
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 
 		Assertions.assertThat(fromString).isEqualTo(matcher);
 	}
 
+	// Ensure we can parse a EqualsMatcher with the default serialization format
+	@Test
+	public void testJackson_fromExplicit() throws JsonProcessingException {
+		IValueMatcher matcher = EqualsMatcher.isEqualTo("azerty");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		String asString = """
+				{
+				    "type" : "equals",
+				    "operand" : "azerty"
+				  }
+				""";
+
+		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
+
+		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
 }

@@ -73,6 +73,25 @@ public class TestTransformator_Combinator_Long extends ADagTest implements IAdho
 	}
 
 	@Test
+	public void testTwiceSameMeasure() {
+		amb.addMeasure(Combinator.builder()
+				.name("sumK1K1")
+				.underlyings(Arrays.asList("k1", "k1"))
+				.combinationKey(SumCombination.KEY)
+				.build());
+
+		amb.addMeasure(k1Sum);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K1").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K1", 0L + 123 + 345 + 123 + 345));
+	}
+
+	@Test
 	public void testSumOfMax() {
 		amb.addMeasure(Combinator.builder()
 				.name("sumK1K2")

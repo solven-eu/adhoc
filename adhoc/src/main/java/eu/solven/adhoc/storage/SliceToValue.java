@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.SliceAsMap;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -46,8 +45,13 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public void onValue(IAdhocSlice slice, IValueConsumer consumer) {
+	public void onValue(SliceAsMap slice, IValueConsumer consumer) {
 		storage.onValue(slice.getAdhocSliceAsMap(), consumer);
+	}
+
+	@Override
+	public Stream<SliceAsMap> keySetStream() {
+		return storage.keySetStream();
 	}
 
 	@Override

@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -32,7 +33,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -87,23 +87,36 @@ public class InMatcher implements IValueMatcher {
 	 * @return
 	 */
 	public static IValueMatcher isIn(Collection<?> allowedValues) {
+		// One important edge-case is getting away from `java.util.Set.of` which generates NPE on .contains(null)
+		// https://github.com/adoptium/adoptium-support/issues/1186
+		boolean hasNull = allowedValues.stream().anyMatch(Objects::isNull);
+
 		List<Object> unnested = allowedValues.stream().flatMap(allowed -> {
-			if (allowed instanceof Collection<?> asCollection) {
+			if (allowed == null) {
+				return Stream.empty();
+			} else if (allowed instanceof Collection<?> asCollection) {
 				return asCollection.stream();
 			} else {
 				return Stream.of(allowed);
 			}
 		}).toList();
-		if (unnested.size() == 1) {
+
+		IValueMatcher notNullMatcher;
+		if (unnested.isEmpty()) {
+			notNullMatcher = IValueMatcher.MATCH_NONE;
+		} else if (unnested.size() == 1) {
 			Object singleValue = unnested.getFirst();
-			return EqualsMatcher.isEqualTo(singleValue);
+			notNullMatcher = EqualsMatcher.isEqualTo(singleValue);
 		} else {
-			if (unnested.contains(null)) {
-				throw new NotYetImplementedException(
-						"`%s` is not allowed in an InMatcher".formatted(new Object[] { null }));
-			}
-			return InMatcher.builder().operands(unnested).build();
+			notNullMatcher = InMatcher.builder().operands(unnested).build();
 		}
+
+		if (hasNull) {
+			return OrMatcher.or(NullMatcher.matchNull(), notNullMatcher);
+		} else {
+			return notNullMatcher;
+		}
+
 	}
 
 	/**

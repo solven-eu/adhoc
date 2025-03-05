@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -36,13 +40,37 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class EqualsMatcher implements IValueMatcher {
+@JsonSerialize(using = HasWrappedSerializer.class)
+public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	@NonNull
 	Object operand;
+
+	public Object getWrapped() {
+		return operand;
+	}
 
 	@Override
 	public boolean match(Object value) {
 		return operand == value || operand.equals(value);
+	}
+
+	public static class EqualsMatcherBuilder {
+
+		public EqualsMatcherBuilder() {
+		}
+
+		// Enable Jackson deserialization given a plain Object
+		public EqualsMatcherBuilder(Object operand) {
+
+			this.operand(operand);
+		}
+
+		// Enable Jackson deserialization given a plain String
+		// TODO Does the nead for a String constructor a Jackson bug?
+		public EqualsMatcherBuilder(String operand) {
+
+			this.operand(operand);
+		}
 	}
 
 	public static IValueMatcher isEqualTo(Object operand) {

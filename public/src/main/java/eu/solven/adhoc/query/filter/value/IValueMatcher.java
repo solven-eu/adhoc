@@ -22,11 +22,20 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.Collection;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.pepper.core.PepperLogHelper;
+
 // https://stackoverflow.com/questions/19379863/how-to-deserialize-interface-fields-using-jacksons-objectmapper
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "type",
+		defaultImpl = EqualsMatcher.class)
 @JsonSubTypes({ @JsonSubTypes.Type(value = EqualsMatcher.class, name = "equals"),
 		@JsonSubTypes.Type(value = SameMatcher.class, name = "same"),
 		@JsonSubTypes.Type(value = InMatcher.class, name = "in"),
@@ -41,4 +50,30 @@ public interface IValueMatcher {
 	IValueMatcher MATCH_NONE = OrMatcher.builder().build();
 
 	boolean match(Object value);
+
+	/**
+	 * 
+	 * @param matching
+	 *            may be null, a {@link Collection}, a {@link IValueMatcher}, or any other value for a
+	 *            {@link EqualsMatcher}.
+	 * @return
+	 */
+	static IValueMatcher matching(Object matching) {
+		if (matching == null) {
+			return NullMatcher.matchNull();
+		} else if (matching instanceof IValueMatcher vm) {
+			return vm;
+		} else if (matching instanceof Collection<?> c) {
+			return InMatcher.isIn(c);
+		} else if (matching instanceof IColumnFilter) {
+			throw new IllegalArgumentException("Can not use a IColumnFilter as valueFilter: %s"
+					.formatted(PepperLogHelper.getObjectAndClass(matching)));
+		} else if (matching instanceof Pattern) {
+			// May happen due to sick API in LikeMatcher
+			throw new IllegalArgumentException(
+					"Invalid matching: %s".formatted(PepperLogHelper.getObjectAndClass(matching)));
+		} else {
+			return EqualsMatcher.isEqualTo(matching);
+		}
+	}
 }

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.resource;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import eu.solven.adhoc.util.IHasName;
+import eu.solven.adhoc.query.filter.value.IHasWrapped;
 
 /**
  * This is used to print a complex `(a -> ref(a), b -> ref(b)` into a simpler `[a, b]`
@@ -37,28 +37,28 @@ import eu.solven.adhoc.util.IHasName;
  * @author Benoit Lacelle
  */
 // https://www.baeldung.com/jackson-custom-serialization
-public class NameSerializer extends StdSerializer<IHasName> {
+public class HasWrappedSerializer extends StdSerializer<IHasWrapped> {
 	private static final long serialVersionUID = 1L;
 
-	public NameSerializer() {
+	public HasWrappedSerializer() {
 		this(null);
 	}
 
-	public NameSerializer(Class<IHasName> t) {
+	public HasWrappedSerializer(Class<IHasWrapped> t) {
 		super(t);
 	}
 
 	@Override
-	public void serializeWithType(IHasName hasName,
+	public void serializeWithType(IHasWrapped hasWrapped,
 			JsonGenerator gen,
 			SerializerProvider serializers,
 			TypeSerializer typeSer) throws IOException {
-		gen.writeString(hasName.getName());
+		gen.writeObject(hasWrapped.getWrapped());
 	}
 
 	@Override
-	public void serialize(IHasName hasName, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeString(hasName.getName());
+	public void serialize(IHasWrapped hasWrapped, JsonGenerator gen, SerializerProvider provider) throws IOException {
+		gen.writeObject(hasWrapped.getWrapped());
 	}
 
 }

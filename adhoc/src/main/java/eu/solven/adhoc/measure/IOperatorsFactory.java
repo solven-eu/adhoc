@@ -24,12 +24,12 @@ package eu.solven.adhoc.measure;
 
 import java.util.Map;
 
+import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.IFilterEditor;
 
 /**
  * Provides {@link ICombination} given their key. This can be extended to provides custom transformations.

@@ -80,10 +80,7 @@ public class TestAndMatcher {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "and",
-				  "operands" : [ {
-				    "type" : "equals",
-				    "operand" : "azerty"
-				  }, {
+				  "operands" : [ "azerty", {
 				    "type" : "like",
 				    "like" : "b%"
 				  } ]

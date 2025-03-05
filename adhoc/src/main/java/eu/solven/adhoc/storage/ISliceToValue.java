@@ -26,28 +26,40 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.slice.IAdhocSlice;
-import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
 
-public interface ISliceToValue
-// extends ISliceAndValueConsumer
-{
+/**
+ * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
+ * computed by a {@link ITransformator}.
+ */
+public interface ISliceToValue {
+	Stream<SliceAsMap> keySetStream();
+
 	Set<SliceAsMap> slicesSet();
 
 	long size();
 
-	void onValue(IAdhocSlice slice, IValueConsumer consumer);
+	void onValue(SliceAsMap slice, IValueConsumer consumer);
 
 	void forEachSlice(IRowScanner<SliceAsMap> rowScanner);
 
 	<U> Stream<U> stream(IRowConverter<SliceAsMap, U> rowScanner);
 
-	static <T> Object getValue(ISliceToValue storage, ISliceWithStep slice) {
+	/**
+	 * 
+	 * @param <T>
+	 * @param storage
+	 * @param slice
+	 * @return the value as {@link Object} on given slice
+	 */
+	static <T> Object getValue(ISliceToValue storage, IAdhocSlice slice) {
 		AtomicReference<Object> refV = new AtomicReference<>();
 
-		storage.onValue(slice, refV::set);
+		storage.onValue(slice.getAdhocSliceAsMap(), refV::set);
 
 		return refV.get();
 	}
+
 }

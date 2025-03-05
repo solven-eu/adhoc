@@ -30,8 +30,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.transformator.IFilterEditor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.storage.ITabularView;
@@ -66,7 +67,7 @@ public class TestAdhocQueryShiftor extends ADagTest implements IAdhocTestConstan
 
 		@Override
 		public IAdhocFilter editFilter(IAdhocFilter input) {
-			return Shiftor.shift("ccy", "EUR", input);
+			return SimpleFilterEditor.shift(input, "ccy", "EUR");
 		}
 	}
 

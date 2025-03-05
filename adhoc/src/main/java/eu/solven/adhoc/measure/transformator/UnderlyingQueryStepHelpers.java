@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+
+import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.slice.SliceAsMap;
@@ -47,7 +51,7 @@ public class UnderlyingQueryStepHelpers {
 			List<? extends ISliceToValue> underlyings) {
 		if (!debug && underlyings.size() == 1) {
 			// Fast track
-			return underlyings.getFirst().slicesSet();
+			return underlyings.getFirst().keySetStream().toList();
 		}
 
 		Set<SliceAsMap> keySet;
@@ -63,5 +67,22 @@ public class UnderlyingQueryStepHelpers {
 		}
 
 		return keySet;
+	}
+
+	@Deprecated(since = "WIP")
+	public static Iterator<? extends SliceAsMap> distinctSlicesSorted(boolean debug,
+			List<? extends ISliceToValue> underlyings) {
+		Comparator<SliceAsMap> comparator =
+				Comparator.comparing(SliceAsMap::getCoordinates, MapComparators.mapComparator());
+
+		List<Iterator<SliceAsMap>> iterators = new ArrayList<>();
+
+		for (ISliceToValue underlying : underlyings) {
+			// TODO We need to call `.sorted()`, hence SliceAsMap to be naturally sorted, in order not to re-sort
+			// manually
+			iterators.add(underlying.keySetStream().sorted(comparator).iterator());
+		}
+
+		return Iterators.mergeSorted(iterators, comparator);
 	}
 }

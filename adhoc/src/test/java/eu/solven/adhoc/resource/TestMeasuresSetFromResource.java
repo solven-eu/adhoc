@@ -255,9 +255,7 @@ public class TestMeasuresSetFromResource {
 					    filter:
 					      type: "column"
 					      column: "c"
-					      valueMatcher:
-					        type: "equals"
-					        operand: "someString"
+					      valueMatcher: "someString"
 					      nullIfAbsent: true
 					    underlying: "k1"
 					  - name: "k1"
@@ -321,17 +319,18 @@ public class TestMeasuresSetFromResource {
 				[ {
 				  "name" : "shiftorAisA1",
 				  "type" : ".Shiftor",
-				  "editorKey" : "single",
+				  "editorKey" : "simple",
 				  "editorOptions" : {
-				    "shiftedColumn" : "a",
-				    "shiftedValue" : "a1"
+				    "shifted" : {
+				      "a" : "a1"
+				    }
 				  },
 				  "underlying" : "k1"
 				}, {
 				  "name" : "k1",
 				  "type" : ".Aggregator"
 				} ]
-				                """.strip());
+								                """.strip());
 	}
 
 	@Test
@@ -566,7 +565,7 @@ public class TestMeasuresSetFromResource {
 								.put("column", "a")
 								.put("nullIfAbsent", true)
 								.put("type", "column")
-								.put("valueMatcher", Map.of("operand", "a1", "type", "equals"))
+								.put("valueMatcher", "a1")
 								.build())
 				.containsEntry("name", "filterK1onA1")
 				.containsEntry("type", ".Filtrator")

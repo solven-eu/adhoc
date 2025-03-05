@@ -23,9 +23,11 @@
 package eu.solven.adhoc;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -69,15 +71,16 @@ public interface IAdhocTestConstants {
 
 	Filtrator filterK1onA1 =
 			Filtrator.builder().name("filterK1onA1").underlying("k1").filter(ColumnFilter.isEqualTo("a", "a1")).build();
+	Filtrator filterK1onB1 =
+			Filtrator.builder().name("filterK1onB1").underlying("k1").filter(ColumnFilter.isEqualTo("b", "b1")).build();
 
 	Unfiltrator unfilterOnA = Unfiltrator.builder().name("unfilterOnK1").underlying("k1").unfiltered("a").build();
 
 	Shiftor shiftorAisA1 = Shiftor.builder()
 			.name("shiftorAisA1")
 			.underlying("k1")
-			.editorKey("single")
-			.editorOptions(
-					ImmutableMap.<String, Object>builder().put("shiftedColumn", "a").put("shiftedValue", "a1").build())
+			.editorKey(SimpleFilterEditor.KEY)
+			.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("a", "a1")))
 			.build();
 
 	Bucketor sum_MaxK1K2ByA = Bucketor.builder()

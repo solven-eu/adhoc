@@ -26,6 +26,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
@@ -40,7 +42,7 @@ import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.IFilterEditor;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -161,6 +163,11 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		return switch (key) {
 		case AdhocIdentity.KEY: {
 			yield f -> f;
+		}
+		case SimpleFilterEditor.KEY: {
+			Map<String, Object> columnToValue = MapPathGet.getRequiredMap(options, SimpleFilterEditor.P_SHIFTED);
+
+			yield SimpleFilterEditor.builder().columnToValues(columnToValue).build();
 		}
 		default:
 			yield defaultEditor(key, options);

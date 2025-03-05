@@ -146,10 +146,7 @@ public class TestAdhocQueryBuilder {
 				  "filter" : {
 				    "type" : "column",
 				    "column" : "c2",
-				    "valueMatcher" : {
-				      "type" : "equals",
-				      "operand" : "v2"
-				    },
+				    "valueMatcher" : "v2",
 				    "nullIfAbsent" : true
 				  },
 				  "groupBy" : {

@@ -217,7 +217,9 @@ public class TestAdhocTranscodingHelper {
 		Assertions.assertThat(AdhocTranscodingHelper.match(filter, Map.of("k", "v2"))).isTrue();
 		Assertions.assertThat(AdhocTranscodingHelper.match(filter, Map.of("k", "v3"))).isFalse();
 
-		Assertions.assertThat(filter.toString()).isEqualTo("k matches `InMatcher{size=2, #0=v1, #1=v2}`");
+		// The .toString can not be guaranteed as we test a not deterministic implementation: `Set.of`
+		Assertions.assertThat(filter.toString())
+				.isIn("k matches `InMatcher{size=2, #0=v1, #1=v2}`", "k matches `InMatcher{size=2, #0=v2, #1=v1}`");
 	}
 
 	@Test

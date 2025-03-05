@@ -20,29 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.query.filter.value;
 
-import java.util.Set;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
-@Value
-@Builder
-public class DagHolder {
-	@NonNull
-	String table;
-
-	// The DAG of a given IAdhocQuery, from queried to aggregators
-	@NonNull
-	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;
-
-	// We keep a separate list of queried steps, as some queried may not be roots in the DAG (e.g. when the query
-	// requests both a measure and one of its underlying)
-	@NonNull
-	Set<AdhocQueryStep> queried;
+/**
+ * For objects which are essentially a wrapper of another object.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IHasWrapped {
+	Object getWrapped();
 }

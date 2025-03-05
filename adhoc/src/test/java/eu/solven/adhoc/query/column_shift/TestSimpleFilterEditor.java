@@ -27,40 +27,41 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
-public class TestShiftor {
+public class TestSimpleFilterEditor {
 	@Test
 	public void testShiftAll() {
 		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(ColumnFilter.isEqualTo("c", "v1"));
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(ColumnFilter.isEqualTo("c", "v1"));
 	}
 
 	@Test
 	public void testShiftColumn() {
 		IAdhocFilter filter = ColumnFilter.isEqualTo("a", "a1");
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1"))
+				.isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
 	}
 
 	@Test
 	public void testShiftIfPresent() {
 		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-		Assertions.assertThat(Shiftor.shiftIfPresent("c", "v1", filter)).isEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "c", "v1")).isEqualTo(IAdhocFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testMatchNone() {
 		IAdhocFilter filter = IAdhocFilter.MATCH_NONE;
-		Assertions.assertThat(Shiftor.shift("c", "v1", filter)).isEqualTo(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(IAdhocFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testShiftAnd() {
 		IAdhocFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(Shiftor.shift("c", "c2", filter))
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "c2"))
 				.isEqualTo(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c2")));
 	}
 }

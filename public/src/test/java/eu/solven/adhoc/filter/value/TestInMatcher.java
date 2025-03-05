@@ -29,9 +29,15 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
-import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestInMatcher {
 	@Test
@@ -52,6 +58,27 @@ public class TestInMatcher {
 	}
 
 	@Test
+	public void testJackson() throws JsonProcessingException {
+		IValueMatcher matcher = InMatcher.isIn("a", "b");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		String asString = objectMapper.writeValueAsString(matcher);
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				{
+				  "type" : "in",
+				  "operands" : [ "a", "b" ]
+				}
+								""".trim());
+
+		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
+
+		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
+
+	@Test
 	public void testSingleNull() {
 		Set<Object> singletonNull = new HashSet<>();
 		singletonNull.add(null);
@@ -65,8 +92,18 @@ public class TestInMatcher {
 		singletonNull.add(null);
 		singletonNull.add("notNull");
 
-		// Assertions.assertThat(InMatcher.isIn(singletonNull)).isInstanceOf(InMatcher.class);
-		Assertions.assertThatThrownBy(() -> InMatcher.isIn(singletonNull))
-				.isInstanceOf(NotYetImplementedException.class);
+		Assertions.assertThat(InMatcher.isIn(singletonNull))
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), EqualsMatcher.isEqualTo("notNull")));
+	}
+
+	@Test
+	public void testNullAndNotNull1And2() {
+		Set<Object> singletonNull = new HashSet<>();
+		singletonNull.add(null);
+		singletonNull.add("notNull1");
+		singletonNull.add("notNull2");
+
+		Assertions.assertThat(InMatcher.isIn(singletonNull))
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.isIn("notNull1", "notNull2")));
 	}
 }

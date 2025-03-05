@@ -71,7 +71,8 @@ public class FiltratorQueryStep extends ATransformator {
 		if (underlyings.isEmpty()) {
 			return SliceToValue.empty();
 		} else if (underlyings.size() != 1) {
-			throw new IllegalArgumentException("underlyings.size() != 1");
+			throw new IllegalArgumentException(
+					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
 		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
@@ -104,6 +105,6 @@ public class FiltratorQueryStep extends ATransformator {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, getMeasure().getName());
 		}
 
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getAdhocSliceAsMap()).onObject(value);
 	}
 }

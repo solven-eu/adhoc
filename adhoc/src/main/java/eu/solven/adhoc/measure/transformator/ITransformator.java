@@ -38,7 +38,9 @@ import eu.solven.adhoc.storage.ISliceToValue;
  */
 public interface ITransformator {
 	/**
-	 *
+	 * This is a {@link List} as in some edge-cases, a measure may refer multiple times the same underlyingSteps (e.g. a
+	 * Filtrator on a slice which match the filter).
+	 * 
 	 * @return the {@link List} of underlying {@link AdhocQueryStep}
 	 */
 	List<AdhocQueryStep> getUnderlyingSteps();
