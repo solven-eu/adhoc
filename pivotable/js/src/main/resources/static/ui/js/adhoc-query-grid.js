@@ -76,7 +76,7 @@ export default {
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.view;
-
+			
 			gridColumns=[];
 			
 			data = [];
@@ -119,9 +119,66 @@ export default {
 					gridColumns.push(column);
 				}
 				
+				{
+					// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
+					const index = _.map(view.coordinates, (x, i) => [view.coordinates[i], view.values[i]]);
+//					const sorted = _.sortBy(index, coordinateToMeasure => { 
+//						return coordinateToMeasure[0][0];
+//					});
+
+					const sortingFunctions = [];
+					const sortingOrders = [];
+					for (let column of columnNames) {
+						sortingFunctions.push(function (item) { return item[0][column]; });
+						// or `desc`
+						sortingOrders.push("asc");
+					}
+					const indexSorted = _.orderBy(index, sortingFunctions, sortingOrders);
+					
+					for (let i = 0; i < view.coordinates.length; i++) {
+						view.coordinates[i] = indexSorted[i][0];
+						view.values[i] = indexSorted[i][1];
+					}
+				}
+				
+				// This is used for rowSpan evaluation
 				let previousCoordinates = undefined;
 				
 				const runningRowSpans = {};
+				
+				function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
+					if (previousCoordinates) {
+						for (const column of columnNames) {
+							if (!lastRow && coordinatesRow[column] == previousCoordinates[column]) {
+								// In a rowSpan
+								if (!runningRowSpans[column]?.isRunning) {
+									// Let's start running
+									runningRowSpans[column] = {};
+									runningRowSpans[column].isRunning = true;
+									runningRowSpans[column].startRowIndex = rowIndex - 1;
+								}
+							} else {
+								// Not in a rowSpan
+								if (runningRowSpans[column]?.isRunning) {
+									// Let's stop running
+									const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
+									
+									const columnIndex = columnNames.indexOf(column);
+									
+									const rowIndexStart = rowIndex - rowSpan;
+									if (!metadata[rowIndexStart]) {
+										metadata[rowIndexStart] = {columns: {}};	
+									} 
+									metadata[rowIndexStart].columns[columnIndex] = { rowspan: rowSpan };
+									
+									console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
+									
+									delete runningRowSpans[column];
+								}
+							}
+						}
+					}
+				};
 				
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
 				for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
@@ -163,42 +220,19 @@ export default {
 						d[property] = measuresRow[property];
 					}
 					
-					if (previousCoordinates) {
-						for (const column of columnNames) {
-							if (coordinatesRow[column] == previousCoordinates[column]) {
-								// In a rowSpan
-								if (!runningRowSpans[column]?.isRunning) {
-									// Let's start running
-									runningRowSpans[column] = {};
-									runningRowSpans[column].isRunning = true;
-									runningRowSpans[column].startRowIndex = rowIndex - 1;
-								}
-							} else {
-								// Not in a rowSpan
-								if (runningRowSpans[column]?.isRunning) {
-									// Let's stop running
-									const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
-									
-									const columnIndex = columnNames.indexOf(column);
-									
-									const rowIndexStart = rowIndex - rowSpan; 
-									metadata[rowIndexStart] = {columns: {}};
-									metadata[rowIndexStart].columns[columnIndex] = { rowspan: rowSpan };
-									
-									console.log(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
-									
-									delete runningRowSpans[column];
-								}
-							}
-						}
-					}
+					updateRowSpan(rowIndex, coordinatesRow, false);
 					
 					// console.log(d);
 
 					data.push(d);
 					previousCoordinates = coordinatesRow;
 				}
+
+				// Purge rowSpan after the lastRow
+				updateRowSpan(view.coordinates.length, null,true);
 			}
+			
+			console.log("rowSpans: ", metadata);
 
 			grid.setColumns(gridColumns);
 			
