@@ -39,6 +39,8 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IColumnValueConverter;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -79,7 +81,7 @@ public class ListBasedTabularView implements ITabularView {
 			return asMapBased;
 		}
 
-		IRowScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
 			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
 
 			return o -> {
@@ -112,7 +114,7 @@ public class ListBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public void acceptScanner(IRowScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
 		for (int i = 0; i < size(); i++) {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
@@ -121,12 +123,12 @@ public class ListBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public <U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
 		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
 
-			return rowScanner.convertObject(SliceAsMap.fromMap(k), v);
+			return rowScanner.prepare(SliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
@@ -143,8 +145,8 @@ public class ListBasedTabularView implements ITabularView {
 
 		AtomicInteger index = new AtomicInteger();
 
-		stream((slice, value) -> {
-			return Map.entry(slice, value);
+		stream((slice) -> {
+			return value -> Map.entry(slice, value);
 		}).limit(AdhocUnsafe.limitOrdinalToString)
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,53 +22,39 @@
  */
 package eu.solven.adhoc.storage;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 
-/**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
- * 
- * This can be seen as a proxy to **read** values.
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IValueConsumer {
+public interface IMultitypeGrid<T> {
 
 	/**
-	 * If this holds a long, override this optional method to receive the primitive long
+	 * Useful when the DB has not done the aggregation.
 	 * 
-	 * @param value
+	 * @param aggregator
+	 * @param key
+	 * @param v
 	 */
-	default void onLong(long value) {
-		onObject(value);
-	}
+	void contributeRaw(Aggregator aggregator, T key, Object v);
 
 	/**
-	 * If this holds a double, override this optional method to receive the primitive double
+	 * Useful when the DB has done the aggregation
 	 * 
-	 * @param value
+	 * Especially important for {@link IHasCarriers}
+	 * 
+	 * @param aggregator
+	 * @param key
+	 * @param v
 	 */
-	default void onDouble(double value) {
-		onObject(value);
-	}
+	void contributePre(Aggregator aggregator, T key, Object v);
 
 	/**
-	 * If this holds a {@link CharSequence}, override this optional method to receive the {@link CharSequence}
+	 * Will typically handle {@link IAggregationCarrier}.
 	 * 
-	 * @param value
+	 * @param aggregator
+	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
-	default void onCharsequence(CharSequence value) {
-		onObject(value);
-	}
+	IMultitypeColumnFastGet<T> closeColumn(Aggregator aggregator);
 
-	void onObject(Object object);
-
-	static Object getValue(Consumer<IValueConsumer> valueConsumerConsumer) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		valueConsumerConsumer.accept(refV::set);
-
-		return refV.get();
-	}
 }

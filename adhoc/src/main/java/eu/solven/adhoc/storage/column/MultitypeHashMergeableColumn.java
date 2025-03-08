@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultiTypeStorageMergeable<T> extends MultiTypeStorageFastGet<T> implements IMultitypeColumnMergeable<T> {
+public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> implements IMultitypeMergeableColumn<T> {
 
 	// @Default
 	@NonNull

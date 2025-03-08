@@ -28,6 +28,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.Multimaps;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.column.AdhocColumnsManager;
@@ -57,7 +58,7 @@ public class TestAdhocQueryEngine {
 				.build();
 		QueryStepsDag fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
 		Map<String, Set<Aggregator>> columnToAggregators =
-				aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates);
+				Multimaps.asMap(aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates));
 
 		Assertions.assertThat(columnToAggregators)
 				.hasSize(3)

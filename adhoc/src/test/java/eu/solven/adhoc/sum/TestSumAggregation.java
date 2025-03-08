@@ -146,4 +146,14 @@ public class TestSumAggregation {
 	public void testSum_bigDecimal() {
 		Assertions.assertThat(aggregator.aggregate(123, BigDecimal.valueOf(234L))).isEqualTo(0L + 123 + 234);
 	}
+
+	@Test
+	public void testSum_bigDecimal_singleLong() {
+		Assertions.assertThat(aggregator.aggregate(null, BigDecimal.valueOf(234L))).isEqualTo(234L);
+	}
+
+	@Test
+	public void testSum_bigDecimal_singleDouble() {
+		Assertions.assertThat(aggregator.aggregate(null, BigDecimal.valueOf(12.34D))).isEqualTo(12.34D);
+	}
 }

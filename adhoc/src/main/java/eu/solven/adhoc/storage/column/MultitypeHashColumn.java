@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +35,8 @@ import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
@@ -58,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
+public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
@@ -89,7 +91,13 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 	@Override
 	public IValueConsumer append(T key) {
 		// We clear all keys, to prevent storing different types for the same key
-		clearKey(key);
+		// clearKey(key);
+
+		if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
+				|| measureToAggregateS.containsKey(key)
+				|| measureToAggregateO.containsKey(key)) {
+			return merge(key);
+		}
 
 		return new IValueConsumer() {
 			@Override
@@ -128,6 +136,10 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 		};
 	}
 
+	protected IValueConsumer merge(T key) {
+		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
+	}
+
 	protected void clearKey(T key) {
 		measureToAggregateL.removeLong(key);
 		measureToAggregateD.removeDouble(key);
@@ -150,7 +162,7 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public void scan(IRowScanner<T> rowScanner) {
+	public void scan(IColumnScanner<T> rowScanner) {
 		// Consider each column is much faster than going with `keySetStream` as
 		// it would require searching the column providing given type
 
@@ -170,15 +182,45 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public <U> Stream<U> stream(IRowConverter<T, U> converter) {
+	public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
 		Stream<U> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
-				.map(entry -> converter.convertLong(entry.getKey(), entry.getLongValue()));
+				.map(entry -> converter.prepare(entry.getKey()).onLong(entry.getLongValue()));
 		Stream<U> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
-				.map(entry -> converter.convertDouble(entry.getKey(), entry.getDoubleValue()));
+				.map(entry -> converter.prepare(entry.getKey()).onDouble(entry.getDoubleValue()));
 		Stream<U> streamFromCharsequence = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
-				.map(entry -> converter.convertCharSequence(entry.getKey(), entry.getValue()));
+				.map(entry -> converter.prepare(entry.getKey()).onCharsequence(entry.getValue()));
 		Stream<U> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
-				.map(entry -> converter.convertObject(entry.getKey(), entry.getValue()));
+				.map(entry -> converter.prepare(entry.getKey()).onObject(entry.getValue()));
+
+		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)
+				.flatMap(Functions.identity());
+	}
+
+	@Override
+	public Stream<SliceAndMeasure<T>> stream() {
+		Stream<SliceAndMeasure<T>> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
+				.map(entry -> SliceAndMeasure.<T>builder()
+						.slice(entry.getKey())
+						.valueConsumerConsumer(vc -> vc.onLong(entry.getLongValue()))
+						.build());
+		Stream<SliceAndMeasure<T>> streamFromDouble =
+				Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
+						.map(entry -> SliceAndMeasure.<T>builder()
+								.slice(entry.getKey())
+								.valueConsumerConsumer(vc -> vc.onDouble(entry.getDoubleValue()))
+								.build());
+		Stream<SliceAndMeasure<T>> streamFromCharsequence =
+				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
+						.map(entry -> SliceAndMeasure.<T>builder()
+								.slice(entry.getKey())
+								.valueConsumerConsumer(vc -> vc.onCharsequence(entry.getValue()))
+								.build());
+		Stream<SliceAndMeasure<T>> streamFromObject =
+				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
+						.map(entry -> SliceAndMeasure.<T>builder()
+								.slice(entry.getKey())
+								.valueConsumerConsumer(vc -> vc.onObject(entry.getValue()))
+								.build());
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)
 				.flatMap(Functions.identity());
@@ -198,7 +240,22 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public Stream<T> keySetStream() {
+	public boolean isEmpty() {
+		if (!measureToAggregateD.isEmpty()) {
+			return false;
+		} else if (!measureToAggregateL.isEmpty()) {
+			return false;
+		} else if (!measureToAggregateS.isEmpty()) {
+			return false;
+		} else if (!measureToAggregateO.isEmpty()) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	@Override
+	public Stream<T> keyStream() {
 		return Stream
 				.of(measureToAggregateD.keySet(),
 						measureToAggregateL.keySet(),
@@ -227,7 +284,7 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keySetStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
+		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
 			onValue(key, o -> {
 				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));
@@ -240,8 +297,8 @@ public class MultiTypeStorageFastGet<T> implements IMultitypeColumnFastGet<T> {
 	/**
 	 * @return an empty and immutable MultiTypeStorage
 	 */
-	public static <T> MultiTypeStorageFastGet<T> empty() {
-		return MultiTypeStorageFastGet.<T>builder()
+	public static <T> MultitypeHashColumn<T> empty() {
+		return MultitypeHashColumn.<T>builder()
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
 				.measureToAggregateS(Object2ObjectMaps.emptyMap())

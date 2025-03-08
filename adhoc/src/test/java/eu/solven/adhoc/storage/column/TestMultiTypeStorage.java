@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
 
 import java.util.stream.IntStream;
 
@@ -35,7 +35,8 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 public class TestMultiTypeStorage {
 	IAggregation sum = new SumAggregation();
 
-	MultiTypeStorageMergeable<String> storage = MultiTypeStorageMergeable.<String>builder().aggregation(sum).build();
+	MultitypeHashMergeableColumn<String> storage =
+			MultitypeHashMergeableColumn.<String>builder().aggregation(sum).build();
 
 	@Test
 	public void testIntAndLong() {
@@ -96,8 +97,8 @@ public class TestMultiTypeStorage {
 
 	@Test
 	public void testPurgeAggregationCarriers() {
-		MultiTypeStorageMergeable<String> storage =
-				MultiTypeStorageMergeable.<String>builder().aggregation(new CountAggregation()).build();
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
 
 		storage.merge("k1", 3);
 		storage.merge("k1", 5);
@@ -115,8 +116,8 @@ public class TestMultiTypeStorage {
 
 	@Test
 	public void testPurgeAggregationCarriers_singleEntry() {
-		MultiTypeStorageMergeable<String> storage =
-				MultiTypeStorageMergeable.<String>builder().aggregation(new CountAggregation()).build();
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
 
 		storage.merge("k1", 3);
 
@@ -134,8 +135,8 @@ public class TestMultiTypeStorage {
 	// For consider a large problem, to pop issues around hashMap and non-linearities due to buckets
 	@Test
 	public void testPurgeAggregationCarriers_large() {
-		MultiTypeStorageMergeable<String> storage =
-				MultiTypeStorageMergeable.<String>builder().aggregation(new CountAggregation()).build();
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
 
 		int size = 16 * 1024;
 

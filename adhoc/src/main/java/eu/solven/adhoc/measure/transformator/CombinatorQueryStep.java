@@ -30,13 +30,13 @@ import com.google.common.base.Suppliers;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,11 +55,6 @@ public class CombinatorQueryStep extends ATransformator {
 		return operatorsFactory.makeCombination(combinator);
 	}
 
-	@Override
-	protected IMeasure getMeasure() {
-		return combinator;
-	}
-
 	public List<String> getUnderlyingNames() {
 		return combinator.getUnderlyingNames();
 	}
@@ -72,6 +67,12 @@ public class CombinatorQueryStep extends ATransformator {
 					.measureNamed(underlyingName)
 					.build();
 		}).toList();
+	}
+
+	@Override
+	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		// TODO Auto-generated method stub
+		return super.makeStorage();
 	}
 
 	@Override
@@ -89,22 +90,22 @@ public class CombinatorQueryStep extends ATransformator {
 
 		forEachDistinctSlice(underlyings, transformation, storage::append);
 
-		return SliceToValue.builder().storage(storage).build();
+		return SliceToValue.builder().column(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
+		List<?> underlyingVs = slice.getMeasures().asList();
 
-		Object value = combine(slice, combination, underlyingVs);
+		Object value = combine(slice.getSlice(), combination, underlyingVs);
 
-		output.putSlice(slice.getAdhocSliceAsMap()).onObject(value);
+		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
 	}
 
-	protected Object combine(ISliceWithStep slice, ICombination combination, List<Object> underlyingVs) {
+	protected Object combine(ISliceWithStep slice, ICombination combination, List<?> underlyingVs) {
 		Object value;
 		try {
 			value = combination.combine(slice, underlyingVs);

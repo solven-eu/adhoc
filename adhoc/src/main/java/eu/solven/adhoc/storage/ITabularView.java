@@ -26,6 +26,8 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.slice.IAdhocSlice;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IColumnValueConverter;
 
 /**
  * Storage for static data (i.e. not mutating data). Typical output of an {@link IAdhocQuery} on an
@@ -67,7 +69,7 @@ public interface ITabularView {
 	 * 
 	 * @param rowScanner
 	 */
-	void acceptScanner(IRowScanner<IAdhocSlice> rowScanner);
+	void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner);
 
 	/**
 	 *
@@ -77,5 +79,5 @@ public interface ITabularView {
 	 * @param <U>
 	 *            the output type of the rowConvertor
 	 */
-	<U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowConverter);
+	<U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowConverter);
 }

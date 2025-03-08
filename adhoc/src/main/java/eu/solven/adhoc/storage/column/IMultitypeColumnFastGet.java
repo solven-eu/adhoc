@@ -20,44 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.record;
-
-import java.util.Map;
-import java.util.Set;
+package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.storage.IValueConsumer;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 
 /**
- * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
+ * For {@link IMultitypeColumn} which enables fast `.get` operations.
  * 
+ * @param <T>
  * @author Benoit Lacelle
  */
-public interface IAggregatedRecord {
-	Set<String> aggregateKeySet();
-
-	void onAggregate(String aggregateName, IValueConsumer valueConsumer);
-
-	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
-	Object getAggregate(String aggregateName);
-
-	Set<String> groupByKeySet();
-
-	Object getGroupBy(String columnName);
+public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 
 	/**
+	 * Similar to a `.get` but the value is available through a {@link IValueConsumer}
 	 * 
-	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
+	 * @param slice
+	 * @param valueConsumer
 	 */
-	Map<String, ?> asMap();
+	void onValue(T slice, IValueConsumer valueConsumer);
 
-	boolean isEmpty();
-
-	Map<String, ?> getGroupBys();
-
-	IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
-
-	IAggregatedRecord transcode(ICustomTypeManager customTypeManager);
 }

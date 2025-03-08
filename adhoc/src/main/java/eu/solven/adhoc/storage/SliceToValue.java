@@ -26,51 +26,83 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IColumnValueConverter;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.storage.column.MultitypeHashColumn;
+import eu.solven.adhoc.storage.column.MultitypeNavigableColumn;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.ToString;
 
 /**
  * This is a simple way to storage the value for a {@link java.util.Set} of {@link SliceAsMap}.
  */
+// BEWARE What is the point of this given IMultitypeColumnFastGet? It forces the generic with SliceAsMap. And hides some
+// methods/processes like `.purgeAggregationCarriers()`. This is also immutable.
 @Builder
+@ToString
 public class SliceToValue implements ISliceToValue {
 	@NonNull
-	@Default
-	final IMultitypeColumnFastGet<SliceAsMap> storage = MultiTypeStorageFastGet.<SliceAsMap>builder().build();
+	// @Default
+	final IMultitypeColumnFastGet<SliceAsMap> column
+	// = MultiTypeStorageHash.<SliceAsMap>builder().build()
+	;
 
 	public static SliceToValue empty() {
-		return SliceToValue.builder().build();
+		return SliceToValue.builder().column(MultitypeHashColumn.empty()).build();
 	}
 
 	@Override
 	public void onValue(SliceAsMap slice, IValueConsumer consumer) {
-		storage.onValue(slice.getAdhocSliceAsMap(), consumer);
+		column.onValue(slice.getAdhocSliceAsMap(), consumer);
 	}
 
 	@Override
 	public Stream<SliceAsMap> keySetStream() {
-		return storage.keySetStream();
+		return column.keyStream();
 	}
 
 	@Override
 	public Set<SliceAsMap> slicesSet() {
-		return storage.keySetStream().collect(Collectors.toSet());
+		return column.keyStream().collect(Collectors.toSet());
 	}
 
 	@Override
-	public void forEachSlice(IRowScanner<SliceAsMap> rowScanner) {
-		storage.scan(rowScanner);
+	public void forEachSlice(IColumnScanner<SliceAsMap> rowScanner) {
+		column.scan(rowScanner);
 	}
 
 	@Override
-	public <U> Stream<U> stream(IRowConverter<SliceAsMap, U> rowScanner) {
-		return storage.stream(rowScanner);
+	public <U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowScanner) {
+		return column.stream(rowScanner);
+	}
+
+	@Override
+	public Stream<SliceAndMeasure<SliceAsMap>> stream() {
+		return column.stream();
 	}
 
 	@Override
 	public long size() {
-		return storage.size();
+		return column.size();
 	}
+
+	@Override
+	public boolean isEmpty() {
+		return column.isEmpty();
+	}
+
+	@Override
+	public boolean isSorted() {
+		if (column instanceof MultitypeNavigableColumn<SliceAsMap>) {
+			// TODO Introduce dedicated interface
+			// .keySetStream().spliterator().hasCharacteristics(Spliterator.SORTED)
+			return true;
+		}
+		return false;
+	}
+
 }

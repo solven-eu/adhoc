@@ -20,24 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
 
 import java.util.Map;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
- * This is similar to a {@link Map}, but it is specialized for full-scan read operations and `.append`.
+ * This is similar to a {@link Map}, but it is specialized for full-scan read operations and `.append`. If you need
+ * `.merge()` capabilities, consider {@link IMultitypeMergeableColumn}.
  * 
  * @param <T>
  * @author Benoit Lacelle
  */
 public interface IMultitypeColumn<T> {
 
+	/**
+	 * 
+	 * @return the number of different keys.
+	 */
 	long size();
+
+	boolean isEmpty();
 
 	/**
 	 * Typically called by {@link AdhocQueryEngine} once an {@link IAdhocTableWrapper} measure is fully received, to
@@ -46,6 +55,11 @@ public interface IMultitypeColumn<T> {
 	 */
 	void purgeAggregationCarriers();
 
+	/**
+	 * 
+	 * @param slice
+	 * @return the {@link IValueConsumer} into which the value has to be written.
+	 */
 	IValueConsumer append(T slice);
 
 	@Deprecated(since = "Should rely on `IValueConsumer append(T slice)`")
@@ -53,10 +67,12 @@ public interface IMultitypeColumn<T> {
 		append(slice).onObject(o);
 	}
 
-	void scan(IRowScanner<T> rowScanner);
+	void scan(IColumnScanner<T> rowScanner);
 
-	<U> Stream<U> stream(IRowConverter<T, U> converter);
+	<U> Stream<U> stream(IColumnValueConverter<T, U> converter);
 
-	Stream<T> keySetStream();
+	Stream<SliceAndMeasure<T>> stream();
+
+	Stream<T> keyStream();
 
 }

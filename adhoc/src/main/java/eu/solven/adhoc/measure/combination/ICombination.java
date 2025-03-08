@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.slice.ISliceWithStep;
 
 /**
@@ -34,6 +35,11 @@ import eu.solven.adhoc.slice.ISliceWithStep;
  * @author Benoit Lacelle
  */
 public interface ICombination {
+
+	// TODO This shall become the optimal API, not to require to provide Objects
+	default Object combine(SliceAndMeasures slice) {
+		return combine(slice.getSlice(), slice.getMeasures().asList());
+	}
 
 	/**
 	 * @param slice

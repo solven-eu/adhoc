@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.storage;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
@@ -33,15 +30,15 @@ import java.util.function.Consumer;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IValueConsumer {
+public interface IValueFunction<T> {
 
 	/**
 	 * If this holds a long, override this optional method to receive the primitive long
 	 * 
 	 * @param value
 	 */
-	default void onLong(long value) {
-		onObject(value);
+	default T onLong(long value) {
+		return onObject(value);
 	}
 
 	/**
@@ -49,8 +46,8 @@ public interface IValueConsumer {
 	 * 
 	 * @param value
 	 */
-	default void onDouble(double value) {
-		onObject(value);
+	default T onDouble(double value) {
+		return onObject(value);
 	}
 
 	/**
@@ -58,17 +55,10 @@ public interface IValueConsumer {
 	 * 
 	 * @param value
 	 */
-	default void onCharsequence(CharSequence value) {
-		onObject(value);
+	default T onCharsequence(CharSequence value) {
+		return onObject(value);
 	}
 
-	void onObject(Object object);
+	T onObject(Object object);
 
-	static Object getValue(Consumer<IValueConsumer> valueConsumerConsumer) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		valueConsumerConsumer.accept(refV::set);
-
-		return refV.get();
-	}
 }

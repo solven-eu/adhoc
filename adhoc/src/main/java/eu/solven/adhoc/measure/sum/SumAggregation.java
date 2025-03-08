@@ -61,8 +61,10 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	protected Object onlyOne(Object r) {
 		if (r == null) {
 			return null;
+		} else if (isLongLike(r)) {
+			return asLong(r);
 		} else if (isDoubleLike(r)) {
-			return r;
+			return asDouble(r);
 		} else if (r instanceof Collection<?> asCollection) {
 			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
 		} else {

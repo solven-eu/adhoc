@@ -120,7 +120,7 @@ export default {
 			  <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
 			    </div>
 			  </div>
-			  <div class="col-9" style="height: 600px;">
+			  <div class="col-9">
 			  	<AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
 			  </div>
 			</div>

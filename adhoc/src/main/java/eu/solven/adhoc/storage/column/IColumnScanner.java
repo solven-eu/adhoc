@@ -20,34 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
 
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.IValueConsumer;
 
 /**
- * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
+ * Used with a {@link ITabularView} to iterate over its rows.
  * 
- * Typically used by {@link Bucketor}.
+ * Used with a {@link ISliceToValue} to iterate on slices.
  * 
- * @param <T>
  * @author Benoit Lacelle
+ *
  */
-public interface IMultitypeColumnMergeable<T> extends IMultitypeColumnFastGet<T> {
-
-	@Deprecated(since = "Should rely on `IValueConsumer merge(T slice)`")
-	default void merge(T slice, Object v) {
-		merge(slice).onObject(v);
-	}
-
+public interface IColumnScanner<T> {
 	/**
-	 * Either the slice is missing, and this is similar to a `.append`, or the input value will be aggregated in the
-	 * already present aggregate.
 	 * 
-	 * The aggregation is defined at column instantiation.
-	 * 
-	 * @param slice
-	 * @param fragmentValue
+	 * @param key
+	 * @return a {@link IValueConsumer}
 	 */
-	IValueConsumer merge(T slice);
-
+	IValueConsumer onKey(T key);
 }

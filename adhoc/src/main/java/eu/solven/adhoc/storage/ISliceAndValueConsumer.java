@@ -35,5 +35,10 @@ public interface ISliceAndValueConsumer {
 		putSlice(slice).onObject(value);
 	}
 
+	/**
+	 * 
+	 * @param slice
+	 * @return a {@link IValueConsumer} into which the value to write has to be pushed.
+	 */
 	IValueConsumer putSlice(SliceAsMap slice);
 }

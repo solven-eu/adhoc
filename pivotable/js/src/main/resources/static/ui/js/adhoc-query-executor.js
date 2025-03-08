@@ -104,7 +104,7 @@ export default {
 			}
 			const orderedColumns = props.queryModel.selectedColumns2.slice(0);
 
-			return { groupBy: { columns: orderedColumns }, measureRefs: measures, debug: props.queryModel.debugQuery?.value, explain: props.queryModel.explainQuery?.value };
+			return { groupBy: { columns: orderedColumns }, measures: measures, debug: props.queryModel.debugQuery?.value, explain: props.queryModel.explainQuery?.value };
 		});
 
 		// Used for manual input of a JSON

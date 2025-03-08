@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -43,6 +42,13 @@ import eu.solven.adhoc.storage.MapBasedTabularView;
 public class TestTransformator_Combinator_Perf extends ADagTest implements IAdhocTestConstants {
 	int maxCardinality = 100_000;
 
+	// This will be edited by registerMeasures
+	String timesNMinus1 = k1Sum.getName();
+	// This will be edited by registerMeasures
+	String timesN = k1Sum.getName();
+
+	final int height = 16;
+
 	@BeforeEach
 	@Override
 	public void feedTable() {
@@ -51,17 +57,10 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 		}
 	}
 
-	@Test
-	public void testSumOfSum() {
+	@BeforeEach
+	public void registerMeasures() {
 		amb.addMeasure(k1Sum);
 
-		String timesNMinus1 = k1Sum.getName();
-		String timesN = k1Sum.getName();
-
-		// SUM(0..N) = N * (N-1)
-		long sum = LongMath.checkedMultiply(maxCardinality, maxCardinality - 1);
-
-		int height = 2;
 		for (int i = 0; i < height; i++) {
 			if (i == 0) {
 				timesNMinus1 = k1Sum.getName();
@@ -76,14 +75,34 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 					.combinationKey(SumCombination.KEY)
 					.build());
 		}
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(timesN
-		// k1Sum.getName() + "x" + (1 << height)
-		).build());
+
+	}
+
+	@Test
+	public void testGrandTotal() {
+		// SUM(0..N) = N * (N-1) / 2
+		long sum = LongMath.checkedMultiply(maxCardinality, maxCardinality - 1) / 2;
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(timesN).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(timesN, 0L + sum * height));
+				.containsEntry(Map.of(), Map.of(timesN, 0L + sum * (1L << height)));
+	}
+
+	@Test
+	public void testChainOfSums() {
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure(timesN).groupByAlso("row_index").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(maxCardinality)
+				.containsEntry(Map.of("row_index", 0), Map.of(timesN, 0L))
+				.containsEntry(Map.of("row_index", 1), Map.of(timesN, 0L + (1L << height)))
+				.containsEntry(Map.of("row_index", maxCardinality - 1),
+						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
 	}
 }

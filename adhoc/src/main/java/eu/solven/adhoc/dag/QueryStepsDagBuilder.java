@@ -136,7 +136,7 @@ public class QueryStepsDagBuilder {
 				// If the underlying is already pending for processing: skip it
 				&& !pending.contains(underlyingStep)).forEach(underlyingStep -> {
 					pending.add(underlyingStep);
-					log.info("pending: {}", underlyingStep);
+					log.debug("pending: {}", underlyingStep);
 				});
 	}
 

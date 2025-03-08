@@ -23,18 +23,19 @@
 package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.slice.SliceAsMapWithStep;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.storage.column.MultitypeNavigableColumn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,16 +46,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class ATransformator implements ITransformator {
 
-	protected abstract IMeasure getMeasure();
-
 	protected abstract AdhocQueryStep getStep();
+
+	protected IMeasure getMeasure() {
+		return getStep().getMeasure();
+	}
 
 	protected boolean isDebug() {
 		return getMeasure().isDebug() || getStep().isDebug();
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
+		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
@@ -64,13 +67,14 @@ public abstract class ATransformator implements ITransformator {
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
-			Consumer<SliceAsMapWithStep> sliceConsumer) {
-		Iterable<? extends SliceAsMap> distinctSlices = distinctSlices(underlyings);
+			Consumer<SliceAndMeasures> sliceConsumer) {
+		Stream<SliceAndMeasures> sliceAndMeasures = distinctSlices(underlyings);
 
-		int slicesDone = 0;
-		for (SliceAsMap coordinates : distinctSlices) {
-			SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(coordinates).queryStep(getStep()).build();
-
+		AtomicInteger slicesDone = new AtomicInteger();
+		sliceAndMeasures.forEach(slice -> {
+			if (isDebug()) {
+				log.info("[DEBUG] Processing slice={}", slice);
+			}
 			try {
 				sliceConsumer.accept(slice);
 			} catch (RuntimeException e) {
@@ -79,20 +83,20 @@ public abstract class ATransformator implements ITransformator {
 						e);
 			}
 
-			if (Integer.bitCount(++slicesDone) == 1) {
+			if (Integer.bitCount(slicesDone.incrementAndGet()) == 1) {
 				if (isDebug()) {
 					log.info("[DEBUG] Done processing {} slices", slicesDone);
 				}
 			}
-		}
+		});
 	}
 
-	protected Iterable<? extends SliceAsMap> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpers.distinctSlices(isDebug(), underlyings);
+	protected Stream<SliceAndMeasures> distinctSlices(List<? extends ISliceToValue> underlyings) {
+		return UnderlyingQueryStepHelpers.distinctSlices(getStep(), underlyings);
 	}
 
 	protected abstract void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output);
 }

@@ -20,22 +20,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.measure.transformator.iterator;
+
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import eu.solven.adhoc.record.ISlicedRecord;
+import eu.solven.adhoc.storage.IValueConsumer;
+import lombok.Builder;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * A {@link ISlicedRecord} based on a {@link List} of {@link SliceAndMeasure}.
  * 
- * @param <T>
  * @author Benoit Lacelle
  */
-public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
+@Builder
+public class SlicedRecordFromSlices implements ISlicedRecord {
+	final List<Consumer<IValueConsumer>> valueConsumers;
 
-	/**
-	 * Similar to a `.get` but the value is available through a {@link IValueConsumer}
-	 * 
-	 * @param slice
-	 * @param valueConsumer
-	 */
-	void onValue(T slice, IValueConsumer valueConsumer);
+	@Override
+	public boolean isEmpty() {
+		return valueConsumers.isEmpty();
+	}
+
+	@Override
+	public int size() {
+		return valueConsumers.size();
+	}
+
+	@Override
+	public void read(int index, IValueConsumer valueConsumer) {
+		valueConsumers.get(index).accept(valueConsumer);
+	}
+
+	@Override
+	public String toString() {
+		return IntStream.range(0, size()).<String>mapToObj(index -> {
+			Object v = IValueConsumer.getValue(vc -> read(index, vc));
+
+			return String.valueOf(v);
+		}).collect(Collectors.joining(", ", "[", "]"));
+	}
 
 }

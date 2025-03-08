@@ -135,10 +135,12 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 
 			NavigableSet<String> missingColumns =
 					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), cubeColumns));
-			return view.stream((slice, o) -> {
-				Map<String, ?> oAsMap = (Map<String, ? extends Object>) o;
+			return view.stream((slice) -> {
+				return o -> {
+					Map<String, ?> oAsMap = (Map<String, ? extends Object>) o;
 
-				return transcodeSliceToComposite(cube, slice, oAsMap, missingColumns);
+					return transcodeSliceToComposite(cube, slice, oAsMap, missingColumns);
+				};
 			});
 		});
 

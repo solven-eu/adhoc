@@ -30,11 +30,11 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.slice.SliceAsMapWithStep;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.storage.column.MultitypeHashColumn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,7 +74,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 			return v -> onSlice(slice, v, storage::append);
 		});
 
-		return SliceToValue.builder().storage(storage).build();
+		return SliceToValue.builder().column(storage).build();
 	}
 
 	private boolean isDebug() {
@@ -90,6 +90,6 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
+		return MultitypeHashColumn.<SliceAsMap>builder().build();
 	}
 }

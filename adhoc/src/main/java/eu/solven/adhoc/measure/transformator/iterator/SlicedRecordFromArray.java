@@ -20,44 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.record;
+package eu.solven.adhoc.measure.transformator.iterator;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
+import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.storage.IValueConsumer;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import lombok.Builder;
 
 /**
- * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
+ * A simple {@link ISlicedRecord} based on a {@link List}. It is sub-optimal for performance, but very useful for
+ * unit-tests.
  * 
  * @author Benoit Lacelle
  */
-public interface IAggregatedRecord {
-	Set<String> aggregateKeySet();
+@Builder
+public class SlicedRecordFromArray implements ISlicedRecord {
+	final List<?> measures;
 
-	void onAggregate(String aggregateName, IValueConsumer valueConsumer);
+	@Override
+	public boolean isEmpty() {
+		return measures.isEmpty();
+	}
 
-	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
-	Object getAggregate(String aggregateName);
+	@Override
+	public int size() {
+		return measures.size();
+	}
 
-	Set<String> groupByKeySet();
+	@Override
+	public void read(int index, IValueConsumer valueConsumer) {
+		valueConsumer.onObject(measures.get(index));
+	}
 
-	Object getGroupBy(String columnName);
+	@Override
+	public String toString() {
+		return measures.toString();
+	}
 
-	/**
-	 * 
-	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
-	 */
-	Map<String, ?> asMap();
-
-	boolean isEmpty();
-
-	Map<String, ?> getGroupBys();
-
-	IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
-
-	IAggregatedRecord transcode(ICustomTypeManager customTypeManager);
 }

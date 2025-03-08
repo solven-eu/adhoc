@@ -275,3 +275,4 @@ This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example i
 - [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
 - [Documentation] `MeasuresSetFromResource` should enable generation of Graphiviz `.dot` files
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
+- [EXPLAIN] Provide metriuc about memory usage (e.g. footprint from table, footprint for each queryStep)

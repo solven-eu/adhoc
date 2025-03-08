@@ -23,29 +23,50 @@
 package eu.solven.adhoc.storage;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IColumnValueConverter;
 
 /**
  * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
  * computed by a {@link ITransformator}.
  */
 public interface ISliceToValue {
+	/**
+	 * 
+	 * @return true if `keySetStream` is already sorted
+	 */
+	boolean isSorted();
+
+	long size();
+
+	boolean isEmpty();
+
 	Stream<SliceAsMap> keySetStream();
 
 	Set<SliceAsMap> slicesSet();
 
-	long size();
-
 	void onValue(SliceAsMap slice, IValueConsumer consumer);
 
-	void forEachSlice(IRowScanner<SliceAsMap> rowScanner);
+	void forEachSlice(IColumnScanner<SliceAsMap> rowScanner);
 
-	<U> Stream<U> stream(IRowConverter<SliceAsMap, U> rowScanner);
+	/**
+	 * 
+	 * @param <U>
+	 * @param rowConverter
+	 *            knows how to convert a {@link SliceAsMap} and a value through a {@link IValueConsumer} into a custom
+	 *            object
+	 * @return a {@link Stream} of objects built by the rowConverter
+	 */
+	<U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowConverter);
+
+	Stream<SliceAndMeasure<SliceAsMap>> stream();
 
 	/**
 	 * 
@@ -55,11 +76,11 @@ public interface ISliceToValue {
 	 * @return the value as {@link Object} on given slice
 	 */
 	static <T> Object getValue(ISliceToValue storage, IAdhocSlice slice) {
-		AtomicReference<Object> refV = new AtomicReference<>();
+		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
 
-		storage.onValue(slice.getAdhocSliceAsMap(), refV::set);
+		Consumer<IValueConsumer> valueConsumerConsumer = valueConsumer -> storage.onValue(sliceAsMap, valueConsumer);
 
-		return refV.get();
+		return IValueConsumer.getValue(valueConsumerConsumer);
 	}
 
 }

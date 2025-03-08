@@ -37,6 +37,8 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.measure.aggregation.collection.MapAggregator;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IColumnValueConverter;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -66,7 +68,7 @@ public class MapBasedTabularView implements ITabularView {
 			return asMapBased;
 		}
 
-		IRowScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
 			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
 
 			return o -> {
@@ -100,17 +102,17 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public void acceptScanner(IRowScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
 			rowScanner.onKey(SliceAsMap.fromMap(k)).onObject(v);
 		});
 	}
 
 	@Override
-	public <U> Stream<U> stream(IRowConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
 		return coordinatesToValues.entrySet()
 				.stream()
-				.map(e -> rowScanner.convertObject(SliceAsMap.fromMap(e.getKey()), e.getValue()));
+				.map(e -> rowScanner.prepare(SliceAsMap.fromMap(e.getKey())).onObject(e.getValue()));
 	}
 
 	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {

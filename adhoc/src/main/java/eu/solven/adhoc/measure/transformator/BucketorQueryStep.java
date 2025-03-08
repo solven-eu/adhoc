@@ -36,16 +36,16 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeColumnMergeable;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorageMergeable;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.storage.column.MultitypeHashMergeableColumn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,11 +68,6 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 		return operatorsFactory.makeAggregation(bucketor.getAggregationKey());
 	}
 
-	@Override
-	protected IMeasure getMeasure() {
-		return bucketor;
-	}
-
 	public List<String> getUnderlyingNames() {
 		return bucketor.getUnderlyings();
 	}
@@ -93,26 +88,26 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeColumnMergeable<SliceAsMap> aggregatingView =
-				MultiTypeStorageMergeable.<SliceAsMap>builder().aggregation(agg).build();
+		IMultitypeMergeableColumn<SliceAsMap> aggregatingView =
+				MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 
 		ICombination combinator = combinationSupplier.get();
 
 		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
 
-		return SliceToValue.builder().storage(aggregatingView).build();
+		return SliceToValue.builder().column(aggregatingView).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combinator,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
+		List<?> underlyingVs = slice.getMeasures().asList();
 
 		Object value;
 		try {
-			value = combinator.combine(slice, underlyingVs);
+			value = combinator.combine(slice.getSlice(), underlyingVs);
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException(
 					"Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
@@ -136,13 +131,13 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 		}
 
 		if (value != null) {
-			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice);
+			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
 			}
 
-			output.putSlice(SliceAsMap.fromMap(outputCoordinate), value);
+			output.putSlice(SliceAsMap.fromMap(outputCoordinate)).onObject(value);
 		}
 	}
 

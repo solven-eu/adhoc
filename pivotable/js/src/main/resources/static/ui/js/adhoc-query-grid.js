@@ -107,7 +107,7 @@ export default {
 				}
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
-				const measureNames = props.tabularView.query.measureRefs;
+				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
 				for (let measureName of measureNames) {
 					const column = { id: measureName, name: measureName, field: measureName, sortable: sortable, asyncPostRender: renderCallback };
@@ -232,7 +232,7 @@ export default {
 				updateRowSpan(view.coordinates.length, null,true);
 			}
 			
-			console.log("rowSpans: ", metadata);
+			console.debug("rowSpans: ", metadata);
 
 			grid.setColumns(gridColumns);
 			
@@ -326,7 +326,7 @@ export default {
 		return { rendering, gridMetadata };
 	},
 	template: /* HTML */ `
-		<div>
+		<div >
 			<div class="spinner-grow" role="status" v-if="loading">
 			  <span class="visually-hidden">Loading...</span>
 			</div>
@@ -335,13 +335,12 @@ export default {
 				{{row}} -> {{tabularView.grid.values[index]}}
 			</div-->
 			
-			<div>
+			<div class="">
 			  <div style="width:100%;">
-			    <label>SlickGrid</label>
+			    <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
 			  </div>
-			  <div :id="domId" style="width:100%;height:500px;"></div>
+			  <div :id="domId" style="width:100%;" class="vh-100"></div>
 			</div>
-			  rendering = {{rendering}} ({{gridMetadata}} rows)
         </div>
     `,
 };

@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -46,6 +47,11 @@ public class AggregatedRecordOverMaps implements IAggregatedRecord {
 	@Override
 	public Object getAggregate(String aggregateName) {
 		return aggregates.get(aggregateName);
+	}
+
+	@Override
+	public void onAggregate(String aggregateName, IValueConsumer valueConsumer) {
+		valueConsumer.onObject(getAggregate(aggregateName));
 	}
 
 	@Override

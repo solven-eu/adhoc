@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -39,7 +40,7 @@ import lombok.ToString;
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
 @ToString
-public final class SliceAsMap implements IAdhocSlice {
+public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	final Map<String, ?> asMap;
@@ -123,5 +124,10 @@ public final class SliceAsMap implements IAdhocSlice {
 		}
 		SliceAsMap other = (SliceAsMap) obj;
 		return Objects.equals(asMap, other.asMap);
+	}
+
+	@Override
+	public int compareTo(SliceAsMap o) {
+		return MapComparators.mapComparator().compare(this.asMap, o.asMap);
 	}
 }

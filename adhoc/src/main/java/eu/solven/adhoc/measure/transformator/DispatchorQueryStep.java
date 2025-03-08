@@ -36,16 +36,16 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeColumnMergeable;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorageMergeable;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.storage.column.MultitypeHashMergeableColumn;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -56,13 +56,9 @@ import lombok.extern.slf4j.Slf4j;
 public class DispatchorQueryStep extends ATransformator implements ITransformator {
 	final Dispatchor dispatchor;
 	final IOperatorsFactory transformationFactory;
+
 	@Getter
 	final AdhocQueryStep step;
-
-	@Override
-	protected IMeasure getMeasure() {
-		return dispatchor;
-	}
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
@@ -92,7 +88,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		throw new UnsupportedOperationException(
@@ -109,26 +105,26 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
 
-		IMultitypeColumnMergeable<SliceAsMap> aggregatingView =
-				MultiTypeStorageMergeable.<SliceAsMap>builder().aggregation(agg).build();
+		IMultitypeMergeableColumn<SliceAsMap> aggregatingView =
+				MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 
 		IDecomposition decomposition = makeDecomposition();
 
 		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, aggregatingView));
 
-		return SliceToValue.builder().storage(aggregatingView).build();
+		return SliceToValue.builder().column(aggregatingView).build();
 	}
 
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			IDecomposition decomposition,
-			IMultitypeColumnMergeable<SliceAsMap> aggregatingView) {
-		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
+			IMultitypeMergeableColumn<SliceAsMap> aggregatingView) {
+		List<?> underlyingVs = slice.getMeasures().asList();
 
 		Object value = underlyingVs.getFirst();
 
 		if (value != null) {
-			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice, value);
+			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice.getSlice(), value);
 
 			// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
 			// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
@@ -139,7 +135,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 				Set<Set<String>> decompositionGroupBys =
 						decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
 
-				NavigableSet<String> groupByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+				NavigableSet<String> groupByColumns =
+						slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
 				if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {
 					// all group columns are expressed in groupBy
 					isMultiGroupSlice = false;
@@ -159,7 +156,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 					log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 				}
 
-				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice, fragmentCoordinate);
+				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
 
 				if (
 				// Not multiGroupSlice: the group is single and clearly stated

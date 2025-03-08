@@ -20,44 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.record;
+package eu.solven.adhoc.storage.column;
 
-import java.util.Map;
-import java.util.Set;
-
+import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.storage.IValueConsumer;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 
 /**
- * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
+ * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
  * 
+ * Typically used by {@link Bucketor}.
+ * 
+ * @param <T>
  * @author Benoit Lacelle
  */
-public interface IAggregatedRecord {
-	Set<String> aggregateKeySet();
+public interface IMultitypeMergeableColumn<T> extends IMultitypeColumnFastGet<T> {
 
-	void onAggregate(String aggregateName, IValueConsumer valueConsumer);
-
-	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
-	Object getAggregate(String aggregateName);
-
-	Set<String> groupByKeySet();
-
-	Object getGroupBy(String columnName);
+	@Deprecated(since = "Should rely on `IValueConsumer merge(T slice)`")
+	default void merge(T slice, Object v) {
+		merge(slice).onObject(v);
+	}
 
 	/**
+	 * Either the slice is missing, and this is similar to a `.append`, or the input value will be aggregated in the
+	 * already present aggregate.
 	 * 
-	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
+	 * The aggregation is defined at column instantiation.
+	 * 
+	 * @param slice
+	 * @param fragmentValue
 	 */
-	Map<String, ?> asMap();
+	IValueConsumer merge(T slice);
 
-	boolean isEmpty();
-
-	Map<String, ?> getGroupBys();
-
-	IAggregatedRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
-
-	IAggregatedRecord transcode(ICustomTypeManager customTypeManager);
 }

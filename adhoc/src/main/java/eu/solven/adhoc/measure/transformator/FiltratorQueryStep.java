@@ -30,14 +30,14 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +51,8 @@ import lombok.extern.slf4j.Slf4j;
 public class FiltratorQueryStep extends ATransformator {
 	final Filtrator filtrator;
 	final IOperatorsFactory transformationFactory;
+
+	@Getter
 	final AdhocQueryStep step;
 
 	public List<String> getUnderlyingNames() {
@@ -79,32 +81,22 @@ public class FiltratorQueryStep extends ATransformator {
 
 		forEachDistinctSlice(underlyings, new FindFirstCombination(), storage::append);
 
-		return SliceToValue.builder().storage(storage).build();
-	}
-
-	@Override
-	protected IMeasure getMeasure() {
-		return filtrator;
-	}
-
-	@Override
-	protected AdhocQueryStep getStep() {
-		return step;
+		return SliceToValue.builder().column(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
+		List<?> underlyingVs = slice.getMeasures().asList();
 
-		Object value = combination.combine(slice, underlyingVs);
+		Object value = combination.combine(slice.getSlice(), underlyingVs);
 
 		if (isDebug()) {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, getMeasure().getName());
 		}
 
-		output.putSlice(slice.getAdhocSliceAsMap()).onObject(value);
+		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
 	}
 }

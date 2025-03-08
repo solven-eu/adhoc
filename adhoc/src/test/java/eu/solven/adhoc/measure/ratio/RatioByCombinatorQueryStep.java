@@ -28,16 +28,15 @@ import java.util.List;
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.ATransformator;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.storage.column.MultitypeHashColumn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,13 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 public class RatioByCombinatorQueryStep extends ATransformator {
 	final RatioByCombinator combinator;
 	final IOperatorsFactory transformationFactory;
+
 	@Getter
 	final AdhocQueryStep step;
-
-	@Override
-	protected IMeasure getMeasure() {
-		return combinator;
-	}
 
 	public List<String> getUnderlyingNames() {
 		return combinator.getUnderlyingNames();
@@ -90,27 +85,27 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 
 		forEachDistinctSlice(underlyings, transformation, storage::append);
 
-		return SliceToValue.builder().storage(storage).build();
+		return SliceToValue.builder().column(storage).build();
 	}
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
+			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		List<Object> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, slice)).toList();
+		List<?> underlyingVs = slice.getMeasures().asList();
 
-		Object value = combination.combine(slice, underlyingVs);
+		Object value = combination.combine(slice.getSlice(), underlyingVs);
 
 		if (isDebug()) {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getSlice().getAdhocSliceAsMap(), value);
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultiTypeStorageFastGet.<SliceAsMap>builder().build();
+		return MultitypeHashColumn.<SliceAsMap>builder().build();
 	}
 
 }

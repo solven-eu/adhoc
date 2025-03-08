@@ -25,7 +25,6 @@ package eu.solven.adhoc.dag;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -41,6 +39,8 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -69,14 +69,14 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.AggregatingMeasurators;
-import eu.solven.adhoc.storage.IMultitypeColumnFastGet;
-import eu.solven.adhoc.storage.IRowScanner;
+import eu.solven.adhoc.storage.AggregatingColumns;
+import eu.solven.adhoc.storage.IMultitypeGrid;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
-import eu.solven.adhoc.storage.MultiTypeStorageFastGet;
 import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.storage.column.IColumnScanner;
+import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -200,14 +200,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
 			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream,
 			QueryStepsDag fromQueriedToAggregates) {
-		Map<String, Set<Aggregator>> columnToAggregators =
+		SetMultimap<String, Aggregator> columnToAggregators =
 				columnToAggregators(executingQueryContext, fromQueriedToAggregates);
 
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 
 		// This is the only step consuming the input stream
 		tableToRowsStream.forEach((tableQuery, rowsStream) -> {
-			Map<AdhocQueryStep, SliceToValue> oneQueryStepToValues =
+			Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
 					aggregateStreamToAggregates(executingQueryContext, tableQuery, rowsStream, columnToAggregators);
 
 			queryStepToValues.putAll(oneQueryStepToValues);
@@ -229,9 +229,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queryStepToValues;
 	}
 
-	protected Map<String, Set<Aggregator>> columnToAggregators(ExecutingQueryContext executingQueryContext,
+	protected SetMultimap<String, Aggregator> columnToAggregators(ExecutingQueryContext executingQueryContext,
 			QueryStepsDag dagHolder) {
-		Map<String, Set<Aggregator>> columnToAggregators = new LinkedHashMap<>();
+		SetMultimap<String, Aggregator> columnToAggregators =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
 		dag.vertexSet()
@@ -242,7 +243,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					measure = executingQueryContext.resolveIfRef(measure);
 
 					if (measure instanceof Aggregator a) {
-						columnToAggregators.merge(a.getColumnName(), Set.of(a), UnionSetAggregator::unionSet);
+						columnToAggregators.put(a.getColumnName(), a);
 					} else if (measure instanceof EmptyMeasure) {
 						// ???
 					} else if (measure instanceof Columnator) {
@@ -288,7 +289,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
-				IRowScanner<SliceAsMap> rowScanner = slice -> {
+				IColumnScanner<SliceAsMap> rowScanner = slice -> {
 					return mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName());
 				};
 
@@ -298,34 +299,25 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return mapBasedTabularView;
 	}
 
-	protected Map<AdhocQueryStep, SliceToValue> aggregateStreamToAggregates(ExecutingQueryContext executingQueryContext,
+	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
+			ExecutingQueryContext executingQueryContext,
 			TableQuery query,
 			IAggregatedRecordStream stream,
-			Map<String, Set<Aggregator>> columnToAggregators) {
+			SetMultimap<String, Aggregator> columnToAggregators) {
 
-		AggregatingMeasurators<SliceAsMap> coordinatesToAggregates =
+		IMultitypeGrid<SliceAsMap> coordinatesToAggregates =
 				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
 
 		return toImmutableChunks(query, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, SliceToValue> toImmutableChunks(TableQuery tableQuery,
-			AggregatingMeasurators<SliceAsMap> coordinatesToAggregates) {
-		Map<AdhocQueryStep, SliceToValue> queryStepToValues = new HashMap<>();
+	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(TableQuery tableQuery,
+			IMultitypeGrid<SliceAsMap> coordinatesToAggregates) {
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
 		tableQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
 
-			IMultitypeColumnFastGet<SliceAsMap> storage =
-					coordinatesToAggregates.getAggregatorToStorage().get(aggregator);
-
-			if (storage == null) {
-				// Typically happens when a filter reject completely one of the underlying
-				// measure
-				storage = MultiTypeStorageFastGet.empty();
-			} else {
-				// Typically converts a CountHolder into the count as a `long`
-				storage.purgeAggregationCarriers();
-			}
+			IMultitypeColumnFastGet<SliceAsMap> storage = coordinatesToAggregates.closeColumn(aggregator);
 
 			eventBus.post(
 					QueryStepIsCompleted.builder().querystep(queryStep).nbCells(storage.size()).source(this).build());
@@ -334,7 +326,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to
 			// spare a copy to an immutable container
-			queryStepToValues.put(queryStep, SliceToValue.builder().storage(storage).build());
+			queryStepToValues.put(queryStep, SliceToValue.builder().column(storage).build());
 		});
 		return queryStepToValues;
 	}
@@ -362,7 +354,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		});
 	}
 
-	private void processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,
+	protected void processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,
 			AdhocQueryStep queryStep,
 			List<AdhocQueryStep> underlyingSteps,
 			IMeasure measure) {
@@ -388,7 +380,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			} catch (RuntimeException e) {
 				StringBuilder describeStep = new StringBuilder();
 
-				describeStep.append("Issue computing columns for:");
+				describeStep.append("Issue computing columns for:").append("\r\n");
 
 				// First, we print only measure as a simplistic shorthand of the step
 				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
@@ -439,38 +431,41 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected AggregatingMeasurators<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
+	protected IMultitypeGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
 			IAggregatedRecordStream stream,
-			Map<String, Set<Aggregator>> columnToAggregators) {
+			SetMultimap<String, Aggregator> columnToAggregators) {
 
-		AggregatingMeasurators<SliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
+		IMultitypeGrid<SliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
 
-		Set<String> relevantColumns = new HashSet<>();
-		// We may receive raw columns,to be aggregated by ourselves
-		relevantColumns.addAll(columnToAggregators.keySet());
-		// We may also receive pre-aggregated columns
-		columnToAggregators.values()
-				.stream()
-				.flatMap(Collection::stream)
-				.map(Aggregator::getName)
-				.forEach(relevantColumns::add);
+		TableAggregatesMetadata tableAggregatesMetadata =
+				TableAggregatesMetadata.from(executingQueryContext, columnToAggregators);
+
+		AggregatedRecordLogger aggregatedRecordLogger =
+				AggregatedRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
 
 		// TODO We'd like to log on the last row, to have the number if row actually
 		// streamed
-		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate = prepareStreamLogger(tableQuery);
+		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate =
+				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			stream.asMap().forEach(input -> {
-				forEachStreamedRow(executingQueryContext,
-						tableQuery,
-						columnToAggregators,
-						input,
-						peekOnCoordinate,
-						relevantColumns,
-						coordinatesToAgg);
-			});
+			stream.asMap()
+					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
+					// For any reason, `closeHandler` is not called automatically on a terminal operation
+					// .onClose(aggregatedRecordLogger.closeHandler())
+					.forEach(input -> {
+						forEachRow(executingQueryContext,
+								tableQuery,
+								input,
+								peekOnCoordinate,
+								tableAggregatesMetadata,
+								coordinatesToAgg);
+					});
+
+			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
+			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
 			throw new RuntimeException("Issue processing stream from %s".formatted(stream), e);
 		}
@@ -479,41 +474,16 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	}
 
-	private AggregatingMeasurators<SliceAsMap> makeAggregatingMeasures() {
-		return new AggregatingMeasurators<>(operatorsFactory);
+	protected IMultitypeGrid<SliceAsMap> makeAggregatingMeasures() {
+		return new AggregatingColumns<>(operatorsFactory);
 	}
 
-	protected BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
-		AtomicInteger nbIn = new AtomicInteger();
-		AtomicInteger nbOut = new AtomicInteger();
-
-		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
-
-			if (optCoordinates.isEmpty()) {
-				// Skip this input as it is incompatible with the groupBy
-				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.
-				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
-				int currentOut = nbOut.incrementAndGet();
-				if (tableQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
-					log.info("Rejected row #{}: {}", currentOut, input);
-				}
-			} else {
-				int currentIn = nbIn.incrementAndGet();
-				if (tableQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
-					log.info("Accepted row #{}: {}", currentIn, input);
-				}
-			}
-		};
-		return peekOnCoordinate;
-	}
-
-	protected void forEachStreamedRow(ExecutingQueryContext executingQueryContext,
+	protected void forEachRow(ExecutingQueryContext executingQueryContext,
 			IHasGroupBy tableQuery,
-			Map<String, Set<Aggregator>> columnToAggregators,
 			IAggregatedRecord tableRow,
 			BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate,
-			Set<String> aggregatorColumns,
-			AggregatingMeasurators<SliceAsMap> coordinatesToAgg) {
+			TableAggregatesMetadata aggregatesMetadata,
+			IMultitypeGrid<SliceAsMap> sliceToAgg) {
 		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
@@ -524,22 +494,24 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		SliceAsMap coordinates = optCoordinates.get();
 
-		for (String aggregatedColumn : aggregatorColumns) {
-			Object v = tableRow.getAggregate(aggregatedColumn);
+		Set<String> aggregatedMeasures = aggregatesMetadata.getMeasures();
+
+		for (String aggregatedMeasure : aggregatedMeasures) {
+			Object v = tableRow.getAggregate(aggregatedMeasure);
 			if (v != null) {
-				Set<Aggregator> aggs = columnToAggregators.get(aggregatedColumn);
-
-				if (aggs == null) {
-					// DB has done the aggregation for us
-					Optional<Aggregator> optAgg = isAggregator(columnToAggregators, aggregatedColumn);
-
-					optAgg.ifPresent(agg -> {
-						coordinatesToAgg.contributeAggregate(agg, coordinates, v);
-					});
-				} else {
+				Set<Aggregator> rawAggregations = aggregatesMetadata.getRaw(aggregatedMeasure);
+				if (!rawAggregations.isEmpty()) {
+					// What we receive is actually an underlying column, to be dispatched to the N aggregations
 					// The DB provides the column raw value, and not an aggregated value
 					// So we aggregate row values ourselves (e.g. InMemoryTable)
-					aggs.forEach(agg -> coordinatesToAgg.contributeRaw(agg, coordinates, v));
+					rawAggregations.forEach(agg -> sliceToAgg.contributeRaw(agg, coordinates, v));
+				}
+
+				Aggregator preAggregation = aggregatesMetadata.getAggregation(aggregatedMeasure);
+				if (preAggregation != null) {
+					// We received a pre-aggregated measure
+					// DB has seemingly done the aggregation for us
+					sliceToAgg.contributePre(preAggregation, coordinates, v);
 				}
 			}
 		}

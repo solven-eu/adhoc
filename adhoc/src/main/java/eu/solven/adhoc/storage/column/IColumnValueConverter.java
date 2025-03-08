@@ -20,19 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.storage.column;
+
+import eu.solven.adhoc.storage.IValueFunction;
 
 /**
- * Used with a {@link ITabularView} to iterate over its rows.
+ * Enables conversion from given types (including primitive types) into a uniform type.
  * 
+ * @param <T>
+ *            the type of some key
+ * @param <U>
+ *            the uniform output
  * @author Benoit Lacelle
- *
  */
-public interface IRowScanner<T> {
-	/**
-	 * 
-	 * @param key
-	 * @return a {@link IValueConsumer}
-	 */
-	IValueConsumer onKey(T key);
+public interface IColumnValueConverter<T, U> {
+
+	// default U convertLong(T key, long value) {
+	// return convertObject(key, value);
+	// }
+	//
+	// default U convertDouble(T key, double value) {
+	// return convertObject(key, value);
+	// }
+	//
+	// default U convertCharSequence(T key, CharSequence value) {
+	// return convertObject(key, value);
+	// }
+	//
+	// U convertObject(T key, Object value);
+
+	// U convertObject(T key, IValueConsumer valueConsumer);
+
+	IValueFunction<U> prepare(T key);
+
 }

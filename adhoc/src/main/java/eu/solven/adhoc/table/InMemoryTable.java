@@ -105,7 +105,10 @@ public class InMemoryTable implements IAdhocTableWrapper {
 					tableQuery.getAggregators()
 							.stream()
 							.filter(a -> a.getColumnName().equals(aggregatedColumn))
-							.forEach(a -> aggregates.put(a.getName(), 1L));
+							// Return the column for homogeneity regarding InMemoryTable can not aggregate any column
+							// We could also return `a.getName()` to test a table knowing how to do a subset of
+							// aggregations
+							.forEach(a -> aggregates.put(a.getColumnName(), 1L));
 				}
 			});
 
