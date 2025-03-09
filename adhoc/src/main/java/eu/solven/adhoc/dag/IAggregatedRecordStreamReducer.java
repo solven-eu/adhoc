@@ -20,41 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.record.IAggregatedRecordStream;
+import eu.solven.adhoc.slice.SliceAsMap;
+import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
 
-public interface IMultitypeGrid<T> {
+public interface IAggregatedRecordStreamReducer {
 
-	/**
-	 * Useful when the DB has not done the aggregation.
-	 * 
-	 * @param aggregator
-	 * @param key
-	 * @param v
-	 */
-	void contributeRaw(Aggregator aggregator, T key, Object v);
-
-	/**
-	 * Useful when the DB has done the aggregation
-	 * 
-	 * Especially important for {@link IHasCarriers}
-	 * 
-	 * @param aggregator
-	 * @param key
-	 * @param v
-	 */
-	void contributePre(Aggregator aggregator, T key, Object v);
-
-	/**
-	 * Will typically handle {@link IAggregationCarrier}.
-	 * 
-	 * @param aggregator
-	 * @return the close {@link IMultitypeColumnFastGet}
-	 */
-	IMultitypeColumnFastGet<T> closeColumn(Aggregator aggregator);
+	IMultitypeMergeableGrid<SliceAsMap> reduce(IAggregatedRecordStream stream);
 
 }

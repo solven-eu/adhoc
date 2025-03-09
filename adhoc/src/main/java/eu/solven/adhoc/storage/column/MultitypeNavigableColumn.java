@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * This {@link IMultitypeColumn} relies on {@link List} and {@link Arrays}.
- * 
+ * <p>
  * The key has to be {@link Comparable}, so that `stream().sorted()` is a no-op, for performance reasons.
  *
  * @param <T>
@@ -68,6 +68,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	// This List has only distinct elements
 	@Default
 	@NonNull
+	// TODO Capacity strategy?
 	final List<T> keys = new ArrayList<>();
 
 	// TODO How could we manage different types efficiently?
@@ -119,14 +120,21 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 			// Do not check the assertion on each .put else it would get quite slow
 			if (Integer.bitCount(keys.size()) == 1) {
-				assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
+				// assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
 			}
 		};
 	}
 
+	protected void doLock() {
+		if (!locked) {
+			locked = true;
+			assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
+		}
+	}
+
 	protected void checkLock(T key) {
 		if (locked) {
-			throw new IllegalStateException("This is locked. Can bnot append %s".formatted(key));
+			throw new IllegalStateException("This is locked. Can not append %s".formatted(key));
 		}
 	}
 
@@ -147,7 +155,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public void scan(IColumnScanner<T> rowScanner) {
-		locked = true;
+		doLock();
 
 		int size = keys.size();
 		for (int i = 0; i < size; i++) {
@@ -160,7 +168,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-		locked = true;
+		doLock();
 
 		return LongStream.range(0, size())
 				.mapToInt(Ints::checkedCast)
@@ -169,7 +177,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public Stream<SliceAndMeasure<T>> stream() {
-		locked = true;
+		doLock();
 
 		return LongStream.range(0, size())
 				.mapToInt(Ints::checkedCast)
@@ -191,7 +199,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public Stream<T> keyStream() {
-		locked = true;
+		doLock();
 
 		// No need for .distinct as each key is guaranteed to appear in a single column
 		return StreamSupport.stream(Spliterators.spliterator(keys, // keys is guaranteed to hold distinct value
@@ -272,7 +280,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			sm.getValueConsumerConsumer().accept(o -> keyToValue.add(Map.entry(sm.getSlice(), o)));
 		});
 
-		keyToValue.sort(Comparator.comparing(entry -> entry.getKey()));
+		// https://stackoverflow.com/questions/17328077/difference-between-arrays-sort-and-arrays-parallelsort
+		// This section typically takes from 100ms to 1s for 100k slices
+		keyToValue.sort(Map.Entry.comparingByKey());
 
 		final ImmutableList.Builder<T> keys = ImmutableList.builderWithExpectedSize(size);
 		final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);

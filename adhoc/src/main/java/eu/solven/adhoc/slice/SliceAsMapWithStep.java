@@ -40,7 +40,7 @@ import lombok.ToString;
 @ToString
 public class SliceAsMapWithStep implements ISliceWithStep {
 	@NonNull
-	final IAdhocSlice slice;
+	final SliceAsMap slice;
 
 	@NonNull
 	final AdhocQueryStep queryStep;
@@ -69,7 +69,9 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 
 	@Override
 	public SliceAsMap getAdhocSliceAsMap() {
-		return SliceAsMap.fromMap(slice.getCoordinates());
+		// BEWARE Make sure we return an existing SliceAsMap, and not creating a new instance
+		// We want to minimize the number of different SliceAsMap through a query
+		return slice;
 	}
 
 	@Override

@@ -23,6 +23,8 @@
 package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -71,36 +73,55 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 		// }
 		// });
 
-		return v -> {
-			onValue(key, existingAggregate -> {
-				Object newAggregate = aggregation.aggregate(existingAggregate, v);
+		return new IValueConsumer() {
+			@Override
+			public void onLong(long v) {
+				onValue(key, new IValueConsumer() {
+					@Override
+					public void onLong(long existingAggregate) {
+						if (aggregation instanceof ILongAggregation longAggregation) {
+							long newAggregate = longAggregation.aggregateLongs(existingAggregate, v);
 
-				if (existingAggregate != null) {
-					clearKey(key);
-				}
-				append(key, newAggregate);
-			});
+							// No need to clear as we replace a long with a long
+							unsafePut(key).onLong(newAggregate);
+						} else {
+							Object newAggregate = aggregation.aggregate(existingAggregate, v);
+
+							if (SumAggregation.isLongLike(newAggregate)) {
+								long newAggregateAsLong = SumAggregation.asLong(newAggregate);
+								unsafePut(key).onLong(newAggregateAsLong);
+							} else {
+								// Clear long
+								clearKey(key);
+								unsafePut(key).onObject(newAggregate);
+							}
+						}
+					}
+
+					@Override
+					public void onObject(Object existingAggregate) {
+						Object newAggregate = aggregation.aggregate(existingAggregate, v);
+
+						if (existingAggregate != null) {
+							clearKey(key);
+						}
+						unsafePut(key).onObject(newAggregate);
+					}
+				});
+			}
+
+			@Override
+			public void onObject(Object v) {
+				onValue(key, existingAggregate -> {
+					Object newAggregate = aggregation.aggregate(existingAggregate, v);
+
+					if (existingAggregate != null) {
+						clearKey(key);
+					}
+					append(key).onObject(newAggregate);
+				});
+			}
 		};
-
-		// Aggregate received longs together
-		// if (SumAggregator.isLongLike(v)) {
-		// long vAsPrimitive = SumAggregator.asLong(v);
-		//
-		// mergeLong(key, vAsPrimitive);
-		// }
-		// // Aggregate received doubles together
-		// else if (SumAggregator.isDoubleLike(v)) {
-		// double vAsPrimitive = SumAggregator.asDouble(v);
-		//
-		// mergeDouble(key, vAsPrimitive);
-		// }
-		// // Aggregate received objects together
-		//
-		// else if (v instanceof CharSequence vAsCharSequence) {
-		// mergeCharSequence(key, vAsCharSequence);
-		// } else {
-		// mergeObject(key, v);
-		// }
 	}
 
 	// private void mergeObject(T key, Object v) {

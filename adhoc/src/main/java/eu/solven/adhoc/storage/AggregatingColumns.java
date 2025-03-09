@@ -43,7 +43,7 @@ import lombok.Value;
  * @param <T>
  */
 @Value
-public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeGrid<T> {
+public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMergeableGrid<T> {
 	// The table can not do aggregations, so Adhoc does the aggregation
 	Map<Aggregator, IMultitypeMergeableColumn<T>> aggregatorToRawAggregated = new HashMap<>();
 	// The table can do aggregations, so Adhoc does not need to do the aggregation
@@ -69,28 +69,40 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeGr
 
 	@Override
 	public void contributeRaw(Aggregator aggregator, T key, Object v) {
+		contributeRaw(aggregator, key).onObject(v);
+	}
+
+	@Override
+	public IValueConsumer contributeRaw(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 
 		IMultitypeMergeableColumn<T> column =
 				aggregatorToRawAggregated.computeIfAbsent(aggregator, k -> makeRawColumn(agg));
 
-		column.merge(key).onObject(v);
+		return column.merge(key);
 	}
 
 	@Override
 	public void contributePre(Aggregator aggregator, T key, Object v) {
+		contributePre(aggregator, key).onObject(v);
+	}
+
+	@Override
+	public IValueConsumer contributePre(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 
 		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 
-		if (agg instanceof IHasCarriers hasCarriers) {
-			// Wrap the aggregate from table into the aggregation custom wrapper
-			v = hasCarriers.wrap(v);
-		}
+		return v -> {
+			if (agg instanceof IHasCarriers hasCarriers) {
+				// Wrap the aggregate from table into the aggregation custom wrapper
+				v = hasCarriers.wrap(v);
+			}
 
-		column.append(key).onObject(v);
+			column.append(key).onObject(v);
+		};
 	}
 
 	public long size(Aggregator aggregator) {

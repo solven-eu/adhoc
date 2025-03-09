@@ -128,6 +128,10 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 
 	@Override
 	public int compareTo(SliceAsMap o) {
-		return MapComparators.mapComparator().compare(this.asMap, o.asMap);
+		if (this.asMap instanceof AdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
+			return adhocMap.compareTo(otherAdhocMap);
+		} else {
+			return MapComparators.mapComparator().compare(this.asMap, o.asMap);
+		}
 	}
 }

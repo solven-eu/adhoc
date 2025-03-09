@@ -36,12 +36,10 @@ import eu.solven.adhoc.slice.IAdhocSlice;
  * It is immutable as it is used as key in {@link Map}. it may typically cache the hashCode.
  * 
  * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
- * (https://openjdk.org/jeps/180).
+ * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMap extends Map<String, Object>
-// , Comparable<AdhocMap>
-{
+public interface IAdhocMap extends Map<String, Object>, Comparable<AdhocMap> {
 
 }

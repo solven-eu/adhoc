@@ -157,8 +157,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe
-				.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), measureBag, table);
+		ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1SumSquared).build(), measureBag, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -179,9 +178,7 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		measureBag.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).groupByAlso("a").debug(true).build(),
-						measureBag,
-						table);
+				aqe.execute(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), measureBag, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -202,10 +199,10 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 		measureBag.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.execute(
-				AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").debug(true).build(),
-				measureBag,
-				table);
+		ITabularView result =
+				aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
+						measureBag,
+						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -231,7 +228,6 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")
-				.debug(true)
 				.build(), measureBag, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

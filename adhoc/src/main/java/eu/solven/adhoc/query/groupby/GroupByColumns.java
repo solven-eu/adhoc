@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -55,22 +56,19 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Jacksonized
-// @JsonSerialize(using = GroupByColumnsSerializer2.class)
-// @JsonDeserialize(using = GroupByColumnsDeserializer2.class)
 @Slf4j
 public class GroupByColumns implements IAdhocGroupBy {
-	// @JsonSerialize(using = GroupByColumnsSerializer.class)
-	// @JsonDeserialize(using = GroupByColumnsDeserializer.class)
-	// @Default
-	// @NonNull
-	// final NavigableMap<String, IAdhocColumn> nameToColumn = new TreeMap<>();
-
 	@Singular
 	@NonNull
-	final List<IAdhocColumn> columns;
+	final ImmutableList<IAdhocColumn> columns;
+
+	// @JsonIgnore
+	// final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn = Suppliers.memoize(() ->
+	// namedColumns(columns));
 
 	@Override
 	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+		// return cachedNameToColumn.get();
 		return namedColumns(columns);
 	}
 
@@ -128,7 +126,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 	}
 
 	public static IAdhocGroupBy named(Collection<String> columns) {
-		return of(columns.stream().map(c -> ReferencedColumn.ref(c)).toList());
+		return of(columns.stream().map(ReferencedColumn::ref).toList());
 	}
 
 	public static IAdhocGroupBy named(String column, String... moreColumns) {

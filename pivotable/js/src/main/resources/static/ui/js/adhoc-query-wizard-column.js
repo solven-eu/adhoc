@@ -74,29 +74,32 @@ export default {
 					loading.value = false;
 				});
 		}
-		
-		watch(() => props.queryModel.selectedColumns[props.column], (newX) => {
-			if (!props.queryModel.selectedColumns2) {
-				props.queryModel.selectedColumns2 = [];
-			}
 
-			const array = props.queryModel.selectedColumns2;
-			const index = array.indexOf(props.column);
-			if (newX) {
-				if (index < 0) {
-					props.queryModel.selectedColumns2.push(props.column);	
+		watch(
+			() => props.queryModel.selectedColumns[props.column],
+			(newX) => {
+				if (!props.queryModel.selectedColumns2) {
+					props.queryModel.selectedColumns2 = [];
 				}
-			} else {
-				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-				// only splice array when item is found
-				if (index >= 0) { 
-					// 2nd parameter means remove one item only
-				  array.splice(index, 1); 
+
+				const array = props.queryModel.selectedColumns2;
+				const index = array.indexOf(props.column);
+				if (newX) {
+					if (index < 0) {
+						props.queryModel.selectedColumns2.push(props.column);
+					}
+				} else {
+					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+					// only splice array when item is found
+					if (index >= 0) {
+						// 2nd parameter means remove one item only
+						array.splice(index, 1);
+					}
 				}
-			}
-			
-		  console.log(`${props.column} is ${newX}`)
-		});
+
+				console.log(`${props.column} is ${newX}`);
+			},
+		);
 
 		return {
 			loadColumnCoordinates,

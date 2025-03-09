@@ -66,28 +66,28 @@ export default {
 
 		// from rowIndex to columnIndex to span height
 		const metadata = {
-		  0: {
-		    columns: {
-		      1: { rowspan: 3 }
-		    }
-		  },
+			0: {
+				columns: {
+					1: { rowspan: 3 },
+				},
+			},
 		};
 
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.view;
-			
-			gridColumns=[];
-			
+
+			gridColumns = [];
+
 			data = [];
 
 			rendering.value = true;
-			
+
 			// https://stackoverflow.com/questions/684575/how-to-quickly-clear-a-javascript-object
 			for (const rowIndex of Object.getOwnPropertyNames(metadata)) {
-			  delete metadata[rowIndex];
+				delete metadata[rowIndex];
 			}
-			
+
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = false;
 
@@ -118,34 +118,36 @@ export default {
 
 					gridColumns.push(column);
 				}
-				
+
 				{
 					// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
 					const index = _.map(view.coordinates, (x, i) => [view.coordinates[i], view.values[i]]);
-//					const sorted = _.sortBy(index, coordinateToMeasure => { 
-//						return coordinateToMeasure[0][0];
-//					});
+					//					const sorted = _.sortBy(index, coordinateToMeasure => {
+					//						return coordinateToMeasure[0][0];
+					//					});
 
 					const sortingFunctions = [];
 					const sortingOrders = [];
 					for (let column of columnNames) {
-						sortingFunctions.push(function (item) { return item[0][column]; });
+						sortingFunctions.push(function (item) {
+							return item[0][column];
+						});
 						// or `desc`
 						sortingOrders.push("asc");
 					}
 					const indexSorted = _.orderBy(index, sortingFunctions, sortingOrders);
-					
+
 					for (let i = 0; i < view.coordinates.length; i++) {
 						view.coordinates[i] = indexSorted[i][0];
 						view.values[i] = indexSorted[i][1];
 					}
 				}
-				
+
 				// This is used for rowSpan evaluation
 				let previousCoordinates = undefined;
-				
+
 				const runningRowSpans = {};
-				
+
 				function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
 					if (previousCoordinates) {
 						for (const column of columnNames) {
@@ -162,24 +164,24 @@ export default {
 								if (runningRowSpans[column]?.isRunning) {
 									// Let's stop running
 									const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
-									
+
 									const columnIndex = columnNames.indexOf(column);
-									
+
 									const rowIndexStart = rowIndex - rowSpan;
 									if (!metadata[rowIndexStart]) {
-										metadata[rowIndexStart] = {columns: {}};	
-									} 
+										metadata[rowIndexStart] = { columns: {} };
+									}
 									metadata[rowIndexStart].columns[columnIndex] = { rowspan: rowSpan };
-									
+
 									console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
-									
+
 									delete runningRowSpans[column];
 								}
 							}
 						}
 					}
-				};
-				
+				}
+
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
 				for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
 					const coordinatesRow = view.coordinates[rowIndex];
@@ -203,7 +205,7 @@ export default {
 							}
 						} else if (!_.isEqual(_.sortBy(measureNames), _.sortBy(Object.keys(measuresRow)))) {
 							// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
-							
+
 							// This typically happens when not requesting a single measure, and receiving the default measure
 							console.log(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
 						}
@@ -219,9 +221,9 @@ export default {
 					for (const property of measureNames) {
 						d[property] = measuresRow[property];
 					}
-					
+
 					updateRowSpan(rowIndex, coordinatesRow, false);
-					
+
 					// console.log(d);
 
 					data.push(d);
@@ -229,19 +231,16 @@ export default {
 				}
 
 				// Purge rowSpan after the lastRow
-				updateRowSpan(view.coordinates.length, null,true);
+				updateRowSpan(view.coordinates.length, null, true);
 			}
-			
+
 			console.debug("rowSpans: ", metadata);
 
 			grid.setColumns(gridColumns);
-			
 
 			// Option #1
 			dataView.getItemMetadata = (row) => {
-			  return metadata[row] && metadata.attributes
-			    ? metadata[row]
-			    : (metadata[row] = {attributes: {'data-row': row}, ...metadata[row]});
+				return metadata[row] && metadata.attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
 			};
 
 			// Option #2
@@ -257,9 +256,9 @@ export default {
 			dataView.beginUpdate();
 			dataView.setItems(data);
 			dataView.endUpdate();
-			
+
 			gridMetadata.nb_rows = data.length;
-			
+
 			// https://github.com/6pac/SlickGrid/wiki/Slick.Grid#invalidate
 			// since we have a rowspan that spans nearly the entire length to the bottom,
 			// we need to invalidate everything so that it recalculate all rowspan cell heights
@@ -273,7 +272,7 @@ export default {
 			},
 			{ deep: true },
 		);
-		
+
 		// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view
 		dataView = new SlickDataView({});
 
@@ -293,7 +292,7 @@ export default {
 			enableCellRowSpan: true,
 			// rowspan doesn't render well with 'transform', default is 'top'
 			// https://github.com/6pac/SlickGrid/blob/master/examples/example-0032-row-span-many-columns.html
-			rowTopOffsetRenderType: 'top' 
+			rowTopOffsetRenderType: "top",
 		};
 
 		// Use AutoResizer?

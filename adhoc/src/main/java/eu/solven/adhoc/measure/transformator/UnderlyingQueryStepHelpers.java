@@ -27,7 +27,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -134,51 +135,74 @@ public class UnderlyingQueryStepHelpers {
 
 		final List<PeekingIterator<SliceAndMeasure<SliceAsMap>>> sortedIterators;
 
+		// Used to get faster the next/minimum slice
+		final Queue<PeekingIterator<SliceAndMeasure<SliceAsMap>>> queue;
+
 		public MergedSlicesIterator(AdhocQueryStep queryStep,
 				List<? extends Iterator<SliceAndMeasure<SliceAsMap>>> iterators) {
 			this.queryStep = queryStep;
-			sortedIterators = iterators.stream().map(i -> Iterators.peekingIterator(i)).toList();
+			sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();
+
+			Comparator<PeekingIterator<SliceAndMeasure<SliceAsMap>>> heapComparator =
+					(o1, o2) -> o1.peek().getSlice().compareTo(o2.peek().getSlice());
+
+			queue = new PriorityQueue<>(2, heapComparator);
+
+			sortedIterators.stream()
+					// We may receive iterators empty (e.g. an empty queryStep)
+					.filter(i -> i.hasNext())
+					.forEach(queue::add);
 		}
 
 		@Override
 		public boolean hasNext() {
-			return sortedIterators.stream().anyMatch(i -> i.hasNext());
+			return !queue.isEmpty();
 		}
 
 		@Override
 		public SliceAndMeasures next() {
-			List<SliceAndMeasure<SliceAsMap>> sliceAndMeasures = sortedIterators.stream()
-					.map(i -> i.hasNext() ? i.peek() : null)
-					// Need a mutable List as we'll later replace some index with a
-					.collect(Collectors.toCollection(ArrayList::new));
+			// Peek the nextIterator, i.e. one of the iterator with the minimum slice
+			PeekingIterator<SliceAndMeasure<SliceAsMap>> nextIter = queue.peek();
+			if (nextIter == null) {
+				throw new IllegalStateException(
+						"`hasNext` should have returned false as only not-empty iterators are in the queue");
+			}
 
-			// As we iterate through sorted slices, we keep the minimum slice amongst candidates
-			SliceAsMap slice = sliceAndMeasures.stream()
-					.filter(Objects::nonNull)
-					.map(SliceAndMeasure::getSlice)
-					.min(Comparator.naturalOrder())
-					.get();
+			SliceAsMap slice = nextIter.peek().getSlice();
+
+			int size = sortedIterators.size();
+
+			List<Consumer<IValueConsumer>> valueConsumerConsumers = new ArrayList<>(size);
 
 			Consumer<IValueConsumer> nullValueConsumerConsumer = vc -> vc.onObject(null);
 
-			sliceAndMeasures.stream()
-					.map(sm -> sm == null ? nullValueConsumerConsumer : sm.getValueConsumerConsumer())
-					.toList();
-
-			int size = sliceAndMeasures.size();
-			List<Consumer<IValueConsumer>> valueConsumerConsumers = new ArrayList<>(size);
-
 			for (int i = 0; i < size; i++) {
-				SliceAndMeasure<SliceAsMap> sliceAndMeasure = sliceAndMeasures.get(i);
-				if (sliceAndMeasure == null || !sliceAndMeasure.getSlice().equals(slice)) {
+				PeekingIterator<SliceAndMeasure<SliceAsMap>> iterator = sortedIterators.get(i);
+				if (iterator.hasNext() && iterator.peek().getSlice().equals(slice)) {
+					// Given peeked elements, this slice is confirmed in this column
+					// We could assert it is equal to `slice`
+					SliceAndMeasure<SliceAsMap> next = iterator.peek();
+					valueConsumerConsumers.add(next.getValueConsumerConsumer());
+
+				} else {
 					// Given peeked elements, this slice is not present in this column
 					valueConsumerConsumers.add(nullValueConsumerConsumer);
-				} else {
-					// Given peeked elements, this slice is confirmed in this column
-					sortedIterators.get(i).next();
-					valueConsumerConsumers.add(sliceAndMeasures.get(i).getValueConsumerConsumer());
 				}
 			}
+
+			do {
+				// The first removal is guaranteed as the queue head led to this iteration
+				PeekingIterator<SliceAndMeasure<SliceAsMap>> removed = queue.remove();
+				// Do the iteration (we just peeked up to now)
+				removed.next();
+
+				if (removed.hasNext()) {
+					// Insert back in the priority queue
+					// (We could insert after removal, to spare a few comparisons)
+					queue.add(removed);
+				}
+				// We need to process also the other iterators giving the same slice (de-duplication)
+			} while (queue.peek() != null && queue.peek().peek().getSlice().equals(slice));
 
 			return SliceAndMeasures.from(queryStep, slice, valueConsumerConsumers);
 		}

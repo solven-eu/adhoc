@@ -49,7 +49,7 @@ public class AdhocTranscodingHelper {
 
 	public static Map<String, ?> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
-		Map<String, Object> transcoded = new HashMap<>();
+		Map<String, Object> transcoded = new HashMap<>(underlyingMap.size());
 
 		underlyingMap.forEach((underlyingKey, v) -> {
 			Set<String> queriedKeys = reverseTranscoder.queried(underlyingKey);
@@ -64,6 +64,10 @@ public class AdhocTranscodingHelper {
 				});
 			}
 		});
+
+		if (transcoded.size() > underlyingMap.size()) {
+			log.info("Sub-optimal capacity");
+		}
 
 		return transcoded;
 	}

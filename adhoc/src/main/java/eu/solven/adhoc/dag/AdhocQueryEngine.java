@@ -29,10 +29,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultEdge;
@@ -47,7 +45,6 @@ import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
-import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
@@ -60,17 +57,13 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.AggregatingColumns;
-import eu.solven.adhoc.storage.IMultitypeGrid;
+import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -219,7 +212,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 					return o -> {
 						eventBus.post(AdhocLogEvent.builder()
 								.debug(true)
-								.message("%s -> %s step={}".formatted(o, row))
+								.message("%s -> %s".formatted(o, row))
 								.source(aggregateStep));
 					};
 				});
@@ -305,14 +298,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			IAggregatedRecordStream stream,
 			SetMultimap<String, Aggregator> columnToAggregators) {
 
-		IMultitypeGrid<SliceAsMap> coordinatesToAggregates =
+		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
 				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
 
 		return toImmutableChunks(query, coordinatesToAggregates);
 	}
 
 	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(TableQuery tableQuery,
-			IMultitypeGrid<SliceAsMap> coordinatesToAggregates) {
+			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
 		tableQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
@@ -431,90 +424,28 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.toString();
 	}
 
-	protected IMultitypeGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
+	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
 			IAggregatedRecordStream stream,
 			SetMultimap<String, Aggregator> columnToAggregators) {
 
-		IMultitypeGrid<SliceAsMap> coordinatesToAgg = makeAggregatingMeasures();
+		IAggregatedRecordStreamReducer streamReducer =
+				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery, columnToAggregators);
 
-		TableAggregatesMetadata tableAggregatesMetadata =
-				TableAggregatesMetadata.from(executingQueryContext, columnToAggregators);
-
-		AggregatedRecordLogger aggregatedRecordLogger =
-				AggregatedRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
-
-		// TODO We'd like to log on the last row, to have the number if row actually
-		// streamed
-		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate =
-				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
-
-		// Process the underlying stream of data to execute aggregations
-		try {
-			stream.asMap()
-					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-					// For any reason, `closeHandler` is not called automatically on a terminal operation
-					// .onClose(aggregatedRecordLogger.closeHandler())
-					.forEach(input -> {
-						forEachRow(executingQueryContext,
-								tableQuery,
-								input,
-								peekOnCoordinate,
-								tableAggregatesMetadata,
-								coordinatesToAgg);
-					});
-
-			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-			aggregatedRecordLogger.closeHandler();
-		} catch (RuntimeException e) {
-			throw new RuntimeException("Issue processing stream from %s".formatted(stream), e);
-		}
-
-		return coordinatesToAgg;
+		return streamReducer.reduce(stream);
 
 	}
 
-	protected IMultitypeGrid<SliceAsMap> makeAggregatingMeasures() {
-		return new AggregatingColumns<>(operatorsFactory);
-	}
-
-	protected void forEachRow(ExecutingQueryContext executingQueryContext,
-			IHasGroupBy tableQuery,
-			IAggregatedRecord tableRow,
-			BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate,
-			TableAggregatesMetadata aggregatesMetadata,
-			IMultitypeGrid<SliceAsMap> sliceToAgg) {
-		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
-
-		peekOnCoordinate.accept(tableRow, optCoordinates);
-
-		if (optCoordinates.isEmpty()) {
-			return;
-		}
-
-		SliceAsMap coordinates = optCoordinates.get();
-
-		Set<String> aggregatedMeasures = aggregatesMetadata.getMeasures();
-
-		for (String aggregatedMeasure : aggregatedMeasures) {
-			Object v = tableRow.getAggregate(aggregatedMeasure);
-			if (v != null) {
-				Set<Aggregator> rawAggregations = aggregatesMetadata.getRaw(aggregatedMeasure);
-				if (!rawAggregations.isEmpty()) {
-					// What we receive is actually an underlying column, to be dispatched to the N aggregations
-					// The DB provides the column raw value, and not an aggregated value
-					// So we aggregate row values ourselves (e.g. InMemoryTable)
-					rawAggregations.forEach(agg -> sliceToAgg.contributeRaw(agg, coordinates, v));
-				}
-
-				Aggregator preAggregation = aggregatesMetadata.getAggregation(aggregatedMeasure);
-				if (preAggregation != null) {
-					// We received a pre-aggregated measure
-					// DB has seemingly done the aggregation for us
-					sliceToAgg.contributePre(preAggregation, coordinates, v);
-				}
-			}
-		}
+	protected IAggregatedRecordStreamReducer makeAggregatedRecordStreamReducer(
+			ExecutingQueryContext executingQueryContext,
+			TableQuery tableQuery,
+			SetMultimap<String, Aggregator> columnToAggregators) {
+		return AggregatedRecordStreamReducer.builder()
+				.operatorsFactory(operatorsFactory)
+				.executingQueryContext(executingQueryContext)
+				.tableQuery(tableQuery)
+				.columnToAggregators(columnToAggregators)
+				.build();
 	}
 
 	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
@@ -524,56 +455,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.flatMap(Collection::stream)
 				.filter(a -> a.getName().equals(aggregatorName))
 				.findAny();
-	}
-
-	/**
-	 * @param tableQuery
-	 * @param tableRow
-	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
-	 */
-	protected Optional<SliceAsMap> makeCoordinate(ExecutingQueryContext executingQueryContext,
-			IHasGroupBy tableQuery,
-			IAggregatedRecord tableRow) {
-		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
-		if (groupBy.isGrandTotal()) {
-			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));
-		}
-
-		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
-
-		AdhocMap.AdhocMapBuilder coordinatesBuilder = AdhocMap.builder(groupedByColumns);
-
-		for (String groupedByColumn : groupedByColumns) {
-			Object value = tableRow.getGroupBy(groupedByColumn);
-
-			if (value == null) {
-				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
-					// We received an explicit null
-					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(executingQueryContext, groupedByColumn);
-
-					assert value != null : "`null` is not a legal column value";
-				} else {
-					// The input lack a groupBy coordinate: we exclude it
-					// TODO What's a legitimate case leading to this?
-					return Optional.empty();
-				}
-			}
-
-			coordinatesBuilder.append(value);
-		}
-
-		return Optional.of(SliceAsMap.fromMap(coordinatesBuilder.build()));
-	}
-
-	/**
-	 * The value to inject in place of a NULL. Returning a null-reference is not supported.
-	 *
-	 * @param column
-	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
-	 */
-	protected Object valueOnNull(ExecutingQueryContext executingQueryContext, String column) {
-		return executingQueryContext.getColumnsManager().onMissingColumn(column);
 	}
 
 	/**

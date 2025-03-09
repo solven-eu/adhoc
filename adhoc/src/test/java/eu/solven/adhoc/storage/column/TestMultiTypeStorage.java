@@ -92,7 +92,7 @@ public class TestMultiTypeStorage {
 		storage.merge("k1", 123);
 		storage.append("k1", null);
 
-		Assertions.assertThat(storage.size()).isEqualTo(0);
+		Assertions.assertThat(storage.size()).isEqualTo(1);
 	}
 
 	@Test

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
-import java.util.Objects;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -36,7 +35,17 @@ public class SumCombination implements ICombination {
 
 	@Override
 	public Object combine(List<?> underlyingValues) {
-		return underlyingValues.stream().filter(Objects::nonNull).<Object>map(o -> o).reduce(null, agg::aggregate);
+		// return underlyingValues.stream().filter(Objects::nonNull).<Object>map(o -> o).reduce(null, agg::aggregate);
+		Object output = null;
+
+		int size = underlyingValues.size();
+
+		// Unroll the loop as Steam is suboptimal as this logic is very simple
+		for (int i = 0; i < size; i++) {
+			output = agg.aggregate(underlyingValues.get(i), output);
+		}
+
+		return output;
 	}
 
 }

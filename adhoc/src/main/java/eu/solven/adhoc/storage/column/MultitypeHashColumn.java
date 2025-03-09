@@ -99,6 +99,16 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			return merge(key);
 		}
 
+		return unsafePut(key);
+	}
+
+	/**
+	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type
+	 *
+	 * @param key
+	 * @return
+	 */
+	protected IValueConsumer unsafePut(T key) {
 		return new IValueConsumer() {
 			@Override
 			public void onLong(long v) {

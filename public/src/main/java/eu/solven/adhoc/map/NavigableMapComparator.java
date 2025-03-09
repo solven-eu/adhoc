@@ -98,6 +98,7 @@ public class NavigableMapComparator implements Comparator<NavigableMap<?, ?>>, S
 
 	@SuppressWarnings("rawtypes")
 	protected int compareTo(Object left, Object right) {
+		// TODO Use ComparableElseClassComparatorV2?
 		return Ordering.natural().compare((Comparable) left, (Comparable) right);
 	}
 }

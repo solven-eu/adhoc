@@ -88,10 +88,12 @@ public class InMemoryTable implements IAdhocTableWrapper {
 				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
+		int nbKeys = (int) Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count();
+
 		return new SuppliedAggregatedRecordStream(tableQuery, () -> this.stream().filter(row -> {
 			return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 		}).map(row -> {
-			Map<String, Object> aggregates = new LinkedHashMap<>();
+			Map<String, Object> aggregates = new LinkedHashMap<>(nbKeys);
 			// Transcode from columnName to aggregatorName, supposing all aggregation functions does not change a not
 			// aggregated single value
 			aggregateColumns.forEach(aggregatedColumn -> {
@@ -137,9 +139,9 @@ public class InMemoryTable implements IAdhocTableWrapper {
 			} else if (classes.isEmpty()) {
 				throw new IllegalStateException("No class for column=%s in %s".formatted(column, columnToClasses));
 			} else {
-				if (classes.stream().allMatch(c -> Number.class.isAssignableFrom(c))) {
+				if (classes.stream().allMatch(Number.class::isAssignableFrom)) {
 					columnToClass.put(column, Number.class);
-				} else if (classes.stream().allMatch(c -> CharSequence.class.isAssignableFrom(c))) {
+				} else if (classes.stream().allMatch(CharSequence.class::isAssignableFrom)) {
 					columnToClass.put(column, CharSequence.class);
 				} else {
 					columnToClass.put(column, Object.class);

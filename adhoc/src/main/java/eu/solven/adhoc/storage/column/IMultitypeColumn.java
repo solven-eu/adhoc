@@ -58,7 +58,8 @@ public interface IMultitypeColumn<T> {
 	/**
 	 * 
 	 * @param slice
-	 * @return the {@link IValueConsumer} into which the value has to be written.
+	 * @return the {@link IValueConsumer} into which the value has to be written. If the key already exists, switch to
+	 *         an optional merge. Appending null is generally a no-op, not a remove.
 	 */
 	IValueConsumer append(T slice);
 

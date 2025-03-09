@@ -38,28 +38,28 @@ public interface IValueConsumer {
 	/**
 	 * If this holds a long, override this optional method to receive the primitive long
 	 * 
-	 * @param value
+	 * @param v
 	 */
-	default void onLong(long value) {
-		onObject(value);
+	default void onLong(long v) {
+		onObject(v);
 	}
 
 	/**
 	 * If this holds a double, override this optional method to receive the primitive double
 	 * 
-	 * @param value
+	 * @param v
 	 */
-	default void onDouble(double value) {
-		onObject(value);
+	default void onDouble(double v) {
+		onObject(v);
 	}
 
 	/**
 	 * If this holds a {@link CharSequence}, override this optional method to receive the {@link CharSequence}
 	 * 
-	 * @param value
+	 * @param v
 	 */
-	default void onCharsequence(CharSequence value) {
-		onObject(value);
+	default void onCharsequence(CharSequence v) {
+		onObject(v);
 	}
 
 	void onObject(Object object);

@@ -23,9 +23,10 @@
 package eu.solven.adhoc.map;
 
 import java.util.AbstractMap;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -35,20 +36,24 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.Ints;
 
+import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 // `extends AbstractMap` enables not duplicating `.toString`
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	// This is mandatory for fast `.get`
+	// This is sorted
 	final Object2IntArrayMap<String> keyToIndex;
 	// final List<String> keys;
 	final List<Object> values;
-
-	// private Set<String> keysAsSet;
 
 	/** Cache the hash code for the string */
 	// Like String
@@ -60,7 +65,11 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
+	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
+
 	private AdhocMap(Object2IntArrayMap<String> keyToIndex, List<Object> values) {
+		assert Ordering.natural().isOrdered(keyToIndex.keySet());
+
 		this.keyToIndex = keyToIndex;
 		this.values = values;
 	}
@@ -122,11 +131,6 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	@Override
 	public Set<String> keySet() {
-		// if (keysAsSet == null) {
-		// keysAsSet = ImmutableSet.copyOf(keys);
-		// assert keysAsSet.size() == keys.size() : ".keySet is not distinct";
-		// }
-
 		return Collections.unmodifiableSet(keyToIndex.keySet());
 	}
 
@@ -152,7 +156,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	 */
 	@Override
 	public int hashCode() {
-		// Like String.hashCode
+		// hashCode caching Like String.hashCode
 		int h = hash;
 		if (h == 0 && !hashIsZero) {
 			int[] hashcodeHolder = new int[1];
@@ -209,35 +213,103 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 	}
 
-	// @Override
-	// public int compareTo(AdhocMap o) {
-	// // TODO Auto-generated method stub
-	// return 0;
-	// }
+	// Looks a lot like NavigableMapComparator. Duplication?
+	@Override
+	public int compareTo(AdhocMap o) {
+		// throw new NotYetImplementedException("%s.compareTo".formatted(getClass()));
+		if (this == o) {
+			// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to provide
+			// same sliceAsMap
+			return 0;
+		}
+
+		ObjectIterator<Object2IntMap.Entry<String>> thisIterator = keyToIndex.object2IntEntrySet().fastIterator();
+		ObjectIterator<Object2IntMap.Entry<String>> otherIterator = o.keyToIndex.object2IntEntrySet().fastIterator();
+
+		// Loop until the iterator has values.
+		while (true) {
+			boolean thisHashNext = thisIterator.hasNext();
+			boolean otherhashnext = otherIterator.hasNext();
+
+			if (!thisHashNext) {
+				if (!otherhashnext) {
+					// Equals
+					return 0;
+				} else {
+					// other has more entries: this is smaller
+					return -1;
+				}
+			} else if (!otherhashnext) {
+				// this has more entries: this is bigger
+				return 1;
+			} else {
+				Object2IntMap.Entry<String> thisNext = thisIterator.next();
+				Object2IntMap.Entry<String> otherNext = otherIterator.next();
+
+				int compareKey = thisNext.getKey().compareTo(otherNext.getKey());
+				if (compareKey != 0) {
+					return compareKey;
+				} else {
+					int valueCompare = valueComparator.compare(this.values.get(thisNext.getIntValue()),
+							o.values.get(otherNext.getIntValue()));
+
+					if (valueCompare != 0) {
+						return valueCompare;
+					}
+				}
+			}
+		}
+	}
 
 	public static class AdhocMapBuilder {
 		final NavigableSet<String> keys;
+		// From key original index to sortedIndex
+		final int[] reordering;
 		final List<Object> values;
 
-		private AdhocMapBuilder(Collection<String> keys) {
-			this.keys = toNavigableSet(keys);
-			this.values = new ArrayList<>(keys.size());
-		}
+		int added = 0;
 
-		private static NavigableSet<String> toNavigableSet(Collection<String> keys) {
+		private AdhocMapBuilder(Collection<String> keys) {
+			int size = keys.size();
 			if (keys instanceof NavigableSet<String> navigableKeys) {
-				return navigableKeys;
+				this.keys = navigableKeys;
+				// identity reordering
+				reordering =
+						// IntStream.range(0, size).toArray()
+						new int[0];
+			} else {
+				ObjectArrayList<Object2IntMap.Entry<String>> keyToIndex = new ObjectArrayList<>();
+
+				keys.forEach(key -> keyToIndex.add(new AbstractObject2IntMap.BasicEntry<>(key, keyToIndex.size())));
+
+				keyToIndex.sort(Map.Entry.comparingByKey());
+
+				this.keys = new TreeSet<>();
+				this.reordering = new int[size];
+
+				keyToIndex.forEach(e -> {
+					reordering[this.keys.size()] = e.getIntValue();
+					this.keys.add(e.getKey());
+				});
 			}
-			return new TreeSet<>(keys);
+			this.values = Arrays.asList(new Object[keys.size()]);
 		}
 
 		public AdhocMapBuilder append(Object value) {
-			values.add(value);
+			int writeIndex;
+			if (reordering.length == 0) {
+				writeIndex = added;
+			} else {
+				writeIndex = reordering[added];
+			}
+			values.set(writeIndex, value);
+			added++;
 
 			return this;
 		}
 
-		public IAdhocMap build() {
+		public AdhocMap build() {
+			// Object2IntArrayMap enables keeping the order
 			Object2IntArrayMap<String> keyToIndex = new Object2IntArrayMap<>(keys.size());
 
 			// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)
@@ -250,12 +322,14 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	/**
-	 * 
+	 * BEWARE of `Set` as in many cases, the order may not be the one you believe. e.g. `Set.of("a", "b")` may iterate
+	 * "b" then "a".
+	 *
 	 * @param keys
 	 *            the ordered-set of keys which will be appended
 	 * @return
 	 */
-	public static AdhocMapBuilder builder(Set<String> keys) {
+	public static AdhocMapBuilder builder(Collection<String> keys) {
 		return new AdhocMapBuilder(keys);
 	}
 
@@ -267,4 +341,5 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			return ImmutableMap.copyOf(map);
 		}
 	}
+
 }
