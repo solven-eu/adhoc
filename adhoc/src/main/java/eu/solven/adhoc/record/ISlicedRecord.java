@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 
 /**
  * Used to provide the values given a {@link List} of {@link ISliceToValue} and an {@link IAdhocSlice}
@@ -57,7 +58,7 @@ public interface ISlicedRecord {
 
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {
-		return IntStream.range(0, size()).mapToObj(index -> IValueConsumer.getValue(vc -> read(index, vc))).toList();
+		return IntStream.range(0, size()).mapToObj(index -> IValueProvider.getValue(vc -> read(index, vc))).toList();
 	}
 
 	/**
@@ -70,7 +71,7 @@ public interface ISlicedRecord {
 	default void asArray(Object[] array) {
 		for (int i = 0; i < Math.min(array.length, size()); i++) {
 			int finalI = i;
-			array[i] = IValueConsumer.getValue(vc -> read(finalI, vc));
+			array[i] = IValueProvider.getValue(vc -> read(finalI, vc));
 		}
 	}
 }

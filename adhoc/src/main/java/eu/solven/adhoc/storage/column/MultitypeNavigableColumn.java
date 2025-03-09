@@ -183,7 +183,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				.mapToInt(Ints::checkedCast)
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueConsumerConsumer(vc -> vc.onObject(valuesO.get(i)))
+						.valueProvider(vc -> vc.onObject(valuesO.get(i)))
 						.build());
 	}
 
@@ -277,7 +277,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		ObjectList<Map.Entry<T, Object>> keyToValue = new ObjectArrayList<Map.Entry<T, Object>>(size);
 
 		input.stream().forEach(sm -> {
-			sm.getValueConsumerConsumer().accept(o -> keyToValue.add(Map.entry(sm.getSlice(), o)));
+			sm.getValueProvider().acceptConsumer(o -> keyToValue.add(Map.entry(sm.getSlice(), o)));
 		});
 
 		// https://stackoverflow.com/questions/17328077/difference-between-arrays-sort-and-arrays-parallelsort

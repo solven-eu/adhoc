@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.record.ISlicedRecord;
@@ -31,7 +30,7 @@ import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.slice.SliceAsMapWithStep;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -39,7 +38,7 @@ import lombok.Value;
 /**
  * Combines a slice and the underlying measures. Typically useful when iterating along the underlying
  * {@link ISliceToValue}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Value
@@ -51,18 +50,19 @@ public class SliceAndMeasures {
 	ISlicedRecord measures;
 
 	/**
-	 * 
+	 *
 	 * @param queryStep
-	 * @param sliceAndMeasures
-	 *            may have null if the underlying queryStep did not hold current slice
+	 * @param slice
+	 * @param valueConsumerConsumers
+	 *            underlyingStep index to a value provider
 	 * @return
 	 */
 	public static SliceAndMeasures from(AdhocQueryStep queryStep,
 			SliceAsMap slice,
-			List<Consumer<IValueConsumer>> valueConsumerConsumers) {
+			List<IValueProvider> valueProviders) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
-				.measures(SlicedRecordFromSlices.builder().valueConsumers(valueConsumerConsumers).build())
+				.measures(SlicedRecordFromSlices.builder().valueProviders(valueProviders).build())
 				.build();
 	}
 

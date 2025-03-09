@@ -32,7 +32,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -46,7 +45,7 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.storage.column.MultitypeHashColumn;
 import eu.solven.adhoc.storage.column.MultitypeNavigableColumn;
@@ -72,7 +71,7 @@ public class UnderlyingQueryStepHelpers {
 			// Fast track
 			ISliceToValue underlying = underlyings.getFirst();
 			return underlying.stream().map(slice -> {
-				Object value = IValueConsumer.getValue(slice.getValueConsumerConsumer());
+				Object value = IValueProvider.getValue(slice.getValueProvider());
 
 				return SliceAndMeasures.from(slice.getSlice(), queryStep, Collections.singletonList(value));
 			});
@@ -172,9 +171,9 @@ public class UnderlyingQueryStepHelpers {
 
 			int size = sortedIterators.size();
 
-			List<Consumer<IValueConsumer>> valueConsumerConsumers = new ArrayList<>(size);
+			List<IValueProvider> valueProviders = new ArrayList<>(size);
 
-			Consumer<IValueConsumer> nullValueConsumerConsumer = vc -> vc.onObject(null);
+			IValueProvider nullProvider = vc -> vc.onObject(null);
 
 			for (int i = 0; i < size; i++) {
 				PeekingIterator<SliceAndMeasure<SliceAsMap>> iterator = sortedIterators.get(i);
@@ -182,11 +181,11 @@ public class UnderlyingQueryStepHelpers {
 					// Given peeked elements, this slice is confirmed in this column
 					// We could assert it is equal to `slice`
 					SliceAndMeasure<SliceAsMap> next = iterator.peek();
-					valueConsumerConsumers.add(next.getValueConsumerConsumer());
+					valueProviders.add(next.getValueProvider());
 
 				} else {
 					// Given peeked elements, this slice is not present in this column
-					valueConsumerConsumers.add(nullValueConsumerConsumer);
+					valueProviders.add(nullProvider);
 				}
 			}
 
@@ -204,7 +203,7 @@ public class UnderlyingQueryStepHelpers {
 				// We need to process also the other iterators giving the same slice (de-duplication)
 			} while (queue.peek() != null && queue.peek().peek().getSlice().equals(slice));
 
-			return SliceAndMeasures.from(queryStep, slice, valueConsumerConsumers);
+			return SliceAndMeasures.from(queryStep, slice, valueProviders);
 		}
 	}
 

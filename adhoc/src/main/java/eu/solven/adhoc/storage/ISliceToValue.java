@@ -23,7 +23,6 @@
 package eu.solven.adhoc.storage;
 
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.measure.transformator.ITransformator;
@@ -78,9 +77,9 @@ public interface ISliceToValue {
 	static <T> Object getValue(ISliceToValue storage, IAdhocSlice slice) {
 		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
 
-		Consumer<IValueConsumer> valueConsumerConsumer = valueConsumer -> storage.onValue(sliceAsMap, valueConsumer);
+		IValueProvider valueProvider = valueConsumer -> storage.onValue(sliceAsMap, valueConsumer);
 
-		return IValueConsumer.getValue(valueConsumerConsumer);
+		return IValueProvider.getValue(valueProvider);
 	}
 
 }

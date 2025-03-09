@@ -22,15 +22,13 @@
  */
 package eu.solven.adhoc.storage;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
  * This can be seen as a proxy to **read** values.
  * 
  * @author Benoit Lacelle
+ * @see IValueProvider
  */
 @FunctionalInterface
 public interface IValueConsumer {
@@ -63,12 +61,4 @@ public interface IValueConsumer {
 	}
 
 	void onObject(Object object);
-
-	static Object getValue(Consumer<IValueConsumer> valueConsumerConsumer) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		valueConsumerConsumer.accept(refV::set);
-
-		return refV.get();
-	}
 }

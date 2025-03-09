@@ -23,12 +23,12 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 import lombok.Builder;
 
 /**
@@ -38,27 +38,27 @@ import lombok.Builder;
  */
 @Builder
 public class SlicedRecordFromSlices implements ISlicedRecord {
-	final List<Consumer<IValueConsumer>> valueConsumers;
+	final List<IValueProvider> valueProviders;
 
 	@Override
 	public boolean isEmpty() {
-		return valueConsumers.isEmpty();
+		return valueProviders.isEmpty();
 	}
 
 	@Override
 	public int size() {
-		return valueConsumers.size();
+		return valueProviders.size();
 	}
 
 	@Override
 	public void read(int index, IValueConsumer valueConsumer) {
-		valueConsumers.get(index).accept(valueConsumer);
+		valueProviders.get(index).acceptConsumer(valueConsumer);
 	}
 
 	@Override
 	public String toString() {
 		return IntStream.range(0, size()).<String>mapToObj(index -> {
-			Object v = IValueConsumer.getValue(vc -> read(index, vc));
+			Object v = IValueProvider.getValue(vc -> read(index, vc));
 
 			return String.valueOf(v);
 		}).collect(Collectors.joining(", ", "[", "]"));

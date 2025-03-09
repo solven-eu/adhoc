@@ -211,25 +211,25 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		Stream<SliceAndMeasure<T>> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
 				.map(entry -> SliceAndMeasure.<T>builder()
 						.slice(entry.getKey())
-						.valueConsumerConsumer(vc -> vc.onLong(entry.getLongValue()))
+						.valueProvider(vc -> vc.onLong(entry.getLongValue()))
 						.build());
 		Stream<SliceAndMeasure<T>> streamFromDouble =
 				Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
 						.map(entry -> SliceAndMeasure.<T>builder()
 								.slice(entry.getKey())
-								.valueConsumerConsumer(vc -> vc.onDouble(entry.getDoubleValue()))
+								.valueProvider(vc -> vc.onDouble(entry.getDoubleValue()))
 								.build());
 		Stream<SliceAndMeasure<T>> streamFromCharsequence =
 				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
 						.map(entry -> SliceAndMeasure.<T>builder()
 								.slice(entry.getKey())
-								.valueConsumerConsumer(vc -> vc.onCharsequence(entry.getValue()))
+								.valueProvider(vc -> vc.onCharsequence(entry.getValue()))
 								.build());
 		Stream<SliceAndMeasure<T>> streamFromObject =
 				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
 						.map(entry -> SliceAndMeasure.<T>builder()
 								.slice(entry.getKey())
-								.valueConsumerConsumer(vc -> vc.onObject(entry.getValue()))
+								.valueProvider(vc -> vc.onObject(entry.getValue()))
 								.build());
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)

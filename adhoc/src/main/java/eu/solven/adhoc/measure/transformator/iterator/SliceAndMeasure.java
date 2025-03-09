@@ -22,10 +22,8 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
-import java.util.function.Consumer;
-
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 import lombok.Builder;
 import lombok.Value;
 
@@ -39,6 +37,6 @@ import lombok.Value;
 @Builder
 public class SliceAndMeasure<T> {
 	T slice;
-	Consumer<IValueConsumer> valueConsumerConsumer;
+	IValueProvider valueProvider;
 
 }
