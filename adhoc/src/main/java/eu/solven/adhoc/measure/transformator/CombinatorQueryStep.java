@@ -31,10 +31,12 @@ import eu.solven.adhoc.dag.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.ISliceAndValueConsumer;
 import eu.solven.adhoc.storage.ISliceToValue;
+import eu.solven.adhoc.storage.IValueProvider;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 import lombok.Getter;
@@ -70,12 +72,6 @@ public class CombinatorQueryStep extends ATransformator {
 	}
 
 	@Override
-	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		// TODO Auto-generated method stub
-		return super.makeStorage();
-	}
-
-	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
@@ -98,27 +94,30 @@ public class CombinatorQueryStep extends ATransformator {
 			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		List<?> underlyingVs = slice.getMeasures().asList();
 
-		Object value = combine(slice.getSlice(), combination, underlyingVs);
-
-		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
-	}
-
-	protected Object combine(ISliceWithStep slice, ICombination combination, List<?> underlyingVs) {
-		Object value;
+		ISlicedRecord slicedRecord = slice.getMeasures();
 		try {
-			value = combination.combine(slice, underlyingVs);
+			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
+
+			valueProvider.acceptConsumer(output.putSlice(slice.getSlice().getAdhocSliceAsMap()));
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException(
-					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), underlyingVs, slice),
+					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), slicedRecord, slice),
 					e);
 		}
+	}
+
+	protected IValueProvider combine(ISliceWithStep slice, ICombination combination, ISlicedRecord slicedRecord) {
+		IValueProvider valueProvider = combination.combine(slice, slicedRecord);
 
 		if (isDebug()) {
-			log.info("[DEBUG] Write {} (given {} over {}) in {}", value, combinator.getName(), underlyingVs, slice);
+			log.info("[DEBUG] Write {} (given {} over {}) in {}",
+					valueProvider,
+					combinator.getName(),
+					slicedRecord,
+					slice);
 		}
-		return value;
+		return valueProvider;
 	}
 
 }

@@ -25,8 +25,10 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
+import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.storage.IValueProvider;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
@@ -36,11 +38,6 @@ import eu.solven.adhoc.slice.ISliceWithStep;
  */
 public interface ICombination {
 
-	// TODO This shall become the optimal API, not to require to provide Objects
-	default Object combine(SliceAndMeasures slice) {
-		return combine(slice.getSlice(), slice.getMeasures().asList());
-	}
-
 	/**
 	 * @param slice
 	 * @param underlyingValues
@@ -49,7 +46,10 @@ public interface ICombination {
 	 */
 	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		// The simplest logic does not rely on the coordinates
-		return combine(underlyingValues);
+		IValueProvider valueProvider =
+				combine(slice, SlicedRecordFromArray.builder().measures(underlyingValues).build());
+
+		return IValueProvider.getValue(valueProvider);
 	}
 
 	/**
@@ -60,5 +60,10 @@ public interface ICombination {
 	default Object combine(List<?> underlyingValues) {
 		throw new UnsupportedOperationException(
 				"%s requires the slice to be provided".formatted(this.getClass().getName()));
+	}
+
+	// TODO This shall become the optimal API, not to require to provide Objects
+	default IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		return vc -> vc.onObject(combine(slicedRecord.asList()));
 	}
 }

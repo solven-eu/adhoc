@@ -31,7 +31,8 @@ import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
 
 /**
- * Used to provide the values given a {@link List} of {@link ISliceToValue} and an {@link IAdhocSlice}
+ * Used to provide measure values/aggregates given a {@link List} of {@link ISliceToValue}. The scope is an
+ * {@link IAdhocSlice}.
  * 
  * @author Benoit Lacelle
  */
@@ -50,7 +51,7 @@ public interface ISlicedRecord {
 	/**
 	 * 
 	 * @param index
-	 *            from 0 to `.size()` excluded
+	 *            the index of the underlying queryStep. From 0 to `.size()` excluded.
 	 * @param valueConsumer
 	 *            some {@link IValueConsumer} to receive the data.
 	 */

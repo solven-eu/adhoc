@@ -22,10 +22,13 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import java.util.List;
-
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.cell.MultitypeCell;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.record.ISlicedRecord;
+import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
 
 public class SumCombination implements ICombination {
 
@@ -34,18 +37,17 @@ public class SumCombination implements ICombination {
 	final IAggregation agg = new SumAggregation();
 
 	@Override
-	public Object combine(List<?> underlyingValues) {
-		// return underlyingValues.stream().filter(Objects::nonNull).<Object>map(o -> o).reduce(null, agg::aggregate);
-		Object output = null;
+	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		int size = slicedRecord.size();
 
-		int size = underlyingValues.size();
+		MultitypeCell refMultitype = MultitypeCell.builder().aggregation(agg).build();
 
-		// Unroll the loop as Steam is suboptimal as this logic is very simple
+		IValueConsumer cellValueConsumer = refMultitype.merge();
 		for (int i = 0; i < size; i++) {
-			output = agg.aggregate(underlyingValues.get(i), output);
+			slicedRecord.read(i, cellValueConsumer);
 		}
 
-		return output;
+		return refMultitype.reduce();
 	}
 
 }

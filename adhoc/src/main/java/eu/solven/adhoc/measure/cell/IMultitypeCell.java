@@ -20,36 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.sum;
+package eu.solven.adhoc.measure.cell;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.IValueConsumer;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.storage.IValueProvider;
 
 /**
- * This is used by {@link IAggregation} which need to differentiate clearly from inputs and a stateful-but-intermediate
- * aggregation.
+ * A single cell (i.e. single {@link IAdhocSlice} and single measure) value.
  * 
  * @author Benoit Lacelle
  */
-public interface IAggregationCarrier {
+public interface IMultitypeCell {
 
-	interface IHasCarriers {
+	/**
+	 * Used to push data into the cell.
+	 * 
+	 * @return a {@link IValueConsumer} to accept the incoming data
+	 */
+	IValueConsumer merge();
 
-		/**
-		 * 
-		 * @param v
-		 *            some pre-aggregated value, typically computed by the {@link IAdhocTableWrapper}.
-		 * @return an {@link IAggregationCarrier}
-		 */
-		IAggregationCarrier wrap(Object v);
-
+	default void merge(Object o) {
+		merge().onObject(o);
 	}
 
 	/**
-	 * Enables to read the underlying value of this carrier.
+	 * Used to read data from this cell.
 	 * 
-	 * @param valueConsumer
+	 * BEWARE As of now, a single call on the aggregate type will be done. It may turn a better design to call each
+	 * different leg on the specific type.
+	 * 
+	 * @return
 	 */
-	void acceptValueConsumer(IValueConsumer valueConsumer);
+	IValueProvider reduce();
+
 }

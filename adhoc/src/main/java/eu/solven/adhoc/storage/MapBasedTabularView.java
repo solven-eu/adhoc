@@ -124,7 +124,12 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public IValueConsumer sliceFeeder(SliceAsMap slice, String measureName) {
-		return o -> appendSlice(slice, Map.of(measureName, o));
+		return o -> {
+			if (o == null) {
+				return;
+			}
+			appendSlice(slice, Map.of(measureName, o));
+		};
 	}
 
 	public static ITabularView empty() {

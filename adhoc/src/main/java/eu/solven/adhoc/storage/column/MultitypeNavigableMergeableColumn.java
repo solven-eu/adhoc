@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.storage.IValueConsumer;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -56,13 +57,49 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 
 	@Override
 	protected IValueConsumer merge(int index) {
-		return v -> {
-			checkLock(keys.get(index));
+		checkLock(keys.get(index));
 
-			onValue(index, existingAggregate -> {
-				Object newAggregate = aggregation.aggregate(existingAggregate, v);
-				valuesO.set(index, newAggregate);
-			});
+		return new IValueConsumer() {
+			@Override
+			public void onLong(long input) {
+				onValue(index, new IValueConsumer() {
+
+					@Override
+					public void onLong(long existingAggregate) {
+						if (aggregation instanceof ILongAggregation longAggregation) {
+							long newAggregate = longAggregation.aggregateLongs(existingAggregate, input);
+							values.set(index).onLong(newAggregate);
+						} else {
+							Object newAggregate = aggregation.aggregate(existingAggregate, input);
+							values.set(index).onObject(newAggregate);
+						}
+					}
+
+					@Override
+					public void onObject(Object existingAggregate) {
+						Object newAggregate = aggregation.aggregate(existingAggregate, input);
+						values.set(index).onObject(newAggregate);
+					}
+				});
+			}
+
+			@Override
+			public void onObject(Object input) {
+				onValue(index, new IValueConsumer() {
+
+					@Override
+					public void onLong(long existingAggregate) {
+						Object newAggregate = aggregation.aggregate(existingAggregate, input);
+						values.set(index).onObject(newAggregate);
+					}
+
+					@Override
+					public void onObject(Object existingAggregate) {
+						Object newAggregate = aggregation.aggregate(existingAggregate, input);
+						values.set(index).onObject(newAggregate);
+					}
+				});
+			}
 		};
 	}
 

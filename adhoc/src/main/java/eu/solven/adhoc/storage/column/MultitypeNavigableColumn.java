@@ -44,8 +44,19 @@ import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.column.MultitypeArray.MultitypeArrayBuilder;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleImmutableList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongImmutableList;
+import it.unimi.dsi.fastutil.objects.AbstractObject2DoubleMap;
+import it.unimi.dsi.fastutil.objects.AbstractObject2LongMap;
+import it.unimi.dsi.fastutil.objects.AbstractObject2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder.Default;
@@ -71,12 +82,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	// TODO Capacity strategy?
 	final List<T> keys = new ArrayList<>();
 
-	// TODO How could we manage different types efficiently?
-	// Using an intToType could do that job, but the use of a hash-based structure makes it equivalent to
-	// MergeableMultitypeStorage
 	@Default
 	@NonNull
-	final List<Object> valuesO = new ArrayList<>();
+	final MultitypeArray values = MultitypeArray.builder().build();
 
 	// Once locked, this can not be written, hence not unlocked
 	@Default
@@ -88,6 +96,17 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		throw new IllegalArgumentException("This does not allow merging. key=%s".formatted(keys.get(index)));
 	}
 
+	protected Object cleanValue(Object v) {
+		// This is useful to ensure type homogeneity, as this column does not have (yet) primitive storage
+		if (SumAggregation.isLongLike(v)) {
+			return SumAggregation.asLong(v);
+		} else if (SumAggregation.isDoubleLike(v)) {
+			return SumAggregation.asDouble(v);
+		} else {
+			return v;
+		}
+	}
+
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
@@ -96,33 +115,33 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	 */
 	@Override
 	public IValueConsumer append(T key) {
-		return v -> {
-			checkLock(key);
-
-			if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
-				// In most cases, we append a greater key, because we process sorted keys
-				keys.add(key);
-				valuesO.add(cleanValue(v));
+		checkLock(key);
+		
+		IValueConsumer valueConsumer;
+		
+		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
+			// In most cases, we append a greater key, because we process sorted keys
+			keys.add(key);
+			valueConsumer = values.add();
+		} else {
+			int index = getIndex(key);
+			
+			if (index >= 0) {
+				valueConsumer = merge(index);
 			} else {
-				int index = getIndex(key);
-
-				if (index >= 0) {
-					merge(index).onObject(v);
-				} else {
-					if (Integer.bitCount(slowPath.incrementAndGet()) == 1) {
-						log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
-					}
-					int insertionIndex = -index - 1;
-					keys.add(insertionIndex, key);
-					valuesO.add(insertionIndex, cleanValue(v));
+				// BEWARE This case should not happen. For now, we try handling it smoothly
+				// It typically happens if it is used to receive table aggregates while the table does not provide
+				// sorted results.
+				// It typically happens if some underlying queryStep does not return a properly sorted column.
+				if (Integer.bitCount(slowPath.incrementAndGet()) == 1) {
+					log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
 				}
+				int insertionIndex = -index - 1;
+				keys.add(insertionIndex, key);
+				valueConsumer = values.add(insertionIndex);
 			}
-
-			// Do not check the assertion on each .put else it would get quite slow
-			if (Integer.bitCount(keys.size()) == 1) {
-				// assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
-			}
-		};
+		}
+		return valueConsumer;
 	}
 
 	protected void doLock() {
@@ -138,17 +157,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		}
 	}
 
-	protected Object cleanValue(Object v) {
-		// This is useful to ensure type homogeneity, as this column does not have (yet) primitive storage
-		if (SumAggregation.isLongLike(v)) {
-			return SumAggregation.asLong(v);
-		} else if (SumAggregation.isDoubleLike(v)) {
-			return SumAggregation.asDouble(v);
-		} else {
-			return v;
-		}
-	}
-
 	protected int getIndex(T key) {
 		return Collections.binarySearch(keys, key, Comparator.naturalOrder());
 	}
@@ -159,10 +167,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		int size = keys.size();
 		for (int i = 0; i < size; i++) {
-			Object v = valuesO.get(i);
-			if (v != null) {
-				rowScanner.onKey(keys.get(i)).onObject(v);
-			}
+			values.read(i, rowScanner.onKey(keys.get(i)));
 		}
 	}
 
@@ -172,7 +177,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		return LongStream.range(0, size())
 				.mapToInt(Ints::checkedCast)
-				.mapToObj(i -> converter.prepare(keys.get(i)).onObject(valuesO.get(i)));
+				.mapToObj(i -> values.apply(i, converter.prepare(keys.get(i))));
 	}
 
 	@Override
@@ -183,7 +188,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				.mapToInt(Ints::checkedCast)
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueProvider(vc -> vc.onObject(valuesO.get(i)))
+						.valueProvider(vc -> values.read(i, vc))
 						.build());
 	}
 
@@ -234,24 +239,17 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public static <T extends Comparable<T>> MultitypeNavigableColumn<T> empty() {
 		return MultitypeNavigableColumn.<T>builder()
 				.keys(Collections.emptyList())
-				.valuesO(Collections.emptyList())
+				.values(MultitypeArray.empty())
 				.build();
 	}
 
 	@Override
 	public void purgeAggregationCarriers() {
-		LongStream.range(0, size()).mapToInt(Ints::checkedCast).forEach(i -> {
-			Object value = valuesO.get(i);
-
+		values.replaceObjects(value -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				aggregationCarrier.acceptValueConsumer(new IValueConsumer() {
-
-					@Override
-					public void onObject(Object object) {
-						// Replace current value
-						valuesO.set(i, object);
-					}
-				});
+				return IValueProvider.getValue(vc -> aggregationCarrier.acceptValueConsumer(vc));
+			} else {
+				return value;
 			}
 		});
 	}
@@ -260,38 +258,97 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public void onValue(T key, IValueConsumer valueConsumer) {
 		int index = getIndex(key);
 
-		onValue(index, valueConsumer);
+		if (index < 0) {
+			valueConsumer.onObject(null);
+		} else {
+			onValue(index, valueConsumer);
+		}
 	}
 
 	protected void onValue(int index, IValueConsumer valueConsumer) {
-		if (index >= 0) {
-			valueConsumer.onObject(valuesO.get(index));
-		} else {
-			valueConsumer.onObject(null);
-		}
+		values.read(index, valueConsumer);
 	}
 
 	public static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copy(IMultitypeColumnFastGet<T> input) {
 		int size = Ints.checkedCast(input.size());
 
-		ObjectList<Map.Entry<T, Object>> keyToValue = new ObjectArrayList<Map.Entry<T, Object>>(size);
+		if (size == 0) {
+			return empty();
+		}
+
+		ObjectList<Object2LongMap.Entry<T>> keyToLong = new ObjectArrayList<>(size);
+		ObjectList<Object2DoubleMap.Entry<T>> keyToDouble = new ObjectArrayList<>(size);
+		ObjectList<Map.Entry<T, ?>> keyToObject = new ObjectArrayList<>(size);
 
 		input.stream().forEach(sm -> {
-			sm.getValueProvider().acceptConsumer(o -> keyToValue.add(Map.entry(sm.getSlice(), o)));
+			sm.getValueProvider().acceptConsumer(new IValueConsumer() {
+
+				@Override
+				public void onLong(long v) {
+					keyToLong.add(new AbstractObject2LongMap.BasicEntry<T>(sm.getSlice(), v));
+				}
+
+				@Override
+				public void onDouble(double v) {
+					keyToDouble.add(new AbstractObject2DoubleMap.BasicEntry<T>(sm.getSlice(), v));
+				}
+
+				@Override
+				public void onObject(Object v) {
+					keyToObject.add(new AbstractObject2ObjectMap.BasicEntry<T, Object>(sm.getSlice(), v));
+				}
+			});
 		});
+
+		MultitypeArrayBuilder multitypeArrayBuilder = MultitypeArray.builder();
+
+		final ImmutableList.Builder<T> keys = ImmutableList.builderWithExpectedSize(size);
 
 		// https://stackoverflow.com/questions/17328077/difference-between-arrays-sort-and-arrays-parallelsort
 		// This section typically takes from 100ms to 1s for 100k slices
-		keyToValue.sort(Map.Entry.comparingByKey());
+		if (keyToLong.size() == size) {
+			keyToLong.sort(Map.Entry.comparingByKey());
 
-		final ImmutableList.Builder<T> keys = ImmutableList.builderWithExpectedSize(size);
-		final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);
+			final LongArrayList values = new LongArrayList(size);
 
-		keyToValue.forEach(e -> {
-			keys.add(e.getKey());
-			values.add(e.getValue());
-		});
+			keyToLong.forEach(e -> {
+				keys.add(e.getKey());
+				values.add(e.getLongValue());
+			});
 
-		return MultitypeNavigableColumn.<T>builder().keys(keys.build()).valuesO(values.build()).locked(true).build();
+			multitypeArrayBuilder.valuesL(LongImmutableList.of(values.elements())).valuesType((byte) 1);
+		} else if (keyToDouble.size() == size) {
+			keyToDouble.sort(Map.Entry.comparingByKey());
+
+			final DoubleArrayList values = new DoubleArrayList(size);
+
+			keyToDouble.forEach(e -> {
+				keys.add(e.getKey());
+				values.add(e.getDoubleValue());
+			});
+
+			multitypeArrayBuilder.valuesD(DoubleImmutableList.of(values.elements())).valuesType((byte) 2);
+		} else {
+			// Transfer notObject entries to object case as MultitypeNavigableColumn is mono-type
+			keyToObject.addAll(keyToLong);
+			keyToObject.addAll(keyToDouble);
+
+			keyToLong.sort(Map.Entry.comparingByKey());
+
+			final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);
+
+			keyToObject.forEach(e -> {
+				keys.add(e.getKey());
+				values.add(e.getValue());
+			});
+
+			multitypeArrayBuilder.valuesO(values.build()).valuesType((byte) 8);
+		}
+
+		return MultitypeNavigableColumn.<T>builder()
+				.keys(keys.build())
+				.values(multitypeArrayBuilder.build())
+				.locked(true)
+				.build();
 	}
 }

@@ -60,5 +60,6 @@ public interface IValueConsumer {
 		onObject(v);
 	}
 
-	void onObject(Object object);
+	void onObject(Object v);
+
 }

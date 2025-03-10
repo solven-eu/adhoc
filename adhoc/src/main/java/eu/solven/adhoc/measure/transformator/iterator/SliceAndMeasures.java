@@ -53,7 +53,7 @@ public class SliceAndMeasures {
 	 *
 	 * @param queryStep
 	 * @param slice
-	 * @param valueConsumerConsumers
+	 * @param valueProviders
 	 *            underlyingStep index to a value provider
 	 * @return
 	 */
