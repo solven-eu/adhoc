@@ -96,17 +96,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		throw new IllegalArgumentException("This does not allow merging. key=%s".formatted(keys.get(index)));
 	}
 
-	protected Object cleanValue(Object v) {
-		// This is useful to ensure type homogeneity, as this column does not have (yet) primitive storage
-		if (SumAggregation.isLongLike(v)) {
-			return SumAggregation.asLong(v);
-		} else if (SumAggregation.isDoubleLike(v)) {
-			return SumAggregation.asDouble(v);
-		} else {
-			return v;
-		}
-	}
-
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *

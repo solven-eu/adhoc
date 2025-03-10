@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,163 +38,160 @@ import lombok.NonNull;
 
 @Builder
 public class MultitypeArray {
-	// Indicate the single type of values stored in this column
-	// For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not constant
-	@Default
-	byte valuesType = 0;
+    // Indicate the single type of values stored in this column
+    // For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not constant
+    @Default
+    byte valuesType = 0;
 
-	// TODO How could we manage crossTypes efficiently?
-	// Using an intToType could do that job, but the use of a hash-based structure makes it equivalent to
-	// MergeableMultitypeStorage
-	@Default
-	@NonNull
-	final LongList valuesL = new LongArrayList();
+    // TODO How could we manage crossTypes efficiently?
+    // Using an intToType could do that job, but the use of a hash-based structure makes it equivalent to
+    // MergeableMultitypeStorage
+    @Default
+    @NonNull
+    final LongList valuesL = new LongArrayList();
 
-	@Default
-	@NonNull
-	final DoubleList valuesD = new DoubleArrayList();
+    @Default
+    @NonNull
+    final DoubleList valuesD = new DoubleArrayList();
 
-	@Default
-	@NonNull
-	final List<Object> valuesO = new ArrayList<>();
+    @Default
+    @NonNull
+    final List<Object> valuesO = new ArrayList<>();
 
-	public int size() {
-		if (valuesType == 0) {
-			return 0;
-		} else if (valuesType == 1) {
-			return valuesL.size();
-		} else if (valuesType == 2) {
-			return valuesD.size();
-		} else {
-			return valuesO.size();
-		}
-	}
+    public int size() {
+        if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+            return 0;
+        } else if (valuesType == IMultitypeConstants.MASK_LONG) {
+            return valuesL.size();
+        } else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+            return valuesD.size();
+        } else {
+            return valuesO.size();
+        }
+    }
 
-	public IValueConsumer add() {
-		int insertionIndex = size();
+    public IValueConsumer add() {
+        int insertionIndex = size();
 
-		return add(insertionIndex);
-	}
+        return add(insertionIndex);
+    }
 
-	public IValueConsumer add(int insertionIndex) {
-		return new IValueConsumer() {
-			@Override
-			public void onLong(long v) {
-				if (valuesType == 0) {
-					valuesType = 1;
-					valuesL.add(v);
-				} else if (valuesType == 1) {
-					valuesL.add(v);
-				} else {
-					onObject(v);
-				}
-			}
+    public IValueConsumer add(int insertionIndex) {
+        return new IValueConsumer() {
+            @Override
+            public void onLong(long v) {
+                if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+                    valuesType = IMultitypeConstants.MASK_LONG;
+                    valuesL.add(insertionIndex, v);
+                } else if (valuesType == IMultitypeConstants.MASK_LONG) {
+                    valuesL.add(insertionIndex, v);
+                } else {
+                    onObject(v);
+                }
+            }
 
-			@Override
-			public void onObject(Object v) {
-				if (valuesType == 0) {
-					// First value
-					valuesType = 8;
-				} else if (valuesType == 8) {
-				} else if (valuesType == 1) {
-					// if (SumAggregation.isLongLike(v)) {
-					// onLong(SumAggregation.asLong(v));
-					// } else {
-					// Migrate the column from long to object
-					valuesL.iterator().forEachRemaining(longV -> valuesO.add(longV));
-					valuesL.clear();
-					// }
-				} else if (valuesType == 2) {
-					// Migrate the column from double to object
-					valuesD.iterator().forEachRemaining(doubleV -> valuesO.add(doubleV));
-					valuesD.clear();
-				} else {
-					throw new IllegalStateException("valueType=%s".formatted(valuesType));
-				}
-				valuesO.add(v);
-			}
-		};
-	}
+            @Override
+            public void onDouble(double v) {
+                if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+                    valuesType = IMultitypeConstants.MASK_DOUBLE;
+                    valuesD.add(insertionIndex, v);
+                } else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+                    valuesD.add(insertionIndex, v);
+                } else {
+                    onObject(v);
+                }
+            }
 
-	public IValueConsumer set(int index) {
-		return new IValueConsumer() {
-			@Override
-			public void onLong(long v) {
-				if (valuesType == 0) {
-					valuesType = 1;
-					valuesL.set(index, v);
-				} else if (valuesType == 1) {
-					valuesL.set(index, v);
-				} else {
-					onObject(v);
-				}
-			}
+            @Override
+            public void onObject(Object v) {
+                ensureObject();
+                valuesO.add(insertionIndex, v);
+            }
+        };
+    }
 
-			@Override
-			public void onObject(Object v) {
-				if (valuesType == 0) {
-					// First value
-					valuesType = 8;
-				} else if (valuesType == 8) {
-				} else if (valuesType == 1) {
-					// Migrate the column from long to object
-					valuesL.iterator().forEachRemaining(longV -> valuesO.add(longV));
-					valuesL.clear();
-					valuesType = 8;
-					// }
-				} else if (valuesType == 2) {
-					// Migrate the column from double to object
-					valuesD.iterator().forEachRemaining(doubleV -> valuesO.add(doubleV));
-					valuesD.clear();
-					valuesType = 8;
-				} else {
-					throw new IllegalStateException("valueType=%s".formatted(valuesType));
-				}
-				valuesO.set(index, v);
-			}
-		};
-	}
+    protected void ensureObject() {
+        if (valuesType == IMultitypeConstants.MASK_OBJECT) {
+            // Already on proper type
+        } else {
+            if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+                // First value
+            } else if (valuesType == IMultitypeConstants.MASK_LONG) {
+                // Migrate the column from long to object
+                valuesO.addAll(valuesL);
+                valuesL.clear();
+                // }
+            } else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+                // Migrate the column from double to object
+                valuesO.addAll(valuesD);
+                valuesD.clear();
+            } else {
+                throw new IllegalStateException("valueType=%s".formatted(valuesType));
+            }
+            valuesType = IMultitypeConstants.MASK_OBJECT;
+        }
+    }
 
-	public void read(int rowIndex, IValueConsumer valueConsumer) {
-		if (valuesType == 0) {
-			throw new IndexOutOfBoundsException(rowIndex);
-		} else if (valuesType == 1) {
-			valueConsumer.onLong(valuesL.getLong(rowIndex));
-		} else if (valuesType == 2) {
-			valueConsumer.onDouble(valuesD.getDouble(rowIndex));
-		} else {
-			valueConsumer.onObject(valuesO.get(rowIndex));
-		}
-	}
+    public IValueConsumer set(int index) {
+        return new IValueConsumer() {
+            @Override
+            public void onLong(long v) {
+                if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+                    valuesType = IMultitypeConstants.MASK_LONG;
+                    valuesL.set(index, v);
+                } else if (valuesType == IMultitypeConstants.MASK_LONG) {
+                    valuesL.set(index, v);
+                } else {
+                    onObject(v);
+                }
+            }
 
-	public <U> U apply(int rowIndex, IValueFunction<U> valueFunction) {
-		if (valuesType == 0) {
-			throw new IndexOutOfBoundsException(rowIndex);
-		} else if (valuesType == 1) {
-			return valueFunction.onLong(valuesL.getLong(rowIndex));
-		} else if (valuesType == 2) {
-			return valueFunction.onDouble(valuesD.getDouble(rowIndex));
-		} else {
-			return valueFunction.onObject(valuesO.get(rowIndex));
-		}
-	}
+            @Override
+            public void onObject(Object v) {
+                ensureObject();
+                valuesO.set(index, v);
+            }
+        };
+    }
 
-	public static MultitypeArray empty() {
-		return MultitypeArray.builder().valuesD(DoubleList.of()).valuesL(LongList.of()).valuesO(List.of()).build();
-	}
+    public void read(int rowIndex, IValueConsumer valueConsumer) {
+        if (valuesType == 0) {
+            throw new IndexOutOfBoundsException(rowIndex);
+        } else if (valuesType == 1) {
+            valueConsumer.onLong(valuesL.getLong(rowIndex));
+        } else if (valuesType == 2) {
+            valueConsumer.onDouble(valuesD.getDouble(rowIndex));
+        } else {
+            valueConsumer.onObject(valuesO.get(rowIndex));
+        }
+    }
 
-	public void replaceObjects(Function<Object, Object> function) {
-		if (valuesType == 0) {
-			// nothing
-		} else if (valuesType == 1) {
-			// nothing
-		} else if (valuesType == 2) {
-			// nothing
-		} else {
-			valuesO.replaceAll(v -> {
-				return function.apply(v);
-			});
-		}
-	}
+    public <U> U apply(int rowIndex, IValueFunction<U> valueFunction) {
+        if (valuesType == 0) {
+            throw new IndexOutOfBoundsException(rowIndex);
+        } else if (valuesType == 1) {
+            return valueFunction.onLong(valuesL.getLong(rowIndex));
+        } else if (valuesType == 2) {
+            return valueFunction.onDouble(valuesD.getDouble(rowIndex));
+        } else {
+            return valueFunction.onObject(valuesO.get(rowIndex));
+        }
+    }
+
+    public static MultitypeArray empty() {
+        return MultitypeArray.builder().valuesD(DoubleList.of()).valuesL(LongList.of()).valuesO(List.of()).build();
+    }
+
+    public void replaceObjects(Function<Object, Object> function) {
+        if (valuesType == 0) {
+            // nothing
+        } else if (valuesType == 1) {
+            // nothing
+        } else if (valuesType == 2) {
+            // nothing
+        } else {
+            valuesO.replaceAll(function::apply);
+        }
+    }
 
 }

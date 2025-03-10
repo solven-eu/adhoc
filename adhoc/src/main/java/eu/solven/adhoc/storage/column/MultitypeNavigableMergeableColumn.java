@@ -44,15 +44,12 @@ import lombok.extern.slf4j.Slf4j;
 public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends MultitypeNavigableColumn<T>
 		implements IMultitypeMergeableColumn<T> {
 
-	// @Default
 	@NonNull
-	IAggregation aggregation // = new SumAggregation()
-	;
+	IAggregation aggregation;
 
 	// When writing the value, we need to ensure it is prepared by the aggregation function
-	@Override
 	protected Object cleanValue(Object v) {
-		return super.cleanValue(aggregation.aggregate(v, null));
+		return aggregation.aggregate(v, null);
 	}
 
 	@Override
