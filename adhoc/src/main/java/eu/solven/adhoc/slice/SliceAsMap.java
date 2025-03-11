@@ -34,12 +34,10 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import lombok.ToString;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
  */
-@ToString
 public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
@@ -133,5 +131,10 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		} else {
 			return MapComparators.mapComparator().compare(this.asMap, o.asMap);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "slice:" + asMap;
 	}
 }

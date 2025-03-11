@@ -63,11 +63,11 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+		MapBasedTabularView view = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
+		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
@@ -85,10 +85,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		amb.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
-		ITabularView output = aqw.execute(AdhocQuery.builder()
-				.measure("sumK1K2")
-				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
-				.build());
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("k2", null).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

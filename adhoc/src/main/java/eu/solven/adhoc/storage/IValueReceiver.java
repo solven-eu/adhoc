@@ -25,13 +25,13 @@ package eu.solven.adhoc.storage;
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
- * This can be seen as a proxy to **read** values.
+ * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
  * 
  * @author Benoit Lacelle
  * @see IValueProvider
  */
 @FunctionalInterface
-public interface IValueConsumer {
+public interface IValueReceiver {
 
 	/**
 	 * If this holds a long, override this optional method to receive the primitive long

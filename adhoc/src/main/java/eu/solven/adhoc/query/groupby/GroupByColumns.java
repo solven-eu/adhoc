@@ -22,25 +22,6 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.IHasName;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -48,6 +29,27 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TODO Should this superseed {@link GroupBySimpleColumns}?
@@ -59,13 +61,16 @@ import java.util.stream.Collectors;
 @Builder
 @Jacksonized
 @Slf4j
+@EqualsAndHashCode(exclude = "cachedNameToColumn")
 public class GroupByColumns implements IAdhocGroupBy {
 	@Singular
 	@NonNull
 	final ImmutableList<IAdhocColumn> columns;
 
-	 @JsonIgnore
-	 final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn = Suppliers.memoize(() -> namedColumns(columns));
+	// Cached to spare memory allocation as this may be read once per aggregate
+	@JsonIgnore
+	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
+			Suppliers.memoize(() -> namedColumns(getColumns()));
 
 	@Override
 	public NavigableMap<String, IAdhocColumn> getNameToColumn() {

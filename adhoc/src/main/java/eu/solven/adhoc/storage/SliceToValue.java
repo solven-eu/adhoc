@@ -56,7 +56,7 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public void onValue(SliceAsMap slice, IValueConsumer consumer) {
+	public void onValue(SliceAsMap slice, IValueReceiver consumer) {
 		column.onValue(slice.getAdhocSliceAsMap(), consumer);
 	}
 

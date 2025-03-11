@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
@@ -58,10 +58,10 @@ public interface IMultitypeColumn<T> {
 	/**
 	 * 
 	 * @param slice
-	 * @return the {@link IValueConsumer} into which the value has to be written. If the key already exists, switch to
+	 * @return the {@link IValueReceiver} into which the value has to be written. If the key already exists, switch to
 	 *         an optional merge. Appending null is generally a no-op, not a remove.
 	 */
-	IValueConsumer append(T slice);
+	IValueReceiver append(T slice);
 
 	@Deprecated(since = "Should rely on `IValueConsumer append(T slice)`")
 	default void append(T slice, Object o) {

@@ -23,7 +23,7 @@
 package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
@@ -49,6 +49,6 @@ public interface IMultitypeMergeableColumn<T> extends IMultitypeColumnFastGet<T>
 	 * @param slice
 	 * @param fragmentValue
 	 */
-	IValueConsumer merge(T slice);
+	IValueReceiver merge(T slice);
 
 }

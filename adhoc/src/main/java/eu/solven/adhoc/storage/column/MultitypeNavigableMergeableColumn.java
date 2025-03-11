@@ -27,7 +27,7 @@ import java.util.List;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -53,13 +53,13 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 	}
 
 	@Override
-	protected IValueConsumer merge(int index) {
+	protected IValueReceiver merge(int index) {
 		checkLock(keys.get(index));
 
-		return new IValueConsumer() {
+		return new IValueReceiver() {
 			@Override
 			public void onLong(long input) {
-				onValue(index, new IValueConsumer() {
+				onValue(index, new IValueReceiver() {
 
 					@Override
 					public void onLong(long existingAggregate) {
@@ -82,7 +82,7 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 
 			@Override
 			public void onObject(Object input) {
-				onValue(index, new IValueConsumer() {
+				onValue(index, new IValueReceiver() {
 
 					@Override
 					public void onLong(long existingAggregate) {
@@ -101,7 +101,7 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 	}
 
 	@Override
-	public IValueConsumer merge(T key) {
+	public IValueReceiver merge(T key) {
 		int index = getIndex(key);
 
 		if (index < 0) {

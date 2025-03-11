@@ -130,7 +130,7 @@ public class TestSumAggregation {
 
 	@Test
 	public void testSum_objects() {
-		Assertions.assertThat(aggregator.aggregate(null, null)).isEqualTo(null);
+		Assertions.assertThat(aggregator.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(aggregator.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(aggregator.aggregate(1.2D, null)).isEqualTo(1.2D);
 	}

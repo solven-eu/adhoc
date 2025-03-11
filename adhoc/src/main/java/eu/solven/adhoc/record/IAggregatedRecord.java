@@ -25,7 +25,7 @@ package eu.solven.adhoc.record;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -38,7 +38,7 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 public interface IAggregatedRecord {
 	Set<String> aggregateKeySet();
 
-	void onAggregate(String aggregateName, IValueConsumer valueConsumer);
+	void onAggregate(String aggregateName, IValueReceiver valueConsumer);
 
 	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
 	Object getAggregate(String aggregateName);

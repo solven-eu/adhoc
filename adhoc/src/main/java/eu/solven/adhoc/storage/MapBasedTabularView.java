@@ -123,7 +123,7 @@ public class MapBasedTabularView implements ITabularView {
 		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregator::aggregateMaps);
 	}
 
-	public IValueConsumer sliceFeeder(SliceAsMap slice, String measureName) {
+	public IValueReceiver sliceFeeder(SliceAsMap slice, String measureName) {
 		return o -> {
 			if (o == null) {
 				return;

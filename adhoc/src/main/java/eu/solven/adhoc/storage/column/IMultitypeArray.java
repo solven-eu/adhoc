@@ -20,48 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iterator;
+package eu.solven.adhoc.storage.column;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.function.Function;
 
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueFunction;
 import eu.solven.adhoc.storage.IValueReceiver;
-import lombok.Builder;
 
 /**
- * A {@link ISlicedRecord} based on a {@link List} of {@link SliceAndMeasure}.
+ * A Data-structure similar to an array, enable multitype.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class SlicedRecordFromSlices implements ISlicedRecord {
-	final List<IValueProvider> valueProviders;
+public interface IMultitypeArray {
 
-	@Override
-	public boolean isEmpty() {
-		return valueProviders.isEmpty();
+	int size();
+
+	/**
+	 * Append a value at the end of this array.
+	 * 
+	 * @return
+	 */
+	default IValueReceiver add() {
+		return add(size());
 	}
 
-	@Override
-	public int size() {
-		return valueProviders.size();
-	}
+	/**
+	 * 
+	 * @param insertionIndex
+	 *            must be between `0` and `size()` included.
+	 * @return a {@link IValueReceiver} to push the value to write
+	 */
+	IValueReceiver add(int insertionIndex);
 
-	@Override
-	public void read(int index, IValueReceiver valueConsumer) {
-		valueProviders.get(index).acceptConsumer(valueConsumer);
-	}
+	/**
+	 * 
+	 * @param rowIndex
+	 *            the rowIndex at which the value has to be changed. Must be between `0` and `size()` excluded.
+	 * @return
+	 */
+	IValueReceiver set(int rowIndex);
 
-	@Override
-	public String toString() {
-		return IntStream.range(0, size()).<String>mapToObj(index -> {
-			Object v = IValueProvider.getValue(vc -> read(index, vc));
+	void read(int rowIndex, IValueReceiver onKey);
 
-			return String.valueOf(v);
-		}).collect(Collectors.joining(", ", "[", "]"));
-	}
+	<U> U apply(int rowIndex, IValueFunction<U> iValueFunction);
+
+	// BEWARE Should rely on IValueConsumer
+	// Relates with IAggregationCarrier
+	void replaceAllObjects(Function<Object, Object> function);
 
 }

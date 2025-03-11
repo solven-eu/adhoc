@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.aggregation;
 import java.util.List;
 
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.
@@ -34,5 +36,70 @@ import eu.solven.adhoc.measure.model.Combinator;
  */
 public interface IAggregation {
 	Object aggregate(Object left, Object right);
+
+	// BEWARE It is important not to take a IValueConsumer as argument, it may typically lead to a synchronous
+	// `.clearKey` while preparing the write, which may lead to a valueProvider not to get access to some data.
+	// By returning an IValueProvider, we delay the initialization of the receiver
+	default IValueProvider aggregate(IValueProvider l, IValueProvider r) {
+		return new IValueProvider() {
+
+			@Override
+			public void acceptConsumer(IValueReceiver valueReceiver) {
+				l.acceptConsumer(new IValueReceiver() {
+
+					@Override
+					public void onLong(long vL) {
+						r.acceptConsumer(new IValueReceiver() {
+
+							@Override
+							public void onLong(long vR) {
+								if (this instanceof ILongAggregation longAggregation) {
+									valueReceiver.onLong(longAggregation.aggregateLongs(vL, vR));
+								} else {
+									valueReceiver.onObject(aggregate(vL, vR));
+								}
+							}
+
+							@Override
+							public void onObject(Object vR) {
+								valueReceiver.onObject(aggregate(vL, vR));
+							}
+						});
+					}
+
+					@Override
+					public void onDouble(double vL) {
+						r.acceptConsumer(new IValueReceiver() {
+
+							@Override
+							public void onDouble(double vR) {
+								if (this instanceof IDoubleAggregation doubleAggregation) {
+									valueReceiver.onDouble(doubleAggregation.aggregateDoubles(vL, vR));
+								} else {
+									valueReceiver.onObject(aggregate(vL, vR));
+								}
+							}
+
+							@Override
+							public void onObject(Object vR) {
+								valueReceiver.onObject(aggregate(vL, vR));
+							}
+						});
+					}
+
+					@Override
+					public void onObject(Object vL) {
+						r.acceptConsumer(new IValueReceiver() {
+
+							@Override
+							public void onObject(Object vR) {
+								valueReceiver.onObject(aggregate(vL, vR));
+							}
+						});
+					}
+				});
+			}
+		};
+	}
 
 }

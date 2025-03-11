@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.cell;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -56,8 +56,8 @@ public class MultitypeCell implements IMultitypeCell {
 	Object asObject = null;
 
 	@Override
-	public IValueConsumer merge() {
-		return new IValueConsumer() {
+	public IValueReceiver merge() {
+		return new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {

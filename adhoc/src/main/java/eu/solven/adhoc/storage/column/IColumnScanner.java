@@ -24,7 +24,7 @@ package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * Used with a {@link ITabularView} to iterate over its rows.
@@ -38,7 +38,7 @@ public interface IColumnScanner<T> {
 	/**
 	 * 
 	 * @param key
-	 * @return a {@link IValueConsumer}
+	 * @return a {@link IValueReceiver}
 	 */
-	IValueConsumer onKey(T key);
+	IValueReceiver onKey(T key);
 }

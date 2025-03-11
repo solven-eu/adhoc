@@ -45,7 +45,7 @@ public class TestListBasedTabularView {
 				{"coordinates":[{"c1":"v1"}],"values":[{"m":123}]}""");
 
 		Assertions.assertThat(view.toString()).isEqualTo("""
-				ListBasedTabularView{size=1, #0=SliceAsMap(asMap={c1=v1})={m=123}}""");
+				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
 	}
 
 }

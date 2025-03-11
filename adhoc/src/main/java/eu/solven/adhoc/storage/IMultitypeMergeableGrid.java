@@ -45,7 +45,7 @@ public interface IMultitypeMergeableGrid<T> {
 	@Deprecated(since = "Prefer `IValueConsumer contributeRaw(Aggregator aggregator, T key)`")
 	void contributeRaw(Aggregator aggregator, T key, Object v);
 
-	IValueConsumer contributeRaw(Aggregator aggregator, T key);
+	IValueReceiver contributeRaw(Aggregator aggregator, T key);
 
 	/**
 	 * Useful when the DB has done the aggregation
@@ -59,7 +59,7 @@ public interface IMultitypeMergeableGrid<T> {
 	@Deprecated(since = "Prefer `IValueConsumer contributePre(Aggregator aggregator, T key)`")
 	void contributePre(Aggregator aggregator, T key, Object v);
 
-	IValueConsumer contributePre(Aggregator aggregator, T key);
+	IValueReceiver contributePre(Aggregator aggregator, T key);
 
 	/**
 	 * Will typically handle {@link IAggregationCarrier}.

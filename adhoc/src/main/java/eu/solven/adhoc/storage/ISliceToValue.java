@@ -51,7 +51,7 @@ public interface ISliceToValue {
 
 	Set<SliceAsMap> slicesSet();
 
-	void onValue(SliceAsMap slice, IValueConsumer consumer);
+	void onValue(SliceAsMap slice, IValueReceiver consumer);
 
 	void forEachSlice(IColumnScanner<SliceAsMap> rowScanner);
 
@@ -59,7 +59,7 @@ public interface ISliceToValue {
 	 * 
 	 * @param <U>
 	 * @param rowConverter
-	 *            knows how to convert a {@link SliceAsMap} and a value through a {@link IValueConsumer} into a custom
+	 *            knows how to convert a {@link SliceAsMap} and a value through a {@link IValueReceiver} into a custom
 	 *            object
 	 * @return a {@link Stream} of objects built by the rowConverter
 	 */

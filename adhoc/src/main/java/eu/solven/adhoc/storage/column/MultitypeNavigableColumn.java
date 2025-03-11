@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -41,10 +41,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.storage.column.MultitypeArray.MultitypeArrayBuilder;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -84,7 +83,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Default
 	@NonNull
-	final MultitypeArray values = MultitypeArray.builder().build();
+	final IMultitypeArray values = MultitypeArray.builder().build();
 
 	// Once locked, this can not be written, hence not unlocked
 	@Default
@@ -92,31 +91,58 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	final AtomicInteger slowPath = new AtomicInteger();
 
-	protected IValueConsumer merge(int index) {
+	protected IValueReceiver merge(int index) {
 		throw new IllegalArgumentException("This does not allow merging. key=%s".formatted(keys.get(index)));
+	}
+
+	@Override
+	public IValueReceiver set(T key) {
+		return write(key, false);
 	}
 
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
 	 * @param key
-	 * @return a {@link IValueConsumer}. If pushing null, this behave like `.clear`
+	 * @return a {@link IValueReceiver}. If pushing null, this behave like `.clear`
 	 */
 	@Override
-	public IValueConsumer append(T key) {
+	public IValueReceiver append(T key) {
+		return write(key, true);
+	}
+
+	protected IValueReceiver write(T key, boolean mergeElseSet) {
+		int size = keys.size();
+		int valuesSize = values.size();
+		if (size != valuesSize) {
+			// This is generally the faulty key
+			T errorKey = keys.getLast();
+
+			if (size > valuesSize) {
+				// BEWARE Should we prefer trimming the unwritten keys?
+				throw new IllegalStateException("Forget to push into IValueReceiver for key=%s".formatted(errorKey));
+			} else if (size < valuesSize) {
+				throw new IllegalStateException("Multiple pushes into IValueReceiver for key=%s".formatted(errorKey));
+			}
+		}
+
 		checkLock(key);
-		
-		IValueConsumer valueConsumer;
-		
+
+		IValueReceiver valueConsumer;
+
 		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
 			// In most cases, we append a greater key, because we process sorted keys
 			keys.add(key);
 			valueConsumer = values.add();
 		} else {
 			int index = getIndex(key);
-			
+
 			if (index >= 0) {
-				valueConsumer = merge(index);
+				if (mergeElseSet) {
+					valueConsumer = merge(index);
+				} else {
+					valueConsumer = set(index);
+				}
 			} else {
 				// BEWARE This case should not happen. For now, we try handling it smoothly
 				// It typically happens if it is used to receive table aggregates while the table does not provide
@@ -164,8 +190,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
 		doLock();
 
-		return LongStream.range(0, size())
-				.mapToInt(Ints::checkedCast)
+		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> values.apply(i, converter.prepare(keys.get(i))));
 	}
 
@@ -173,8 +198,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public Stream<SliceAndMeasure<T>> stream() {
 		doLock();
 
-		return LongStream.range(0, size())
-				.mapToInt(Ints::checkedCast)
+		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
 						.valueProvider(vc -> values.read(i, vc))
@@ -234,7 +258,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public void purgeAggregationCarriers() {
-		values.replaceObjects(value -> {
+		values.replaceAllObjects(value -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				return IValueProvider.getValue(vc -> aggregationCarrier.acceptValueConsumer(vc));
 			} else {
@@ -244,7 +268,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	@Override
-	public void onValue(T key, IValueConsumer valueConsumer) {
+	public void onValue(T key, IValueReceiver valueConsumer) {
 		int index = getIndex(key);
 
 		if (index < 0) {
@@ -254,8 +278,23 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		}
 	}
 
-	protected void onValue(int index, IValueConsumer valueConsumer) {
+	@Override
+	public IValueProvider onValue(T key) {
+		int index = getIndex(key);
+
+		if (index < 0) {
+			return valueConsumer -> valueConsumer.onObject(null);
+		} else {
+			return valueConsumer -> onValue(index, valueConsumer);
+		}
+	}
+
+	protected void onValue(int index, IValueReceiver valueConsumer) {
 		values.read(index, valueConsumer);
+	}
+
+	protected IValueReceiver set(int index) {
+		return values.set(index);
 	}
 
 	public static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copy(IMultitypeColumnFastGet<T> input) {
@@ -270,7 +309,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		ObjectList<Map.Entry<T, ?>> keyToObject = new ObjectArrayList<>(size);
 
 		input.stream().forEach(sm -> {
-			sm.getValueProvider().acceptConsumer(new IValueConsumer() {
+			sm.getValueProvider().acceptConsumer(new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {

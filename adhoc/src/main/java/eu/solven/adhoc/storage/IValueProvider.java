@@ -25,17 +25,19 @@ package eu.solven.adhoc.storage;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * While {@link IValueConsumer} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
+ * While {@link IValueReceiver} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
  * transmit data in the opposite direction.
  * <p>
- * Typically, a class would provide a {@link IValueConsumer} to receive data/to be written into. Then, a
  * {@link IValueProvider} can be seen as a way to send data/to be read from.
+ * 
+ * @author Benoit Lacelle
+ * @see IValueReceiver
  */
 public interface IValueProvider {
 
 	IValueProvider NULL = vc -> vc.onObject(null);
 
-	void acceptConsumer(IValueConsumer valueConsumer);
+	void acceptConsumer(IValueReceiver valueReceiver);
 
 	static Object getValue(IValueProvider valueProvider) {
 		AtomicReference<Object> refV = new AtomicReference<>();

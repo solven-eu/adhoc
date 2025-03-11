@@ -23,15 +23,14 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.Builder;
 import lombok.Value;
 
 /**
- * Keep the highest value amongst encountered values
+ * Count the number of received entries. Typically used for `COUNT(*)` row count.
  */
-public class CountAggregation implements IAggregation, IHasCarriers {
+public class CountAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
 
 	public static final String KEY = "COUNT";
 
@@ -66,7 +65,7 @@ public class CountAggregation implements IAggregation, IHasCarriers {
 		}
 
 		@Override
-		public void acceptValueConsumer(IValueConsumer valueConsumer) {
+		public void acceptValueConsumer(IValueReceiver valueConsumer) {
 			valueConsumer.onLong(count);
 		}
 	}
@@ -100,14 +99,4 @@ public class CountAggregation implements IAggregation, IHasCarriers {
 	public CountHolder wrap(Object v) {
 		return CountHolder.builder().count(((Number) v).longValue()).build();
 	}
-
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// throw new UnsupportedOperationException("COUNT does not fit into a double");
-	// }
-
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// throw new UnsupportedOperationException("COUNT does not fit into a double");
-	// }
 }

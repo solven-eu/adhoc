@@ -43,7 +43,7 @@ import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.AggregatingColumns;
 import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -115,7 +115,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 
 		for (String aggregatedMeasure : aggregatedMeasures) {
 			// TODO Compute valueConsumers once for all rows
-			List<IValueConsumer> valueConsumers = new ArrayList<>();
+			List<IValueReceiver> valueConsumers = new ArrayList<>();
 
 			Set<Aggregator> rawAggregations = aggregatesMetadata.getRaw(aggregatedMeasure);
 			if (!rawAggregations.isEmpty()) {
@@ -137,7 +137,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				continue;
 			}
 
-			tableRow.onAggregate(aggregatedMeasure, new IValueConsumer() {
+			tableRow.onAggregate(aggregatedMeasure, new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {
@@ -151,12 +151,16 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 
 				@Override
 				public void onCharsequence(CharSequence v) {
-					valueConsumers.forEach(vc -> vc.onCharsequence(v));
+					if (v != null) {
+						valueConsumers.forEach(vc -> vc.onCharsequence(v));
+					}
 				}
 
 				@Override
 				public void onObject(Object v) {
-					valueConsumers.forEach(vc -> vc.onObject(v));
+					if (v != null) {
+						valueConsumers.forEach(vc -> vc.onObject(v));
+					}
 				}
 			});
 		}

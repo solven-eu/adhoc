@@ -27,8 +27,8 @@ import java.util.stream.IntStream;
 
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * Used to provide measure values/aggregates given a {@link List} of {@link ISliceToValue}. The scope is an
@@ -53,9 +53,9 @@ public interface ISlicedRecord {
 	 * @param index
 	 *            the index of the underlying queryStep. From 0 to `.size()` excluded.
 	 * @param valueConsumer
-	 *            some {@link IValueConsumer} to receive the data.
+	 *            some {@link IValueReceiver} to receive the data.
 	 */
-	void read(int index, IValueConsumer valueConsumer);
+	void read(int index, IValueReceiver valueConsumer);
 
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {

@@ -112,7 +112,7 @@ public class CombinatorQueryStep extends ATransformator {
 
 		if (isDebug()) {
 			log.info("[DEBUG] Write {} (given {} over {}) in {}",
-					valueProvider,
+					IValueProvider.getValue(valueProvider),
 					combinator.getName(),
 					slicedRecord,
 					slice);

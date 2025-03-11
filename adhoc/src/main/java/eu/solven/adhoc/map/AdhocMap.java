@@ -246,9 +246,12 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 				Object2IntMap.Entry<String> thisNext = thisIterator.next();
 				Object2IntMap.Entry<String> otherNext = otherIterator.next();
 
-				// We expect most key comparison to be reference comparisons as columnNames as defined once, should be internalized,
-				// and keySet are identical in most cases
-				int compareKey = (thisNext.getKey() == otherNext.getKey()) ? 0 : thisNext.getKey().compareTo(otherNext.getKey());
+				String thisKey = thisNext.getKey();
+				String otherKey = otherNext.getKey();
+				// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
+				// internalized, and keySet are identical in most cases
+				int compareKey = thisKey == otherKey ? 0 : thisKey.compareTo(otherKey);
+
 				if (compareKey != 0) {
 					return compareKey;
 				} else {
@@ -277,9 +280,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			if (keys instanceof NavigableSet<String> navigableKeys) {
 				this.keys = navigableKeys;
 				// identity reordering
-				reordering =
-						// IntStream.range(0, size).toArray()
-						new int[0];
+				reordering = new int[0];
 			} else {
 				ObjectArrayList<Object2IntMap.Entry<String>> keyToIndex = new ObjectArrayList<>();
 

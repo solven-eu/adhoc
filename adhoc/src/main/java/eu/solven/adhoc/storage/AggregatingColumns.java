@@ -73,7 +73,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IValueConsumer contributeRaw(Aggregator aggregator, T key) {
+	public IValueReceiver contributeRaw(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 
@@ -89,7 +89,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IValueConsumer contributePre(Aggregator aggregator, T key) {
+	public IValueReceiver contributePre(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
 		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
 

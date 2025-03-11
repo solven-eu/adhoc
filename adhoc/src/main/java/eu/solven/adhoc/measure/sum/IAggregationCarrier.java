@@ -23,7 +23,7 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
@@ -51,5 +51,5 @@ public interface IAggregationCarrier {
 	 * 
 	 * @param valueConsumer
 	 */
-	void acceptValueConsumer(IValueConsumer valueConsumer);
+	void acceptValueConsumer(IValueReceiver valueConsumer);
 }

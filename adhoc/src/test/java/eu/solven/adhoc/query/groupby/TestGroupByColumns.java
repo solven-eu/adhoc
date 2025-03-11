@@ -20,48 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iterator;
+package eu.solven.adhoc.query.groupby;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.storage.IValueProvider;
-import eu.solven.adhoc.storage.IValueReceiver;
-import lombok.Builder;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-/**
- * A {@link ISlicedRecord} based on a {@link List} of {@link SliceAndMeasure}.
- * 
- * @author Benoit Lacelle
- */
-@Builder
-public class SlicedRecordFromSlices implements ISlicedRecord {
-	final List<IValueProvider> valueProviders;
-
-	@Override
-	public boolean isEmpty() {
-		return valueProviders.isEmpty();
+public class TestGroupByColumns {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn").verify();
 	}
-
-	@Override
-	public int size() {
-		return valueProviders.size();
-	}
-
-	@Override
-	public void read(int index, IValueReceiver valueConsumer) {
-		valueProviders.get(index).acceptConsumer(valueConsumer);
-	}
-
-	@Override
-	public String toString() {
-		return IntStream.range(0, size()).<String>mapToObj(index -> {
-			Object v = IValueProvider.getValue(vc -> read(index, vc));
-
-			return String.valueOf(v);
-		}).collect(Collectors.joining(", ", "[", "]"));
-	}
-
 }

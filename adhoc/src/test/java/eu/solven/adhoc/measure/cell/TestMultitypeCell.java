@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 public class TestMultitypeCell {
 	@Test
@@ -37,7 +37,7 @@ public class TestMultitypeCell {
 		cell.merge().onDouble(23.45);
 		cell.merge().onObject("Arg");
 
-		cell.reduce().acceptConsumer(new IValueConsumer() {
+		cell.reduce().acceptConsumer(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -63,7 +63,7 @@ public class TestMultitypeCell {
 		cell.merge().onLong(123);
 		cell.merge().onDouble(23.45);
 
-		cell.reduce().acceptConsumer(new IValueConsumer() {
+		cell.reduce().acceptConsumer(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -89,7 +89,7 @@ public class TestMultitypeCell {
 		cell.merge().onLong(123);
 		cell.merge().onLong(234);
 
-		cell.reduce().acceptConsumer(new IValueConsumer() {
+		cell.reduce().acceptConsumer(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -115,7 +115,7 @@ public class TestMultitypeCell {
 		cell.merge().onDouble(12.34);
 		cell.merge().onDouble(23.45);
 
-		cell.reduce().acceptConsumer(new IValueConsumer() {
+		cell.reduce().acceptConsumer(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {

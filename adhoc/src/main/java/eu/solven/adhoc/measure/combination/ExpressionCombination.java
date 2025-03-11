@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.combination;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
+import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
@@ -71,7 +73,18 @@ public class ExpressionCombination implements ICombination {
 			throw new IllegalArgumentException("Issue with expression=`%s`".formatted(expression), e);
 		}
 
-		return result.getValue();
+		// BEWARE In some cases, we may like to cast to long if the result is a perfect long
+		if (result.isNumberValue()) {
+			BigDecimal bigDecimal = result.getNumberValue();
+
+			if (SumAggregation.isLongLike(bigDecimal)) {
+				return bigDecimal.longValueExact();
+			} else {
+				return bigDecimal.doubleValue();
+			}
+		} else {
+			return result.getValue();
+		}
 	}
 
 	public static ExpressionCombination parse(Map<String, ?> options) {

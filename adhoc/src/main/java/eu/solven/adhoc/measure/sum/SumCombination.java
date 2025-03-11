@@ -27,8 +27,8 @@ import eu.solven.adhoc.measure.cell.MultitypeCell;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 public class SumCombination implements ICombination {
 
@@ -42,7 +42,7 @@ public class SumCombination implements ICombination {
 
 		MultitypeCell refMultitype = MultitypeCell.builder().aggregation(agg).build();
 
-		IValueConsumer cellValueConsumer = refMultitype.merge();
+		IValueReceiver cellValueConsumer = refMultitype.merge();
 		for (int i = 0; i < size; i++) {
 			slicedRecord.read(i, cellValueConsumer);
 		}

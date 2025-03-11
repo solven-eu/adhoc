@@ -23,9 +23,11 @@
 package eu.solven.adhoc.storage.column;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -42,58 +44,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> implements IMultitypeMergeableColumn<T> {
 
-	// @Default
 	@NonNull
-	IAggregation aggregation // = new SumAggregation()
-	;
+	IAggregation aggregation;
 
 	@Override
-	public IValueConsumer merge(T key) {
-		// BEWARE This must not assumes doubles necessarily aggregates into a double, longs into a long, etc
-		// It is for instance not true in SumElseSetAggregator which turns input String into a collecting Set
-		// onValue(key, new ValueConsumer() {
-		//
-		// @Override
-		// public void onLong(long l) {
-		//
-		// }
-		// @Override
-		// public void onDouble(double d) {
-		//
-		// }
-		//
-		// @Override
-		// public void onCharsequence(CharSequence charSequence) {
-		//
-		// }
-		//
-		// @Override
-		// public void onObject(Object object) {
-		//
-		// }
-		// });
+	public IValueReceiver merge(T key) {
 
-		return new IValueConsumer() {
+		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
-				onValue(key, new IValueConsumer() {
+				onValue(key, new IValueReceiver() {
 					@Override
 					public void onLong(long existingAggregate) {
 						if (aggregation instanceof ILongAggregation longAggregation) {
 							long newAggregate = longAggregation.aggregateLongs(existingAggregate, v);
 
 							// No need to clear as we replace a long with a long
-							unsafePut(key).onLong(newAggregate);
+							unsafePut(key, false).onLong(newAggregate);
 						} else {
 							Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
 							if (SumAggregation.isLongLike(newAggregate)) {
 								long newAggregateAsLong = SumAggregation.asLong(newAggregate);
-								unsafePut(key).onLong(newAggregateAsLong);
+								unsafePut(key, false).onLong(newAggregateAsLong);
 							} else {
 								// Clear long
-								clearKey(key);
-								unsafePut(key).onObject(newAggregate);
+								measureToAggregateL.removeLong(key);
+								unsafePut(key, false).onObject(newAggregate);
 							}
 						}
 					}
@@ -102,88 +79,51 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 					public void onObject(Object existingAggregate) {
 						Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
-						if (existingAggregate != null) {
-							clearKey(key);
+						boolean clearKey = existingAggregate != null;
+						unsafePut(key, clearKey).onObject(newAggregate);
+					}
+				});
+			}
+
+			@Override
+			public void onDouble(double v) {
+				onValue(key, new IValueReceiver() {
+					@Override
+					public void onDouble(double existingAggregate) {
+						if (aggregation instanceof IDoubleAggregation doubleAggregation) {
+							double newAggregate = doubleAggregation.aggregateDoubles(existingAggregate, v);
+
+							// No need to clear as we replace a long with a long
+							unsafePut(key, false).onDouble(newAggregate);
+						} else {
+							Object newAggregate = aggregation.aggregate(existingAggregate, v);
+
+							if (SumAggregation.isDoubleLike(newAggregate)) {
+								double newAggregateAsDouble = SumAggregation.asDouble(newAggregate);
+								unsafePut(key, false).onDouble(newAggregateAsDouble);
+							} else {
+								// Clear double
+								measureToAggregateD.removeDouble(key);
+								unsafePut(key, false).onObject(newAggregate);
+							}
 						}
-						unsafePut(key).onObject(newAggregate);
+					}
+
+					@Override
+					public void onObject(Object existingAggregate) {
+						Object newAggregate = aggregation.aggregate(existingAggregate, v);
+
+						boolean clearKey = existingAggregate != null;
+						unsafePut(key, clearKey).onObject(newAggregate);
 					}
 				});
 			}
 
 			@Override
 			public void onObject(Object v) {
-				onValue(key, existingAggregate -> {
-					Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-					if (existingAggregate != null) {
-						clearKey(key);
-					}
-					append(key).onObject(newAggregate);
-				});
+				IValueProvider existingAggregate = onValue(key);
+				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptConsumer(set(key));
 			}
 		};
 	}
-
-	// private void mergeObject(T key, Object v) {
-	// Object valueToStore;
-	//
-	// if (measureToAggregateO.containsKey(key)) {
-	// Object aggregatedV = aggregation.aggregate(measureToAggregateO.get(key), v);
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered String
-	// valueToStore = v;
-	// }
-	//
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeCharSequence(T key, CharSequence vAsCharSequence) {
-	// CharSequence valueToStore;
-	//
-	// if (measureToAggregateS.containsKey(key)) {
-	// CharSequence aggregatedV = aggregation.aggregateStrings(measureToAggregateS.get(key), vAsCharSequence);
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered String
-	// valueToStore = vAsCharSequence;
-	// }
-	//
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeDouble(T key, double vAsPrimitive) {
-	// double valueToStore;
-	// if (measureToAggregateD.containsKey(key)) {
-	// double currentV = measureToAggregateD.getDouble(key);
-	// // BEWARE What if longs are not aggregated as long?
-	// double aggregatedV = aggregation.aggregateDoubles(currentV, vAsPrimitive);
-	//
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered long
-	// valueToStore = vAsPrimitive;
-	// }
-	// put(key, valueToStore);
-	// }
-	//
-	// protected void mergeLong(T key, long vAsPrimitive) {
-	// long valueToStore;
-	// if (measureToAggregateL.containsKey(key)) {
-	// long currentV = measureToAggregateL.getLong(key);
-	// // BEWARE What if longs are not aggregated as long?
-	// long aggregatedV = aggregation.aggregateLongs(currentV, vAsPrimitive);
-	//
-	// // Replace the existing long by aggregated long
-	// valueToStore = aggregatedV;
-	// } else {
-	// // This is the first encountered long
-	// valueToStore = vAsPrimitive;
-	// }
-	// put(key, valueToStore);
-	// }
-
 }

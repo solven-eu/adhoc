@@ -30,7 +30,7 @@ public class TestMaxAggregator {
 
 	@Test
 	public void testNull() {
-		Assertions.assertThat(a.aggregate(null, null)).isNull();
+		Assertions.assertThat(a.aggregate((Object) null, null)).isNull();
 		Assertions.assertThat(a.aggregate(null, 123)).isEqualTo(123);
 		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
 

@@ -38,7 +38,7 @@ public interface ISliceAndValueConsumer {
 	/**
 	 * 
 	 * @param slice
-	 * @return a {@link IValueConsumer} into which the value to write has to be pushed.
+	 * @return a {@link IValueReceiver} into which the value to write has to be pushed.
 	 */
-	IValueConsumer putSlice(SliceAsMap slice);
+	IValueReceiver putSlice(SliceAsMap slice);
 }

@@ -32,6 +32,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -47,6 +48,36 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StandardOperatorsFactory implements IOperatorsFactory {
+
+	@Override
+	public IAggregation makeAggregation(String key, Map<String, ?> options) {
+		return switch (key) {
+		case SumAggregation.KEY: {
+			yield new SumAggregation();
+		}
+		case MaxAggregation.KEY: {
+			yield new MaxAggregation();
+		}
+		case MinAggregation.KEY: {
+			yield new MinAggregation();
+		}
+		case CountAggregation.KEY: {
+			yield new CountAggregation();
+		}
+		case ExpressionAggregation.KEY: {
+			yield new ExpressionAggregation();
+		}
+		case RankAggregation.KEY: {
+			yield RankAggregation.make(options);
+		}
+		default:
+			yield defaultAggregation(key, options);
+		};
+	}
+
+	protected IAggregation defaultAggregation(String className, Map<String, ?> options) {
+		return makeWithMapOrEmpty(IAggregation.class, className, options);
+	}
 
 	@Override
 	public ICombination makeCombination(String key, Map<String, ?> options) {
@@ -69,37 +100,11 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	}
 
 	protected ICombination defaultCombination(String className, Map<String, ?> options) {
-		return makeWithmapOrEmpty(ICombination.class, className, options);
+		return makeWithMapOrEmpty(ICombination.class, className, options);
 	}
 
-	@Override
-	public IAggregation makeAggregation(String key, Map<String, ?> options) {
-		return switch (key) {
-		case SumAggregation.KEY: {
-			yield new SumAggregation();
-		}
-		case MaxAggregation.KEY: {
-			yield new MaxAggregation();
-		}
-		case MinAggregation.KEY: {
-			yield new MinAggregation();
-		}
-		case CountAggregation.KEY: {
-			yield new CountAggregation();
-		}
-		case ExpressionAggregation.KEY: {
-			yield new ExpressionAggregation();
-		}
-		default:
-			yield defaultAggregation(key, options);
-		};
-	}
-
-	protected IAggregation defaultAggregation(String className, Map<String, ?> options) {
-		return makeWithmapOrEmpty(IAggregation.class, className, options);
-	}
-
-	protected <T> T makeWithmapOrEmpty(Class<? extends T> parentClazz, String className, Map<String, ?> options) {
+	protected <T> T makeWithMapOrEmpty(Class<? extends T> parentClazz, String className, Map<String, ?> options) {
+		// TODO Start searching for a static method named `make`
 		Class<? extends T> asClass;
 		try {
 			asClass = (Class<? extends T>) Class.forName(className);

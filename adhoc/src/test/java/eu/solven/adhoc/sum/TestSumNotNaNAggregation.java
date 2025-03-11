@@ -32,7 +32,7 @@ public class TestSumNotNaNAggregation {
 
 	@Test
 	public void testSum_objects() {
-		Assertions.assertThat(a.aggregate(null, null)).isEqualTo(null);
+		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
 	}

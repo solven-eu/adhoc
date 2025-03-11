@@ -36,7 +36,8 @@ import com.google.common.collect.Streams;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
@@ -61,7 +62,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
-
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
@@ -89,7 +89,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 *            if null, this behave like `.clear`
 	 */
 	@Override
-	public IValueConsumer append(T key) {
+	public IValueReceiver append(T key) {
 		// We clear all keys, to prevent storing different types for the same key
 		// clearKey(key);
 
@@ -99,54 +99,102 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			return merge(key);
 		}
 
-		return unsafePut(key);
+		return unsafePut(key, false);
+	}
+
+	@Override
+	public IValueReceiver set(T key) {
+		// We clear all keys, to prevent storing different types for the same key
+		// clearKey(key);
+
+		// if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
+		// || measureToAggregateS.containsKey(key)
+		// || measureToAggregateO.containsKey(key)) {
+		// clearKey(key);
+		// }
+
+		return unsafePut(key, true);
 	}
 
 	/**
-	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type
+	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type. Once must
+	 * ensure he's not leading to `key` to be present for multi column/types.
 	 *
 	 * @param key
 	 * @return
 	 */
-	protected IValueConsumer unsafePut(T key) {
-		return new IValueConsumer() {
+	protected IValueReceiver unsafePut(T key, boolean safe) {
+		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
-				long vAsPrimitive = SumAggregation.asLong(v);
-				measureToAggregateL.put(key, vAsPrimitive);
+				measureToAggregateL.put(key, v);
+
+				if (safe) {
+					// measureToAggregateL.removeLong(key);
+					measureToAggregateD.removeDouble(key);
+					measureToAggregateS.remove(key);
+					measureToAggregateO.remove(key);
+				}
 			}
 
 			@Override
 			public void onDouble(double v) {
-				double vAsPrimitive = SumAggregation.asDouble(v);
-				measureToAggregateD.put(key, vAsPrimitive);
+				measureToAggregateD.put(key, v);
+
+				if (safe) {
+					measureToAggregateL.removeLong(key);
+					// measureToAggregateD.removeDouble(key);
+					measureToAggregateS.remove(key);
+					measureToAggregateO.remove(key);
+				}
 			}
 
 			@Override
 			public void onCharsequence(CharSequence v) {
 				String vAsString = v.toString();
 				measureToAggregateS.put(key, vAsString);
+
+				if (safe) {
+					measureToAggregateL.removeLong(key);
+					measureToAggregateD.removeDouble(key);
+					// measureToAggregateS.remove(key);
+					measureToAggregateO.remove(key);
+				}
 			}
 
 			@Override
 			public void onObject(Object v) {
 				if (SumAggregation.isLongLike(v)) {
 					long vAsPrimitive = SumAggregation.asLong(v);
-					measureToAggregateL.put(key, vAsPrimitive);
+					onLong(vAsPrimitive);
 				} else if (SumAggregation.isDoubleLike(v)) {
 					double vAsPrimitive = SumAggregation.asDouble(v);
-					measureToAggregateD.put(key, vAsPrimitive);
+					onDouble(vAsPrimitive);
 				} else if (v instanceof CharSequence) {
 					String vAsString = v.toString();
 					measureToAggregateS.put(key, vAsString);
+
+					if (safe) {
+						measureToAggregateL.removeLong(key);
+						measureToAggregateD.removeDouble(key);
+						// measureToAggregateS.remove(key);
+						measureToAggregateO.remove(key);
+					}
 				} else if (v != null) {
 					measureToAggregateO.put(key, v);
+
+					if (safe) {
+						measureToAggregateL.removeLong(key);
+						measureToAggregateD.removeDouble(key);
+						measureToAggregateS.remove(key);
+						// measureToAggregateO.remove(key);
+					}
 				}
 			}
 		};
 	}
 
-	protected IValueConsumer merge(T key) {
+	protected IValueReceiver merge(T key) {
 		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
 	}
 
@@ -158,7 +206,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public void onValue(T key, IValueConsumer consumer) {
+	public void onValue(T key, IValueReceiver consumer) {
 		if (measureToAggregateL.containsKey(key)) {
 			consumer.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
@@ -168,6 +216,20 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
 			consumer.onObject(measureToAggregateO.get(key));
+		}
+	}
+
+	@Override
+	public IValueProvider onValue(T key) {
+		if (measureToAggregateL.containsKey(key)) {
+			return vc -> vc.onLong(measureToAggregateL.getLong(key));
+		} else if (measureToAggregateD.containsKey(key)) {
+			return vc -> vc.onDouble(measureToAggregateD.getDouble(key));
+		} else if (measureToAggregateS.containsKey(key)) {
+			return vc -> vc.onCharsequence(measureToAggregateS.get(key));
+		} else {
+			// BEWARE if the key is unknown, the call is done with null
+			return vc -> vc.onObject(measureToAggregateO.get(key));
 		}
 	}
 
@@ -323,7 +385,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				aggregationCarrier.acceptValueConsumer(new IValueConsumer() {
+				aggregationCarrier.acceptValueConsumer(new IValueReceiver() {
 
 					@Override
 					public void onLong(long value) {

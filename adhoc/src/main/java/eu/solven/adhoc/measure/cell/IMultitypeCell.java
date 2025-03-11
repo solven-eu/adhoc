@@ -23,8 +23,8 @@
 package eu.solven.adhoc.measure.cell;
 
 import eu.solven.adhoc.slice.IAdhocSlice;
-import eu.solven.adhoc.storage.IValueConsumer;
 import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * A single cell (i.e. single {@link IAdhocSlice} and single measure) value.
@@ -36,9 +36,9 @@ public interface IMultitypeCell {
 	/**
 	 * Used to push data into the cell.
 	 * 
-	 * @return a {@link IValueConsumer} to accept the incoming data
+	 * @return a {@link IValueReceiver} to accept the incoming data
 	 */
-	IValueConsumer merge();
+	IValueReceiver merge();
 
 	default void merge(Object o) {
 		merge().onObject(o);

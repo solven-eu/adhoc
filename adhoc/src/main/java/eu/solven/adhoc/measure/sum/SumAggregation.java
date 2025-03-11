@@ -68,7 +68,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		} else if (r instanceof Collection<?> asCollection) {
 			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
 		} else {
-			// Wrap into a Set, so this aggregate function return either a long/double, or a String
+			// Wrap into a Set, so this aggregate function return either a long/double, or a String, or Set
 			return r.toString();
 		}
 	}

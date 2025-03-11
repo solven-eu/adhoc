@@ -22,7 +22,8 @@
  */
 package eu.solven.adhoc.storage.column;
 
-import eu.solven.adhoc.storage.IValueConsumer;
+import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.storage.IValueReceiver;
 
 /**
  * For {@link IMultitypeColumn} which enables fast `.get` operations.
@@ -33,11 +34,15 @@ import eu.solven.adhoc.storage.IValueConsumer;
 public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 
 	/**
-	 * Similar to a `.get` but the value is available through a {@link IValueConsumer}
+	 * Similar to a `.get` but the value is available through a {@link IValueReceiver}
 	 * 
 	 * @param slice
 	 * @param valueConsumer
 	 */
-	void onValue(T slice, IValueConsumer valueConsumer);
+	void onValue(T slice, IValueReceiver valueConsumer);
+
+	IValueProvider onValue(T key);
+
+	IValueReceiver set(T key);
 
 }

@@ -32,7 +32,7 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation.CountHolder;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
-public class TestMultiTypeStorage {
+public class TestMultitypeNavigableColumn {
 	IAggregation sum = new SumAggregation();
 
 	MultitypeHashMergeableColumn<String> storage =
