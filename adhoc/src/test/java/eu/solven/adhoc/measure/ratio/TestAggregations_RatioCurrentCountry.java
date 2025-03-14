@@ -155,7 +155,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testExplain_filterUs() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
 			AdhocQuery adhocQuery = AdhocQuery.builder()

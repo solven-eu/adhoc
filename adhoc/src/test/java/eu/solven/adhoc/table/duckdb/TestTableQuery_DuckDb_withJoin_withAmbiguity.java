@@ -165,7 +165,8 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, table);
+			ITabularView result =
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -181,7 +182,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
 					measureBag,
 					table);
@@ -202,7 +203,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
 					measureBag,
 					table);
@@ -223,7 +224,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
 					measureBag,
 					table);
@@ -244,7 +245,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
 					measureBag,
 					table);
@@ -265,7 +266,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
 					measureBag,
 					table);
@@ -286,7 +287,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		measureBag.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.execute(
+			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
 					measureBag,
 					table);

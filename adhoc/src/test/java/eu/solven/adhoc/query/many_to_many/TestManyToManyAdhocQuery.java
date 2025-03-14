@@ -338,7 +338,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 
 	@Test
 	public void testExplain_groupByGroups() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
 			prepareMeasures();

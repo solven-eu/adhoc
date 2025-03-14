@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 
@@ -36,6 +37,8 @@ import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
  * Helps testing anything related with a {@link AdhocMeasureBag} or a {@link AdhocQueryEngine}
@@ -47,7 +50,20 @@ public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
 	public final Object toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel();
 	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().name(this.getClass().getSimpleName()).build();
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
+
+	public IStopwatch makeStopwatch() {
+		return Stopwatch.createStarted()::elapsed;
+	}
+
+	public final IStopwatchFactory stopwatchFactory = new IStopwatchFactory() {
+
+		@Override
+		public IStopwatch createStarted() {
+			return makeStopwatch();
+		}
+	};
+	public final AdhocQueryEngine aqe =
+			AdhocQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();
 	public final Supplier<IAdhocTableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);

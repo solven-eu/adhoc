@@ -29,7 +29,9 @@ import java.util.Set;
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -62,12 +64,15 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@Default
 	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 	@NonNull
-	final IAdhocMeasureBag measures;
-	@NonNull
 	final IAdhocTableWrapper table;
+	@NonNull
+	final IAdhocMeasureBag measures;
 	@NonNull
 	@Default
 	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
+	@NonNull
+	@Default
+	final IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
@@ -76,7 +81,7 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(query, options, measures, table, columnsManager);
+		return engine.execute(queryPreparator.prepareQuery(table, measures, columnsManager, query, options));
 	}
 
 	@Override
@@ -102,6 +107,7 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 	public static class AdhocCubeWrapperBuilder {
 		public AdhocCubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
+			// BEWARE Is this the proper the ensure the eventBus is written in proper places?
 			AdhocColumnsManager columnsManager = (AdhocColumnsManager) this.build().getColumnsManager();
 			this.columnsManager(columnsManager.toBuilder().eventBus(eventBus).build());
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.util;
 
 import java.time.Duration;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
-/**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
- */
-@Value
-@Builder
-public class QueryStepIsCompleted implements IAdhocEvent {
-	@NonNull
-	AdhocQueryStep querystep;
-
-	long nbCells;
-
-	@NonNull
-	Duration duration;
-
-	@NonNull
-	Object source;
+public interface IStopwatch {
+	Duration elapsed();
 }

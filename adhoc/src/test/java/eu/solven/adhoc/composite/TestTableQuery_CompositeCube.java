@@ -227,7 +227,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 
 	@Test
 	public void testQueryCube1Plus2_filterUnshared() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 

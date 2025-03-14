@@ -41,7 +41,7 @@ public class AdhocExplainerTestHelper {
 		// hidden
 	}
 
-	public static List<String> listenForExplain(EventBus eventBus) {
+	public static List<String> listenForExplainNoPerf(EventBus eventBus) {
 		List<String> messages = new ArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results
@@ -50,7 +50,28 @@ public class AdhocExplainerTestHelper {
 
 				@Subscribe
 				public void onExplainOrDebugEvent(AdhocLogEvent event) {
-					if (event.isExplain()) {
+					if (event.isExplain() && !event.isPerformance()) {
+						messages.add(event.getMessage());
+					}
+				}
+			};
+
+			eventBus.register(listener);
+		}
+
+		return messages;
+	}
+
+	public static List<String> listenForPerf(EventBus eventBus) {
+		List<String> messages = new ArrayList<>();
+
+		// Register an eventListener to collect the EXPLAIN results
+		{
+			Object listener = new Object() {
+
+				@Subscribe
+				public void onExplainOrDebugEvent(AdhocLogEvent event) {
+					if (event.isPerformance()) {
 						messages.add(event.getMessage());
 					}
 				}

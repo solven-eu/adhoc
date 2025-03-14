@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.query;
 
-import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.Builder;
-import lombok.NonNull;
+import lombok.Builder.Default;
 import lombok.Value;
 
 /**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
+ * An {@link AdhocQueryId} is useful to atatch properly logs to a given query, especially in logs and eventBus events.
+ * 
+ * @author Benoit Lacelle
  */
 @Value
 @Builder
-public class QueryStepIsCompleted implements IAdhocEvent {
-	@NonNull
-	AdhocQueryStep querystep;
+public class AdhocQueryId {
+	private static AtomicLong NEXT_QUERY_INDEX = new AtomicLong();
 
-	long nbCells;
+	@Default
+	long queryIndex = NEXT_QUERY_INDEX.getAndIncrement();
 
-	@NonNull
-	Duration duration;
+	// queryId is defaulted to a random UUID, with very low collision probability
+	@Default
+	UUID queryId = UUID.randomUUID();
 
-	@NonNull
-	Object source;
+	// a query may have a parent, for instance in a CompositeCube, the compositeQuery would be the parent of the
+	// underlyingQuerys
+	@Default
+	UUID parentQueryId = null;
+
+	// Some queryHash to help as a human to see/search given query is re-used or edited
+	@Default
+	String queryHash = "";
+
+	public static AdhocQueryId from(IAdhocQuery query) {
+		return AdhocQueryId.builder().queryHash(Integer.toHexString(query.toString().hashCode())).build();
+	}
 }

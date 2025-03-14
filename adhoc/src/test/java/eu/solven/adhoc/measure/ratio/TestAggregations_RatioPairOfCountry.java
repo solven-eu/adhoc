@@ -186,7 +186,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testExplain_filterOtherColumn() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
 			AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").explain(true).build();

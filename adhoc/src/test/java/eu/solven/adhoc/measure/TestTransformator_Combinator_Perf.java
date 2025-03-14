@@ -23,7 +23,9 @@
 package eu.solven.adhoc.measure;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,11 +36,14 @@ import com.google.common.math.LongMath;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestTransformator_Combinator_Perf extends ADagTest implements IAdhocTestConstants {
 	int maxCardinality = 100_000;
 
@@ -94,7 +99,10 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 
 	@Test
 	public void testChainOfSums() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(timesN).groupByAlso("row_index").build());
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -104,5 +112,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 				.containsEntry(Map.of("row_index", 1), Map.of(timesN, 0L + (1L << height)))
 				.containsEntry(Map.of("row_index", maxCardinality - 1),
 						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 	}
 }

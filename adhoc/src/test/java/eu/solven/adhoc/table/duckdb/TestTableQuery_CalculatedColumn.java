@@ -83,7 +83,7 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 		measureBag.addMeasure(k1Sum);
 
 		ITabularView result =
-				aqe.execute(
+				aqe.executeUnsafe(
 						AdhocQuery.builder()
 								.measure(k1Sum.getName())
 								.groupBy(GroupByColumns

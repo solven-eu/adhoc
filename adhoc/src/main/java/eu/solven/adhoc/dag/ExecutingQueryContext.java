@@ -32,6 +32,7 @@ import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -53,6 +54,10 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// The query requested to the queryEngine
 	@NonNull
 	IAdhocQuery query;
+
+	@NonNull
+	@Default
+	AdhocQueryId queryId = AdhocQueryId.builder().build();
 
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures

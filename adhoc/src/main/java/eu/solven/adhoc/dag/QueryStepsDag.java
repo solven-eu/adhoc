@@ -24,7 +24,9 @@ package eu.solven.adhoc.dag;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -36,6 +38,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -61,6 +64,10 @@ public class QueryStepsDag {
 	@NonNull
 	Set<AdhocQueryStep> queried;
 
+	@NonNull
+	@Default
+	Map<AdhocQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
+
 	public List<AdhocQueryStep> underlyingSteps(AdhocQueryStep queryStep) {
 		if (queryStep.getMeasure() instanceof ReferencedMeasure refMeasure) {
 			throw new IllegalArgumentException(
@@ -82,5 +89,9 @@ public class QueryStepsDag {
 		// TopologicalOrder guarantees processing a vertex after dependent vertices are
 		// done.
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
+	}
+
+	public void registerExecutionFeedback(AdhocQueryStep queryStep, SizeAndDuration sizeAndDuration) {
+		stepToCost.put(queryStep, sizeAndDuration);
 	}
 }

@@ -90,7 +90,7 @@ public class AdhocQueryStepDefs {
 		AdhocQuery query = queryBuilder.build();
 
 		try {
-			tabularView = aDagTest.aqe.execute(query, aDagTest.amb, aDagTest.rows);
+			tabularView = aDagTest.aqe.executeUnsafe(query, aDagTest.amb, aDagTest.rows);
 		} catch (Throwable t) {
 			log.trace("A step thrown an exception (which may be expected by the scenario)", t);
 			this.t = t;

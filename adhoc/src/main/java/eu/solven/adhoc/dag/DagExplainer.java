@@ -33,10 +33,11 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.util.IAdhocEventBus;
-import lombok.Builder;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@SuperBuilder
 @Slf4j
 public class DagExplainer {
 	@NonNull
@@ -70,7 +71,18 @@ public class DagExplainer {
 				.thenComparing(qr -> qr.getGroupBy().toString());
 	}
 
-	protected void printStepAndUnderlyings(QueryStepsDag dagHolder,
+	/**
+	 * 
+	 * @param queryStepsDag
+	 * @param stepToIndentation
+	 * @param stepToReference
+	 * @param step
+	 *            currently show queryStep
+	 * @param optParent
+	 * @param isLast
+	 *            true if this step is the last amongst its siblings.
+	 */
+	protected void printStepAndUnderlyings(QueryStepsDag queryStepsDag,
 			Map<AdhocQueryStep, String> stepToIndentation,
 			Map<AdhocQueryStep, Integer> stepToReference,
 			AdhocQueryStep step,
@@ -97,25 +109,23 @@ public class DagExplainer {
 			stepToIndentation.putIfAbsent(step, indentation);
 
 			String stepAsString = toString(stepToReference, step);
+			String additionalStepInfo = additionalInfo(queryStepsDag, step, indentation);
 
 			isReferenced = stepAsString.startsWith("!");
 
-			eventBus.post(AdhocLogEvent.builder()
-					.explain(true)
-					.message("%s%s".formatted(indentation, stepAsString))
-					.source(this)
+			eventBus.post(openEventBuilder().message("%s%s%s".formatted(indentation, stepAsString, additionalStepInfo))
 					.build());
 		}
 
 		if (!isReferenced) {
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
+			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
 			List<DefaultEdge> underlyings = dag.outgoingEdgesOf(step).stream().toList();
 
 			for (int i = 0; i < underlyings.size(); i++) {
 				DefaultEdge edge = underlyings.get(i);
 				AdhocQueryStep underlyingStep = Graphs.getOppositeVertex(dag, edge, step);
 
-				printStepAndUnderlyings(dagHolder,
+				printStepAndUnderlyings(queryStepsDag,
 						stepToIndentation,
 						stepToReference,
 						underlyingStep,
@@ -124,6 +134,15 @@ public class DagExplainer {
 
 			}
 		}
+	}
+
+	protected AdhocLogEventBuilder openEventBuilder() {
+		return AdhocLogEvent.builder().explain(true).source(this);
+	}
+
+	// Typically overriden by DagExplainerForPerfs
+	protected String additionalInfo(QueryStepsDag queryStepsDag, AdhocQueryStep step, String indentation) {
+		return "";
 	}
 
 	protected String toString(Map<AdhocQueryStep, Integer> stepToReference, AdhocQueryStep step) {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.dag;
 
-import java.time.Duration;
+import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
+ * Generate {@link ExecutingQueryContext} given an {@link IAdhocQuery} and its context of execution.
+ * 
+ * @author Benoit Lacelle
+ * 
+ * @see IAdhocColumnsManager
+ * @see IAdhocImplicitFilter
  */
-@Value
-@Builder
-public class QueryStepIsCompleted implements IAdhocEvent {
-	@NonNull
-	AdhocQueryStep querystep;
+public interface IQueryPreparator {
+	default ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
+			IAdhocMeasureBag measures,
+			IAdhocColumnsManager columnsManager,
+			IAdhocQuery query) {
+		return prepareQuery(table, measures, columnsManager, query, Set.of());
+	}
 
-	long nbCells;
-
-	@NonNull
-	Duration duration;
-
-	@NonNull
-	Object source;
+	ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
+			IAdhocMeasureBag measures,
+			IAdhocColumnsManager columnsManager,
+			IAdhocQuery query,
+			Set<? extends IQueryOption> options);
 }

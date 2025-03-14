@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,44 +24,51 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
-/**
- * Holds the logic to execute a query, which means turning a {@link IAdhocQuery} into a {@link ITabularView}.
- *
- * @author Benoit Lacelle
- */
-public interface IAdhocQueryEngine {
+@Builder
+public class DefaultQueryPreparator implements IQueryPreparator {
 
-	/**
-	 * Execute an {@link IAdhocQuery}.
-	 *
-	 * @param executingQueryContext
-	 * @return
-	 */
-	ITabularView execute(ExecutingQueryContext executingQueryContext);
+	@NonNull
+	@Default
+	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
 
-	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
-		return executeUnsafe(query, Set.of(), measures, table, AdhocColumnsManager.builder().build());
-	}
-
-	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query,
-			Set<? extends IQueryOption> options,
+	@Override
+	public ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
 			IAdhocMeasureBag measures,
-			IAdhocTableWrapper table,
-			IAdhocColumnsManager columnsManager) {
-		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+			IAdhocColumnsManager columnsManager,
+			IAdhocQuery rawQuery,
+			Set<? extends IQueryOption> options) {
+		AdhocQuery query = combineWithImplicitFilter(rawQuery);
+		AdhocQueryId queryId = AdhocQueryId.from(query);
 
-		ExecutingQueryContext executingQueryContext =
-				queryPreparator.prepareQuery(table, measures, columnsManager, query, options);
-		return execute(executingQueryContext);
+		return ExecutingQueryContext.builder()
+				.query(query)
+				.queryId(queryId)
+				.options(options)
+				.measures(measures)
+				.table(table)
+				.columnsManager(columnsManager)
+				.build();
 	}
+
+	protected AdhocQuery combineWithImplicitFilter(IAdhocQuery rawQuery) {
+		IAdhocFilter preprocessedFilter =
+				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
+
+		AdhocQuery query = AdhocQuery.edit(rawQuery).filter(preprocessedFilter).build();
+		return query;
+	}
+
 }

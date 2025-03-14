@@ -79,10 +79,10 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> aqe.execute(adhocQuery, amb, rows))
+		Assertions.assertThatThrownBy(() -> aqe.executeUnsafe(adhocQuery, amb, rows))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = aqe.execute(adhocQuery,
+		ITabularView output = aqe.executeUnsafe(adhocQuery,
 				Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY),
 				amb,
 				rows,

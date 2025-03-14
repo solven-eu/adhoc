@@ -200,7 +200,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testExplain_grandTotal() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		prepareMeasures();
 
@@ -217,7 +217,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testExplain_filter() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		prepareMeasures();
 

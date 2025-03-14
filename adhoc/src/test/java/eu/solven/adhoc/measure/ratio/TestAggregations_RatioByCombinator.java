@@ -171,7 +171,7 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 
 	@Test
 	public void testExplain_groupByGroups() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplain(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
 			AdhocQuery adhocQuery =

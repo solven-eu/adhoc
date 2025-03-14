@@ -36,6 +36,8 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.DefaultQueryPreparator;
+import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -58,12 +60,17 @@ public class TestImplicitFilter_SpringSecurity {
 	{
 		EventBus eventBus = new EventBus();
 		eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder()
-				.eventBus(eventBus::post)
-				.implicitFilter(new SpringSecurityAdhocImplicitFilter())
-				.build();
+		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-		aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).eventBus(eventBus::post).build();
+		IQueryPreparator queryPreparator =
+				DefaultQueryPreparator.builder().implicitFilter(new SpringSecurityAdhocImplicitFilter()).build();
+		aqw = AdhocCubeWrapper.builder()
+				.table(rows)
+				.engine(aqe)
+				.measures(amb)
+				.queryPreparator(queryPreparator)
+				.eventBus(eventBus::post)
+				.build();
 	}
 
 	@BeforeEach
