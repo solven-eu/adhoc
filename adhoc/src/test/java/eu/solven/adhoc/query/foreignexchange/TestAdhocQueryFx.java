@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.foreignexchange;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,6 +50,7 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
+import eu.solven.adhoc.util.IStopwatch;
 import lombok.NonNull;
 
 /**
@@ -236,5 +238,39 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 						""".trim());
 
 		Assertions.assertThat(messages).hasSize(2);
+	}
+
+	@Override
+	public IStopwatch makeStopwatch() {
+		return () -> Duration.ofMillis(123);
+	}
+
+	@Test
+	public void testLogPerfs() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		prepareMeasures();
+
+		// ITabularView output =
+		aqw.execute(AdhocQuery.builder()
+				.measure(mName)
+				.customMarker(Optional.of("JPY"))
+				.groupByAlso("letter")
+				.andFilter("color", "red")
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualToNormalizingNewlines(
+						"""
+								#0 m=k1.CCY(Bucketor) filter=color=red groupBy=(letter) customMarker=JPY
+								   size=0 duration=123ms
+								\\-- #1 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
+								       size=0 duration=123ms
+								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, debug=false, explain=true)
+														"""
+								.trim());
+
+		Assertions.assertThat(messages).hasSize(3);
 	}
 }

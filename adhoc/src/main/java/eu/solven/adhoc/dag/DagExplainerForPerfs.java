@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class DagExplainerForPerfs extends DagExplainer {
+	private static final String EOL = System.lineSeparator();
 
 	@Override
 	protected AdhocLogEventBuilder openEventBuilder() {
@@ -50,10 +51,10 @@ public class DagExplainerForPerfs extends DagExplainer {
 
 		indentation = indentation.replace('\\', ' ').replace('-', ' ') + "   ";
 		if (cost == null) {
-			return "\r\n" + indentation + "No cost info";
+			return EOL + indentation + "No cost info";
 		}
 
-		return "\r\n" + "%ssize=%s duration=%s".formatted(indentation,
+		return EOL + "%ssize=%s duration=%s".formatted(indentation,
 				cost.getSize(),
 				PepperLogHelper.humanDuration(cost.getDuration().toNanos(), TimeUnit.NANOSECONDS));
 	}

@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.measure.transformator;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -32,75 +33,105 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 
-public class TestTransformator_Aggregator extends ADagTest implements IAdhocTestConstants {
-	@Override
+public class TestTransformator_Combinator_Long extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
+	@Override
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
-
-		amb.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k1.min").columnName("k1").aggregationKey(MinAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k1.max").columnName("k1").aggregationKey(MaxAggregation.KEY).build());
+		rows.add(Map.of("k1", 123));
+		rows.add(Map.of("k2", 234));
+		rows.add(Map.of("k1", 345, "k2", 456));
 	}
 
 	@Test
-	public void testK1MinMax() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("k1", "k1.min", "k1.max").build());
+	public void testSumOfSum() {
+		amb.addMeasure(Combinator.builder()
+				.name("sumK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.combinationKey(SumCombination.KEY)
+				.build());
+
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
-						Map.of("k1", 0L + (123 + 345) + 567, "k1.min", 0L + 123, "k1.max", 0L + 567));
+						// "k1", 123 + 345, "k2", 234 + 456,
+						Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
 
 	@Test
-	public void testCountAsterisk() {
-		Aggregator m = Aggregator.countAsterisk();
-		amb.addMeasure(m);
+	public void testTwiceSameMeasure() {
+		amb.addMeasure(Combinator.builder()
+				.name("sumK1K1")
+				.underlyings(Arrays.asList("k1", "k1"))
+				.combinationKey(SumCombination.KEY)
+				.build());
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(m).build());
+		amb.addMeasure(k1Sum);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(m.getName(), 0L + 4));
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K1", 0L + 123 + 345 + 123 + 345));
 	}
 
 	@Test
-	public void testNoMeasure() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().build());
+	public void testSumOfMax() {
+		amb.addMeasure(Combinator.builder()
+				.name("sumK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.combinationKey(SumCombination.KEY)
+				.build());
+
+		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
+		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		String mName = Aggregator.countAsterisk().getName();
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(mName, 0L + 4));
+				.containsEntry(Collections.emptyMap(),
+						// "k1", 345, "k2", 456,
+						Map.of("sumK1K2", 0L + 345 + 456));
 	}
 
 	@Test
-	public void testNoMeasureGroupBy() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().groupByAlso("a").build());
+	public void testMaxOfSum() {
+		amb.addMeasure(Combinator.builder()
+				.name("maxK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.combinationKey(MaxCombination.KEY)
+				.build());
+
+		amb.addMeasure(k1Sum);
+		amb.addMeasure(k2Sum);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		String mName = Aggregator.countAsterisk().getName();
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of(mName, 0L + 2))
-				.containsEntry(Map.of("a", "a2"), Map.of(mName, 0L + 2));
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(),
+						// "k1", 123 + 345, "k2", 234 + 456,
+						Map.of("maxK1K2", 0L + 234 + 456));
 	}
 }

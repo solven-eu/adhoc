@@ -625,6 +625,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {
-		return AdhocQueryEngine.builder().operatorsFactory(engine.operatorsFactory).eventBus(engine.eventBus);
+		return AdhocQueryEngine.builder()
+				.operatorsFactory(engine.operatorsFactory)
+				.eventBus(engine.eventBus)
+				.stopwatchFactory(engine.stopwatchFactory);
 	}
 }

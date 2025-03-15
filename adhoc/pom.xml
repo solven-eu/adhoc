@@ -88,6 +88,34 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<!-- JdbcClient for inserting arrays-->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- JdbcClient for inserting arrays-->
+			<groupId>org.apache.arrow.adbc</groupId>
+			<artifactId>adbc-driver-jdbc</artifactId>
+			<version>0.17.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!--<dependency>-->
+		<!-- QuickSlect-->
+		<!--    <groupId>org.apache.commons</groupId>-->
+		<!--    <artifactId>commons-numbers-arrays</artifactId>-->
+		<!--    <version>1.2</version>-->
+		<!--			<scope>test</scope>-->
+		<!--</dependency>-->
+		<!-- https://mvnrepository.com/artifact/com.github.haifengl/smile-core -->
+		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>4.3.0</version>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- Cucumber -->
 		<dependency>
 			<groupId>io.cucumber</groupId>
