@@ -66,8 +66,8 @@ export default {
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
             <AdhocEndpointHeader :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" />
-			
-			<AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" />
+
+            <AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" />
         </div>
     `,
 };

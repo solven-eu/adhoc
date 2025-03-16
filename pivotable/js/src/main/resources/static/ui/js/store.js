@@ -26,6 +26,7 @@ export const useAdhocStore = defineStore("adhoc", {
 		// The loaded endpoints and schemas
 		endpoints: {},
 		schemas: {},
+		columns: {},
 		nbSchemaFetching: 0,
 
 		queries: { nextQuery: 0 },
@@ -300,19 +301,20 @@ export const useAdhocStore = defineStore("adhoc", {
 
 					console.debug("responseJson", responseJson);
 
-					const schemas = responseJson;
+					const columns = responseJson;
 
-					schemas.forEach((column) => {
-						console.log("Registering column", column.column);
+					columns.forEach((columnJson) => {
+						const columnId = `${endpointId}-${cubeId}-${column}`;
+						console.log("Registering column", columnId, columnJson);
 
-						//						store.$patch({
-						//							schemas: {
-						//								...store.schemas,
-						//								[schemaAndEndpoint.endpoint.id]: schemaAndEndpoint.schema,
-						//							},
-						//						});
+						store.$patch({
+							columns: {
+								...store.columns,
+								[columnId]: columnJson,
+							},
+						});
 					});
-					return responseJson[0].coordinates;
+					return columns[0].coordinates;
 				} catch (e) {
 					store.onSwallowedError(e);
 					return {};

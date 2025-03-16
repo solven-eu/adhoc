@@ -157,6 +157,17 @@ public class TestAndFilter {
 	}
 
 	@Test
+	public void testJackson_empty() throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		IAdhocFilter fromString = objectMapper.readValue("{}", IAdhocFilter.class);
+
+		Assertions.assertThat(fromString).isEqualTo(IAdhocFilter.MATCH_ALL);
+	}
+
+	@Test
 	public void testChained() {
 		IAdhocFilter a1Andb2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
 		IAdhocFilter a1Andb2AndC3 = AndFilter.and(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));

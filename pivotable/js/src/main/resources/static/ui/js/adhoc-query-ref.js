@@ -30,8 +30,6 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/endpoints/' + endpointId + '/cubes/' + cubeId + '/query'}">
-            <i class="bi bi-grid-3x3"></i> Query {{cubeId}}
-        </RouterLink>
+        <RouterLink :to="{path:'/html/endpoints/' + endpointId + '/cubes/' + cubeId + '/query'}"> <i class="bi bi-grid-3x3"></i> Query {{cubeId}} </RouterLink>
     `,
 };

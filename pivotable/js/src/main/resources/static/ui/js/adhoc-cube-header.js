@@ -51,7 +51,7 @@ export default {
         <span v-else>
             <h2>
                 <AdhocCubeRef :cubeId="cubeId" :endpointId="endpointId" />
-				<AdhocEndpointRef :endpointId="endpointId" />
+                <AdhocEndpointRef :endpointId="endpointId" />
             </h2>
         </span>
     `,

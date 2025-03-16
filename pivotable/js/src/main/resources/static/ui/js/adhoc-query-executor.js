@@ -97,6 +97,9 @@ export default {
 			const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
 			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
 
+			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
+			const filter = JSON.parse(JSON.stringify(props.queryModel.filter || {}));
+
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as this must not changed when playing with the wizard.
 			if (!props.queryModel.selectedColumns2) {
@@ -107,6 +110,7 @@ export default {
 			return {
 				groupBy: { columns: orderedColumns },
 				measures: measures,
+				filter: filter,
 				debug: props.queryModel.debugQuery?.value,
 				explain: props.queryModel.explainQuery?.value,
 			};
@@ -224,21 +228,20 @@ export default {
         </div>
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
-			<!-- Move Submitter-->
-			<span>
-				<div>
-				    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit (queryStatus={{queryStatus}})
-					</button>
-				    <span v-if="sendMoveError" class="alert alert-warning" role="alert">{{sendMoveError}}</span>
-				</div>
+            <!-- Move Submitter-->
+            <span>
+                <div>
+                    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit (queryStatus={{queryStatus}})</button>
+                    <span v-if="sendMoveError" class="alert alert-warning" role="alert">{{sendMoveError}}</span>
+                </div>
 
-				<div class="form-check form-switch">
-				  <input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery">
-				  <label class="form-check-label" for="autoQuery">autoQuery</label>
-				</div>
-			</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
+                    <label class="form-check-label" for="autoQuery">autoQuery</label>
+                </div>
+            </span>
 
-			<AdhocQueryRawModal :queryJson="queryJson" />
+            <AdhocQueryRawModal :queryJson="queryJson" />
         </div>
     `,
 };

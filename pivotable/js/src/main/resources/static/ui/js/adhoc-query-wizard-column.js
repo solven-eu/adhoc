@@ -6,16 +6,18 @@ import { useAdhocStore } from "./store.js";
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
-import AdhocMeasure from "./adhoc-measure.js";
+import AdhocQueryWizardColumnFilterModal from "./adhoc-query-wizard-column-filter-modal.js";
 
 import { useUserStore } from "./store-user.js";
+
+// BEWARE: Should probably push an event to the Modal component so it open itself
+import { Modal } from "bootstrap";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocMeasure,
+		AdhocQueryWizardColumnFilterModal,
 	},
-	// https://vuejs.org/guide/components/props.html
 	props: {
 		cubeId: {
 			type: String,
@@ -52,6 +54,10 @@ export default {
 			cube(store) {
 				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
 			},
+			columnMeta(store) {
+				const columnId = `${this.endpointId}-${this.cubeId}-${this.column}`;
+				return store.columns[columnId] || { error: "not_loaded" };
+			},
 		}),
 	},
 	setup(props) {
@@ -60,19 +66,35 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
-		const coordinates = reactive({ array: [] });
 		const loading = ref(false);
 
 		function loadColumnCoordinates() {
 			loading.value = true;
-			store
-				.loadColumnCoordinates(props.cubeId, props.endpointId, props.column)
-				.then((columnMeta) => {
-					coordinates.array = columnMeta;
-				})
-				.finally(() => {
-					loading.value = false;
-				});
+			store.loadColumnCoordinates(props.cubeId, props.endpointId, props.column).finally(() => {
+				loading.value = false;
+			});
+		}
+
+		function openFilterModal() {
+			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
+			let columnFilterModal = new Modal(document.getElementById("columnFilterModal_" + props.column), {});
+			// https://getbootstrap.com/docs/5.0/components/modal/#show
+			columnFilterModal.show();
+
+			console.log("Showing modal for column", props.column);
+		}
+
+		function isFiltered() {
+			if (!props.queryModel?.filter?.type) {
+				return false;
+			} else if (props.queryModel.filter.type == "and" || props.queryModel.filter.type == "or") {
+				const filters = props.queryModel.filter.filters;
+				return filters.some((filter) => filter.type == "column" && filter.column == props.column);
+			} else {
+				return false;
+			}
 		}
 
 		watch(
@@ -104,25 +126,31 @@ export default {
 		return {
 			loadColumnCoordinates,
 			loading,
-			coordinates,
+			openFilterModal,
+			isFiltered,
 		};
 	},
 	template: /* HTML */ `
-	<div class="form-check form-switch">
-	  <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-	  <label class="form-check-label" :for="'column_' + column">{{column}}: {{type}}</label>
-	</div>
-	
-	  	<button  type="button" @click="loadColumnCoordinates()" class="badge bg-primary rounded-pill">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
+            <label class="form-check-label" :for="'column_' + column">{{column}}: {{type}}</label>
+        </div>
 
-		? - {{coordinates.array.length}}
-		<span v-if="loading">
-
-		<div class="spinner-grow" role="status">
-		  <span class="visually-hidden">Loading...</span>
-		</div>
-		
-		</span>
-		</button>
+        <AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+        <button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
+            <i class="bi bi-filter"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
+                <span class="visually-hidden">is filtered</span>
+            </span>
+        </button>
+        <button type="button" @click="loadColumnCoordinates()" class="badge bg-primary rounded-pill">
+            <span v-if="!columnMeta.coordinates?.length"> ? </span>
+            <span v-else> {{columnMeta.coordinates?.length}} </span>
+            <span v-if="loading">
+                <div class="spinner-grow" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </span>
+        </button>
     `,
 };

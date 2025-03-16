@@ -29,9 +29,5 @@ export default {
 
 		return {};
 	},
-	template: /* HTML */ `
-        <RouterLink :to="{path:'/html/endpoints/' + endpointId + '/cubes/' + cubeId}">
-            <i class="bi bi-box"></i> {{cubeId}}
-        </RouterLink>
-    `,
+	template: /* HTML */ ` <RouterLink :to="{path:'/html/endpoints/' + endpointId + '/cubes/' + cubeId}"> <i class="bi bi-box"></i> {{cubeId}} </RouterLink> `,
 };

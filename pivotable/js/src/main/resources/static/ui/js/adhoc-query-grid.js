@@ -325,21 +325,21 @@ export default {
 		return { rendering, gridMetadata };
 	},
 	template: /* HTML */ `
-		<div >
-			<div class="spinner-grow" role="status" v-if="loading">
-			  <span class="visually-hidden">Loading...</span>
-			</div>
-			
-			<!--div v-for="(row, index) in tabularView.grid?.coordinates">
+        <div>
+            <div class="spinner-grow" role="status" v-if="loading">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+
+            <!--div v-for="(row, index) in tabularView.grid?.coordinates">
 				{{row}} -> {{tabularView.grid.values[index]}}
 			</div-->
-			
-			<div class="">
-			  <div style="width:100%;">
-			    <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
-			  </div>
-			  <div :id="domId" style="width:100%;" class="vh-100"></div>
-			</div>
+
+            <div class="">
+                <div style="width:100%;">
+                    <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
+                </div>
+                <div :id="domId" style="width:100%;" class="vh-100"></div>
+            </div>
         </div>
     `,
 };

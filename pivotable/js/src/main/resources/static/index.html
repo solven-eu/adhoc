@@ -10,9 +10,9 @@
         <!-- https://icons.getbootstrap.com/ -->
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/styles/css/slick.columnpicker.css" type="text/css"/>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/styles/css/slick-alpine-theme.css" type="text/css"/>
-		
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/styles/css/slick.columnpicker.css" type="text/css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/styles/css/slick-alpine-theme.css" type="text/css" />
+
         <title>Pivotable (Adhoc)</title>
     </head>
     <body>
@@ -32,9 +32,9 @@
                     "vue-demi": "https://cdn.jsdelivr.net/npm/vue-demi/lib/v3/index.mjs",
                     "bootstrap": "/webjars/bootstrap/js/bootstrap.esm.js",
                     "@popperjs/core": "https://unpkg.com/@popperjs/core@2.11.8/dist/esm/index.js",
-					"slickgrid": "https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/esm/index.mjs",
-					"sortablejs": "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js",
-					"lodashEs": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm"
+                    "slickgrid": "https://cdn.jsdelivr.net/npm/slickgrid@5.15.0/dist/esm/index.mjs",
+                    "sortablejs": "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js",
+                    "lodashEs": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm"
                 }
             }
         </script>
@@ -54,9 +54,9 @@
             import AdhocAccount from "./ui/js/adhoc-account.js";
             import AdhocMe from "./ui/js/adhoc-account-me.js";
             import AdhocEndpoints from "./ui/js/adhoc-endpoints.js";
-			import AdhocEndpoint from "./ui/js/adhoc-endpoint.js";
-			import AdhocCube from "./ui/js/adhoc-cube.js";
-			import AdhocQuery from "./ui/js/adhoc-query.js";
+            import AdhocEndpoint from "./ui/js/adhoc-endpoint.js";
+            import AdhocCube from "./ui/js/adhoc-cube.js";
+            import AdhocQuery from "./ui/js/adhoc-query.js";
             import Login from "./ui/js/login.js";
             import LoginBasic from "./ui/js/login-basic.js";
             import AboutView from "./ui/js/about.js";
@@ -75,18 +75,18 @@
                     component: AdhocAccount,
                     props: true,
                 },
-					{
-					    path: "/html/login",
-					    component: Login,
-					    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
-					    // props: route => Object.assign({}, route.query, route.params)
-					},
-					{
-					    path: "/html/login/basic",
-					    component: LoginBasic,
-					    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
-					    // props: route => Object.assign({}, route.query, route.params)
-					},
+                {
+                    path: "/html/login",
+                    component: Login,
+                    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
+                    // props: route => Object.assign({}, route.query, route.params)
+                },
+                {
+                    path: "/html/login/basic",
+                    component: LoginBasic,
+                    // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
+                    // props: route => Object.assign({}, route.query, route.params)
+                },
                 { path: "/html/endpoints", component: AdhocEndpoints },
                 // https://router.vuejs.org/guide/essentials/passing-props
                 {
@@ -94,33 +94,31 @@
                     component: AdhocEndpoint,
                     props: true,
                 },
-					{
-					    path: "/html/endpoints/:endpointId/schema",
-					    component: AdhocEndpoint,
-					    props: (route) => ({
-							endpointId: route.params.endpointId,
-					        showSchema: true,
-					    }),
-					},
-					{
-					    path: "/html/endpoints/:endpointId/cubes/:cubeId",
-					    component: AdhocCube,
-					    props: (route) => ({
-							cubeId: route.params.cubeId,
-							endpointId: route.params.endpointId,
-					        showSchema: false,
-					    }),
-					},
-					{
-					    path: "/html/endpoints/:endpointId/cubes/:cubeId/query",
-					    component: AdhocQuery,
-					    props: (route) => ({
-							cubeId: route.params.cubeId,
-							endpointId: route.params.endpointId,
-					    }),
-					},
-				
-				
+                {
+                    path: "/html/endpoints/:endpointId/schema",
+                    component: AdhocEndpoint,
+                    props: (route) => ({
+                        endpointId: route.params.endpointId,
+                        showSchema: true,
+                    }),
+                },
+                {
+                    path: "/html/endpoints/:endpointId/cubes/:cubeId",
+                    component: AdhocCube,
+                    props: (route) => ({
+                        cubeId: route.params.cubeId,
+                        endpointId: route.params.endpointId,
+                        showSchema: false,
+                    }),
+                },
+                {
+                    path: "/html/endpoints/:endpointId/cubes/:cubeId/query",
+                    component: AdhocQuery,
+                    props: (route) => ({
+                        cubeId: route.params.cubeId,
+                        endpointId: route.params.endpointId,
+                    }),
+                },
             ];
 
             const router = createRouter({

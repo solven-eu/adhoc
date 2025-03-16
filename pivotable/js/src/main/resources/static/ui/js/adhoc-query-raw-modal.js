@@ -24,9 +24,9 @@ export default {
                     </div>
                     <!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
                     <div class="modal-body">
-						<div>
-						    <pre style="height: 10pc; overflow-y: scroll;" class="border text-start">{{queryJson}}</pre>
-						</div>
+                        <div>
+                            <pre style="height: 10pc; overflow-y: scroll;" class="border text-start">{{queryJson}}</pre>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

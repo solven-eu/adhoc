@@ -8,7 +8,7 @@ export default {
 		Logout,
 	},
 	computed: {
-		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching"]),
+		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching", "expectedToBeLoggedIn"]),
 	},
 	setup() {
 		const userStore = useUserStore();
@@ -52,6 +52,7 @@ export default {
                         />
                         <Logout />
                     </span>
+                    expectedToBeLoggedIn={{expectedToBeLoggedIn}}
                 </div>
             </div>
         </nav>

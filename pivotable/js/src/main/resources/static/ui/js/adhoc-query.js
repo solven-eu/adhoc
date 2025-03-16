@@ -109,22 +109,21 @@ export default {
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
-			
-			<div class="row">
-			  <div class="col">
-			<div class="row">
-			<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
-			  </div>
 
-			  <div class="row">
-			  <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
-			    </div>
-			  </div>
-			  <div class="col-9">
-			  	<AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
-			  </div>
-			</div>
+            <div class="row">
+                <div class="col">
+                    <div class="row">
+                        <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
+                    </div>
 
+                    <div class="row">
+                        <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
+                    </div>
+                </div>
+                <div class="col-9">
+                    <AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
+                </div>
+            </div>
         </div>
     `,
 };

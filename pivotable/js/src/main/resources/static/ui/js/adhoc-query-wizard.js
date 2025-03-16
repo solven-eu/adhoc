@@ -9,6 +9,7 @@ import AdhocCubeHeader from "./adhoc-cube-header.js";
 import AdhocMeasure from "./adhoc-measure.js";
 
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
+import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -17,6 +18,7 @@ export default {
 	components: {
 		AdhocMeasure,
 		AdhocQueryWizardColumn,
+		AdhocQueryWizardFilter,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -100,48 +102,51 @@ export default {
         </div>
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
-			Build the query
-			
-			<form>
+            Build the query
 
-				Search: <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search">
-				
-				<div class="h-25 d-inline-block">
-					Columns
-					<ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
-					    <li class="list-group-item  d-flex justify-content-between align-items-center">
-							<AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-						</li>
-					</ul>
-				</div>
+            <form>
+                Search: <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
 
-				<div class="h-25 d-inline-block">
-				Measures 
-				<ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
-				    <li class="list-group-item">
-						<div class="form-check form-switch">
-						  <input class="form-check-input" type="checkbox" role="switch" :id="'measure_' + name" v-model="queryModel.selectedMeasures[name]">
-						  <label class="form-check-label" :for="'measure_' + name">
-							  <AdhocMeasure :measure='measure' />
-						  </label>
-						</div>
-				    </li>
-				</ul>
-				</div>
+                <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
 
-				<div class="form-check form-switch">
-				  <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery">
-				  <label class="form-check-label" for="debugQuery">debug</label>
-				</div>
-				  <div class="form-check form-switch">
-				    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery">
-				    <label class="form-check-label" for="explainQuery">explain</label>
-				  </div>
-			</form>
-			
-			<div>
-			
-			</div>
+                <div class="h-25 d-inline-block">
+                    {{ Object.keys(cube.columns.columnToTypes).length}} Columns
+                    <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
+                        <li class="list-group-item  d-flex justify-content-between align-items-center">
+                            <AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="h-25 d-inline-block">
+                    {{ Object.keys(cube.measures).length}} Measures
+                    <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <div class="form-check form-switch">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    :id="'measure_' + name"
+                                    v-model="queryModel.selectedMeasures[name]"
+                                />
+                                <label class="form-check-label" :for="'measure_' + name">
+                                    <AdhocMeasure :measure="measure" />
+                                </label>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery" />
+                    <label class="form-check-label" for="debugQuery">debug</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery" />
+                    <label class="form-check-label" for="explainQuery">explain</label>
+                </div>
+            </form>
         </div>
     `,
 };

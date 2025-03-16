@@ -1,0 +1,41 @@
+import { computed, reactive, ref, watch, onMounted } from "vue";
+
+import { mapState } from "pinia";
+import { useAdhocStore } from "./store.js";
+
+import { useUserStore } from "./store-user.js";
+
+// import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
+
+export default {
+	name: "AdhocQueryWizardFilter",
+	// https://vuejs.org/guide/components/registration#local-registration
+	components: {
+		// AdhocQueryWizardFilter,
+	},
+	// https://vuejs.org/guide/components/props.html
+	props: {
+		filter: {
+			type: Object,
+			required: true,
+		},
+	},
+	computed: {},
+	setup(props) {
+		const store = useAdhocStore();
+		const userStore = useUserStore();
+
+		return {};
+	},
+	template: /* HTML */ `
+        <div v-if="filter.type == 'and'">
+            AND ->
+            <span v-for="operand in filter.filters">
+                <AdhocQueryWizardFilter :filter="operand" />
+            </span>
+            <- AND
+        </div>
+        <span v-else-if="filter.type='column'"> {{filter.column}}={{filter.valueMatcher}} </span>
+        <div v-else>{{filter}}</div>
+    `,
+};

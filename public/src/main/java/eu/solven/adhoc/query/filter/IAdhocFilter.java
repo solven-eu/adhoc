@@ -26,7 +26,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "type",
+		defaultImpl = AndFilter.class)
 @JsonSubTypes({ @JsonSubTypes.Type(value = AndFilter.class, name = "and"),
 		@JsonSubTypes.Type(value = OrFilter.class, name = "or"),
 		@JsonSubTypes.Type(value = NotFilter.class, name = "not"),

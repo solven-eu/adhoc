@@ -108,7 +108,7 @@ export default {
                     Cubes
                     <ul v-for="(cube, cubeName) in schema.cubes">
                         <li>
-							<AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
+                            <AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
                             <ul v-for="(ref, name) in cube.columns.columnToTypes">
                                 <li>{{name}}: {{ref}}</li>
                             </ul>
@@ -128,10 +128,10 @@ export default {
                     <div>
                         Cubes
                         <span v-for="(cube, cubeName) in schema.cubes">
-							<AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
-						</span>
+                            <AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
+                        </span>
                     </div>
-					<AdhocEndpointSchemaRef :endpointId="endpointId" />
+                    <AdhocEndpointSchemaRef :endpointId="endpointId" />
                 </span>
             </span>
 
@@ -143,8 +143,8 @@ export default {
                     ><i class="bi bi-trophy"></i> Join an existing contest ({{nbContests}})
                 </RouterLink>
             </span-->
-			
-			<AdhocCube :endpointId="endpointId" :cubeId="cubeId" v-if="cubeId" />
+
+            <AdhocCube :endpointId="endpointId" :cubeId="cubeId" v-if="cubeId" />
         </div>
     `,
 };
