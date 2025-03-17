@@ -27,17 +27,12 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!--        <dependency>-->
-		<!--            <groupId>eu.solven.adhoc</groupId>-->
-		<!--            <artifactId>redis</artifactId>-->
-		<!--            <version>${project.version}</version>-->
-		<!--        </dependency>-->
-
 		<dependency>
-			<!-- EvaluationExpression -->
-			<groupId>com.ezylang</groupId>
-			<artifactId>EvalEx</artifactId>
-			<version>3.4.0</version>
+			<!-- Used by some examples datasets in InjectSimpleCubesConfig -->
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>1.2.0</version>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>

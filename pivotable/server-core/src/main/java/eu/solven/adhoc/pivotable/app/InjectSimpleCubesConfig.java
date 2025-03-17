@@ -62,6 +62,18 @@ public class InjectSimpleCubesConfig {
 	public Void initSimpleCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
+		registerSimple(schema);
+
+		// schemaForApi.registerQuery("delta.EUR", AdhocQuery.builder().measure("delta").andFilter("ccy",
+		// "EUR").build());
+		// schemaForApi.registerQuery("gamma.USD", AdhocQuery.builder().measure("gamma").andFilter("ccy",
+		// "USD").build());
+		// schemaForApi.registerQuery("delta+gamma.grandTotal", AdhocQuery.builder().measure("delta+gamma").build());
+
+		return null;
+	}
+
+	protected void registerSimple(AdhocSchema schema) {
 		InMemoryTable table = prefillInmemoryTable();
 
 		schema.registerTable(table);
@@ -91,14 +103,6 @@ public class InjectSimpleCubesConfig {
 		schema.registerMeasureBag(AdhocMeasureBag.fromMeasures("simple", measures));
 
 		schema.registerCube("simple", "simple", "simple");
-
-		// schemaForApi.registerQuery("delta.EUR", AdhocQuery.builder().measure("delta").andFilter("ccy",
-		// "EUR").build());
-		// schemaForApi.registerQuery("gamma.USD", AdhocQuery.builder().measure("gamma").andFilter("ccy",
-		// "USD").build());
-		// schemaForApi.registerQuery("delta+gamma.grandTotal", AdhocQuery.builder().measure("delta+gamma").build());
-
-		return null;
 	}
 
 	protected InMemoryTable prefillInmemoryTable() {

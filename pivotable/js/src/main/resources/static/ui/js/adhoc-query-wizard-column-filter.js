@@ -148,6 +148,7 @@ export default {
                 <input v-model="equalsValue" placeholder="single value" />
 
                 <select class="form-select" aria-label="Filter type" v-model="equalsValue">
+                    <option disabled value="no_value">Please select a value</option>
                     <option v-for="coordinate in columnMeta.coordinates" :value="coordinate">{{coordinate}}</option>
                 </select>
             </div>

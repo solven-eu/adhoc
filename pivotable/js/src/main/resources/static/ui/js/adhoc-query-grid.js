@@ -62,16 +62,14 @@ export default {
 
 		function renderCallback(cellNode, row, dataContext, colDef) {
 			rendering.value = false;
+			props.tabularView.loading.rendering = false;
+			if (props.tabularView.timing.rendering_start) {
+				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_start;
+				delete props.tabularView.timing.rendering_start;
+			} else {
+				// another cell already registered renderering as done
+			}
 		}
-
-		// from rowIndex to columnIndex to span height
-		const metadata = {
-			0: {
-				columns: {
-					1: { rowspan: 3 },
-				},
-			},
-		};
 
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
@@ -82,11 +80,19 @@ export default {
 			data = [];
 
 			rendering.value = true;
+			props.tabularView.loading.rendering = true;
+			props.tabularView.timing.rendering_start = new Date();
 
-			// https://stackoverflow.com/questions/684575/how-to-quickly-clear-a-javascript-object
-			for (const rowIndex of Object.getOwnPropertyNames(metadata)) {
-				delete metadata[rowIndex];
-			}
+			// from rowIndex to columnIndex to span height
+			// We leave an example rowSpan but it will reset on first dataset
+			const metadata = {
+				0: {
+					columns: {
+						1: { rowspan: 3 },
+					},
+				},
+			};
+			metadata[0] = {};
 
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = false;
@@ -98,11 +104,23 @@ export default {
 				data.push({ id: "0", empty: "empty" });
 				gridMetadata.nb_rows = 0;
 			} else {
+				// https://stackoverflow.com/questions/9840548/how-to-put-html-into-slickgrid-cell
+				//				function popoverFormatter(row, cell, value, columnDef, dataContext) {
+				//					return '<span class="h-100 w-100" style="width=100%;" data-bs-toggle="popover" title="someTitle" data-bs-content="popoverContent">' + value + '</span>';
+				//				}
+
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				const columnNames = props.tabularView.query.groupBy.columns;
 				console.log(`Rendering columnNames=${columnNames}`);
 				for (let columnName of columnNames) {
-					const column = { id: columnName, name: columnName, field: columnName, sortable: sortable, asyncPostRender: renderCallback };
+					const column = {
+						id: columnName,
+						name: columnName,
+						field: columnName,
+						sortable: sortable,
+						asyncPostRender: renderCallback,
+						//, formatter: popoverFormatter
+					};
 					gridColumns.push(column);
 				}
 
@@ -148,6 +166,7 @@ export default {
 
 				const runningRowSpans = {};
 
+				// https://github.com/6pac/SlickGrid/issues/1114
 				function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
 					if (previousCoordinates) {
 						for (const column of columnNames) {
@@ -238,19 +257,9 @@ export default {
 
 			grid.setColumns(gridColumns);
 
-			// Option #1
 			dataView.getItemMetadata = (row) => {
-				return metadata[row] && metadata.attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
 			};
-
-			// Option #2
-			// const dataView = new Slick.Data.DataView({
-			//   globalItemMetadataProvider: {
-			//     getRowMetadata: (item, row) => {
-			//       return metadata[row];
-			//     }
-			//   }
-			// });
 
 			// https://github.com/6pac/SlickGrid/wiki/DataView#batching-updates
 			dataView.beginUpdate();
@@ -266,9 +275,23 @@ export default {
 		};
 
 		watch(
-			() => props.tabularView,
+			() => props.tabularView.view,
 			() => {
-				resyncData();
+				console.log("Detected change");
+				if (!props.tabularView.loading) {
+					props.tabularView.loading = {};
+				}
+				if (!props.tabularView.timing) {
+					props.tabularView.timing = {};
+				}
+				props.tabularView.loading.preparingGrid = true;
+				const startPreparingGrid = new Date();
+				try {
+					resyncData();
+				} finally {
+					props.tabularView.loading.preparingGrid = false;
+					props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
+				}
 			},
 			{ deep: true },
 		);
@@ -277,6 +300,18 @@ export default {
 		dataView = new SlickDataView({});
 
 		dataView.setItems(data);
+
+		// Initialize with `-1` to have a nice default value
+		const clickedCell = ref({ id: "-1" });
+
+		watch(
+			() => clickedCell,
+			() => {
+				// TODO Make it easy to filter by clicking a cell
+				console.log("Open menu for cell", clickedCell.value);
+			},
+			{ deep: true },
+		);
 
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
@@ -320,9 +355,17 @@ export default {
 				// preferred method but can be very slow in IE with huge datasets
 				dataView.sort(comparer, args.sortAsc);
 			});
+
+			// https://stackoverflow.com/questions/8365139/slickgrid-how-to-get-the-grid-item-on-click-event
+			grid.onDblClick.subscribe(function (e, args) {
+				var item = dataView.getItem(args.row);
+
+				// Update a reactive for event propagation in Vue
+				clickedCell.value = item;
+			});
 		});
 
-		return { rendering, gridMetadata };
+		return { rendering, gridMetadata, clickedCell };
 	},
 	template: /* HTML */ `
         <div>
@@ -330,16 +373,11 @@ export default {
                 <span class="visually-hidden">Loading...</span>
             </div>
 
-            <!--div v-for="(row, index) in tabularView.grid?.coordinates">
-				{{row}} -> {{tabularView.grid.values[index]}}
-			</div-->
-
-            <div class="">
-                <div style="width:100%;">
-                    <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
-                </div>
-                <div :id="domId" style="width:100%;" class="vh-100"></div>
+            <div style="width:100%;">
+                <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
             </div>
+            <div :id="domId" style="width:100%;" class="vh-100"></div>
+            clickedCell={{clickedCell}} props.tabularView.loading={{tabularView.loading}} props.tabularView.timing={{tabularView.timing}}
         </div>
     `,
 };

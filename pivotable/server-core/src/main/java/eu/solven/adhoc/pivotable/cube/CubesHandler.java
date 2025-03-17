@@ -35,12 +35,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Deprecated(since = "used?")
 @RequiredArgsConstructor
 @Slf4j
 public class CubesHandler {
 	final AdhocCubesRegistry cubesRegistry;
 
-	public Mono<ServerResponse> listGames(ServerRequest request) {
+	public Mono<ServerResponse> listCubes(ServerRequest request) {
 		PivotableCubeSearchParameters.PivotableCubeSearchParametersBuilder parameters =
 				PivotableCubeSearchParameters.builder();
 

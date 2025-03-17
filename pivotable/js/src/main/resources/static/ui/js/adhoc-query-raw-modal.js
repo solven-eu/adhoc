@@ -1,5 +1,3 @@
-import { mapState } from "pinia";
-
 export default {
 	props: {
 		queryJson: {

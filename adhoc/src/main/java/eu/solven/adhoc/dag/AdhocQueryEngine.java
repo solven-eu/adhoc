@@ -107,13 +107,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 		boolean postedAboutDone = false;
 		try {
-			eventBus.post(AdhocLogEvent.builder()
-					.message("Executing on table=%s measures=%s query=%s".formatted(
-							executingQueryContext.getTable().getName(),
-							executingQueryContext.getMeasures().getName(),
-							executingQueryContext.getQuery()))
-					.source(this)
-					.build());
+			postAboutQueryDone(executingQueryContext);
 
 			QueryStepsDag queryStepsDag = makeQueryStepsDag(executingQueryContext);
 
@@ -156,7 +150,19 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	private void postAboutQueryDone(ExecutingQueryContext executingQueryContext, String status, IStopwatch stopWatch) {
+	protected void postAboutQueryDone(ExecutingQueryContext executingQueryContext) {
+		eventBus.post(AdhocLogEvent.builder()
+				.message("Executing on table=%s measures=%s query=%s".formatted(executingQueryContext.getTable()
+						.getName(), executingQueryContext.getMeasures().getName(), executingQueryContext.getQuery()))
+				.source(this)
+				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
+				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
+				.build());
+	}
+
+	protected void postAboutQueryDone(ExecutingQueryContext executingQueryContext,
+			String status,
+			IStopwatch stopWatch) {
 		eventBus.post(AdhocLogEvent.builder()
 				.message("Executed status=%s duration=%s on table=%s measures=%s query=%s".formatted(status,
 						stopWatch.elapsed(),
@@ -165,6 +171,8 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						executingQueryContext.getQuery()))
 				.source(this)
 				.performance(true)
+				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
+				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
 				.build());
 	}
 

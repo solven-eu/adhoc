@@ -38,24 +38,24 @@ import lombok.extern.slf4j.Slf4j;
 public class PivotableEndpointsRegistry {
 	// One day, we could register externalized games, interacting by API. It will be a way not to concentrate all Games
 	// in this project.
-	final Map<UUID, PivotableAdhocEndpointMetadata> idToServer = new ConcurrentHashMap<>();
+	final Map<UUID, PivotableAdhocEndpointMetadata> idToEndpoint = new ConcurrentHashMap<>();
 
 	public void registerEntrypoint(PivotableAdhocEndpointMetadata endpoint) {
-		UUID serverId = endpoint.getId();
+		UUID endpointId = endpoint.getId();
 
-		if (serverId == null) {
-			throw new IllegalArgumentException("Missing gameId: " + endpoint);
+		if (endpointId == null) {
+			throw new IllegalArgumentException("Missing endpointId: " + endpoint);
 		}
 
-		PivotableAdhocEndpointMetadata alreadyIn = idToServer.putIfAbsent(serverId, endpoint);
+		PivotableAdhocEndpointMetadata alreadyIn = idToEndpoint.putIfAbsent(endpointId, endpoint);
 		if (alreadyIn != null) {
-			throw new IllegalArgumentException("gameId already registered: " + endpoint);
+			throw new IllegalArgumentException("endpointId already registered: " + endpoint);
 		}
-		log.info("Registering serverId={} serverName={}", serverId, endpoint.getName());
+		log.info("Registering endpointId={} endpointName={}", endpointId, endpoint.getName());
 	}
 
 	public PivotableAdhocEndpointMetadata getEntrypoint(UUID endpointId) {
-		PivotableAdhocEndpointMetadata endpoint = idToServer.get(endpointId);
+		PivotableAdhocEndpointMetadata endpoint = idToEndpoint.get(endpointId);
 		if (endpoint == null) {
 			throw new IllegalArgumentException("No endpoint registered for id=" + endpointId);
 		}
@@ -67,9 +67,9 @@ public class PivotableEndpointsRegistry {
 
 		if (search.getEndpointId().isPresent()) {
 			UUID uuid = search.getEndpointId().get();
-			metaStream = Optional.ofNullable(idToServer.get(uuid)).stream();
+			metaStream = Optional.ofNullable(idToEndpoint.get(uuid)).stream();
 		} else {
-			metaStream = idToServer.values().stream();
+			metaStream = idToEndpoint.values().stream();
 		}
 
 		if (search.getKeyword().isPresent()) {
@@ -81,7 +81,7 @@ public class PivotableEndpointsRegistry {
 		return metaStream.collect(Collectors.toList());
 	}
 
-	public Stream<? extends PivotableAdhocEndpointMetadata> getGames() {
-		return idToServer.values().stream();
+	public Stream<? extends PivotableAdhocEndpointMetadata> getEndpoints() {
+		return idToEndpoint.values().stream();
 	}
 }

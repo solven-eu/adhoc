@@ -111,7 +111,7 @@ export default {
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
             <div class="row">
-                <div class="col">
+                <div class="col-3">
                     <div class="row">
                         <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
                     </div>

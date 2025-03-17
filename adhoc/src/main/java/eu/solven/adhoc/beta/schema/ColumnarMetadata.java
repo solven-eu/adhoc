@@ -66,7 +66,7 @@ public class ColumnarMetadata {
 			} else if (Float.class.isAssignableFrom(clazz)) {
 				builder.columnToType(name, FLOAT);
 			} else {
-				log.warn("Unclear type for clazz={}", clazz);
+				log.warn("Unclear type for name={} clazz={}", name, clazz);
 				builder.columnToType(name, BLOB);
 			}
 		});

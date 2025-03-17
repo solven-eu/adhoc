@@ -109,11 +109,13 @@ export default {
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
 
-                <div class="h-25 d-inline-block">
+                <div class="h-25 d-inline-block overflow-auto">
                     {{ Object.keys(cube.columns.columnToTypes).length}} Columns
                     <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
                         <li class="list-group-item  d-flex justify-content-between align-items-center">
-                            <AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+                            <row>
+                                <AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+                            </row>
                         </li>
                     </ul>
                 </div>

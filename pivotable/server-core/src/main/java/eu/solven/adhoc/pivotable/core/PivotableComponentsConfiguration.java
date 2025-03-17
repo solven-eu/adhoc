@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
+import eu.solven.adhoc.pivotable.app.InjectAdvancedCubesConfig;
 import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
 import eu.solven.adhoc.pivotable.app.InjectPivotableSelfEndpointConfig;
 import eu.solven.adhoc.pivotable.app.InjectSimpleCubesConfig;
@@ -59,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 		InjectPivotableAccountsConfig.class,
 		InjectPivotableSelfEndpointConfig.class,
 		InjectSimpleCubesConfig.class,
+		InjectAdvancedCubesConfig.class,
 
 })
 @Slf4j

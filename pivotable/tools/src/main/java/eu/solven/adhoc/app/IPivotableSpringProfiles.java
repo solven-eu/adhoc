@@ -50,6 +50,7 @@ public interface IPivotableSpringProfiles {
 	// The server hosting pivotable also host an adhoc endpoint
 	String P_SELF_ENDPOINT = "self_endpoint";
 	String P_SIMPLE_DATASETS = "simple_datasets";
+	String P_ADVANCED_DATASETS = "advanced_datasets";
 
 	// Provides unsafe security settings (like DEV OAuth2 providers, and an unsafe JWT signingKey)
 	String P_UNSAFE_SERVER = "unsafe_server";

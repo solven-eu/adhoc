@@ -34,16 +34,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
+@Deprecated(since = "used?")
 public class AdhocCubesRegistry {
 	// One day, we could register externalized games, interacting by API. It will be a way not to concentrate all Games
 	// in this project.
 	final Map<PivotableCubeId, PivotableCubeMetadata> idToCube = new ConcurrentHashMap<>();
 
-	public void registerGame(PivotableCubeMetadata cube) {
+	public void registerCube(PivotableCubeMetadata cube) {
 		PivotableCubeId cubeId = cube.getId();
 
 		if (cubeId == null) {
-			throw new IllegalArgumentException("Missing gameId: " + cube);
+			throw new IllegalArgumentException("Missing cubeId: " + cube);
 		}
 
 		PivotableCubeMetadata alreadyIn = idToCube.putIfAbsent(cubeId, cube);

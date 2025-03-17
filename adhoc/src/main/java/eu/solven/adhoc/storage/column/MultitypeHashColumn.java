@@ -22,9 +22,7 @@
  */
 package eu.solven.adhoc.storage.column;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -380,9 +378,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public void purgeAggregationCarriers() {
-		// We collect entries to remove, not to modify `measureToAggregateO` while iterating over it
-		List<T> toRemove = new ArrayList<>();
-
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				aggregationCarrier.acceptValueConsumer(new IValueReceiver() {
@@ -390,23 +385,25 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					@Override
 					public void onLong(long value) {
 						measureToAggregateL.put(key, value);
-						toRemove.add(key);
 					}
 
 					@Override
 					public void onDouble(double value) {
 						measureToAggregateD.put(key, value);
-						toRemove.add(key);
 					}
 
 					@Override
 					public void onCharsequence(CharSequence value) {
 						measureToAggregateS.put(key, value.toString());
-						toRemove.add(key);
 					}
 
 					@Override
 					public void onObject(Object object) {
+						if (object instanceof IAggregationCarrier aggregationCarrier) {
+							throw new IllegalArgumentException(
+									"Illegal purge from %s to %s".formatted(aggregationCarrier, object));
+						}
+
 						// Replace current value
 						measureToAggregateO.put(key, value);
 					}
@@ -414,6 +411,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			}
 		});
 
-		toRemove.forEach(measureToAggregateO::remove);
+		// Remove in a later pass, as it is generally unsafe to remove while iterating
+		measureToAggregateO.object2ObjectEntrySet().removeIf(e -> e.getValue() instanceof IAggregationCarrier);
 	}
 }

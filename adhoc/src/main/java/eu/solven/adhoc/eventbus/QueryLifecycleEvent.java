@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,42 +24,19 @@ package eu.solven.adhoc.eventbus;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
-/**
- * Typically used for unitTests, to check some debug/explain feature.
- * 
- * @author Benoit Lacelle
- *
- */
 @Value
 @Builder
-public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable {
-	@Default
-	boolean explain = false;
-	// Are these info relative to performance?
-	// This is especially important for tests, not included logs which would generally change from one run to another
-	@Default
-	boolean performance = false;
-	@Default
-	boolean debug = false;
-	@Default
-	boolean warn = false;
-
-	@NonNull
-	String message;
+public class QueryLifecycleEvent {
+	ExecutingQueryContext query;
 
 	// Useful for event filtering
 	@NonNull
 	@Singular
 	ImmutableSet<String> tags;
-
-	@NonNull
-	Object source;
 }

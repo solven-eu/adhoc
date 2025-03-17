@@ -133,16 +133,9 @@ export default {
 	template: /* HTML */ `
         <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-            <label class="form-check-label" :for="'column_' + column">{{column}}: {{type}}</label>
+            <label class="form-check-label  text-wrap" :for="'column_' + column">{{column}}: {{type}}</label>
         </div>
 
-        <AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-        <button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
-            <i class="bi bi-filter"></i>
-            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
-                <span class="visually-hidden">is filtered</span>
-            </span>
-        </button>
         <button type="button" @click="loadColumnCoordinates()" class="badge bg-primary rounded-pill">
             <span v-if="!columnMeta.coordinates?.length"> ? </span>
             <span v-else> {{columnMeta.coordinates?.length}} </span>
@@ -150,6 +143,14 @@ export default {
                 <div class="spinner-grow" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
+            </span>
+        </button>
+
+        <AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+        <button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
+            <i class="bi bi-filter"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
+                <span class="visually-hidden">is filtered</span>
             </span>
         </button>
     `,

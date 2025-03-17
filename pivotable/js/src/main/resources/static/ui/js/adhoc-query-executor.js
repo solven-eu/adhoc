@@ -126,22 +126,12 @@ export default {
 			move.endpointId = props.endpointId;
 			move.cube = props.cubeId;
 			move.query = queryJson.value;
-			//			try {
-			//				move = JSON.parse(this.queryJson);
-			//			} catch (e) {
-			//				console.error("Issue parsing json: ", e);
-			//				sendMoveError.value = e.message;
-			//				return;
-			//			}
 
 			async function postFromUrl(url) {
 				try {
 					loading.value = true;
 					queryStatus.value = "Preparing";
 					const stringifiedQuery = JSON.stringify(move);
-
-					// console.log("Submitting move", move);
-					// console.log("Submitting move", stringifiedQuery);
 
 					if (!store.queries["" + stringifiedQuery.hashCode()]) {
 						store.queries["" + stringifiedQuery.hashCode()] = {};
@@ -154,15 +144,34 @@ export default {
 						body: stringifiedQuery,
 					};
 
+					if (!props.tabularView.loading) {
+						props.tabularView.loading = {};
+					}
+					if (!props.tabularView.timing) {
+						props.tabularView.timing = {};
+					}
+
+					const startSending = new Date();
+					props.tabularView.loading.sending = true;
+
 					queryStatus.value = "Submitted";
 					const response = await userStore.authenticatedFetch(url, fetchOptions);
+					props.tabularView.loading.sending = false;
+					props.tabularView.timing.sending = new Date() - startSending;
+
 					if (!response.ok) {
 						throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
 					}
 
 					queryStatus.value = "Downloading";
 
+					const startDownloading = new Date();
+					props.tabularView.loading.downloading = true;
+
 					const responseTabularView = await response.json();
+
+					props.tabularView.loading.downloading = false;
+					props.tabularView.timing.downloading = new Date() - startDownloading;
 
 					// This will be cancelled i nthe finally block: the rendering status is managed autonomously by the grid
 					queryStatus.value = "Rendering";
@@ -187,6 +196,8 @@ export default {
 					sendMoveError.value = e.message;
 				} finally {
 					loading.value = false;
+					props.tabularView.loading.sending = false;
+					props.tabularView.loading.downloading = false;
 					queryStatus.value = "";
 				}
 			}
