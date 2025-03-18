@@ -22,12 +22,19 @@
  */
 package eu.solven.adhoc.measure.aggregation.comparable;
 
+import lombok.experimental.SuperBuilder;
+
 /**
  * Keep the lowest value amongst encountered values
  */
+@SuperBuilder
 public class MinAggregation extends MaxAggregation {
-
 	public static final String KEY = "MIN";
+
+	@Override
+	protected int compare(Object l, Object r) {
+		return -super.compare(l, r);
+	}
 
 	@Override
 	public CharSequence aggregateStrings(CharSequence left, CharSequence right) {
@@ -50,5 +57,10 @@ public class MinAggregation extends MaxAggregation {
 	@Override
 	public long aggregateLongs(long left, long right) {
 		return Long.min(left, right);
+	}
+
+	@Override
+	public long neutralLong() {
+		return Long.MAX_VALUE;
 	}
 }

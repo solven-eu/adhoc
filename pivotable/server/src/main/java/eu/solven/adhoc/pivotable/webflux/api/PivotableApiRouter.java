@@ -82,8 +82,14 @@ public class PivotableApiRouter {
 				.example("somreCubeName");
 
 		var coordinate = parameterBuilder().name("coordinate")
-				.description("Search for a specific coordinate, along a column")
+				.description("Search for a specific coordinate, along one or more column")
 				.example("someCoordinate");
+
+		var coordinatesLimit = parameterBuilder().name("limit_coordinates")
+				.description(
+						"Maximum number of coordinates to return per column. -1 for no limit. Missing will fallback on a reasonnable default.")
+				.example("100")
+				.implementation(Integer.class);
 
 		return SpringdocRouteBuilder.route()
 				.GET(json("/endpoints"),
@@ -107,6 +113,7 @@ public class PivotableApiRouter {
 								.parameter(table)
 								.parameter(name)
 								.parameter(coordinate)
+								.parameter(coordinatesLimit)
 								.response(responseBuilder().responseCode("200")
 										.implementationArray(ColumnMetadata.class)))
 

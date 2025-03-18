@@ -20,40 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.beta.schema;
 
-import lombok.extern.slf4j.Slf4j;
+import com.google.common.collect.ImmutableSet;
+
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Singular;
+import lombok.Value;
 
 /**
- * Some various unsafe constants, one should edit if he knows what he's doing.
+ * Enables providing metadata about a column, especially a sample of available coordinates and an estimated cardinality.
+ * 
+ * @author Benoit Lacelle
  */
-@Slf4j
-public class AdhocUnsafe {
+@Value
+@Builder
+public class CoordinatesSample {
+	public static final long NO_ESTIMATION = -1;
 
-	static {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
-		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
+	@Singular
+	ImmutableSet<?> coordinates;
+
+	@Default
+	long estimatedCardinality = NO_ESTIMATION;
+
+	public long getEstimatedCardinality() {
+		return estimatedCardinality;
 	}
-
-	private static int safeLoadIntegerProperty(String key, int defaultValue) {
-		try {
-			return Integer.getInteger(key, defaultValue);
-		} catch (RuntimeException e) {
-			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
-		}
-		return defaultValue;
-	}
-
-	/**
-	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
-	 */
-	public static int limitOrdinalToString;
-
-	/**
-	 * Used as default number of examples coordinates when fetching columns by API.
-	 */
-	// TODO This should be a pivotable custom parameter
-	public static int limitCoordinates;
 }

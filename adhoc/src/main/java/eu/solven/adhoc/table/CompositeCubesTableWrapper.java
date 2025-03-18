@@ -164,7 +164,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 			NavigableSet<String> missingColumns) {
 		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
 
-		Map<String, Object> groupBys = new LinkedHashMap<>(slice.getCoordinates());
+		Map<String, Object> groupBys = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
 		missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
 
 		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();

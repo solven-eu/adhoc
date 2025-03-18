@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
@@ -54,10 +54,10 @@ public class AggregatedRecordOverMaps implements IAggregatedRecord {
 	public void onAggregate(String aggregateName, IValueReceiver valueConsumer) {
 		Object aggregate = getAggregate(aggregateName);
 
-		if (SumAggregation.isLongLike(aggregate)) {
-			valueConsumer.onLong(SumAggregation.asLong(aggregate));
-		} else if (SumAggregation.isDoubleLike(aggregate)) {
-			valueConsumer.onDouble(SumAggregation.asDouble(aggregate));
+		if (AdhocPrimitiveHelpers.isLongLike(aggregate)) {
+			valueConsumer.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
+		} else if (AdhocPrimitiveHelpers.isDoubleLike(aggregate)) {
+			valueConsumer.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
 		} else if (aggregate instanceof CharSequence charsequence) {
 			valueConsumer.onCharsequence(charsequence);
 		} else {

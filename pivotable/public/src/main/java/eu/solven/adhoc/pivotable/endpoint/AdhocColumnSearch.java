@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Value;
@@ -56,5 +57,8 @@ public class AdhocColumnSearch {
 	// Search for columns with a matching coordinate
 	@Default
 	Optional<IValueMatcher> coordinate = Optional.empty();
+
+	@Default
+	int limitCoordinates = AdhocUnsafe.limitCoordinates;
 
 }

@@ -20,61 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.sum;
+package eu.solven.adhoc.measure.aggregation.comparable;
+
+import java.util.List;
+import java.util.Objects;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
- * Like {@link SumAggregation}, but ignores {@link Double#NaN}
- * 
- * @author Benoit Lacelle
- *
+ * Return the maximum amongst the underlying values.
  */
-public class SumNotNaNAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
+public class MinCombination implements ICombination {
 
-	public static final String KEY = "SUM";
+	public static final String KEY = MinAggregation.KEY;
 
-	@Override
-	public Object aggregate(Object l, Object r) {
-		if (l == null) {
-			return r;
-		} else if (r == null) {
-			return l;
-		} else if (isLongLike(l) && isLongLike(r)) {
-			return aggregateLongs(((Number) l).longValue(), ((Number) r).longValue());
-		} else {
-			return aggregateDoubles(((Number) l).doubleValue(), ((Number) r).doubleValue());
-		}
-	}
+	final IAggregation agg = MinAggregation.builder().build();
 
 	@Override
-	public double aggregateDoubles(double l, double r) {
-		if (Double.isNaN(l)) {
-			if (Double.isNaN(r)) {
-				return 0D;
-			} else {
-				return r;
-			}
-		} else if (Double.isNaN(r)) {
-			return l;
-		} else {
-			return l + r;
-		}
+	public Object combine(List<?> underlyingValues) {
+		return underlyingValues.stream().filter(Objects::nonNull).<Object>map(o -> o).reduce(null, agg::aggregate);
 	}
 
-	@Override
-	public long aggregateLongs(long l, long r) {
-		return l + r;
-	}
-
-	public static boolean isLongLike(Object o) {
-		return Integer.class.isInstance(o) || Long.class.isInstance(o);
-	}
-
-	@Override
-	public long neutralLong() {
-		return 0L;
-	}
 }

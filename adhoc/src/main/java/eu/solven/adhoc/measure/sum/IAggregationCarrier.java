@@ -34,6 +34,11 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  */
 public interface IAggregationCarrier {
 
+	/**
+	 * Typically extended by an {@link IAggregation} requiring an {@link IAggregationCarrier}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	interface IHasCarriers {
 
 		/**

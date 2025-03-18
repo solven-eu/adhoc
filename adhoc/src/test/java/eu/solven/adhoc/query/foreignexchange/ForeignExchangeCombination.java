@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class ForeignExchangeCombination implements ICombination {
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		Object beforeFx = underlyingValues.getFirst();
 
-		if (!SumAggregation.isDoubleLike(beforeFx)) {
+		if (!AdhocPrimitiveHelpers.isDoubleLike(beforeFx)) {
 			// This is typically a String holding an error message
 			return beforeFx;
 		}
@@ -74,7 +74,7 @@ public class ForeignExchangeCombination implements ICombination {
 			log.info("[DEBUG] fxRate={} for fxKey={}", fxRate, fxKey);
 		}
 
-		if (!SumAggregation.isDoubleLike(fxRate)) {
+		if (!AdhocPrimitiveHelpers.isDoubleLike(fxRate)) {
 			// This is typically a String holding an error message
 			return fxRate;
 		}

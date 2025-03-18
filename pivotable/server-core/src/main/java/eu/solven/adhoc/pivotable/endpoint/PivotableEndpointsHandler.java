@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -38,9 +37,11 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.RequiredArgsConstructor;
@@ -110,8 +111,12 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "name")
 				.ifPresent(id -> parameters.name(Optional.of(EqualsMatcher.isEqualTo(id))));
 		// TODO How to turn from String to Object? (e.g. LocalDate)
+		// Should we switch to a `SameString` matcher?
 		AdhocHandlerHelper.optString(request, "coordinate")
 				.ifPresent(id -> parameters.coordinate(Optional.of(EqualsMatcher.isEqualTo(id))));
+
+		Number limitCoordinates = AdhocHandlerHelper.optNumber(request, "limit_coordinates").orElse(100);
+		parameters.limitCoordinates(limitCoordinates.intValue());
 
 		AdhocColumnSearch columnSearch = parameters.build();
 
@@ -179,15 +184,17 @@ public class PivotableEndpointsHandler {
 
 						ColumnIdentifier columnId = tableId.toBuilder().column(column).build();
 
-						Set<?> coordinates = schema.getCoordinates(columnId);
+						CoordinatesSample coordinates = schema.getCoordinates(columnId,
+								columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL),
+								columnSearch.getLimitCoordinates());
 
 						columns.add(ColumnMetadata.builder()
 								.entrypointId(endpointId)
 								.holder(tableId.getHolder())
 								.column(column)
 								.type(type)
-								.coordinates(coordinates)
-								.estimatedCardinality(coordinates.size())
+								.coordinates(coordinates.getCoordinates())
+								.estimatedCardinality(coordinates.getEstimatedCardinality())
 								.build());
 					});
 			// });

@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -42,9 +43,9 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 			return r;
 		} else if (r == null) {
 			return l;
-		} else if (SumAggregation.isLongLike(l) && SumAggregation.isLongLike(r)) {
+		} else if (AdhocPrimitiveHelpers.isLongLike(l) && AdhocPrimitiveHelpers.isLongLike(r)) {
 			return aggregateLongs(asLong(l), asLong(r));
-		} else if (SumAggregation.isDoubleLike(l) && SumAggregation.isDoubleLike(r)) {
+		} else if (AdhocPrimitiveHelpers.isDoubleLike(l) && AdhocPrimitiveHelpers.isDoubleLike(r)) {
 			return aggregateDoubles(asDouble(l), asDouble(r));
 		} else {
 			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)".formatted(KEY, l, r));
@@ -67,5 +68,10 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 
 	public static double asDouble(Object o) {
 		return ((Number) o).doubleValue();
+	}
+
+	@Override
+	public long neutralLong() {
+		return 1L;
 	}
 }

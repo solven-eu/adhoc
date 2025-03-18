@@ -32,8 +32,8 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.storage.IValueProvider;
 import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -162,11 +162,11 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 			@Override
 			public void onObject(Object v) {
-				if (SumAggregation.isLongLike(v)) {
-					long vAsPrimitive = SumAggregation.asLong(v);
+				if (AdhocPrimitiveHelpers.isLongLike(v)) {
+					long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
 					onLong(vAsPrimitive);
-				} else if (SumAggregation.isDoubleLike(v)) {
-					double vAsPrimitive = SumAggregation.asDouble(v);
+				} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
+					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
 					onDouble(vAsPrimitive);
 				} else if (v instanceof CharSequence) {
 					String vAsString = v.toString();
@@ -213,7 +213,12 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			consumer.onCharsequence(measureToAggregateS.get(key));
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
-			consumer.onObject(measureToAggregateO.get(key));
+			Object value = measureToAggregateO.get(key);
+			// if (value == null) {
+			// consumer.onNull();
+			// } else {
+			consumer.onObject(value);
+			// }
 		}
 	}
 

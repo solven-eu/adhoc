@@ -33,6 +33,10 @@ package eu.solven.adhoc.storage;
 @FunctionalInterface
 public interface IValueReceiver {
 
+	// default void onNull() {
+	// onObject(null);
+	// }
+
 	/**
 	 * If this holds a long, override this optional method to receive the primitive long
 	 * 

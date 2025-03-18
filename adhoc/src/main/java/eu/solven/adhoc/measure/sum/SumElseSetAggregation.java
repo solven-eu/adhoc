@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -72,7 +73,7 @@ public class SumElseSetAggregation extends SumAggregation {
 	}
 
 	private static void addErrorsToSet(Object l, Set<Object> errors) {
-		if (l != null && !isDoubleLike(l)) {
+		if (l != null && !AdhocPrimitiveHelpers.isDoubleLike(l)) {
 			if (l instanceof Collection<?> lAsSet) {
 				errors.addAll(lAsSet);
 			} else {

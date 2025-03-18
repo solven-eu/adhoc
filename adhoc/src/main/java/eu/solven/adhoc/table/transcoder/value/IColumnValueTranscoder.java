@@ -22,6 +22,15 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
+import java.time.LocalDate;
+
+/**
+ * Enable transcoding from a raw column coordinate to a proper column coordinate.
+ * 
+ * This is typically used to transcode from {@link String} to {@link LocalDate}.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IColumnValueTranscoder {
 	Object transcodeValue(String column, Object value);
 }

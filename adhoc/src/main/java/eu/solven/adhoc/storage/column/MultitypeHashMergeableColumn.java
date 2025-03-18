@@ -25,7 +25,7 @@ package eu.solven.adhoc.storage.column;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.storage.IValueProvider;
 import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.NonNull;
@@ -64,8 +64,29 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 						} else {
 							Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
-							if (SumAggregation.isLongLike(newAggregate)) {
-								long newAggregateAsLong = SumAggregation.asLong(newAggregate);
+							if (AdhocPrimitiveHelpers.isLongLike(newAggregate)) {
+								long newAggregateAsLong = AdhocPrimitiveHelpers.asLong(newAggregate);
+								unsafePut(key, false).onLong(newAggregateAsLong);
+							} else {
+								// Clear long
+								measureToAggregateL.removeLong(key);
+								unsafePut(key, false).onObject(newAggregate);
+							}
+						}
+					}
+
+					// @Override
+					public void onNull() {
+						if (aggregation instanceof ILongAggregation longAggregation) {
+							long newAggregate = longAggregation.aggregateLongs(longAggregation.neutralLong(), v);
+
+							// No need to clear as we replace a long with a long
+							unsafePut(key, false).onLong(newAggregate);
+						} else {
+							Object newAggregate = aggregation.aggregate(null, v);
+
+							if (AdhocPrimitiveHelpers.isLongLike(newAggregate)) {
+								long newAggregateAsLong = AdhocPrimitiveHelpers.asLong(newAggregate);
 								unsafePut(key, false).onLong(newAggregateAsLong);
 							} else {
 								// Clear long
@@ -77,10 +98,14 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 
 					@Override
 					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, v);
+						if (existingAggregate == null) {
+							onNull();
+						} else {
+							Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
-						boolean clearKey = existingAggregate != null;
-						unsafePut(key, clearKey).onObject(newAggregate);
+							boolean clearKey = existingAggregate != null;
+							unsafePut(key, clearKey).onObject(newAggregate);
+						}
 					}
 				});
 			}
@@ -98,8 +123,8 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 						} else {
 							Object newAggregate = aggregation.aggregate(existingAggregate, v);
 
-							if (SumAggregation.isDoubleLike(newAggregate)) {
-								double newAggregateAsDouble = SumAggregation.asDouble(newAggregate);
+							if (AdhocPrimitiveHelpers.isDoubleLike(newAggregate)) {
+								double newAggregateAsDouble = AdhocPrimitiveHelpers.asDouble(newAggregate);
 								unsafePut(key, false).onDouble(newAggregateAsDouble);
 							} else {
 								// Clear double

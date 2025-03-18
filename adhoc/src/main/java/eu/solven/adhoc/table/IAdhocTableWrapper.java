@@ -22,10 +22,19 @@
  */
 package eu.solven.adhoc.table;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
+
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.dag.TableAggregatesMetadata;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.record.IAggregatedRecordStream;
@@ -47,9 +56,51 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 	 */
 	IAggregatedRecordStream streamSlices(TableQuery tableQuery);
 
-	default Set<Object> getCoordinates(String column) {
+	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		TableQuery tableQuery = TableQuery.builder().groupBy(GroupByColumns.named(column)).build();
-		return this.streamSlices(tableQuery).asMap().map(r -> r.getGroupBy(column)).collect(Collectors.toSet());
+
+		int returnedCoordinates;
+		List<Object> distinctCoordinates;
+
+		if (limit < 1) {
+			returnedCoordinates = Integer.MAX_VALUE;
+			distinctCoordinates = new ArrayList<>();
+		} else {
+			returnedCoordinates = limit;
+			distinctCoordinates = new ArrayList<>(limit);
+		}
+
+		long estimatedCardinality = this.streamSlices(tableQuery)
+				.asMap()
+				.map(r -> r.getGroupBy(column))
+				// `.disinct()` is relevant only for InMemoryTable and related tables
+				.distinct()
+				.peek(coordinate -> {
+					if (distinctCoordinates.size() < returnedCoordinates) {
+						distinctCoordinates.add(coordinate);
+					}
+				})
+				.count();
+
+		return CoordinatesSample.builder()
+				.coordinates(distinctCoordinates)
+				.estimatedCardinality(estimatedCardinality)
+				.build();
 	}
 
+	/**
+	 * 
+	 * @param columnToAggregators
+	 * @return hints about which aggregates can be executed by the table or not
+	 */
+	default TableAggregatesMetadata getAggregatesMetadata(SetMultimap<String, Aggregator> columnToAggregators) {
+		// We consider all other tables can do all aggregations
+		// BEWARE What if a table would not be able to do only a subset of aggregations?
+		Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
+		columnToAggregators.values().forEach(a -> nameToPre.put(a.getName(), a));
+
+		SetMultimap<String, Aggregator> nameToRaw = ImmutableSetMultimap.of();
+
+		return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
+	}
 }

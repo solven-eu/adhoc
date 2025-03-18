@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,13 +30,11 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.InMemoryTable;
 import lombok.Builder;
 import lombok.Value;
 
@@ -89,29 +86,7 @@ public class TableAggregatesMetadata {
 
 	public static TableAggregatesMetadata from(ExecutingQueryContext executingQueryContext,
 			SetMultimap<String, Aggregator> columnToAggregators) {
-		Map<String, Aggregator> nameToPre;
-		SetMultimap<String, Aggregator> nameToRaw;
-
-		if (executingQueryContext.getTable() instanceof InMemoryTable) {
-			// We may receive raw columns,to be aggregated by ourselves
-			ImmutableSetMultimap.Builder<String, Aggregator> nameToRawBuilder = ImmutableSetMultimap.builder();
-
-			columnToAggregators.values().stream().forEach(a -> nameToRawBuilder.putAll(a.getColumnName(), a));
-			nameToRaw = nameToRawBuilder.build();
-
-			nameToPre = new LinkedHashMap<>();
-		} else {
-			// We may also receive pre-aggregated columns
-
-			// We consider all other tables can do all aggregations
-			// BEWARE What if a table would not be able to do only a subset of aggregations?
-			nameToPre = new LinkedHashMap<>();
-			columnToAggregators.values().forEach(a -> nameToPre.put(a.getName(), a));
-
-			nameToRaw = ImmutableSetMultimap.of();
-		}
-
-		return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
+		return executingQueryContext.getTable().getAggregatesMetadata(columnToAggregators);
 	}
 
 }

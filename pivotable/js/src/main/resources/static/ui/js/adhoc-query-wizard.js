@@ -105,48 +105,112 @@ export default {
             Build the query
 
             <form>
-                Search: <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
 
-                <div class="h-25 d-inline-block overflow-auto">
-                    {{ Object.keys(cube.columns.columnToTypes).length}} Columns
-                    <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
-                        <li class="list-group-item  d-flex justify-content-between align-items-center">
-                            <row>
-                                <AdhocQueryWizardColumn :queryModel="queryModel" :column="name" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-                            </row>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="h-25 d-inline-block">
-                    {{ Object.keys(cube.measures).length}} Measures
-                    <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <div class="form-check form-switch">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    :id="'measure_' + name"
-                                    v-model="queryModel.selectedMeasures[name]"
-                                />
-                                <label class="form-check-label" :for="'measure_' + name">
-                                    <AdhocMeasure :measure="measure" />
-                                </label>
+                <div class="accordion" id="accordionWizard">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                class="accordion-button"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#wizardColumns"
+                                aria-expanded="true"
+                                aria-controls="wizardColumns"
+                            >
+                                <span v-if="search">
+                                    <span class="text-decoration-line-through"> {{ Object.keys(cube.columns.columnToTypes).length}} </span>&nbsp;
+                                    <span> {{ Object.keys(filtered(cube.columns.columnToTypes)).length}} </span> Columns
+                                </span>
+                                <span v-else> {{ Object.keys(cube.columns.columnToTypes).length}} Columns </span>
+                            </button>
+                        </h2>
+                        <div id="wizardColumns" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                            <div class="accordion-body">
+                                <div class="h-25 d-inline-block overflow-auto">
+                                    <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
+                                        <li class="list-group-item ">
+                                            <AdhocQueryWizardColumn
+                                                :queryModel="queryModel"
+                                                :column="name"
+                                                :type="type"
+                                                :endpointId="endpointId"
+                                                :cubeId="cubeId"
+                                            />
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery" />
-                    <label class="form-check-label" for="debugQuery">debug</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery" />
-                    <label class="form-check-label" for="explainQuery">explain</label>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#wizardMeasures"
+                                aria-expanded="false"
+                                aria-controls="wizardMeasures"
+                            >
+                                <span v-if="search">
+                                    <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
+                                    <span> {{ Object.keys(filtered(cube.measures)).length}} </span> Measures
+                                </span>
+                                <span v-else> {{ Object.keys(cube.measures).length}} Measures </span>
+                            </button>
+                        </h2>
+                        <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                            <div class="accordion-body">
+                                <div class="h-25 d-inline-block">
+                                    <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <div class="form-check form-switch">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    :id="'measure_' + name"
+                                                    v-model="queryModel.selectedMeasures[name]"
+                                                />
+                                                <label class="form-check-label" :for="'measure_' + name">
+                                                    <AdhocMeasure :measure="measure" />
+                                                </label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#wizardOptions"
+                                aria-expanded="false"
+                                aria-controls="wizardOptions"
+                            >
+                                Options
+                            </button>
+                        </h2>
+                        <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                            <div class="accordion-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery" />
+                                    <label class="form-check-label" for="debugQuery">debug</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery" />
+                                    <label class="form-check-label" for="explainQuery">explain</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>

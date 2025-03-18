@@ -22,38 +22,13 @@
  */
 package eu.solven.adhoc.util;
 
-import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Some various unsafe constants, one should edit if he knows what he's doing.
- */
-@Slf4j
-public class AdhocUnsafe {
-
-	static {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
-		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
+public class TestAdhocUnsafe {
+	@Test
+	public void testDefaults() {
+		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(5);
+		Assertions.assertThat(AdhocUnsafe.limitCoordinates).isEqualTo(100);
 	}
-
-	private static int safeLoadIntegerProperty(String key, int defaultValue) {
-		try {
-			return Integer.getInteger(key, defaultValue);
-		} catch (RuntimeException e) {
-			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
-		}
-		return defaultValue;
-	}
-
-	/**
-	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
-	 */
-	public static int limitOrdinalToString;
-
-	/**
-	 * Used as default number of examples coordinates when fetching columns by API.
-	 */
-	// TODO This should be a pivotable custom parameter
-	public static int limitCoordinates;
 }

@@ -128,9 +128,7 @@ public class TestQueryGrandTotalsThroughRouter {
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(lastView);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Map.of(), Map.of("count(*)", 16_384));
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).containsEntry(Map.of(), Map.of());
 	}
 
 	@Test

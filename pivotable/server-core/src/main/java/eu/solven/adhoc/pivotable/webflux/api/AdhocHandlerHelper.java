@@ -102,6 +102,18 @@ public class AdhocHandlerHelper {
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
 	}
 
+	public static Optional<Number> optNumber(ServerRequest request, String idKey) {
+		Optional<String> optDouble = request.queryParam(idKey);
+
+		return optDouble.map(rawDouble -> {
+			if ("undefined".equals(rawDouble)) {
+				throw new IllegalArgumentException("`undefined` is an invalid rawDouble");
+			}
+
+			return Double.parseDouble(rawDouble);
+		});
+	}
+
 	// public static Mono<ServerResponse> resourceGone(Map<String, ?> body) {
 	// return ServerResponse.status(HttpStatus.NOT_FOUND)
 	// .contentType(MediaType.APPLICATION_JSON)

@@ -20,40 +20,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.measure.sum;
 
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.measure.model.EmptyMeasure;
 
 /**
- * Some various unsafe constants, one should edit if he knows what he's doing.
+ * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
+ * when querying the table.
+ * 
+ * @author Benoit Lacelle
  */
-@Slf4j
-public class AdhocUnsafe {
+public class EmptyAggregation implements IAggregation, ILongAggregation, IDoubleAggregation {
 
-	static {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
-		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
+	public static final String KEY = "EMPTY";
+
+	@Override
+	public Object aggregate(Object left, Object right) {
+		// BEWARE SHould we throw?
+		return null;
 	}
 
-	private static int safeLoadIntegerProperty(String key, int defaultValue) {
-		try {
-			return Integer.getInteger(key, defaultValue);
-		} catch (RuntimeException e) {
-			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
-		}
-		return defaultValue;
+	@Override
+	public long aggregateLongs(long left, long right) {
+		// BEWARE SHould we throw?
+		return 0;
 	}
 
-	/**
-	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
-	 */
-	public static int limitOrdinalToString;
+	@Override
+	public double aggregateDoubles(double left, double right) {
+		// BEWARE SHould we throw?
+		return 0;
+	}
 
-	/**
-	 * Used as default number of examples coordinates when fetching columns by API.
-	 */
-	// TODO This should be a pivotable custom parameter
-	public static int limitCoordinates;
+	@Override
+	public long neutralLong() {
+		return 0;
+	}
+
+	public static boolean isEmpty(String aggregationKey) {
+		return EmptyAggregation.KEY.equals(aggregationKey) || aggregationKey.equals(EmptyAggregation.class.getName());
+	}
 }

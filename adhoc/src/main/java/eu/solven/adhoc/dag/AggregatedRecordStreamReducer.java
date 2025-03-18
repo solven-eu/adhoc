@@ -62,7 +62,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 	SetMultimap<String, Aggregator> columnToAggregators;
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures() {
-		return new AggregatingColumns<>(operatorsFactory);
+		return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
 	}
 
 	@Override
@@ -137,32 +137,37 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				continue;
 			}
 
-			tableRow.onAggregate(aggregatedMeasure, new IValueReceiver() {
+			if ("empty".equals(aggregatedMeasure)) {
+				// TODO Introduce .onBoolean
+				valueConsumers.forEach(vc -> vc.onLong(0));
+			} else {
+				tableRow.onAggregate(aggregatedMeasure, new IValueReceiver() {
 
-				@Override
-				public void onLong(long v) {
-					valueConsumers.forEach(vc -> vc.onLong(v));
-				}
-
-				@Override
-				public void onDouble(double v) {
-					valueConsumers.forEach(vc -> vc.onDouble(v));
-				}
-
-				@Override
-				public void onCharsequence(CharSequence v) {
-					if (v != null) {
-						valueConsumers.forEach(vc -> vc.onCharsequence(v));
+					@Override
+					public void onLong(long v) {
+						valueConsumers.forEach(vc -> vc.onLong(v));
 					}
-				}
 
-				@Override
-				public void onObject(Object v) {
-					if (v != null) {
-						valueConsumers.forEach(vc -> vc.onObject(v));
+					@Override
+					public void onDouble(double v) {
+						valueConsumers.forEach(vc -> vc.onDouble(v));
 					}
-				}
-			});
+
+					@Override
+					public void onCharsequence(CharSequence v) {
+						if (v != null) {
+							valueConsumers.forEach(vc -> vc.onCharsequence(v));
+						}
+					}
+
+					@Override
+					public void onObject(Object v) {
+						if (v != null) {
+							valueConsumers.forEach(vc -> vc.onObject(v));
+						}
+					}
+				});
+			}
 		}
 	}
 

@@ -123,12 +123,16 @@ public class MapBasedTabularView implements ITabularView {
 		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregator::aggregateMaps);
 	}
 
-	public IValueReceiver sliceFeeder(SliceAsMap slice, String measureName) {
+	public IValueReceiver sliceFeeder(SliceAsMap slice, String measureName, boolean materializeNull) {
 		return o -> {
 			if (o == null) {
-				return;
+				// Materialize the slice. Especially useful with EmptyAggregation as defaultMeasure
+				if (materializeNull) {
+					appendSlice(slice, Map.of());
+				}
+			} else {
+				appendSlice(slice, Map.of(measureName, o));
 			}
-			appendSlice(slice, Map.of(measureName, o));
 		};
 	}
 

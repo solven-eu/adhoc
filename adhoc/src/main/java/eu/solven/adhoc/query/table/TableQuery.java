@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
@@ -104,9 +105,14 @@ public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, II
 	 * @param tableQuery
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
+	// BEWARE Is this a JooQ specific logic?
 	public static AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery) {
 		List<String> aggregatorNames = new ArrayList<>();
-		tableQuery.getAggregators().stream().distinct().forEach(a -> aggregatorNames.add(a.getName()));
+		tableQuery.getAggregators()
+				.stream()
+				.distinct()
+				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
+				.forEach(a -> aggregatorNames.add(a.getName()));
 
 		List<String> columns = new ArrayList<>();
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {

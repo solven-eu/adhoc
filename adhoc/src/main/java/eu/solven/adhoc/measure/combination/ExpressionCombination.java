@@ -32,8 +32,8 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +77,7 @@ public class ExpressionCombination implements ICombination {
 		if (result.isNumberValue()) {
 			BigDecimal bigDecimal = result.getNumberValue();
 
-			if (SumAggregation.isLongLike(bigDecimal)) {
+			if (AdhocPrimitiveHelpers.isLongLike(bigDecimal)) {
 				return bigDecimal.longValueExact();
 			} else {
 				return bigDecimal.doubleValue();

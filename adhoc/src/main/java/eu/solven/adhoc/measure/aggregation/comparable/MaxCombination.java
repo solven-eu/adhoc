@@ -32,10 +32,9 @@ import eu.solven.adhoc.measure.combination.ICombination;
  * Return the maximum amongst the underlying values.
  */
 public class MaxCombination implements ICombination {
+	public static final String KEY = MaxAggregation.KEY;
 
-	public static final String KEY = "MAX";
-
-	final IAggregation agg = new MaxAggregation();
+	final IAggregation agg = MaxAggregation.builder().build();
 
 	@Override
 	public Object combine(List<?> underlyingValues) {

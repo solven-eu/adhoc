@@ -91,7 +91,7 @@ public class TestAdhocJooqTableQueryFactory {
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k" from "someTableName" where "k" is not null
+				select sum("k") "k" from "someTableName" where "k" is not null group by ()
 				""".trim());
 	}
 
@@ -101,7 +101,7 @@ public class TestAdhocJooqTableQueryFactory {
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null
+				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null group by ()
 				""".trim());
 	}
 
@@ -111,7 +111,17 @@ public class TestAdhocJooqTableQueryFactory {
 				streamOpener.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(*) "count(*)" from "someTableName"
+				select count(*) "count(*)" from "someTableName" group by ()
+				""".trim());
+	}
+
+	@Test
+	public void testEmptyAggregation() {
+		ResultQuery<Record> condition =
+				streamOpener.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select 1 from "someTableName" group by ()
 				""".trim());
 	}
 }

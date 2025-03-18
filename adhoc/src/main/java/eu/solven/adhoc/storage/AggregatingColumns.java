@@ -35,6 +35,9 @@ import eu.solven.adhoc.storage.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.storage.column.MultitypeHashColumn;
 import eu.solven.adhoc.storage.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.storage.column.MultitypeNavigableColumn;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -43,14 +46,20 @@ import lombok.Value;
  * @param <T>
  */
 @Value
+@Builder
 public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMergeableGrid<T> {
 	// The table can not do aggregations, so Adhoc does the aggregation
+	@NonNull
+	@Default
 	Map<Aggregator, IMultitypeMergeableColumn<T>> aggregatorToRawAggregated = new HashMap<>();
 	// The table can do aggregations, so Adhoc does not need to do the aggregation
 	// Need to aggregate partitioned results, like from CompositeCube providing aggregates for same slice
+	@NonNull
+	@Default
 	Map<Aggregator, IMultitypeMergeableColumn<T>> aggregatorToPreAggregated = new HashMap<>();
 
-	IOperatorsFactory transformationFactory;
+	@NonNull
+	IOperatorsFactory operatorsFactory;
 
 	protected IMultitypeMergeableColumn<T> makeRawColumn(IAggregation agg) {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
@@ -75,7 +84,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	@Override
 	public IValueReceiver contributeRaw(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
+		IAggregation agg = operatorsFactory.makeAggregation(aggregationKey);
 
 		IMultitypeMergeableColumn<T> column =
 				aggregatorToRawAggregated.computeIfAbsent(aggregator, k -> makeRawColumn(agg));
@@ -91,7 +100,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	@Override
 	public IValueReceiver contributePre(Aggregator aggregator, T key) {
 		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = transformationFactory.makeAggregation(aggregationKey);
+		IAggregation agg = operatorsFactory.makeAggregation(aggregationKey);
 
 		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 

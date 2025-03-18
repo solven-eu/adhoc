@@ -58,6 +58,7 @@ export default {
 		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
 		const filterRef = ref(null);
 
+		// Enable saving the filter from the Modal control
 		function saveFilter() {
 			filterRef.value.saveFilter();
 		}

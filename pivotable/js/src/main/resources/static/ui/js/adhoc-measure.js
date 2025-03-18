@@ -11,8 +11,10 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <span v-if="measure.type == '.Aggregator'"> {{measure.name}}: {{measure.aggregationKey}}({{measure.columnName}}) </span>
-        <span v-else-if="measure.type == '.Combinator'"> {{measure.name}}: {{measure.combinationKey}}({{measure.underlyings.join(', ')}}) </span>
+        <span v-if="measure.type == '.Aggregator'"> {{measure.name}} <small class="text-muted">{{measure.aggregationKey}}({{measure.columnName}})</small></span>
+        <span v-else-if="measure.type == '.Combinator'">
+            {{measure.name}} <small class="text-muted">{{measure.combinationKey}}({{measure.underlyings.join(', ')}})</small></span
+        >
         <span v-else> {{measure.name}}: {{measure}} </span>
     `,
 };

@@ -78,12 +78,13 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 				TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build());
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
-				select *
+				select 1
 				from "someTableName"
 				where (
 				  "k1" = 'v1'
 				  and "k2" = 'v2'
 				)
+				group by ()
 								""".trim());
 	}
 }

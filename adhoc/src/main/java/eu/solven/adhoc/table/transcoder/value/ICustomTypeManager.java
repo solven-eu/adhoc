@@ -26,6 +26,8 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
  * Used to transcode types, typically from/to {@link IAdhocTableWrapper}.
+ * 
+ * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
  *
  * @author Benoit Lacelle
  */

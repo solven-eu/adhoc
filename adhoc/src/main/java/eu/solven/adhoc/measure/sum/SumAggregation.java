@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -31,6 +30,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,38 +98,20 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		return left + right;
 	}
 
-	public static boolean isLongLike(Object o) {
-		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
-			return true;
-		} else if (o instanceof BigDecimal bigDecimal) {
-			try {
-				long asLong = bigDecimal.longValueExact();
-				log.trace("This is a long: {}", bigDecimal);
-				return true;
-			} catch (ArithmeticException e) {
-				log.trace("This is not a long: {}", bigDecimal, e);
-			}
-			return false;
-		} else {
-			return false;
-		}
+	protected boolean isLongLike(Object o) {
+		return AdhocPrimitiveHelpers.isLongLike(o);
 	}
 
-	public static long asLong(Object o) {
-		return ((Number) o).longValue();
+	protected long asLong(Object o) {
+		return AdhocPrimitiveHelpers.asLong(o);
 	}
 
-	/**
-	 *
-	 * @param o
-	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
-	 */
-	public static boolean isDoubleLike(Object o) {
-		return Number.class.isInstance(o);
+	protected boolean isDoubleLike(Object o) {
+		return AdhocPrimitiveHelpers.isDoubleLike(o);
 	}
 
-	public static double asDouble(Object o) {
-		return ((Number) o).doubleValue();
+	protected double asDouble(Object o) {
+		return AdhocPrimitiveHelpers.asDouble(o);
 	}
 
 	@Override
@@ -143,5 +125,10 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		} else {
 			throw new IllegalArgumentException("Not a charSequence: " + PepperLogHelper.getObjectAndClass(aggregate));
 		}
+	}
+
+	@Override
+	public long neutralLong() {
+		return 0L;
 	}
 }

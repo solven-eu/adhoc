@@ -54,6 +54,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -64,6 +65,7 @@ import eu.solven.adhoc.slice.SliceAsMap;
 import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
 import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.storage.ITabularView;
+import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.storage.SliceToValue;
 import eu.solven.adhoc.storage.column.IColumnScanner;
@@ -287,7 +289,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected ITabularView toTabularView(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag fromQueriedToAggregates,
+			QueryStepsDag queryStepsDag,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
 			return MapBasedTabularView.empty();
@@ -299,11 +301,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			// BEWARE Should we return steps with same groupBy?
 			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
 			// What about measures appearing multiple times in the DAG?
-			stepsToReturn = new BreadthFirstIterator<>(fromQueriedToAggregates.getDag());
+			stepsToReturn = new BreadthFirstIterator<>(queryStepsDag.getDag());
 			expectedOutputCardinality = 0;
 		} else {
 			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
-			stepsToReturn = fromQueriedToAggregates.getQueried().iterator();
+			stepsToReturn = queryStepsDag.getQueried().iterator();
 			expectedOutputCardinality =
 					queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
 		}
@@ -318,10 +320,42 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
 			} else {
-				IColumnScanner<SliceAsMap> rowScanner = slice -> {
-					return mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName());
-				};
+				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
+						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
 
+				IColumnScanner<SliceAsMap> baseRowScanner =
+						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
+
+				IColumnScanner<SliceAsMap> rowScanner;
+				if (isEmptyMeasure) {
+					rowScanner = slice -> {
+						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
+
+						// `emptyValue` may not empty as we needed to materialize it to get up to here
+						// But now is time to force it to null, while materializing the slice.
+						return new IValueReceiver() {
+
+							// This is useful to prevent boxing emptyValue when long
+							@Override
+							public void onLong(long v) {
+								sliceFeeder.onObject(null);
+							}
+
+							// This is useful to prevent boxing emptyValue when double
+							@Override
+							public void onDouble(double v) {
+								sliceFeeder.onObject(null);
+							}
+
+							@Override
+							public void onObject(Object v) {
+								sliceFeeder.onObject(null);
+							}
+						};
+					};
+				} else {
+					rowScanner = baseRowScanner;
+				}
 				coordinatesToValues.forEachSlice(rowScanner);
 			}
 		});
@@ -615,17 +649,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return queriedMeasures;
 	}
 
-	// Not a single measure is selected: we are doing a DISTINCT query
-
 	/**
-	 * This measure is used to materialize slices.
+	 * This measure is used to materialize slices. Typically used to list coordinates along a column.
 	 * 
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
-		return Aggregator.countAsterisk();
-		// return
-		// Aggregator.builder().name("CONSTANT_1").aggregationKey("COUNT").columnName("*").build();
+		return Aggregator.builder().name("empty").aggregationKey(EmptyAggregation.class.getName()).build();
 	}
 
 	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {

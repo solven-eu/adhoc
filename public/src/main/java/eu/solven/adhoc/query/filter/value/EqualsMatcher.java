@@ -22,11 +22,17 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.function.Supplier;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.Suppliers;
+
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -41,9 +47,18 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
+@EqualsAndHashCode(exclude = { "operandIsLongLike", "operandIsDoubleLike" })
+// BEWARE This is not a strict `equals`, as it has special rules around ints and longs
+// We may introduce a StrictEqualsMatcher
+// BEWARE Should we introduce a way to match primitive value without boxing?
 public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	@NonNull
 	Object operand;
+
+	@JsonIgnore
+	Supplier<Boolean> operandIsLongLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isLongLike(getOperand()));
+	@JsonIgnore
+	Supplier<Boolean> operandIsDoubleLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isDoubleLike(getOperand()));
 
 	public Object getWrapped() {
 		return operand;
@@ -51,7 +66,25 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 
 	@Override
 	public boolean match(Object value) {
-		return operand == value || operand.equals(value);
+		if (operand == value || operand.equals(value)) {
+			return true;
+		}
+
+		if (operandIsDoubleLike.get()) {
+			if (operandIsLongLike.get()) {
+				if (AdhocPrimitiveHelpers.isLongLike(value)) {
+					// We consider `int 3` and `long 3` to be equals
+					return AdhocPrimitiveHelpers.asLong(operand) == AdhocPrimitiveHelpers.asLong(value);
+				}
+			}
+
+			if (AdhocPrimitiveHelpers.isDoubleLike(value)) {
+				// We consider `float 1.2` and `double 1.2` to be equals
+				return AdhocPrimitiveHelpers.asDouble(operand) == AdhocPrimitiveHelpers.asDouble(value);
+			}
+		}
+
+		return false;
 	}
 
 	public static class EqualsMatcherBuilder {
@@ -65,10 +98,28 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 			this.operand(operand);
 		}
 
+		// https://github.com/FasterXML/jackson-databind/issues/5030
 		// Enable Jackson deserialization given a plain String
-		// TODO Does the nead for a String constructor a Jackson bug?
+		// TODO Does the need for an int constructor a Jackson bug?
 		public EqualsMatcherBuilder(String operand) {
+			this.operand(operand);
+		}
 
+		// https://github.com/FasterXML/jackson-databind/issues/5030
+		// Enable Jackson deserialization given a plain String
+		// TODO Does the need for a double constructor a Jackson bug?
+		public EqualsMatcherBuilder(int operand) {
+			this.operand(operand);
+		}
+
+		public EqualsMatcherBuilder(long operand) {
+			this.operand(operand);
+		}
+
+		// https://github.com/FasterXML/jackson-databind/issues/5030
+		// Enable Jackson deserialization given a plain String
+		// TODO Does the need for a String constructor a Jackson bug?
+		public EqualsMatcherBuilder(double operand) {
 			this.operand(operand);
 		}
 	}

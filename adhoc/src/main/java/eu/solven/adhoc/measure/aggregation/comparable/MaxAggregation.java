@@ -22,18 +22,25 @@
  */
 package eu.solven.adhoc.measure.aggregation.comparable;
 
+import java.util.Comparator;
+
+import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Keep the highest value amongst encountered values
  */
+@SuperBuilder
 public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
 
 	public static final String KEY = "MAX";
+
+	final Comparator<Object> comparator = new ComparableElseClassComparatorV2();
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -43,7 +50,7 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 			return l;
 		} else {
 			if (l instanceof Number lAsNumber && r instanceof Number rAsNumber) {
-				if (SumAggregation.isLongLike(l) && SumAggregation.isLongLike(r)) {
+				if (AdhocPrimitiveHelpers.isLongLike(l) && AdhocPrimitiveHelpers.isLongLike(r)) {
 					long leftAsLong = lAsNumber.longValue();
 					long rightAsLong = rAsNumber.longValue();
 
@@ -55,11 +62,20 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 					return aggregateDoubles(leftAsDouble, rightAsDouble);
 				}
 			} else {
-				String lAsString = l.toString();
-				String rAsString = r.toString();
-				return aggregateStrings(lAsString, rAsString);
+				int compared = compare(l, r);
+
+				if (compared >= 0) {
+					// If equals, we keep l
+					return l;
+				} else {
+					return r;
+				}
 			}
 		}
+	}
+
+	protected int compare(Object l, Object r) {
+		return comparator.compare(l, r);
 	}
 
 	@Override
@@ -83,5 +99,10 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	@Override
 	public long aggregateLongs(long left, long right) {
 		return Long.max(left, right);
+	}
+
+	@Override
+	public long neutralLong() {
+		return Long.MIN_VALUE;
 	}
 }

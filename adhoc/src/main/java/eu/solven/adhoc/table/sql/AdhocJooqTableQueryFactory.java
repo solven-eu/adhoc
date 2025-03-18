@@ -24,7 +24,6 @@ package eu.solven.adhoc.table.sql;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,6 +51,7 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -115,12 +115,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 		// `GROUP BY ...`
 		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
-		SelectHavingStep<Record> selectFromWhereGroupBy;
-		if (groupFields.isEmpty()) {
-			selectFromWhereGroupBy = selectFromWhere;
-		} else {
-			selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
-		}
+		SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
 
 		// `ORDER BY ...`
 		ResultQuery<Record> resultQuery;
@@ -155,12 +150,25 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		tableQuery.getAggregators().stream().distinct().forEach(a -> selectedFields.add(toSqlAggregatedColumn(a)));
+		tableQuery.getAggregators()
+				.stream()
+				.distinct()
+				.map(a -> toSqlAggregatedColumn(a))
+				// EmptyAggregation leads to no SQL aggregation
+				.filter(a -> a != null)
+				.forEach(a -> selectedFields.add(a));
 
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
 			Field<Object> field = columnAsField(column);
 			selectedFields.add(field);
 		});
+
+		if (selectedFields.isEmpty()) {
+			// Typically happens on EmptyAggregation
+			// We force one field to prevent JooQ querying automatically for `*`
+			selectedFields.add(DSL.val(1));
+		}
+
 		return selectedFields;
 	}
 
@@ -228,18 +236,14 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	}
 
 	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {
-		Collection<Field<Object>> groupedFields = new ArrayList<>();
+		List<GroupField> groupedFields = new ArrayList<>();
 
 		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
 			Field<Object> field = columnAsField(column, true);
 			groupedFields.add(field);
 		});
 
-		if (groupedFields.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		return Collections.singleton(DSL.groupingSets(groupedFields));
+		return groupedFields;
 	}
 
 	private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
@@ -288,6 +292,8 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			} else if (CountAggregation.KEY.equals(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.count(field);
+			} else if (EmptyAggregation.isEmpty(aggregationKey)) {
+				return null;
 			} else {
 				throw new UnsupportedOperationException(
 						"SQL does not support aggregationKey=%s".formatted(aggregationKey));
@@ -299,6 +305,7 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
+				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
 				.map(Aggregator::getColumnName)
 				.filter(columnName -> !isExpression(columnName))
 				.map(c -> DSL.field(name(c)).isNotNull())

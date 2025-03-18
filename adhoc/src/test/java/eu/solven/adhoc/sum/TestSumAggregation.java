@@ -23,7 +23,6 @@
 package eu.solven.adhoc.sum;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,44 +33,6 @@ import eu.solven.pepper.unittest.PepperTestHelper;
 
 public class TestSumAggregation {
 	SumAggregation aggregator = new SumAggregation();
-
-	@Test
-	public void isLongLike() {
-		Assertions.assertThat(SumAggregation.isLongLike(123)).isTrue();
-		Assertions.assertThat(SumAggregation.isLongLike(123L)).isTrue();
-
-		Assertions.assertThat(SumAggregation.isLongLike(123.4F)).isFalse();
-		Assertions.assertThat(SumAggregation.isLongLike(123.4D)).isFalse();
-
-		Assertions.assertThat(SumAggregation.isLongLike("someString")).isFalse();
-		Assertions.assertThat(SumAggregation.isLongLike(LocalDate.now())).isFalse();
-
-		// Float without decimal
-		Assertions.assertThat(SumAggregation.isLongLike(123F)).isFalse();
-		Assertions.assertThat(SumAggregation.isLongLike(123D)).isFalse();
-
-		Assertions.assertThat(SumAggregation.isLongLike(BigDecimal.valueOf(123))).isTrue();
-		Assertions.assertThat(SumAggregation.isLongLike(BigDecimal.valueOf(123.456))).isFalse();
-	}
-
-	@Test
-	public void isDoubleLike() {
-		Assertions.assertThat(SumAggregation.isDoubleLike(123)).isTrue();
-		Assertions.assertThat(SumAggregation.isDoubleLike(123L)).isTrue();
-
-		Assertions.assertThat(SumAggregation.isDoubleLike(123.4F)).isTrue();
-		Assertions.assertThat(SumAggregation.isDoubleLike(123.4D)).isTrue();
-
-		Assertions.assertThat(SumAggregation.isDoubleLike("someString")).isFalse();
-		Assertions.assertThat(SumAggregation.isDoubleLike(LocalDate.now())).isFalse();
-
-		// Float without decimal
-		Assertions.assertThat(SumAggregation.isDoubleLike(123F)).isTrue();
-		Assertions.assertThat(SumAggregation.isDoubleLike(123D)).isTrue();
-
-		Assertions.assertThat(SumAggregation.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
-		Assertions.assertThat(SumAggregation.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();
-	}
 
 	@Test
 	public void testStrings() {

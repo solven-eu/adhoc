@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.model;
 import java.util.Set;
 
 import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import lombok.Builder;
@@ -84,6 +85,15 @@ public class Aggregator implements IMeasure {
 				.name("count(*)")
 				.columnName(ICountMeasuresConstants.ASTERISK)
 				.aggregationKey(CountAggregation.KEY)
+				.build();
+	}
+
+	public static Aggregator empty() {
+		return Aggregator.builder()
+				.name("empty")
+				// columnName is irrelevant
+				.columnName("empty")
+				.aggregationKey(EmptyAggregation.KEY)
 				.build();
 	}
 }

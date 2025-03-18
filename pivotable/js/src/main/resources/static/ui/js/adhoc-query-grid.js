@@ -71,6 +71,9 @@ export default {
 			}
 		}
 
+		// Used to workaround corrupted rowSpans
+		var previousRowCount = 0;
+
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.view;
@@ -92,7 +95,7 @@ export default {
 					},
 				},
 			};
-			metadata[0] = {};
+			delete metadata[0];
 
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = false;
@@ -254,6 +257,13 @@ export default {
 			}
 
 			console.debug("rowSpans: ", metadata);
+
+			// https://github.com/6pac/SlickGrid/issues/1114
+			previousRowCount = dataView.getItems().length;
+			if (data.length > 0 && data.length == previousRowCount) {
+				// Same rowCount: rowSpan could get corrupted in SlickGrid
+				data.push({ id: -1 });
+			}
 
 			grid.setColumns(gridColumns);
 

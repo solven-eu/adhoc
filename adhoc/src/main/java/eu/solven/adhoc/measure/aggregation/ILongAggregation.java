@@ -30,4 +30,10 @@ package eu.solven.adhoc.measure.aggregation;
 public interface ILongAggregation {
 
 	long aggregateLongs(long left, long right);
+
+	/**
+	 * 
+	 * @return the neutral value for this aggregation.
+	 */
+	long neutralLong();
 }

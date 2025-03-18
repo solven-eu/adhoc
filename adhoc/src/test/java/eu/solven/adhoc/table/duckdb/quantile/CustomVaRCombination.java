@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.record.ISlicedRecord;
 import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.adhoc.storage.IValueProvider;
@@ -47,10 +47,10 @@ public class CustomVaRCombination implements ICombination {
 		Optional<?> optRawQuantile = MapPathGet.getOptionalAs(options, P_QUANTILE);
 		if (optRawQuantile.isPresent()) {
 			Object rawQuantile = optRawQuantile.get();
-			if (SumAggregation.isLongLike(rawQuantile)) {
-				quantile = SumAggregation.asLong(rawQuantile) / 100D;
-			} else if (SumAggregation.isDoubleLike(rawQuantile)) {
-				quantile = SumAggregation.asDouble(rawQuantile);
+			if (AdhocPrimitiveHelpers.isLongLike(rawQuantile)) {
+				quantile = AdhocPrimitiveHelpers.asLong(rawQuantile) / 100D;
+			} else if (AdhocPrimitiveHelpers.isDoubleLike(rawQuantile)) {
+				quantile = AdhocPrimitiveHelpers.asDouble(rawQuantile);
 			} else {
 				quantile = Double.parseDouble(rawQuantile.toString());
 			}

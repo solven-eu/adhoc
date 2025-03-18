@@ -32,6 +32,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
@@ -40,6 +41,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
@@ -56,16 +58,19 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield new SumAggregation();
 		}
 		case MaxAggregation.KEY: {
-			yield new MaxAggregation();
+			yield MaxAggregation.builder().build();
 		}
 		case MinAggregation.KEY: {
-			yield new MinAggregation();
+			yield MinAggregation.builder().build();
 		}
 		case CountAggregation.KEY: {
 			yield new CountAggregation();
 		}
 		case ExpressionAggregation.KEY: {
 			yield new ExpressionAggregation();
+		}
+		case EmptyAggregation.KEY: {
+			yield new EmptyAggregation();
 		}
 		case RankAggregation.KEY: {
 			yield RankAggregation.make(options);
@@ -86,6 +91,9 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield new SumCombination();
 		}
 		case MaxCombination.KEY: {
+			yield new MaxCombination();
+		}
+		case MinCombination.KEY: {
 			yield new MaxCombination();
 		}
 		case DivideCombination.KEY: {

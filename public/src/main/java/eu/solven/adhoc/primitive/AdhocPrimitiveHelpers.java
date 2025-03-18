@@ -20,40 +20,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.primitive;
+
+import java.math.BigDecimal;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Some various unsafe constants, one should edit if he knows what he's doing.
+ * Helpers methods around primitive (int, long, float, double, etc).
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocUnsafe {
+public class AdhocPrimitiveHelpers {
 
-	static {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
-		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
+	private AdhocPrimitiveHelpers() {
+		// hidden
 	}
 
-	private static int safeLoadIntegerProperty(String key, int defaultValue) {
-		try {
-			return Integer.getInteger(key, defaultValue);
-		} catch (RuntimeException e) {
-			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
+	public static boolean isLongLike(Object o) {
+		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
+			return true;
+		} else if (o instanceof BigDecimal bigDecimal) {
+			try {
+				long asLong = bigDecimal.longValueExact();
+				if (log.isTraceEnabled()) {
+					log.trace("This is a long: {} -> ", bigDecimal, asLong);
+				}
+				return true;
+			} catch (ArithmeticException e) {
+				log.trace("This is not a long: {}", bigDecimal, e);
+			}
+			return false;
+		} else {
+			return false;
 		}
-		return defaultValue;
+	}
+
+	public static long asLong(Object o) {
+		return ((Number) o).longValue();
 	}
 
 	/**
-	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
+	 *
+	 * @param o
+	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
 	 */
-	public static int limitOrdinalToString;
+	public static boolean isDoubleLike(Object o) {
+		return Number.class.isInstance(o);
+	}
 
-	/**
-	 * Used as default number of examples coordinates when fetching columns by API.
-	 */
-	// TODO This should be a pivotable custom parameter
-	public static int limitCoordinates;
+	public static double asDouble(Object o) {
+		return ((Number) o).doubleValue();
+	}
 }

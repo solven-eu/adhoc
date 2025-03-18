@@ -105,6 +105,11 @@ public class MultitypeArray implements IMultitypeArray {
 
 			@Override
 			public void onObject(Object v) {
+				if (v == null) {
+					// BEWARE We may want to remove the key
+					// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
+				}
+
 				ensureObject();
 				valuesO.add(insertionIndex, v);
 			}

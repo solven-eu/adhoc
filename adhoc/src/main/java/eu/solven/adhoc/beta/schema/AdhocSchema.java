@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
@@ -106,7 +107,13 @@ public class AdhocSchema implements IAdhocSchema {
 
 	@Override
 	public ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return nameToCube.get(cube).execute(query, options);
+		IAdhocCubeWrapper cubeWrapper = nameToCube.get(cube);
+
+		if (cubeWrapper == null) {
+			throw new IllegalArgumentException("No cube named %s".formatted(cube));
+		}
+
+		return cubeWrapper.execute(query, options);
 	}
 
 	public void registerTable(IAdhocTableWrapper table) {
@@ -123,11 +130,19 @@ public class AdhocSchema implements IAdhocSchema {
 		measureBag.addMeasure(measure);
 	}
 
-	public Set<?> getCoordinates(ColumnIdentifier columnId) {
+	/**
+	 * 
+	 * @param columnId
+	 * @param valueMatcher
+	 * @param limit
+	 *            if `-1` no limit, else the maximum number of coordinates to return.
+	 * @return
+	 */
+	public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
 		if (columnId.isCubeElseTable()) {
-			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
+			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
 		} else {
-			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn());
+			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
 
 		}
 	}

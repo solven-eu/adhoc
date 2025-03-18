@@ -480,6 +480,52 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("a", "a1"), Map.of())
+				.containsEntry(Map.of("a", "a2"), Map.of());
+	}
+
+	@Test
+	public void testEmpty() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		amb.addMeasure(k1Sum);
+
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result =
+				wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.empty()).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("a", "a1"), Map.of())
+				.containsEntry(Map.of("a", "a2"), Map.of());
+	}
+
+	@Test
+	public void testCountAsterisk() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		amb.addMeasure(k1Sum);
+
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result = wrapInCube(amb)
+				.execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.countAsterisk()).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of("count(*)", 2L))
 				.containsEntry(Map.of("a", "a2"), Map.of("count(*)", 1L));
 	}

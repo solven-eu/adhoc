@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestMaxAggregator {
-	MaxAggregation a = MaxAggregation.builder().build();
+public class TestMinAggregator {
+	MinAggregation a = MinAggregation.builder().build();
 
 	@Test
 	public void testNull() {
@@ -42,16 +42,16 @@ public class TestMaxAggregator {
 	@Test
 	public void testNominal() {
 		// TODO Is it legal to cast to long?
-		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(234L);
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(123L);
 
-		Assertions.assertThat(a.aggregate("qwerty", "azerty")).isEqualTo("qwerty");
+		Assertions.assertThat(a.aggregate("qwerty", "azerty")).isEqualTo("azerty");
 		// Java considers lowerCase greater than upperCase
-		Assertions.assertThat(a.aggregate("a", "A")).isEqualTo("a");
-		Assertions.assertThat(a.aggregate("A", "a")).isEqualTo("a");
+		Assertions.assertThat(a.aggregate("a", "A")).isEqualTo("A");
+		Assertions.assertThat(a.aggregate("A", "a")).isEqualTo("A");
 	}
 
 	@Test
 	public void testDifferentTypes() {
-		Assertions.assertThat(a.aggregate(123, "a")).isEqualTo("a");
+		Assertions.assertThat(a.aggregate(123, "a")).isEqualTo(123);
 	}
 }

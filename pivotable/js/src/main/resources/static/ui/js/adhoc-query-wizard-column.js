@@ -136,9 +136,10 @@ export default {
             <label class="form-check-label  text-wrap" :for="'column_' + column">{{column}}: {{type}}</label>
         </div>
 
-        <button type="button" @click="loadColumnCoordinates()" class="badge bg-primary rounded-pill">
-            <span v-if="!columnMeta.coordinates?.length"> ? </span>
-            <span v-else> {{columnMeta.coordinates?.length}} </span>
+        <button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
+            <span v-if="!columnMeta.estimatedCardinality"> ? </span>
+            <!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
+            <span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
             <span v-if="loading">
                 <div class="spinner-grow" role="status">
                     <span class="visually-hidden">Loading...</span>

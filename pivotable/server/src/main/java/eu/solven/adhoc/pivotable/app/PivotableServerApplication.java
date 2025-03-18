@@ -55,7 +55,12 @@ import lombok.extern.slf4j.Slf4j;
 public class PivotableServerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(PivotableServerApplication.class, args);
+		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
+
+		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT,
+				IPivotableSpringProfiles.P_ADVANCED_DATASETS);
+
+		springApp.run(args);
 	}
 
 	// https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type

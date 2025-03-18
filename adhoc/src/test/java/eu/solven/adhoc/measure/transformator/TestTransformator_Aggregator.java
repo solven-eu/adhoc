@@ -81,14 +81,13 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasure() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().build());
+		ITabularView output = aqw.execute(AdhocQuery.builder().debug(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		String mName = Aggregator.countAsterisk().getName();
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(mName, 0L + 4));
+				.containsEntry(Collections.emptyMap(), Map.of());
 	}
 
 	@Test
@@ -97,10 +96,9 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		String mName = Aggregator.countAsterisk().getName();
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of(mName, 0L + 2))
-				.containsEntry(Map.of("a", "a2"), Map.of(mName, 0L + 2));
+				.containsEntry(Map.of("a", "a1"), Map.of())
+				.containsEntry(Map.of("a", "a2"), Map.of());
 	}
 }
