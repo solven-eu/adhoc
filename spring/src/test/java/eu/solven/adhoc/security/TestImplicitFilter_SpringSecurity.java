@@ -39,7 +39,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -54,7 +54,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public class TestImplicitFilter_SpringSecurity {
 
 	InMemoryTable rows = InMemoryTable.builder().build();
-	AdhocMeasureBag amb = AdhocMeasureBag.builder().name(this.getClass().getSimpleName()).build();
+	UnsafeAdhocMeasureBag amb = UnsafeAdhocMeasureBag.builder().name(this.getClass().getSimpleName()).build();
 	AdhocCubeWrapper aqw;
 
 	{

@@ -80,6 +80,17 @@ export default {
 
 			gridColumns = [];
 
+			// Do not allow sorting until it is compatible with rowSpans
+			const sortable = false;
+
+			// We always show the id column
+			// It is especially useful on the grandTotal without measure: the idColumn enables the grid not to be empty
+			// If the grid was empty, `renderCallback` would not be called-back
+			{
+				const column = { id: "id", name: "id", field: "id", width: 5, sortable: sortable, asyncPostRender: renderCallback };
+				gridColumns.push(column);
+			}
+
 			data = [];
 
 			rendering.value = true;
@@ -96,9 +107,6 @@ export default {
 				},
 			};
 			delete metadata[0];
-
-			// Do not allow sorting until it is compatible with rowSpans
-			const sortable = false;
 
 			if (!view.coordinates) {
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
@@ -193,7 +201,9 @@ export default {
 									if (!metadata[rowIndexStart]) {
 										metadata[rowIndexStart] = { columns: {} };
 									}
-									metadata[rowIndexStart].columns[columnIndex] = { rowspan: rowSpan };
+
+									// `1+` due to `id` column which is always enforced
+									metadata[rowIndexStart].columns[1 + columnIndex] = { rowspan: rowSpan };
 
 									console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
 
@@ -328,8 +338,11 @@ export default {
 			// Do not allow re-ordering until it is compatible with rowSpans
 			enableColumnReorder: false,
 			enableAutoSizeColumns: true,
+			// https://github.com/6pac/SlickGrid/wiki/Auto-Column-Sizing
+			// autosizeColsMode: "?"
 			//			autoHeight: true,
 			fullWidthRows: true,
+			// `forceFitColumns` is legacy, and related with `autosizeColsMode`
 			forceFitColumns: true,
 			// https://github.com/6pac/SlickGrid/blob/master/examples/example10-async-post-render.html		,
 			enableAsyncPostRender: true,

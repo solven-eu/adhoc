@@ -273,6 +273,7 @@ This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example i
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Explain] EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
-- [Documentation] `MeasuresSetFromResource` should enable generation of Graphiviz `.dot` files
+- [Documentation] `MeasuresSetFromResource` should enable generation of Graphviz `.dot` files
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metriuc about memory usage (e.g. footprint from table, footprint for each queryStep)
+- [Feature] AdhocCompositeCube needs to handle `IAggregation` with carrier

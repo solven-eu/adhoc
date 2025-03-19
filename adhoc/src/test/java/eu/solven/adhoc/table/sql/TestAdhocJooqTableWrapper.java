@@ -38,7 +38,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
@@ -82,7 +82,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			}
 
 			{
-				AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("jooq").build();
+				UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("jooq").build();
 				measureBag.addMeasure(k1Sum);
 				AdhocCubeWrapper aqw =
 						AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).measures(measureBag).build();

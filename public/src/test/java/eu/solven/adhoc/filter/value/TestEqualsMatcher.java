@@ -22,9 +22,11 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -72,6 +74,23 @@ public class TestEqualsMatcher {
 		Assertions.assertThat(fromString).isEqualTo(matcher);
 	}
 
+	@Disabled("https://github.com/FasterXML/jackson-databind/issues/5030")
+	@Test
+	public void testJackson_toMap() throws JsonProcessingException {
+		IValueMatcher matcher = EqualsMatcher.isEqualTo("azerty");
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		Map asMap = objectMapper.convertValue(matcher, Map.class);
+		Assertions.assertThat(asMap).hasSize(2).containsEntry("type", "equals");
+
+		IValueMatcher fromString = objectMapper.convertValue(asMap, IValueMatcher.class);
+
+		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
+
 	// Ensure we can parse a EqualsMatcher with the default serialization format
 	@Test
 	public void testJackson_fromExplicit() throws JsonProcessingException {
@@ -83,6 +102,24 @@ public class TestEqualsMatcher {
 				{
 				    "type" : "equals",
 				    "operand" : "azerty"
+				  }
+				""";
+
+		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
+
+		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
+
+	@Test
+	public void testJackson_fromExplicit_int() throws JsonProcessingException {
+		IValueMatcher matcher = EqualsMatcher.isEqualTo(3);
+
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		String asString = """
+				{
+				    "type" : "equals",
+				    "operand" : 3
 				  }
 				""";
 

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.table.composite;
 
 import java.util.Set;
 
@@ -31,7 +31,8 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -46,7 +47,7 @@ import eu.solven.adhoc.table.sql.DuckDbHelper;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
-	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
+	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return AdhocCubeWrapper.builder()
@@ -74,29 +75,29 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
 		AdhocCubeWrapper cube1;
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName1).build();
+			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		AdhocCubeWrapper cube2;
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName2).build();
+			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Max);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("composite").build();
-		measureBag.addMeasure(k1Sum);
-		measureBag.addMeasure(k1PlusK2AsExpr);
+		UnsafeAdhocMeasureBag measuresWithoutUnderlyings = UnsafeAdhocMeasureBag.builder().name("composite").build();
+		measuresWithoutUnderlyings.addMeasure(k1Sum);
+		measuresWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		compositeCubesTable.injectUnderlyingMeasures(measureBag);
+		IAdhocMeasureBag withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
 
-		Assertions.assertThat(measureBag.getNameToMeasure().values())
+		Assertions.assertThat(withUnderlyings.getNameToMeasure().values())
 				.hasSize(6)
 				// Composite own measures
 				.contains(k1Sum, k1PlusK2AsExpr)
@@ -138,9 +139,11 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		Assertions.assertThat(composite.filterForColumns(IAdhocFilter.MATCH_NONE, Set.of()))
 				.isEqualTo(IAdhocFilter.MATCH_NONE);
 
+		// and
 		Assertions.assertThat(composite.filterForColumns(
 				AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+		// or
 		Assertions.assertThat(composite.filterForColumns(
 				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));

@@ -41,7 +41,7 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -76,7 +76,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measures) {
+	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).engine(aqe).build();

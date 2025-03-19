@@ -20,21 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.storage.column;
+package eu.solven.adhoc.table.duckdb;
 
-import eu.solven.adhoc.storage.IValueFunction;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 
-/**
- * Enables conversion from given types (including primitive types) into a uniform type.
- * 
- * @param <T>
- *            the type of some key
- * @param <U>
- *            the uniform output
- * @author Benoit Lacelle
- */
-public interface IColumnValueConverter<T, U> {
+public abstract class ADuckDbJooqTest {
 
-	IValueFunction<U> prepare(T key);
+	static {
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
+	}
 
+	protected AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	protected UnsafeAdhocMeasureBag measures = UnsafeAdhocMeasureBag.builder().name("duckdb").build();
 }

@@ -43,7 +43,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -78,7 +78,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measures) {
+	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).engine(aqe).build();

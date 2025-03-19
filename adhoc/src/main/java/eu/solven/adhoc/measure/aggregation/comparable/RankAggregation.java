@@ -22,11 +22,16 @@
  */
 package eu.solven.adhoc.measure.aggregation.comparable;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
@@ -50,6 +55,22 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 	private final int rank;
 	private final boolean ascElseDesc;
 
+	/**
+	 * 
+	 * @param rank
+	 *            1-based. If 1, we return the maximum. If -1, we return the min.
+	 * @return
+	 */
+	public static RankAggregation fromMax(int rank) {
+		if (rank == 0) {
+			throw new IllegalArgumentException("rank is 1-based. Can not be `0`");
+		} else if (rank > 0) {
+			return make(Map.of(P_RANK, rank, P_ORDER, "DESC"));
+		} else {
+			return make(Map.of(P_RANK, -rank, P_ORDER, "ASC"));
+		}
+	}
+
 	public static RankAggregation make(Map<String, ?> options) {
 		int rank;
 
@@ -69,7 +90,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		} else if (rawOrder instanceof String rawOrderString) {
 			if ("ASC".equalsIgnoreCase(rawOrderString)) {
 				ascElseDesc = true;
-			} else if ("ASC".equalsIgnoreCase(rawOrderString)) {
+			} else if ("DESC".equalsIgnoreCase(rawOrderString)) {
 				ascElseDesc = false;
 			} else {
 				throw new IllegalArgumentException("%s=%s in invalid. Expected 'ASC' or 'DECS'".formatted(P_ORDER));
@@ -82,19 +103,21 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 	}
 
 	/**
-	 * This class holds the count. It is useful to differentiate as input long (which count as `1`) and a count.
+	 * This class holds the top elements, enough to get the ranked elements.
+	 * 
+	 * It is immutable;
 	 * 
 	 * @author Benoit Lacelle
 	 */
 	@Value
 	@Builder
-	public static class RankCarrier implements IAggregationCarrier {
+	public static class RankedElementsCarrier implements IAggregationCarrier {
 		int rank;
 		Comparator<Object> comparator;
 		// BEWARE Should we have large capacity or not?
 		List<Object> elements;
 
-		public static RankCarrier empty(int rank, boolean ascElseDesc) {
+		public static RankedElementsCarrier empty(int rank, boolean ascElseDesc) {
 			Comparator<Object> comparator;
 			if (ascElseDesc) {
 				comparator = (Comparator) Comparator.naturalOrder();
@@ -102,39 +125,73 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 				comparator = (Comparator) Comparator.reverseOrder();
 			}
 
-			List<Object> queue = new LinkedList<>();
+			List<Object> queue = Collections.emptyList();
 
-			return RankCarrier.builder().rank(rank).comparator(comparator).elements(queue).build();
+			return RankedElementsCarrier.builder().rank(rank).comparator(comparator).elements(queue).build();
 		}
 
-		public static RankCarrier of(int rank, boolean ascElseDesc, Object first) {
-			return empty(rank, ascElseDesc).add(first);
+		public static RankedElementsCarrier of(int rank, boolean ascElseDesc, Object first) {
+			if (first instanceof RankedElementsCarrier carrier) {
+				return carrier;
+			} else {
+				return empty(rank, ascElseDesc).add(first);
+			}
 		}
 
-		public RankCarrier add(Object element) {
-			List<Object> copy = new LinkedList<>(elements);
+		public RankedElementsCarrier add(Object element) {
+			List<Object> merged;
+			if (element instanceof RankedElementsCarrier otherCarrier) {
+				Iterator<Object> thisElements = new LinkedList<>(elements).iterator();
+				Iterator<Object> otherElements = new LinkedList<>(otherCarrier.elements).iterator();
 
-			int insertionIndex = Collections.binarySearch((List) elements, comparator);
-			if (insertionIndex >= 0) {
-				if (insertionIndex > rank) {
-					// Skip adding at this element is out of rank
-				} else {
-					copy.set(insertionIndex, element);
+				UnmodifiableIterator<Object> mergedIterator =
+						Iterators.mergeSorted(Arrays.asList(thisElements, otherElements), this.getComparator());
+
+				merged = new LinkedList<>();
+
+				// Remember previous as `Iterators.mergeSorted` does not de-duplicate
+				Object previous = null;
+				while (mergedIterator.hasNext() && merged.size() < rank) {
+					Object next = mergedIterator.next();
+
+					if (previous == null || !previous.equals(next)) {
+						merged.add(next);
+						previous = next;
+					}
 				}
 			} else {
-				copy.add(-insertionIndex - 1, element);
-			}
+				merged = new LinkedList<>(elements);
 
-			if (copy.size() > rank) {
-				copy.removeLast();
-			}
+				int insertionIndex = Collections.binarySearch((List) elements, element, comparator);
+				if (insertionIndex >= 0) {
+					if (insertionIndex > rank) {
+						// Skip adding at this element is out of rank
+					} else {
+						merged.set(insertionIndex, element);
+					}
+				} else if (insertionIndex < -rank) {
+					// Skip adding at this element is out of rank
+				} else {
+					merged.add(-insertionIndex - 1, element);
+				}
 
-			return RankCarrier.builder().rank(rank).comparator(comparator).elements(copy).build();
+				if (merged.size() > rank) {
+					merged.removeLast();
+				}
+
+			}
+			return RankedElementsCarrier.builder().rank(rank).comparator(comparator).elements(merged).build();
+
 		}
 
 		@Override
 		public void acceptValueConsumer(IValueReceiver valueConsumer) {
-			valueConsumer.onObject(elements.get(rank));
+			if (elements.size() >= rank) {
+				// `-1` as rank is 1-based
+				valueConsumer.onObject(elements.get(rank - 1));
+			} else {
+				valueConsumer.onObject(null);
+			}
 		}
 
 	}
@@ -157,27 +214,27 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		} else if (r == null) {
 			return aggregateOne(l);
 		} else {
-			if (l instanceof RankCarrier countHolder) {
+			if (l instanceof RankedElementsCarrier countHolder) {
 				return countHolder.add(r);
-			} else if (r instanceof RankCarrier countHolder) {
+			} else if (r instanceof RankedElementsCarrier countHolder) {
 				return countHolder.add(l);
 			} else {
-				return RankCarrier.empty(rank, ascElseDesc).add(l).add(r);
+				return RankedElementsCarrier.empty(rank, ascElseDesc).add(l).add(r);
 			}
 		}
 	}
 
 	protected Object aggregateOne(Object one) {
-		if (one instanceof RankCarrier) {
+		if (one instanceof RankedElementsCarrier) {
 			return one;
 		} else {
-			return RankCarrier.of(rank, ascElseDesc, one);
+			return RankedElementsCarrier.of(rank, ascElseDesc, one);
 		}
 	}
 
 	@Override
 	public IAggregationCarrier wrap(Object v) {
-		if (v instanceof RankCarrier rankCarrier) {
+		if (v instanceof RankedElementsCarrier rankCarrier) {
 			// Does it happen on Composite cubes?
 			return rankCarrier;
 		}

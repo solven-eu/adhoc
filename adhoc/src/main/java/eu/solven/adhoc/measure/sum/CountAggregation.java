@@ -23,52 +23,16 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.storage.IValueReceiver;
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.pepper.core.PepperLogHelper;
 
 /**
  * Count the number of received entries. Typically used for `COUNT(*)` row count.
  */
-public class CountAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
+public class CountAggregation implements IAggregation, ILongAggregation {
 
 	public static final String KEY = "COUNT";
-
-	/**
-	 * This class holds the count. It is useful to differentiate as input long (which count as `1`) and a count.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@Value
-	@Builder
-	public static class CountHolder implements IAggregationCarrier {
-		long count;
-
-		public static CountHolder zero() {
-			return new CountHolder(0);
-		}
-
-		public CountHolder aggregate(Object input) {
-			if (input instanceof CountHolder inputCountHolder) {
-				return add(inputCountHolder.count);
-			} else {
-				return increment();
-			}
-		}
-
-		public CountHolder increment() {
-			return new CountHolder(this.count + 1);
-		}
-
-		public CountHolder add(long input) {
-			return new CountHolder(this.count + input);
-		}
-
-		@Override
-		public void acceptValueConsumer(IValueReceiver valueConsumer) {
-			valueConsumer.onLong(count);
-		}
-	}
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -77,26 +41,39 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 		} else if (r == null) {
 			return aggregateOne(l);
 		} else {
-			if (l instanceof CountHolder countHolder) {
-				return countHolder.aggregate(r);
-			} else if (r instanceof CountHolder countHolder) {
-				return countHolder.aggregate(l);
-			} else {
-				return CountHolder.zero().aggregate(l).aggregate(r);
+			if (!AdhocPrimitiveHelpers.isLongLike(l)) {
+				throw new IllegalArgumentException(
+						"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(l)));
+			} else if (!AdhocPrimitiveHelpers.isLongLike(r)) {
+				throw new IllegalArgumentException(
+						"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(r)));
 			}
+
+			return AdhocPrimitiveHelpers.asLong(l) + AdhocPrimitiveHelpers.asLong(r);
 		}
 	}
 
 	protected Object aggregateOne(Object one) {
-		if (one instanceof CountHolder) {
-			return one;
+		if (AdhocPrimitiveHelpers.isLongLike(one)) {
+			return AdhocPrimitiveHelpers.asLong(one);
 		} else {
-			return CountHolder.zero().increment();
+			throw new IllegalArgumentException(
+					"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(one)));
 		}
 	}
 
 	@Override
-	public CountHolder wrap(Object v) {
-		return CountHolder.builder().count(((Number) v).longValue()).build();
+	public long aggregateLongs(long left, long right) {
+		return left + right;
 	}
+
+	@Override
+	public long neutralLong() {
+		return 0;
+	}
+
+	// @Override
+	// public CountHolder wrap(Object v) {
+	// return CountHolder.builder().count(((Number) v).longValue()).build();
+	// }
 }

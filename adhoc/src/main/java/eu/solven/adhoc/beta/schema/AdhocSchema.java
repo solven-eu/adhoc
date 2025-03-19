@@ -28,11 +28,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
@@ -122,11 +122,11 @@ public class AdhocSchema implements IAdhocSchema {
 		nameToMeasure.put(measureBag.getName(), measureBag);
 	}
 
-	public void registerMeasure(String measureBagName, IMeasure measure) {
-		AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
-				k -> AdhocMeasureBag.builder().name(measureBagName).build());
-		measureBag.addMeasure(measure);
-	}
+	// public void registerMeasure(String measureBagName, IMeasure measure) {
+	// AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
+	// k -> AdhocMeasureBag.builder().name(measureBagName).build());
+	// measureBag.addMeasure(measure);
+	// }
 
 	/**
 	 * 

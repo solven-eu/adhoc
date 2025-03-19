@@ -22,15 +22,10 @@
  */
 package eu.solven.adhoc.measure;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.Supplier;
-
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -39,8 +34,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.Singular;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,28 +48,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @Builder
-@ToString(exclude = "cachedNameToMeasure")
-public class AdhocMeasureBag implements IAdhocMeasureBag {
+public class UnsafeAdhocMeasureBag implements IAdhocMeasureBag {
 	@Getter
 	@NonNull
 	final String name;
 
 	@NonNull
-	@Singular
-	final ImmutableList<IMeasure> measures;
-
-	final Supplier<Map<String, IMeasure>> cachedNameToMeasure = Suppliers.memoize(() -> noCacheNameToMeasures());
+	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
-		return cachedNameToMeasure.get();
-	}
-
-	private Map<String, IMeasure> noCacheNameToMeasures() {
-		Map<String, IMeasure> nameToMeasure = new TreeMap<>();
-
-		measures.forEach(m -> nameToMeasure.put(m.getName(), m));
-
 		return nameToMeasure;
 	}
 
@@ -84,17 +65,17 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	 * @param measure
 	 * @return this
 	 */
-	// public AdhocMeasureBag addMeasure(IMeasure measure) {
-	// String measureName = measure.getName();
-	//
-	// if (measureName == null) {
-	// throw new IllegalArgumentException("m=%s has a null name".formatted(measure));
-	// }
-	//
-	// nameToMeasure.put(measureName, measure);
-	//
-	// return this;
-	// }
+	public UnsafeAdhocMeasureBag addMeasure(IMeasure measure) {
+		String measureName = measure.getName();
+
+		if (measureName == null) {
+			throw new IllegalArgumentException("m=%s has a null name".formatted(measure));
+		}
+
+		nameToMeasure.put(measureName, measure);
+
+		return this;
+	}
 
 	@Override
 	public IMeasure resolveIfRef(IMeasure measure) {
@@ -125,35 +106,39 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 		return Optional.of(measure);
 	}
 
-	public static AdhocMeasureBag fromMeasures(String name, List<IMeasure> measures) {
-		Map<String, IMeasure> nameToMeasure = new HashMap<>();
+	public static UnsafeAdhocMeasureBag fromMeasures(String name, List<IMeasure> measures) {
+		UnsafeAdhocMeasureBag ams = UnsafeAdhocMeasureBag.builder().name(name).build();
 
 		measures.forEach(measure -> {
 			String measureName = measure.getName();
-			if (nameToMeasure.containsKey(measureName)) {
+			if (ams.getNameToMeasure().containsKey(measureName)) {
 				throw new IllegalArgumentException(
 						"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
 								measureName));
 			}
 
-			nameToMeasure.put(measure.getName(), measure);
+			ams.addMeasure(measure);
 		});
 
-		AdhocMeasureBagBuilder ams = AdhocMeasureBag.builder().name(name);
-
-		ams.measures(nameToMeasure.values());
-
-		return ams.build();
+		return ams;
 	}
 
-	@Override
+	/**
+	 * In {@link UnsafeAdhocMeasureBag}, a visitor both mutate current {@link IAdhocMeasureBag} and return the
+	 * immutable+edited bag.
+	 */
 	public IAdhocMeasureBag acceptVisitor(IMeasureBagVisitor asCombinator) {
-		return asCombinator.addMeasures(this);
+		IAdhocMeasureBag newState = asCombinator.addMeasures(this);
+
+		this.nameToMeasure.clear();
+		this.nameToMeasure.putAll(newState.getNameToMeasure());
+
+		return newState;
 	}
 
-	public static AdhocMeasureBagBuilder edit(IAdhocMeasureBag measures) {
-		return AdhocMeasureBag.builder().name(measures.getName()).measures(measures.getNameToMeasure().values());
-	}
+	// public static AdhocMeasureBagBuilder edit(IAdhocMeasureBag measures) {
+	// return UnsafeAdhocMeasureBag.builder().name(measures.getName()).measures(measures.getNameToMeasure().values());
+	// }
 
 	// TODO Why doesn't this compile?
 	// public static class AdhocMeasuresSetBuilder {

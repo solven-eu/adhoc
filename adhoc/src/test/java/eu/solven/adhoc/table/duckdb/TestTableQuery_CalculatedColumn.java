@@ -34,9 +34,6 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.CalculatedColumn;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -47,16 +44,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
-public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+public class TestTableQuery_CalculatedColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
@@ -79,8 +67,7 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("azerty", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("qwerty", 234).execute();
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testWholeQuery").build();
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		ITabularView result =
 				aqe.executeUnsafe(
@@ -90,7 +77,7 @@ public class TestTableQuery_CalculatedColumn implements IAdhocTestConstants {
 										.of(CalculatedColumn.builder().name("first_letter").sql("word[1]").build()))
 								.debug(true)
 								.build(),
-						measureBag,
+						measures,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

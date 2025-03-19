@@ -41,8 +41,9 @@ public class TestMapBasedTabularView {
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), "m", 123);
 
+		// Serialization fails as we consider a Map with complex keys (Maps) which is not trivial to represent in a JSON
 		Assertions.assertThatThrownBy(() -> verifyJackson(MapBasedTabularView.class, view))
-				.isInstanceOf(InvalidDefinitionException.class);
+				.hasRootCauseInstanceOf(InvalidDefinitionException.class);
 	}
 
 	public static <T> String verifyJackson(Class<T> clazz, T object) throws JsonProcessingException {
@@ -50,7 +51,14 @@ public class TestMapBasedTabularView {
 
 		String asString = om.writeValueAsString(object);
 
-		Object fromString = om.readValue(asString, clazz);
+		Object fromString;
+		try {
+			fromString = om.readValue(asString, clazz);
+		} catch (RuntimeException | JsonProcessingException e) {
+			throw new IllegalArgumentException(
+					"Issue deserializing to class=%s from `%s`".formatted(clazz.getName(), asString),
+					e);
+		}
 
 		Assertions.assertThat(fromString).isEqualTo(object);
 

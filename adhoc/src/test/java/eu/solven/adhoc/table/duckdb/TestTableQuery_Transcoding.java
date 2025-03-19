@@ -34,9 +34,6 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -54,17 +51,7 @@ import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
  * This test complex transcoding scenarios, like one underlying column being mapped multiple times by different queried
  * columns
  */
-public class TestTableQuery_Transcoding implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measures = AdhocMeasureBag.builder().name("transcoding").build();
+public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 

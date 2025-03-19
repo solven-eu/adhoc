@@ -162,7 +162,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			// https://stackoverflow.com/questions/76908078/how-to-check-if-a-query-is-valid-or-not-using-jooq
 			String plan = dslContext.explain(resultQuery).plan();
 
-			log.info("[DEBUG] Query plan: {}", plan);
+			log.info("[DEBUG] Query plan: {}{}", System.lineSeparator(), plan);
 		} catch (RuntimeException e) {
 			log.warn("[DEBUG] Issue on EXPLAIN on query={}", resultQuery, e);
 		}

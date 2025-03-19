@@ -53,7 +53,7 @@ import lombok.Value;
  *
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
 	@Builder.Default
@@ -96,18 +96,19 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 	/**
 	 * Typically useful when the {@link IAdhocTableWrapper} has to be changed, but the other parameters must be kept.
+	 * Another typical case is editing the measures.
 	 *
 	 * @param template
 	 *            some template
 	 * @return
 	 */
-	public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
-		return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
-	}
+	// public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
+	// return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
+	// }
 
 	public static class AdhocCubeWrapperBuilder {
 		public AdhocCubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
-			// BEWARE Is this the proper the ensure the eventBus is written in proper places?
+			// BEWARE Is this the proper way the ensure the eventBus is written in proper places?
 			AdhocColumnsManager columnsManager = (AdhocColumnsManager) this.build().getColumnsManager();
 			this.columnsManager(columnsManager.toBuilder().eventBus(eventBus).build());
 

@@ -32,14 +32,14 @@ import com.google.common.collect.Multimaps;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocQueryEngine {
-	AdhocMeasureBag amg = AdhocMeasureBag.builder().name("engine").build();
+	UnsafeAdhocMeasureBag amg = UnsafeAdhocMeasureBag.builder().name("engine").build();
 	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()::post).build();
 
 	@Test

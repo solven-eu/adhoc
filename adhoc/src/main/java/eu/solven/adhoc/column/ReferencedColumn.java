@@ -41,11 +41,13 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
 public class ReferencedColumn implements IAdhocColumn, IHasWrapped {
+	// https://github.com/FasterXML/jackson-databind/issues/5030
+	// @JsonValue
 	String name;
 
 	@Override
 	public Object getWrapped() {
-		return name;
+		return getName();
 	}
 
 	public static ReferencedColumn ref(String column) {

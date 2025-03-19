@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -44,32 +45,34 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
  *
  */
 public class RatioOverSpecificColumnValueCompositor {
-	public AdhocMeasureBag addTo(AdhocMeasureBag measureBag, String column, String value, String underlying) {
+	public AdhocMeasureBag addTo(IAdhocMeasureBag measureBag, String column, String value, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, value);
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, value);
 		String ratioMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, value);
 
-		return measureBag
+		return AdhocMeasureBag.edit(measureBag)
 				// Filter the specific country: if we were filtering color=red, this filters both color and country
-				.addMeasure(Filtrator.builder()
+				.measure(Filtrator.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
 						.filter(ColumnFilter.isEqualTo(column, value))
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this filters only country
-				.addMeasure(Unfiltrator.builder()
+				.measure(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
 						.filterOnly(column)
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this returns (red&FR/FR)
-				.addMeasure(Combinator.builder()
+				.measure(Combinator.builder()
 						.name(ratioMeasureName)
 						.underlyings(Arrays.asList(sliceMeasureName, wholeMeasureName))
 						.combinationKey(DivideCombination.KEY)
-						.build());
+						.build())
+
+				.build();
 	}
 
 	/**
@@ -87,7 +90,7 @@ public class RatioOverSpecificColumnValueCompositor {
 		return new IMeasureBagVisitor() {
 
 			@Override
-			public AdhocMeasureBag addMeasures(AdhocMeasureBag adhocMeasureBag) {
+			public IAdhocMeasureBag addMeasures(IAdhocMeasureBag adhocMeasureBag) {
 				return RatioOverSpecificColumnValueCompositor.this.addTo(adhocMeasureBag, column, value, underlying);
 			}
 		};

@@ -52,4 +52,6 @@ public interface IAdhocMeasureBag extends IHasName, IHasMeasures {
 	 */
 	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
 
+	IAdhocMeasureBag acceptVisitor(IMeasureBagVisitor visitor);
+
 }

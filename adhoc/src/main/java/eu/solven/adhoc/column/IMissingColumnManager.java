@@ -24,7 +24,7 @@ package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
-import eu.solven.adhoc.table.CompositeCubesTableWrapper;
+import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 
 /**
  * On edge-cases (e.g. a failed JOIN), we would encounter NULL. This interface centralizes the behaviors on such cases.

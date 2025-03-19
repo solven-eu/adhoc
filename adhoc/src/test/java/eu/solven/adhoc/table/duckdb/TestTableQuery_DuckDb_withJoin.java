@@ -40,10 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -52,17 +49,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 
-public class TestTableQuery_DuckDb_withJoin implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measures = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
+public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String factTable = "someFactTable";
 	String joinedTable = "someJoinedName";

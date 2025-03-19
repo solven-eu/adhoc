@@ -53,6 +53,7 @@ import lombok.extern.jackson.Jacksonized;
 // BEWARE Should we introduce a way to match primitive value without boxing?
 public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	@NonNull
+	// @JsonValue
 	Object operand;
 
 	@JsonIgnore
@@ -93,6 +94,8 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 		}
 
 		// Enable Jackson deserialization given a plain Object
+		// https://github.com/FasterXML/jackson-databind/issues/5030
+		// @JsonCreator
 		public EqualsMatcherBuilder(Object operand) {
 
 			this.operand(operand);

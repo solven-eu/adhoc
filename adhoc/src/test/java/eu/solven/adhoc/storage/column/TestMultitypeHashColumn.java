@@ -28,8 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.CountAggregation;
-import eu.solven.adhoc.measure.sum.CountAggregation.CountHolder;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestMultitypeHashColumn {
@@ -108,37 +107,37 @@ public class TestMultitypeHashColumn {
 	@Test
 	public void testPurgeAggregationCarriers() {
 		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
 
 		storage.merge("k1", 3);
 		storage.merge("k1", 5);
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(CountHolder.class);
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
 		});
 
 		storage.purgeAggregationCarriers();
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(2L);
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(3);
 		});
 	}
 
 	@Test
 	public void testPurgeAggregationCarriers_singleEntry() {
 		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
 
 		storage.merge("k1", 3);
 
-		// storage.onValue("k1", o -> {
-		// Assertions.assertThat(o).isInstanceOf(CountHolder.class);
-		// });
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+		});
 
 		storage.purgeAggregationCarriers();
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(1L);
+			Assertions.assertThat(o).isNull();
 		});
 	}
 
@@ -146,7 +145,7 @@ public class TestMultitypeHashColumn {
 	@Test
 	public void testPurgeAggregationCarriers_large() {
 		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(new CountAggregation()).build();
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
 
 		int size = 16 * 1024;
 
@@ -154,13 +153,17 @@ public class TestMultitypeHashColumn {
 		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, 2 * i));
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(CountHolder.class);
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
 		});
 
 		storage.purgeAggregationCarriers();
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Long.class).isEqualTo(2L);
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(1);
+		});
+
+		storage.onValue("k" + size, o -> {
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
 	}
 }

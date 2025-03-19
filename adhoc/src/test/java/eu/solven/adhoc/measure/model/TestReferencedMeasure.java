@@ -23,9 +23,12 @@
 package eu.solven.adhoc.measure.model;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.storage.TestMapBasedTabularView;
@@ -39,6 +42,20 @@ public class TestReferencedMeasure {
 		Assertions.assertThat(asString).isEqualTo("""
 				"someMeasure"
 				""".strip());
+	}
+
+	@Disabled("Does not work as `type` is expected to be a minimal class, not a name like `ref`")
+	@Test
+	public void testJackson_rawFormat() throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		String asString = "{\"type\": \"ref\", \"ref\": \"someMeasure\"}";
+
+		ReferencedMeasure fromString = objectMapper.readValue(asString, ReferencedMeasure.class);
+
+		Assertions.assertThat(fromString).isEqualTo(ReferencedMeasure.ref("someMeasure"));
 	}
 
 	@Test

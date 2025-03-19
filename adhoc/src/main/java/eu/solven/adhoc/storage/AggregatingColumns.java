@@ -104,14 +104,17 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 
 		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 
-		return v -> {
-			if (agg instanceof IHasCarriers hasCarriers) {
+		if (agg instanceof IHasCarriers hasCarriers) {
+			return v -> {
 				// Wrap the aggregate from table into the aggregation custom wrapper
-				v = hasCarriers.wrap(v);
-			}
+				Object wrapped = hasCarriers.wrap(v);
 
-			column.append(key).onObject(v);
-		};
+				column.append(key).onObject(wrapped);
+			};
+
+		} else {
+			return column.append(key);
+		}
 	}
 
 	public long size(Aggregator aggregator) {

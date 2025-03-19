@@ -85,7 +85,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 public class AdhocQueryEngine implements IAdhocQueryEngine {
 	@NonNull
@@ -662,10 +662,4 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return new QueryStepsDagBuilder(executingQueryContext.getTable().getName(), executingQueryContext.getQuery());
 	}
 
-	public static AdhocQueryEngineBuilder edit(AdhocQueryEngine engine) {
-		return AdhocQueryEngine.builder()
-				.operatorsFactory(engine.operatorsFactory)
-				.eventBus(engine.eventBus)
-				.stopwatchFactory(engine.stopwatchFactory);
-	}
 }

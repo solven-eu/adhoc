@@ -28,7 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
@@ -40,7 +40,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public class TestQueryStepsDag implements IAdhocTestConstants {
 	AdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 
-	AdhocMeasureBag measures = AdhocMeasureBag.fromMeasures(this.getClass().getName(),
+	UnsafeAdhocMeasureBag measures = UnsafeAdhocMeasureBag.fromMeasures(this.getClass().getName(),
 			Arrays.asList(k1Sum, k1SumSquared, filterK1onA1, filterK1onB1, shiftorAisA1));
 
 	@Test

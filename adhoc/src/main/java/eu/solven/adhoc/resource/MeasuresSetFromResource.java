@@ -87,12 +87,10 @@ public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
-	public AdhocMeasureBag loadToBag(Collection<? extends Map<String, ?>> measures) {
-		Map<String, IMeasure> nameToMeasure = measures.stream().flatMap(measure -> {
-			return makeMeasure(measure).stream();
-		}).collect(Collectors.toMap(IMeasure::getName, m -> m));
+	public AdhocMeasureBag loadToBag(String name, Collection<? extends Map<String, ?>> measuresAsMap) {
+		List<IMeasure> measures = measuresAsMap.stream().flatMap(m -> makeMeasure(m).stream()).toList();
 
-		return AdhocMeasureBag.builder().nameToMeasure(nameToMeasure).build();
+		return AdhocMeasureBag.builder().name(name).measures(measures).build();
 	}
 
 	/**
@@ -434,7 +432,7 @@ public class MeasuresSetFromResource {
 		return AdhocMeasureBag.fromMeasures(name, measures);
 	}
 
-	public String asString(String format, AdhocMeasureBag amb) {
+	public String asString(String format, IAdhocMeasureBag amb) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<?> asMaps =

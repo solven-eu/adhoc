@@ -24,6 +24,8 @@ package eu.solven.adhoc.storage;
 
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.slice.IAdhocSlice;
 import eu.solven.adhoc.storage.column.IColumnScanner;
@@ -56,6 +58,7 @@ public interface ITabularView {
 	 *
 	 * @return true if this view is empty.
 	 */
+	@JsonIgnore
 	boolean isEmpty();
 
 	/**

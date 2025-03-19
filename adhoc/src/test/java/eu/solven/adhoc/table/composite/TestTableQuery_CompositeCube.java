@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.composite;
+package eu.solven.adhoc.table.composite;
 
 import java.util.List;
 import java.util.Map;
@@ -39,13 +39,16 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.storage.MapBasedTabularView;
-import eu.solven.adhoc.table.CompositeCubesTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -78,7 +81,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	AdhocJooqTableWrapper table2 = new AdhocJooqTableWrapper(tableName2,
 			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
-	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
+	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
 		return AdhocCubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
@@ -103,9 +106,10 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("a"), DSL.field("b"))
 					.values(345, 456, "a2", "b2")
 					.execute();
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName1).build();
+			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
+			measureBag.addMeasure(Aggregator.countAsterisk());
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		AdhocCubeWrapper cube2;
@@ -119,24 +123,26 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("a"), DSL.field("c"))
 					.values(1234, 2345, "a1", "c1")
 					.execute();
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name(tableName2).build();
+			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Sum);
+			measureBag.addMeasure(Aggregator.countAsterisk());
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("composite").build();
-		measureBag.addMeasure(k1PlusK2AsExpr);
+		UnsafeAdhocMeasureBag measureBagWithoutUnderlyings = UnsafeAdhocMeasureBag.builder().name("composite").build();
+		measureBagWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		compositeCubesTable.injectUnderlyingMeasures(measureBag);
+		IAdhocMeasureBag measureBagWithUnderlyings =
+				compositeCubesTable.injectUnderlyingMeasures(measureBagWithoutUnderlyings);
 
 		AdhocCubeWrapper cube3 = AdhocCubeWrapper.builder()
 				.engine(aqe)
-				.measures(measureBag)
+				.measures(measureBagWithUnderlyings)
 				.table(compositeCubesTable)
 				.engine(aqe)
 				.build();
@@ -147,7 +153,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	public void testQueryCube1() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).debug(true).build());
+		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -168,14 +174,15 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				.contains(k1PlusK2AsExpr.getName())
 				.contains(k2Sum.getColumnName())
 				.contains(k3Sum.getColumnName())
-				.hasSize(4);
+				.contains(Aggregator.countAsterisk().getName())
+				.hasSize(5);
 	}
 
 	@Test
 	public void testQueryCube1Plus2() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).debug(true).build());
+		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -187,8 +194,8 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	public void testQueryCube1Plus2_groupByShared() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3
-				.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").debug(true).build());
+		ITabularView result =
+				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -201,8 +208,8 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	public void testQueryCube1Plus2_groupByUnshared() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3
-				.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").debug(true).build());
+		ITabularView result =
+				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -216,8 +223,8 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	public void testQueryCube1Plus2_filterShared() {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(
-				AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("a", "a1").debug(true).build());
+		ITabularView result =
+				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("a", "a1").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -232,7 +239,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(
-				AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("b", "b1").debug(true).build());
+				AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("b", "b1").explain(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -247,5 +254,74 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				#1 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
 				#0 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
 		Assertions.assertThat(messages).hasSize(6);
+	}
+
+	@Test
+	public void testQuery_Count() {
+		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+
+		ITabularView result =
+				cube3.execute(AdhocQuery.builder().measure(Aggregator.countAsterisk()).debug(true).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 0L + 2 + 1))
+				.hasSize(1);
+	}
+
+	// Make sure Composite can not only do SUMs
+	@Test
+	public void testQuery_Max() {
+		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+
+		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
+		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+				.measures(AdhocMeasureBag.edit(initialCube3.getMeasures())
+						.measure(Aggregator.builder()
+								.name("k1Min")
+								.columnName("k1")
+								.aggregationKey(MinAggregation.KEY)
+								.build())
+						.measure(Aggregator.builder()
+								.name("k1Max")
+								.columnName("k1")
+								.aggregationKey(MaxAggregation.KEY)
+								.build())
+						.build())
+				.build();
+
+		ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Min", "k1Max").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of("k1Min", 123D, "k1Max", 1234D))
+				.hasSize(1);
+	}
+
+	@Test
+	public void testQueryNoMeasures_common() {
+		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+
+		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("a").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("a", "a1"), Map.of())
+				.containsEntry(Map.of("a", "a2"), Map.of())
+				.hasSize(2);
+	}
+
+	@Test
+	public void testQueryNoMeasures_onlyOne() {
+		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+
+		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("b", "c").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("b", "b1", "c", "someTableName1.cube"), Map.of())
+				.containsEntry(Map.of("b", "b2", "c", "someTableName1.cube"), Map.of())
+				.containsEntry(Map.of("b", "someTableName2.cube", "c", "c1"), Map.of())
+				.hasSize(3);
 	}
 }

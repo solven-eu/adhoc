@@ -36,7 +36,7 @@ public class TestAdhocMeasureBag {
 
 	@Test
 	public void testReplaceMeasure() {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testReplaceMeasure").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testReplaceMeasure").build();
 		measureBag.addMeasure(inital);
 		measureBag.addMeasure(later);
 

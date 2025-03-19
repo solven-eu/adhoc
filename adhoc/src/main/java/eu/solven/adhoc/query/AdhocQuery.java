@@ -122,13 +122,15 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 
 		/**
+		 * Append measures to the query.
+		 * 
 		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
 		 * This may be lifted in a later version.
 		 * 
 		 * @param measures
 		 * @return
 		 */
-		public AdhocQueryBuilder measures(Collection<IMeasure> measures) {
+		public AdhocQueryBuilder measures(Collection<? extends IMeasure> measures) {
 			this.measures =
 					Stream.concat(this.measures.stream(), measures.stream()).collect(ImmutableSet.toImmutableSet());
 

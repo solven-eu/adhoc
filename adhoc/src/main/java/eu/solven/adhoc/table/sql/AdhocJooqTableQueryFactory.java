@@ -49,6 +49,7 @@ import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -289,6 +290,9 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			} else if (MaxAggregation.KEY.equals(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.max(field);
+			} else if (MinAggregation.KEY.equals(aggregationKey)) {
+				Field<?> field = DSL.field(namedColumn);
+				sqlAggFunction = DSL.min(field);
 			} else if (CountAggregation.KEY.equals(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.count(field);

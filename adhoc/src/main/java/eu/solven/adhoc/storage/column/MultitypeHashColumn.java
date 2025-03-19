@@ -410,7 +410,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 						}
 
 						// Replace current value
-						measureToAggregateO.put(key, value);
+						measureToAggregateO.put(key, object);
 					}
 				});
 			}

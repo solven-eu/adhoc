@@ -58,24 +58,24 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 	public final AdhocQueryEngine aqe =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.edit(((ADagTest) this).aqw).engine(aqe).build();
+	public final AdhocCubeWrapper aqw = ((ADagTest) this).aqw.toBuilder().engine(aqe).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
 
-        return new StandardOperatorsFactory() {
-            @Override
-            public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-                if (ManyToMany1DDecomposition.KEY.equals(key)
-                        || key.equals(ManyToManyNDDecomposition.class.getName())) {
-                    return new ManyToManyNDDecomposition(options, manyToManyDefinition);
-                }
-                return switch (key) {
-                    default:
-                        yield super.makeDecomposition(key, options);
-                };
-            }
-        };
-    }
+		return new StandardOperatorsFactory() {
+			@Override
+			public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
+				if (ManyToMany1DDecomposition.KEY.equals(key)
+						|| key.equals(ManyToManyNDDecomposition.class.getName())) {
+					return new ManyToManyNDDecomposition(options, manyToManyDefinition);
+				}
+				return switch (key) {
+				default:
+					yield super.makeDecomposition(key, options);
+				};
+			}
+		};
+	}
 
 	final String dispatchedMeasure = "k1.dispatched";
 

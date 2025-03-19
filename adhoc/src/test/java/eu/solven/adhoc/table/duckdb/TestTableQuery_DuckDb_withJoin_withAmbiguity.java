@@ -39,10 +39,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -51,17 +48,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 
-public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("duckdb_withJoin").build();
+public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String factTable = "someFactTable";
 	String joinedTable = "someJoinedName";
@@ -162,11 +149,11 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
-					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).build(), measureBag, table);
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).build(), measures, table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -179,12 +166,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -200,12 +187,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -221,12 +208,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -242,12 +229,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -263,12 +250,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -284,12 +271,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity implements IAdhocTestC
 		initTables();
 		insertData();
 
-		measureBag.addMeasure(k1Sum);
+		measures.addMeasure(k1Sum);
 
 		{
 			ITabularView result = aqe.executeUnsafe(
 					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
-					measureBag,
+					measures,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

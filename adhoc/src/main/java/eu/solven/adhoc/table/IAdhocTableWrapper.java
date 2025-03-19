@@ -73,6 +73,8 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 		long estimatedCardinality = this.streamSlices(tableQuery)
 				.asMap()
 				.map(r -> r.getGroupBy(column))
+				// TODO Should we return the information about null-ness?
+				.filter(c -> c != null)
 				// `.disinct()` is relevant only for InMemoryTable and related tables
 				.distinct()
 				.peek(coordinate -> {

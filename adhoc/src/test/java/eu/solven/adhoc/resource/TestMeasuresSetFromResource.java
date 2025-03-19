@@ -44,6 +44,7 @@ import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -184,23 +185,23 @@ public class TestMeasuresSetFromResource {
 			Assertions.assertThat(amsAsString).isEqualTo("""
 					- name: "someBagName"
 					  measures:
-					  - name: "k1Byk1k2"
-					    type: ".Combinator"
-					    combinationKey: "DIVIDE"
-					    underlyings:
-					    - "k1"
-					    - "anonymous-0"
-					  - name: "k1"
-					    type: ".Aggregator"
-					  - name: "k2"
-					    type: ".Aggregator"
 					  - name: "anonymous-0"
 					    type: ".Combinator"
 					    combinationKey: "SUM"
 					    underlyings:
 					    - "k1"
 					    - "k2"
-					""");
+					  - name: "k1"
+					    type: ".Aggregator"
+					  - name: "k1Byk1k2"
+					    type: ".Combinator"
+					    combinationKey: "DIVIDE"
+					    underlyings:
+					    - "k1"
+					    - "anonymous-0"
+					  - name: "k2"
+					    type: ".Aggregator"
+										""");
 
 			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
@@ -250,6 +251,8 @@ public class TestMeasuresSetFromResource {
 			Assertions.assertThat(amsAsString).isEqualTo("""
 					- name: "someBagName"
 					  measures:
+					  - name: "k1"
+					    type: ".Aggregator"
 					  - name: "k1_c=V"
 					    type: ".Filtrator"
 					    filter:
@@ -258,8 +261,6 @@ public class TestMeasuresSetFromResource {
 					      valueMatcher: "someString"
 					      nullIfAbsent: true
 					    underlying: "k1"
-					  - name: "k1"
-					    type: ".Aggregator"
 					""");
 
 			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
@@ -271,7 +272,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testUnfiltrator() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testUnfiltrator").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testUnfiltrator").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.unfilterOnA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -301,7 +302,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testShiftor() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testShiftor").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testShiftor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.shiftorAisA1);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -335,7 +336,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testBucketor() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testBucketor").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testBucketor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -372,7 +373,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testDispatchor() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testDispatchor").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testDispatchor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.dispatchFrom0To100);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -408,7 +409,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testCustomMeasure() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testCustomMeasure").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testCustomMeasure").build();
 
 		measureBag.addMeasure(
 				CustomMeasureForResource.builder().name("someCustomName").customProperty("customValue").build());
@@ -436,7 +437,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testAggregator_countAsterisk() throws IOException {
-		AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("testAggregator_countAsterisk").build();
+		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testAggregator_countAsterisk").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
 
@@ -501,7 +502,7 @@ public class TestMeasuresSetFromResource {
 				.containsEntry("columnName", "legacyColumnName");
 
 		{
-			AdhocMeasureBag measureBag = AdhocMeasureBag.builder()
+			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder()
 					.name("testRemoveUselessProperties_Aggregator_differentColumnName")
 					.build();
 

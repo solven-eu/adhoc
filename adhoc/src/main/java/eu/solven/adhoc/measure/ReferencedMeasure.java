@@ -46,7 +46,9 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
-public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure>, IHasWrapped {
+public class ReferencedMeasure implements IMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
+	// https://github.com/FasterXML/jackson-databind/issues/5030
+	// @JsonValue
 	String ref;
 
 	/**
@@ -60,7 +62,7 @@ public class ReferencedMeasure implements IMeasure, Comparable<ReferencedMeasure
 
 	@Override
 	public Object getWrapped() {
-		return ref;
+		return getName();
 	}
 
 	@Override

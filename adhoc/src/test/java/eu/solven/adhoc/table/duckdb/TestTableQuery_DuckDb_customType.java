@@ -36,7 +36,7 @@ import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -50,16 +50,7 @@ import eu.solven.adhoc.util.IAdhocEventBus;
 
 //@Disabled("TODO")
 // https://www.jooq.org/doc/latest/manual/sql-building/queryparts/custom-bindings/
-public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocMeasureBag measures = AdhocMeasureBag.builder().name(this.getClass().getName()).build();
+public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
@@ -72,7 +63,7 @@ public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(AdhocMeasureBag measureBag) {
+	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(adhocEventBus).build();
 
@@ -103,7 +94,7 @@ public class TestTableQuery_DuckDb_customType implements IAdhocTestConstants {
 				AdhocColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
 		return AdhocCubeWrapper.builder()
 				.engine(aqe)
-				.measures(measureBag)
+				.measures(measures)
 				.table(table)
 				.engine(aqe)
 				.columnsManager(columnsManager)

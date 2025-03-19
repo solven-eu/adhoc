@@ -70,7 +70,7 @@ export default {
 
 		function loadColumnCoordinates() {
 			loading.value = true;
-			store.loadColumnCoordinates(props.cubeId, props.endpointId, props.column).finally(() => {
+			store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column).finally(() => {
 				loading.value = false;
 			});
 		}

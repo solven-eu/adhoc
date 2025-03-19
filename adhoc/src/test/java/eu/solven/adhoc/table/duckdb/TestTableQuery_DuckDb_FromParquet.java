@@ -41,10 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.storage.ITabularView;
@@ -53,18 +50,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 
-public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	AdhocMeasureBag measureBag = AdhocMeasureBag.builder().name("parquet").build();
-
+public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implements IAdhocTestConstants {
 	Path tmpParquetPath;
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
@@ -154,10 +140,10 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measureBag.addMeasure(k1Sum);
-		measureBag.addMeasure(k1SumSquared);
+		measures.addMeasure(k1Sum);
+		measures.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).build(), measureBag, table);
+		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).build(), measures, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -174,11 +160,11 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measureBag.addMeasure(k1Sum);
-		measureBag.addMeasure(k1SumSquared);
+		measures.addMeasure(k1Sum);
+		measures.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe
-				.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), measureBag, table);
+		ITabularView result =
+				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), measures, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -196,12 +182,12 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measureBag.addMeasure(k1Sum);
-		measureBag.addMeasure(k1SumSquared);
+		measures.addMeasure(k1Sum);
+		measures.addMeasure(k1SumSquared);
 
 		ITabularView result =
 				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
-						measureBag,
+						measures,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -221,14 +207,14 @@ public class TestTableQuery_DuckDb_FromParquet implements IAdhocTestConstants {
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measureBag.addMeasure(k1Sum);
-		measureBag.addMeasure(k1SumSquared);
+		measures.addMeasure(k1Sum);
+		measures.addMeasure(k1SumSquared);
 
 		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder()
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")
-				.build(), measureBag, table);
+				.build(), measures, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

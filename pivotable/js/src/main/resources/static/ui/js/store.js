@@ -268,8 +268,13 @@ export const useAdhocStore = defineStore("adhoc", {
 				if (schemas.length == 0) {
 					const schema = {
 						endpointId: endpointId,
-						endpointId: endpointId,
 						error: "None matching",
+						cubes: [
+							{
+								cubeId: cubeId,
+								error: "None matching",
+							},
+						],
 					};
 
 					return schema;
@@ -280,10 +285,11 @@ export const useAdhocStore = defineStore("adhoc", {
 		},
 
 		async loadCubeSchemaIfMissing(cubeId, endpointId) {
+			const store = this;
 			return this.loadEndpointIfMissing(endpointId).then(() => {
-				if (this.schemas[cubeId]) {
+				if (store.schemas[endpointId]?.cubes[cubeId]) {
 					console.debug("Skip loading cubeId=", cubeId);
-					return Promise.resolve(this.schemas[cubeId]);
+					return Promise.resolve(store.schemas[endpointId]?.cubes[cubeId]);
 				} else {
 					return this.loadCubeSchema(cubeId, endpointId);
 				}
@@ -314,7 +320,7 @@ export const useAdhocStore = defineStore("adhoc", {
 							},
 						});
 					});
-					return columns[0].coordinates;
+					return columns[0];
 				} catch (e) {
 					store.onSwallowedError(e);
 					return {};
@@ -332,6 +338,16 @@ export const useAdhocStore = defineStore("adhoc", {
 			return this.loadEndpointIfMissing(endpointId).then(() => {
 				return fetchFromUrl(url);
 			});
+		},
+
+		async loadColumnCoordinatesIfMissing(cubeId, endpointId, column) {
+			const columnId = `${endpointId}-${cubeId}-${column}`;
+			if (this.columns[columnId]) {
+				console.debug("Skip loading columnId=", columnId);
+				return Promise.resolve(this.columns[columnId]);
+			} else {
+				return this.loadColumnCoordinates(cubeId, endpointId, column);
+			}
 		},
 
 		async executeQuery(cubeId, endpointId, query) {
