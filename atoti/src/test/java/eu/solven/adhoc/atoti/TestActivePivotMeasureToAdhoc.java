@@ -45,12 +45,8 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotConditionCubeToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Filtrator;
-import eu.solven.adhoc.measure.step.Shiftor;
-import eu.solven.adhoc.measure.step.Unfiltrator;
+import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -251,8 +247,8 @@ public class TestActivePivotMeasureToAdhoc {
 								.combinationKey(LeafIdentityPostProcessor.TYPE)
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										// leafLevels keep the original ordering
-										.put(ADynamicAggregationPostProcessorV2.LEAF_LEVELS, "lvl0,lvl1")
 										.put("customKey", "customValue")
+										.put(ADynamicAggregationPostProcessorV2.LEAF_LEVELS, "lvl0,lvl1")
 										.build())
 								// groupBy may be re-ordered
 								.groupBy(GroupByColumns.named("lvl1", "lvl0"))

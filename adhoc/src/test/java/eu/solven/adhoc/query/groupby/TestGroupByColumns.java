@@ -22,13 +22,23 @@
  */
 package eu.solven.adhoc.query.groupby;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestGroupByColumns {
 	@Test
 	public void testHashcodeEquals() {
 		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn").verify();
+	}
+
+	@Test
+	public void testDifferentOrders() {
+		IAdhocGroupBy groupByAsc = GroupByColumns.named("a", "b");
+		IAdhocGroupBy groupByDesc = GroupByColumns.named("b", "a");
+
+		Assertions.assertThat(groupByAsc).isEqualTo(groupByDesc);
 	}
 }

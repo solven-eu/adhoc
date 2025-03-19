@@ -28,8 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
-
-import eu.solven.adhoc.beta.schema.CubeSchemaMetadata.CubeSchemaMetadataBuilder;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
@@ -81,7 +79,7 @@ public class AdhocSchema implements IAdhocSchema {
 		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
 		nameToCube.forEach((name, cube) -> {
-			CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
 			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
 			cubeSchema.measures(cube.getNameToMeasure());

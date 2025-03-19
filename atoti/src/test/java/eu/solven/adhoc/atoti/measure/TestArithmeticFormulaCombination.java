@@ -31,7 +31,7 @@ import org.mockito.Mockito;
 
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 
 public class TestArithmeticFormulaCombination {
 
@@ -40,7 +40,7 @@ public class TestArithmeticFormulaCombination {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
 						"aggregatedValue[CDS Composite Spread5Y],double[10000],*"));
-		IAdhocSliceWithStep slice = Mockito.mock(IAdhocSliceWithStep.class);
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(0.123_456))).isEqualTo(1234.56);
 		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isEqualTo(null);
@@ -51,7 +51,7 @@ public class TestArithmeticFormulaCombination {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
 						"int[123],aggregatedValue[CDS Composite Spread5Y],double[234],*"));
-		IAdhocSliceWithStep slice = Mockito.mock(IAdhocSliceWithStep.class);
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(34.56))).isEqualTo(123 * 34.56 * 234);
 		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isNull();

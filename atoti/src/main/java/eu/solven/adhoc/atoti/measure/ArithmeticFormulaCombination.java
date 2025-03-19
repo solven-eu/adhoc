@@ -33,7 +33,7 @@ import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcesso
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.ProductCombination;
-import eu.solven.adhoc.slice.IAdhocSliceWithStep;
+import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,7 +59,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 	}
 
 	@Override
-	public Object combine(IAdhocSliceWithStep slice, List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		List<Object> pendingOperands = new LinkedList<>();
 
 		String[] elements = formula.split(",");

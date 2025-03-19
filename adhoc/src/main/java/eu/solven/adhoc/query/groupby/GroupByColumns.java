@@ -35,7 +35,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -63,9 +63,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @EqualsAndHashCode(exclude = "cachedNameToColumn")
 public class GroupByColumns implements IAdhocGroupBy {
+	// Set as not ordered
 	@Singular
 	@NonNull
-	final ImmutableList<IAdhocColumn> columns;
+	final ImmutableSet<IAdhocColumn> columns;
 
 	// Cached to spare memory allocation as this may be read once per aggregate
 	@JsonIgnore
@@ -104,6 +105,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 	}
 
 	public static IAdhocGroupBy of(Collection<? extends IAdhocColumn> columns) {
+		// `namedColumns` is useful to check the consistency of names
 		namedColumns(columns);
 
 		return GroupByColumns.builder().columns(List.copyOf(columns)).build();

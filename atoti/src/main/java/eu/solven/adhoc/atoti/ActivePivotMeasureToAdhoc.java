@@ -49,16 +49,11 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IMeasure;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregator;
-import eu.solven.adhoc.measure.step.Aggregator;
-import eu.solven.adhoc.measure.step.Bucketor;
-import eu.solven.adhoc.measure.step.Combinator;
-import eu.solven.adhoc.measure.step.Filtrator;
-import eu.solven.adhoc.measure.step.Shiftor;
-import eu.solven.adhoc.measure.step.Unfiltrator;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.model.*;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -104,7 +99,7 @@ public class ActivePivotMeasureToAdhoc {
 			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
 					.name(IMeasureHierarchy.COUNT_ID)
 					.aggregationKey(CountAggregation.KEY)
-					.columnName(CountAggregation.ASTERISK);
+					.columnName(ICountMeasuresConstants.ASTERISK);
 			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
 
 			// Do not add update.TIMESTAMP as it is any way ambiguous regarding the underlying columnName
@@ -148,9 +143,9 @@ public class ActivePivotMeasureToAdhoc {
 		String columnName;
 		if (IMeasureHierarchy.COUNT_ID.equals(nativeMeasure.getName())) {
 			aggregationKey = CountAggregation.KEY;
-			columnName = CountAggregation.ASTERISK;
+			columnName = ICountMeasuresConstants.ASTERISK;
 		} else if (IMeasureHierarchy.TIMESTAMP_ID.equals(nativeMeasure.getName())) {
-			aggregationKey = MaxAggregator.KEY;
+			aggregationKey = MaxAggregation.KEY;
 			// BEWARE There is no standard way to collect update.TIMESTAMP, as many DB does not keep this
 			// information
 			columnName = "someTimestampColumn";

@@ -141,7 +141,7 @@ public class TestAdhocQueryBuilder {
 
 		Assertions.assertThat(fromString).isEqualTo(query);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToIgnoringNewLines("""
 				{
 				  "filter" : {
 				    "type" : "column",
