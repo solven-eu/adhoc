@@ -35,11 +35,11 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.util.IStopwatch;
 
 public class TestAggregations_Filter extends ADagTest implements IAdhocTestConstants {

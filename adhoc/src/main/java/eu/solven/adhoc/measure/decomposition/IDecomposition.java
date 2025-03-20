@@ -25,9 +25,9 @@ package eu.solven.adhoc.measure.decomposition;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
-import eu.solven.adhoc.slice.ISliceWithStep;
 
 /**
  * Used for {@link eu.solven.adhoc.measure.model.IMeasure} which generates/contributes into multiple slices given an

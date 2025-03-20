@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.table.duckdb.quantile;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.storage.IValueProvider;
-import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**

@@ -29,6 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Enable overview of active-queries.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class AdhocQueryMonitor {
 	public static final String TAG_QUERY_LIFECYCLE = "QUERY_LIFECYCLE";

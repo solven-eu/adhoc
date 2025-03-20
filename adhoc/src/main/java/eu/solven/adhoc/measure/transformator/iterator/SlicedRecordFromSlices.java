@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.storage.IValueProvider;
-import eu.solven.adhoc.storage.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import lombok.Builder;
 
 /**

@@ -32,13 +32,13 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 
 public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestConstants {
 

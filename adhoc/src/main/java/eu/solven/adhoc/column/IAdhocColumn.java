@@ -29,7 +29,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * A column, typically used in {@link IAdhocGroupBy}
+ * A column definition, typically used in {@link IAdhocGroupBy}
  * 
  * @author Benoit Lacelle
  *

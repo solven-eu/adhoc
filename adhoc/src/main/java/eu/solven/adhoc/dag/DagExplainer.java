@@ -32,6 +32,7 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.query.cube.IAdhocQuery;

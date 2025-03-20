@@ -33,9 +33,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.UnmodifiableIterator;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
 /**
  *

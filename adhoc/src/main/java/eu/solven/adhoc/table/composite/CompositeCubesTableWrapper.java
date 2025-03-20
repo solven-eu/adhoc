@@ -42,6 +42,12 @@ import eu.solven.adhoc.column.DefaultMissingColumnManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IMissingColumnManager;
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag.AdhocMeasureBagBuilder;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
@@ -60,12 +66,6 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.AggregatedRecordOverMaps;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
-import eu.solven.adhoc.slice.IAdhocSlice;
-import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -105,10 +105,10 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IAggregatedRecordStream streamSlices(TableQuery compositeQuery) {
+	public ITabularRecordStream streamSlices(TableQuery compositeQuery) {
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
-		Stream<IAggregatedRecord> streams = cubes.stream().flatMap(cube -> {
+		Stream<ITabularRecord> streams = cubes.stream().flatMap(cube -> {
 
 			Set<String> cubeColumns = cube.getColumns().keySet();
 
@@ -129,7 +129,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 			});
 		});
 
-		return new SuppliedAggregatedRecordStream(compositeQuery, () -> streams);
+		return new SuppliedTabularRecordStream(compositeQuery, () -> streams);
 	}
 
 	protected IAdhocQuery makeSubCubeQuery(TableQuery compositeQuery,
@@ -183,7 +183,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
 	 * @return
 	 */
-	protected IAggregatedRecord transcodeSliceToComposite(IAdhocCubeWrapper cube,
+	protected ITabularRecord transcodeSliceToComposite(IAdhocCubeWrapper cube,
 			IAdhocSlice slice,
 			Map<String, ?> measures,
 			NavigableSet<String> missingColumns) {
@@ -192,7 +192,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 		Map<String, Object> groupBys = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
 		missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
 
-		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 	}
 
 	protected Object missingColumn(IAdhocCubeWrapper cube, String column) {

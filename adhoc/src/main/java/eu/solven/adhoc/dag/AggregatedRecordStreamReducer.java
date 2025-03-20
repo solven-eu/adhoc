@@ -32,18 +32,18 @@ import java.util.function.BiConsumer;
 
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.tabular.AggregatingColumns;
+import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.AggregatingColumns;
-import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
-import eu.solven.adhoc.storage.IValueReceiver;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -66,7 +66,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 	}
 
 	@Override
-	public IMultitypeMergeableGrid<SliceAsMap> reduce(IAggregatedRecordStream stream) {
+	public IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream) {
 		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures();
 
 		TableAggregatesMetadata tableAggregatesMetadata =
@@ -77,7 +77,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed
-		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate =
+		BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate =
 				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
@@ -97,8 +97,8 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 		return grid;
 	}
 
-	protected void forEachRow(IAggregatedRecord tableRow,
-			BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate,
+	protected void forEachRow(ITabularRecord tableRow,
+			BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate,
 			TableAggregatesMetadata aggregatesMetadata,
 			IMultitypeMergeableGrid<SliceAsMap> sliceToAgg) {
 		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
@@ -178,7 +178,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 	 */
 	protected Optional<SliceAsMap> makeCoordinate(ExecutingQueryContext executingQueryContext,
 			IHasGroupBy tableQuery,
-			IAggregatedRecord tableRow) {
+			ITabularRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
 			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));

@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.storage.IValueReceiver;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**

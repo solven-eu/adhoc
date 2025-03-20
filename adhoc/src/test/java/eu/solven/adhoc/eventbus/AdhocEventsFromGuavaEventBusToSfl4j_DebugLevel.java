@@ -36,8 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel {
 	/**
 	 * An {@link eu.solven.adhoc.query.AdhocQuery} is resolved through a DAG of
-	 * {@link eu.solven.adhoc.dag.AdhocQueryStep}. This will log when an {@link eu.solven.adhoc.dag.AdhocQueryStep} is
-	 * completed.
+	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}. This will log when an
+	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep} is completed.
 	 * 
 	 * @param event
 	 */

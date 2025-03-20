@@ -24,15 +24,16 @@ package eu.solven.adhoc.measure.combination;
 
 import java.util.List;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.storage.IValueProvider;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
- * {@link eu.solven.adhoc.measure.model.IMeasure}, it writes into current {@link eu.solven.adhoc.slice.IAdhocSlice}.
+ * {@link eu.solven.adhoc.measure.model.IMeasure}, it writes into current
+ * {@link eu.solven.adhoc.data.row.slice.IAdhocSlice}.
  *
  * @author Benoit Lacelle
  */

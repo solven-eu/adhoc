@@ -32,8 +32,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.record.IAggregatedRecord;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
 import lombok.Value;
@@ -60,7 +60,7 @@ public class TableAggregatesMetadata {
 
 	/**
 	 * 
-	 * @return the {@link List} of names expected in {@link IAggregatedRecord}
+	 * @return the {@link List} of names expected in {@link ITabularRecord}
 	 */
 	public Set<String> getMeasures() {
 		return names.get();

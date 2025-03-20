@@ -33,16 +33,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.MergedSlicesIterator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueProvider;
-import eu.solven.adhoc.storage.SliceToValue;
-import eu.solven.adhoc.storage.column.MultitypeHashColumn;
-import eu.solven.adhoc.storage.column.MultitypeNavigableColumn;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

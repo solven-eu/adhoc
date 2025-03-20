@@ -31,6 +31,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;

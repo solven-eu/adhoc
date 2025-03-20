@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.storage.SliceToValue;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.column.SliceToValue;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

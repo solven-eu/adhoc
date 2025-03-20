@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
@@ -42,6 +45,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Holds the living action doing a query, typically while being executed by an {@link AdhocQueryEngine}
@@ -50,6 +54,7 @@ import lombok.Value;
  */
 @Builder(toBuilder = true)
 @Value
+@Slf4j
 public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// The query requested to the queryEngine
 	@NonNull
@@ -75,6 +80,8 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	@Singular
 	Set<? extends IQueryOption> options;
 
+	AtomicReference<OffsetDateTime> cancellationDate = new AtomicReference<>();
+
 	protected IMeasure resolveIfRef(IMeasure measure) {
 		if (measure == null) {
 			throw new IllegalArgumentException("Null input");
@@ -99,5 +106,22 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 
 	public boolean isDebug() {
 		return getQuery().isDebug() || options.contains(StandardQueryOptions.DEBUG);
+	}
+
+	public void cancel() {
+		if (cancellationDate.compareAndSet(null, now())) {
+			log.info("Cancelled queryId={}", queryId);
+		} else {
+			Duration cancellationDelay = Duration.between(cancellationDate.get(), now());
+			log.info("Cancelled queryId={} (already cancelled since {})", queryId, cancellationDelay);
+		}
+	}
+
+	protected OffsetDateTime now() {
+		return OffsetDateTime.now();
+	}
+
+	public boolean isCancelled() {
+		return cancellationDate.get() != null;
 	}
 }

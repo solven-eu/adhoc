@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 
 public interface IAggregatedRecordStreamReducer {
 
-	IMultitypeMergeableGrid<SliceAsMap> reduce(IAggregatedRecordStream stream);
+	IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream);
 
 }

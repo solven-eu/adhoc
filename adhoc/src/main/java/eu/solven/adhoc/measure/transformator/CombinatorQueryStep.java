@@ -27,18 +27,18 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.ISliceAndValueConsumer;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueProvider;
-import eu.solven.adhoc.storage.SliceToValue;
-import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

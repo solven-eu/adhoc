@@ -28,7 +28,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;

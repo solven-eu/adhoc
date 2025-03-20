@@ -24,9 +24,9 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.Set;
 
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
 
 /**
  * Wraps together the core structures of Adhoc

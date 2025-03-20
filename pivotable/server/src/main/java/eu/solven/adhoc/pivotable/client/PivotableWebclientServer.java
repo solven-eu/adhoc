@@ -37,6 +37,8 @@ import com.nimbusds.jwt.SignedJWT;
 
 import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
@@ -45,8 +47,6 @@ import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

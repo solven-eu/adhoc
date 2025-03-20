@@ -42,13 +42,13 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.dag.TableAggregatesMetadata;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.AggregatedRecordOverMaps;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -101,18 +101,18 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	}
 
 	@Override
-	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
 		Set<String> aggregateColumns =
 				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
 		int nbKeys = (int) Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count();
 
-		return new SuppliedAggregatedRecordStream(tableQuery, () -> {
+		return new SuppliedTabularRecordStream(tableQuery, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
 				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 			});
-			Stream<IAggregatedRecord> stream = matchingRows.map(row -> {
+			Stream<ITabularRecord> stream = matchingRows.map(row -> {
 				return toRecord(tableQuery, aggregateColumns, groupByColumns, nbKeys, row);
 			});
 
@@ -120,15 +120,15 @@ public class InMemoryTable implements IAdhocTableWrapper {
 				// TODO Enable aggregations from InMemoryTable
 
 				// groupBy groupedByColumns
-				Map<Map<String, ?>, Optional<IAggregatedRecord>> groupedAggregatedRecord =
+				Map<Map<String, ?>, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(r -> r.getGroupBys(),
 								// empty is legit as we query no measure
-								Collectors.reducing((left, right) -> AggregatedRecordOverMaps.empty())));
+								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
 
-				Stream<IAggregatedRecord> distinctStream = groupedAggregatedRecord.entrySet()
+				Stream<ITabularRecord> distinctStream = groupedAggregatedRecord.entrySet()
 						.stream()
 						.filter(e -> e.getValue().isPresent())
-						.map(e -> AggregatedRecordOverMaps.builder()
+						.map(e -> TabularRecordOverMaps.builder()
 								.groupBys(e.getKey())
 								.aggregates(e.getValue().get().asMap())
 								.build());
@@ -140,7 +140,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 		});
 	}
 
-	protected IAggregatedRecord toRecord(TableQuery tableQuery,
+	protected ITabularRecord toRecord(TableQuery tableQuery,
 			Set<String> aggregateColumns,
 			Set<String> groupByColumns,
 			int nbKeys,
@@ -183,7 +183,7 @@ public class InMemoryTable implements IAdhocTableWrapper {
 						.filter(e -> groupByColumns.contains(e.getKey()))
 						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 	}
 
 	@Override

@@ -25,9 +25,9 @@ package eu.solven.adhoc.table;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,8 +46,8 @@ public class EmptyTableWrapper implements IAdhocTableWrapper {
 	final String name;
 
 	@Override
-	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
-		return new SuppliedAggregatedRecordStream("empty", Stream::empty);
+	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
+		return new SuppliedTabularRecordStream("empty", Stream::empty);
 	}
 
 	@Override

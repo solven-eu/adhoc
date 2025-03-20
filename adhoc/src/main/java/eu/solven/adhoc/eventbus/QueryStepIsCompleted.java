@@ -24,13 +24,13 @@ package eu.solven.adhoc.eventbus;
 
 import java.time.Duration;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * An {@link eu.solven.adhoc.dag.AdhocQueryStep} has been evaluated.
+ * An {@link eu.solven.adhoc.dag.step.AdhocQueryStep} has been evaluated.
  */
 @Value
 @Builder

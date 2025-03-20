@@ -25,12 +25,12 @@ package eu.solven.adhoc.measure.model;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.SliceToValue;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

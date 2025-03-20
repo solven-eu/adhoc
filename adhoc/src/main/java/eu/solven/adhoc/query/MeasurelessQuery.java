@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;

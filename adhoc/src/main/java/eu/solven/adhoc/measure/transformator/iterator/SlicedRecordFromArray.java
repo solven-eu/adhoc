@@ -24,8 +24,8 @@ package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
 
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.storage.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import lombok.Builder;
 
 /**

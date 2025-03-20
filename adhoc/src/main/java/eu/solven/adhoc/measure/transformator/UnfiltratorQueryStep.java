@@ -26,13 +26,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.storage.ISliceToValue;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

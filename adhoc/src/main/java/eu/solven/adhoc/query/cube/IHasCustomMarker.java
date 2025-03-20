@@ -26,7 +26,7 @@ import java.util.Optional;
 
 /**
  * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
- * {@link eu.solven.adhoc.dag.AdhocQueryStep}.
+ * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}.
  *
  * For instance, in ActivePivot/Atoti, this could be an IContextValue.
  * 

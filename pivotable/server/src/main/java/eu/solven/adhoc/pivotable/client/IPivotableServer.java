@@ -24,12 +24,12 @@ package eu.solven.adhoc.pivotable.client;
 
 import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
-import eu.solven.adhoc.storage.ITabularView;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

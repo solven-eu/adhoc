@@ -35,11 +35,11 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 

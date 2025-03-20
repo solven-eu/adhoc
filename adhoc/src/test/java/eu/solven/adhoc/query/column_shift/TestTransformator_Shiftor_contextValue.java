@@ -31,13 +31,13 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 
 /**

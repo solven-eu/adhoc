@@ -26,10 +26,10 @@ import java.util.Set;
 
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**

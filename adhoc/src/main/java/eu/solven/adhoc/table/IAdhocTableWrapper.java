@@ -32,12 +32,12 @@ import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.TableAggregatesMetadata;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
@@ -52,9 +52,9 @@ public interface IAdhocTableWrapper extends IHasColumns, IHasName {
 	/**
 	 *
 	 * @param tableQuery
-	 * @return a {@link IAggregatedRecordStream} matching the input dpQuery
+	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	IAggregatedRecordStream streamSlices(TableQuery tableQuery);
+	ITabularRecordStream streamSlices(TableQuery tableQuery);
 
 	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		TableQuery tableQuery = TableQuery.builder().groupBy(GroupByColumns.named(column)).build();

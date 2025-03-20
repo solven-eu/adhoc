@@ -24,10 +24,10 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.storage.ISliceToValue;
 
 /**
  * {@link IMeasure} which are not {@link Aggregator} defines underlying nodes and transform them together. (e.g. given

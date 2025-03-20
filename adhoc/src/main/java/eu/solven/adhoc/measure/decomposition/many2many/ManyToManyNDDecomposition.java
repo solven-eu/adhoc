@@ -37,7 +37,8 @@ import com.google.common.collect.Sets.SetView;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
@@ -50,7 +51,6 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 

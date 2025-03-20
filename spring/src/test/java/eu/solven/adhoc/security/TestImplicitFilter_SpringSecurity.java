@@ -38,11 +38,11 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IQueryPreparator;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**

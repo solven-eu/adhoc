@@ -33,9 +33,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.storage.TestMapBasedTabularView;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

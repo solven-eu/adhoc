@@ -25,11 +25,11 @@ package eu.solven.adhoc.table.duckdb.quantile;
 import java.util.Map;
 import java.util.Optional;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.storage.IValueProvider;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import smile.math.MathEx;

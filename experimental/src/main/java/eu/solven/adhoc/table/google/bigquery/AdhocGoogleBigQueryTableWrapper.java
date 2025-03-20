@@ -43,8 +43,8 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.record.AggregatedRecordOverMaps;
-import eu.solven.adhoc.record.IAggregatedRecord;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import lombok.extern.slf4j.Slf4j;
@@ -66,8 +66,7 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<IAggregatedRecord> toMapStream(AggregatedRecordFields queriedColumns,
-			ResultQuery<Record> sqlQuery) {
+	protected Stream<ITabularRecord> toMapStream(AggregatedRecordFields queriedColumns, ResultQuery<Record> sqlQuery) {
 		String sql = sqlQuery.getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
@@ -153,7 +152,7 @@ public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
 				}
 			}
 
-			return AggregatedRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+			return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 		});
 	}
 

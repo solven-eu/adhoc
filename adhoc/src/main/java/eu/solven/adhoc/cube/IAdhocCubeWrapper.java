@@ -29,13 +29,13 @@ import java.util.Set;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 

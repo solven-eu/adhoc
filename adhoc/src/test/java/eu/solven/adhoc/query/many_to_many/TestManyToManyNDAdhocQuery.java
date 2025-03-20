@@ -37,6 +37,8 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
@@ -49,8 +51,6 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 
 public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestConstants {
 

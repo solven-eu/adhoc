@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 
 public interface IHasUnderlyingMeasures {

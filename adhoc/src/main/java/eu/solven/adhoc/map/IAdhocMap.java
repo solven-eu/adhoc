@@ -25,8 +25,8 @@ package eu.solven.adhoc.map;
 import java.util.HashMap;
 import java.util.Map;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.slice.IAdhocSlice;
 
 /**
  * A map dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a{@link IAdhocGroupBy}.

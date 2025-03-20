@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -54,8 +56,6 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
@@ -93,7 +93,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
 
 	@Override
-	public IAggregatedRecordStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
+	public ITabularRecordStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -126,16 +126,16 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 					.build());
 		}
 
-		IAggregatedRecordStream aggregatedRecordsStream = table.streamSlices(transcodedQuery);
+		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(transcodedQuery);
 
 		return transcodeRows(transcodingContext, aggregatedRecordsStream);
 	}
 
-	protected IAggregatedRecordStream transcodeRows(TranscodingContext transcodingContext,
-			IAggregatedRecordStream aggregatedRecordsStream) {
-		Supplier<Stream<IAggregatedRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::asMap);
+	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
+			ITabularRecordStream aggregatedRecordsStream) {
+		Supplier<Stream<ITabularRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::asMap);
 
-		return new IAggregatedRecordStream() {
+		return new ITabularRecordStream() {
 
 			@Override
 			public void close() throws Exception {
@@ -144,7 +144,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			}
 
 			@Override
-			public Stream<IAggregatedRecord> asMap() {
+			public Stream<ITabularRecord> asMap() {
 				return memoized.get()
 						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
 						.map(row -> transcodeTypes(row));
@@ -157,7 +157,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 		};
 	}
 
-	protected IAggregatedRecord transcodeTypes(IAggregatedRecord row) {
+	protected ITabularRecord transcodeTypes(ITabularRecord row) {
 		return row.transcode(customTypeManager);
 	}
 

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.storage.TestMapBasedTabularView;
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 
 public class TestCalculatedColumn {
 	@Test

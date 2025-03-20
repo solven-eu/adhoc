@@ -31,6 +31,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+
 public class TestAdhocSlice {
 	@Test
 	public void testRequireFilter_String() {

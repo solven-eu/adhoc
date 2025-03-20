@@ -24,17 +24,17 @@ package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.dag.AdhocQueryStep.AdhocQueryStepBuilder;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep.AdhocQueryStepBuilder;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.slice.SliceAsMapWithStep;
-import eu.solven.adhoc.storage.ISliceAndValueConsumer;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.SliceToValue;
-import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.storage.column.MultitypeHashColumn;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

@@ -41,6 +41,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.ColumnMetadata;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.client.IPivotableServer;
 import eu.solven.adhoc.pivotable.client.PivotableWebclientServer;
@@ -49,8 +51,6 @@ import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 

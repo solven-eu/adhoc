@@ -28,10 +28,10 @@ import java.util.Optional;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.slice.ISliceWithStep;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

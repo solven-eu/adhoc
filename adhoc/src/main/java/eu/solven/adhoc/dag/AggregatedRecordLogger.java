@@ -26,9 +26,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.slice.SliceAsMap;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,9 +51,9 @@ public class AggregatedRecordLogger {
 		};
 	}
 
-	public BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
+	public BiConsumer<ITabularRecord, Optional<SliceAsMap>> prepareStreamLogger(TableQuery tableQuery) {
 
-		BiConsumer<IAggregatedRecord, Optional<SliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
+		BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
 
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy

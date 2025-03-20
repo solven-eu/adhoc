@@ -43,6 +43,17 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -60,16 +71,6 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.storage.IMultitypeMergeableGrid;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.IValueReceiver;
-import eu.solven.adhoc.storage.MapBasedTabularView;
-import eu.solven.adhoc.storage.SliceToValue;
-import eu.solven.adhoc.storage.column.IColumnScanner;
-import eu.solven.adhoc.storage.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
@@ -119,9 +120,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			Set<TableQuery> tableQueries = prepareForTable(executingQueryContext, queryStepsDag);
 
-			Map<TableQuery, IAggregatedRecordStream> tableQueryToStream = new HashMap<>();
+			Map<TableQuery, ITabularRecordStream> tableQueryToStream = new HashMap<>();
 			for (TableQuery tableQuery : tableQueries) {
-				IAggregatedRecordStream rowsStream = openTableStream(executingQueryContext, tableQuery);
+				ITabularRecordStream rowsStream = openTableStream(executingQueryContext, tableQuery);
 				tableQueryToStream.put(tableQuery, rowsStream);
 			}
 
@@ -178,15 +179,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				.build());
 	}
 
-	protected IAggregatedRecordStream openTableStream(ExecutingQueryContext executingQueryContext,
-			TableQuery tableQuery) {
+	protected ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
 		IAdhocTableWrapper table = executingQueryContext.getTable();
 		return executingQueryContext.getColumnsManager().openTableStream(table, tableQuery);
 	}
 
 	protected ITabularView executeDagGivenRecordStreams(ExecutingQueryContext executingQueryContext,
 			QueryStepsDag queryStepsDag,
-			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream) {
+			Map<TableQuery, ITabularRecordStream> tableToRowsStream) {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("prepare").source(this).build());
 
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
@@ -208,7 +208,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	}
 
 	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
-			Map<TableQuery, IAggregatedRecordStream> tableToRowsStream,
+			Map<TableQuery, ITabularRecordStream> tableToRowsStream,
 			QueryStepsDag queryStepsDag) {
 		SetMultimap<String, Aggregator> columnToAggregators = columnToAggregators(executingQueryContext, queryStepsDag);
 
@@ -365,7 +365,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
 			ExecutingQueryContext executingQueryContext,
 			TableQuery query,
-			IAggregatedRecordStream stream,
+			ITabularRecordStream stream,
 			SetMultimap<String, Aggregator> columnToAggregators) {
 
 		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
@@ -514,7 +514,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
-			IAggregatedRecordStream stream,
+			ITabularRecordStream stream,
 			SetMultimap<String, Aggregator> columnToAggregators) {
 
 		IAggregatedRecordStreamReducer streamReducer =

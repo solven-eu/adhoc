@@ -32,6 +32,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
@@ -43,7 +44,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.storage.ListBasedTabularView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;

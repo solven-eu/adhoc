@@ -40,6 +40,8 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -50,8 +52,6 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.storage.ITabularView;
-import eu.solven.adhoc.storage.MapBasedTabularView;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
@@ -331,7 +331,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.assertThatThrownBy(() -> wrapInCube(amb)
 						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
 				.isInstanceOf(RuntimeException.class)
-				.hasStackTraceContaining("from source=TableQuery")
+				.hasStackTraceContaining("source=TableQuery")
 				.hasStackTraceContaining("unknownColumn");
 	}
 
@@ -412,7 +412,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
 				.isInstanceOf(RuntimeException.class)
-				.hasStackTraceContaining("from source=TableQuery")
+				.hasStackTraceContaining("source=TableQuery")
 				.hasRootCauseInstanceOf(SQLException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}

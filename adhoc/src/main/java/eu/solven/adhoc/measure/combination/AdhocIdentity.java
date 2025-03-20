@@ -26,12 +26,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.slice.ISliceWithStep;
 
 public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";

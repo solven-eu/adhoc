@@ -30,8 +30,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.storage.TestMapBasedTabularView;
 
 public class TestReferencedMeasure {
 	@Test

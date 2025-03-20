@@ -24,13 +24,13 @@ package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.AdhocQueryStep;
-import eu.solven.adhoc.record.ISlicedRecord;
-import eu.solven.adhoc.slice.ISliceWithStep;
-import eu.solven.adhoc.slice.SliceAsMap;
-import eu.solven.adhoc.slice.SliceAsMapWithStep;
-import eu.solven.adhoc.storage.ISliceToValue;
-import eu.solven.adhoc.storage.IValueProvider;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
-import eu.solven.adhoc.storage.ITabularView;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;
