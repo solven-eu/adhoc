@@ -83,8 +83,6 @@ export default {
 		const autoQuery = ref(true);
 		const loading = ref(false);
 
-		const queryStatus = ref("");
-
 		if (!props.queryModel.selectedColumns) {
 			props.queryModel.selectedColumns = {};
 		}
@@ -130,7 +128,6 @@ export default {
 			async function postFromUrl(url) {
 				try {
 					loading.value = true;
-					queryStatus.value = "Preparing";
 					const stringifiedQuery = JSON.stringify(move);
 
 					if (!store.queries["" + stringifiedQuery.hashCode()]) {
@@ -154,7 +151,6 @@ export default {
 					const startSending = new Date();
 					props.tabularView.loading.sending = true;
 
-					queryStatus.value = "Submitted";
 					const response = await userStore.authenticatedFetch(url, fetchOptions);
 					props.tabularView.loading.sending = false;
 					props.tabularView.timing.sending = new Date() - startSending;
@@ -162,8 +158,6 @@ export default {
 					if (!response.ok) {
 						throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
 					}
-
-					queryStatus.value = "Downloading";
 
 					const startDownloading = new Date();
 					props.tabularView.loading.downloading = true;
@@ -173,8 +167,7 @@ export default {
 					props.tabularView.loading.downloading = false;
 					props.tabularView.timing.downloading = new Date() - startDownloading;
 
-					// This will be cancelled i nthe finally block: the rendering status is managed autonomously by the grid
-					queryStatus.value = "Rendering";
+					// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
 
 					// The submitted move may have impacted the leaderboard
 					store.$patch((state) => {
@@ -198,7 +191,6 @@ export default {
 					loading.value = false;
 					props.tabularView.loading.sending = false;
 					props.tabularView.loading.downloading = false;
-					queryStatus.value = "";
 				}
 			}
 
@@ -223,7 +215,6 @@ export default {
 			sendMoveError,
 
 			loading,
-			queryStatus,
 		};
 	},
 	template: /* HTML */ `
@@ -242,7 +233,7 @@ export default {
             <!-- Move Submitter-->
             <span>
                 <div>
-                    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit (queryStatus={{queryStatus}})</button>
+                    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit</button>
                     <span v-if="sendMoveError" class="alert alert-warning" role="alert">{{sendMoveError}}</span>
                 </div>
 

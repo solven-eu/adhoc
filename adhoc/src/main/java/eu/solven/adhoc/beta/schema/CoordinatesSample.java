@@ -40,7 +40,7 @@ public class CoordinatesSample {
 	public static final long NO_ESTIMATION = -1;
 
 	@Singular
-	ImmutableSet<?> coordinates;
+	ImmutableSet<Object> coordinates;
 
 	@Default
 	long estimatedCardinality = NO_ESTIMATION;

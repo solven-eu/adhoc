@@ -65,7 +65,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	}
 
 	protected IAggregation getMakeAggregation() {
-		return operatorsFactory.makeAggregation(bucketor.getAggregationKey());
+		return operatorsFactory.makeAggregation(bucketor);
 	}
 
 	public List<String> getUnderlyingNames() {

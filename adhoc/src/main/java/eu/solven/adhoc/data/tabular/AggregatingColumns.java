@@ -84,8 +84,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 
 	@Override
 	public IValueReceiver contributeRaw(Aggregator aggregator, T key) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = operatorsFactory.makeAggregation(aggregationKey);
+		IAggregation agg = operatorsFactory.makeAggregation(aggregator);
 
 		IMultitypeMergeableColumn<T> column =
 				aggregatorToRawAggregated.computeIfAbsent(aggregator, k -> makeRawColumn(agg));
@@ -100,8 +99,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 
 	@Override
 	public IValueReceiver contributePre(Aggregator aggregator, T key) {
-		String aggregationKey = aggregator.getAggregationKey();
-		IAggregation agg = operatorsFactory.makeAggregation(aggregationKey);
+		IAggregation agg = operatorsFactory.makeAggregation(aggregator);
 
 		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 

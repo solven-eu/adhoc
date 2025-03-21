@@ -37,7 +37,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbSchemaFetching"]),
+		...mapState(useAdhocStore, ["nbSchemaFetching", "nbColumnFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
 				return store.endpoints[this.endpointId] || { error: "not_loaded" };
@@ -113,11 +113,11 @@ export default {
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button
-                                class="accordion-button"
+                                class="accordion-button collapsed"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#wizardColumns"
-                                aria-expanded="true"
+                                aria-expanded="false"
                                 aria-controls="wizardColumns"
                             >
                                 <span v-if="search">
@@ -126,22 +126,40 @@ export default {
                                 </span>
                                 <span v-else> {{ Object.keys(cube.columns.columnToTypes).length}} Columns </span>
                             </button>
+
+                            <div v-if="nbColumnFetching > 0">
+                                <div
+                                    class="progress"
+                                    role="progressbar"
+                                    aria-label="Basic example"
+                                    :aria-valuenow="Object.keys(cube.columns.columnToTypes).length - nbColumnFetching"
+                                    aria-valuemin="0"
+                                    :aria-valuemax="Object.keys(cube.columns.columnToTypes).length"
+                                >
+                                    <!-- https://stackoverflow.com/questions/21716294/how-to-change-max-value-of-bootstrap-progressbar -->
+                                    <div
+                                        class="progress-bar"
+                                        :style="'width: ' + 100 * (Object.keys(cube.columns.columnToTypes).length - nbColumnFetching) / Object.keys(cube.columns.columnToTypes).length + '%'"
+                                    >
+                                        {{(Object.keys(cube.columns.columnToTypes).length - nbColumnFetching)}} /
+                                        {{Object.keys(cube.columns.columnToTypes).length}}
+                                    </div>
+                                </div>
+                            </div>
                         </h2>
                         <div id="wizardColumns" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body">
-                                <div class="h-25 d-inline-block overflow-auto">
-                                    <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group list-group-flush">
-                                        <li class="list-group-item ">
-                                            <AdhocQueryWizardColumn
-                                                :queryModel="queryModel"
-                                                :column="name"
-                                                :type="type"
-                                                :endpointId="endpointId"
-                                                :cubeId="cubeId"
-                                            />
-                                        </li>
-                                    </ul>
-                                </div>
+                            <div class="accordion-body vh-50 overflow-scroll">
+                                <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group">
+                                    <li class="list-group-item ">
+                                        <AdhocQueryWizardColumn
+                                            :queryModel="queryModel"
+                                            :column="name"
+                                            :type="type"
+                                            :endpointId="endpointId"
+                                            :cubeId="cubeId"
+                                        />
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -163,25 +181,23 @@ export default {
                             </button>
                         </h2>
                         <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body">
-                                <div class="h-25 d-inline-block">
-                                    <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
-                                        <li class="list-group-item">
-                                            <div class="form-check form-switch">
-                                                <input
-                                                    class="form-check-input"
-                                                    type="checkbox"
-                                                    role="switch"
-                                                    :id="'measure_' + name"
-                                                    v-model="queryModel.selectedMeasures[name]"
-                                                />
-                                                <label class="form-check-label" :for="'measure_' + name">
-                                                    <AdhocMeasure :measure="measure" />
-                                                </label>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
+                            <div class="accordion-body vh-50 overflow-scroll">
+                                <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
+                                    <li class="list-group-item">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                class="form-check-input"
+                                                type="checkbox"
+                                                role="switch"
+                                                :id="'measure_' + name"
+                                                v-model="queryModel.selectedMeasures[name]"
+                                            />
+                                            <label class="form-check-label" :for="'measure_' + name">
+                                                <AdhocMeasure :measure="measure" />
+                                            </label>
+                                        </div>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -199,7 +215,7 @@ export default {
                             </button>
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body">
+                            <div class="accordion-body vh-50 overflow-scroll">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery" />
                                     <label class="form-check-label" for="debugQuery">debug</label>

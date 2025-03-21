@@ -26,8 +26,9 @@ export const useAdhocStore = defineStore("adhoc", {
 		// The loaded endpoints and schemas
 		endpoints: {},
 		schemas: {},
-		columns: {},
 		nbSchemaFetching: 0,
+		columns: {},
+		nbColumnFetching: 0,
 
 		queries: { nextQuery: 0 },
 		nbQueryFetching: 0,
@@ -300,7 +301,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbSchemaFetching++;
+				store.nbColumnFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
 					const responseJson = await response.json();
@@ -325,7 +326,7 @@ export const useAdhocStore = defineStore("adhoc", {
 					store.onSwallowedError(e);
 					return {};
 				} finally {
-					store.nbSchemaFetching--;
+					store.nbColumnFetching--;
 				}
 			}
 

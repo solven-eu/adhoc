@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultEdge;
@@ -89,6 +90,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Slf4j
 public class AdhocQueryEngine implements IAdhocQueryEngine {
+	private static final String EMPTY_MEASURE_NAME = "$ADHOC$empty-" + UUID.randomUUID();
+
 	@NonNull
 	@Default
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
@@ -655,7 +658,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
-		return Aggregator.builder().name("empty").aggregationKey(EmptyAggregation.class.getName()).build();
+		return Aggregator.builder().name(EMPTY_MEASURE_NAME).aggregationKey(EmptyAggregation.KEY).build();
 	}
 
 	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {

@@ -41,6 +41,7 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -137,7 +138,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				continue;
 			}
 
-			if ("empty".equals(aggregatedMeasure)) {
+			if (EmptyAggregation.isEmpty(aggregatesMetadata.getAggregation(aggregatedMeasure).getAggregationKey())) {
 				// TODO Introduce .onBoolean
 				valueConsumers.forEach(vc -> vc.onLong(0));
 			} else {

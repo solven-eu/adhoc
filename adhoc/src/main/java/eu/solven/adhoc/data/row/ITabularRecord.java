@@ -38,7 +38,7 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 public interface ITabularRecord {
 	Set<String> aggregateKeySet();
 
-	void onAggregate(String aggregateName, IValueReceiver valueConsumer);
+	void onAggregate(String aggregateName, IValueReceiver valueReceiver);
 
 	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
 	Object getAggregate(String aggregateName);

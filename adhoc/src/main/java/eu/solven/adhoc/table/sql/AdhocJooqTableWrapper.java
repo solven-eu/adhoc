@@ -23,10 +23,12 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,14 +37,23 @@ import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
 
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ColumnMetadataHelpers;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters.AdhocJooqTableWrapperParametersBuilder;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -181,11 +192,13 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	// Take original `queriedColumns` as the record may not clearly expresses aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
 	protected ITabularRecord intoMap(AggregatedRecordFields fields, Record r) {
-		Map<String, Object> aggregates = new LinkedHashMap<>();
+		Map<String, Object> aggregates;
 
 		List<String> aggregateFields = fields.getAggregates();
 		{
 			int size = aggregateFields.size();
+			aggregates = new LinkedHashMap<>(size);
+
 			for (int i = 0; i < size; i++) {
 				String columnName = aggregateFields.get(i);
 
@@ -196,10 +209,12 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			}
 		}
 
-		Map<String, Object> groupBys = new LinkedHashMap<>();
+		Map<String, Object> groupBys;
 		{
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
+
+			groupBys = new LinkedHashMap<>(size);
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 
@@ -216,6 +231,15 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	protected String toQualifiedName(Field<?> field) {
 		// field.getQualifiedName()
 		return Stream.of(field.getQualifiedName().parts()).map(Name::first).collect(Collectors.joining("."));
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		if (dbParameters.getDslSupplier().getDSLContext().dialect().equals(SQLDialect.DUCKDB)) {
+			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
+		} else {
+			return ColumnMetadataHelpers.getCoordinatesMostGeneric(this, column, valueMatcher, limit);
+		}
 	}
 
 }

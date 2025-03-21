@@ -25,11 +25,23 @@ package eu.solven.adhoc.table.sql;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
 
 import org.duckdb.DuckDBConnection;
+import org.duckdb.DuckDBResultSet.DuckDBBlobResult;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.table.TableQuery;
 import lombok.NonNull;
 
 /**
@@ -72,5 +84,88 @@ public class DuckDbHelper {
 			}
 			return DSL.using(duplicated);
 		};
+	}
+
+	public static CoordinatesSample getCoordinates(AdhocJooqTableWrapper table,
+			String column,
+			IValueMatcher valueMatcher,
+			int limit) {
+		// select approx_count_distinct("id") "approx_count_distinct" from
+		// read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet') group by ()
+		TableQuery estimatedCardinalityQuery = TableQuery.builder()
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+				.aggregator(Aggregator.builder()
+						.aggregationKey(ExpressionAggregation.KEY)
+						.name("approx_count_distinct")
+						.columnName("approx_count_distinct(\"%s\")".formatted(column))
+						.build())
+				// .explain(true)
+				.build();
+
+		long estimatedCardinality;
+		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(estimatedCardinalityQuery).asMap().findAny();
+		if (optCardinalityRecord.isEmpty()) {
+			estimatedCardinality = 0L;
+		} else {
+			ITabularRecord tabularRecord = optCardinalityRecord.get();
+
+			// TODO Enable getting by index
+			estimatedCardinality =
+					(long) IValueProvider.getValue(vc -> tabularRecord.onAggregate("approx_count_distinct", vc));
+		}
+
+		int returnedCoordinates;
+
+		if (limit < 1) {
+			returnedCoordinates = Integer.MAX_VALUE;
+		} else {
+			returnedCoordinates = limit;
+		}
+
+		// select approx_top_k("id", 100) "approx_count_distinct" from
+		// read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet') group by ();
+		TableQuery tableQuery = TableQuery.builder()
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+				.aggregator(Aggregator.builder()
+						.aggregationKey(ExpressionAggregation.KEY)
+						.name("approx_top_k")
+						.columnName("approx_top_k(\"%s\", %s)".formatted(column, returnedCoordinates))
+						.build())
+				// .explain(true)
+				.build();
+
+		List<Object> coordinates;
+		Optional<ITabularRecord> optTopK = table.streamSlices(tableQuery).asMap().findAny();
+		if (optTopK.isEmpty()) {
+			coordinates = ImmutableList.of();
+		} else {
+			ITabularRecord tabularRecord = optTopK.get();
+
+			// TODO Enable getting by index
+			// TODO Is it important to call `Array.free()`?
+			java.sql.Array array =
+					(java.sql.Array) IValueProvider.getValue(vc -> tabularRecord.onAggregate("approx_top_k", vc));
+
+			if (array == null) {
+				// BEWARE When does this happen?
+				coordinates = ImmutableList.of();
+			} else {
+				try {
+					Object[] nativeArray = (Object[]) array.getArray();
+
+					if (nativeArray.length >= 1 && nativeArray[0] instanceof java.sql.Blob) {
+						// BEWARE We should have skip the search altogether
+						// Returning a Blob, or a `byte[]` has unclear usage/support
+						coordinates = ImmutableList.of();
+					} else {
+						coordinates = ImmutableList.copyOf(nativeArray);
+					}
+				} catch (SQLException e) {
+					throw new IllegalArgumentException(e);
+				}
+			}
+		}
+
+		return CoordinatesSample.builder().coordinates(coordinates).estimatedCardinality(estimatedCardinality).build();
 	}
 }

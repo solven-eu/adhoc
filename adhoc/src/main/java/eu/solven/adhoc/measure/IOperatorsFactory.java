@@ -30,6 +30,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 
 /**
  * Provides {@link ICombination} given their key. This can be extended to provides custom transformations.
@@ -37,21 +38,16 @@ import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
  * @author Benoit Lacelle
  */
 public interface IOperatorsFactory {
-
-	default ICombination makeCombination(ICombineUnderlyingMeasures hasCombinationKey) {
-		Map<String, ?> allOptions =
-				Combinator.makeAllOptions(hasCombinationKey, hasCombinationKey.getCombinationOptions());
-		return makeCombination(hasCombinationKey.getCombinationKey(), allOptions);
-	}
-
-	ICombination makeCombination(String key, Map<String, ?> options);
-
 	/**
 	 * @param key
 	 * @param options
 	 * @return an instance of IAggregation matching given key
 	 */
 	IAggregation makeAggregation(String key, Map<String, ?> options);
+
+	default IAggregation makeAggregation(IHasAggregationKey hasAggregationKey) {
+		return makeAggregation(hasAggregationKey.getAggregationKey(), hasAggregationKey.getAggregationOptions());
+	}
 
 	/**
 	 * Use empty options by default, as most IAggregation are not configurable.
@@ -62,6 +58,14 @@ public interface IOperatorsFactory {
 	default IAggregation makeAggregation(String key) {
 		return makeAggregation(key, Map.of());
 	}
+
+	default ICombination makeCombination(ICombineUnderlyingMeasures hasCombinationKey) {
+		Map<String, ?> allOptions =
+				Combinator.makeAllOptions(hasCombinationKey, hasCombinationKey.getCombinationOptions());
+		return makeCombination(hasCombinationKey.getCombinationKey(), allOptions);
+	}
+
+	ICombination makeCombination(String key, Map<String, ?> options);
 
 	IDecomposition makeDecomposition(String key, Map<String, ?> decompositionOptions);
 

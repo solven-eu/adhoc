@@ -22,16 +22,11 @@
  */
 package eu.solven.adhoc.cube;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-
-import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -59,29 +54,31 @@ public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 	 */
 	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
 
-	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
-
-		int saturatedViewSize = Ints.saturatedCast(view.size());
-
-		int returnedCoordinates = saturatedViewSize;
-		if (limit > 0) {
-			returnedCoordinates = Math.min(saturatedViewSize, limit);
-		}
-
-		int finalReturnedCoordinates = returnedCoordinates;
-
-		List<Object> distinctCoordinates = new ArrayList<>(returnedCoordinates);
-		long estimatedCardinality = view.slices().map(slice -> slice.getRawSliced(column)).peek(coordinate -> {
-			if (distinctCoordinates.size() < finalReturnedCoordinates) {
-				distinctCoordinates.add(coordinate);
-			}
-		}).count();
-
-		return CoordinatesSample.builder()
-				.coordinates(distinctCoordinates)
-				.estimatedCardinality(estimatedCardinality)
-				.build();
-	}
-
+	// default
+	CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit)
+	// {
+	// ITabularView view = this.execute(AdhocQuery.builder().groupByAlso(column).build());
+	//
+	// int saturatedViewSize = Ints.saturatedCast(view.size());
+	//
+	// int returnedCoordinates = saturatedViewSize;
+	// if (limit > 0) {
+	// returnedCoordinates = Math.min(saturatedViewSize, limit);
+	// }
+	//
+	// int finalReturnedCoordinates = returnedCoordinates;
+	//
+	// List<Object> distinctCoordinates = new ArrayList<>(returnedCoordinates);
+	// long estimatedCardinality = view.slices().map(slice -> slice.getRawSliced(column)).peek(coordinate -> {
+	// if (distinctCoordinates.size() < finalReturnedCoordinates) {
+	// distinctCoordinates.add(coordinate);
+	// }
+	// }).count();
+	//
+	// return CoordinatesSample.builder()
+	// .coordinates(distinctCoordinates)
+	// .estimatedCardinality(estimatedCardinality)
+	// .build();
+	// }
+	;
 }

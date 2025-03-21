@@ -155,4 +155,24 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 	}
+
+	// Check EmptyAggregation is fast
+	@Test
+	public void testNoMeasures() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		ITabularView output = wrapInCube(amb)
+				.execute(AdhocQuery.builder().measure(k1Sum).groupByAlso("row_index").explain(true).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(maxCardinality)
+				.containsEntry(Map.of("row_index", 0), Map.of())
+				.containsEntry(Map.of("row_index", 1), Map.of())
+				.containsEntry(Map.of("row_index", maxCardinality - 1),
+						Map.of());
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+	}
 }

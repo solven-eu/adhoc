@@ -118,18 +118,16 @@ export default {
                 <span v-else>
                     <div>
                         Tables:
-                        <span v-for="(table, name) in schema.tables"> {{name}} </span>
+                        <span v-for="(table, name) in schema.tables"> {{name}} &nbsp;</span>
                     </div>
                     <div>
                         Measures
-                        <span v-for="(measureBag, name) in schema.measureBags"> {{name}} </span>
+                        <span v-for="(measureBag, name) in schema.measureBags"> {{name}} &nbsp;</span>
                     </div>
 
                     <div>
                         Cubes
-                        <span v-for="(cube, cubeName) in schema.cubes">
-                            <AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />
-                        </span>
+                        <span v-for="(cube, cubeName) in schema.cubes"> <AdhocCubeRef :endpointId="endpointId" :cubeId="cubeName" />&nbsp; </span>
                     </div>
                     <AdhocEndpointSchemaRef :endpointId="endpointId" />
                 </span>

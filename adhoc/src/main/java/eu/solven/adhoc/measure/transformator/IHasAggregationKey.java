@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.sum;
+package eu.solven.adhoc.measure.transformator;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
+import java.util.Map;
+
+import eu.solven.adhoc.measure.model.Combinator;
 
 /**
- * Used when the aggregation is an expression for {@link eu.solven.adhoc.table.IAdhocTableWrapper}.
- * 
- * The actual expression is provided through the {@link Aggregator} column.
- *
- * @author Benoit Lacelle
+ * Anything which may require a configured {@link Combinator}
  */
-public class ExpressionAggregation implements IAggregation {
-	public static final String KEY = "expression";
+public interface IHasAggregationKey {
+	String getAggregationKey();
 
-	@Override
-	public Object aggregate(Object left, Object right) {
-		if (left == null) {
-			return right;
-		} else if (right == null) {
-			return left;
-		} else {
-			throw new UnsupportedOperationException("Can not be evaluated. left=%s right=%s".formatted(left, right));
-		}
-	}
+	Map<String, ?> getAggregationOptions();
+
 }

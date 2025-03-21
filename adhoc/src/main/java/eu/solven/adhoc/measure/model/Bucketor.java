@@ -36,6 +36,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.BucketorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -60,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @Jacksonized
-public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasGroupBy {
+public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
 	@NonNull
 	String name;
 
@@ -74,6 +75,9 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasGroup
 	@NonNull
 	@Default
 	String aggregationKey = SumAggregation.KEY;
+
+	@Singular
+	Map<String, Object> aggregationOptions;
 
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull

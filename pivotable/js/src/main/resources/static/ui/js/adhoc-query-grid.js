@@ -60,7 +60,7 @@ export default {
 
 		const rendering = ref(false);
 
-		function renderCallback(cellNode, row, dataContext, colDef) {
+		function renderingDone() {
 			rendering.value = false;
 			props.tabularView.loading.rendering = false;
 			if (props.tabularView.timing.rendering_start) {
@@ -71,8 +71,10 @@ export default {
 			}
 		}
 
-		// Used to workaround corrupted rowSpans
-		var previousRowCount = 0;
+		function renderCallback(cellNode, row, dataContext, colDef) {
+			// We assume rendering is done as soon as one cell is rendered
+			renderingDone();
+		}
 
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
@@ -93,10 +95,6 @@ export default {
 
 			data = [];
 
-			rendering.value = true;
-			props.tabularView.loading.rendering = true;
-			props.tabularView.timing.rendering_start = new Date();
-
 			// from rowIndex to columnIndex to span height
 			// We leave an example rowSpan but it will reset on first dataset
 			const metadata = {
@@ -114,7 +112,13 @@ export default {
 				gridColumns.push(column);
 				data.push({ id: "0", empty: "empty" });
 				gridMetadata.nb_rows = 0;
+
+				// TODO How to know when the empty grid is rendered? (This may be slow if previous grid was large)
 			} else {
+				rendering.value = true;
+				props.tabularView.loading.rendering = true;
+				props.tabularView.timing.rendering_start = new Date();
+
 				// https://stackoverflow.com/questions/9840548/how-to-put-html-into-slickgrid-cell
 				//				function popoverFormatter(row, cell, value, columnDef, dataContext) {
 				//					return '<span class="h-100 w-100" style="width=100%;" data-bs-toggle="popover" title="someTitle" data-bs-content="popoverContent">' + value + '</span>';
@@ -148,7 +152,9 @@ export default {
 					gridColumns.push(column);
 				}
 
-				{
+				props.tabularView.loading.sorting = true;
+				const sortingStart = new Date();
+				try {
 					// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
 					const index = _.map(view.coordinates, (x, i) => [view.coordinates[i], view.values[i]]);
 					//					const sorted = _.sortBy(index, coordinateToMeasure => {
@@ -170,110 +176,113 @@ export default {
 						view.coordinates[i] = indexSorted[i][0];
 						view.values[i] = indexSorted[i][1];
 					}
+				} finally {
+					props.tabularView.loading.sorting = false;
+					props.tabularView.timing.sorting = new Date() - sortingStart;
 				}
 
 				// This is used for rowSpan evaluation
 				let previousCoordinates = undefined;
 
-				const runningRowSpans = {};
+				props.tabularView.loading.rowSpanning = true;
+				const rowSpanningStart = new Date();
+				try {
+					const runningRowSpans = {};
 
-				// https://github.com/6pac/SlickGrid/issues/1114
-				function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
-					if (previousCoordinates) {
-						for (const column of columnNames) {
-							if (!lastRow && coordinatesRow[column] == previousCoordinates[column]) {
-								// In a rowSpan
-								if (!runningRowSpans[column]?.isRunning) {
-									// Let's start running
-									runningRowSpans[column] = {};
-									runningRowSpans[column].isRunning = true;
-									runningRowSpans[column].startRowIndex = rowIndex - 1;
+					// https://github.com/6pac/SlickGrid/issues/1114
+					function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
+						if (previousCoordinates) {
+							for (const column of columnNames) {
+								if (!lastRow && coordinatesRow[column] == previousCoordinates[column]) {
+									// In a rowSpan
+									if (!runningRowSpans[column]?.isRunning) {
+										// Let's start running
+										runningRowSpans[column] = {};
+										runningRowSpans[column].isRunning = true;
+										runningRowSpans[column].startRowIndex = rowIndex - 1;
+									}
+								} else {
+									// Not in a rowSpan
+									if (runningRowSpans[column]?.isRunning) {
+										// Let's stop running
+										const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
+
+										const columnIndex = columnNames.indexOf(column);
+
+										const rowIndexStart = rowIndex - rowSpan;
+										if (!metadata[rowIndexStart]) {
+											metadata[rowIndexStart] = { columns: {} };
+										}
+
+										// `1+` due to `id` column which is always enforced
+										metadata[rowIndexStart].columns[1 + columnIndex] = { rowspan: rowSpan };
+
+										console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
+
+										delete runningRowSpans[column];
+									}
 								}
-							} else {
-								// Not in a rowSpan
-								if (runningRowSpans[column]?.isRunning) {
-									// Let's stop running
-									const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
+							}
+						}
+					}
 
-									const columnIndex = columnNames.indexOf(column);
+					// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
+					for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
+						const coordinatesRow = view.coordinates[rowIndex];
+						const measuresRow = view.values[rowIndex];
 
-									const rowIndexStart = rowIndex - rowSpan;
-									if (!metadata[rowIndexStart]) {
-										metadata[rowIndexStart] = { columns: {} };
+						if (rowIndex == 0) {
+							// https://stackoverflow.com/questions/29951293/using-lodash-to-compare-jagged-arrays-items-existence-without-order
+							if (!_.isEqual(_.sortBy(columnNames), _.sortBy(Object.keys(coordinatesRow)))) {
+								throw new Error(`Inconsistent columnNames: ${columnNames} vs ${Object.keys(coordinatesRow)}`);
+							}
+							if (measureNames.length == 0) {
+								for (let measureName of Object.keys(measuresRow)) {
+									const column = { id: measureName, name: measureName, field: measureName, sortable: true, asyncPostRender: renderCallback };
+
+									if (measureName.indexOf("%") >= 0) {
+										column["formatter"] = percentFormatter;
 									}
 
-									// `1+` due to `id` column which is always enforced
-									metadata[rowIndexStart].columns[1 + columnIndex] = { rowspan: rowSpan };
-
-									console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
-
-									delete runningRowSpans[column];
+									measureNames.push(measureName);
+									gridColumns.push(column);
 								}
+							} else if (!_.isEqual(_.sortBy(measureNames), _.sortBy(Object.keys(measuresRow)))) {
+								// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
+
+								// This typically happens when not requesting a single measure, and receiving the default measure
+								console.log(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
 							}
 						}
-					}
-				}
 
-				// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
-				for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
-					const coordinatesRow = view.coordinates[rowIndex];
-					const measuresRow = view.values[rowIndex];
+						let d = {};
 
-					if (rowIndex == 0) {
-						// https://stackoverflow.com/questions/29951293/using-lodash-to-compare-jagged-arrays-items-existence-without-order
-						if (!_.isEqual(_.sortBy(columnNames), _.sortBy(Object.keys(coordinatesRow)))) {
-							throw new Error(`Inconsistent columnNames: ${columnNames} vs ${Object.keys(coordinatesRow)}`);
+						d["id"] = rowIndex;
+
+						for (const property of columnNames) {
+							d[property] = coordinatesRow[property];
 						}
-						if (measureNames.length == 0) {
-							for (let measureName of Object.keys(measuresRow)) {
-								const column = { id: measureName, name: measureName, field: measureName, sortable: true, asyncPostRender: renderCallback };
-
-								if (measureName.indexOf("%") >= 0) {
-									column["formatter"] = percentFormatter;
-								}
-
-								measureNames.push(measureName);
-								gridColumns.push(column);
-							}
-						} else if (!_.isEqual(_.sortBy(measureNames), _.sortBy(Object.keys(measuresRow)))) {
-							// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
-
-							// This typically happens when not requesting a single measure, and receiving the default measure
-							console.log(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
+						for (const property of measureNames) {
+							d[property] = measuresRow[property];
 						}
+
+						updateRowSpan(rowIndex, coordinatesRow, false);
+
+						// console.log(d);
+
+						data.push(d);
+						previousCoordinates = coordinatesRow;
 					}
 
-					let d = {};
-
-					d["id"] = rowIndex;
-
-					for (const property of columnNames) {
-						d[property] = coordinatesRow[property];
-					}
-					for (const property of measureNames) {
-						d[property] = measuresRow[property];
-					}
-
-					updateRowSpan(rowIndex, coordinatesRow, false);
-
-					// console.log(d);
-
-					data.push(d);
-					previousCoordinates = coordinatesRow;
+					// Purge rowSpan after the lastRow
+					updateRowSpan(view.coordinates.length, null, true);
+				} finally {
+					props.tabularView.loading.rowSpanning = false;
+					props.tabularView.timing.rowSpanning = new Date() - rowSpanningStart;
 				}
-
-				// Purge rowSpan after the lastRow
-				updateRowSpan(view.coordinates.length, null, true);
 			}
 
 			console.debug("rowSpans: ", metadata);
-
-			// https://github.com/6pac/SlickGrid/issues/1114
-			previousRowCount = dataView.getItems().length;
-			if (data.length > 0 && data.length == previousRowCount) {
-				// Same rowCount: rowSpan could get corrupted in SlickGrid
-				data.push({ id: -1 });
-			}
 
 			grid.setColumns(gridColumns);
 
@@ -292,6 +301,8 @@ export default {
 			// since we have a rowspan that spans nearly the entire length to the bottom,
 			// we need to invalidate everything so that it recalculate all rowspan cell heights
 			grid.invalidate();
+			// https://github.com/6pac/SlickGrid/issues/1114
+			grid.remapAllColumnsRowSpan();
 		};
 
 		watch(
@@ -388,7 +399,59 @@ export default {
 			});
 		});
 
-		return { rendering, gridMetadata, clickedCell };
+		function isLoading() {
+			if (!props.tabularView.loading) {
+				// Not a single flag initialized the loading property
+				return false;
+			}
+			return Object.values(props.tabularView.loading).some((loadingFlag) => !!loadingFlag);
+		}
+
+		function loadingPercent() {
+			if (!isLoading()) {
+				return 100;
+			}
+
+			if (props.tabularView.loading.sending) {
+				return 10;
+			}
+			if (props.tabularView.loading.downloading) {
+				return 35;
+			}
+			if (props.tabularView.loading.preparingGrid) {
+				return 55;
+			}
+			if (props.tabularView.loading.rendering) {
+				return 75;
+			}
+
+			console.log("Unclear loading state", props.tabularView.loading);
+			return 95;
+		}
+
+		function loadingMessage() {
+			if (!isLoading()) {
+				return "Loaded";
+			}
+
+			if (props.tabularView.loading.sending) {
+				return "Sending the query";
+			}
+			if (props.tabularView.loading.downloading) {
+				return "Downloading the result";
+			}
+			if (props.tabularView.loading.preparingGrid) {
+				return "Preparing the grid";
+			}
+			if (props.tabularView.loading.rendering) {
+				return "Rendering the grid";
+			}
+
+			console.log("Unclear loading state", props.tabularView.loading);
+			return "Unclear but not done yet";
+		}
+
+		return { rendering, gridMetadata, clickedCell, isLoading, loadingPercent, loadingMessage };
 	},
 	template: /* HTML */ `
         <div>
@@ -396,11 +459,24 @@ export default {
                 <span class="visually-hidden">Loading...</span>
             </div>
 
-            <div style="width:100%;">
+            <div>
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
+                <div
+                    class="progress"
+                    role="progressbar"
+                    aria-label="Animated striped example"
+                    :aria-valuenow="loadingPercent()"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    v-if="isLoading()"
+                >
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
+                </div>
             </div>
-            <div :id="domId" style="width:100%;" class="vh-100"></div>
-            clickedCell={{clickedCell}} props.tabularView.loading={{tabularView.loading}} props.tabularView.timing={{tabularView.timing}}
+            <div :id="domId" style="width:100%;" class="vh-75"></div>
+            <div>clickedCell={{clickedCell}}</div>
+            <div>props.tabularView.loading={{tabularView.loading}}</div>
+            <div>props.tabularView.timing={{tabularView.timing}}</div>
         </div>
     `,
 };

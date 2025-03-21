@@ -36,6 +36,7 @@ import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.DispatchorQueryStep;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import lombok.Builder;
@@ -60,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @Jacksonized
-public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
+public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey {
 	@NonNull
 	String name;
 
@@ -82,6 +83,9 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	@Default
 	String aggregationKey = SumAggregation.KEY;
+
+	@Singular
+	Map<String, Object> aggregationOptions;
 
 	/**
 	 * @see IDecomposition

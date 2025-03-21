@@ -133,8 +133,10 @@ export default {
 	template: /* HTML */ `
         <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-            <label class="form-check-label  text-wrap" :for="'column_' + column">{{column}}: {{type}}</label>
+            <label class="form-check-label  text-wrap" :for="'column_' + column">{{column}}</label>
         </div>
+
+        <small>{{type}}</small>
 
         <button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
             <span v-if="!columnMeta.estimatedCardinality"> ? </span>
