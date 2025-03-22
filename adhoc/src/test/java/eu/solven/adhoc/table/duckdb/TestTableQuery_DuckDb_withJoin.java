@@ -76,7 +76,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.table(fromClause)
 					.build());
-	AdhocCubeWrapper cube = AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).build();
+	AdhocCubeWrapper cube = AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).build();
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
@@ -141,7 +141,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
@@ -157,7 +157,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -176,7 +176,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -195,7 +195,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -214,7 +214,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -233,7 +233,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -252,7 +252,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			ITabularView result =
@@ -271,7 +271,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(countAsterisk);
+		forest.addMeasure(countAsterisk);
 
 		{
 			ITabularView result = cube
@@ -290,7 +290,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		initTables();
 		insertData();
 
-		measures.addMeasure(countAsterisk);
+		forest.addMeasure(countAsterisk);
 
 		{
 			ITabularView result = cube.execute(

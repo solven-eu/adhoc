@@ -27,7 +27,7 @@ import java.util.Set;
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
@@ -48,14 +48,14 @@ public interface IAdhocQueryEngine {
 	ITabularView execute(ExecutingQueryContext executingQueryContext);
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query, IAdhocMeasureBag measures, IAdhocTableWrapper table) {
+	default ITabularView executeUnsafe(IAdhocQuery query, IMeasureForest measures, IAdhocTableWrapper table) {
 		return executeUnsafe(query, Set.of(), measures, table, AdhocColumnsManager.builder().build());
 	}
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(IAdhocQuery query,
 			Set<? extends IQueryOption> options,
-			IAdhocMeasureBag measures,
+			IMeasureForest measures,
 			IAdhocTableWrapper table,
 			IAdhocColumnsManager columnsManager) {
 		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();

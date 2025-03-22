@@ -42,7 +42,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
@@ -82,10 +82,10 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
+	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).engine(aqe).build();
+		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	@BeforeEach
@@ -156,13 +156,13 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 	}
 
-	// Check EmptyAggregation is fast
+	// Check that EmptyAggregation is fast
 	@Test
 	public void testNoMeasures() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = wrapInCube(amb)
-				.execute(AdhocQuery.builder().measure(k1Sum).groupByAlso("row_index").explain(true).build());
+		ITabularView output =
+				wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -170,8 +170,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 				.hasSize(maxCardinality)
 				.containsEntry(Map.of("row_index", 0), Map.of())
 				.containsEntry(Map.of("row_index", 1), Map.of())
-				.containsEntry(Map.of("row_index", maxCardinality - 1),
-						Map.of());
+				.containsEntry(Map.of("row_index", maxCardinality - 1), Map.of());
 
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 	}

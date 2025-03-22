@@ -22,9 +22,14 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -40,19 +45,52 @@ public class AdhocQueryMonitor {
 	public static final String TAG_QUERY_START = "QUERY_START";
 	public static final String TAG_QUERY_DONE = "QUERY_DONE";
 
-	final Map<ExecutingQueryContext, OffsetDateTime> queryToStart = new ConcurrentHashMap<>();
+	// TODO Is it a leak to reference the whole context?
+	protected final Map<ExecutingQueryContext, OffsetDateTime> queryToStart = new ConcurrentHashMap<>();
 
-	public void onQueryStart(QueryLifecycleEvent lifecycleEvent) {
+	protected final int slowestQueriedMax;
+	// TODO Is it a leak to reference the whole context?
+	protected final BlockingQueue<Map.Entry<ExecutingQueryContext, Duration>> slowestQueried;
+
+	public AdhocQueryMonitor() {
+		this(100);
+	}
+
+	public AdhocQueryMonitor(int maxSlowQueries) {
+		// `+1` as we need to insert an additional query before removing the faster one
+		slowestQueriedMax = maxSlowQueries;
+		slowestQueried = new PriorityBlockingQueue<>(slowestQueriedMax + 1, comparatorForSlowest());
+	}
+
+	public void onQueryLifecycleEvent(QueryLifecycleEvent lifecycleEvent) {
 		ExecutingQueryContext query = lifecycleEvent.getQuery();
 
 		int nbActive;
 		synchronized (query) {
 			if (lifecycleEvent.getTags().contains(TAG_QUERY_START)) {
-				queryToStart.put(query, now());
+				OffsetDateTime removed = queryToStart.put(query, now());
+
+				if (removed != null) {
+					log.warn("Received start event but query already started: {}", lifecycleEvent);
+				}
+
 				nbActive = queryToStart.size();
-			} else if (lifecycleEvent.getTags().contains(TAG_QUERY_START)) {
-				queryToStart.remove(query);
+			} else if (lifecycleEvent.getTags().contains(TAG_QUERY_DONE)) {
+				OffsetDateTime removed = queryToStart.remove(query);
+
+				if (removed == null) {
+					log.warn("Received done event but query is not registered: {}", lifecycleEvent);
+				} else {
+					Duration duration = Duration.between(removed, now());
+					slowestQueried.add(Map.entry(query, duration));
+
+					if (slowestQueried.size() > slowestQueriedMax) {
+						Map.Entry<ExecutingQueryContext, Duration> slowestRemoved = slowestQueried.remove();
+						log.debug("Not amongst slowest anymore: {}", slowestRemoved);
+					}
+				}
 				nbActive = queryToStart.size();
+
 			} else {
 				nbActive = -1;
 			}
@@ -61,6 +99,16 @@ public class AdhocQueryMonitor {
 		if (nbActive > 0) {
 			onNbActive(nbActive);
 		}
+	}
+
+	private Comparator<Map.Entry<ExecutingQueryContext, Duration>> comparatorForSlowest() {
+		Comparator<Entry<ExecutingQueryContext, Duration>> comparingByValue = Map.Entry.comparingByValue();
+
+		return comparingByValue
+		// We want first entry with large duration
+		// In fact, we want fast to be first, to be dropped on `.remove()`
+		// .reversed()
+		;
 	}
 
 	protected void onNbActive(int nbActive) {

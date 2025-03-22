@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -37,7 +37,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag},
+ * A schema describing metadata for a set of {@link IAdhocTableWrapper}, {@link IMeasureForest},
  * {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle

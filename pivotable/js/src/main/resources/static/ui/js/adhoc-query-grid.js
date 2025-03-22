@@ -89,7 +89,7 @@ export default {
 			// It is especially useful on the grandTotal without measure: the idColumn enables the grid not to be empty
 			// If the grid was empty, `renderCallback` would not be called-back
 			{
-				const column = { id: "id", name: "id", field: "id", width: 5, sortable: sortable, asyncPostRender: renderCallback };
+				const column = { id: "id", name: "#row", field: "id", width: 5, sortable: sortable, asyncPostRender: renderCallback };
 				gridColumns.push(column);
 			}
 
@@ -157,9 +157,6 @@ export default {
 				try {
 					// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
 					const index = _.map(view.coordinates, (x, i) => [view.coordinates[i], view.values[i]]);
-					//					const sorted = _.sortBy(index, coordinateToMeasure => {
-					//						return coordinateToMeasure[0][0];
-					//					});
 
 					const sortingFunctions = [];
 					const sortingOrders = [];
@@ -461,19 +458,19 @@ export default {
 
             <div>
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
-                <div
-                    class="progress"
-                    role="progressbar"
-                    aria-label="Animated striped example"
-                    :aria-valuenow="loadingPercent()"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    v-if="isLoading()"
-                >
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
-                </div>
             </div>
             <div :id="domId" style="width:100%;" class="vh-75"></div>
+			<div
+			    class="progress"
+			    role="progressbar"
+			    aria-label="Animated striped example"
+			    :aria-valuenow="loadingPercent()"
+			    aria-valuemin="0"
+			    aria-valuemax="100"
+			    v-if="isLoading()"
+			>
+			    <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
+			</div>
             <div>clickedCell={{clickedCell}}</div>
             <div>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>

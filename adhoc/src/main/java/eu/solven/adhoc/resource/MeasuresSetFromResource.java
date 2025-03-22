@@ -45,7 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -432,7 +432,7 @@ public class MeasuresSetFromResource {
 		return AdhocMeasureBag.fromMeasures(name, measures);
 	}
 
-	public String asString(String format, IAdhocMeasureBag amb) {
+	public String asString(String format, IMeasureForest amb) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<?> asMaps =
@@ -451,7 +451,7 @@ public class MeasuresSetFromResource {
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
 
 		abmb.bagNames().forEach(bagName -> {
-			IAdhocMeasureBag measures = abmb.getBag(bagName);
+			IMeasureForest measures = abmb.getBag(bagName);
 
 			List<?> asMaps = measures.getNameToMeasure()
 					.values()
@@ -471,19 +471,12 @@ public class MeasuresSetFromResource {
 
 	// https://stackoverflow.com/questions/25387978/how-to-add-custom-deserializer-to-interface-using-jackson
 	public Map<String, ?> asMap(ObjectMapper objectMapper, IMeasure m) {
-		// try {
 		// https://github.com/FasterXML/jackson-databind/issues/4983
 		Map rawMap = objectMapper.convertValue(m, Map.class);
 		// objectMapper.readValue(objectMapper.writerFor(IMeasure.class).writeValueAsString(m), Map.class);
 
 		// Let's remove some redundant properties, as the output Map will typically be read by humans
 		return simplifyProperties(m, rawMap);
-		// }
-		// catch (JsonMappingException e) {
-		// throw new RuntimeException(e);
-		// } catch (JsonProcessingException e) {
-		// throw new RuntimeException(e);
-		// }
 	}
 
 	/**
@@ -498,12 +491,6 @@ public class MeasuresSetFromResource {
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
 	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
-		// if (map.containsKey(KEY_TYPE)) {
-		// // This may happen with custom IMeasure with a `.getType()`
-		// throw new IllegalStateException(
-		// "`type` is a reserved getter for IMeasure. Can not handle: %s".formatted(map));
-		// }
-
 		Comparator<String> comparing =
 				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
 		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
@@ -517,6 +504,9 @@ public class MeasuresSetFromResource {
 			}
 			if (a.getColumnName().equals(a.getName())) {
 				clean.remove("columnName");
+			}
+			if (a.getAggregationOptions().isEmpty()) {
+				clean.remove("aggregationOptions");
 			}
 		} else if (measure instanceof Combinator c) {
 			// clean.put(KEY_TYPE, "combinator");
@@ -537,13 +527,12 @@ public class MeasuresSetFromResource {
 			// clean.put(KEY_TYPE, "shiftor");
 		} else if (measure instanceof Dispatchor d) {
 			// clean.put(KEY_TYPE, "dispatchor");
+
+			if (d.getAggregationOptions().isEmpty()) {
+				clean.remove("aggregationOptions");
+			}
 		} else if (measure instanceof Bucketor b) {
 			// clean.put(KEY_TYPE, "bucketor");
-
-			if (b.getGroupBy() instanceof GroupByColumns byColumns) {
-				// We replace Jackson representation by a simple List of String
-				// MapPathPut.putEntry(clean, byColumns.getGroupedByColumns(), "groupBy");
-			}
 
 			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
@@ -556,6 +545,10 @@ public class MeasuresSetFromResource {
 			}
 			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
 				clean.remove("combinationOptions");
+			}
+
+			if (b.getAggregationOptions().isEmpty()) {
+				clean.remove("aggregationOptions");
 			}
 		} else {
 			onUnknownMeasureType(measure, clean);

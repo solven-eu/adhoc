@@ -82,9 +82,9 @@ public class CombinatorQueryStep extends ATransformator {
 
 		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
-		ICombination transformation = combinationSupplier.get();
+		ICombination combination = combinationSupplier.get();
 
-		forEachDistinctSlice(underlyings, transformation, storage::append);
+		forEachDistinctSlice(underlyings, combination, storage::append);
 
 		return SliceToValue.builder().column(storage).build();
 	}

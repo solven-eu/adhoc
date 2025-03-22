@@ -48,4 +48,8 @@ public class CoordinatesSample {
 	public long getEstimatedCardinality() {
 		return estimatedCardinality;
 	}
+
+	public static CoordinatesSample empty() {
+		return CoordinatesSample.builder().build();
+	}
 }

@@ -27,6 +27,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 
 /**
@@ -36,7 +37,7 @@ import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
  *
  * Also used for many2many: each input element is decomposed into its target groups.
  */
-public interface IDecomposition {
+public interface IDecomposition extends IColumnGenerator {
 	/**
 	 *
 	 * @param slice
@@ -51,4 +52,5 @@ public interface IDecomposition {
 	 * @return the columns which MAY be written by decompositions.
 	 */
 	List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step);
+
 }

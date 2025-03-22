@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
@@ -263,6 +264,21 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 	protected Set<?> elementsMatchingGroups(IValueMatcher valueMatcher) {
 		return manyToManyDefinition.getElementsMatchingGroups(valueMatcher);
+	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		return Set.of(groupColumn);
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		Set<Object> groups = manyToManyDefinition.getGroups(valueMatcher);
+		return CoordinatesSample.builder()
+				.estimatedCardinality(CoordinatesSample.NO_ESTIMATION)
+				.coordinates(groups)
+				.build();
 	}
 
 }

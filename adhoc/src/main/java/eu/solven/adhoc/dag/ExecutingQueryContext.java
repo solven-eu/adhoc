@@ -31,7 +31,7 @@ import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -67,7 +67,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures
 	@NonNull
-	IAdhocMeasureBag measures;
+	IMeasureForest measures;
 
 	@NonNull
 	IAdhocTableWrapper table;

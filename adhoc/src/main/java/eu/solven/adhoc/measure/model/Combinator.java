@@ -26,18 +26,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.CombinatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
@@ -55,7 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-public class Combinator implements ICombinator {
+public class Combinator implements ICombinator, IMayHaveColumnGenerator {
 	@NonNull
 	String name;
 
@@ -120,5 +124,16 @@ public class Combinator implements ICombinator {
 	@Override
 	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
 		return new CombinatorQueryStep(this, transformationFactory, step);
+	}
+
+	@Override
+	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+		ICombination combination = operatorsFactory.makeCombination(getCombinationKey(), getCombinationOptions());
+
+		if (combination instanceof IColumnGenerator columnGenerator) {
+			return Optional.of(columnGenerator);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

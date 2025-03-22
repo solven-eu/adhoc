@@ -44,7 +44,7 @@ public class MeasureBagTestHelpers {
 	 *
 	 * @return
 	 */
-	public static DirectedAcyclicGraph<IMeasure, DefaultEdge> makeMeasuresDag(IAdhocMeasureBag measureBag) {
+	public static DirectedAcyclicGraph<IMeasure, DefaultEdge> makeMeasuresDag(IMeasureForest measureBag) {
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		Map<String, IMeasure> nameToMeasure = measureBag.getNameToMeasure();

@@ -47,6 +47,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
@@ -104,6 +105,10 @@ public class InMemoryTable implements IAdhocTableWrapper {
 	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
 		Set<String> aggregateColumns =
 				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
+
+		boolean isEmptyAggregation = tableQuery.getAggregators().isEmpty()
+				|| tableQuery.getAggregators().stream().allMatch(a -> EmptyAggregation.isEmpty(a.getAggregationKey()));
+
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
 		int nbKeys = (int) Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count();
@@ -116,8 +121,8 @@ public class InMemoryTable implements IAdhocTableWrapper {
 				return toRecord(tableQuery, aggregateColumns, groupByColumns, nbKeys, row);
 			});
 
-			if (aggregateColumns.isEmpty() || aggregateColumns.equals(Set.of("empty"))) {
-				// TODO Enable aggregations from InMemoryTable
+			if (isEmptyAggregation) {
+				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
 				// groupBy groupedByColumns
 				Map<Map<String, ?>, Optional<ITabularRecord>> groupedAggregatedRecord =

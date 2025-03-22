@@ -30,6 +30,11 @@ import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
+/**
+ * An event enabling to be notified on query lifecycle events (e.g. start, done).
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class QueryLifecycleEvent {

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.cube;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,8 +36,10 @@ import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -62,28 +65,33 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@Getter
 	final String name = "someCubeName";
 
+	// Execute the query
 	@NonNull
 	@Default
 	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
+	// Holds the data
 	@NonNull
 	final IAdhocTableWrapper table;
+	// Holds the indicators definitions
 	@NonNull
-	final IAdhocMeasureBag measures;
+	final IMeasureForest forest;
+	// Enable transcoding from table to cube
 	@NonNull
 	@Default
 	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
+	// Wrap a query (e.g. with queryId, implicitFilter, etc)
 	@NonNull
 	@Default
 	final IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
-		return measures.getNameToMeasure();
+		return forest.getNameToMeasure();
 	}
 
 	@Override
 	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(queryPreparator.prepareQuery(table, measures, columnsManager, query, options));
+		return engine.execute(queryPreparator.prepareQuery(table, forest, columnsManager, query, options));
 	}
 
 	@Override
@@ -120,7 +128,16 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		return table.getCoordinates(column, valueMatcher, limit);
+		IOperatorsFactory operatorsFactory = ((AdhocQueryEngine) engine).getOperatorsFactory();
+
+		List<IColumnGenerator> columnGenerators =
+				IColumnGenerator.getColumns(operatorsFactory, forest.getMeasures(), column);
+		if (!columnGenerators.isEmpty()) {
+			// Given column is actually defined by a measure, not by the table
+			return IColumnGenerator.getCoordinates(columnGenerators, column, valueMatcher, limit);
+		} else {
+			return table.getCoordinates(column, valueMatcher, limit);
+		}
 	}
 
 }

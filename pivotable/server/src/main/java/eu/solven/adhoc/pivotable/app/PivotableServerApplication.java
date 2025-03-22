@@ -47,6 +47,8 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableSecuritySpringConfig.class,
 		GitPropertySourceConfig.class,
 
+		PivotableQueryMonitoring.class,
+
 // RedisKumiteConfiguration.class,
 // KumiteWebSocketSpringConfig.class,
 
@@ -63,7 +65,7 @@ public class PivotableServerApplication {
 		springApp.run(args);
 	}
 
-	// https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type
+	// // https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type
 	@Bean
 	// This will override any auto-configured SessionRepository like Redis one
 	@Profile({ IPivotableSpringProfiles.P_INMEMORY })

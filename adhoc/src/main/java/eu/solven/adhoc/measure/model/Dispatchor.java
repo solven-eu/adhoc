@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -39,6 +40,8 @@ import eu.solven.adhoc.measure.transformator.DispatchorQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -61,7 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @Jacksonized
-public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey {
+public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey, IMayHaveColumnGenerator {
 	@NonNull
 	String name;
 
@@ -108,8 +111,20 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
-		return new DispatchorQueryStep(this, transformationFactory, adhocSubQuery);
+	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep adhocSubQuery) {
+		return new DispatchorQueryStep(this, operatorsFactory, adhocSubQuery);
+	}
+
+	@Override
+	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+		IDecomposition decomposition =
+				operatorsFactory.makeDecomposition(getDecompositionKey(), getDecompositionOptions());
+
+		if (decomposition instanceof IColumnGenerator columnGenerator) {
+			return Optional.of(columnGenerator);
+		} else {
+			return Optional.empty();
+		}
 	}
 
 }

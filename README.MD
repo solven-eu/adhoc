@@ -277,3 +277,5 @@ This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example i
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metriuc about memory usage (e.g. footprint from table, footprint for each queryStep)
 - [Feature] AdhocCompositeCube needs to handle `IAggregation` with carrier
+- Work on query cancellations/queryTimeouts
+- Enables `getCoordinates` for cube.columns created by measures

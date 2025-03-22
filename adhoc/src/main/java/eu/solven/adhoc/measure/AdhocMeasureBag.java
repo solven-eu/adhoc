@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 @ToString(exclude = "cachedNameToMeasure")
-public class AdhocMeasureBag implements IAdhocMeasureBag {
+public class AdhocMeasureBag implements IMeasureForest {
 	@Getter
 	@NonNull
 	final String name;
@@ -147,11 +147,11 @@ public class AdhocMeasureBag implements IAdhocMeasureBag {
 	}
 
 	@Override
-	public IAdhocMeasureBag acceptVisitor(IMeasureBagVisitor asCombinator) {
+	public IMeasureForest acceptVisitor(IMeasureBagVisitor asCombinator) {
 		return asCombinator.addMeasures(this);
 	}
 
-	public static AdhocMeasureBagBuilder edit(IAdhocMeasureBag measures) {
+	public static AdhocMeasureBagBuilder edit(IMeasureForest measures) {
 		return AdhocMeasureBag.builder().name(measures.getName()).measures(measures.getNameToMeasure().values());
 	}
 

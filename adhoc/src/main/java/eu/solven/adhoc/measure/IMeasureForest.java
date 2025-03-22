@@ -20,40 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube;
+package eu.solven.adhoc.measure;
 
+import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.IHasColumns;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
-	}
+public interface IMeasureForest extends IHasName, IHasMeasures {
+
+	/**
+	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}
+	 * 
+	 * @param measure
+	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
+	 */
+	IMeasure resolveIfRef(IMeasure measure);
 
 	/**
 	 * 
-	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
-	 * @return
+	 * @param measure
+	 *            a measure, possibly a {@link ReferencedMeasure}.
+	 * @return the optional plain {@link IMeasure}
 	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
+	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
 
-	// default
-	CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit);
+	IMeasureForest acceptVisitor(IMeasureBagVisitor visitor);
+
 }

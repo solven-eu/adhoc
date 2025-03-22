@@ -50,7 +50,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.AdhocMeasureBag.AdhocMeasureBagBuilder;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -242,7 +242,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 	 * @param measureBag
 	 *            the measureBag to be applied on top of this composite cube
 	 */
-	public IAdhocMeasureBag injectUnderlyingMeasures(IAdhocMeasureBag measureBag) {
+	public IMeasureForest injectUnderlyingMeasures(IMeasureForest measureBag) {
 		// The aggregationKey is important in case multiple cubes contribute to the same measure
 
 		Set<String> compositeMeasures = new HashSet<>(measureBag.getNameToMeasure().keySet());

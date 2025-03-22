@@ -25,13 +25,16 @@ package eu.solven.adhoc.measure.combination;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";
@@ -50,4 +53,15 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public IAdhocFilter editFilter(IAdhocFilter input) {
 		return input;
 	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		return Set.of();
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		return CoordinatesSample.empty();
+	}
+
 }

@@ -82,10 +82,9 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			}
 
 			{
-				UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("jooq").build();
-				measureBag.addMeasure(k1Sum);
-				AdhocCubeWrapper aqw =
-						AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).measures(measureBag).build();
+				UnsafeAdhocMeasureBag forest = UnsafeAdhocMeasureBag.builder().name("jooq").build();
+				forest.addMeasure(k1Sum);
+				AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
 
 				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);

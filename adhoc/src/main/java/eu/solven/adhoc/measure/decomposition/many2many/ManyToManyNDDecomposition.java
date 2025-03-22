@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
@@ -282,6 +283,22 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 	protected Set<Map<String, IValueMatcher>> elementsMatchingGroups(IValueMatcher valueMatcher) {
 		return manyToManyDefinition.getElementsMatchingGroups(valueMatcher);
+	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+
+		return Set.of(groupColumn);
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		Set<?> groups = manyToManyDefinition.getMatchingGroups(valueMatcher);
+		return CoordinatesSample.builder()
+				.estimatedCardinality(CoordinatesSample.NO_ESTIMATION)
+				.coordinates(groups)
+				.build();
 	}
 
 }

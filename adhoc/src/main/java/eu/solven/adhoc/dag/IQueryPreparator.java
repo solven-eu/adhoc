@@ -25,7 +25,7 @@ package eu.solven.adhoc.dag;
 import java.util.Set;
 
 import eu.solven.adhoc.column.IAdhocColumnsManager;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
@@ -40,14 +40,14 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  */
 public interface IQueryPreparator {
 	default ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
-			IAdhocMeasureBag measures,
+			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery query) {
 		return prepareQuery(table, measures, columnsManager, query, Set.of());
 	}
 
 	ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
-			IAdhocMeasureBag measures,
+			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery query,
 			Set<? extends IQueryOption> options);

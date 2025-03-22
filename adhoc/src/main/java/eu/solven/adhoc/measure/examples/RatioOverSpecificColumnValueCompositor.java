@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
  *
  */
 public class RatioOverSpecificColumnValueCompositor {
-	public AdhocMeasureBag addTo(IAdhocMeasureBag measureBag, String column, String value, String underlying) {
+	public AdhocMeasureBag addTo(IMeasureForest measureBag, String column, String value, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, value);
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, value);
 		String ratioMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, value);
@@ -90,7 +90,7 @@ public class RatioOverSpecificColumnValueCompositor {
 		return new IMeasureBagVisitor() {
 
 			@Override
-			public IAdhocMeasureBag addMeasures(IAdhocMeasureBag adhocMeasureBag) {
+			public IMeasureForest addMeasures(IMeasureForest adhocMeasureBag) {
 				return RatioOverSpecificColumnValueCompositor.this.addTo(adhocMeasureBag, column, value, underlying);
 			}
 		};

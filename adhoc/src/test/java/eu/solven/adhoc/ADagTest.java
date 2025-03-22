@@ -72,7 +72,7 @@ public abstract class ADagTest {
 	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder()
 			.table(tableSupplier.get())
 			.engine(aqe)
-			.measures(amb)
+			.forest(amb)
 			.eventBus(eventBus::post)
 			.build();
 

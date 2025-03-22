@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.examples;
 import java.util.Arrays;
 
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * @author Benoit Lacelle
  */
 public class RatioOverCurrentColumnValueCompositor {
-	public IAdhocMeasureBag addTo(IAdhocMeasureBag measureBag, String column, String underlying) {
+	public IMeasureForest addTo(IMeasureForest measureBag, String column, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, "current");
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, "current");
 		String ratioMeasureName = "%s_%s=%s_ratio_postcheck".formatted(underlying, column, "current");
@@ -93,7 +93,7 @@ public class RatioOverCurrentColumnValueCompositor {
 		return new IMeasureBagVisitor() {
 
 			@Override
-			public IAdhocMeasureBag addMeasures(IAdhocMeasureBag adhocMeasureBag) {
+			public IMeasureForest addMeasures(IMeasureForest adhocMeasureBag) {
 				return RatioOverCurrentColumnValueCompositor.this.addTo(adhocMeasureBag, column, underlying);
 			}
 		};

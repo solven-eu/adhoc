@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 
 /**
@@ -60,7 +61,21 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 		return 0;
 	}
 
+	/**
+	 * 
+	 * @param aggregationKey
+	 * @return true if the aggregationKey refers to {@link EmptyAggregation}
+	 */
 	public static boolean isEmpty(String aggregationKey) {
 		return EmptyAggregation.KEY.equals(aggregationKey) || aggregationKey.equals(EmptyAggregation.class.getName());
+	}
+
+	/**
+	 * 
+	 * @param aggregator
+	 * @return true if the {@link Aggregator} aggregationKey refers to {@link EmptyAggregation}
+	 */
+	public static boolean isEmpty(Aggregator aggregator) {
+		return isEmpty(aggregator.getAggregationKey());
 	}
 }

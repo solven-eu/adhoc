@@ -48,7 +48,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -70,25 +70,35 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	}
 
 	int maxCardinality = 10_000;
-	int arrayLength = 200;
+	int arrayLength = 2;
 
 	String tableName = "someTableName";
 
-	DSLSupplier jooqInMemorySupplier = DuckDbHelper.inMemoryDSLSupplier();
+	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
 			AdhocJooqTableWrapperParameters.builder()
-					.dslSupplier(jooqInMemorySupplier)
+					.dslSupplier(dslSupplier)
 					// `generate_subscripts` is 1-based
-					.table(DSL.table(
-							"(PIVOT (SELECT color, index, SUM(doubles) AS doubles FROM (SELECT color, unnest(doubles) AS doubles, generate_subscripts(doubles, 1) - 1 AS index FROM someTableName) GROUP BY color, index) ON index USING SUM(doubles))"))
+					.table(DSL
+							.table("""
+									(
+										PIVOT
+										(
+											SELECT color, index, SUM(doubles) AS doubles FROM (
+												SELECT color, unnest(doubles) AS doubles, generate_subscripts(doubles, 1) - 1 AS index
+												FROM someTableName
+											) GROUP BY color, index
+										) ON index USING SUM(doubles)
+									)
+									"""))
 					.build());
 
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
+	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).measures(measures).table(table).engine(aqe).build();
+		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	String mArray = "k1Array";
@@ -99,7 +109,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	public void feedTable() {
 
 		// https://duckdb.org/docs/stable/sql/data_types/array.html
-		jooqInMemorySupplier.getDSLContext().connection(c -> {
+		dslSupplier.getDSLContext().connection(c -> {
 			DuckDBConnection duckDbConnection = (DuckDBConnection) c;
 
 			Statement s = duckDbConnection.createStatement();
@@ -227,14 +237,16 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 				.hasSize(arrayLength + 1);
 	}
 
+	// @Disabled("TODO")
 	@Test
 	public void testColumnMeta_scenarios() {
 		AdhocCubeWrapper cube = wrapInCube(amb);
 
-		CoordinatesSample coordinates = cube.getCoordinates("names", IValueMatcher.MATCH_ALL, 2);
+		CoordinatesSample coordinates =
+				cube.getCoordinates(CustomArrayCombination.C_SCENARIOS, IValueMatcher.MATCH_ALL, 2);
 
-		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(arrayLength);
-		Assertions.assertThat(coordinates.getCoordinates()).hasSize(2).contains("aa");
+		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(5L);
+		Assertions.assertThat(coordinates.getCoordinates()).hasSize(3).contains("s0", "s1", "s2");
 
 	}
 

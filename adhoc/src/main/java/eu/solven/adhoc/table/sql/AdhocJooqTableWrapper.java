@@ -23,12 +23,10 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,16 +39,11 @@ import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.InvalidResultException;
 
-import com.google.common.collect.ImmutableList;
-
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ColumnMetadataHelpers;
@@ -235,7 +228,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (dbParameters.getDslSupplier().getDSLContext().dialect().equals(SQLDialect.DUCKDB)) {
+		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ColumnMetadataHelpers.getCoordinatesMostGeneric(this, column, valueMatcher, limit);

@@ -22,21 +22,29 @@
  */
 package eu.solven.adhoc.table.duckdb.quantile;
 
+import java.util.Arrays;
+import java.util.Set;
+
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * Collecting the underlying measures into a single array.
+ * Collecting the N underlying measures into a single array.
  * 
  * @author Benoit Lacelle
  */
-public class CustomArrayCombination implements ICombination {
+public class CustomArrayCombination implements ICombination, IColumnGenerator {
 
 	public static final String KEY = "ARRAY";
+
+	public static final String C_SCENARIOS = "scenarioIndex";
 
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
@@ -69,6 +77,16 @@ public class CustomArrayCombination implements ICombination {
 		}
 
 		return vr -> vr.onObject(valuesAsArray);
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		return CoordinatesSample.builder().coordinates(Arrays.asList("s0", "s1", "s2")).estimatedCardinality(5).build();
+	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		return Set.of(C_SCENARIOS);
 	}
 
 }

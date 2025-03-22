@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.cube;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.IHasMeasures;
 
 /**
  * A aggregation query. It is configured by:

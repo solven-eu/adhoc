@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.pivotable.app;
 
-import java.util.List;
-import java.util.Set;
+import org.greenrobot.eventbus.EventBus;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
-import eu.solven.adhoc.measure.model.IMeasure;
+@Configuration
+@Import({
 
-/**
- * A {@link List} of {@link IMeasure}. Typically used by {@link IAdhocQuery}.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IHasMeasures {
+		PivotableQueryMonitor.class,
 
-	Set<IMeasure> getMeasures();
+})
+public class PivotableQueryMonitoring {
+	@Bean
+	public Void registerToEventBus(EventBus eventBus, PivotableQueryMonitor queryMonitor) {
+		eventBus.register(queryMonitor);
+
+		return null;
+	}
 }

@@ -38,7 +38,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -63,7 +63,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measures) {
+	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(adhocEventBus).build();
 
@@ -94,7 +94,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 				AdhocColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
 		return AdhocCubeWrapper.builder()
 				.engine(aqe)
-				.measures(measures)
+				.forest(forest)
 				.table(table)
 				.engine(aqe)
 				.columnsManager(columnsManager)
@@ -119,10 +119,10 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	public void testFilterEnum() {
 		initAndInsert();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(measures).execute(
+		ITabularView result = wrapInCube(forest).execute(
 				AdhocQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -136,11 +136,11 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	public void testGroupByEnum() {
 		initAndInsert();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result =
-				wrapInCube(measures).execute(AdhocQuery.builder().groupByAlso("letter").measure(k1Sum).build());
+				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("letter").measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

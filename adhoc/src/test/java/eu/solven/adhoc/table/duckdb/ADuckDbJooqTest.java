@@ -36,5 +36,5 @@ public abstract class ADuckDbJooqTest {
 	}
 
 	protected AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	protected UnsafeAdhocMeasureBag measures = UnsafeAdhocMeasureBag.builder().name("duckdb").build();
+	protected UnsafeAdhocMeasureBag forest = UnsafeAdhocMeasureBag.builder().name("duckdb").build();
 }

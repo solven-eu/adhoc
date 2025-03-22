@@ -20,38 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.measure.transformator.column_generator;
 
 import java.util.Optional;
-import java.util.Set;
 
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import eu.solven.adhoc.measure.IOperatorsFactory;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
+ * Anything which may provide a {@link IColumnGenerator}
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMeasureBag extends IHasName, IHasMeasures {
+public interface IMayHaveColumnGenerator {
 
-	/**
-	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}
-	 * 
-	 * @param measure
-	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
-	 */
-	IMeasure resolveIfRef(IMeasure measure);
-
-	/**
-	 * 
-	 * @param measure
-	 *            a measure, possibly a {@link ReferencedMeasure}.
-	 * @return the optional plain {@link IMeasure}
-	 */
-	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
-
-	IAdhocMeasureBag acceptVisitor(IMeasureBagVisitor visitor);
+	Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
 
 }

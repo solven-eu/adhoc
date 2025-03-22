@@ -67,7 +67,7 @@ public class TestImplicitFilter_SpringSecurity {
 		aqw = AdhocCubeWrapper.builder()
 				.table(rows)
 				.engine(aqe)
-				.measures(amb)
+				.forest(amb)
 				.queryPreparator(queryPreparator)
 				.eventBus(eventBus::post)
 				.build();

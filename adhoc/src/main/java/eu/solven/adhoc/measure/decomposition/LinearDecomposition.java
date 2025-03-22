@@ -30,12 +30,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -148,6 +150,21 @@ public class LinearDecomposition implements IDecomposition {
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
 		return Collections.singletonList(MeasurelessQuery.edit(step).groupBy(GroupByColumns.of(allGroupBys)).build());
+	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+
+		return Set.of(outputColumn);
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		Number min = MapPathGet.getRequiredNumber(options, "min");
+		Number max = MapPathGet.getRequiredNumber(options, "max");
+
+		return CoordinatesSample.builder().estimatedCardinality(2).coordinate(min).coordinate(max).build();
 	}
 
 }

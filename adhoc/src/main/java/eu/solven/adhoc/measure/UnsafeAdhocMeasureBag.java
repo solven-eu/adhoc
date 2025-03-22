@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @Builder
-public class UnsafeAdhocMeasureBag implements IAdhocMeasureBag {
+public class UnsafeAdhocMeasureBag implements IMeasureForest {
 	@Getter
 	@NonNull
 	final String name;
@@ -124,11 +124,11 @@ public class UnsafeAdhocMeasureBag implements IAdhocMeasureBag {
 	}
 
 	/**
-	 * In {@link UnsafeAdhocMeasureBag}, a visitor both mutate current {@link IAdhocMeasureBag} and return the
+	 * In {@link UnsafeAdhocMeasureBag}, a visitor both mutate current {@link IMeasureForest} and return the
 	 * immutable+edited bag.
 	 */
-	public IAdhocMeasureBag acceptVisitor(IMeasureBagVisitor asCombinator) {
-		IAdhocMeasureBag newState = asCombinator.addMeasures(this);
+	public IMeasureForest acceptVisitor(IMeasureBagVisitor asCombinator) {
+		IMeasureForest newState = asCombinator.addMeasures(this);
 
 		this.nameToMeasure.clear();
 		this.nameToMeasure.putAll(newState.getNameToMeasure());

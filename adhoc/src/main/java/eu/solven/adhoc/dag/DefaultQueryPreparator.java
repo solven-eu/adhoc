@@ -25,7 +25,7 @@ package eu.solven.adhoc.dag;
 import java.util.Set;
 
 import eu.solven.adhoc.column.IAdhocColumnsManager;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
@@ -46,7 +46,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 
 	@Override
 	public ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
-			IAdhocMeasureBag measures,
+			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery rawQuery,
 			Set<? extends IQueryOption> options) {

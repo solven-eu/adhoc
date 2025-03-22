@@ -57,6 +57,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
+import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -79,6 +80,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,6 +96,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	@NonNull
 	@Default
+	@Getter
 	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
@@ -113,7 +116,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 		boolean postedAboutDone = false;
 		try {
-			postAboutQueryDone(executingQueryContext);
+			postAboutQueryStart(executingQueryContext);
 
 			QueryStepsDag queryStepsDag = makeQueryStepsDag(executingQueryContext);
 
@@ -144,10 +147,9 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			postAboutQueryDone(executingQueryContext, "KO", stopWatch);
 			postedAboutDone = true;
 
-			throw new IllegalArgumentException(
-					"Issue executing query=%s options=%s".formatted(executingQueryContext.getQuery(),
-							executingQueryContext.getOptions()),
-					e);
+			String eMsg = "Issue executing query=%s options=%s".formatted(executingQueryContext.getQuery(),
+					executingQueryContext.getOptions());
+			throw new IllegalArgumentException(eMsg, e);
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
@@ -156,13 +158,19 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		}
 	}
 
-	protected void postAboutQueryDone(ExecutingQueryContext executingQueryContext) {
+	protected void postAboutQueryStart(ExecutingQueryContext executingQueryContext) {
 		eventBus.post(AdhocLogEvent.builder()
 				.message("Executing on table=%s measures=%s query=%s".formatted(executingQueryContext.getTable()
 						.getName(), executingQueryContext.getMeasures().getName(), executingQueryContext.getQuery()))
 				.source(this)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
-				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
+				.tag(AdhocQueryMonitor.TAG_QUERY_START)
+				.build());
+
+		eventBus.post(QueryLifecycleEvent.builder()
+				.query(executingQueryContext)
+				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
+				.tag(AdhocQueryMonitor.TAG_QUERY_START)
 				.build());
 	}
 
@@ -177,6 +185,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 						executingQueryContext.getQuery()))
 				.source(this)
 				.performance(true)
+				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
+				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
+				.build());
+
+		eventBus.post(QueryLifecycleEvent.builder()
+				.query(executingQueryContext)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
 				.build());
@@ -291,80 +305,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		return columnToAggregators;
 	}
 
-	protected ITabularView toTabularView(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag queryStepsDag,
-			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
-		if (queryStepToValues.isEmpty()) {
-			return MapBasedTabularView.empty();
-		}
-
-		long expectedOutputCardinality;
-		Iterator<AdhocQueryStep> stepsToReturn;
-		if (executingQueryContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
-			// BEWARE Should we return steps with same groupBy?
-			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
-			// What about measures appearing multiple times in the DAG?
-			stepsToReturn = new BreadthFirstIterator<>(queryStepsDag.getDag());
-			expectedOutputCardinality = 0;
-		} else {
-			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
-			stepsToReturn = queryStepsDag.getQueried().iterator();
-			expectedOutputCardinality =
-					queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
-		}
-
-		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
-				// Force a HashMap not to rely on default TreeMap
-				.coordinatesToValues(new HashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
-				.build();
-
-		stepsToReturn.forEachRemaining(step -> {
-			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
-			if (coordinatesToValues == null) {
-				// Happens on a Columnator missing a required column
-			} else {
-				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
-						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
-
-				IColumnScanner<SliceAsMap> baseRowScanner =
-						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
-
-				IColumnScanner<SliceAsMap> rowScanner;
-				if (isEmptyMeasure) {
-					rowScanner = slice -> {
-						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
-
-						// `emptyValue` may not empty as we needed to materialize it to get up to here
-						// But now is time to force it to null, while materializing the slice.
-						return new IValueReceiver() {
-
-							// This is useful to prevent boxing emptyValue when long
-							@Override
-							public void onLong(long v) {
-								sliceFeeder.onObject(null);
-							}
-
-							// This is useful to prevent boxing emptyValue when double
-							@Override
-							public void onDouble(double v) {
-								sliceFeeder.onObject(null);
-							}
-
-							@Override
-							public void onObject(Object v) {
-								sliceFeeder.onObject(null);
-							}
-						};
-					};
-				} else {
-					rowScanner = baseRowScanner;
-				}
-				coordinatesToValues.forEachSlice(rowScanner);
-			}
-		});
-		return mapBasedTabularView;
-	}
-
 	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
 			ExecutingQueryContext executingQueryContext,
 			TableQuery query,
@@ -401,91 +341,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			queryStepToValues.put(queryStep, SliceToValue.builder().column(column).build());
 		});
 		return queryStepToValues;
-	}
-
-	protected void walkDagUpToQueriedMeasures(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag queryStepsDag,
-			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
-		queryStepsDag.fromAggregatesToQueried().forEachRemaining(queryStep -> {
-
-			if (queryStepToValues.containsKey(queryStep)) {
-				// This typically happens on aggregator measures, as they are fed in a previous
-				// step. Here, we want to process a measure once its underlying steps are completed
-				return;
-			} else if (queryStep.getMeasure() instanceof Aggregator a) {
-				throw new IllegalStateException("Missing values for %s".formatted(a));
-			}
-
-			eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
-
-			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
-
-			List<AdhocQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
-
-			IStopwatch stepWatch = stopwatchFactory.createStarted();
-
-			Optional<ISliceToValue> optOutputColumn =
-					processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
-
-			// Would be empty on table steps (leaves of the DAG)
-			optOutputColumn.ifPresent(outputColumn -> {
-				Duration elapsed = stepWatch.elapsed();
-				eventBus.post(QueryStepIsCompleted.builder()
-						.querystep(queryStep)
-						.nbCells(outputColumn.size())
-						.source(this)
-						.duration(elapsed)
-						.build());
-				queryStepsDag.registerExecutionFeedback(queryStep,
-						SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
-
-				queryStepToValues.put(queryStep, outputColumn);
-			});
-		});
-	}
-
-	protected Optional<ISliceToValue> processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,
-			AdhocQueryStep queryStep,
-			List<AdhocQueryStep> underlyingSteps,
-			IMeasure measure) {
-		if (underlyingSteps.isEmpty()) {
-			// This may happen on a Columnator which is missing a required column
-			return Optional.empty();
-		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-				ISliceToValue values = queryStepToValues.get(underlyingStep);
-
-				if (values == null) {
-					throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
-				}
-
-				return values;
-			}).toList();
-
-			// BEWARE It looks weird we have to call again `.wrapNode`
-			ITransformator hasUnderlyingQuerySteps = hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
-			ISliceToValue coordinatesToValues;
-			try {
-				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
-			} catch (RuntimeException e) {
-				StringBuilder describeStep = new StringBuilder();
-
-				describeStep.append("Issue computing columns for:").append("\r\n");
-
-				// First, we print only measure as a simplistic shorthand of the step
-				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
-						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
-				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
-				describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
-						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
-
-				throw new IllegalStateException(describeStep.toString(), e);
-			}
-
-			return Optional.of(coordinatesToValues);
-		} else {
-			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
-		}
 	}
 
 	/**
@@ -576,6 +431,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// ???
 				// Happens if we miss given column
 			} else {
+				// Happens on Transformator with no underlying measure
 				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
 			}
 		});
@@ -612,14 +468,14 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		// Add implicitly requested steps
 		while (queryStepsDagBuilder.hasLeftovers()) {
-			AdhocQueryStep parentStep = queryStepsDagBuilder.pollLeftover();
+			AdhocQueryStep queryStep = queryStepsDagBuilder.pollLeftover();
 
-			IMeasure measure = executingQueryContext.resolveIfRef(parentStep.getMeasure());
+			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, parentStep);
+				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
 
 				List<AdhocQueryStep> underlyingSteps =
 						wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
@@ -628,7 +484,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 							return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 						}).toList();
 
-				queryStepsDagBuilder.registerUnderlyings(parentStep, underlyingSteps);
+				queryStepsDagBuilder.registerUnderlyings(queryStep, underlyingSteps);
 			} else {
 				throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(measure).toString());
 			}
@@ -663,6 +519,165 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {
 		return new QueryStepsDagBuilder(executingQueryContext.getTable().getName(), executingQueryContext.getQuery());
+	}
+
+	protected void walkDagUpToQueriedMeasures(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag,
+			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
+		queryStepsDag.fromAggregatesToQueried().forEachRemaining(queryStep -> {
+
+			if (queryStepToValues.containsKey(queryStep)) {
+				// This typically happens on aggregator measures, as they are fed in a previous
+				// step. Here, we want to process a measure once its underlying steps are completed
+				return;
+			} else if (queryStep.getMeasure() instanceof Aggregator a) {
+				throw new IllegalStateException("Missing values for %s".formatted(a));
+			}
+
+			eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
+
+			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
+
+			List<AdhocQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
+
+			IStopwatch stepWatch = stopwatchFactory.createStarted();
+
+			Optional<ISliceToValue> optOutputColumn =
+					processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+
+			// Would be empty on table steps (leaves of the DAG)
+			optOutputColumn.ifPresent(outputColumn -> {
+				Duration elapsed = stepWatch.elapsed();
+				eventBus.post(QueryStepIsCompleted.builder()
+						.querystep(queryStep)
+						.nbCells(outputColumn.size())
+						.source(this)
+						.duration(elapsed)
+						.build());
+				queryStepsDag.registerExecutionFeedback(queryStep,
+						SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
+
+				queryStepToValues.put(queryStep, outputColumn);
+			});
+		});
+	}
+
+	protected Optional<ISliceToValue> processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,
+			AdhocQueryStep queryStep,
+			List<AdhocQueryStep> underlyingSteps,
+			IMeasure measure) {
+		if (underlyingSteps.isEmpty()) {
+			// This may happen on a Columnator which is missing a required column
+			return Optional.empty();
+		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
+			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
+				ISliceToValue values = queryStepToValues.get(underlyingStep);
+
+				if (values == null) {
+					throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+				}
+
+				return values;
+			}).toList();
+
+			// BEWARE It looks weird we have to call again `.wrapNode`
+			ITransformator hasUnderlyingQuerySteps = hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+			ISliceToValue coordinatesToValues;
+			try {
+				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+			} catch (RuntimeException e) {
+				StringBuilder describeStep = new StringBuilder();
+
+				describeStep.append("Issue computing columns for:").append("\r\n");
+
+				// First, we print only measure as a simplistic shorthand of the step
+				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
+						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
+				describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
+						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+
+				throw new IllegalStateException(describeStep.toString(), e);
+			}
+
+			return Optional.of(coordinatesToValues);
+		} else {
+			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
+		}
+	}
+
+	protected ITabularView toTabularView(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag,
+			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
+		if (queryStepToValues.isEmpty()) {
+			return MapBasedTabularView.empty();
+		}
+
+		long expectedOutputCardinality;
+		Iterator<AdhocQueryStep> stepsToReturn;
+		if (executingQueryContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
+			// BEWARE Should we return steps with same groupBy?
+			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
+			// What about measures appearing multiple times in the DAG?
+			stepsToReturn = new BreadthFirstIterator<>(queryStepsDag.getDag());
+			expectedOutputCardinality = 0;
+		} else {
+			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
+			stepsToReturn = queryStepsDag.getQueried().iterator();
+			expectedOutputCardinality =
+					queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
+		}
+
+		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
+				// Force a HashMap not to rely on default TreeMap
+				.coordinatesToValues(new HashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
+				.build();
+
+		stepsToReturn.forEachRemaining(step -> {
+			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
+			if (coordinatesToValues == null) {
+				// Happens on a Columnator missing a required column
+			} else {
+				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
+						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
+
+				IColumnScanner<SliceAsMap> baseRowScanner =
+						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
+
+				IColumnScanner<SliceAsMap> rowScanner;
+				if (isEmptyMeasure) {
+					rowScanner = slice -> {
+						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
+
+						// `emptyValue` may not empty as we needed to materialize it to get up to here
+						// But now is time to force it to null, while materializing the slice.
+						return new IValueReceiver() {
+
+							// This is useful to prevent boxing emptyValue when long
+							@Override
+							public void onLong(long v) {
+								sliceFeeder.onObject(null);
+							}
+
+							// This is useful to prevent boxing emptyValue when double
+							@Override
+							public void onDouble(double v) {
+								sliceFeeder.onObject(null);
+							}
+
+							@Override
+							public void onObject(Object v) {
+								sliceFeeder.onObject(null);
+							}
+						};
+					};
+				} else {
+					rowScanner = baseRowScanner;
+				}
+				coordinatesToValues.forEachSlice(rowScanner);
+			}
+		});
+		return mapBasedTabularView;
 	}
 
 }

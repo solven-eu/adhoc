@@ -41,7 +41,7 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
@@ -81,11 +81,11 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 	AdhocJooqTableWrapper table2 = new AdhocJooqTableWrapper(tableName2,
 			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
-	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
+	private AdhocCubeWrapper wrapInCube(IMeasureForest forest, AdhocJooqTableWrapper table) {
 		return AdhocCubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
-				.measures(measureBag)
+				.forest(forest)
 				.table(table)
 				.engine(aqe)
 				.build();
@@ -137,12 +137,12 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		IAdhocMeasureBag measureBagWithUnderlyings =
+		IMeasureForest measureBagWithUnderlyings =
 				compositeCubesTable.injectUnderlyingMeasures(measureBagWithoutUnderlyings);
 
 		AdhocCubeWrapper cube3 = AdhocCubeWrapper.builder()
 				.engine(aqe)
-				.measures(measureBagWithUnderlyings)
+				.forest(measureBagWithUnderlyings)
 				.table(compositeCubesTable)
 				.engine(aqe)
 				.build();
@@ -276,7 +276,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
 		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
-				.measures(AdhocMeasureBag.edit(initialCube3.getMeasures())
+				.forest(AdhocMeasureBag.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1Min")
 								.columnName("k1")

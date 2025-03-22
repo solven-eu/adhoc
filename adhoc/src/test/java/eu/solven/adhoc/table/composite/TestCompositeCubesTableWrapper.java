@@ -31,7 +31,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -47,13 +47,13 @@ import eu.solven.adhoc.table.sql.DuckDbHelper;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
-	private AdhocCubeWrapper wrapInCube(IAdhocMeasureBag measureBag, AdhocJooqTableWrapper table) {
+	private AdhocCubeWrapper wrapInCube(IMeasureForest forest, AdhocJooqTableWrapper table) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return AdhocCubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
-				.measures(measureBag)
+				.forest(forest)
 				.table(table)
 				.engine(aqe)
 				.build();
@@ -95,7 +95,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		IAdhocMeasureBag withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
 
 		Assertions.assertThat(withUnderlyings.getNameToMeasure().values())
 				.hasSize(6)

@@ -61,7 +61,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 		IAdhocTableWrapper adw = makeTableWrapper(operand);
 
-		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).measures(amb).table(adw).build();
+		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).forest(amb).table(adw).build();
 
 		return new AdhocCalciteSchema(aqw);
 	}

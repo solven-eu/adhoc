@@ -24,6 +24,9 @@ package eu.solven.adhoc.measure;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
@@ -35,6 +38,22 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  */
 public interface IHasMeasures {
 
-	Map<String, IMeasure> getNameToMeasure();
+	/**
+	 * This recalls such objects requires not to have {@link IMeasure} with conflicting names.
+	 * 
+	 * @return a {@link Map} from measure name to the measure.
+	 */
+	@JsonIgnore
+	default Map<String, IMeasure> getNameToMeasure() {
+		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(m -> m.getName(), m -> m));
+	}
+
+	/**
+	 * 
+	 * @return the {@link Set} of {@link IMeasure}
+	 */
+	default Set<IMeasure> getMeasures() {
+		return getNameToMeasure().values().stream().collect(Collectors.toSet());
+	}
 
 }

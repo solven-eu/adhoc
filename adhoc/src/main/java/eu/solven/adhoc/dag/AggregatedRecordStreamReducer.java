@@ -138,7 +138,8 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				continue;
 			}
 
-			if (EmptyAggregation.isEmpty(aggregatesMetadata.getAggregation(aggregatedMeasure).getAggregationKey())) {
+			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)
+					|| rawAggregations.stream().anyMatch(EmptyAggregation::isEmpty)) {
 				// TODO Introduce .onBoolean
 				valueConsumers.forEach(vc -> vc.onLong(0));
 			} else {

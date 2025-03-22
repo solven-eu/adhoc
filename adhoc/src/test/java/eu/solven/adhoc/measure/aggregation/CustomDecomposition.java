@@ -24,12 +24,15 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
@@ -43,5 +46,15 @@ public class CustomDecomposition implements IDecomposition {
 	@Override
 	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
 		return List.of();
+	}
+
+	@Override
+	public Set<String> getOutputColumns() {
+		return Set.of();
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		return CoordinatesSample.empty();
 	}
 }

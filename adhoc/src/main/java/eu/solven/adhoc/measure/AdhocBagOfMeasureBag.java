@@ -27,17 +27,17 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public class AdhocBagOfMeasureBag {
-	final Map<String, IAdhocMeasureBag> nameToMeasureBag = new TreeMap<>();
+	final Map<String, IMeasureForest> nameToMeasureBag = new TreeMap<>();
 
 	public int size() {
 		return nameToMeasureBag.size();
 	}
 
-	public IAdhocMeasureBag getBag(String name) {
+	public IMeasureForest getBag(String name) {
 		return nameToMeasureBag.get(name);
 	}
 
-	public AdhocBagOfMeasureBag putBag(String name, IAdhocMeasureBag bag) {
+	public AdhocBagOfMeasureBag putBag(String name, IMeasureForest bag) {
 		nameToMeasureBag.put(name, bag);
 
 		return this;

@@ -34,7 +34,7 @@ import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IAdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -44,7 +44,7 @@ import lombok.Builder;
 import lombok.Value;
 
 /**
- * Wraps together a Set of {@link IAdhocTableWrapper}, {@link IAdhocMeasureBag}, {@link IAdhocCubeWrapper} and
+ * Wraps together a Set of {@link IAdhocTableWrapper}, {@link IMeasureForest}, {@link IAdhocCubeWrapper} and
  * {@link IAdhocQuery}. It is typically used for use through an API.
  * 
  * @author Benoit Lacelle
@@ -57,17 +57,17 @@ public class AdhocSchema implements IAdhocSchema {
 
 	final Map<String, IAdhocTableWrapper> nameToTable = new ConcurrentHashMap<>();
 
-	final Map<String, IAdhocMeasureBag> nameToMeasure = new ConcurrentHashMap<>();
+	final Map<String, IMeasureForest> nameToForest = new ConcurrentHashMap<>();
 
 	final Map<String, IAdhocCubeWrapper> nameToCube = new ConcurrentHashMap<>();
 
 	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
-	public void registerCube(String cubeName, String tableName, String measuresName) {
+	public void registerCube(String cubeName, String tableName, String forestName) {
 		AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
 				.name(cubeName)
 				.engine(engine)
-				.measures(nameToMeasure.get(measuresName))
+				.forest(nameToForest.get(forestName))
 				.table(nameToTable.get(tableName))
 				.build();
 
@@ -87,7 +87,7 @@ public class AdhocSchema implements IAdhocSchema {
 			metadata.cube(name, cubeSchema.build());
 		});
 
-		nameToMeasure.forEach((name, measureBag) -> {
+		nameToForest.forEach((name, measureBag) -> {
 			List<IMeasure> measures = ImmutableList.copyOf(measureBag.getNameToMeasure().values());
 			metadata.measureBag(name, measures);
 		});
@@ -118,8 +118,8 @@ public class AdhocSchema implements IAdhocSchema {
 		nameToTable.put(table.getName(), table);
 	}
 
-	public void registerMeasureBag(IAdhocMeasureBag measureBag) {
-		nameToMeasure.put(measureBag.getName(), measureBag);
+	public void registerMeasureBag(IMeasureForest measureBag) {
+		nameToForest.put(measureBag.getName(), measureBag);
 	}
 
 	// public void registerMeasure(String measureBagName, IMeasure measure) {

@@ -67,7 +67,7 @@ public class TestTableQuery_CalculatedColumn extends ADuckDbJooqTest implements 
 		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("azerty", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("word"), DSL.field("k1")).values("qwerty", 234).execute();
 
-		measures.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		ITabularView result =
 				aqe.executeUnsafe(
@@ -77,7 +77,7 @@ public class TestTableQuery_CalculatedColumn extends ADuckDbJooqTest implements 
 										.of(CalculatedColumn.builder().name("first_letter").sql("word[1]").build()))
 								.debug(true)
 								.build(),
-						measures,
+						forest,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

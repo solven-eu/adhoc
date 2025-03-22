@@ -140,10 +140,10 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measures.addMeasure(k1Sum);
-		measures.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).build(), measures, table);
+		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -160,11 +160,11 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measures.addMeasure(k1Sum);
-		measures.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), measures, table);
+				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -182,12 +182,12 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measures.addMeasure(k1Sum);
-		measures.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
 				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
-						measures,
+						forest,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -207,14 +207,14 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 				""");
 		dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
 
-		measures.addMeasure(k1Sum);
-		measures.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
 		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder()
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")
-				.build(), measures, table);
+				.build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

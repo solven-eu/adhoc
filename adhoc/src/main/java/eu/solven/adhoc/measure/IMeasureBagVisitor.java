@@ -24,6 +24,6 @@ package eu.solven.adhoc.measure;
 
 public interface IMeasureBagVisitor {
 
-	IAdhocMeasureBag addMeasures(IAdhocMeasureBag adhocMeasureBag);
+	IMeasureForest addMeasures(IMeasureForest adhocMeasureBag);
 
 }

@@ -48,7 +48,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 	IAdhocColumnsManager columnsManager =
 			AdhocColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
 	AdhocCubeWrapper aqw =
-			AdhocCubeWrapper.builder().table(rows).engine(aqe).measures(amb).columnsManager(columnsManager).build();
+			AdhocCubeWrapper.builder().table(rows).engine(aqe).forest(amb).columnsManager(columnsManager).build();
 
 	@Override
 	@BeforeEach

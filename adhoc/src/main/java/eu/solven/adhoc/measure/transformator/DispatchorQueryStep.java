@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DispatchorQueryStep extends ATransformator implements ITransformator {
 	final Dispatchor dispatchor;
-	final IOperatorsFactory transformationFactory;
+	final IOperatorsFactory operatorsFactory;
 
 	@Getter
 	final AdhocQueryStep step;
@@ -82,7 +82,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	}
 
 	protected IDecomposition makeDecomposition() {
-		return transformationFactory.makeDecomposition(dispatchor.getDecompositionKey(),
+		return operatorsFactory.makeDecomposition(dispatchor.getDecompositionKey(),
 				dispatchor.getDecompositionOptions());
 	}
 
@@ -103,7 +103,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 			throw new IllegalArgumentException("A dispatchor expects a single underlying");
 		}
 
-		IAggregation agg = transformationFactory.makeAggregation(dispatchor.getAggregationKey());
+		IAggregation agg = operatorsFactory.makeAggregation(dispatchor.getAggregationKey());
 
 		IMultitypeMergeableColumn<SliceAsMap> aggregatingView =
 				MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();

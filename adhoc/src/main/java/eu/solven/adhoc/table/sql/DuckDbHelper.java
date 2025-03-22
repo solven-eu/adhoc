@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.duckdb.DuckDBConnection;
-import org.duckdb.DuckDBResultSet.DuckDBBlobResult;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 

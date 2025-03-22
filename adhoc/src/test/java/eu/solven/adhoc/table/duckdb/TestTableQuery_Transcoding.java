@@ -59,8 +59,8 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 	DSLSupplier dslSupplier = DSLSupplier.fromConnection(() -> dbConn);
 
 	{
-		measures.addMeasure(k1Sum);
-		measures.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 	}
 
 	private AdhocCubeWrapper makecube(IAdhocTableTranscoder transcoder) {
@@ -70,7 +70,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 		AdhocCubeWrapper cubeWrapper = AdhocCubeWrapper.builder()
 				.engine(aqe)
 				.table(table)
-				.measures(measures)
+				.forest(forest)
 				.columnsManager(AdhocColumnsManager.builder().transcoder(transcoder).build())
 				.build();
 
@@ -119,7 +119,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 		{
 			// There is an aggregator which name is also an underlying column: it does not be reverseTranscoded
 			Aggregator kSum = Aggregator.builder().name("k").aggregationKey(SumAggregation.KEY).build();
-			measures.addMeasure(kSum);
+			forest.addMeasure(kSum);
 
 			// We request both k1 and k, which are the same in DB
 			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
@@ -169,7 +169,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 		{
 			Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
 			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregation.KEY).build();
-			measures.addMeasure(k3Sum).addMeasure(k4Sum);
+			forest.addMeasure(k3Sum).addMeasure(k4Sum);
 
 			ITabularView view = cube.execute(AdhocQuery.builder()
 					.measure(k1Sum.getName(), k2Sum.getName(), k3Sum.getName(), k4Sum.getName())
@@ -215,7 +215,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 
 		{
 			Aggregator k5Sum = Aggregator.builder().name("k5").aggregationKey(SumAggregation.KEY).build();
-			measures.addMeasure(k5Sum);
+			forest.addMeasure(k5Sum);
 
 			ITabularView view = cube
 					.execute(AdhocQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
@@ -240,7 +240,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).build();
 
-			measures.addMeasure(k1Sum);
+			forest.addMeasure(k1Sum);
 
 			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -277,7 +277,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 			AdhocQuery query =
 					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k2").build();
 
-			measures.addMeasure(k1Sum);
+			forest.addMeasure(k1Sum);
 
 			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -336,7 +336,7 @@ public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdho
 				.execute();
 
 		Aggregator vRedSum = Aggregator.builder().name("v_RED").aggregationKey(ExpressionAggregation.KEY).build();
-		measures.addMeasure(vRedSum);
+		forest.addMeasure(vRedSum);
 
 		{
 			AdhocQuery query = AdhocQuery.builder().measure("v_RED").build();
