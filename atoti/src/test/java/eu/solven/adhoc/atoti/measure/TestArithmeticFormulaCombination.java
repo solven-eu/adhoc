@@ -31,7 +31,7 @@ import org.mockito.Mockito;
 
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 
-import eu.solven.adhoc.slice.ISliceWithStep;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 
 public class TestArithmeticFormulaCombination {
 

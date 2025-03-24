@@ -34,15 +34,15 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.cube.AdhocCubeWrapper.AdhocCubeWrapperBuilder;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
- * Helps testing anything related with a {@link AdhocMeasureBag} or a {@link AdhocQueryEngine}
+ * Helps testing anything related with a {@link MeasureForest} or a {@link AdhocQueryEngine}
  * 
  * @author Benoit Lacelle
  *
@@ -50,8 +50,8 @@ import eu.solven.adhoc.util.IStopwatchFactory;
 public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
 	public final Object toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel();
-	public final UnsafeAdhocMeasureBag amb =
-			UnsafeAdhocMeasureBag.builder().name(this.getClass().getSimpleName()).build();
+	public final UnsafeMeasureForestBag amb =
+			UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
 
 	public IStopwatch makeStopwatch() {
 		return Stopwatch.createStarted()::elapsed;

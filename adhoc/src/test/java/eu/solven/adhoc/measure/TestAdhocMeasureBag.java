@@ -36,7 +36,7 @@ public class TestAdhocMeasureBag {
 
 	@Test
 	public void testReplaceMeasure() {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testReplaceMeasure").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testReplaceMeasure").build();
 		measureBag.addMeasure(inital);
 		measureBag.addMeasure(later);
 
@@ -47,7 +47,7 @@ public class TestAdhocMeasureBag {
 	public void testFromList() {
 		Assertions
 				.assertThatThrownBy(
-						() -> AdhocMeasureBag.fromMeasures("testReplaceMeasure", Arrays.asList(inital, later)))
+						() -> MeasureForest.fromMeasures("testReplaceMeasure", Arrays.asList(inital, later)))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

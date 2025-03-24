@@ -67,7 +67,7 @@ public class TestTransformator_Combinator_Exception extends ADagTest implements 
 	public void testOnException() {
 		Assertions
 				.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure("sumK1K2_OK", "sumK1K2_KO").build()))
-				.isInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(IllegalStateException.class)
 				.hasStackTraceContaining("Issue evaluating sumK1K2_KO over [468, 690]");
 	}
 

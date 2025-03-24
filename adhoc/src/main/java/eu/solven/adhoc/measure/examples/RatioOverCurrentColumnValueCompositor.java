@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.examples;
 
 import java.util.Arrays;
 
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -52,7 +52,7 @@ public class RatioOverCurrentColumnValueCompositor {
 		// We ensure the filter is compatible (e.g. a multi-selection with no groupBy would not be compatible)
 		String validMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, "current");
 
-		return AdhocMeasureBag.edit(measureBag)
+		return MeasureForest.edit(measureBag)
 
 				// A Bucketor will make explicit what's the current value for requested column
 				// Filter the specific country: if we were filtering color=red, this filters both color and country

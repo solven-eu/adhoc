@@ -30,7 +30,7 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 /**
  * Holds the logic mapping from the columns names in {@link IAdhocQuery} and columnNames in {@link IAdhocTableWrapper}.
  * <p>
- * This enables re-using a {@link eu.solven.adhoc.measure.AdhocMeasureBag} for different {@link IAdhocTableWrapper}.
+ * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link IAdhocTableWrapper}.
  *
  * @see TranscodingContext
  * @see IAdhocTableReverseTranscoder

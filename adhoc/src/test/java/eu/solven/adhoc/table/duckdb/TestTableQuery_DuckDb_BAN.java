@@ -48,6 +48,12 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Some integrations tests over `https://www.data.gouv.fr/fr/datasets/ban-format-parquet/`. It is a ~500MB Parquet
+ * files, with a 26 million cardinality `id` field and a bunch of fields meaningful to any human.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestConstants {
 	static {

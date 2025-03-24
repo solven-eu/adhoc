@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.query.StandardQueryOptions;
 
 /**
  * Holds various details/metadata/enrichment about the application.
@@ -42,16 +43,17 @@ public class PivotableMetadataController {
 	public Map<String, ?> getMetadata() {
 		Map<String, Object> metadata = new LinkedHashMap<>();
 
-		// {
-		// Map<String, Object> tagsMetadata = new LinkedHashMap<>();
-		// tagsMetadata.put(IGameMetadataConstants.TAG_OPTIMIZATION,
-		// "The goal is to find the best solution for given problem. Any player can join.");
-		// tagsMetadata.put(IGameMetadataConstants.TAG_1V1,
-		// "We need exactly 2 players, to play one against the other");
-		// tagsMetadata.put(IGameMetadataConstants.TAG_PERFECT_INFORMATION, "All players can see the whole board");
-		//
-		// metadata.put("tags", tagsMetadata);
-		// }
+		{
+			Map<String, Object> queryOptions = new LinkedHashMap<>();
+			queryOptions.put(StandardQueryOptions.DEBUG.toString(),
+					"Forces the query to be executed with `debug=true`. Very fine-grained information are added in logs");
+			queryOptions.put(StandardQueryOptions.EXPLAIN.toString(),
+					"Forces the query to be executed with `explain=true`. Query informative information are added in logs");
+			queryOptions.put(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.toString(),
+					"Unknown measures should be treated as empty. By default, they lead to an exception.");
+
+			metadata.put("query_options", queryOptions);
+		}
 
 		return metadata;
 	}

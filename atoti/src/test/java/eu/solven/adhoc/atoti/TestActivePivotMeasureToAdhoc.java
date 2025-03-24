@@ -44,9 +44,13 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
 import eu.solven.adhoc.atoti.custom.CustomActivePivotConditionCubeToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -90,7 +94,7 @@ public class TestActivePivotMeasureToAdhoc {
 		IActivePivotInstanceDescription cubeDescription =
 				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -119,7 +123,7 @@ public class TestActivePivotMeasureToAdhoc {
 				;
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -161,7 +165,7 @@ public class TestActivePivotMeasureToAdhoc {
 									Arrays.asList(new EqualCondition("someValue"), new EqualCondition(123)));
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -195,7 +199,7 @@ public class TestActivePivotMeasureToAdhoc {
 							.withProperty(StoreLookupPostProcessor.STORE_NAME_PROPERTY, "someStoreName");
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -232,7 +236,7 @@ public class TestActivePivotMeasureToAdhoc {
 							.withProperty("customKey", "customValue");
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -272,7 +276,7 @@ public class TestActivePivotMeasureToAdhoc {
 							.withProperty("customKey", "customValue");
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
@@ -305,7 +309,7 @@ public class TestActivePivotMeasureToAdhoc {
 							.withProperty("customKey", "customValue");
 				}).withSingleLevelDimension("someL").build();
 
-		AdhocMeasureBag adhoc =
+		IMeasureForest adhoc =
 				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())

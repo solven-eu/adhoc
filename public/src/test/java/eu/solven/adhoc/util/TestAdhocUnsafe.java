@@ -31,4 +31,16 @@ public class TestAdhocUnsafe {
 		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(5);
 		Assertions.assertThat(AdhocUnsafe.limitCoordinates).isEqualTo(100);
 	}
+
+	@Test
+	public void testParse() {
+		String someKey = "TestAdhocUnsafe.testProperty";
+
+		// The `_` syntax is not managed by `Integer.getInteger`
+		System.setProperty(someKey, "10_000_000");
+		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(123);
+
+		System.setProperty(someKey, "10000000");
+		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(10_000_000);
+	}
 }

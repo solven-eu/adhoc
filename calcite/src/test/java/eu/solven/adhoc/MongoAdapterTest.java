@@ -43,7 +43,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**
@@ -60,7 +60,7 @@ public class MongoAdapterTest {
 
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
-	public final AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
+	public final MeasureForest amb = MeasureForest.builder().build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();

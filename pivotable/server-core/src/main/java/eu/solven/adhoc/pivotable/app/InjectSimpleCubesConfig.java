@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -100,7 +100,7 @@ public class InjectSimpleCubesConfig {
 						.build())
 				.build());
 
-		schema.registerMeasureBag(AdhocMeasureBag.fromMeasures("simple", measures));
+		schema.registerMeasureBag(MeasureForest.fromMeasures("simple", measures));
 
 		schema.registerCube("simple", "simple", "simple");
 	}

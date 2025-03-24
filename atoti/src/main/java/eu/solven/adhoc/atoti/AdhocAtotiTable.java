@@ -41,11 +41,11 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.record.AggregatedRecordOverMaps;
-import eu.solven.adhoc.record.IAggregatedRecord;
-import eu.solven.adhoc.record.IAggregatedRecordStream;
-import eu.solven.adhoc.record.SuppliedAggregatedRecordStream;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
@@ -73,7 +73,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
-	public IAggregatedRecordStream streamSlices(TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();
@@ -93,7 +93,7 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 		}
 
 		// TODO Return as an Iterator/Stream
-		List<IAggregatedRecord> asList = new ArrayList<>();
+		List<ITabularRecord> asList = new ArrayList<>();
 
 		result.forEachLocation(location -> {
 			asList.add(asMap(tableQuery, result, location));
@@ -101,17 +101,17 @@ public class AdhocAtotiTable implements IAdhocTableWrapper {
 			return true;
 		});
 
-		return new SuppliedAggregatedRecordStream(tableQuery, asList::stream);
+		return new SuppliedTabularRecordStream(tableQuery, asList::stream);
 	}
 
-	private IAggregatedRecord asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {
+	protected ITabularRecord asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {
 		Map<String, Object> groupBys = new LinkedHashMap<>();
 
 		dbQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
 			groupBys.put(column, getColumnCoordinate(dbQuery, result, locationIndex, column));
 		});
 
-		return AggregatedRecordOverMaps.builder().aggregates(Map.of()).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).groupBys(groupBys).build();
 	}
 
 	private Object getColumnCoordinate(TableQuery dbQuery, ICellSet result, int locationIndex, String column) {

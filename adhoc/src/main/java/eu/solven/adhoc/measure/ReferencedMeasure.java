@@ -36,7 +36,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * This is useful to refer to an existing {@link IMeasure} in the {@link AdhocMeasureBag}, hence preventing to need to
+ * This is useful to refer to an existing {@link IMeasure} in the {@link MeasureForest}, hence preventing to need to
  * provide its definition.
  * 
  * @author Benoit Lacelle

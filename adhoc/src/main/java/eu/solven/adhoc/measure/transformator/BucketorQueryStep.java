@@ -88,14 +88,17 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView =
-				MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
 
 		ICombination combinator = combinationSupplier.get();
 
 		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
 
 		return SliceToValue.builder().column(aggregatingView).build();
+	}
+
+	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
+		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
 	@Override

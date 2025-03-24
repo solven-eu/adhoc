@@ -158,7 +158,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 			String eMsg = "Issue executing query=%s options=%s".formatted(executingQueryContext.getQuery(),
 					executingQueryContext.getOptions());
-			throw new IllegalArgumentException(eMsg, e);
+
+			if (e instanceof IllegalStateException illegalStateE) {
+				throw new IllegalStateException(eMsg, illegalStateE);
+			} else {
+				throw new IllegalArgumentException(eMsg, e);
+			}
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception

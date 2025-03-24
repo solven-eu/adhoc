@@ -40,9 +40,9 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -106,7 +106,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("a"), DSL.field("b"))
 					.values(345, 456, "a2", "b2")
 					.execute();
-			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName1).build();
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			measureBag.addMeasure(Aggregator.countAsterisk());
@@ -123,14 +123,15 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 			dsl.insertInto(DSL.table(tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("a"), DSL.field("c"))
 					.values(1234, 2345, "a1", "c1")
 					.execute();
-			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName2).build();
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Sum);
 			measureBag.addMeasure(Aggregator.countAsterisk());
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeAdhocMeasureBag measureBagWithoutUnderlyings = UnsafeAdhocMeasureBag.builder().name("composite").build();
+		UnsafeMeasureForestBag measureBagWithoutUnderlyings =
+				UnsafeMeasureForestBag.builder().name("composite").build();
 		measureBagWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
@@ -276,7 +277,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
 		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
-				.forest(AdhocMeasureBag.edit(initialCube3.getForest())
+				.forest(MeasureForest.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1Min")
 								.columnName("k1")

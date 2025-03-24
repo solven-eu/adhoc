@@ -142,6 +142,11 @@ public class PivotableApiRouter {
 								.parameter(parameterBuilder().name("column_color")
 										.description("A filter expression for column `color`")
 										.example("red"))
+
+								.parameter(parameterBuilder().name("query_option")
+										.description("A set of options (e.g. StandardQueryOptions)")
+										.example("red"))
+
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
 

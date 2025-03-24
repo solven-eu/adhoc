@@ -36,6 +36,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
@@ -101,6 +102,9 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		}
 		case ExpressionCombination.KEY: {
 			yield ExpressionCombination.parse(options);
+		}
+		case FindFirstCombination.KEY: {
+			yield new FindFirstCombination();
 		}
 		default:
 			yield defaultCombination(key, options);

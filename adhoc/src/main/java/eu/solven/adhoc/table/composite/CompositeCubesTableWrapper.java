@@ -48,9 +48,8 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
-import eu.solven.adhoc.measure.AdhocMeasureBag.AdhocMeasureBagBuilder;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -289,7 +288,7 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 				.filter(e -> e.getValue().size() >= 2)
 				.forEach(e -> log.info("measure={} is provided by cubes: {}", e.getKey(), e.getValue()));
 
-		AdhocMeasureBagBuilder builder = AdhocMeasureBag.edit(measureBag);
+		MeasureForest.MeasureForestBuilder builder = MeasureForest.edit(measureBag);
 
 		measuresToAdd.forEach(builder::measure);
 

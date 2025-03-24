@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -43,7 +43,7 @@ import lombok.ToString;
 import lombok.Value;
 
 /**
- * Given an {@link IAdhocQuery} and a {@link AdhocMeasureBag}, we need to compute each underlying measure at a given
+ * Given an {@link IAdhocQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
  * {@link IWhereGroupbyAdhocQuery}.
  * 
  * @author Benoit Lacelle

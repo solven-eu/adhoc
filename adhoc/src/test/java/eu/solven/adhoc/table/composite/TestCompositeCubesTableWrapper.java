@@ -32,7 +32,7 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -75,20 +75,20 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
 		AdhocCubeWrapper cube1;
 		{
-			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName1).build();
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		AdhocCubeWrapper cube2;
 		{
-			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name(tableName2).build();
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Max);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeAdhocMeasureBag measuresWithoutUnderlyings = UnsafeAdhocMeasureBag.builder().name("composite").build();
+		UnsafeMeasureForestBag measuresWithoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
 		measuresWithoutUnderlyings.addMeasure(k1Sum);
 		measuresWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 

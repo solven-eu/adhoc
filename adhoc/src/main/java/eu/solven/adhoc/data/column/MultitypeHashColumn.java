@@ -80,6 +80,17 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>();
 
 	/**
+	 * To be called before a guaranteed `add` operation.
+	 */
+	protected void checkSizeBeforeAdd() {
+		long size = size();
+		if (size >= AdhocUnsafe.limitColumnLength) {
+			throw new IllegalStateException(
+					"Can not grow as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnLength));
+		}
+	}
+
+	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
 	 * @param key
@@ -125,6 +136,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
+				checkSizeBeforeAdd();
 				measureToAggregateL.put(key, v);
 
 				if (safe) {
@@ -137,6 +149,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 			@Override
 			public void onDouble(double v) {
+				checkSizeBeforeAdd();
 				measureToAggregateD.put(key, v);
 
 				if (safe) {
@@ -149,6 +162,8 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 			@Override
 			public void onCharsequence(CharSequence v) {
+				checkSizeBeforeAdd();
+
 				String vAsString = v.toString();
 				measureToAggregateS.put(key, vAsString);
 
@@ -169,6 +184,8 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
 					onDouble(vAsPrimitive);
 				} else if (v instanceof CharSequence) {
+					checkSizeBeforeAdd();
+
 					String vAsString = v.toString();
 					measureToAggregateS.put(key, vAsString);
 
@@ -179,6 +196,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 						measureToAggregateO.remove(key);
 					}
 				} else if (v != null) {
+					checkSizeBeforeAdd();
 					measureToAggregateO.put(key, v);
 
 					if (safe) {

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.pivotable.app;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +35,7 @@ import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
@@ -62,10 +64,15 @@ public class InjectAdvancedCubesConfig {
 
 	// https://www.data.gouv.fr/fr/datasets/ban-format-parquet/
 	protected void registerBan(AdhocSchema schema) {
+		Path pathToParquet = Path.of("/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet");
+
+		if (!Files.isReadable(pathToParquet)) {
+			log.warn("path=`{}` is not readable", pathToParquet);
+		}
 		AdhocJooqTableWrapper table = new AdhocJooqTableWrapper("ban",
 				AdhocJooqTableWrapperParameters.builder()
 						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-						.table(DSL.table("'/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet'"))
+						.table(DSL.table("'%s'".formatted(pathToParquet)))
 						.build());
 
 		schema.registerTable(table);
@@ -74,7 +81,7 @@ public class InjectAdvancedCubesConfig {
 
 		measures.add(Aggregator.countAsterisk());
 
-		schema.registerMeasureBag(AdhocMeasureBag.fromMeasures("ban", measures));
+		schema.registerMeasureBag(MeasureForest.fromMeasures("ban", measures));
 
 		schema.registerCube("ban", "ban", "ban");
 	}

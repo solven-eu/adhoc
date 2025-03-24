@@ -41,10 +41,10 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.UnsafeAdhocMeasureBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -126,7 +126,7 @@ public class TestMeasuresSetFromResource {
 				// The first measure must be the explicit measure
 				.satisfies(m -> Assertions.assertThat(m.getName()).isEqualTo("k"));
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testDeepMeasuresAsUnderlyings", measures);
+		MeasureForest ams = MeasureForest.fromMeasures("testDeepMeasuresAsUnderlyings", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(11);
@@ -166,7 +166,7 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-0");
 				});
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testAnonymousUnderlyingNode", measures);
+		MeasureForest ams = MeasureForest.fromMeasures("testAnonymousUnderlyingNode", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(4);
@@ -237,7 +237,7 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.isEqualTo("c", "someString"));
 				});
 
-		AdhocMeasureBag ams = AdhocMeasureBag.fromMeasures("testWithFilter", measures);
+		MeasureForest ams = MeasureForest.fromMeasures("testWithFilter", measures);
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
@@ -272,13 +272,13 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testUnfiltrator() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testUnfiltrator").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testUnfiltrator").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.unfilterOnA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testUnfiltrator",
+		MeasureForest fromString = fromResource.loadBagFromResource("testUnfiltrator",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -302,13 +302,13 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testShiftor() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testShiftor").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testShiftor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.shiftorAisA1);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testShiftor",
+		MeasureForest fromString = fromResource.loadBagFromResource("testShiftor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -336,14 +336,14 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testBucketor() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testBucketor").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testBucketor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 		measureBag.addMeasure(IAdhocTestConstants.k2Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testBucketor",
+		MeasureForest fromString = fromResource.loadBagFromResource("testBucketor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -373,13 +373,13 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testDispatchor() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testDispatchor").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testDispatchor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.dispatchFrom0To100);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testDispatchor",
+		MeasureForest fromString = fromResource.loadBagFromResource("testDispatchor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -409,14 +409,14 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testCustomMeasure() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testCustomMeasure").build();
+		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testCustomMeasure").build();
 
 		measureBag.addMeasure(
 				CustomMeasureForResource.builder().name("someCustomName").customProperty("customValue").build());
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testCustomMeasure",
+		MeasureForest fromString = fromResource.loadBagFromResource("testCustomMeasure",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -437,12 +437,13 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testAggregator_countAsterisk() throws IOException {
-		UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder().name("testAggregator_countAsterisk").build();
+		UnsafeMeasureForestBag measureBag =
+				UnsafeMeasureForestBag.builder().name("testAggregator_countAsterisk").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
 
 		String asString = fromResource.asString("json", measureBag);
-		AdhocMeasureBag fromString = fromResource.loadBagFromResource("testAggregator_countAsterisk",
+		MeasureForest fromString = fromResource.loadBagFromResource("testAggregator_countAsterisk",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -466,7 +467,7 @@ public class TestMeasuresSetFromResource {
 
 		Assertions.assertThat(obj.size()).isEqualTo(1);
 
-		AdhocMeasureBag bag = (AdhocMeasureBag) obj.getBag("niceBagName");
+		MeasureForest bag = (MeasureForest) obj.getBag("niceBagName");
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = MeasureBagTestHelpers.makeMeasuresDag(bag);
 
@@ -502,14 +503,14 @@ public class TestMeasuresSetFromResource {
 				.containsEntry("columnName", "legacyColumnName");
 
 		{
-			UnsafeAdhocMeasureBag measureBag = UnsafeAdhocMeasureBag.builder()
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder()
 					.name("testRemoveUselessProperties_Aggregator_differentColumnName")
 					.build();
 
 			measureBag.addMeasure(measure);
 
 			String asString = fromResource.asString("json", measureBag);
-			AdhocMeasureBag fromString =
+			MeasureForest fromString =
 					fromResource.loadBagFromResource("testRemoveUselessProperties_Aggregator_differentColumnName",
 							"json",
 							new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));

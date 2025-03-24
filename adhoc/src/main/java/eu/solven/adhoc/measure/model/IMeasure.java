@@ -29,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.util.IHasName;
 
@@ -50,7 +50,7 @@ public interface IMeasure extends IHasName {
 
 	/**
 	 * 
-	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link AdhocMeasureBag}.
+	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link MeasureForest}.
 	 */
 	String getName();
 

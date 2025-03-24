@@ -63,12 +63,13 @@ public class PivotableQueryHandler {
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(cube));
 	}
 
-	private Mono<ServerResponse> executeQuery(Mono<TargetedAdhocQuery> queryOnSchemaMono) {
+	protected Mono<ServerResponse> executeQuery(Mono<TargetedAdhocQuery> queryOnSchemaMono) {
 		return queryOnSchemaMono.map(queryOnSchema -> {
 			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
 
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery(), queryOnSchema.getOptions());
 		})
+				// ListBasedTabularView is serializable with Jackson
 				.map(view -> ListBasedTabularView.load(view))
 				.flatMap(view -> ServerResponse.ok()
 						.contentType(MediaType.APPLICATION_JSON)

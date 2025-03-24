@@ -31,13 +31,19 @@ import lombok.extern.slf4j.Slf4j;
 public class AdhocUnsafe {
 
 	static {
+		reloadProperties();
+	}
+
+	public static void reloadProperties() {
 		// Customize with `-Dadhoc.limitOrdinalToString=15`
 		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
+		// Customize with `-Dadhoc.limitColumnLength=15`
+		limitColumnLength = safeLoadIntegerProperty("adhoc.limitColumnLength", 10_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
 	}
 
-	private static int safeLoadIntegerProperty(String key, int defaultValue) {
+	static int safeLoadIntegerProperty(String key, int defaultValue) {
 		try {
 			return Integer.getInteger(key, defaultValue);
 		} catch (RuntimeException e) {
@@ -56,4 +62,10 @@ public class AdhocUnsafe {
 	 */
 	// TODO This should be a pivotable custom parameter
 	public static int limitCoordinates;
+
+	/**
+	 * Used to prevent one query consuming too much memory. This applied to both pre-aggregated columns, and
+	 * transformator columns.
+	 */
+	public static int limitColumnLength;
 }

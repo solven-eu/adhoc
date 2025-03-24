@@ -105,14 +105,17 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		IAggregation agg = operatorsFactory.makeAggregation(dispatchor.getAggregationKey());
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView =
-				MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
 
 		IDecomposition decomposition = makeDecomposition();
 
 		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, aggregatingView));
 
 		return SliceToValue.builder().column(aggregatingView).build();
+	}
+
+	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
+		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
 	protected void onSlice(List<? extends ISliceToValue> underlyings,

@@ -94,7 +94,12 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
-			throw new RuntimeException("Issue processing stream from %s".formatted(stream), e);
+			String msgE = "Issue processing stream from %s".formatted(stream);
+			if (e instanceof IllegalStateException illegalStateE) {
+				throw new IllegalStateException(msgE, illegalStateE);
+			} else {
+				throw new RuntimeException(msgE, e);
+			}
 		}
 
 		return grid;

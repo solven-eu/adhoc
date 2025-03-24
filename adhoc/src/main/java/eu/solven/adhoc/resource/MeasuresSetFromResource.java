@@ -44,8 +44,8 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -66,7 +66,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps reading and writing {@link AdhocMeasureBag} into resource files.
+ * Helps reading and writing {@link MeasureForest} into resource files.
  *
  * @author Benoit Lacelle
  *
@@ -87,10 +87,10 @@ public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
-	public AdhocMeasureBag loadToBag(String name, Collection<? extends Map<String, ?>> measuresAsMap) {
+	public MeasureForest loadToBag(String name, Collection<? extends Map<String, ?>> measuresAsMap) {
 		List<IMeasure> measures = measuresAsMap.stream().flatMap(m -> makeMeasure(m).stream()).toList();
 
-		return AdhocMeasureBag.builder().name(name).measures(measures).build();
+		return MeasureForest.builder().name(name).measures(measures).build();
 	}
 
 	/**
@@ -394,7 +394,7 @@ public class MeasuresSetFromResource {
 		return minimizingDistance;
 	}
 
-	public AdhocMeasureBag loadBagFromResource(String name, String format, Resource resource) throws IOException {
+	public MeasureForest loadBagFromResource(String name, String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -425,11 +425,11 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	protected AdhocMeasureBag makeBag(String name, List<Map<String, ?>> rawMeasures) {
+	protected MeasureForest makeBag(String name, List<Map<String, ?>> rawMeasures) {
 		List<IMeasure> measures =
 				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
 
-		return AdhocMeasureBag.fromMeasures(name, measures);
+		return MeasureForest.fromMeasures(name, measures);
 	}
 
 	public String asString(String format, IMeasureForest amb) {

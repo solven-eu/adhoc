@@ -48,9 +48,17 @@ import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -77,8 +85,8 @@ public class ActivePivotMeasureToAdhoc {
 	@Getter
 	final ActivePivotConditionCubeToAdhoc apConditionToAdhoc = new ActivePivotConditionCubeToAdhoc();
 
-	public AdhocMeasureBag asBag(String pivotId, IActivePivotDescription desc) {
-		AdhocMeasureBag adhocMeasureSet = AdhocMeasureBag.builder().name(pivotId).build();
+	public IMeasureForest asBag(String pivotId, IActivePivotDescription desc) {
+		MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);
 
 		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
 		desc.getMeasuresDescription().getNativeMeasures().forEach(nativeMeasure -> {
@@ -89,7 +97,7 @@ public class ActivePivotMeasureToAdhoc {
 				return;
 			}
 
-			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
+			measureForest.measure(aggregatorBuilder.build());
 		});
 		if (desc.getMeasuresDescription()
 				.getNativeMeasures()
@@ -100,7 +108,7 @@ public class ActivePivotMeasureToAdhoc {
 					.name(IMeasureHierarchy.COUNT_ID)
 					.aggregationKey(CountAggregation.KEY)
 					.columnName(ICountMeasuresConstants.ASTERISK);
-			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
+			measureForest.measure(aggregatorBuilder.build());
 
 			// Do not add update.TIMESTAMP as it is any way ambiguous regarding the underlying columnName
 		}
@@ -114,7 +122,7 @@ public class ActivePivotMeasureToAdhoc {
 
 			transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
 
-			adhocMeasureSet.addMeasure(aggregatorBuilder.build());
+			measureForest.measure(aggregatorBuilder.build());
 		});
 
 		IExtendedPlugin<IPostProcessor<?>> extendedPluginFactory = Registry.getExtendedPlugin(IPostProcessor.class);
@@ -132,10 +140,10 @@ public class ActivePivotMeasureToAdhoc {
 				asMeasures.addAll(onAdvancedPostProcessor(measure));
 			}
 
-			asMeasures.forEach(adhocMeasureSet::addMeasure);
+			asMeasures.forEach(measureForest::measure);
 		});
 
-		return adhocMeasureSet;
+		return measureForest.build();
 	}
 
 	protected Aggregator.AggregatorBuilder convertNativeMeasure(INativeMeasureDescription nativeMeasure) {

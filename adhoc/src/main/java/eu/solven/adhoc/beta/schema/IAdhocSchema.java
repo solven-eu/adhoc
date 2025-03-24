@@ -24,19 +24,35 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.Set;
 
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.table.IAdhocTableWrapper;
 
 /**
- * Wraps together the core structures of Adhoc
+ * Wraps together the core structures of Adhoc.
+ * 
+ * A schema is a bunch of {@link IAdhocTableWrapper}, {@link IMeasureForest} and {@link IAdhocCubeWrapper}.
  * 
  * @author Benoit Lacelle
  */
 public interface IAdhocSchema {
 
+	/**
+	 * 
+	 * @return the metadata of this instance.
+	 */
 	EndpointSchemaMetadata getMetadata();
 
+	/**
+	 * 
+	 * @param cube
+	 * @param query
+	 * @param options
+	 * @return an {@link ITabularView} as computed for given query.
+	 */
 	ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options);
 
 }

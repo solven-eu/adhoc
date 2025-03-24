@@ -33,7 +33,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -56,7 +56,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 	@Override
 	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
-		AdhocMeasureBag amb = AdhocMeasureBag.builder().build();
+		MeasureForest amb = MeasureForest.builder().build();
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 		IAdhocTableWrapper adw = makeTableWrapper(operand);

@@ -35,9 +35,9 @@ import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.IQueryOption;
@@ -52,7 +52,7 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link AdhocMeasureBag} and a {@link IAdhocTableWrapper}.
+ * Combines an {@link AdhocQueryEngine}, including its {@link MeasureForest} and a {@link IAdhocTableWrapper}.
  * 
  * @author Benoit Lacelle
  *

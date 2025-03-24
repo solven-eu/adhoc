@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.examples;
 
 import java.util.Arrays;
 
-import eu.solven.adhoc.measure.AdhocMeasureBag;
 import eu.solven.adhoc.measure.IMeasureBagVisitor;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -45,12 +45,12 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
  *
  */
 public class RatioOverSpecificColumnValueCompositor {
-	public AdhocMeasureBag addTo(IMeasureForest measureBag, String column, String value, String underlying) {
+	public MeasureForest addTo(IMeasureForest measureBag, String column, String value, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, value);
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, value);
 		String ratioMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, value);
 
-		return AdhocMeasureBag.edit(measureBag)
+		return MeasureForest.edit(measureBag)
 				// Filter the specific country: if we were filtering color=red, this filters both color and country
 				.measure(Filtrator.builder()
 						.name(sliceMeasureName)
