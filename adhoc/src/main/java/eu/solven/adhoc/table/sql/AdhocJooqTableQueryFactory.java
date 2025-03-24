@@ -95,15 +95,15 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 	DSLContext dslContext;
 
 	@Override
-	public ResultQuery<Record> prepareQuery(TableQuery dbQuery) {
+	public ResultQuery<Record> prepareQuery(TableQuery tableQuery) {
 		// `SELECT ...`
-		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(dbQuery);
+		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(tableQuery);
 
 		// `FROM ...`
 		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
 
 		// `WHERE ...`
-		Collection<Condition> dbAndConditions = toConditions(dbQuery);
+		Collection<Condition> dbAndConditions = toConditions(tableQuery);
 		// Typically happens on `COUNT(*)`
 		dbAndConditions.removeIf(c -> c instanceof True);
 
@@ -115,15 +115,15 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 		}
 
 		// `GROUP BY ...`
-		Collection<GroupField> groupFields = makeGroupingFields(dbQuery);
+		Collection<GroupField> groupFields = makeGroupingFields(tableQuery);
 		SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
 
 		// `ORDER BY ...`
 		ResultQuery<Record> resultQuery;
-		if (dbQuery.getTopClause().isPresent()) {
-			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(dbQuery);
+		if (tableQuery.getTopClause().isPresent()) {
+			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(tableQuery);
 
-			resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(dbQuery.getTopClause().getLimit());
+			resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(tableQuery.getTopClause().getLimit());
 		} else {
 			resultQuery = selectFromWhereGroupBy;
 		}

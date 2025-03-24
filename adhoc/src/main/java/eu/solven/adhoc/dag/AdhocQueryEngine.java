@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +63,7 @@ import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregator;
+import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -92,7 +93,10 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Slf4j
 public class AdhocQueryEngine implements IAdhocQueryEngine {
-	private static final String EMPTY_MEASURE_NAME = "$ADHOC$empty-" + UUID.randomUUID();
+	private final UUID engineId = UUID.randomUUID();
+
+	// This shall not conflict with any user measure
+	private final String emptyMeasureName = "$ADHOC$empty-" + engineId;
 
 	@NonNull
 	@Default
@@ -110,6 +114,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 
 		return stopwatch::elapsed;
 	};
+
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + "=" + engineId;
+	}
 
 	@Override
 	public ITabularView execute(ExecutingQueryContext executingQueryContext) {
@@ -411,7 +420,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	protected Set<TableQuery> prepareForTable(ExecutingQueryContext executingQueryContext,
 			QueryStepsDag queryStepsDag) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
-		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new HashMap<>();
+		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
 		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
@@ -424,7 +433,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				// We could analyze filters, to discard a query filter `k=v` if another query
 				// filters `k=v|v2`
 				measurelessToAggregators
-						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregator::unionSet);
+						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
 			} else if (leafMeasure instanceof EmptyMeasure) {
 				// ???
 			} else if (leafMeasure instanceof Columnator) {
@@ -440,7 +449,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			MeasurelessQuery measurelessQuery = e.getKey();
 			Set<Aggregator> leafAggregators = e.getValue();
 			return TableQuery.edit(measurelessQuery).aggregators(leafAggregators).build();
-		}).collect(Collectors.toSet());
+		}).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	protected void explainDagSteps(QueryStepsDag queryStepsDag) {
@@ -514,7 +523,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
-		return Aggregator.builder().name(EMPTY_MEASURE_NAME).aggregationKey(EmptyAggregation.KEY).build();
+		return Aggregator.builder().name(emptyMeasureName).aggregationKey(EmptyAggregation.KEY).build();
 	}
 
 	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {

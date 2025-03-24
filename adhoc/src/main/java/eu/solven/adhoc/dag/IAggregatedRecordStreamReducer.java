@@ -26,6 +26,11 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 
+/**
+ * Reduces a {@link ITabularRecordStream} (providing a stream of slices and aggregates) into a grid.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IAggregatedRecordStreamReducer {
 
 	IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream);

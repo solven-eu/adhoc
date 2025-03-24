@@ -35,7 +35,12 @@ import eu.solven.pepper.mappath.MapPathGet;
 import smile.math.MathEx;
 import smile.sort.QuickSelect;
 
-public class CustomVaRCombination implements ICombination {
+/**
+ * The VaR (e.g. quantile) computation, given an array.
+ * 
+ * @author Benoit Lacelle
+ */
+public class ExampleVaRCombination implements ICombination {
 
 	public static final String KEY = "QUANTILE";
 
@@ -43,7 +48,7 @@ public class CustomVaRCombination implements ICombination {
 
 	final double quantile;
 
-	public CustomVaRCombination(Map<String, ?> options) {
+	public ExampleVaRCombination(Map<String, ?> options) {
 		Optional<?> optRawQuantile = MapPathGet.getOptionalAs(options, P_QUANTILE);
 		if (optRawQuantile.isPresent()) {
 			Object rawQuantile = optRawQuantile.get();
@@ -55,6 +60,7 @@ public class CustomVaRCombination implements ICombination {
 				quantile = Double.parseDouble(rawQuantile.toString());
 			}
 		} else {
+			// Default quantile
 			quantile = 0.95D;
 		}
 

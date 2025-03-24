@@ -115,4 +115,75 @@ public class SimpleFilterEditor implements IFilterEditor {
 		}
 	}
 
+	/**
+	 * 
+	 * @param filter
+	 * @param retainedColumns
+	 * @return a filter where not retainedColumns columns are turned into `matchAll`
+	 */
+	public static IAdhocFilter retainsColumns(IAdhocFilter filter, Set<String> retainedColumns) {
+		if (filter instanceof IColumnFilter columnFilter) {
+			boolean isRetained = retainedColumns.contains(columnFilter.getColumn());
+
+			if (isRetained) {
+				return filter;
+			} else {
+				return IAdhocFilter.MATCH_ALL;
+			}
+		} else if (filter instanceof IAndFilter andFilter) {
+			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands()
+					.stream()
+					.map(subFilter -> retainsColumns(subFilter, retainedColumns))
+					.toList();
+
+			return AndFilter.and(unfilteredAnds);
+		} else {
+			throw new NotYetImplementedException("filter=%s".formatted(filter));
+		}
+	}
+
+	/**
+	 * 
+	 * @param filter
+	 * @param retainedColumns
+	 * @return a {@link IFilterEditor} where not retainedColumns are turned into `matchAll`
+	 */
+	public static IFilterEditor retainsColumns(Set<String> retainedColumns) {
+		return filter -> retainsColumns(filter, retainedColumns);
+	}
+
+	/**
+	 * 
+	 * @param suppressedColumns
+	 * @return a filter where suppressedColumns columns are turned into `matchAll`
+	 */
+	public static IAdhocFilter suppressColumn(IAdhocFilter filter, Set<String> suppressedColumns) {
+		if (filter instanceof IColumnFilter columnFilter) {
+			boolean isSuppressed = suppressedColumns.contains(columnFilter.getColumn());
+
+			if (isSuppressed) {
+				return IAdhocFilter.MATCH_ALL;
+			} else {
+				return filter;
+			}
+		} else if (filter instanceof IAndFilter andFilter) {
+			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands()
+					.stream()
+					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
+					.toList();
+
+			return AndFilter.and(unfilteredAnds);
+		} else {
+			throw new NotYetImplementedException("filter=%s".formatted(filter));
+		}
+	}
+
+	/**
+	 * 
+	 * @param suppressedColumns
+	 * @return an {@link IFilterEditor} which turns suppressedColumns into `matchAll`
+	 */
+	public static IFilterEditor suppressColumn(Set<String> suppressedColumns) {
+		return filter -> suppressColumn(filter, suppressedColumns);
+	}
 }

@@ -26,10 +26,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import lombok.Builder;
+import lombok.Singular;
 
 /**
  * A {@link ISlicedRecord} based on a {@link List} of {@link SliceAndMeasure}.
@@ -38,7 +42,8 @@ import lombok.Builder;
  */
 @Builder
 public class SlicedRecordFromSlices implements ISlicedRecord {
-	final List<IValueProvider> valueProviders;
+	@Singular
+	final ImmutableList<IValueProvider> valueProviders;
 
 	@Override
 	public boolean isEmpty() {
@@ -57,10 +62,10 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 
 	@Override
 	public String toString() {
-		return IntStream.range(0, size()).<String>mapToObj(index -> {
+		return IntStream.range(0, size()).mapToObj(index -> {
 			Object v = IValueProvider.getValue(vc -> read(index, vc));
 
-			return String.valueOf(v);
+			return AdhocDebug.toString(v);
 		}).collect(Collectors.joining(", ", "[", "]"));
 	}
 

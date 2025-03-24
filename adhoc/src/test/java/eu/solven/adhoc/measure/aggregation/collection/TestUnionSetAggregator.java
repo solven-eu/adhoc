@@ -20,34 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.measure.aggregation.collection;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
-/**
- * While {@link IValueReceiver} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
- * transmit data in the opposite direction.
- * <p>
- * {@link IValueProvider} can be seen as a way to send data/to be read from.
- * 
- * @author Benoit Lacelle
- * @see IValueReceiver
- */
-public interface IValueProvider {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	IValueProvider NULL = vc -> vc.onObject(null);
+public class TestUnionSetAggregator {
+	@Test
+	public void testUnion() {
+		UnionSetAggregation aggregation = new UnionSetAggregation();
 
-	void acceptConsumer(IValueReceiver valueReceiver);
+		Assertions.assertThat(aggregation.aggregate((Object) null, null)).isNull();
+		Assertions.assertThat(aggregation.aggregate(null, 123)).isEqualTo(Set.of(123));
 
-	static Object getValue(IValueProvider valueProvider) {
-		AtomicReference<Object> refV = new AtomicReference<>();
+		Assertions.assertThat(aggregation.aggregate("foo", null)).isEqualTo(Set.of("foo"));
 
-		valueProvider.acceptConsumer(refV::set);
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), null)).isEqualTo(Set.of("foo"));
+		Assertions.assertThat(aggregation.aggregate(null, Set.of("foo"))).isEqualTo(Set.of("foo"));
 
-		return refV.get();
-	}
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), Set.of("bar"))).isEqualTo(Set.of("foo", "bar"));
 
-	static IValueProvider setValue(Object o) {
-		return vc -> vc.onObject(o);
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), 123)).isEqualTo(Set.of("foo", 123));
+
+		// Check we do not re-use references
+		{
+			Set<String> input = Set.of("foo");
+			Set<?> output = aggregation.aggregate(input, null);
+			Assertions.assertThat(output).isEqualTo(Set.of("foo")).isNotSameAs(input);
+		}
 	}
 }

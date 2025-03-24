@@ -24,12 +24,17 @@ package eu.solven.adhoc.measure.aggregation.collection;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-public class UnionAggregator implements IAggregation {
+/**
+ * A generic `union`, including `Set` and `Map` unions.
+ * 
+ * @author Benoit Lacelle
+ */
+public class UnionAggregation implements IAggregation {
 
 	public static final String KEY = "UNION";
 
 	private final MapAggregator<Object, Object> mapAggregator = new MapAggregator<>();
-	private final UnionSetAggregator<Object> setAggregator = new UnionSetAggregator<>();
+	private final UnionSetAggregation setAggregator = new UnionSetAggregation();
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -42,21 +47,4 @@ public class UnionAggregator implements IAggregation {
 		}
 	}
 
-	// @Override
-	// public double aggregateDoubles(double l, double r) {
-	// if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
-	// return setAggregator.aggregateDoubles(l, r);
-	// } else {
-	// throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
-	// }
-	// }
-
-	// @Override
-	// public long aggregateLongs(long l, long r) {
-	// if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
-	// return setAggregator.aggregateLongs(l, r);
-	// } else {
-	// throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
-	// }
-	// }
 }

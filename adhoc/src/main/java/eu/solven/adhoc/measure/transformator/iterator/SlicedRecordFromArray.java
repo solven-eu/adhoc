@@ -23,10 +23,13 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import lombok.Builder;
+import lombok.Singular;
 
 /**
  * A simple {@link ISlicedRecord} based on a {@link List}. It is sub-optimal for performance, but very useful for
@@ -36,6 +39,8 @@ import lombok.Builder;
  */
 @Builder
 public class SlicedRecordFromArray implements ISlicedRecord {
+	// ImmutableList will not accept `null`. Should we introduce a placeholder for null?
+	@Singular
 	final List<?> measures;
 
 	@Override
@@ -55,7 +60,8 @@ public class SlicedRecordFromArray implements ISlicedRecord {
 
 	@Override
 	public String toString() {
-		return measures.toString();
+		// Some measure may be an int[]
+		return measures.stream().map(AdhocDebug::toString).collect(Collectors.joining(", ", "[", "]"));
 	}
 
 }

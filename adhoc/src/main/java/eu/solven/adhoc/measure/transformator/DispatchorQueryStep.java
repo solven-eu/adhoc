@@ -168,7 +168,9 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 					if (isDebug()) {
 						aggregatingView.onValue(coordinateAsSlice,
-								o -> log.info("[DEBUG] slice={} has been merged into agg={}", fragmentCoordinate, o));
+								o -> log.info("[DEBUG] slice={} has been merged into agg={}",
+										fragmentCoordinate,
+										AdhocDebug.toString(o)));
 					}
 				} else {
 					// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple

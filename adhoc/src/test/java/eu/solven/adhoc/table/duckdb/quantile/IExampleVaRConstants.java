@@ -20,34 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
-
-import java.util.concurrent.atomic.AtomicReference;
+package eu.solven.adhoc.table.duckdb.quantile;
 
 /**
- * While {@link IValueReceiver} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
- * transmit data in the opposite direction.
- * <p>
- * {@link IValueProvider} can be seen as a way to send data/to be read from.
+ * Various constants related to the example VaR.
  * 
  * @author Benoit Lacelle
- * @see IValueReceiver
  */
-public interface IValueProvider {
+public interface IExampleVaRConstants {
+	/**
+	 * Column enabling selecting scenarios by their index. The column should hold only integers.
+	 */
+	String C_SCENARIOINDEX = "scenarioIndex";
 
-	IValueProvider NULL = vc -> vc.onObject(null);
+	/**
+	 * Column enabling selecting scenarios by their name. This column would typically holds {@link String}.
+	 */
+	String C_SCENARIONAME = "scenarioName";
 
-	void acceptConsumer(IValueReceiver valueReceiver);
+	String NB_SCENARIO = "nbScenarios";
 
-	static Object getValue(IValueProvider valueProvider) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		valueProvider.acceptConsumer(refV::set);
-
-		return refV.get();
-	}
-
-	static IValueProvider setValue(Object o) {
-		return vc -> vc.onObject(o);
-	}
 }

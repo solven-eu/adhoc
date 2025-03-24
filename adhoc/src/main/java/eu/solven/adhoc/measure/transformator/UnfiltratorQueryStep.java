@@ -25,23 +25,37 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
 public class UnfiltratorQueryStep implements ITransformator {
+	@Getter
 	final Unfiltrator unfiltrator;
 	final AdhocQueryStep step;
+
+	final Supplier<IFilterEditor> filterEditor = Suppliers.memoize(() -> {
+		Unfiltrator unfiltrator = getUnfiltrator();
+
+		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
+		if (unfiltrator.isInverse()) {
+			return SimpleFilterEditor.retainsColumns(unfilteredColumns);
+		} else {
+			return SimpleFilterEditor.suppressColumn(unfilteredColumns);
+		}
+	});
 
 	public List<String> getUnderlyingNames() {
 		return unfiltrator.getUnderlyingNames();
@@ -57,28 +71,7 @@ public class UnfiltratorQueryStep implements ITransformator {
 	}
 
 	protected IAdhocFilter unfilter(IAdhocFilter filter) {
-		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
-
-		if (filter instanceof IColumnFilter columnFilter) {
-			boolean columnIsUnfiltered = unfilteredColumns.contains(columnFilter.getColumn());
-			boolean inverse = unfiltrator.isInverse();
-
-			// If inverse is false, we drop columnFilters on given columns
-			// If inverse is true, we keep columnFilters on given columns
-			boolean eraseFilter = columnIsUnfiltered ^ inverse;
-
-			if (eraseFilter) {
-				return IAdhocFilter.MATCH_ALL;
-			} else {
-				return filter;
-			}
-		} else if (filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands().stream().map(this::unfilter).toList();
-
-			return AndFilter.and(unfilteredAnds);
-		} else {
-			throw new NotYetImplementedException("filter=%s".formatted(filter));
-		}
+		return filterEditor.get().editFilter(filter);
 	}
 
 	@Override

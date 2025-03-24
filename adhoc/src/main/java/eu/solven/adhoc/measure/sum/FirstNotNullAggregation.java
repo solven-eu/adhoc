@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.measure.sum;
 
-import java.util.concurrent.atomic.AtomicReference;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * While {@link IValueReceiver} can be interpreted as a way to transmit data, {@link IValueProvider} is a way to
- * transmit data in the opposite direction.
- * <p>
- * {@link IValueProvider} can be seen as a way to send data/to be read from.
- * 
- * @author Benoit Lacelle
- * @see IValueReceiver
+ * Typically used for advanced {@link IDecomposition} where we know there will be no actual aggregation.
  */
-public interface IValueProvider {
+@Slf4j
+public class FirstNotNullAggregation implements IAggregation {
 
-	IValueProvider NULL = vc -> vc.onObject(null);
+	public static final String KEY = "FIRST";
 
-	void acceptConsumer(IValueReceiver valueReceiver);
-
-	static Object getValue(IValueProvider valueProvider) {
-		AtomicReference<Object> refV = new AtomicReference<>();
-
-		valueProvider.acceptConsumer(refV::set);
-
-		return refV.get();
-	}
-
-	static IValueProvider setValue(Object o) {
-		return vc -> vc.onObject(o);
+	@Override
+	public Object aggregate(Object l, Object r) {
+		if (l == null) {
+			return r;
+		} else if (r == null) {
+			return l;
+		} else if (l == r) {
+			return l;
+		} else {
+			throw new IllegalArgumentException(
+					"%s != %s".formatted(System.identityHashCode(l), System.identityHashCode(r)));
+		}
 	}
 }

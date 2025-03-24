@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-public class UnionSetAggregator<K> implements IAggregation {
+public class UnionSetAggregation implements IAggregation {
 
 	public static final String KEY = "UNION_SET";
 
@@ -37,32 +37,28 @@ public class UnionSetAggregator<K> implements IAggregation {
 	}
 
 	@Override
-	public Set<K> aggregate(Object l, Object r) {
-		Set<?> lAsSet = (Set<?>) l;
-		Set<?> rAsSet = (Set<?>) r;
+	public Set<?> aggregate(Object l, Object r) {
+		Set<?> lAsSet = wrapAsSet(l);
+		Set<?> rAsSet = wrapAsSet(r);
 
 		return aggregateSets(lAsSet, rAsSet);
 	}
 
-	protected Set<K> aggregateSets(Set<?> l, Set<?> r) {
-		if (l == null || l.isEmpty()) {
-			return (Set<K>) r;
-		} else if (r == null || r.isEmpty()) {
-			return (Set<K>) l;
+	protected Set<?> wrapAsSet(Object l) {
+		Set<?> lAsSet;
+		if (l == null) {
+			lAsSet = null;
+		} else if (l instanceof Set<?> lAsSetT) {
+			lAsSet = lAsSetT;
 		} else {
-			return (Set<K>) ImmutableSet.builder().addAll(l).addAll(r).build();
+			lAsSet = Set.of(l);
 		}
+		return lAsSet;
 	}
 
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// throw new UnsupportedOperationException("Can not %s on doubles".formatted(KEY));
-	// }
-
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// throw new UnsupportedOperationException("Can not %s on longs".formatted(KEY));
-	// }
+	protected Set<?> aggregateSets(Set<?> l, Set<?> r) {
+		return UnionSetAggregation.<Object>unionSet(l, r);
+	}
 
 	/**
 	 * This is useful to be used in {@link Map#}.merge
@@ -72,7 +68,17 @@ public class UnionSetAggregator<K> implements IAggregation {
 	 * @param right
 	 * @return
 	 */
-	public static <T> Set<T> unionSet(Set<T> left, Set<T> right) {
-		return new UnionSetAggregator<T>().aggregateSets(left, right);
+	public static <T> Set<T> unionSet(Set<? extends T> left, Set<? extends T> right) {
+		if (left == null) {
+			if (right == null) {
+				return null;
+			} else {
+				return ImmutableSet.copyOf(right);
+			}
+		} else if (right == null) {
+			return ImmutableSet.copyOf(left);
+		} else {
+			return ImmutableSet.<T>builder().addAll(left).addAll(right).build();
+		}
 	}
 }

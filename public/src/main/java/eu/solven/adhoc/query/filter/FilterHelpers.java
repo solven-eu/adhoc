@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * Utility method to help doing operations on {@link IAdhocFilter}.
  * 
  * @author Benoit Lacelle
+ * @see SimpleFilterEditor for write operations.
  */
 @Slf4j
 public class FilterHelpers {
@@ -80,36 +81,6 @@ public class FilterHelpers {
 					"filter=%s is not managed yet".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
 	}
-	//
-	//
-	// /**
-	// *
-	// * @param filter some {@link IAdhocFilter}, potentially complex
-	// * @param column some specific column
-	// * @param clazz the type of the expected value. Will throw if there is a filter with a not compatible type
-	// * @return
-	// * @param <T>
-	// */
-	// public <T> Optional<T> getEqualsOperand(IAdhocFilter filter, String column, Class<? extends T> clazz) {
-	// Optional<IValueMatcher> optValueMatcher = getValueMatcher(filter, column);
-	//
-	// return optvalueMatcher.map(valueMatcher -> {
-	// if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-	// Object rawOperand = equalsMatcher.getOperand();
-	//
-	// if (clazz.isInstance(rawOperand)) {
-	// T operandAsT = clazz.cast (rawOperand);
-	// return Optional.of(operandAsT);
-	// } else {
-	// throw new IllegalArgumentException("operand=%s is not instance of
-	// %s".formatted(PepperLogHelper.getObjectAndClass(rawOperand), clazz));
-	// }
-	// } else {
-	// // column is filtered but not with equals
-	// return Optional.empty();
-	// }
-	// });
-	// }
 
 	public static Map<String, Object> asMap(IAdhocFilter slice) {
 		if (slice.isMatchAll()) {

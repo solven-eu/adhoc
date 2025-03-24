@@ -20,21 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb.quantile;
+package eu.solven.adhoc.measure.transformator;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import java.util.Arrays;
 
-public class ArrayIndexNameCombination implements ICombination {
-	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		IAdhocFilter filter = slice.asFilter();
-
-		Integer scenarioIndex = (Integer) slice.getRawSliced("scenarioIndex");
-
-		return ICombination.super.combine(slice, slicedRecord);
+public class AdhocDebug {
+	protected AdhocDebug() {
+		// hidden
 	}
+
+	public static String toString(Object o) {
+		if (o instanceof int[] array) {
+			return Arrays.toString(array);
+		} else if (o instanceof long[] array) {
+			return Arrays.toString(array);
+		} else if (o instanceof float[] array) {
+			return Arrays.toString(array);
+		} else if (o instanceof double[] array) {
+			return Arrays.toString(array);
+		} else if (o instanceof Object[] array) {
+			return Arrays.deepToString(array);
+		} else {
+			return String.valueOf(o);
+		}
+	}
+
 }

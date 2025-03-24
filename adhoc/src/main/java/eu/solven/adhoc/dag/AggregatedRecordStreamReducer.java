@@ -48,9 +48,11 @@ import eu.solven.adhoc.query.table.TableQuery;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 @Value
 @Builder
+@Slf4j
 public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamReducer {
 	@NonNull
 	IOperatorsFactory operatorsFactory;
@@ -136,6 +138,12 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 			if (valueConsumers.isEmpty()) {
 				// BEWARE When does it happen? When requesting no measure and no groupBy?
 				continue;
+			}
+
+			if (executingQueryContext.isDebug()) {
+				Object aggregateValue = tableRow.getAggregate(aggregatedMeasure);
+
+				log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
 			}
 
 			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)

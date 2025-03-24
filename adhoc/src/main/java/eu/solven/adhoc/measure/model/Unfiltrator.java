@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,6 +35,8 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.UnfiltratorQueryStep;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -46,6 +49,8 @@ import lombok.extern.slf4j.Slf4j;
  * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link AdhocQueryStep}.
  * By removing a filter, we request underlying measures with a wider slice. It is typically useful to make ratios with a
  * parent slice.
+ * 
+ * If `inverse=true`, the filter is kept only for selected columns, which all others are turned into `matchAll`.
  *
  * @author Benoit Lacelle
  */
@@ -53,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
+public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveColumnGenerator {
 	@NonNull
 	String name;
 
@@ -68,8 +73,8 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	@Singular
 	Set<String> unfiltereds;
 
-	// By default, the unfiltered columns are removed from filters. Switch this to true if you wish to unfiltered all
-	// but these columns.
+	// By default, the selected columns are turned to `matchAll`.
+	// If true, only selected columns are kept; others are turned into `matchAll`.
 	@Default
 	boolean inverse = false;
 
@@ -86,7 +91,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 
 	public static class UnfiltratorBuilder {
 		/**
-		 * Use this if you want only given columns to remain filtered.
+		 * Use this if you want only given columns to be filtered, while others are turned into `matchAll`.
 		 *
 		 * @param column
 		 * @param moreColumns
@@ -99,6 +104,12 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 
 			return this;
 		}
+	}
+
+	@Override
+	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+		// TODO Auto-generated method stub
+		return Optional.empty();
 	}
 
 }
