@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
-public class TestTransformator_Combinator_LimitLength extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest implements IAdhocTestConstants {
 
 	@BeforeEach
 	public void setLimitTo2() {
@@ -83,11 +83,20 @@ public class TestTransformator_Combinator_LimitLength extends ADagTest implement
 	}
 
 	@Test
-	public void testGroupByK() {
+	public void testGroupByK_countAggregator() {
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
 		Assertions.assertThatThrownBy(
 				() -> aqw.execute(AdhocQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
+	}
+
+	@Test
+	public void testGroupByK_noAggregator() {
+		Assertions.setMaxStackTraceElementsDisplayed(300);
+
+		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().groupByAlso("k").build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
 	}

@@ -72,8 +72,7 @@ public class CountAggregation implements IAggregation, ILongAggregation {
 		return 0;
 	}
 
-	// @Override
-	// public CountHolder wrap(Object v) {
-	// return CountHolder.builder().count(((Number) v).longValue()).build();
-	// }
+	public static boolean isCount(String aggregationKey) {
+		return KEY.equals(aggregationKey) || CountAggregation.class.getName().equals(aggregationKey);
+	}
 }

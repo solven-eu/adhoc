@@ -32,32 +32,35 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
+
 /** Enumerator that reads from a MongoDB collection. */
 class MongoEnumerator implements Enumerator<Object> {
-	private final Iterator<? extends Map<String, ?>> cursor;
-	private final Function1<Map<String, ?>, Object> getter;
+	private final List<Entry<String, Class<?>>> fields;
+	private final Iterator<? extends ITabularRecord> cursor;
 	private @Nullable Object current;
 
 	/**
 	 * Creates a MongoEnumerator.
+	 * 
+	 * @param fields
 	 *
 	 * @param cursor
 	 *            Mongo iterator (usually a {@link com.mongodb.DBCursor})
 	 * @param getter
 	 *            Converts an object into a list of fields
 	 */
-	MongoEnumerator(Iterator<? extends Map<String, ?>> cursor, Function1<Map<String, ?>, Object> getter) {
+	MongoEnumerator(List<Entry<String, Class<?>>> fields, Iterator<? extends ITabularRecord> cursor) {
+		this.fields = fields;
 		this.cursor = cursor;
-		this.getter = getter;
 	}
 
 	@Override
@@ -72,8 +75,15 @@ class MongoEnumerator implements Enumerator<Object> {
 	public boolean moveNext() {
 		try {
 			if (cursor.hasNext()) {
-				Map<String, ?> map = cursor.next();
-				current = getter.apply(map);
+				ITabularRecord map = cursor.next();
+
+				if (fields.size() == 1) {
+					current = map.getAggregate(fields.getFirst().getKey());
+					// TODO Cast to proper type given `.getValue`
+				} else {
+					current = fields.stream().map(e -> map.getAggregate(e.getKey())).toArray();
+				}
+
 				return true;
 			} else {
 				current = null;
@@ -106,40 +116,6 @@ class MongoEnumerator implements Enumerator<Object> {
 		}
 		// AggregationOutput implements Iterator but not DBCursor. There is no
 		// available close() method -- apparently there is no open resource.
-	}
-
-	static Function1<Map<String, ?>, Map> mapGetter() {
-		return a0 -> (Map) a0;
-	}
-
-	/** Returns a function that projects a single field. */
-	static Function1<Map<String, ?>, Object> singletonGetter(final String fieldName, final Class fieldClass) {
-		return a0 -> convert(fieldName, a0.get(fieldName), fieldClass);
-	}
-
-	/**
-	 * Returns a function that projects fields.
-	 *
-	 * @param fields
-	 *            List of fields to project; or null to return map
-	 */
-	static Function1<Map<String, ?>, Object[]> listGetter(final List<Map.Entry<String, Class>> fields) {
-		return a0 -> {
-			Object[] objects = new Object[fields.size()];
-			for (int i = 0; i < fields.size(); i++) {
-				final Map.Entry<String, Class> field = fields.get(i);
-				final String name = field.getKey();
-				objects[i] = convert(name, a0.get(name), field.getValue());
-			}
-			return objects;
-		};
-	}
-
-	static Function1<Map<String, ?>, Object> getter(List<Map.Entry<String, Class>> fields) {
-		// noinspection unchecked
-		return fields == null ? (Function1) mapGetter()
-				: fields.size() == 1 ? singletonGetter(fields.get(0).getKey(), fields.get(0).getValue())
-						: (Function1) listGetter(fields);
 	}
 
 	/**

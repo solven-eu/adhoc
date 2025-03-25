@@ -47,7 +47,7 @@ import com.google.common.collect.ImmutableList;
  * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.
  */
-public class MongoTableScan extends TableScan implements MongoRel {
+public class MongoTableScan extends TableScan implements AdhocCalciteRel {
 	final MongoTable mongoTable;
 	final @Nullable RelDataType projectRowType;
 
@@ -65,7 +65,7 @@ public class MongoTableScan extends TableScan implements MongoRel {
 		super(cluster, traitSet, ImmutableList.of(), table);
 		this.mongoTable = requireNonNull(mongoTable, "mongoTable");
 		this.projectRowType = projectRowType;
-		checkArgument(getConvention() == MongoRel.CONVENTION);
+		checkArgument(getConvention() == AdhocCalciteRel.CONVENTION);
 	}
 
 	@Override
@@ -100,8 +100,8 @@ public class MongoTableScan extends TableScan implements MongoRel {
 	}
 
 	@Override
-	public void implement(Implementor implementor) {
-		implementor.mongoTable = mongoTable;
+	public void implement(AdhocImplementor implementor) {
+		implementor.adhocTable = mongoTable;
 		implementor.table = table;
 	}
 }

@@ -54,7 +54,7 @@ public interface IAggregationCarrier {
 	/**
 	 * Enables to read the underlying value of this carrier.
 	 * 
-	 * @param valueConsumer
+	 * @param valueReceiver
 	 */
-	void acceptValueConsumer(IValueReceiver valueConsumer);
+	void acceptValueReceiver(IValueReceiver valueReceiver);
 }

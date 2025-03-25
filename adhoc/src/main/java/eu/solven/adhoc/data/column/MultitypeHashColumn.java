@@ -403,7 +403,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	public void purgeAggregationCarriers() {
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				aggregationCarrier.acceptValueConsumer(new IValueReceiver() {
+				aggregationCarrier.acceptValueReceiver(new IValueReceiver() {
 
 					@Override
 					public void onLong(long value) {

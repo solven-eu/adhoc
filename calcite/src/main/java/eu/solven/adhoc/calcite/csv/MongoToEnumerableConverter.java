@@ -86,8 +86,9 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		// "{$filter: {state: 'CA'}}",
 		// "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: "$pop"}}")
 		final BlockBuilder list = new BlockBuilder();
-		final MongoRel.Implementor mongoImplementor = new MongoRel.Implementor(getCluster().getRexBuilder());
-		mongoImplementor.visitChild(0, getInput());
+		final AdhocCalciteRel.AdhocImplementor adhocImplementor =
+				new AdhocCalciteRel.AdhocImplementor(getCluster().getRexBuilder());
+		adhocImplementor.visitChild(0, getInput());
 		final RelDataType rowType = getRowType();
 		final PhysType physType =
 				PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
@@ -104,9 +105,9 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 					}
 				}), Pair.class));
 		final Expression table =
-				list.append("table", mongoImplementor.table.getExpression(MongoTable.MongoQueryable.class));
+				list.append("table", adhocImplementor.table.getExpression(MongoTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
-		AdhocQuery adhocQuery = mongoImplementor.adhocQueryBuilder.build();
+		AdhocQuery adhocQuery = adhocImplementor.adhocQueryBuilder.build();
 		String queryAsString;
 		try {
 			queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);

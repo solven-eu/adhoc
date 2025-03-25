@@ -35,7 +35,9 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 
@@ -48,9 +50,15 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
 		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 
+		// This first `k1` overlaps with the columnName
 		amb.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());
+		// This second `k1.SUM` does not overlap with the columnName
+		amb.addMeasure(Aggregator.builder().name("k1.sum").columnName("k1").aggregationKey(SumAggregation.KEY).build());
+
 		amb.addMeasure(Aggregator.builder().name("k1.min").columnName("k1").aggregationKey(MinAggregation.KEY).build());
 		amb.addMeasure(Aggregator.builder().name("k1.max").columnName("k1").aggregationKey(MaxAggregation.KEY).build());
+		amb.addMeasure(
+				Aggregator.builder().name("k1.count").columnName("k1").aggregationKey(CountAggregation.KEY).build());
 	}
 
 	@Test
@@ -63,6 +71,17 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
 						Map.of("k1", 0L + (123 + 345) + 567, "k1.min", 0L + 123, "k1.max", 0L + 567));
+	}
+
+	@Test
+	public void testK1_SUM_COUNT() {
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("k1", "k1.count").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("k1", 0L + (123 + 345) + 567, "k1.count", 0L + 3));
 	}
 
 	@Test
@@ -100,5 +119,38 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 				.hasSize(2)
 				.containsEntry(Map.of("a", "a1"), Map.of())
 				.containsEntry(Map.of("a", "a2"), Map.of());
+	}
+
+	@Test
+	public void testDifferingColumnName() {
+		Aggregator m = Aggregator.builder().name("niceName").columnName("k1").build();
+		amb.addMeasure(m);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("niceName").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of(m.getName(), 0L + (123 + 345) + 567));
+	}
+
+	@Test
+	public void testRank2() {
+		Aggregator m = Aggregator.builder()
+				.name("rank2")
+				.aggregationKey(RankAggregation.KEY)
+				.aggregationOption(RankAggregation.P_RANK, 2)
+				.columnName("k1")
+				.build();
+		amb.addMeasure(m);
+
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("rank2").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of(m.getName(), 0L + 345));
 	}
 }

@@ -138,17 +138,20 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				// We received a pre-aggregated measure
 				// DB has seemingly done the aggregation for us
 				valueConsumers.add(sliceToAgg.contributePre(preAggregation, coordinates));
+
+				if (executingQueryContext.isDebug()) {
+					tableRow.onAggregate(aggregatedMeasure, aggregateValue -> {
+						log.info("[DEBUG] Table contributes {}={} -> {}",
+								aggregatedMeasure,
+								aggregateValue,
+								coordinates);
+					});
+				}
 			}
 
 			if (valueConsumers.isEmpty()) {
 				// BEWARE When does it happen? When requesting no measure and no groupBy?
 				continue;
-			}
-
-			if (executingQueryContext.isDebug()) {
-				Object aggregateValue = tableRow.getAggregate(aggregatedMeasure);
-
-				log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
 			}
 
 			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)

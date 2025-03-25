@@ -1,4 +1,4 @@
-spring.application.name: domains
+spring.application.name: adhoc
 
 
 # https://stackoverflow.com/questions/30571319/spring-boot-logging-pattern

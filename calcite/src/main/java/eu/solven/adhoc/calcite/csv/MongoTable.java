@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -34,7 +35,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -49,21 +49,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Table based on a MongoDB collection.
  */
+@Slf4j
 public class MongoTable extends AbstractQueryableTable implements TranslatableTable {
-	// private final String collectionName;
 	final IAdhocCubeWrapper aqw;
 
 	/** Creates a MongoTable. */
 	MongoTable(IAdhocCubeWrapper aqw) {
 		super(Object[].class);
-		// this.collectionName = collectionName;
 		this.aqw = aqw;
 	}
 
@@ -74,9 +76,40 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 	@Override
 	public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+		// Similar to MongoDB: we refer to a flexible map
+		// https://github.com/apache/calcite/blob/main/mongodb/src/main/java/org/apache/calcite/adapter/mongodb/MongoTable.java
+		// Though, it seems a valid design when the table is actually always queried through views
 		final RelDataType mapType = typeFactory.createMapType(typeFactory.createSqlType(SqlTypeName.VARCHAR),
 				typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.ANY), true));
-		return typeFactory.builder().add("_MAP", mapType).build();
+		// return typeFactory.builder().add("_MAP", mapType).build();
+
+		List<String> fieldNames = new ArrayList<>();
+		// fieldNames.add("id");
+		// fieldNames.add("name");
+		// fieldNames.add("age");
+		// this.fieldNames = names;
+
+		List<SqlTypeName> fieldTypes = new ArrayList<>();
+		// fieldTypes.add(SqlTypeName.BIGINT);
+		// fieldTypes.add(SqlTypeName.VARCHAR);
+		// fieldTypes.add(SqlTypeName.INTEGER);
+		// this.fieldTypes = types;
+
+		aqw.getColumns().forEach((fieldName, fieldType) -> {
+			fieldNames.add(fieldName);
+
+			if (fieldType == Integer.class) {
+				fieldTypes.add(SqlTypeName.INTEGER);
+			} else if (fieldType == String.class) {
+				fieldTypes.add(SqlTypeName.VARCHAR);
+			} else {
+				log.warn("Unclear SQL type given class={}", fieldType);
+				fieldTypes.add(SqlTypeName.ANY);
+			}
+		});
+
+		List<RelDataType> types = fieldTypes.stream().map(typeFactory::createSqlType).collect(Collectors.toList());
+		return typeFactory.createStructType(types, fieldNames);
 	}
 
 	@Override
@@ -87,7 +120,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 	@Override
 	public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
 		final RelOptCluster cluster = context.getCluster();
-		return new MongoTableScan(cluster, cluster.traitSetOf(MongoRel.CONVENTION), relOptTable, this, null);
+		return new MongoTableScan(cluster, cluster.traitSetOf(AdhocCalciteRel.CONVENTION), relOptTable, this, null);
 	}
 
 	/**
@@ -146,29 +179,36 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 	 */
 	private Enumerable<Object> aggregate(
 			// final MongoDatabase mongoDb,
-			final List<Map.Entry<String, Class>> fields,
+			final List<Map.Entry<String, Class<?>>> fields,
 			final IAdhocQuery adhocQuery) {
-		final List<Object> list = new ArrayList<>();
+		// final List<Object> list = new ArrayList<>();
 		// for (String operation : operations) {
 		// list.add(BsonDocument.parse(operation));
 		// }
-		final Function1<Map<String, ?>, Object> getter = MongoEnumerator.getter(fields);
+		// final Function1<Map<String, ?>, Object> getter = MongoEnumerator.getter(fields);
 		return new AbstractEnumerable<Object>() {
 			@Override
 			public Enumerator<Object> enumerator() {
-				final Iterator<? extends Map<String, ?>> resultIterator;
+				final Iterator<? extends ITabularRecord> resultIterator;
 				try {
 					ITabularView result = aqw.execute(adhocQuery);
 
-					resultIterator = result.slices().map(slice -> {
-						return slice.getCoordinates();
+					resultIterator = result.stream(slice -> {
+						return v -> TabularRecordOverMaps.builder()
+								.groupBys(slice.getCoordinates())
+								.aggregates((Map<String, ?>) v)
+								.build();
 					}).iterator();
+
+					// slices().map(slice -> {
+					// return slice.getCoordinates();
+					// }).iterator();
 
 					// mongoDb.getCollection(collectionName).aggregate(list).iterator();
 				} catch (Exception e) {
 					throw new RuntimeException("While running MongoDB query " + adhocQuery, e);
 				}
-				return new MongoEnumerator(resultIterator, getter);
+				return new MongoEnumerator(fields, resultIterator);
 			}
 		};
 	}
@@ -211,7 +251,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		 * @see org.apache.calcite.adapter.mongodb.MongoMethod#MONGO_QUERYABLE_AGGREGATE
 		 */
 		@SuppressWarnings("UnusedDeclaration")
-		public Enumerable<Object> aggregate(List<Map.Entry<String, Class>> fields, List adhocQuery) {
+		public Enumerable<Object> aggregate(List<Map.Entry<String, Class<?>>> fields, List adhocQuery) {
 			Object rawQuery = adhocQuery.get(0);
 
 			IAdhocQuery q;

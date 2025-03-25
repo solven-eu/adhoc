@@ -37,16 +37,15 @@ import java.util.stream.Stream;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
-import eu.solven.adhoc.dag.TableAggregatesMetadata;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -88,18 +87,18 @@ public class InMemoryTable implements IAdhocTableWrapper {
 		return rows.stream();
 	}
 
-	@Override
-	public TableAggregatesMetadata getAggregatesMetadata(SetMultimap<String, Aggregator> columnToAggregators) {
-		// We may receive raw columns, to be aggregated by ourselves
-		ImmutableSetMultimap.Builder<String, Aggregator> nameToRawBuilder = ImmutableSetMultimap.builder();
-
-		columnToAggregators.values().stream().forEach(a -> nameToRawBuilder.putAll(a.getColumnName(), a));
-		SetMultimap<String, Aggregator> nameToRaw = nameToRawBuilder.build();
-
-		Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
-
-		return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
-	}
+	// @Override
+	// public TableAggregatesMetadata getAggregatesMetadata(SetMultimap<String, Aggregator> columnToAggregators) {
+	// // We may receive raw columns, to be aggregated by ourselves
+	// ImmutableSetMultimap.Builder<String, Aggregator> nameToRawBuilder = ImmutableSetMultimap.builder();
+	//
+	// columnToAggregators.values().stream().forEach(a -> nameToRawBuilder.putAll(a.getColumnName(), a));
+	// SetMultimap<String, Aggregator> nameToRaw = nameToRawBuilder.build();
+	//
+	// Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
+	//
+	// return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
+	// }
 
 	@Override
 	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
@@ -151,25 +150,32 @@ public class InMemoryTable implements IAdhocTableWrapper {
 			int nbKeys,
 			Map<String, ?> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>(nbKeys);
+
 		// Transcode from columnName to aggregatorName, supposing all aggregation functions does not change a
 		// not aggregated single value
 		aggregateColumns.forEach(aggregatedColumn -> {
 			Object aggregatorUnderlyingValue = row.get(aggregatedColumn);
-			if (aggregatorUnderlyingValue != null) {
-				tableQuery.getAggregators()
-						.stream()
-						.filter(a -> a.getColumnName().equals(aggregatedColumn))
-						.forEach(a -> aggregates.put(a.getName(), aggregatorUnderlyingValue));
-			} else if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
-				tableQuery.getAggregators()
-						.stream()
-						.filter(a -> a.getColumnName().equals(aggregatedColumn))
-						// Return the column for homogeneity regarding InMemoryTable can not aggregate any
-						// column
-						// We could also return `a.getName()` to test a table knowing how to do a subset of
-						// aggregations
-						.forEach(a -> aggregates.put(a.getColumnName(), 1L));
-			}
+			tableQuery.getAggregators().stream().filter(a -> a.getColumnName().equals(aggregatedColumn)).forEach(a -> {
+
+				if (CountAggregation.isCount(a.getAggregationKey())) {
+					boolean doCountOne = false;
+
+					if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
+						// `COUNT(*)` counts even if there is no value
+						doCountOne = true;
+					} else if (aggregatorUnderlyingValue != null) {
+						// COUNT 1 only if the COUNTed column is not null
+						doCountOne = true;
+					}
+
+					if (doCountOne) {
+						aggregates.put(a.getName(), 1L);
+					}
+				} else if (aggregatorUnderlyingValue != null) {
+					// SUM, MIN, MAX, AVG, etc
+					aggregates.put(a.getName(), aggregatorUnderlyingValue);
+				}
+			});
 		});
 
 		ImmutableMap.Builder<Object, Object> groupByBuilder =

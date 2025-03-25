@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 
 public class TestRankAggregation {
@@ -37,7 +38,7 @@ public class TestRankAggregation {
 
 		{
 			Assertions.assertThat(carrier3).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(null);
 				});
 			});
@@ -52,7 +53,7 @@ public class TestRankAggregation {
 			Object carrier1234 = aggregation.aggregate(carrier13, carrier24);
 
 			Assertions.assertThat(carrier1234).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(3);
 				});
 			});
@@ -63,7 +64,7 @@ public class TestRankAggregation {
 			Object carrier124 = aggregation.aggregate(1, carrier24);
 
 			Assertions.assertThat(carrier124).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -74,7 +75,7 @@ public class TestRankAggregation {
 			Object carrier241 = aggregation.aggregate(carrier24, 1);
 
 			Assertions.assertThat(carrier241).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -90,7 +91,7 @@ public class TestRankAggregation {
 
 		{
 			Assertions.assertThat(carrier3).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(null);
 				});
 			});
@@ -105,7 +106,7 @@ public class TestRankAggregation {
 			Object carrier1234 = aggregation.aggregate(carrier13, carrier24);
 
 			Assertions.assertThat(carrier1234).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -116,7 +117,7 @@ public class TestRankAggregation {
 			Object carrier124 = aggregation.aggregate(1, carrier24);
 
 			Assertions.assertThat(carrier124).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -127,10 +128,32 @@ public class TestRankAggregation {
 			Object carrier241 = aggregation.aggregate(carrier24, 1);
 
 			Assertions.assertThat(carrier241).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueConsumer(vc -> {
+				carrier.acceptValueReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
 		}
+	}
+
+	@Test
+	public void testWrap_thenAdd() {
+		RankAggregation agg = RankAggregation.fromMax(2);
+		Object o = IValueProvider.getValue(vr -> agg.wrap(123).add(234).acceptValueReceiver(vr));
+		Assertions.assertThat(o).isEqualTo(123);
+	}
+
+	@Test
+	public void testAggregate_thenAddCarrier() {
+		RankAggregation agg = RankAggregation.fromMax(2);
+		Object o = IValueProvider
+				.getValue(vr -> agg.aggregate(123, 234).add(agg.aggregate(345, 567)).acceptValueReceiver(vr));
+		Assertions.assertThat(o).isEqualTo(345);
+	}
+
+	@Test
+	public void testAggregate_thenAddWrapped() {
+		RankAggregation agg = RankAggregation.fromMax(2);
+		Object o = IValueProvider.getValue(vr -> agg.aggregate(123, 234).add(agg.wrap(345)).acceptValueReceiver(vr));
+		Assertions.assertThat(o).isEqualTo(234);
 	}
 }

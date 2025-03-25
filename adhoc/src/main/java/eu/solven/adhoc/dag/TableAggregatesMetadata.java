@@ -51,6 +51,7 @@ public class TableAggregatesMetadata {
 	final Map<String, Aggregator> measureToPre;
 
 	// mapping from table columns to the aggregators when the aggregates are evaluated by Adhoc
+	@Deprecated
 	final SetMultimap<String, Aggregator> columnToRaw;
 
 	// set of tables measures. They may not be only actual measures if `columnToRaw` is not empty
@@ -60,7 +61,7 @@ public class TableAggregatesMetadata {
 
 	/**
 	 * 
-	 * @return the {@link List} of names expected in {@link ITabularRecord}
+	 * @return the {@link List} of names expected in {@link ITabularRecord} from table.
 	 */
 	public Set<String> getMeasures() {
 		return names.get();
@@ -80,6 +81,7 @@ public class TableAggregatesMetadata {
 	 * @param aggregatedMeasure
 	 * @return the {@link Aggregator} associated to given column, when Adhoc is responsible for aggregation.
 	 */
+	@Deprecated
 	public Set<Aggregator> getRaw(String aggregatedMeasure) {
 		return columnToRaw.get(aggregatedMeasure);
 	}

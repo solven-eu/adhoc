@@ -24,6 +24,7 @@ package eu.solven.adhoc.calcite.csv;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
@@ -31,9 +32,11 @@ import org.apache.calcite.schema.SchemaPlus;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -47,6 +50,8 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 	/** Public singleton, per factory contract. */
 	public static final AdhocCalciteSchemaFactory INSTANCE = new AdhocCalciteSchemaFactory();
 
+	public static final Map<String, IAdhocTableWrapper> nameToTable = new ConcurrentHashMap<>();
+
 	final EventBus eventBus;
 
 	// Public default constructor required to instantiate a factory from
@@ -56,17 +61,29 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 	@Override
 	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
-		MeasureForest amb = MeasureForest.builder().build();
+		MeasureForest amb = MeasureForest.builder().name(name).measure(Aggregator.countAsterisk()).build();
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-		IAdhocTableWrapper adw = makeTableWrapper(operand);
+		// IAdhocTableWrapper adw = makeTableWrapper(name, operand);
 
-		AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().engine(aqe).forest(amb).table(adw).build();
+		AdhocSchema schema = AdhocSchema.builder().build();
 
-		return new AdhocCalciteSchema(aqw);
+		nameToTable.forEach((tableName, table) -> {
+			schema.getNameToTable().put(tableName, table);
+
+			AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().name(name).engine(aqe).forest(amb).table(table).build();
+			schema.getNameToCube().put(tableName, aqw);
+		});
+
+		return new AdhocCalciteSchema(schema);
 	}
 
-	private IAdhocTableWrapper makeTableWrapper(Map<String, ?> operand) {
+	private IAdhocTableWrapper makeTableWrapper(String name, Map<String, ?> operand) {
+		IAdhocTableWrapper preparedTable = nameToTable.get(name);
+		if (preparedTable != null) {
+			return preparedTable;
+		}
+
 		String dbWrapperClass = MapPathGet.getRequiredString(operand, "tableWrapperFactoryClass");
 
 		Class<?> clazz;

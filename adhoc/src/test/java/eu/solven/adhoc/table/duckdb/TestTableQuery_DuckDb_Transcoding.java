@@ -51,7 +51,7 @@ import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
  * This test complex transcoding scenarios, like one underlying column being mapped multiple times by different queried
  * columns
  */
-public class TestTableQuery_Transcoding extends ADuckDbJooqTest implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 

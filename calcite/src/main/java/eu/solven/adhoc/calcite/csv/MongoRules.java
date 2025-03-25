@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.calcite.adapter.enumerable.RexImpTable;
-import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
@@ -50,6 +48,7 @@ import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Bug;
@@ -58,7 +57,7 @@ import org.apache.calcite.util.trace.CalciteTrace;
 import org.slf4j.Logger;
 
 /**
- * Rules and relational operators for {@link MongoRel#CONVENTION MONGO} calling convention.
+ * Rules and relational operators for {@link AdhocCalciteRel#CONVENTION MONGO} calling convention.
  */
 public class MongoRules {
 	private MongoRules() {
@@ -67,8 +66,9 @@ public class MongoRules {
 	protected static final Logger LOGGER = CalciteTrace.getPlannerTracer();
 
 	@SuppressWarnings("MutablePublicArray")
-	public static final RelOptRule[] RULES = { MongoSortRule.INSTANCE,
-			MongoFilterRule.INSTANCE,
+	public static final RelOptRule[] RULES = {
+			// MongoSortRule.INSTANCE,
+			// MongoFilterRule.INSTANCE,
 			MongoProjectRule.INSTANCE,
 			MongoAggregateRule.INSTANCE, };
 
@@ -93,6 +93,13 @@ public class MongoRules {
 			public String get(int index) {
 				final String name = rowType.getFieldList().get(index).getName();
 				if (name.startsWith("$")) {
+					// org.apache.calcite.rex.RexUtil.createStructType(RelDataTypeFactory, List<? extends RexNode>,
+					// List<? extends String>, Suggester)
+					if (name.startsWith("$f")) {
+
+					} else {
+
+					}
 					return "_" + name.substring(2);
 				} else {
 					return name;
@@ -166,16 +173,21 @@ public class MongoRules {
 		public String visitLiteral(RexLiteral literal) {
 			if (literal.getValue() == null) {
 				return "null";
+			} else if (literal.getType().getFamily() == SqlTypeFamily.CHARACTER) {
+				return literal.getValueAs(String.class);
+			} else {
+				throw new UnsupportedOperationException("What should be done of literal?: " + literal);
 			}
-			return "{$literal: "
-					+ RexToLixTranslator
-							.translateLiteral(literal, literal.getType(), typeFactory, RexImpTable.NullAs.NOT_POSSIBLE)
-					+ "}";
+			// return "{$literal: "
+			// + RexToLixTranslator
+			// .translateLiteral(literal, literal.getType(), typeFactory, RexImpTable.NullAs.NOT_POSSIBLE)
+			// + "}";
 		}
 
 		@Override
 		public String visitInputRef(RexInputRef inputRef) {
-			return maybeQuote("$" + inFields.get(inputRef.getIndex()));
+			// return maybeQuote("$" + );
+			return inFields.get(inputRef.getIndex());
 		}
 
 		@Override
@@ -255,7 +267,7 @@ public class MongoRules {
 	 */
 	private static class MongoSortRule extends MongoConverterRule {
 		static final MongoSortRule INSTANCE =
-				Config.INSTANCE.withConversion(Sort.class, Convention.NONE, MongoRel.CONVENTION, "MongoSortRule")
+				Config.INSTANCE.withConversion(Sort.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoSortRule")
 						.withRuleFactory(MongoSortRule::new)
 						.toRule(MongoSortRule.class);
 
@@ -281,7 +293,7 @@ public class MongoRules {
 	 */
 	private static class MongoFilterRule extends MongoConverterRule {
 		static final MongoFilterRule INSTANCE = Config.INSTANCE
-				.withConversion(LogicalFilter.class, Convention.NONE, MongoRel.CONVENTION, "MongoFilterRule")
+				.withConversion(LogicalFilter.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoFilterRule")
 				.withRuleFactory(MongoFilterRule::new)
 				.toRule(MongoFilterRule.class);
 
@@ -302,7 +314,7 @@ public class MongoRules {
 	 */
 	private static class MongoProjectRule extends MongoConverterRule {
 		static final MongoProjectRule INSTANCE = Config.INSTANCE
-				.withConversion(LogicalProject.class, Convention.NONE, MongoRel.CONVENTION, "MongoProjectRule")
+				.withConversion(LogicalProject.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoProjectRule")
 				.withRuleFactory(MongoProjectRule::new)
 				.toRule(MongoProjectRule.class);
 
@@ -395,10 +407,14 @@ public class MongoRules {
 	 * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalAggregate} to an {@link MongoAggregate}.
 	 */
 	private static class MongoAggregateRule extends MongoConverterRule {
-		static final MongoAggregateRule INSTANCE = Config.INSTANCE
-				.withConversion(LogicalAggregate.class, Convention.NONE, MongoRel.CONVENTION, "MongoAggregateRule")
-				.withRuleFactory(MongoAggregateRule::new)
-				.toRule(MongoAggregateRule.class);
+		static final MongoAggregateRule INSTANCE =
+				Config.INSTANCE
+						.withConversion(LogicalAggregate.class,
+								Convention.NONE,
+								AdhocCalciteRel.CONVENTION,
+								"MongoAggregateRule")
+						.withRuleFactory(MongoAggregateRule::new)
+						.toRule(MongoAggregateRule.class);
 
 		MongoAggregateRule(Config config) {
 			super(config);

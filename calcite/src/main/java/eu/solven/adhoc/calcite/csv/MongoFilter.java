@@ -52,10 +52,10 @@ import com.google.common.collect.Multimap;
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in MongoDB.
  */
-public class MongoFilter extends Filter implements MongoRel {
+public class MongoFilter extends Filter implements AdhocCalciteRel {
 	public MongoFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition) {
 		super(cluster, traitSet, child, condition);
-		assert getConvention() == MongoRel.CONVENTION;
+		assert getConvention() == AdhocCalciteRel.CONVENTION;
 		assert getConvention() == child.getConvention();
 	}
 
@@ -70,12 +70,13 @@ public class MongoFilter extends Filter implements MongoRel {
 	}
 
 	@Override
-	public void implement(Implementor implementor) {
+	public void implement(AdhocImplementor implementor) {
 		implementor.visitChild(0, getInput());
 		Translator translator = new Translator(implementor.rexBuilder, MongoRules.mongoFieldNames(getRowType()));
 		String match = translator.translateMatch(condition);
 		// implementor.add(null, match);
 		implementor.adhocQueryBuilder.andFilter("c", match);
+		throw new UnsupportedOperationException("TODO");
 	}
 
 	/** Translates {@link RexNode} expressions into MongoDB expression strings. */

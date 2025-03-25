@@ -1,13 +1,13 @@
 {
     "version": "1.0",
-    "defaultSchema": "mongo",
+    "defaultSchema": "adhoc_schema",
     "schemas": [
         {
             "type": "custom",
-            "name": "mongo_raw",
-            "factory": "eu.solven.adhoc.calcite.csv.AdhocSchemaFactory",
+            "name": "adhoc_schema",
+            "factory": "eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory",
             "operand": {
-                "tableWrapperFactoryClass": "eu.solven.adhoc.database.InMemoryDatabase"
+                "tableWrapperFactoryClass": "eu.solven.adhoc.table.InMemoryTable"
             }
         }
     ]

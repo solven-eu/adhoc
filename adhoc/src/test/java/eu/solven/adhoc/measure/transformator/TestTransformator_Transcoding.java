@@ -40,11 +40,9 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
-	InMemoryTable rows = InMemoryTable.builder().build();
 	IAdhocColumnsManager columnsManager =
 			AdhocColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
 	AdhocCubeWrapper aqw =

@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -34,37 +37,38 @@ import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
 /**
  * Relational expression that uses Mongo calling convention.
  */
-public interface MongoRel extends RelNode {
-	void implement(Implementor implementor);
+public interface AdhocCalciteRel extends RelNode {
+	void implement(AdhocImplementor implementor);
 
 	/** Calling convention for relational operations that occur in MongoDB. */
-	Convention CONVENTION = new Convention.Impl("MONGO", MongoRel.class);
+	Convention CONVENTION = new Convention.Impl("ADHOC", AdhocCalciteRel.class);
 
 	/**
-	 * Callback for the implementation process that converts a tree of {@link MongoRel} nodes into a MongoDB query.
+	 * Callback for the implementation process that converts a tree of {@link AdhocCalciteRel} nodes into a MongoDB
+	 * query.
 	 */
-	class Implementor {
-		// final PairList<@Nullable String, String> list = PairList.of();
+	class AdhocImplementor {
+		final AdhocQueryBuilder adhocQueryBuilder = AdhocQuery.builder().debug(true);
 
-		final AdhocQueryBuilder adhocQueryBuilder = AdhocQuery.builder();
+		final Map<String, String> projects = new LinkedHashMap<>();
 
 		final RexBuilder rexBuilder;
 		@Nullable
 		RelOptTable table;
 		@Nullable
-		MongoTable mongoTable;
+		MongoTable adhocTable;
 
-		public Implementor(RexBuilder rexBuilder) {
+		public AdhocImplementor(RexBuilder rexBuilder) {
 			this.rexBuilder = rexBuilder;
 		}
 
-		// public void add(@Nullable String findOp, String aggOp) {
-		// list.add(findOp, aggOp);
-		// }
-
 		public void visitChild(int ordinal, RelNode input) {
 			assert ordinal == 0;
-			((MongoRel) input).implement(this);
+			((AdhocCalciteRel) input).implement(this);
+		}
+
+		public void clearProject() {
+			projects.clear();
 		}
 	}
 }

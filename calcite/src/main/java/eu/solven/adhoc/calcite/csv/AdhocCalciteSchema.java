@@ -22,20 +22,20 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
-import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
  */
 public class AdhocCalciteSchema extends AbstractSchema {
 
-	final IAdhocCubeWrapper aqe;
+	final AdhocSchema schema;
 
 	@Override
 	public boolean isMutable() {
@@ -48,12 +48,15 @@ public class AdhocCalciteSchema extends AbstractSchema {
 	 *
 	 * @param aqe
 	 */
-	public AdhocCalciteSchema(IAdhocCubeWrapper aqe) {
-		this.aqe = aqe;
+	public AdhocCalciteSchema(AdhocSchema schema) {
+		this.schema = schema;
 	}
 
 	@Override
 	protected Map<String, Table> getTableMap() {
-		return Collections.singletonMap(aqe.getName(), new MongoTable(aqe));
+		return schema.getNameToCube()
+				.entrySet()
+				.stream()
+				.collect(Collectors.toMap(e -> e.getKey(), e -> new MongoTable(e.getValue())));
 	}
 }

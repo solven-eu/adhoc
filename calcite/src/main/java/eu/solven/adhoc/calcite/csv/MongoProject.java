@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -45,14 +44,14 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in MongoDB.
  */
-public class MongoProject extends Project implements MongoRel {
+public class MongoProject extends Project implements AdhocCalciteRel {
 	public MongoProject(RelOptCluster cluster,
 			RelTraitSet traitSet,
 			RelNode input,
 			List<? extends RexNode> projects,
 			RelDataType rowType) {
 		super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, ImmutableSet.of());
-		assert getConvention() == MongoRel.CONVENTION;
+		assert getConvention() == AdhocCalciteRel.CONVENTION;
 		assert getConvention() == input.getConvention();
 	}
 
@@ -78,31 +77,29 @@ public class MongoProject extends Project implements MongoRel {
 	}
 
 	@Override
-	public void implement(Implementor implementor) {
+	public void implement(AdhocImplementor implementor) {
 		implementor.visitChild(0, getInput());
 
 		final MongoRules.RexToMongoTranslator translator =
 				new MongoRules.RexToMongoTranslator((JavaTypeFactory) getCluster().getTypeFactory(),
 						MongoRules.mongoFieldNames(getInput().getRowType()));
-		final List<String> items = new ArrayList<>();
+
+		implementor.clearProject();
 		for (Pair<RexNode, String> pair : getNamedProjects()) {
 			final String name = pair.right;
 			final String expr = pair.left.accept(translator);
 			boolean isSimple = expr.equalsIgnoreCase(name);
 
 			if (isSimple) {
-				implementor.adhocQueryBuilder.groupByAlso(expr);
-				// items.add(isSimple ? MongoRules.maybeQuote(name) + ": 1" : MongoRules.maybeQuote(name) + ": " +
-				// expr);
+				implementor.projects.put(name, name);
+				// implementor.adhocQueryBuilder.groupByAlso(name);
+				// // items.add(isSimple ? MongoRules.maybeQuote(name) + ": 1" : MongoRules.maybeQuote(name) + ": " +
+				// // expr);
 			} else {
-				throw new UnsupportedOperationException("Issue with %s %s".formatted(name, expr));
+				// implementor.adhocQueryBuilder.groupByAlso(name);
+				// throw new UnsupportedOperationException("Issue with name=%s expr=%s".formatted(name, expr));
+				implementor.projects.put(name, expr);
 			}
-
 		}
-		// final String findString = Util.toString(items, "{", ", ", "}");
-		// final String aggregateString = "{$project: " + findString + "}";
-		// final Pair<String, String> op = Pair.of(findString, aggregateString);
-		// // implementor.add(op.left, op.right);
-		// throw new UnsupportedOperationException("TODO");
 	}
 }

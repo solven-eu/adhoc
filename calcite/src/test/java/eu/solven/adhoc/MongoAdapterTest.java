@@ -24,11 +24,16 @@ package eu.solven.adhoc;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.test.CalciteAssert;
 import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.TestUtil;
@@ -39,12 +44,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.pepper.spring.PepperResourceHelper;
 
 /**
  * Testing mongo adapter functionality. By default, runs with Mongo Java Server unless {@code IT} maven profile is
@@ -52,7 +62,8 @@ import eu.solven.adhoc.table.InMemoryTable;
  *
  * @see MongoDatabasePolicy
  */
-@Disabled
+// TODO Rely on ADagTest
+// @Disabled
 public class MongoAdapterTest {
 
 	/** Connection factory based on the "mongo-zips" model. */
@@ -60,14 +71,32 @@ public class MongoAdapterTest {
 
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
-	public final MeasureForest amb = MeasureForest.builder().build();
+	public final MeasureForest amb = MeasureForest.builder().name(this.getClass().getSimpleName()).build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();
+	public final InMemoryTable zips = InMemoryTable.builder().build();
 
 	@BeforeEach
 	public void wireEvents() {
 		eventBus.register(toSlf4j);
+
+		rows.add(Map.of("k1", 123, "a", "a1"));
+		AdhocCalciteSchemaFactory.nameToTable.put("adhoc_table", rows);
+
+		String resourcePath = "zips-mini.json";
+		String zipsString = PepperResourceHelper.loadAsString(resourcePath, StandardCharsets.UTF_8);
+
+		ObjectMapper om = new ObjectMapper();
+		Stream.of(zipsString.split("[\r\n]+")).filter(s -> !s.startsWith("//")).forEach(row -> {
+			try {
+				Map<String, ?> asMap = om.readValue(row, Map.class);
+				zips.add(asMap);
+			} catch (JsonProcessingException e) {
+				throw new IllegalStateException("Issue processing %s from %s".formatted(row, "zips-mini.json"), e);
+			}
+		});
+		AdhocCalciteSchemaFactory.nameToTable.put("zips", zips);
 	}
 
 	private CalciteAssert.AssertThat assertModel(Resource resource) {
@@ -75,35 +104,53 @@ public class MongoAdapterTest {
 		// model = model.replace(MongoSchemaFactory.class.getName(), MongoAdapterTest.class.getName());
 
 		try {
-			return CalciteAssert.that().withModel(resource.getURL());
+			return CalciteAssert.that()
+					.withModel(resource.getURL())
+					.with(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.name());
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
 	@Test
+	void testCountGroupByEmpty() {
+		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"adhoc_table\"")
+				.returns(String.format(Locale.ROOT,
+						"EXPR$0=%d\n",
+						rows.streamSlices(TableQuery.builder().build()).asMap().count()))
+				.explainContains(
+						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
+								+ "    MongoTableScan(table=[[adhoc_schema, adhoc_table]])")
+				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
+	}
+
+	@Disabled("Adhoc")
+	@Test
 	void testSumK1GroupBya() {
-		assertModel(MODEL).query("select sum('k1') from \"mongo_raw\".\"toto\" GROUP BY a")
-				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0))
+		assertModel(MODEL).query("select sum('k1') from \"adhoc_schema\".\"adhoc_table\" GROUP BY a")
+				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 123))
 				.explainContains(
 						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
 								+ "    MongoTableScan(table=[[mongo_raw, zips]])")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testSort() {
-		assertModel(MODEL).query("select * from zips order by state")
+		assertModel(MODEL).query("select * from \"adhoc_schema\".\"zips\" order by state")
 				.returnsCount(0)
 				.explainContains("PLAN=MongoToEnumerableConverter\n" + "  MongoSort(sort0=[$4], dir0=[ASC])\n"
 						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
 						+ "      MongoTableScan(table=[[mongo_raw, zips]])");
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testSortLimit() {
 		assertModel(MODEL)
-				.query("select state, id from zips\n" + "order by state, id offset 2 rows fetch next 3 rows only")
+				.query("select state, id from \"adhoc_schema\".\"zips\"\n"
+						+ "order by state, id offset 2 rows fetch next 3 rows only")
 				.returnsOrdered("STATE=AK; ID=99801", "STATE=AL; ID=35215", "STATE=AL; ID=35401")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', ID: '$_id'}}",
 						"{$sort: {STATE: 1, ID: 1}}",
@@ -111,16 +158,19 @@ public class MongoAdapterTest {
 						"{$limit: 3}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testOffsetLimit() {
-		assertModel(MODEL).query("select state, id from zips\n" + "offset 2 fetch next 3 rows only")
+		assertModel(MODEL)
+				.query("select state, id from \"adhoc_schema\".\"zips\"\n" + "offset 2 fetch next 3 rows only")
 				.runs()
 				.queryContains(mongoChecker("{$skip: 2}", "{$limit: 3}", "{$project: {STATE: '$state', ID: '$_id'}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testLimit() {
-		assertModel(MODEL).query("select state, id from zips\n" + "fetch next 3 rows only")
+		assertModel(MODEL).query("select state, id from \"adhoc_schema\".\"zips\"\n" + "fetch next 3 rows only")
 				.runs()
 				.queryContains(mongoChecker("{$limit: 3}", "{$project: {STATE: '$state', ID: '$_id'}}"));
 	}
@@ -131,7 +181,8 @@ public class MongoAdapterTest {
 		// LONGITUDE and LATITUDE are null because of CALCITE-194.
 		Util.discard(Bug.CALCITE_194_FIXED);
 		assertModel(MODEL)
-				.query("select * from zips\n" + "where city = 'SPRINGFIELD' and id >= '70000'\n" + "order by state, id")
+				.query("select * from \"adhoc_schema\".\"zips\"\n" + "where city = 'SPRINGFIELD' and id >= '70000'\n"
+						+ "order by state, id")
 				.returns("" + "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=752; STATE=AR; ID=72157\n"
 						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=1992; STATE=CO; ID=81073\n"
 						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=5597; STATE=LA; ID=70462\n"
@@ -154,10 +205,12 @@ public class MongoAdapterTest {
 						+ "        MongoTableScan(table=[[mongo_raw, zips]])");
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testFilterSortDesc() {
 		assertModel(MODEL)
-				.query("select * from zips\n" + "where pop BETWEEN 45000 AND 46000\n" + "order by state desc, pop")
+				.query("select * from \"adhoc_schema\".\"zips\"\n" + "where pop BETWEEN 45000 AND 46000\n"
+						+ "order by state desc, pop")
 				.limit(4)
 				.returnsOrdered("CITY=BECKLEY; LONGITUDE=null; LATITUDE=null; POP=45196; STATE=WV; ID=25801",
 						"CITY=ROCKERVILLE; LONGITUDE=null; LATITUDE=null; POP=45328; STATE=SD; ID=57701",
@@ -194,11 +247,13 @@ public class MongoAdapterTest {
 	 */
 	@Test
 	void testFilterRedundant() {
-		assertModel(MODEL).query("select * from zips where state > 'CA' and state < 'AZ' and state = 'OK'")
+		assertModel(MODEL)
+				.query("select * from \"adhoc_schema\".\"zips\" where state > 'CA' and state < 'AZ' and state = 'OK'")
 				.runs()
 				.queryContains(mongoChecker());
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testSelectWhere() {
 		assertModel(MODEL).query("select * from \"warehouse\" where \"warehouse_state_province\" = 'CA'")
@@ -221,6 +276,7 @@ public class MongoAdapterTest {
 								"{$project: {warehouse_id: 1, warehouse_state_province: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testInPlan() {
 		assertModel(MODEL).query("select \"store_id\", \"store_name\" from \"store\"\n"
@@ -265,24 +321,16 @@ public class MongoAdapterTest {
 	}
 
 	/** Simple query based on the "mongo-zips" model. */
+	@Disabled("Adhoc")
 	@Test
 	void testZips() {
-		assertModel(MODEL).query("select state, city from zips").returnsCount(0);
+		assertModel(MODEL).query("select state, city from \"adhoc_schema\".\"zips\"").returnsCount(0);
 	}
 
-	@Test
-	void testCountGroupByEmpty() {
-		assertModel(MODEL).query("select count(*) from zips")
-				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0))
-				.explainContains(
-						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-								+ "    MongoTableScan(table=[[mongo_raw, zips]])")
-				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
-	}
-
+	@Disabled("Adhoc")
 	@Test
 	void testCountGroupByEmptyMultiplyBy2() {
-		assertModel(MODEL).query("select count(*)*2 from zips")
+		assertModel(MODEL).query("select count(*)*2 from \"adhoc_schema\".\"zips\"")
 				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 0 * 2))
 				.queryContains(mongoChecker("{$group: {_id: {}, _0: {$sum: 1}}}",
 						"{$project: {'EXPR$0': {$multiply: ['$_0', {$literal: 2}]}}}"));
@@ -290,7 +338,7 @@ public class MongoAdapterTest {
 
 	@Test
 	void testGroupByOneColumnNotProjected() {
-		assertModel(MODEL).query("select count(*) from zips group by state order by 1")
+		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"zips\" group by state order by 1")
 				.limit(2)
 				.returnsUnordered("EXPR$0=2", "EXPR$0=2")
 				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
@@ -300,9 +348,11 @@ public class MongoAdapterTest {
 						"{$sort: {EXPR$0: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByOneColumn() {
-		assertModel(MODEL).query("select state, count(*) as c from zips group by state order by state")
+		assertModel(MODEL)
+				.query("select state, count(*) as c from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(3)
 				.returns("STATE=AK; C=3\nSTATE=AL; C=3\nSTATE=AR; C=3\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
@@ -311,12 +361,14 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByOneColumnReversed() {
 		// Note extra $project compared to testGroupByOneColumn.
-		assertModel(MODEL).query("select count(*) as c, state from zips group by state order by state")
+		assertModel(MODEL)
+				.query("select count(*) as c, state from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
-				.returns("C=3; STATE=AK\nC=3; STATE=AL\n")
+				.returns("c=3; STATE=AK\nC=3; STATE=AL\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}}}",
 						"{$project: {STATE: '$_id', C: '$C'}}",
@@ -324,9 +376,11 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByAvg() {
-		assertModel(MODEL).query("select state, avg(pop) as a from zips group by state order by state")
+		assertModel(MODEL)
+				.query("select state, avg(pop) as a from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
 				.returns("STATE=AK; A=26856\nSTATE=AL; A=43383\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
@@ -335,10 +389,11 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByAvgSumCount() {
 		assertModel(MODEL).query(
-				"select state, avg(pop) as a, sum(pop) as s, count(pop) as c from zips group by state order by state")
+				"select state, avg(pop) as a, sum(pop) as s, count(pop) as c from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
 				.returns("STATE=AK; A=26856; S=80568; C=3\n" + "STATE=AL; A=43383; S=130151; C=3\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
@@ -351,7 +406,8 @@ public class MongoAdapterTest {
 	@Test
 	void testGroupByHaving() {
 		assertModel(MODEL)
-				.query("select state, count(*) as c from zips\n" + "group by state having count(*) > 2 order by state")
+				.query("select state, count(*) as c from \"adhoc_schema\".\"zips\"\n"
+						+ "group by state having count(*) > 2 order by state")
 				.returnsCount(47)
 				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}}}",
@@ -369,7 +425,8 @@ public class MongoAdapterTest {
 	@Test
 	void testGroupByHaving2() {
 		assertModel(MODEL)
-				.query("select state, count(*) as c from zips\n" + "group by state having sum(pop) > 12000000")
+				.query("select state, count(*) as c from \"adhoc_schema\".\"zips\"\n"
+						+ "group by state having sum(pop) > 12000000")
 				.returns("STATE=NY; C=1596\n" + "STATE=TX; C=1676\n" + "STATE=FL; C=826\n" + "STATE=CA; C=1523\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}, _2: {$sum: '$POP'}}}",
@@ -378,12 +435,13 @@ public class MongoAdapterTest {
 						"{$project: {STATE: 1, C: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByMinMaxSum() {
 		assertModel(MODEL)
 				.query("select count(*) as c, state,\n"
 						+ " min(pop) as min_pop, max(pop) as max_pop, sum(pop) as sum_pop\n"
-						+ "from zips group by state order by state")
+						+ "from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
 				.returns("C=3; STATE=AK; MIN_POP=23238; MAX_POP=32383; SUM_POP=80568\n"
 						+ "C=3; STATE=AL; MIN_POP=42124; MAX_POP=44165; SUM_POP=130151\n")
@@ -394,10 +452,11 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testGroupComposite() {
 		assertModel(MODEL)
-				.query("select count(*) as c, state, city from zips\n" + "group by state, city\n"
+				.query("select count(*) as c, state, city from \"adhoc_schema\".\"zips\"\n" + "group by state, city\n"
 						+ "order by c desc, city\n"
 						+ "limit 2")
 				.returns("C=1; STATE=SD; CITY=ABERDEEN\n" + "C=1; STATE=SC; CITY=AIKEN\n")
@@ -413,7 +472,7 @@ public class MongoAdapterTest {
 	@Test
 	void testDistinctCount() {
 		assertModel(MODEL)
-				.query("select state, count(distinct city) as cdc from zips\n"
+				.query("select state, count(distinct city) as cdc from \"adhoc_schema\".\"zips\"\n"
 						+ "where state in ('CA', 'TX') group by state order by state")
 				.returns("STATE=CA; CDC=1072\n" + "STATE=TX; CDC=1233\n")
 				.queryContains(mongoChecker(
@@ -436,10 +495,11 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testDistinctCountOrderBy() {
 		assertModel(MODEL)
-				.query("select state, count(distinct city) as cdc\n" + "from zips\n"
+				.query("select state, count(distinct city) as cdc\n" + "from \"adhoc_schema\".\"zips\"\n"
 						+ "group by state\n"
 						+ "order by cdc desc, state\n"
 						+ "limit 5")
@@ -459,7 +519,7 @@ public class MongoAdapterTest {
 	@Disabled("broken; [CALCITE-2115] is logged to fix it")
 	@Test
 	void testProject() {
-		assertModel(MODEL).query("select state, city, 0 as zero from zips order by state, city")
+		assertModel(MODEL).query("select state, city, 0 as zero from \"adhoc_schema\".\"zips\" order by state, city")
 				.limit(2)
 				.returns("STATE=AK; CITY=AKHIOK; ZERO=0\n" + "STATE=AK; CITY=AKIACHAK; ZERO=0\n")
 				.queryContains(mongoChecker("{$project: {CITY: '$city', STATE: '$state'}}",
@@ -467,9 +527,10 @@ public class MongoAdapterTest {
 						"{$project: {STATE: 1, CITY: 1, ZERO: {$literal: 0}}}"));
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testFilter() {
-		assertModel(MODEL).query("select state, city from zips where state = 'CA'")
+		assertModel(MODEL).query("select state, city from \"adhoc_schema\".\"zips\" where state = 'CA'")
 				.limit(3)
 				.returnsUnordered("STATE=CA; CITY=LOS ANGELES", "STATE=CA; CITY=BELL GARDENS", "STATE=CA; CITY=NORWALK")
 				.explainContains("PLAN=MongoToEnumerableConverter\n"
@@ -482,13 +543,16 @@ public class MongoAdapterTest {
 	 * MongoDB's predicates are handed (they can only accept literals on the right-hand size) so it's worth testing that
 	 * we handle them right both ways around.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testFilterReversed() {
-		assertModel(MODEL).query("select state, city from zips where 'WI' < state order by state, city")
+		assertModel(MODEL)
+				.query("select state, city from \"adhoc_schema\".\"zips\" where 'WI' < state order by state, city")
 				.limit(3)
 				.returnsOrdered("STATE=WV; CITY=BECKLEY", "STATE=WV; CITY=ELM GROVE", "STATE=WV; CITY=STAR CITY");
 
-		assertModel(MODEL).query("select state, city from zips where state > 'WI' order by state, city")
+		assertModel(MODEL)
+				.query("select state, city from \"adhoc_schema\".\"zips\" where state > 'WI' order by state, city")
 				.limit(3)
 				.returnsOrdered("STATE=WV; CITY=BECKLEY", "STATE=WV; CITY=ELM GROVE", "STATE=WV; CITY=STAR CITY");
 	}
@@ -501,6 +565,7 @@ public class MongoAdapterTest {
 	 * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-740">[CALCITE-740] Redundant WHERE clause
 	 * causes wrong result in MongoDB adapter</a>.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testFilterPair() {
 		final int gt9k = 148;
@@ -519,14 +584,16 @@ public class MongoAdapterTest {
 	}
 
 	private void checkPredicate(int expected, String q) {
-		assertModel(MODEL).query("select count(*) as c from zips\n" + q).returns("C=" + expected + "\n");
-		assertModel(MODEL).query("select * from zips\n" + q).returnsCount(expected);
+		assertModel(MODEL).query("select count(*) as c from \"adhoc_schema\".\"zips\"\n" + q)
+				.returns("C=" + expected + "\n");
+		assertModel(MODEL).query("select * from \"adhoc_schema\".\"zips\"\n" + q).returnsCount(expected);
 	}
 
 	/**
 	 * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-286">[CALCITE-286] Error casting MongoDB
 	 * date</a>.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testDate() {
 		assertModel(MODEL).query("select cast(_MAP['date'] as DATE) from \"mongo_raw\".\"datatypes\"")
@@ -537,6 +604,7 @@ public class MongoAdapterTest {
 	 * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-5405">[CALCITE-5405] Error casting MongoDB
 	 * dates to TIMESTAMP</a>.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testDateConversion() {
 		assertModel(MODEL).query("select cast(_MAP['date'] as TIMESTAMP) from \"mongo_raw\".\"datatypes\"")
@@ -547,6 +615,7 @@ public class MongoAdapterTest {
 	 * Test case for <a href="https://issues.apache.org/jira/browse/CALCITE-5407">[CALCITE-5407] Error casting MongoDB
 	 * array to VARCHAR ARRAY</a>.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testArrayConversion() {
 		assertModel(MODEL).query("select cast(_MAP['arr'] as VARCHAR ARRAY) from \"mongo_raw\".\"datatypes\"")
@@ -559,7 +628,7 @@ public class MongoAdapterTest {
 	 */
 	@Test
 	void testCountViaInt() {
-		assertModel(MODEL).query("select count(*) from zips").returns(input -> {
+		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"zips\"").returns(input -> {
 			// try {
 			// assertThat(input.next(), is(true));
 			// assertThat(input.getInt(1), is(ZIPS_SIZE));
@@ -574,6 +643,7 @@ public class MongoAdapterTest {
 	 * a java.lang.ClassCastException when Decimal128 or Binary types are used, or when a primitive value is cast to a
 	 * string</a>.
 	 */
+	@Disabled("Adhoc")
 	@Test
 	void testRuntimeTypes() {
 		assertModel(MODEL)
@@ -664,10 +734,11 @@ public class MongoAdapterTest {
 		};
 	}
 
+	@Disabled("Adhoc")
 	@Test
 	void testColumnQuoting() {
 		assertModel(MODEL)
-				.query("select state as \"STATE\", avg(pop) as \"AVG(pop)\" " + "from zips "
+				.query("select state as \"STATE\", avg(pop) as \"AVG(pop)\" " + "from \"adhoc_schema\".\"zips\" "
 						+ "group by \"STATE\" "
 						+ "order by \"AVG(pop)\"")
 				.limit(2)

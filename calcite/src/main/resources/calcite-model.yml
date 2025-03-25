@@ -3,7 +3,7 @@ defaultSchema: ADHOC
 schemas:
 - name: ADHOC
   type: custom
-  factory: org.apache.calcite.adapter.csv.CsvSchemaFactory
+  factory: eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory
   operand:
     directory: sales
   tables:

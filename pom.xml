@@ -178,8 +178,19 @@
 							</indent>
 
 							<includes>
-								<include>**/*.json</include>
+								<!-- json files at root-->
+								<include>*.json</include>
+								<!-- json files in folders like `.cleanthat` -->
+								<include>/.*/*.json</include>
+								<!-- json files in src folder-->
+								<include>src/**/*.json</include>
+								<!-- Make sure the root modules does not process all json of all modules-->
 							</includes>
+
+							<excludes>
+								<!-- Given file is the concatenation of multiple small JSONs, 1 JSON per line-->
+								<exclude>/src/test/resources/zips-mini.json</exclude>
+							</excludes>
 
 							<gson />
 						</json>

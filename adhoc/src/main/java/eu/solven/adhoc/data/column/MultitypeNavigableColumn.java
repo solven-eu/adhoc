@@ -260,7 +260,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public void purgeAggregationCarriers() {
 		values.replaceAllObjects(value -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				return IValueProvider.getValue(vc -> aggregationCarrier.acceptValueConsumer(vc));
+				return IValueProvider.getValue(vc -> aggregationCarrier.acceptValueReceiver(vc));
 			} else {
 				return value;
 			}
