@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
@@ -53,6 +54,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,31 +63,26 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AdhocCalciteTable extends AbstractQueryableTable implements TranslatableTable {
-	final IAdhocCubeWrapper aqw;
+	final IAdhocCubeWrapper cube;
+	final Set<IQueryOption> queryOptions;
 
-	AdhocCalciteTable(IAdhocCubeWrapper aqw) {
+	public AdhocCalciteTable(IAdhocCubeWrapper cube, Set<IQueryOption> queryOptions) {
 		super(Object[].class);
-		this.aqw = aqw;
+		this.cube = cube;
+		this.queryOptions = queryOptions;
 	}
 
 	@Override
 	public String toString() {
-		return "AdhocTable {" + aqw + "}";
+		return "AdhocTable {" + cube + "}";
 	}
 
 	@Override
 	public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-		// Similar to MongoDB: we refer to a flexible map
-		// https://github.com/apache/calcite/blob/main/mongodb/src/main/java/org/apache/calcite/adapter/mongodb/MongoTable.java
-		// Though, it seems a valid design when the table is actually always queried through views
-		final RelDataType mapType = typeFactory.createMapType(typeFactory.createSqlType(SqlTypeName.VARCHAR),
-				typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.ANY), true));
-		// return typeFactory.builder().add("_MAP", mapType).build();
-
 		List<String> fieldNames = new ArrayList<>();
 		List<SqlTypeName> fieldTypes = new ArrayList<>();
 
-		aqw.getColumns().forEach((fieldName, fieldType) -> {
+		cube.getColumns().forEach((fieldName, fieldType) -> {
 			fieldNames.add(fieldName);
 
 			if (fieldType == Integer.class) {
@@ -173,21 +170,13 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 	 *            One or more JSON strings
 	 * @return Enumerator of results
 	 */
-	private Enumerable<Object> aggregate(
-			// final MongoDatabase mongoDb,
-			final List<Map.Entry<String, Class<?>>> fields,
-			final IAdhocQuery adhocQuery) {
-		// final List<Object> list = new ArrayList<>();
-		// for (String operation : operations) {
-		// list.add(BsonDocument.parse(operation));
-		// }
-		// final Function1<Map<String, ?>, Object> getter = MongoEnumerator.getter(fields);
+	private Enumerable<Object> aggregate(final List<Map.Entry<String, Class<?>>> fields, final IAdhocQuery adhocQuery) {
 		return new AbstractEnumerable<Object>() {
 			@Override
 			public Enumerator<Object> enumerator() {
 				final Iterator<? extends ITabularRecord> resultIterator;
 				try {
-					ITabularView result = aqw.execute(adhocQuery);
+					ITabularView result = cube.execute(adhocQuery, queryOptions);
 
 					resultIterator = result.stream(slice -> {
 						return v -> TabularRecordOverMaps.builder()
@@ -195,23 +184,17 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 								.aggregates((Map<String, ?>) v)
 								.build();
 					}).iterator();
-
-					// slices().map(slice -> {
-					// return slice.getCoordinates();
-					// }).iterator();
-
-					// mongoDb.getCollection(collectionName).aggregate(list).iterator();
 				} catch (Exception e) {
-					throw new RuntimeException("While running MongoDB query " + adhocQuery, e);
+					throw new RuntimeException("While running Adhoc query " + adhocQuery, e);
 				}
-				return new MongoEnumerator(fields, resultIterator);
+				return new AdhocCalciteEnumerator(fields, resultIterator);
 			}
 		};
 	}
 
 	/**
 	 * Implementation of {@link org.apache.calcite.linq4j.Queryable} based on a
-	 * {@link org.apache.calcite.adapter.AdhocCalciteTable.MongoTable}.
+	 * {@link org.apache.calcite.adapter.AdhocCalciteTable}.
 	 *
 	 * @param <T>
 	 *            element type

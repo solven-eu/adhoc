@@ -49,6 +49,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -481,7 +482,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of())
-				.containsEntry(Map.of("a", "a2"), Map.of());
+				.containsEntry(Map.of("a", "a2"), Map.of())
+				.hasSize(2);
 	}
 
 	@Test
@@ -504,7 +506,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of())
-				.containsEntry(Map.of("a", "a2"), Map.of());
+				.containsEntry(Map.of("a", "a2"), Map.of())
+				.hasSize(2);
 	}
 
 	@Test
@@ -527,7 +530,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("a", "a1"), Map.of("count(*)", 2L))
-				.containsEntry(Map.of("a", "a2"), Map.of("count(*)", 1L));
+				.containsEntry(Map.of("a", "a2"), Map.of("count(*)", 1L))
+				.hasSize(2);
 	}
 
 	@Test
@@ -548,5 +552,64 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.containsEntry("a", String.class)
 				.containsEntry("k1", Double.class)
 				.hasSize(2);
+	}
+
+	@Test
+	public void testFilterOnAggregates_aggregateNameIsAlsoColumnName() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		amb.addMeasure(k1Sum);
+
+		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
+				.groupByAlso("a")
+				.measure(k1Sum)
+				.andFilter(k1Sum.getName(),
+						ComparingMatcher.builder()
+								.greaterThan(true)
+								.matchIfEqual(false)
+								.matchIfNull(false)
+								// This will filter `a2=234`
+								.operand(400)
+								.build())
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		// `k1` is ambiguous as it is both a column and a measure name
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+	}
+
+	@Test
+	public void testFilterOnAggregates() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+
+		Aggregator k1Sum =
+				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
+		amb.addMeasure(k1Sum);
+
+		Assertions.assertThatThrownBy(() -> wrapInCube(amb).execute(AdhocQuery.builder()
+				.groupByAlso("a")
+				.measure(k1Sum)
+				.andFilter(k1Sum.getName(),
+						ComparingMatcher.builder()
+								.greaterThan(true)
+								.matchIfEqual(false)
+								.matchIfNull(false)
+								// This will filter `a2=234`
+								.operand(400)
+								.build())
+				.build())).hasStackTraceContaining("Binder Error: WHERE clause cannot contain aggregates!");
 	}
 }

@@ -68,8 +68,8 @@ public class MongoRules {
 	@SuppressWarnings("MutablePublicArray")
 	public static final RelOptRule[] RULES = {
 			// MongoSortRule.INSTANCE,
-			// MongoFilterRule.INSTANCE,
-			MongoProjectRule.INSTANCE,
+			MongoFilterRule.INSTANCE,
+			// MongoProjectRule.INSTANCE,
 			MongoAggregateRule.INSTANCE, };
 
 	/** Returns 'string' if it is a call to item['string'], null otherwise. */
@@ -404,7 +404,7 @@ public class MongoRules {
 	 */
 
 	/**
-	 * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalAggregate} to an {@link MongoAggregate}.
+	 * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalAggregate} to an {@link AdhocCalciteAggregate}.
 	 */
 	private static class MongoAggregateRule extends MongoConverterRule {
 		static final MongoAggregateRule INSTANCE =
@@ -425,7 +425,7 @@ public class MongoRules {
 			final LogicalAggregate agg = (LogicalAggregate) rel;
 			final RelTraitSet traitSet = agg.getTraitSet().replace(out);
 			try {
-				return new MongoAggregate(rel.getCluster(),
+				return new AdhocCalciteAggregate(rel.getCluster(),
 						traitSet,
 						convert(agg.getInput(), traitSet.simplify()),
 						agg.getGroupSet(),

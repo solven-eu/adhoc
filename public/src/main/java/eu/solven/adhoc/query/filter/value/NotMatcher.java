@@ -39,4 +39,17 @@ public class NotMatcher implements IValueMatcher {
 	public boolean match(Object value) {
 		return !negated.match(value);
 	}
+
+	public static IValueMatcher not(IValueMatcher negated) {
+		if (negated instanceof ComparingMatcher comparing) {
+			return ComparingMatcher.builder()
+					.greaterThan(!comparing.isGreaterThan())
+					.matchIfEqual(!comparing.isMatchIfEqual())
+					.matchIfNull(!comparing.isMatchIfNull())
+					.operand(comparing.getOperand())
+					.build();
+		}
+
+		return NotMatcher.builder().negated(negated).build();
+	}
 }

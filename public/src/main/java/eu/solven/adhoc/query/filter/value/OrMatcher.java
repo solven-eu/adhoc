@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -112,6 +113,8 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 				})
 				.collect(Collectors.toList());
 
+		notMatchNone = simplifiedOwned(notMatchNone);
+
 		if (notMatchNone.isEmpty()) {
 			return IValueMatcher.MATCH_NONE;
 		} else if (notMatchNone.size() == 1) {
@@ -119,5 +122,63 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 		} else {
 			return OrMatcher.builder().operands(notMatchNone).build();
 		}
+	}
+
+	private static List<? extends IValueMatcher> simplifiedOwned(List<? extends IValueMatcher> matchers) {
+		List<IValueMatcher> simplified = new ArrayList<>();
+
+		for (IValueMatcher matcher : matchers) {
+			if (simplified.stream().anyMatch(alreadyIn -> isStricter(alreadyIn, matcher))) {
+				// matcher can be skipped
+			} else {
+				// Remove those owned
+				simplified.removeIf(alreadyIn -> isStricter(matcher, alreadyIn));
+				// Then add this matcher
+				simplified.add(matcher);
+			}
+		}
+
+		return simplified;
+	}
+
+	/**
+	 * 
+	 * @param owner
+	 * @param owned
+	 * @return true if `owner OR owned` is equivalent to `owner`
+	 */
+	// TODO How can this be refactored with AND?
+	static boolean isStricter(IValueMatcher owner, IValueMatcher owned) {
+		if (owner.equals(owned)) {
+			return true;
+		} else if (owner instanceof ComparingMatcher ownerComparing) {
+			if (owned instanceof ComparingMatcher ownedComparing) {
+				if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
+					// `<=` can not own `>=`
+					return false;
+				} else if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
+					return false;
+				} else if (ownerComparing.isMatchIfNull() != ownedComparing.isMatchIfNull()) {
+					// `null` needs to be managed the same way for ownership
+					return false;
+				}
+
+				Object ownerOperand = ownerComparing.getOperand();
+				Object ownedOperand = ownedComparing.getOperand();
+				if (ownerOperand.getClass() != ownedOperand.getClass()) {
+					// Different class may lead to Comparing issues
+					return false;
+				} else {
+					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
+
+					if (ownerComparing.isGreaterThan() && ownerMinusOwned <= 0) {
+						// `(a >= X || a >= Y) && X <= Y` ==> `a >= X`
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 }

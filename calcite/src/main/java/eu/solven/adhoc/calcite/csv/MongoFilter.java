@@ -42,12 +42,18 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.util.JsonBuilder;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in MongoDB.
@@ -70,18 +76,16 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 	}
 
 	@Override
-	public void implement(AdhocImplementor implementor) {
+	public void implement(AdhocCalciteRelImplementor implementor) {
 		implementor.visitChild(0, getInput());
 		Translator translator = new Translator(implementor.rexBuilder, MongoRules.mongoFieldNames(getRowType()));
-		String match = translator.translateMatch(condition);
+		IAdhocFilter match = translator.translateMatch(condition);
 		// implementor.add(null, match);
-		implementor.adhocQueryBuilder.andFilter("c", match);
-		throw new UnsupportedOperationException("TODO");
+		implementor.adhocQueryBuilder.andFilter(match);
 	}
 
 	/** Translates {@link RexNode} expressions into MongoDB expression strings. */
 	static class Translator {
-		final JsonBuilder builder = new JsonBuilder();
 		final Multimap<String, Pair<String, RexLiteral>> multimap = HashMultimap.create();
 		final Map<String, RexLiteral> eqMap = new LinkedHashMap<>();
 		private final RexBuilder rexBuilder;
@@ -92,27 +96,19 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 			this.fieldNames = fieldNames;
 		}
 
-		private String translateMatch(RexNode condition) {
-			Map<String, Object> map = builder.map();
-			map.put("$match", translateOr(condition));
-			return builder.toJsonString(map);
+		private IAdhocFilter translateMatch(RexNode condition) {
+			return translateOr(condition);
 		}
 
-		private Object translateOr(RexNode condition) {
+		private IAdhocFilter translateOr(RexNode condition) {
 			final RexNode condition2 = RexUtil.expandSearch(rexBuilder, null, condition);
 
-			List<Object> list = new ArrayList<>();
+			List<IAdhocFilter> listToOr = new ArrayList<>();
 			for (RexNode node : RelOptUtil.disjunctions(condition2)) {
-				list.add(translateAnd(node));
+				listToOr.add(AndFilter.and(translateAnd(node)));
 			}
-			switch (list.size()) {
-			case 1:
-				return list.get(0);
-			default:
-				Map<String, Object> map = builder.map();
-				map.put("$or", list);
-				return map;
-			}
+
+			return OrFilter.or(listToOr);
 		}
 
 		/**
@@ -125,26 +121,32 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 			for (RexNode node : RelOptUtil.conjunctions(node0)) {
 				translateMatch2(node);
 			}
-			Map<String, Object> map = builder.map();
+			Map<String, Object> map = new LinkedHashMap<>();
 			for (Map.Entry<String, RexLiteral> entry : eqMap.entrySet()) {
 				multimap.removeAll(entry.getKey());
 				map.put(entry.getKey(), literalValue(entry.getValue()));
 			}
 			for (Map.Entry<String, Collection<Pair<String, RexLiteral>>> entry : multimap.asMap().entrySet()) {
-				Map<String, Object> map2 = builder.map();
+				List<IValueMatcher> matchers = new ArrayList<>();
 				for (Pair<String, RexLiteral> s : entry.getValue()) {
-					addPredicate(map2, s.left, literalValue(s.right));
+					matchers.add(addPredicate(s.left, literalValue(s.right)));
 				}
-				map.put(entry.getKey(), map2);
+				map.put(entry.getKey(), OrMatcher.or(matchers));
 			}
 			return map;
 		}
 
-		private static void addPredicate(Map<String, Object> map, String op, Object v) {
-			if (map.containsKey(op) && stronger(op, map.get(op), v)) {
-				return;
+		private static IValueMatcher addPredicate(String op, Object v) {
+			if ("$gt".equals(op)) {
+				return ComparingMatcher.builder()
+						.greaterThan(true)
+						.matchIfEqual(false)
+						.matchIfNull(false)
+						.operand(v)
+						.build();
+			} else {
+				throw new IllegalArgumentException("Not managed: %s".formatted(op));
 			}
-			map.put(op, v);
 		}
 
 		/**

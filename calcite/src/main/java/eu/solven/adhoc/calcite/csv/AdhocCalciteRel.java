@@ -38,7 +38,7 @@ import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
  * Relational expression that uses Mongo calling convention.
  */
 public interface AdhocCalciteRel extends RelNode {
-	void implement(AdhocImplementor implementor);
+	void implement(AdhocCalciteRelImplementor implementor);
 
 	/** Calling convention for relational operations that occur in MongoDB. */
 	Convention CONVENTION = new Convention.Impl("ADHOC", AdhocCalciteRel.class);
@@ -47,8 +47,8 @@ public interface AdhocCalciteRel extends RelNode {
 	 * Callback for the implementation process that converts a tree of {@link AdhocCalciteRel} nodes into a MongoDB
 	 * query.
 	 */
-	class AdhocImplementor {
-		final AdhocQueryBuilder adhocQueryBuilder = AdhocQuery.builder().debug(true);
+	class AdhocCalciteRelImplementor {
+		final AdhocQueryBuilder adhocQueryBuilder = AdhocQuery.builder();
 
 		final Map<String, String> projects = new LinkedHashMap<>();
 
@@ -58,7 +58,7 @@ public interface AdhocCalciteRel extends RelNode {
 		@Nullable
 		AdhocCalciteTable adhocTable;
 
-		public AdhocImplementor(RexBuilder rexBuilder) {
+		public AdhocCalciteRelImplementor(RexBuilder rexBuilder) {
 			this.rexBuilder = rexBuilder;
 		}
 

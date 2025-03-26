@@ -23,33 +23,30 @@
 package eu.solven.adhoc.calcite.csv;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.query.IQueryOption;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
  */
+@RequiredArgsConstructor
 public class AdhocCalciteSchema extends AbstractSchema {
 
 	final AdhocSchema schema;
+	final Set<IQueryOption> queryOptions;
 
 	@Override
 	public boolean isMutable() {
 		// Adhoc enables only queries to its own underlying database
-		return false;
-	}
-
-	/**
-	 * Creates a CSV schema.
-	 *
-	 * @param aqe
-	 */
-	public AdhocCalciteSchema(AdhocSchema schema) {
-		this.schema = schema;
+		// Mutability is necessary to enable views
+		return true;
 	}
 
 	@Override
@@ -57,6 +54,6 @@ public class AdhocCalciteSchema extends AbstractSchema {
 		return schema.getNameToCube()
 				.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> new AdhocCalciteTable(e.getValue())));
+				.collect(Collectors.toMap(e -> e.getKey(), e -> new AdhocCalciteTable(e.getValue(), queryOptions)));
 	}
 }

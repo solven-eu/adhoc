@@ -7,8 +7,16 @@
             "name": "adhoc_schema",
             "factory": "eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory",
             "operand": {
-                "tableWrapperFactoryClass": "eu.solven.adhoc.table.InMemoryTable"
-            }
+                "tableWrapperFactoryClass": "eu.solven.adhoc.table.InMemoryTable",
+                "DEBUG": true
+            },
+            "tables": [
+                {
+                    "name": "zips_NY",
+                    "type": "view",
+                    "sql": "SELECT * FROM \"zips\" WHERE \"state\" = 'NY'"
+                }
+            ]
         }
     ]
 }

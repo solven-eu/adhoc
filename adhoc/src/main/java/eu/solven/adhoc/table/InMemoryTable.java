@@ -48,6 +48,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
@@ -102,6 +103,19 @@ public class InMemoryTable implements IAdhocTableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
+		// TODO throw if `tableQuery.getFilte`
+		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());
+		if (tableQuery.getAggregators()
+				.stream()
+				// if the aggregator name is also a column name, then the filtering is valid (as we'll filter on the
+				// column)
+				.filter(a -> !a.getName().equals(a.getColumnName()))
+				.anyMatch(a -> filteredColumns.contains(a.getName()))) {
+			// This may be lifted when InMemoryTable aggregates slices instead of returning rows
+			// e.g. `SELECT c, SUM(k) AS k WHERE k >= 100`
+			throw new IllegalArgumentException("InMemoryTable can not filter a measure");
+		}
+
 		Set<String> aggregateColumns =
 				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
 

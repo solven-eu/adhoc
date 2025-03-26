@@ -126,13 +126,14 @@ public class FilterHelpers {
 						.stream()
 						.flatMap(operand -> getFilteredColumns(operand).stream())
 						.collect(Collectors.toSet());
-			} else if (filter.isAnd() && filter instanceof IOrFilter orFilter) {
+			} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 				return orFilter.getOperands()
 						.stream()
 						.flatMap(operand -> getFilteredColumns(operand).stream())
 						.collect(Collectors.toSet());
 			} else {
-				throw new UnsupportedOperationException("Not managed yet: %s".formatted(filter));
+				throw new UnsupportedOperationException(
+						"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 			}
 		}
 	}

@@ -41,9 +41,10 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.tabular.ITabularView;
 
-/** Enumerator that reads from a MongoDB collection. */
-class MongoEnumerator implements Enumerator<Object> {
+/** Enumerator that reads from an Adhoc {@link ITabularView}. */
+class AdhocCalciteEnumerator implements Enumerator<Object> {
 	private final List<Entry<String, Class<?>>> fields;
 	private final Iterator<? extends ITabularRecord> cursor;
 	private @Nullable Object current;
@@ -58,7 +59,7 @@ class MongoEnumerator implements Enumerator<Object> {
 	 * @param getter
 	 *            Converts an object into a list of fields
 	 */
-	MongoEnumerator(List<Entry<String, Class<?>>> fields, Iterator<? extends ITabularRecord> cursor) {
+	AdhocCalciteEnumerator(List<Entry<String, Class<?>>> fields, Iterator<? extends ITabularRecord> cursor) {
 		this.fields = fields;
 		this.cursor = cursor;
 	}

@@ -24,7 +24,10 @@ package eu.solven.adhoc.calcite.csv;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
@@ -37,6 +40,8 @@ import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -75,7 +80,11 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 			schema.getNameToCube().put(tableName, aqw);
 		});
 
-		return new AdhocCalciteSchema(schema);
+		Set<IQueryOption> queryOptions = Stream.of(StandardQueryOptions.values())
+				.filter(o -> Boolean.TRUE.equals(operand.get(o.name())))
+				.collect(Collectors.toSet());
+
+		return new AdhocCalciteSchema(schema, queryOptions);
 	}
 
 	private IAdhocTableWrapper makeTableWrapper(String name, Map<String, ?> operand) {

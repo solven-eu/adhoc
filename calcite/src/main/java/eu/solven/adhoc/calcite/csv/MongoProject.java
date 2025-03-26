@@ -35,7 +35,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -44,9 +43,10 @@ import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in MongoDB.
+ * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Adhoc.
  */
 @Slf4j
+@Deprecated
 public class MongoProject extends Project implements AdhocCalciteRel {
 	public MongoProject(RelOptCluster cluster,
 			RelTraitSet traitSet,
@@ -56,17 +56,6 @@ public class MongoProject extends Project implements AdhocCalciteRel {
 		super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, ImmutableSet.of());
 		assert getConvention() == AdhocCalciteRel.CONVENTION;
 		assert getConvention() == input.getConvention();
-	}
-
-	@Deprecated // to be removed before 2.0
-	public MongoProject(RelOptCluster cluster,
-			RelTraitSet traitSet,
-			RelNode input,
-			List<RexNode> projects,
-			RelDataType rowType,
-			int flags) {
-		this(cluster, traitSet, input, projects, rowType);
-		Util.discard(flags);
 	}
 
 	@Override
@@ -80,7 +69,7 @@ public class MongoProject extends Project implements AdhocCalciteRel {
 	}
 
 	@Override
-	public void implement(AdhocImplementor implementor) {
+	public void implement(AdhocCalciteRelImplementor implementor) {
 		implementor.visitChild(0, getInput());
 
 		final MongoRules.RexToMongoTranslator translator =

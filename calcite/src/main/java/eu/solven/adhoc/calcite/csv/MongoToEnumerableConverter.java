@@ -86,8 +86,8 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		// "{$filter: {state: 'CA'}}",
 		// "{$group: {_id: '$city', c: {$sum: 1}, p: {$sum: "$pop"}}")
 		final BlockBuilder list = new BlockBuilder();
-		final AdhocCalciteRel.AdhocImplementor adhocImplementor =
-				new AdhocCalciteRel.AdhocImplementor(getCluster().getRexBuilder());
+		final AdhocCalciteRel.AdhocCalciteRelImplementor adhocImplementor =
+				new AdhocCalciteRel.AdhocCalciteRelImplementor(getCluster().getRexBuilder());
 		adhocImplementor.visitChild(0, getInput());
 		final RelDataType rowType = getRowType();
 		final PhysType physType =

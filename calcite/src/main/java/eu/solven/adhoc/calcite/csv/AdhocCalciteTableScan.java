@@ -102,7 +102,7 @@ public class AdhocCalciteTableScan extends TableScan implements AdhocCalciteRel 
 	}
 
 	@Override
-	public void implement(AdhocImplementor implementor) {
+	public void implement(AdhocCalciteRelImplementor implementor) {
 		implementor.adhocTable = adhocTable;
 		implementor.table = table;
 	}

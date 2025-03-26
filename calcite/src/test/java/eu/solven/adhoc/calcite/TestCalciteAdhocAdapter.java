@@ -64,7 +64,7 @@ import eu.solven.pepper.spring.PepperResourceHelper;
  */
 // TODO Rely on ADagTest
 // @Disabled
-public class TestMongoAdapter {
+public class TestCalciteAdhocAdapter {
 
 	/** Connection factory based on the "mongo-zips" model. */
 	protected static final Resource MODEL = new ClassPathResource("/calcite_model-adhoc.json");
@@ -106,7 +106,8 @@ public class TestMongoAdapter {
 		try {
 			return CalciteAssert.that()
 					.withModel(resource.getURL())
-					.with(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.name());
+					.with(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.name())
+					.with(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.name());
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -118,19 +119,24 @@ public class TestMongoAdapter {
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
 						rows.streamSlices(TableQuery.builder().build()).asMap().count()))
-				.explainContains(
-						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-								+ "    AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])")
+				.explainContains("""
+						PLAN=MongoToEnumerableConverter
+						  AdhocCalciteAggregate(group=[{}], EXPR$0=[COUNT()])
+						    AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])
+						""")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
 	@Test
 	void testSumK1GroupBya() {
-		assertModel(MODEL).query("select sum('k1') from \"adhoc_schema\".\"adhoc_table\" GROUP BY a")
+		assertModel(MODEL).query("select sum(k1) from \"adhoc_schema\".\"adhoc_table\" GROUP BY a")
 				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 123))
-				// .explainContains(
-				// "PLAN=MongoToEnumerableConverter\n" + " MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-				// + " MongoTableScan(table=[[mongo_raw, zips]])")
+				.explainContains("""
+						PLAN=EnumerableCalc(expr#0..1=[{inputs}], EXPR$0=[$t1])
+						  MongoToEnumerableConverter
+						    AdhocCalciteAggregate(group=[{0}], EXPR$0=[$SUM0($1)])
+						      AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])
+						""")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
@@ -140,7 +146,7 @@ public class TestMongoAdapter {
 		assertModel(MODEL).query("select * from \"adhoc_schema\".\"zips\" order by state")
 				.returnsCount(0)
 				.explainContains("PLAN=MongoToEnumerableConverter\n" + "  MongoSort(sort0=[$4], dir0=[ASC])\n"
-						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
+						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], state=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
 						+ "      MongoTableScan(table=[[mongo_raw, zips]])");
 	}
 
@@ -150,7 +156,7 @@ public class TestMongoAdapter {
 		assertModel(MODEL)
 				.query("select state, id from \"adhoc_schema\".\"zips\"\n"
 						+ "order by state, id offset 2 rows fetch next 3 rows only")
-				.returnsOrdered("STATE=AK; ID=99801", "STATE=AL; ID=35215", "STATE=AL; ID=35401")
+				.returnsOrdered("state=AK; ID=99801", "state=AL; ID=35215", "state=AL; ID=35401")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', ID: '$_id'}}",
 						"{$sort: {STATE: 1, ID: 1}}",
 						"{$skip: 2}",
@@ -182,11 +188,11 @@ public class TestMongoAdapter {
 		assertModel(MODEL)
 				.query("select * from \"adhoc_schema\".\"zips\"\n" + "where city = 'SPRINGFIELD' and id >= '70000'\n"
 						+ "order by state, id")
-				.returns("" + "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=752; STATE=AR; ID=72157\n"
-						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=1992; STATE=CO; ID=81073\n"
-						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=5597; STATE=LA; ID=70462\n"
-						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=32384; STATE=OR; ID=97477\n"
-						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=27521; STATE=OR; ID=97478\n")
+				.returns("" + "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=752; state=AR; ID=72157\n"
+						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=1992; state=CO; ID=81073\n"
+						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=5597; state=LA; ID=70462\n"
+						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=32384; state=OR; ID=97477\n"
+						+ "CITY=SPRINGFIELD; LONGITUDE=null; LATITUDE=null; POP=27521; state=OR; ID=97478\n")
 				.queryContains(mongoChecker(
 						"{\n" + "  $match: {\n"
 								+ "    city: \"SPRINGFIELD\",\n"
@@ -199,7 +205,7 @@ public class TestMongoAdapter {
 						"{$sort: {STATE: 1, ID: 1}}"))
 				.explainContains("PLAN=MongoToEnumerableConverter\n"
 						+ "  MongoSort(sort0=[$4], sort1=[$5], dir0=[ASC], dir1=[ASC])\n"
-						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
+						+ "    MongoProject(CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)], LONGITUDE=[CAST(ITEM(ITEM($0, 'loc'), 0)):FLOAT], LATITUDE=[CAST(ITEM(ITEM($0, 'loc'), 1)):FLOAT], POP=[CAST(ITEM($0, 'pop')):INTEGER], state=[CAST(ITEM($0, 'state')):VARCHAR(2)], ID=[CAST(ITEM($0, '_id')):VARCHAR(5)])\n"
 						+ "      MongoFilter(condition=[AND(=(CAST(ITEM($0, 'city')):VARCHAR(20), 'SPRINGFIELD'), >=(CAST(ITEM($0, '_id')):VARCHAR(5), '70000'))])\n"
 						+ "        MongoTableScan(table=[[mongo_raw, zips]])");
 	}
@@ -211,10 +217,10 @@ public class TestMongoAdapter {
 				.query("select * from \"adhoc_schema\".\"zips\"\n" + "where pop BETWEEN 45000 AND 46000\n"
 						+ "order by state desc, pop")
 				.limit(4)
-				.returnsOrdered("CITY=BECKLEY; LONGITUDE=null; LATITUDE=null; POP=45196; STATE=WV; ID=25801",
-						"CITY=ROCKERVILLE; LONGITUDE=null; LATITUDE=null; POP=45328; STATE=SD; ID=57701",
-						"CITY=PAWTUCKET; LONGITUDE=null; LATITUDE=null; POP=45442; STATE=RI; ID=02860",
-						"CITY=LAWTON; LONGITUDE=null; LATITUDE=null; POP=45542; STATE=OK; ID=73505");
+				.returnsOrdered("CITY=BECKLEY; LONGITUDE=null; LATITUDE=null; POP=45196; state=WV; ID=25801",
+						"CITY=ROCKERVILLE; LONGITUDE=null; LATITUDE=null; POP=45328; state=SD; ID=57701",
+						"CITY=PAWTUCKET; LONGITUDE=null; LATITUDE=null; POP=45442; state=RI; ID=02860",
+						"CITY=LAWTON; LONGITUDE=null; LATITUDE=null; POP=45542; state=OK; ID=73505");
 	}
 
 	@Disabled("broken; [CALCITE-2115] is logged to fix it")
@@ -388,6 +394,19 @@ public class TestMongoAdapter {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	@Disabled("Adhoc")
+	@Test
+	void testGroupByAvg_NY() {
+		assertModel(MODEL)
+				.query("select state, avg(pop) as A from \"adhoc_schema\".\"zips_NY\" group by state order by state")
+				.limit(2)
+				.returns("state=NY; A=12345")
+				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
+						"{$group: {_id: '$STATE', A: {$avg: '$POP'}}}",
+						"{$project: {STATE: '$_id', A: '$A'}}",
+						"{$sort: {STATE: 1}}"));
+	}
+
 	// The AVG may be computed by Calcite, instead of being requested directly to the table
 	@Disabled("Adhoc")
 	@Test
@@ -403,6 +422,9 @@ public class TestMongoAdapter {
 						"{$sort: {STATE: 1}}"));
 	}
 
+	// In this case, we need the filter to be handled by Calcite
+	// Or improve Adhoc to rely on HAVING
+	@Disabled("Adhoc")
 	@Test
 	void testGroupByHaving() {
 		assertModel(MODEL)
@@ -427,7 +449,7 @@ public class TestMongoAdapter {
 		assertModel(MODEL)
 				.query("select state, count(*) as c from \"adhoc_schema\".\"zips\"\n"
 						+ "group by state having sum(pop) > 12000000")
-				.returns("STATE=NY; C=1596\n" + "STATE=TX; C=1676\n" + "STATE=FL; C=826\n" + "STATE=CA; C=1523\n")
+				.returns("state=NY; C=1596\n" + "state=TX; C=1676\n" + "state=FL; C=826\n" + "state=CA; C=1523\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}, _2: {$sum: '$POP'}}}",
 						"{$project: {STATE: '$_id', C: '$C', _2: '$_2'}}",
@@ -435,16 +457,15 @@ public class TestMongoAdapter {
 						"{$project: {STATE: 1, C: 1}}"));
 	}
 
-	@Disabled("Adhoc")
 	@Test
 	void testGroupByMinMaxSum() {
 		assertModel(MODEL)
-				.query("select count(*) as c, state,\n"
+				.query("select count(*) as C, state,\n"
 						+ " min(pop) as min_pop, max(pop) as max_pop, sum(pop) as sum_pop\n"
 						+ "from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
-				.returns("C=3; STATE=AK; MIN_POP=23238; MAX_POP=32383; SUM_POP=80568\n"
-						+ "C=3; STATE=AL; MIN_POP=42124; MAX_POP=44165; SUM_POP=130151\n")
+				.returns("C=3; state=AK; min_pop=23238; max_pop=32383; sum_pop=80568\n"
+						+ "C=3; state=AL; min_pop=42124; max_pop=44165; sum_pop=130151\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}, MIN_POP: {$min: '$POP'}, MAX_POP: {$max: '$POP'}, SUM_POP: {$sum: '$POP'}}}",
 						"{$project: {STATE: '$_id', C: '$C', MIN_POP: '$MIN_POP', MAX_POP: '$MAX_POP', SUM_POP: '$SUM_POP'}}",
@@ -452,14 +473,16 @@ public class TestMongoAdapter {
 						"{$sort: {STATE: 1}}"));
 	}
 
-	@Disabled("Adhoc")
 	@Test
 	void testGroupComposite() {
 		assertModel(MODEL)
-				.query("select count(*) as c, state, city from \"adhoc_schema\".\"zips\"\n" + "group by state, city\n"
-						+ "order by c desc, city\n"
+				.query("select count(*) as C, state, city from \"adhoc_schema\".\"zips\"\n" + "group by state, city\n"
+						+ "order by C desc, city\n"
 						+ "limit 2")
-				.returns("C=1; STATE=SD; CITY=ABERDEEN\n" + "C=1; STATE=SC; CITY=AIKEN\n")
+				.returns("""
+						C=1; state=SD; city=ABERDEEN
+						C=1; state=SC; city=AIKEN
+						""")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', CITY: '$city'}}",
 						"{$group: {_id: {STATE: '$STATE', CITY: '$CITY'}, C: {$sum: 1}}}",
 						"{$project: {_id: 0, STATE: '$_id.STATE', CITY: '$_id.CITY', C: '$C'}}",
@@ -474,7 +497,7 @@ public class TestMongoAdapter {
 		assertModel(MODEL)
 				.query("select state, count(distinct city) as cdc from \"adhoc_schema\".\"zips\"\n"
 						+ "where state in ('CA', 'TX') group by state order by state")
-				.returns("STATE=CA; CDC=1072\n" + "STATE=TX; CDC=1233\n")
+				.returns("state=CA; CDC=1072\n" + "state=TX; CDC=1233\n")
 				.queryContains(mongoChecker(
 						"{\n" + "  \"$match\": {\n"
 								+ "    \"$or\": [\n"
@@ -495,7 +518,6 @@ public class TestMongoAdapter {
 						"{$sort: {STATE: 1}}"));
 	}
 
-	@Disabled("Adhoc")
 	@Test
 	void testDistinctCountOrderBy() {
 		assertModel(MODEL)
@@ -503,10 +525,13 @@ public class TestMongoAdapter {
 						+ "group by state\n"
 						+ "order by cdc desc, state\n"
 						+ "limit 5")
-				.returns("STATE=AK; CDC=3\n" + "STATE=AL; CDC=3\n"
-						+ "STATE=AR; CDC=3\n"
-						+ "STATE=AZ; CDC=3\n"
-						+ "STATE=CA; CDC=3\n")
+				.returns("""
+						state=AK; cdc=3
+						state=AL; cdc=3
+						state=AR; cdc=3
+						state=AZ; cdc=3
+						state=CA; cdc=3
+						""")
 				.queryContains(mongoChecker("{$project: {CITY: '$city', STATE: '$state'}}",
 						"{$group: {_id: {CITY: '$CITY', STATE: '$STATE'}}}",
 						"{$project: {_id: 0, CITY: '$_id.CITY', STATE: '$_id.STATE'}}",
@@ -521,7 +546,7 @@ public class TestMongoAdapter {
 	void testProject() {
 		assertModel(MODEL).query("select state, city, 0 as zero from \"adhoc_schema\".\"zips\" order by state, city")
 				.limit(2)
-				.returns("STATE=AK; CITY=AKHIOK; ZERO=0\n" + "STATE=AK; CITY=AKIACHAK; ZERO=0\n")
+				.returns("state=AK; CITY=AKHIOK; ZERO=0\n" + "state=AK; CITY=AKIACHAK; ZERO=0\n")
 				.queryContains(mongoChecker("{$project: {CITY: '$city', STATE: '$state'}}",
 						"{$sort: {STATE: 1, CITY: 1}}",
 						"{$project: {STATE: 1, CITY: 1, ZERO: {$literal: 0}}}"));
@@ -532,9 +557,9 @@ public class TestMongoAdapter {
 	void testFilter() {
 		assertModel(MODEL).query("select state, city from \"adhoc_schema\".\"zips\" where state = 'CA'")
 				.limit(3)
-				.returnsUnordered("STATE=CA; CITY=LOS ANGELES", "STATE=CA; CITY=BELL GARDENS", "STATE=CA; CITY=NORWALK")
+				.returnsUnordered("state=CA; CITY=LOS ANGELES", "state=CA; CITY=BELL GARDENS", "state=CA; CITY=NORWALK")
 				.explainContains("PLAN=MongoToEnumerableConverter\n"
-						+ "  MongoProject(STATE=[CAST(ITEM($0, 'state')):VARCHAR(2)], CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)])\n"
+						+ "  MongoProject(state=[CAST(ITEM($0, 'state')):VARCHAR(2)], CITY=[CAST(ITEM($0, 'city')):VARCHAR(20)])\n"
 						+ "    MongoFilter(condition=[=(CAST(CAST(ITEM($0, 'state')):VARCHAR(2)):CHAR(2), 'CA')])\n"
 						+ "      MongoTableScan(table=[[mongo_raw, zips]])");
 	}
@@ -549,12 +574,12 @@ public class TestMongoAdapter {
 		assertModel(MODEL)
 				.query("select state, city from \"adhoc_schema\".\"zips\" where 'WI' < state order by state, city")
 				.limit(3)
-				.returnsOrdered("STATE=WV; CITY=BECKLEY", "STATE=WV; CITY=ELM GROVE", "STATE=WV; CITY=STAR CITY");
+				.returnsOrdered("state=WV; CITY=BECKLEY", "state=WV; CITY=ELM GROVE", "state=WV; CITY=STAR CITY");
 
 		assertModel(MODEL)
 				.query("select state, city from \"adhoc_schema\".\"zips\" where state > 'WI' order by state, city")
 				.limit(3)
-				.returnsOrdered("STATE=WV; CITY=BECKLEY", "STATE=WV; CITY=ELM GROVE", "STATE=WV; CITY=STAR CITY");
+				.returnsOrdered("state=WV; CITY=BECKLEY", "state=WV; CITY=ELM GROVE", "state=WV; CITY=STAR CITY");
 	}
 
 	/**
@@ -742,6 +767,6 @@ public class TestMongoAdapter {
 						+ "group by \"STATE\" "
 						+ "order by \"AVG(pop)\"")
 				.limit(2)
-				.returns("STATE=VT; AVG(pop)=26408\nSTATE=AK; AVG(pop)=26856\n");
+				.returns("state=VT; AVG(pop)=26408\nstate=AK; AVG(pop)=26856\n");
 	}
 }

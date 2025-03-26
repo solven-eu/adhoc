@@ -41,6 +41,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 public class ComparingMatcher implements IValueMatcher {
+	// Can not be an IValueMatcher
 	@NonNull
 	Object operand;
 
