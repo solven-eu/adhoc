@@ -48,9 +48,12 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
@@ -87,7 +90,9 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
-	// BEWARE Should we enable table as SQL or TableLike?
+	@NonNull
+	IOperatorsFactory operatorsFactory;
+
 	@NonNull
 	final TableLike<?> table;
 
@@ -151,10 +156,13 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 
 	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		tableQuery.getAggregators()
-				.stream()
-				.distinct()
-				.map(a -> toSqlAggregatedColumn(a))
+		tableQuery.getAggregators().stream().distinct().map(a -> {
+			try {
+				return toSqlAggregatedColumn(a);
+			} catch (RuntimeException e) {
+				throw new IllegalArgumentException("Issue converting to SQL: %s".formatted(a), e);
+			}
+		})
 				// EmptyAggregation leads to no SQL aggregation
 				.filter(a -> a != null)
 				.forEach(a -> selectedFields.add(a));
@@ -281,10 +289,9 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			AggregateFunction<?> sqlAggFunction;
 			if (SumAggregation.KEY.equals(aggregationKey)) {
 				// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
-				// dialect
-				// DEFAULT`
+				// dialect `DEFAULT`
 				Field<Double> field =
-						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), Double.class));
+						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
 
 				sqlAggFunction = DSL.sum(field);
 			} else if (MaxAggregation.KEY.equals(aggregationKey)) {
@@ -293,10 +300,30 @@ public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
 			} else if (MinAggregation.KEY.equals(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.min(field);
-			} else if (CountAggregation.KEY.equals(aggregationKey)) {
+			} else if (AvgAggregation.isAvg(aggregationKey)) {
+				Field<Double> field =
+						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+				sqlAggFunction = DSL.avg(field);
+			} else if (CountAggregation.isCount(aggregationKey)) {
 				Field<?> field = DSL.field(namedColumn);
 				sqlAggFunction = DSL.count(field);
+			} else if (RankAggregation.isRank(aggregationKey)) {
+				RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
+
+				Field<?> field = DSL.field(namedColumn);
+				String duckDbFunction;
+
+				if (agg.isAscElseDesc()) {
+					duckDbFunction = "arg_min";
+				} else {
+					duckDbFunction = "arg_max";
+				}
+
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
+				sqlAggFunction =
+						DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
 			} else if (EmptyAggregation.isEmpty(aggregationKey)) {
+				// There is no aggregation for empty: we just want to fetch groupBys
 				return null;
 			} else {
 				throw new UnsupportedOperationException(

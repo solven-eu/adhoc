@@ -69,6 +69,7 @@ import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -78,6 +79,7 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -328,16 +330,25 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
 				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
 
-		return toImmutableChunks(query, coordinatesToAggregates);
+		return toImmutableChunks(executingQueryContext, query, coordinatesToAggregates);
 	}
 
-	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(TableQuery tableQuery,
+	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(ExecutingQueryContext executingQueryContext,
+			TableQuery tableQuery,
 			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
 		tableQuery.getAggregators().forEach(aggregator -> {
 			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
 
+			if (executingQueryContext.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
+					&& operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
+				throw new NotYetImplementedException(
+						"Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
+			}
+
 			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
+			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
+			// underlyings
 			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(aggregator);
 
 			// eventBus.post(QueryStepIsCompleted.builder()
@@ -655,6 +666,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
 
+				boolean hasCarrierMeasure = executingQueryContext.getOptions()
+						.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
+						&& step.getMeasure() instanceof Aggregator agg
+						&& operatorsFactory.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers;
+
 				IColumnScanner<SliceAsMap> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
@@ -682,6 +698,37 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 							@Override
 							public void onObject(Object v) {
 								sliceFeeder.onObject(null);
+							}
+						};
+					};
+				} else if (hasCarrierMeasure) {
+					rowScanner = slice -> {
+						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
+
+						// `emptyValue` may not empty as we needed to materialize it to get up to here
+						// But now is time to force it to null, while materializing the slice.
+						return new IValueReceiver() {
+
+							// This is useful to prevent boxing emptyValue when long
+							@Override
+							public void onLong(long v) {
+								sliceFeeder.onLong(v);
+							}
+
+							// This is useful to prevent boxing emptyValue when double
+							@Override
+							public void onDouble(double v) {
+								sliceFeeder.onDouble(v);
+							}
+
+							@Override
+							public void onObject(Object v) {
+								if (v instanceof IAggregationCarrier aggregationCarrier) {
+									// Transfer the carried value
+									aggregationCarrier.acceptValueReceiver(sliceFeeder);
+								} else {
+									sliceFeeder.onObject(v);
+								}
 							}
 						};
 					};

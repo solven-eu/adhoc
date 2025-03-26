@@ -113,7 +113,9 @@ public class CompositeCubesTableWrapper implements IAdhocTableWrapper {
 
 			IAdhocQuery query = makeSubCubeQuery(compositeQuery, compositeGroupBy, cube, cubeColumns);
 
-			ITabularView view = cube.execute(query, Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY));
+			ITabularView view = cube.execute(query,
+					Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY,
+							StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED));
 
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing from
 			// current subCube.

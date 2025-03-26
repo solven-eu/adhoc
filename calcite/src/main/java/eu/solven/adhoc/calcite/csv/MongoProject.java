@@ -41,9 +41,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in MongoDB.
  */
+@Slf4j
 public class MongoProject extends Project implements AdhocCalciteRel {
 	public MongoProject(RelOptCluster cluster,
 			RelTraitSet traitSet,
@@ -84,22 +87,17 @@ public class MongoProject extends Project implements AdhocCalciteRel {
 				new MongoRules.RexToMongoTranslator((JavaTypeFactory) getCluster().getTypeFactory(),
 						MongoRules.mongoFieldNames(getInput().getRowType()));
 
+		// Clear previous named projects
 		implementor.clearProject();
 		for (Pair<RexNode, String> pair : getNamedProjects()) {
 			final String name = pair.right;
 			final String expr = pair.left.accept(translator);
-			boolean isSimple = expr.equalsIgnoreCase(name);
 
-			if (isSimple) {
-				implementor.projects.put(name, name);
-				// implementor.adhocQueryBuilder.groupByAlso(name);
-				// // items.add(isSimple ? MongoRules.maybeQuote(name) + ": 1" : MongoRules.maybeQuote(name) + ": " +
-				// // expr);
-			} else {
-				// implementor.adhocQueryBuilder.groupByAlso(name);
+			if (!name.equals(expr)) {
 				// throw new UnsupportedOperationException("Issue with name=%s expr=%s".formatted(name, expr));
-				implementor.projects.put(name, expr);
+				log.warn("Not trivial project: {] -> {}", name, expr);
 			}
+			implementor.projects.put(name, expr);
 		}
 	}
 }

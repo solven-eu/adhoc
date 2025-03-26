@@ -41,14 +41,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+
 /**
- * Relational expression representing a scan of a MongoDB collection.
+ * Relational expression representing a scan of a {@link IAdhocCubeWrapper}.
  *
  * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.
  */
-public class MongoTableScan extends TableScan implements AdhocCalciteRel {
-	final MongoTable mongoTable;
+public class AdhocCalciteTableScan extends TableScan implements AdhocCalciteRel {
+	final AdhocCalciteTable adhocTable;
 	final @Nullable RelDataType projectRowType;
 
 	/**
@@ -57,13 +59,13 @@ public class MongoTableScan extends TableScan implements AdhocCalciteRel {
 	 * @param projectRowType
 	 *            Fields and types to project; null to project raw row
 	 */
-	protected MongoTableScan(RelOptCluster cluster,
+	protected AdhocCalciteTableScan(RelOptCluster cluster,
 			RelTraitSet traitSet,
 			RelOptTable table,
-			MongoTable mongoTable,
+			AdhocCalciteTable mongoTable,
 			@Nullable RelDataType projectRowType) {
 		super(cluster, traitSet, ImmutableList.of(), table);
-		this.mongoTable = requireNonNull(mongoTable, "mongoTable");
+		this.adhocTable = requireNonNull(mongoTable, "adhocTable");
 		this.projectRowType = projectRowType;
 		checkArgument(getConvention() == AdhocCalciteRel.CONVENTION);
 	}
@@ -101,7 +103,7 @@ public class MongoTableScan extends TableScan implements AdhocCalciteRel {
 
 	@Override
 	public void implement(AdhocImplementor implementor) {
-		implementor.adhocTable = mongoTable;
+		implementor.adhocTable = adhocTable;
 		implementor.table = table;
 	}
 }

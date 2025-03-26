@@ -297,6 +297,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return values.set(index);
 	}
 
+	/**
+	 * 
+	 * @param <T>
+	 * @param input
+	 * @return a copy into a {@link MultitypeNavigableColumn}
+	 */
 	public static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copy(IMultitypeColumnFastGet<T> input) {
 		int size = Ints.checkedCast(input.size());
 
@@ -344,7 +350,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				values.add(e.getLongValue());
 			});
 
-			multitypeArrayBuilder.valuesL(LongImmutableList.of(values.elements())).valuesType((byte) 1);
+			multitypeArrayBuilder.valuesL(LongImmutableList.of(values.elements()))
+					.valuesType(IMultitypeConstants.MASK_LONG);
 		} else if (keyToDouble.size() == size) {
 			keyToDouble.sort(Map.Entry.comparingByKey());
 
@@ -355,13 +362,14 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				values.add(e.getDoubleValue());
 			});
 
-			multitypeArrayBuilder.valuesD(DoubleImmutableList.of(values.elements())).valuesType((byte) 2);
+			multitypeArrayBuilder.valuesD(DoubleImmutableList.of(values.elements()))
+					.valuesType(IMultitypeConstants.MASK_DOUBLE);
 		} else {
 			// Transfer notObject entries to object case as MultitypeNavigableColumn is mono-type
 			keyToObject.addAll(keyToLong);
 			keyToObject.addAll(keyToDouble);
 
-			keyToLong.sort(Map.Entry.comparingByKey());
+			keyToObject.sort((Comparator) Map.Entry.<T, Object>comparingByKey());
 
 			final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);
 
@@ -370,7 +378,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				values.add(e.getValue());
 			});
 
-			multitypeArrayBuilder.valuesO(values.build()).valuesType((byte) 8);
+			multitypeArrayBuilder.valuesO(values.build()).valuesType(IMultitypeConstants.MASK_OBJECT);
 		}
 
 		return MultitypeNavigableColumn.<T>builder()

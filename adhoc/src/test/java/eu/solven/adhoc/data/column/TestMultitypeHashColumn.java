@@ -131,7 +131,7 @@ public class TestMultitypeHashColumn {
 		storage.merge("k1", 3);
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.IRankAggregationCarrier.class);
 		});
 
 		storage.purgeAggregationCarriers();
@@ -153,7 +153,7 @@ public class TestMultitypeHashColumn {
 		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, 2 * i));
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.IRankAggregationCarrier.class);
 		});
 
 		storage.purgeAggregationCarriers();

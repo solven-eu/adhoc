@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -47,8 +48,9 @@ public class TestAdhocJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener =
-			new AdhocJooqTableQueryFactory(DSL.table(DSL.name("someTableName")), DSL.using(SQLDialect.DUCKDB));
+	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new StandardOperatorsFactory(),
+			DSL.table(DSL.name("someTableName")),
+			DSL.using(SQLDialect.DUCKDB));
 
 	@Test
 	public void testToCondition_ColumnEquals() {

@@ -28,7 +28,10 @@ package eu.solven.adhoc.data.column;
 public interface IMultitypeConstants {
 	byte MASK_EMPTY = 0;
 	byte MASK_LONG = 1;
+	// 2
 	byte MASK_DOUBLE = 1 << 1;
+	// 4
 	byte MASK_VARCHAR = 1 << 2;
+	// 8
 	byte MASK_OBJECT = 1 << 3;
 }

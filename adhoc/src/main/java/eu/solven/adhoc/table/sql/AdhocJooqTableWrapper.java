@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
+import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -75,13 +77,29 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 
 	@Override
 	public Map<String, Class<?>> getColumns() {
-		Field<?>[] select = dbParameters.getDslSupplier()
-				.getDSLContext()
-				.select()
-				.from(dbParameters.getTable())
-				.limit(0)
-				.fetch()
-				.fields();
+		Field<?>[] select;
+
+		try {
+			select = dbParameters.getDslSupplier()
+					.getDSLContext()
+					.select()
+					.from(dbParameters.getTable())
+					.limit(0)
+					.fetch()
+					.fields();
+		} catch (DataAccessException e) {
+			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
+				if (log.isDebugEnabled()) {
+					log.warn("No column for {} due to missing files", getName(), e);
+				} else {
+					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
+					log.warn("No column for {} due to missing files. sqlMsg={}", getName(), e.getMessage());
+				}
+				return Collections.emptyMap();
+			} else {
+				throw e;
+			}
+		}
 
 		// https://duckdb.org/docs/sql/expressions/star.html
 
@@ -173,7 +191,11 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 	}
 
 	protected IAdhocJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-		return AdhocJooqTableQueryFactory.builder().table(dbParameters.getTable()).dslContext(dslContext).build();
+		return AdhocJooqTableQueryFactory.builder()
+				.operatorsFactory(dbParameters.getOperatorsFactory())
+				.table(dbParameters.getTable())
+				.dslContext(dslContext)
+				.build();
 	}
 
 	protected Stream<ITabularRecord> toMapStream(AggregatedRecordFields fields, ResultQuery<Record> sqlQuery) {

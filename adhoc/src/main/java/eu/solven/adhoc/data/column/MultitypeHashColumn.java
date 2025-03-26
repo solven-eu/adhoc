@@ -425,10 +425,16 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 						if (object instanceof IAggregationCarrier aggregationCarrier) {
 							throw new IllegalArgumentException(
 									"Illegal purge from %s to %s".formatted(aggregationCarrier, object));
+						} else if (object == null) {
+							// `object` may be null while carrier was not null
+							// (e.g. `Rank2` while we received only one value)
+							log.trace("Skipping `null` from carrier for key={}", key);
+							// No need to remove as we end with a `removeIf` pass
+							// measureToAggregateO.remove(key);
+						} else {
+							// Replace current value
+							measureToAggregateO.put(key, object);
 						}
-
-						// Replace current value
-						measureToAggregateO.put(key, object);
 					}
 				});
 			}

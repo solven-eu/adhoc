@@ -56,7 +56,7 @@ public interface AdhocCalciteRel extends RelNode {
 		@Nullable
 		RelOptTable table;
 		@Nullable
-		MongoTable adhocTable;
+		AdhocCalciteTable adhocTable;
 
 		public AdhocImplementor(RexBuilder rexBuilder) {
 			this.rexBuilder = rexBuilder;

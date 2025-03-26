@@ -40,6 +40,7 @@ import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -75,6 +76,9 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		}
 		case RankAggregation.KEY: {
 			yield RankAggregation.make(options);
+		}
+		case AvgAggregation.KEY: {
+			yield new AvgAggregation();
 		}
 		default:
 			yield defaultAggregation(key, options);

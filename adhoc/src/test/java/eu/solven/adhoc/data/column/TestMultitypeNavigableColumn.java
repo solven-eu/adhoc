@@ -22,6 +22,11 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
@@ -30,7 +35,9 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestMultitypeNavigableColumn {
 	IAggregation sum = new SumAggregation();
 
@@ -121,7 +128,7 @@ public class TestMultitypeNavigableColumn {
 		storage.merge("k1", 3);
 
 		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.SingletonRankCarrier.class);
 		});
 
 		storage.purgeAggregationCarriers();
@@ -155,5 +162,44 @@ public class TestMultitypeNavigableColumn {
 		storage.onValue("k" + size, o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
+	}
+
+	@Test
+	public void testCopyFromNotSorted() {
+		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
+
+		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c", "d"));
+
+		// Not seeded as we want the test to check various configurations through time
+		Random r = new Random();
+		long seed = r.nextLong();
+		log.info("Seed={}", seed);
+		r = new Random(seed);
+
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(123);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(23.45);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onCharsequence("someString");
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onObject(LocalDate.now());
+
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeNavigableColumn.copy(notSorted);
+
+		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
+		Assertions.assertThat(slices).hasSize(4).containsExactly("a", "b", "c", "d");
+	}
+
+	@Test
+	public void testCopyFrom_carrierTurnsToNull() {
+		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
+
+		RankAggregation agg = RankAggregation.fromMax(5);
+
+		notSorted.append("a").onObject(agg.aggregate(123, 234));
+
+		notSorted.purgeAggregationCarriers();
+
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeNavigableColumn.copy(notSorted);
+
+		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
+		Assertions.assertThat(slices).isEmpty();
 	}
 }

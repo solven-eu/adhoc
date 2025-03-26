@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.aggregation.comparable;
 
+import java.sql.Array;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,12 +35,14 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -56,7 +60,11 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 	// ASC or DESC
 	public static final String P_ORDER = "order";
 
+	@Getter
 	private final int rank;
+	// If true, RANK(1) is MIN
+	// If false, RANK(1) is MAX
+	@Getter
 	private final boolean ascElseDesc;
 
 	/**
@@ -84,7 +92,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		} else if (rawRank instanceof String rankAsString) {
 			rank = Integer.parseInt(rankAsString);
 		} else {
-			throw new IllegalArgumentException("%s (int) is mandatory".formatted(P_RANK));
+			throw new IllegalArgumentException("p=`%s` (int) is mandatory".formatted(P_RANK));
 		}
 
 		boolean ascElseDesc;
@@ -126,6 +134,18 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 	}
 
+	public static IRankAggregationCarrier of(RankAggregation rankAggregation, Object first) {
+		if (first instanceof IRankAggregationCarrier carrier) {
+			return carrier;
+		} else if (first instanceof Array array) {
+			return RankedElementsCarrier.empty(rankAggregation).add(array);
+		} else if (first instanceof Iterable iterable) {
+			return RankedElementsCarrier.empty(rankAggregation).add(iterable);
+		} else {
+			return SingletonRankCarrier.builder().rankAggregation(rankAggregation).element(first).build();
+		}
+	}
+
 	/**
 	 * This class holds the top elements, enough to get the ranked elements.
 	 * 
@@ -141,6 +161,10 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		// BEWARE Should we have large capacity or not?
 		List<Object> topElements;
 
+		public static RankedElementsCarrier empty(RankAggregation rankAggregation) {
+			return RankedElementsCarrier.empty(rankAggregation.getRank(), rankAggregation.isAscElseDesc());
+		}
+
 		public static RankedElementsCarrier empty(int rank, boolean ascElseDesc) {
 			Comparator<Object> comparator;
 			if (ascElseDesc) {
@@ -154,15 +178,37 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 			return RankedElementsCarrier.builder().rank(rank).comparator(comparator).topElements(queue).build();
 		}
 
-		public static IRankAggregationCarrier of(int rank, boolean ascElseDesc, Object first) {
-			if (first instanceof IRankAggregationCarrier carrier) {
-				return carrier;
-			} else {
-				return empty(rank, ascElseDesc).add(first);
-			}
+		public RankedElementsCarrier add(Object element, Object... moreElements) {
+			return add(Lists.asList(element, moreElements));
 		}
 
 		public RankedElementsCarrier add(Object element) {
+			if (element == null) {
+				return this;
+			} else if (element instanceof Array) {
+				// TODO Handle `int[]` case
+				Object[] array;
+				try {
+					array = (Object[]) ((Array) element).getArray();
+				} catch (SQLException e) {
+					throw new IllegalArgumentException("Issue processing an sql array", e);
+				}
+				RankedElementsCarrier carrier = this;
+
+				for (Object subElement : array) {
+					carrier = carrier.add(subElement);
+				}
+				return carrier;
+			} else if (element instanceof Iterable<?> iterable) {
+				// We assume any Object which is Iterable is not Comparable, while Rank expect Comparable items
+				RankedElementsCarrier carrier = this;
+
+				for (Object subElement : iterable) {
+					carrier = carrier.add(subElement);
+				}
+				return carrier;
+			}
+
 			List<Object> merged;
 			if (element instanceof IRankAggregationCarrier otherCarrier) {
 				Iterator<?> thisElements = new LinkedList<>(topElements).iterator();
@@ -220,8 +266,15 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 	}
 
+	/**
+	 * A singleton {@link IRankAggregationCarrier}.
+	 * 
+	 * BEWARE What is
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Builder
-	public static class ImmutableRankCarrier implements IRankAggregationCarrier {
+	public static class SingletonRankCarrier implements IRankAggregationCarrier {
 		@NonNull
 		RankAggregation rankAggregation;
 
@@ -230,19 +283,22 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 		@Override
 		public void acceptValueReceiver(IValueReceiver valueConsumer) {
-			valueConsumer.onObject(element);
+			if (rankAggregation.rank == 1) {
+				valueConsumer.onObject(element);
+			} else {
+				valueConsumer.onObject(null);
+			}
 		}
 
 		@Override
 		public IRankAggregationCarrier add(Object input) {
-			return RankedElementsCarrier.of(rankAggregation.rank, rankAggregation.ascElseDesc, element).add(input);
+			return RankedElementsCarrier.empty(rankAggregation).add(element).add(input);
 		}
 
 		@Override
 		public Collection<?> getTopElements() {
 			return Set.of(element);
 		}
-
 	}
 
 	@Override
@@ -257,25 +313,22 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 			} else if (r instanceof IRankAggregationCarrier countHolder) {
 				return countHolder.add(l);
 			} else {
-				return RankedElementsCarrier.empty(rank, ascElseDesc).add(l).add(r);
+				return RankedElementsCarrier.empty(this).add(l, r);
 			}
 		}
 	}
 
 	protected IRankAggregationCarrier aggregateOne(Object one) {
-		if (one instanceof IRankAggregationCarrier asCarrier) {
-			return asCarrier;
-		} else {
-			return RankedElementsCarrier.of(rank, ascElseDesc, one);
-		}
+		return of(this, one);
 	}
 
 	@Override
 	public IRankAggregationCarrier wrap(Object v) {
-		if (v instanceof RankedElementsCarrier rankCarrier) {
-			// Does it happen on Composite cubes?
-			return rankCarrier;
-		}
-		return ImmutableRankCarrier.builder().rankAggregation(this).element(v).build();
+		return of(this, v);
 	}
+
+	public static boolean isRank(String aggregationKey) {
+		return KEY.equals(aggregationKey) || RankAggregation.class.getName().equals(aggregationKey);
+	}
+
 }

@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.query;
 
+import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
+
 /**
  * Various standard/not-exotic options for querying.
  * 
@@ -35,7 +38,7 @@ public enum StandardQueryOptions implements IQueryOption {
 	 * discarded).
 	 */
 	// BROKEN as there is no underlyingMeasures, but underlyingSteps
-	// How could we return an ITabularView with not homogenous slices?
+	// How could we return an ITabularView with not homogeneous slices?
 	@Deprecated
 	RETURN_UNDERLYING_MEASURES,
 
@@ -62,4 +65,10 @@ public enum StandardQueryOptions implements IQueryOption {
 	 * Force the {@link eu.solven.adhoc.query.cube.IAdhocQuery} to be executed with `debug==true`.
 	 */
 	DEBUG,
+
+	/**
+	 * Keep {@link IAggregationCarrier} wrapped. Especially useful for {@link CompositeCubesTableWrapper}.
+	 */
+	@Deprecated(since = "Not ready yet. Should always be used only for internal purposes")
+	AGGREGATION_CARRIERS_STAY_WRAPPED,
 }

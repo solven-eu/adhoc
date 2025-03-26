@@ -37,12 +37,14 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlSumAggFunction;
 import org.apache.calcite.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -113,6 +115,7 @@ public class MongoAggregate extends Aggregate implements AdhocCalciteRel {
 		List<String> list = new ArrayList<>();
 		final List<String> inNames = MongoRules.mongoFieldNames(getInput().getRowType());
 		final List<String> outNames = MongoRules.mongoFieldNames(getRowType());
+
 		int i = 0;
 		// if (groupSet.cardinality() == 1) {
 		// final String inName = inNames.get(groupSet.nth(0));
@@ -131,13 +134,21 @@ public class MongoAggregate extends Aggregate implements AdhocCalciteRel {
 		List<Aggregator> aggregators = new ArrayList<>();
 		list.add("_id: " + Util.toString(keys, "{", ", ", "}"));
 		// }
-		for (AggregateCall aggCall : aggCalls) {
+		for (Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
+			AggregateCall aggCall = namedAggCall.getKey();
+
 			list.add(MongoRules.maybeQuote(outNames.get(i++)) + ": "
 					+ toMongo(aggCall.getAggregation(), inNames, aggCall.getArgList()));
+			String aggCallName = aggCall.getName();
+			if (aggCallName == null) {
+				// TODO Unclear when/why this happens
+				aggCallName = namedAggCall.getValue();
+			}
+
 			if (aggCall.getAggregation().getKind() == SqlKind.COUNT) {
 				if (aggCall.getArgList().isEmpty()) {
 					aggregators.add(Aggregator.builder()
-							.name(aggCall.getName())
+							.name(aggCallName)
 							.aggregationKey(CountAggregation.KEY)
 							.columnName(ICountMeasuresConstants.ASTERISK)
 							.build());
@@ -149,13 +160,16 @@ public class MongoAggregate extends Aggregate implements AdhocCalciteRel {
 					String countedField = inNames.get(aggCall.getArgList().getFirst());
 					// COUNT only when given column is not null
 					aggregators.add(Aggregator.builder()
-							.name(aggCall.getName())
+							.name(aggCallName)
 							.aggregationKey(CountAggregation.KEY)
 							.columnName(countedField)
 							.build());
 				}
-			} else if (aggCall.getAggregation().getKind() == SqlKind.SUM
-					|| aggCall.getAggregation().getKind() == SqlKind.SUM0) {
+			} else if (aggCall.getAggregation() instanceof SqlSumAggFunction
+					|| aggCall.getAggregation() instanceof SqlSumEmptyIsZeroAggFunction
+			// aggCall.getAggregation().getKind() == SqlKind.SUM
+			// || aggCall.getAggregation().getKind() == SqlKind.SUM0
+			) {
 				if (aggCall.getArgList().size() != 1) {
 					throw new IllegalArgumentException(
 							"Can not SUM other than 1 column: %s".formatted(aggCall.getArgList()));
@@ -168,12 +182,29 @@ public class MongoAggregate extends Aggregate implements AdhocCalciteRel {
 					summedField = implementor.projects.get(summedField);
 				}
 				aggregators.add(Aggregator.builder()
-						.name(aggCall.getName())
+						.name(aggCallName)
 						.aggregationKey(SumAggregation.KEY)
 						.columnName(summedField)
 						.build());
+			} else if (aggCall.getAggregation().getKind() == SqlKind.AVG) {
+				if (aggCall.getArgList().size() != 1) {
+					throw new IllegalArgumentException(
+							"Can not SUM other than 1 column: %s".formatted(aggCall.getArgList()));
+				}
+				int index = aggCall.getArgList().getFirst();
+				String avgedField = getInput().getRowType().getFieldList().get(index).getName();
+				if (avgedField.startsWith("$f")) {
+					// org.apache.calcite.rex.RexUtil.createStructType(RelDataTypeFactory, List<? extends RexNode>,
+					// List<? extends String>, Suggester)
+					avgedField = implementor.projects.get(avgedField);
+				}
+				aggregators.add(Aggregator.builder()
+						.name(aggCallName)
+						.aggregationKey(AvgAggregation.KEY)
+						.columnName(avgedField)
+						.build());
 			} else {
-				measures.add(aggCall.getName());
+				measures.add(aggCallName);
 			}
 		}
 

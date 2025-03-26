@@ -98,7 +98,17 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 	public void testTableDoesNotExists() throws IOException {
 		Files.delete(tmpParquetPath);
 
-		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList())
+				.isInstanceOf(DataAccessException.class)
+				.hasMessageContaining("IO Error: No files found that match the pattern");
+	}
+
+	@Test
+	public void testGetColumns_TableDoesNotExists() throws IOException {
+		Files.delete(tmpParquetPath);
+
+		// This should not throw not to prevent Pivotable from loading
+		Assertions.assertThat(table.getColumns()).isEmpty();
 	}
 
 	@Test

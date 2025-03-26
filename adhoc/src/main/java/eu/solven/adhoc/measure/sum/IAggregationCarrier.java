@@ -44,7 +44,8 @@ public interface IAggregationCarrier {
 		/**
 		 * 
 		 * @param v
-		 *            some pre-aggregated value, typically computed by the {@link IAdhocTableWrapper}.
+		 *            some pre-aggregated value, typically computed by the {@link IAdhocTableWrapper}. Typically, for
+		 *            `RankAggregation`, we want to wrap all input values, not a pre-ranked value.
 		 * @return an {@link IAggregationCarrier}
 		 */
 		IAggregationCarrier wrap(Object v);

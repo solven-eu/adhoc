@@ -22,8 +22,12 @@
  */
 package eu.solven.adhoc.measure.aggregation.comparable;
 
+import java.sql.Array;
+import java.sql.SQLException;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
@@ -155,5 +159,60 @@ public class TestRankAggregation {
 		RankAggregation agg = RankAggregation.fromMax(2);
 		Object o = IValueProvider.getValue(vr -> agg.aggregate(123, 234).add(agg.wrap(345)).acceptValueReceiver(vr));
 		Assertions.assertThat(o).isEqualTo(234);
+	}
+
+	// Tables should return the `TOP(N)` entries. This is especially important for CompositeCube queries, as we need the
+	// `TOP(N)` from each cube to merge them correctly.
+	@Test
+	public void testAggregate_sqlArray() throws SQLException {
+		Array arrayFromSql1 = Mockito.mock(Array.class);
+		Mockito.when(arrayFromSql1.getArray()).thenReturn(new Object[] { 123, 234 });
+
+		Array arrayFromSql2 = Mockito.mock(Array.class);
+		Mockito.when(arrayFromSql2.getArray()).thenReturn(new Object[] { 234, 345 });
+
+		// Rank1
+		{
+			RankAggregation agg1 = RankAggregation.fromMax(1);
+			Object o =
+					IValueProvider.getValue(vr -> agg1.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Assertions.assertThat(o).isEqualTo(345);
+		}
+
+		// Rank2
+		{
+			RankAggregation agg2 = RankAggregation.fromMax(2);
+			Object o =
+					IValueProvider.getValue(vr -> agg2.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Assertions.assertThat(o).isEqualTo(234);
+		}
+
+		// Rank3
+		{
+			RankAggregation agg3 = RankAggregation.fromMax(3);
+			Object o =
+					IValueProvider.getValue(vr -> agg3.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Assertions.assertThat(o).isEqualTo(123);
+		}
+
+		// Rank4
+		{
+			RankAggregation agg4 = RankAggregation.fromMax(4);
+			Object o =
+					IValueProvider.getValue(vr -> agg4.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Assertions.assertThat(o).isEqualTo(null);
+		}
+	}
+
+	@Test
+	public void testWrapped_SingletonRankCarrier() {
+		RankAggregation agg1 = RankAggregation.fromMax(1);
+		RankAggregation agg2 = RankAggregation.fromMax(2);
+
+		// Given a single element, we know the rank1
+		Assertions.assertThat(IValueProvider.getValue(agg1.wrap(123)::acceptValueReceiver)).isEqualTo(123);
+
+		// Given a single element, we do not know the rankN
+		Assertions.assertThat(IValueProvider.getValue(agg2.wrap(123)::acceptValueReceiver)).isNull();
 	}
 }

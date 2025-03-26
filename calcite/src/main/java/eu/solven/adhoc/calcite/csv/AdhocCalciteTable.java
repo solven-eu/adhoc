@@ -57,14 +57,13 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Table based on a MongoDB collection.
+ * Table based on a {@link IAdhocCubeWrapper}.
  */
 @Slf4j
-public class MongoTable extends AbstractQueryableTable implements TranslatableTable {
+public class AdhocCalciteTable extends AbstractQueryableTable implements TranslatableTable {
 	final IAdhocCubeWrapper aqw;
 
-	/** Creates a MongoTable. */
-	MongoTable(IAdhocCubeWrapper aqw) {
+	AdhocCalciteTable(IAdhocCubeWrapper aqw) {
 		super(Object[].class);
 		this.aqw = aqw;
 	}
@@ -84,16 +83,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		// return typeFactory.builder().add("_MAP", mapType).build();
 
 		List<String> fieldNames = new ArrayList<>();
-		// fieldNames.add("id");
-		// fieldNames.add("name");
-		// fieldNames.add("age");
-		// this.fieldNames = names;
-
 		List<SqlTypeName> fieldTypes = new ArrayList<>();
-		// fieldTypes.add(SqlTypeName.BIGINT);
-		// fieldTypes.add(SqlTypeName.VARCHAR);
-		// fieldTypes.add(SqlTypeName.INTEGER);
-		// this.fieldTypes = types;
 
 		aqw.getColumns().forEach((fieldName, fieldType) -> {
 			fieldNames.add(fieldName);
@@ -102,6 +92,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 				fieldTypes.add(SqlTypeName.INTEGER);
 			} else if (fieldType == String.class) {
 				fieldTypes.add(SqlTypeName.VARCHAR);
+				// } else if (List.class.isAssignableFrom(fieldType)) {
+				// fieldTypes.add(SqlTypeName.ARRAY);
 			} else {
 				log.warn("Unclear SQL type given class={}", fieldType);
 				fieldTypes.add(SqlTypeName.ANY);
@@ -120,7 +112,11 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 	@Override
 	public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
 		final RelOptCluster cluster = context.getCluster();
-		return new MongoTableScan(cluster, cluster.traitSetOf(AdhocCalciteRel.CONVENTION), relOptTable, this, null);
+		return new AdhocCalciteTableScan(cluster,
+				cluster.traitSetOf(AdhocCalciteRel.CONVENTION),
+				relOptTable,
+				this,
+				null);
 	}
 
 	/**
@@ -215,13 +211,13 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 	/**
 	 * Implementation of {@link org.apache.calcite.linq4j.Queryable} based on a
-	 * {@link org.apache.calcite.adapter.mongodb.MongoTable}.
+	 * {@link org.apache.calcite.adapter.AdhocCalciteTable.MongoTable}.
 	 *
 	 * @param <T>
 	 *            element type
 	 */
 	public static class MongoQueryable<T> extends AbstractTableQueryable<T> {
-		MongoQueryable(QueryProvider queryProvider, SchemaPlus schema, MongoTable table, String tableName) {
+		MongoQueryable(QueryProvider queryProvider, SchemaPlus schema, AdhocCalciteTable table, String tableName) {
 			super(queryProvider, schema, table, tableName);
 		}
 
@@ -241,8 +237,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 		// private AdhocQueryEngine getTable() {
 		// return (AdhocQueryEngine) table;
 		// }
-		private MongoTable getTable() {
-			return (MongoTable) table;
+		private AdhocCalciteTable getTable() {
+			return (AdhocCalciteTable) table;
 		}
 
 		/**

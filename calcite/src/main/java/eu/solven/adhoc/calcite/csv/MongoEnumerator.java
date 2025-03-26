@@ -78,10 +78,11 @@ class MongoEnumerator implements Enumerator<Object> {
 				ITabularRecord map = cursor.next();
 
 				if (fields.size() == 1) {
-					current = map.getAggregate(fields.getFirst().getKey());
+					Entry<String, Class<?>> first = fields.getFirst();
+					current = toValue(map, first);
 					// TODO Cast to proper type given `.getValue`
 				} else {
-					current = fields.stream().map(e -> map.getAggregate(e.getKey())).toArray();
+					current = fields.stream().map(e -> toValue(map, e)).toArray();
 				}
 
 				return true;
@@ -92,6 +93,16 @@ class MongoEnumerator implements Enumerator<Object> {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private Object toValue(ITabularRecord map, Entry<String, Class<?>> first) {
+		Object aggregate = map.getAggregate(first.getKey());
+
+		if (aggregate != null) {
+			return convert(first.getKey(), aggregate, first.getValue());
+		}
+
+		return convert(first.getKey(), map.getGroupBy(first.getKey()), first.getValue());
 	}
 
 	@Override
@@ -179,6 +190,11 @@ class MongoEnumerator implements Enumerator<Object> {
 			// if (o instanceof Decimal128) {
 			// return new BigDecimal(((Decimal128) o).toString());
 			// }
+			if (o instanceof Integer intValue) {
+				return BigDecimal.valueOf(intValue);
+			} else if (o instanceof Long longValue) {
+				return BigDecimal.valueOf(longValue);
+			}
 		} else if (clazz == String.class) {
 			if (o.getClass().isArray()) {
 				return Primitive.OTHER.arrayToString(o);

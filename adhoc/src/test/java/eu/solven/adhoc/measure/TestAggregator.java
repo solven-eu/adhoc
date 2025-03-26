@@ -46,4 +46,19 @@ public class TestAggregator {
 		Assertions.assertThat(aggregator.getColumnName()).isEqualTo("otherColumnName");
 		Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo(SumAggregation.KEY);
 	}
+
+	@Test
+	public void testEdit() {
+		Aggregator aggregator = Aggregator.builder()
+				.name("someName")
+				.columnName("otherColumnName")
+				.aggregationKey("someKey")
+				.aggregationOption("someOptionKey", "someOptionValue")
+				.tag("someTag")
+				.build();
+
+		Aggregator copy = Aggregator.edit(aggregator).build();
+
+		Assertions.assertThat(copy).isEqualTo(aggregator);
+	}
 }

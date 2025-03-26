@@ -45,16 +45,19 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.util.NotYetImplementedException;
 
-public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -270,7 +273,7 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 				.hasSize(1);
 	}
 
-	// Make sure Composite can not only do SUMs
+	// Make sure Composite can not only do Linear SUMs
 	@Test
 	public void testQuery_Max() {
 		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
@@ -297,6 +300,74 @@ public class TestTableQuery_CompositeCube implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of("k1Min", 123D, "k1Max", 1234D))
 				.hasSize(1);
+	}
+
+	// Check aggregation with Carrier. Rank is especially difficult as we need the table to provide the TOP-N, so they
+	// are merged in the composite.
+	@Test
+	public void testQuery_Rank() {
+		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+
+		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
+		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+				.forest(MeasureForest.edit(initialCube3.getForest())
+						.measure(Aggregator.builder()
+								.name("k1Rank1")
+								.columnName("k1")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 1)
+								.build())
+						.measure(Aggregator.builder()
+								.name("k1Rank2")
+								.columnName("k1")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 2)
+								.build())
+						.measure(Aggregator.builder()
+								.name("k1Rank3")
+								.columnName("k1")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 3)
+								.build())
+						.build())
+				.build();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build()))
+				.hasRootCauseInstanceOf(NotYetImplementedException.class);
+		// ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
+		// MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+		//
+		// Assertions.assertThat(mapBased.getCoordinatesToValues())
+		// .containsEntry(Map.of(), Map.of("k1Rank1", 1234D, "k1Rank2", 234D, "k1Rank3", 123D))
+		// .hasSize(1);
+	}
+
+	@Test
+	public void testQuery_Avg() {
+		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+
+		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
+		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+				.forest(MeasureForest.edit(initialCube3.getForest())
+						.measure(Aggregator.builder()
+								.name("k1.avg")
+								.columnName("k1")
+								.aggregationKey(AvgAggregation.KEY)
+								.build())
+						.build())
+				.build();
+
+		Assertions.assertThatThrownBy(() -> cube3.execute(AdhocQuery.builder().measure("k1.avg").build()))
+				.hasRootCauseInstanceOf(NotYetImplementedException.class);
+
+		// ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1.avg").build());
+		// MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+		//
+		// Assertions.assertThat(mapBased.getCoordinatesToValues())
+		// .containsEntry(Map.of(), Map.of("k1.avg", 1234D))
+		// .hasSize(1);
 	}
 
 	@Test

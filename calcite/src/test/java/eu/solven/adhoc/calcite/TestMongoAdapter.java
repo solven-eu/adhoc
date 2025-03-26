@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc;
+package eu.solven.adhoc.calcite;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -64,7 +64,7 @@ import eu.solven.pepper.spring.PepperResourceHelper;
  */
 // TODO Rely on ADagTest
 // @Disabled
-public class MongoAdapterTest {
+public class TestMongoAdapter {
 
 	/** Connection factory based on the "mongo-zips" model. */
 	protected static final Resource MODEL = new ClassPathResource("/calcite_model-adhoc.json");
@@ -120,18 +120,17 @@ public class MongoAdapterTest {
 						rows.streamSlices(TableQuery.builder().build()).asMap().count()))
 				.explainContains(
 						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-								+ "    MongoTableScan(table=[[adhoc_schema, adhoc_table]])")
+								+ "    AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
-	@Disabled("Adhoc")
 	@Test
 	void testSumK1GroupBya() {
 		assertModel(MODEL).query("select sum('k1') from \"adhoc_schema\".\"adhoc_table\" GROUP BY a")
 				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 123))
-				.explainContains(
-						"PLAN=MongoToEnumerableConverter\n" + "  MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
-								+ "    MongoTableScan(table=[[mongo_raw, zips]])")
+				// .explainContains(
+				// "PLAN=MongoToEnumerableConverter\n" + " MongoAggregate(group=[{}], EXPR$0=[COUNT()])\n"
+				// + " MongoTableScan(table=[[mongo_raw, zips]])")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
@@ -348,27 +347,27 @@ public class MongoAdapterTest {
 						"{$sort: {EXPR$0: 1}}"));
 	}
 
-	@Disabled("Adhoc")
+	// @Disabled("Adhoc")
 	@Test
 	void testGroupByOneColumn() {
 		assertModel(MODEL)
-				.query("select state, count(*) as c from \"adhoc_schema\".\"zips\" group by state order by state")
+				.query("select state, count(*) as C from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(3)
-				.returns("STATE=AK; C=3\nSTATE=AL; C=3\nSTATE=AR; C=3\n")
-				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
+				.returns("state=AK; C=3\nstate=AL; C=3\nstate=AR; C=3\n")
+				.queryContains(mongoChecker("{$project: {state: '$state'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}}}",
 						"{$project: {STATE: '$_id', C: '$C'}}",
 						"{$sort: {STATE: 1}}"));
 	}
 
-	@Disabled("Adhoc")
+	// @Disabled("Adhoc")
 	@Test
 	void testGroupByOneColumnReversed() {
 		// Note extra $project compared to testGroupByOneColumn.
 		assertModel(MODEL)
-				.query("select count(*) as c, state from \"adhoc_schema\".\"zips\" group by state order by state")
+				.query("select count(*) as C, state from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
-				.returns("c=3; STATE=AK\nC=3; STATE=AL\n")
+				.returns("C=3; state=AK\nC=3; state=AL\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state'}}",
 						"{$group: {_id: '$STATE', C: {$sum: 1}}}",
 						"{$project: {STATE: '$_id', C: '$C'}}",
@@ -376,26 +375,27 @@ public class MongoAdapterTest {
 						"{$sort: {STATE: 1}}"));
 	}
 
-	@Disabled("Adhoc")
+	// @Disabled("Adhoc")
 	@Test
 	void testGroupByAvg() {
 		assertModel(MODEL)
-				.query("select state, avg(pop) as a from \"adhoc_schema\".\"zips\" group by state order by state")
+				.query("select state, avg(pop) as A from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
-				.returns("STATE=AK; A=26856\nSTATE=AL; A=43383\n")
+				.returns("state=AK; A=26856\nstate=AL; A=43383\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
 						"{$group: {_id: '$STATE', A: {$avg: '$POP'}}}",
 						"{$project: {STATE: '$_id', A: '$A'}}",
 						"{$sort: {STATE: 1}}"));
 	}
 
+	// The AVG may be computed by Calcite, instead of being requested directly to the table
 	@Disabled("Adhoc")
 	@Test
 	void testGroupByAvgSumCount() {
 		assertModel(MODEL).query(
-				"select state, avg(pop) as a, sum(pop) as s, count(pop) as c from \"adhoc_schema\".\"zips\" group by state order by state")
+				"select state, avg(pop) as A, sum(pop) as S, count(pop) as C from \"adhoc_schema\".\"zips\" group by state order by state")
 				.limit(2)
-				.returns("STATE=AK; A=26856; S=80568; C=3\n" + "STATE=AL; A=43383; S=130151; C=3\n")
+				.returns("state=AK; A=26856; S=80568; C=3\n" + "state=AL; A=43383; S=130151; C=3\n")
 				.queryContains(mongoChecker("{$project: {STATE: '$state', POP: '$pop'}}",
 						"{$group: {_id: '$STATE', _1: {$sum: '$POP'}, _2: {$sum: {$cond: [ {$eq: ['POP', null]}, 0, 1]}}}}",
 						"{$project: {STATE: '$_id', _1: '$_1', _2: '$_2'}}",

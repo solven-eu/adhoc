@@ -57,6 +57,6 @@ public class AdhocCalciteSchema extends AbstractSchema {
 		return schema.getNameToCube()
 				.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> new MongoTable(e.getValue())));
+				.collect(Collectors.toMap(e -> e.getKey(), e -> new AdhocCalciteTable(e.getValue())));
 	}
 }

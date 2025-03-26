@@ -82,7 +82,8 @@ public class Aggregator implements IMeasure, IHasAggregationKey {
 				.name(aggregator.getName())
 				.tags(aggregator.getTags())
 				.columnName(aggregator.getColumnName())
-				.aggregationKey(aggregator.getAggregationKey());
+				.aggregationKey(aggregator.getAggregationKey())
+				.aggregationOptions(aggregator.getAggregationOptions());
 	}
 
 	public static Aggregator countAsterisk() {

@@ -105,7 +105,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 					}
 				}), Pair.class));
 		final Expression table =
-				list.append("table", adhocImplementor.table.getExpression(MongoTable.MongoQueryable.class));
+				list.append("table", adhocImplementor.table.getExpression(AdhocCalciteTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
 		AdhocQuery adhocQuery = adhocImplementor.adhocQueryBuilder.build();
 		String queryAsString;

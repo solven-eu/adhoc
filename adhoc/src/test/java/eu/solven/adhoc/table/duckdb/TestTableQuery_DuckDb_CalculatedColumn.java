@@ -44,7 +44,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 
-public class TestTableQuery_CalculatedColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_CalculatedColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
