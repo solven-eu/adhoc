@@ -39,14 +39,18 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.cube.AdhocCubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTest implements IAdhocTestConstants {
 
@@ -145,6 +149,24 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 	}
 
 	@Test
+	public void testDescribe() {
+		initTables();
+		insertData();
+
+		AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
+				.columnsManager(AdhocColumnsManager.builder()
+						.transcoder(MapTableTranscoder.builder().queriedToUnderlying("name", "p.name").build())
+						.build())
+				.table(table)
+				.forest(forest)
+				.build();
+
+		cube.getColumns().forEach((column, type) -> {
+			cube.getCoordinates(column, IValueMatcher.MATCH_ALL, 10);
+		});
+	}
+
+	@Test
 	public void testGrandTotal() {
 		initTables();
 		insertData();
@@ -169,10 +191,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					forest,
-					table);
+			ITabularView result =
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
+							forest,
+							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -191,7 +213,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 		{
 			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").debug(true).build(),
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build(),
 					forest,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -211,10 +233,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").debug(true).build(),
-					forest,
-					table);
+			ITabularView result =
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build(),
+							forest,
+							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -232,10 +254,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").debug(true).build(),
-					forest,
-					table);
+			ITabularView result =
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build(),
+							forest,
+							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -253,10 +275,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").debug(true).build(),
-					forest,
-					table);
+			ITabularView result =
+					aqe.executeUnsafe(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
+							forest,
+							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -275,7 +297,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 		{
 			ITabularView result = aqe.executeUnsafe(
-					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").debug(true).build(),
+					AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build(),
 					forest,
 					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);

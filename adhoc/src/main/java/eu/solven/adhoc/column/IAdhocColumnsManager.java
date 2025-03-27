@@ -42,4 +42,13 @@ public interface IAdhocColumnsManager {
 
 	Object onMissingColumn(String column);
 
+	/**
+	 * This is typically important when the table has JOINs, as a columnName may be ambiguous through the JOINs.
+	 * 
+	 * @param cubeColumn
+	 *            some cube column
+	 * @return the equivalent table column
+	 */
+	String transcodeToTable(String cubeColumn);
+
 }

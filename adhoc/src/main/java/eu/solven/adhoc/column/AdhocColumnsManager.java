@@ -93,6 +93,11 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
 
 	@Override
+	public String transcodeToTable(String cubeColumn) {
+		return transcoder.underlyingNonNull(cubeColumn);
+	}
+
+	@Override
 	public ITabularRecordStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 

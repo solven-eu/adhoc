@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.duckdb.DuckDBConnection;
+import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
@@ -89,6 +90,8 @@ public class DuckDbHelper {
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {
+		Name columnName = DSL.name(column.split("\\."));
+
 		// select approx_count_distinct("id") "approx_count_distinct" from
 		// read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet') group by ()
 		TableQuery estimatedCardinalityQuery = TableQuery.builder()
@@ -96,7 +99,7 @@ public class DuckDbHelper {
 				.aggregator(Aggregator.builder()
 						.aggregationKey(ExpressionAggregation.KEY)
 						.name("approx_count_distinct")
-						.columnName("approx_count_distinct(\"%s\")".formatted(column))
+						.columnName("approx_count_distinct(%s)".formatted(columnName))
 						.build())
 				// .explain(true)
 				.build();
@@ -128,7 +131,7 @@ public class DuckDbHelper {
 				.aggregator(Aggregator.builder()
 						.aggregationKey(ExpressionAggregation.KEY)
 						.name("approx_top_k")
-						.columnName("approx_top_k(\"%s\", %s)".formatted(column, returnedCoordinates))
+						.columnName("approx_top_k(%s, %s)".formatted(columnName, returnedCoordinates))
 						.build())
 				// .explain(true)
 				.build();

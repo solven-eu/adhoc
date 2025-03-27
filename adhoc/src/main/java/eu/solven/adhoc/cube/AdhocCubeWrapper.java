@@ -99,7 +99,13 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 		Map<String, Class<?>> columnToType = new HashMap<>();
 
 		// First we register table columns
-		columnToType.putAll(table.getColumns());
+		table.getColumns().forEach((column, type) -> {
+			String tableColumn = columnsManager.transcodeToTable(column);
+
+			columnToType.put(tableColumn, type);
+		});
+
+		// TODO Add columns from IColumnGenerator
 
 		return columnToType;
 	}
