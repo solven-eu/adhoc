@@ -31,8 +31,10 @@ import com.google.common.base.Suppliers;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.Value;
@@ -59,8 +61,10 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	Object operand;
 
 	@JsonIgnore
+	@Getter(AccessLevel.PRIVATE)
 	Supplier<Boolean> operandIsLongLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isLongLike(getOperand()));
 	@JsonIgnore
+	@Getter(AccessLevel.PRIVATE)
 	Supplier<Boolean> operandIsDoubleLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isDoubleLike(getOperand()));
 
 	public Object getWrapped() {

@@ -85,7 +85,7 @@ public class TestOrMatcher {
 				    "like" : "b%"
 				  } ]
 				}
-												""".trim());
+																				""".trim());
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 

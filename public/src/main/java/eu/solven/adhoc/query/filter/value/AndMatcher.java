@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -130,7 +131,12 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		}
 	}
 
-	// TODO Refactor with OR
+	/**
+	 * 
+	 * @param matchers
+	 *            a {@link List} of {@link IValueMatcher}
+	 * @return a shorter {@link List} of {@link IValueMatcher} considering they would be AND-ed together.
+	 */
 	private static List<? extends IValueMatcher> simplifiedOwned(List<? extends IValueMatcher> matchers) {
 		List<IValueMatcher> simplified = new ArrayList<>();
 
@@ -139,7 +145,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 
 			boolean matcherIsIncluded = false;
 			for (IValueMatcher alreadyIn : simplified) {
-				Optional<IValueMatcher> optMerged = merge(alreadyIn, matcher);
+				Optional<IValueMatcher> optMerged = mergeMatchers(alreadyIn, matcher);
 
 				if (optMerged.isPresent()) {
 					matcherIsIncluded = true;
@@ -168,133 +174,192 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	 * @return true an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
 	 *         returning `owner AND owned`.
 	 */
-	static Optional<IValueMatcher> merge(IValueMatcher owner, IValueMatcher owned) {
-		Optional<IValueMatcher> mergedNotSwapped = rawMerge(owner, owned);
-		if (mergedNotSwapped.isPresent()) {
-			return mergedNotSwapped;
+	static Optional<IValueMatcher> mergeMatchers(IValueMatcher owner, IValueMatcher owned) {
+		if (owner.equals(owned)) {
+			return Optional.of(owner);
+		} else if (MATCH_NONE.equals(owner) || MATCH_NONE.equals(owned)) {
+			return Optional.of(MATCH_NONE);
+		} else {
+			// Equals
+			if (owned instanceof EqualsMatcher ownedEquals) {
+				return Optional.of(mergeGivenEquals(ownedEquals, owner));
+			} else if (owner instanceof EqualsMatcher ownerEquals) {
+				return Optional.of(mergeGivenEquals(ownerEquals, owned));
+			} else
+
+			// In
+			if (owned instanceof InMatcher ownedIn) {
+				return Optional.of(mergeGivenIn(ownedIn, owner));
+			} else if (owner instanceof InMatcher ownerIn) {
+				return Optional.of(mergeGivenIn(ownerIn, owned));
+			} else
+
+			// Null
+			if (owned instanceof NullMatcher ownedNull) {
+				return Optional.of(mergeGivenNull(ownedNull, owner));
+			} else if (owner instanceof NullMatcher ownerNull) {
+				return Optional.of(mergeGivenNull(ownerNull, owned));
+			} else
+
+			// NotMatcher
+			if (owned instanceof NotMatcher ownedNot) {
+				Optional<IValueMatcher> optSimplifiedWithNot = mergeGivenNot(ownedNot, owner);
+				if (optSimplifiedWithNot.isPresent()) {
+					return optSimplifiedWithNot;
+				}
+			} else if (owner instanceof NotMatcher ownerNot) {
+				Optional<IValueMatcher> optSimplifiedWithNot = mergeGivenNot(ownerNot, owned);
+				if (optSimplifiedWithNot.isPresent()) {
+					return optSimplifiedWithNot;
+				}
+			} else
+
+			// Comparing
+			if (owned instanceof ComparingMatcher ownedComparing) {
+				if (owner instanceof ComparingMatcher ownerComparing) {
+					Optional<IValueMatcher> optSimplified =
+							mergeComparing(owner, owned, ownedComparing, ownerComparing);
+					if (optSimplified.isPresent()) {
+						return optSimplified;
+					}
+				}
+			}
 		}
 
-		// We try swapping as the merge output is the best merge whatever the order of arguments
-		// `rawMerge` does not swap its arguments for simpler implementation
-		Optional<IValueMatcher> mergedSwapped = rawMerge(owned, owner);
-		if (mergedSwapped.isPresent()) {
-			return mergedSwapped;
+		return Optional.empty();
+	}
+
+	private static Optional<IValueMatcher> mergeComparing(IValueMatcher owner,
+			IValueMatcher owned,
+			ComparingMatcher ownedComparing,
+			ComparingMatcher ownerComparing) {
+		if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
+			return Optional.empty();
+		} else if (ownerComparing.isMatchIfNull() != ownedComparing.isMatchIfNull()) {
+			// `null` needs to be managed the same way for ownership
+			return Optional.empty();
+		}
+
+		Object ownerOperand = ownerComparing.getOperand();
+		Object ownedOperand = ownedComparing.getOperand();
+		if (ownerOperand.getClass() != ownedOperand.getClass()) {
+			// Different class may lead to Comparing issues
+			return Optional.empty();
+		} else {
+			int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
+
+			if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
+				// Either this is a between, or this is a matchNone
+				if (ownerComparing.isGreaterThan() && ownerMinusOwned > 0) {
+					// `a >= X && a <= Y && X >= Y` ==> `matchNone`
+					return Optional.of(IValueMatcher.MATCH_NONE);
+				} else if (!ownerComparing.isGreaterThan() && ownerMinusOwned < 0) {
+					// `a <= X && a >= Y && X <= Y` ==> `matchNone`
+					return Optional.of(IValueMatcher.MATCH_NONE);
+				} else {
+					// `a >= X && a <= Y && X <= Y` ==> `matchNone`
+					return Optional.empty();
+				}
+			} else {
+				// Necessarily owned
+
+				if (ownerComparing.isGreaterThan()) {
+					if (ownerMinusOwned >= 0) {
+						// `a >= X && a >= Y && X >= Y` ==> `a >= X`
+						// `a > X && a > Y && X >= Y` ==> `a > X`
+						return Optional.of(owner);
+					} else {
+						// `a >= X && a >= Y && X <= Y` ==> `a >= Y`
+						// `a > X && a > Y && X <= Y` ==> `a > Y`
+						return Optional.of(owned);
+					}
+				} else if (!ownerComparing.isGreaterThan()) {
+					// `a <= X && a <= Y && X <= Y` ==> `a <= X`
+					// `a < X && a < Y && X <= Y` ==> `a < X`
+					if (ownerMinusOwned <= 0) {
+						return Optional.of(owner);
+					} else {
+						return Optional.of(owned);
+					}
+				}
+			}
 		}
 
 		return Optional.empty();
 	}
 
 	/**
-	 * This will typically be called with `arg1` and `arg2`: the implementation does not need to swap the arguments.
 	 * 
-	 * @param owner
-	 * @param owned
-	 * @return
+	 * @param equalsMatcher
+	 * @param other
+	 * @return EqualsMatcher or matchNone
 	 */
-	private static Optional<IValueMatcher> rawMerge(IValueMatcher owner, IValueMatcher owned) {
-		if (owner.equals(owned)) {
-			return Optional.of(owner);
-		} else if (MATCH_NONE.equals(owner) || MATCH_NONE.equals(owned)) {
-			return Optional.of(MATCH_NONE);
-		} else if (owned instanceof ComparingMatcher ownedComparing) {
-			if (owner instanceof ComparingMatcher ownerComparing) {
-				if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
-					return Optional.empty();
-				} else if (ownerComparing.isMatchIfNull() != ownedComparing.isMatchIfNull()) {
-					// `null` needs to be managed the same way for ownership
-					return Optional.empty();
-				}
+	private static IValueMatcher mergeGivenEquals(EqualsMatcher equalsMatcher, IValueMatcher other) {
+		Object operand = equalsMatcher.getOperand();
 
-				Object ownerOperand = ownerComparing.getOperand();
-				Object ownedOperand = ownedComparing.getOperand();
-				if (ownerOperand.getClass() != ownedOperand.getClass()) {
-					// Different class may lead to Comparing issues
-					return Optional.empty();
-				} else {
-					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
+		if (other.match(operand)) {
+			return equalsMatcher;
+		} else {
+			return IValueMatcher.MATCH_NONE;
+		}
+	}
 
-					if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
-						// Either this is a between, or this is a matchNone
-						if (ownerComparing.isGreaterThan() && ownerMinusOwned > 0) {
-							// `a >= X && a <= Y && X >= Y` ==> `matchNone`
-							return Optional.of(IValueMatcher.MATCH_NONE);
-						} else if (!ownerComparing.isGreaterThan() && ownerMinusOwned < 0) {
-							// `a <= X && a >= Y && X <= Y` ==> `matchNone`
-							return Optional.of(IValueMatcher.MATCH_NONE);
-						} else {
-							// `a >= X && a <= Y && X <= Y` ==> `matchNone`
-							return Optional.empty();
-						}
-					} else {
-						// Necessarily owned
+	/**
+	 * 
+	 * @param nullMatcher
+	 * @param other
+	 * @return {@link NullMatcher} or matchNone
+	 */
+	private static IValueMatcher mergeGivenNull(NullMatcher nullMatcher, IValueMatcher other) {
+		if (other.match(null)) {
+			return nullMatcher;
+		} else {
+			return IValueMatcher.MATCH_NONE;
+		}
+	}
 
-						if (ownerComparing.isGreaterThan()) {
-							if (ownerMinusOwned >= 0) {
-								// `a >= X && a >= Y && X >= Y` ==> `a >= X`
-								// `a > X && a > Y && X >= Y` ==> `a > X`
-								return Optional.of(owner);
-							} else {
-								// `a >= X && a >= Y && X <= Y` ==> `a >= Y`
-								// `a > X && a > Y && X <= Y` ==> `a > Y`
-								return Optional.of(owned);
-							}
-						} else if (!ownerComparing.isGreaterThan()) {
-							// `a <= X && a <= Y && X <= Y` ==> `a <= X`
-							// `a < X && a < Y && X <= Y` ==> `a < X`
-							if (ownerMinusOwned <= 0) {
-								return Optional.of(owner);
-							} else {
-								return Optional.of(owned);
-							}
-						}
-					}
+	private static Optional<IValueMatcher> mergeGivenNot(NotMatcher notMatcher, IValueMatcher other) {
+		IValueMatcher negated = notMatcher.getNegated();
 
-				}
-			} else if (owner instanceof EqualsMatcher ownerEquals) {
-				Object ownedOperand = ownedComparing.getOperand();
-				Object ownerOperand = ownerEquals.getOperand();
-				if (ownerOperand.getClass() != ownedOperand.getClass()) {
-					// Different class may lead to Comparing issues
-					return Optional.empty();
-				} else {
-					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
-
-					if (ownerMinusOwned == 0) {
-						if (ownedComparing.isMatchIfEqual()) {
-							// `a == X && a >= Y && X == Y` ==> `a == X`
-							return Optional.of(ownerEquals);
-						} else {
-							return Optional.of(IValueMatcher.MATCH_NONE);
-						}
-					} else if (ownedComparing.isGreaterThan()) {
-						if (ownerMinusOwned > 0) {
-							// `a == X && a >= Y && X > Y` ==> `a >= X`
-							return Optional.of(ownerEquals);
-						} else {
-							// `a == X && a >= Y && X < Y` ==> `matchNone`
-							return Optional.of(IValueMatcher.MATCH_NONE);
-						}
-					} else if (!ownedComparing.isGreaterThan() && ownerMinusOwned < 0) {
-						if (ownerMinusOwned > 0) {
-							// `a == X && a <= Y && X < Y` ==> `a >= X`
-							return Optional.of(ownerEquals);
-						} else {
-							// `a == X && a <= Y && X > Y` ==> `matchNone`
-							return Optional.of(IValueMatcher.MATCH_NONE);
-						}
-					}
-				}
-			} else if (owner instanceof NullMatcher ownedNull) {
-				if (ownedComparing.isMatchIfNull()) {
-					// Can only be `null`
-					return Optional.of(ownedNull);
-				} else {
-					// Can not be both `null` and `!null`
-					return Optional.of(IValueMatcher.MATCH_NONE);
-				}
+		if (negated instanceof EqualsMatcher negatedEquals) {
+			if (!other.match(negatedEquals.getOperand())) {
+				// `other` does not accept the negated element in the `not`
+				// So the `not` is embedded in `other`
+				return Optional.of(other);
 			}
+		} else if (negated instanceof InMatcher negatedIn) {
+			Set<?> disallowedElements = negatedIn.getOperands();
+
+			List<?> disallowedButAllowedByOther =
+					disallowedElements.stream().filter(disallowed -> other.match(disallowed)).toList();
+
+			if (disallowedButAllowedByOther.isEmpty()) {
+				// The whole not is already rejected by `other`
+				return Optional.of(other);
+			}
+
+			AndMatcher simplerWithNotAndIn = AndMatcher.builder()
+					// Reject individually the elements not already rejected by other
+					.operand(NotMatcher.not(InMatcher.isIn(disallowedButAllowedByOther), false))
+					.operand(other)
+					.build();
+			return Optional.of(simplerWithNotAndIn);
 		}
 
 		return Optional.empty();
+	}
+
+	/**
+	 * 
+	 * @param inMatcher
+	 * @param other
+	 * @return InMatcher possibly simplified in Equals or none
+	 */
+	private static IValueMatcher mergeGivenIn(InMatcher inMatcher, IValueMatcher other) {
+		Set<?> inOperands = inMatcher.getOperands();
+
+		List<?> allowedInBoth = inOperands.stream().filter(ownerOperand -> other.match(ownerOperand)).toList();
+
+		return InMatcher.isIn(allowedInBoth);
 	}
 }

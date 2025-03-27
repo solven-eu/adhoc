@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +35,7 @@ import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestComparingMatcher {
@@ -73,23 +76,14 @@ public class TestComparingMatcher {
 	}
 
 	@Test
-	public void testComparing_or() {
-		// >= 123
-		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
-		// >= 234
-		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
-
-		Assertions.assertThat(OrMatcher.or(comparing123, comparing234)).isEqualTo(comparing123);
-	}
-
-	@Test
-	public void testComparing_and() {
+	public void testComparing() {
 		// >= 123
 		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 		// >= 234
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 
 		Assertions.assertThat(AndMatcher.and(comparing123, comparing234)).isEqualTo(comparing234);
+		Assertions.assertThat(OrMatcher.or(comparing123, comparing234)).isEqualTo(comparing123);
 	}
 
 	@Test
@@ -100,6 +94,7 @@ public class TestComparingMatcher {
 		IValueMatcher equals234 = EqualsMatcher.isEqualTo(234);
 
 		Assertions.assertThat(AndMatcher.and(comparing123, equals234)).isEqualTo(equals234);
+		Assertions.assertThat(OrMatcher.or(comparing123, equals234)).isEqualTo(comparing123);
 	}
 
 	@Test
@@ -110,5 +105,25 @@ public class TestComparingMatcher {
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 
 		Assertions.assertThat(AndMatcher.and(comparing234, equals123)).isEqualTo(IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(OrMatcher.or(comparing234, equals123))
+				.isInstanceOfSatisfying(OrMatcher.class, orMatcher -> {
+					Assertions.assertThat(orMatcher.getOperands()).hasSize(2).contains(equals123, comparing234);
+				});
+	}
+
+	@Test
+	public void testComparing_and_greaterThan_In_partiallyCompatible() {
+		// >= 234
+		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
+		// in (123,345)
+		IValueMatcher in123_345 = InMatcher.isIn(123, 345);
+
+		Assertions.assertThat(AndMatcher.and(comparing234, in123_345)).isEqualTo(InMatcher.isIn(Set.of(345)));
+		Assertions.assertThat(OrMatcher.or(comparing234, in123_345))
+				.isInstanceOfSatisfying(OrMatcher.class, orMatcher -> {
+					Assertions.assertThat(orMatcher.getOperands())
+							.hasSize(2)
+							.contains(InMatcher.isIn(Set.of(123)), comparing234);
+				});
 	}
 }

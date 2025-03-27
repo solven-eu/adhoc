@@ -90,10 +90,10 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		} catch (DataAccessException e) {
 			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
 				if (log.isDebugEnabled()) {
-					log.warn("No column for {} due to missing files", getName(), e);
+					log.warn("No column for table=`{}` due to missing files", getName(), e);
 				} else {
 					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
-					log.warn("No column for {} due to missing files. sqlMsg={}", getName(), e.getMessage());
+					log.warn("No column for table=`{}` due to missing files. sqlMsg={}", getName(), e.getMessage());
 				}
 				return Collections.emptyMap();
 			} else {

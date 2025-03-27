@@ -34,6 +34,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 
 public class TestAndMatcher {
 	@Test
@@ -69,8 +70,15 @@ public class TestAndMatcher {
 	}
 
 	@Test
+	public void testAndEqualsLike() {
+		Assertions.assertThat(AndMatcher.and(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%")))
+				.isEqualTo(IValueMatcher.MATCH_NONE);
+	}
+
+	@Test
 	public void testJackson() throws JsonProcessingException {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%"));
+		IValueMatcher matcher =
+				AndMatcher.and(NotMatcher.not(EqualsMatcher.isEqualTo("azerty")), LikeMatcher.matching("a%"));
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -80,12 +88,15 @@ public class TestAndMatcher {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "and",
-				  "operands" : [ "azerty", {
+				  "operands" : [ {
+				    "type" : "not",
+				    "negated" : "azerty"
+				  }, {
 				    "type" : "like",
-				    "like" : "b%"
+				    "like" : "a%"
 				  } ]
 				}
-								""".trim());
+																""".trim());
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 

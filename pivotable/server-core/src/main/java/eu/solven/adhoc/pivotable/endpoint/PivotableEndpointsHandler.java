@@ -147,7 +147,7 @@ public class PivotableEndpointsHandler {
 				ColumnarMetadata cubeColumns = schema.getCubes().get(cubeName).getColumns();
 
 				ColumnIdentifier columnId =
-						ColumnIdentifier.builder().isCubeElseTable(false).holder(cubeName).column("searched").build();
+						ColumnIdentifier.builder().isCubeElseTable(true).holder(cubeName).column("searched").build();
 
 				endpointColumns.addAll(addMatchingColumns(endpointSchema, columnId, columnSearch, cubeColumns));
 			});
