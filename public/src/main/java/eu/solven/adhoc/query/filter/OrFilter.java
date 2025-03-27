@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -41,9 +43,9 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Default implementation for {@link IAndFilter}.
+ * Default implementation for {@link IOrFilter}.
  *
- * Prefer `.and(...)` to optimize the matcher, except if you need an unoptimized `OrFilter`.
+ * Prefer `.or(...)` to optimize the matcher, except if you need an unoptimized `OrFilter`.
  *
  * @author Benoit Lacelle
  */
@@ -129,5 +131,20 @@ public class OrFilter implements IOrFilter {
 	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IAdhocFilter or(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
 		return or(Lists.asList(first, second, more));
+	}
+
+	/**
+	 *
+	 * @param columnToFilter
+	 *            each key maps to a column, while each value represent a matcher. May be an {@link IValueMatcher}, or a
+	 *            {@link Collection}, a `null`, or a literal.
+	 *
+	 * @return a filter doing an `OR` between each {@link Map} entry,
+	 */
+	public static IAdhocFilter or(Map<String, ?> columnToFilter) {
+		return or(columnToFilter.entrySet()
+				.stream()
+				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
+				.collect(Collectors.toList()));
 	}
 }

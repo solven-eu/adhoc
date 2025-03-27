@@ -43,6 +43,14 @@ public class TestNotMatcher {
 	}
 
 	@Test
+	public void testNotNot() {
+		IValueMatcher likeMatcher = LikeMatcher.matching("likeThis");
+		IValueMatcher not = NotMatcher.not(likeMatcher);
+		IValueMatcher notNot = NotMatcher.not(not);
+		Assertions.assertThat(notNot).isSameAs(likeMatcher);
+	}
+
+	@Test
 	public void testNotComparing() {
 		for (boolean someBoolean : Arrays.asList(true, false)) {
 			ComparingMatcher comparingMatcher = ComparingMatcher.builder()

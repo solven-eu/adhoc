@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 
@@ -60,7 +61,19 @@ public class TestComparingMatcher {
 	}
 
 	@Test
-	public void testOrComparing() {
+	public void testDefaultFlags() {
+		ComparingMatcher comparing = ComparingMatcher.builder().operand(123).build();
+
+		// By default, it is `>`, not `<`
+		Assertions.assertThat(comparing.isGreaterThan()).isFalse();
+		// By default, it is `>`, not `>=`
+		Assertions.assertThat(comparing.isMatchIfEqual()).isFalse();
+		// By default, it does not match null
+		Assertions.assertThat(comparing.isMatchIfNull()).isFalse();
+	}
+
+	@Test
+	public void testComparing_or() {
 		// >= 123
 		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 		// >= 234
@@ -70,12 +83,32 @@ public class TestComparingMatcher {
 	}
 
 	@Test
-	public void testAndComparing() {
+	public void testComparing_and() {
 		// >= 123
 		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 		// >= 234
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 
 		Assertions.assertThat(AndMatcher.and(comparing123, comparing234)).isEqualTo(comparing234);
+	}
+
+	@Test
+	public void testComparing_and_greaterThan_Equals_compatible() {
+		// >= 123
+		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
+		// == 234
+		IValueMatcher equals234 = EqualsMatcher.isEqualTo(234);
+
+		Assertions.assertThat(AndMatcher.and(comparing123, equals234)).isEqualTo(equals234);
+	}
+
+	@Test
+	public void testComparing_and_greaterThan_Equals_incompatible() {
+		// == 123
+		IValueMatcher equals123 = EqualsMatcher.isEqualTo(123);
+		// >= 234
+		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
+
+		Assertions.assertThat(AndMatcher.and(comparing234, equals123)).isEqualTo(IValueMatcher.MATCH_NONE);
 	}
 }

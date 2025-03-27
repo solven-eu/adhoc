@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -41,6 +43,17 @@ public class NotMatcher implements IValueMatcher {
 	}
 
 	public static IValueMatcher not(IValueMatcher negated) {
+		return not(negated, true);
+	}
+
+	/**
+	 * 
+	 * @param negated
+	 * @param doSimplify
+	 *            may be false when we when optimizations are already applied, to break simplification cycles
+	 * @return
+	 */
+	public static IValueMatcher not(IValueMatcher negated, boolean doSimplify) {
 		if (negated instanceof ComparingMatcher comparing) {
 			return ComparingMatcher.builder()
 					.greaterThan(!comparing.isGreaterThan())
@@ -48,6 +61,18 @@ public class NotMatcher implements IValueMatcher {
 					.matchIfNull(!comparing.isMatchIfNull())
 					.operand(comparing.getOperand())
 					.build();
+		} else if (negated instanceof NotMatcher not) {
+			return not.getNegated();
+		} else if (negated instanceof AndMatcher and) {
+			Set<IValueMatcher> operands = and.getOperands();
+
+			// `!AND` is same as `OR(!)`
+			return OrMatcher.or(operands.stream().map(NotMatcher::not).toList(), doSimplify);
+		} else if (negated instanceof OrMatcher or) {
+			Set<IValueMatcher> operands = or.getOperands();
+
+			// `!OR` is same as `AND(!)`
+			return AndMatcher.and(operands.stream().map(NotMatcher::not).toList(), doSimplify);
 		}
 
 		return NotMatcher.builder().negated(negated).build();

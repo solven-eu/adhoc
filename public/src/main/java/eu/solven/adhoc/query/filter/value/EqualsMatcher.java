@@ -34,6 +34,7 @@ import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -48,6 +49,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
 @EqualsAndHashCode(exclude = { "operandIsLongLike", "operandIsDoubleLike" })
+@ToString(exclude = { "operandIsLongLike", "operandIsDoubleLike" })
 // BEWARE This is not a strict `equals`, as it has special rules around ints and longs
 // We may introduce a StrictEqualsMatcher
 // BEWARE Should we introduce a way to match primitive value without boxing?

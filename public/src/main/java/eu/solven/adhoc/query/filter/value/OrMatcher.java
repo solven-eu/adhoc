@@ -96,6 +96,10 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	}
 
 	public static IValueMatcher or(Collection<? extends IValueMatcher> filters) {
+		return or(filters, true);
+	}
+
+	public static IValueMatcher or(Collection<? extends IValueMatcher> filters, boolean doSimplify) {
 		if (filters.stream().anyMatch(f -> f instanceof AndMatcher andMatcher && andMatcher.isMatchAll())) {
 			return MATCH_ALL;
 		}
@@ -113,72 +117,33 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 				})
 				.collect(Collectors.toList());
 
-		notMatchNone = simplifiedOwned(notMatchNone);
-
-		if (notMatchNone.isEmpty()) {
-			return IValueMatcher.MATCH_NONE;
-		} else if (notMatchNone.size() == 1) {
-			return notMatchNone.getFirst();
+		if (doSimplify) {
+			return simplifiedOwned(notMatchNone);
 		} else {
-			return OrMatcher.builder().operands(notMatchNone).build();
-		}
-	}
-
-	private static List<? extends IValueMatcher> simplifiedOwned(List<? extends IValueMatcher> matchers) {
-		List<IValueMatcher> simplified = new ArrayList<>();
-
-		for (IValueMatcher matcher : matchers) {
-			if (simplified.stream().anyMatch(alreadyIn -> isStricter(alreadyIn, matcher))) {
-				// matcher can be skipped
+			if (notMatchNone.isEmpty()) {
+				return IValueMatcher.MATCH_NONE;
+			} else if (notMatchNone.size() == 1) {
+				return notMatchNone.getFirst();
 			} else {
-				// Remove those owned
-				simplified.removeIf(alreadyIn -> isStricter(matcher, alreadyIn));
-				// Then add this matcher
-				simplified.add(matcher);
+				return OrMatcher.builder().operands(notMatchNone).build();
 			}
 		}
-
-		return simplified;
 	}
 
 	/**
+	 * This will `not` the input OR into an `AND`, so that only `AND` has complex/rich simplification rules
 	 * 
-	 * @param owner
-	 * @param owned
-	 * @return true if `owner OR owned` is equivalent to `owner`
+	 * @param matchers
+	 * @return
 	 */
-	// TODO How can this be refactored with AND?
-	static boolean isStricter(IValueMatcher owner, IValueMatcher owned) {
-		if (owner.equals(owned)) {
-			return true;
-		} else if (owner instanceof ComparingMatcher ownerComparing) {
-			if (owned instanceof ComparingMatcher ownedComparing) {
-				if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
-					// `<=` can not own `>=`
-					return false;
-				} else if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
-					return false;
-				} else if (ownerComparing.isMatchIfNull() != ownedComparing.isMatchIfNull()) {
-					// `null` needs to be managed the same way for ownership
-					return false;
-				}
+	private static IValueMatcher simplifiedOwned(List<? extends IValueMatcher> matchers) {
+		List<IValueMatcher> negated = new ArrayList<>();
+		matchers.forEach(matcher -> negated.add(NotMatcher.not(matcher)));
 
-				Object ownerOperand = ownerComparing.getOperand();
-				Object ownedOperand = ownedComparing.getOperand();
-				if (ownerOperand.getClass() != ownedOperand.getClass()) {
-					// Different class may lead to Comparing issues
-					return false;
-				} else {
-					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
-
-					if (ownerComparing.isGreaterThan() && ownerMinusOwned <= 0) {
-						// `(a >= X || a >= Y) && X <= Y` ==> `a >= X`
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
+		// `a OR b OR c` is `!(!a AND !b AND !c)`
+		IValueMatcher simplified = AndMatcher.and(negated);
+		// `WithoutSimplifications` to prevent infinite cycle
+		return NotMatcher.not(simplified, false);
 	}
+
 }

@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.filter.value;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,6 +96,10 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	}
 
 	public static IValueMatcher and(Collection<? extends IValueMatcher> filters) {
+		return and(filters, true);
+	}
+
+	public static IValueMatcher and(Collection<? extends IValueMatcher> filters, boolean doSimplify) {
 		if (filters.stream().anyMatch(f -> f instanceof OrMatcher orMatcher && orMatcher.isMatchNone())) {
 			return MATCH_NONE;
 		}
@@ -112,7 +117,9 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 				})
 				.collect(Collectors.toList());
 
-		notMatchAll = simplifiedOwned(notMatchAll);
+		if (doSimplify) {
+			notMatchAll = simplifiedOwned(notMatchAll);
+		}
 
 		if (notMatchAll.isEmpty()) {
 			return IValueMatcher.MATCH_ALL;
@@ -128,14 +135,27 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		List<IValueMatcher> simplified = new ArrayList<>();
 
 		for (IValueMatcher matcher : matchers) {
-			if (simplified.stream().anyMatch(alreadyIn -> isStricter(alreadyIn, matcher))) {
-				// matcher can be skipped
-			} else {
-				// Remove those owned
-				simplified.removeIf(alreadyIn -> isStricter(matcher, alreadyIn));
-				// Then add this matcher
-				simplified.add(matcher);
+			List<IValueMatcher> withMatcher = new ArrayList<>(matchers.size() + 1);
+
+			boolean matcherIsIncluded = false;
+			for (IValueMatcher alreadyIn : simplified) {
+				Optional<IValueMatcher> optMerged = merge(alreadyIn, matcher);
+
+				if (optMerged.isPresent()) {
+					matcherIsIncluded = true;
+					withMatcher.add(optMerged.get());
+				} else {
+					matcherIsIncluded = false;
+					withMatcher.add(alreadyIn);
+				}
 			}
+
+			if (!matcherIsIncluded) {
+				// matcher can be skipped. It is already included in previous step
+				withMatcher.add(matcher);
+			}
+
+			simplified = withMatcher;
 		}
 
 		return simplified;
@@ -145,39 +165,136 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	 * 
 	 * @param owner
 	 * @param owned
-	 * @return true if `owner AND owned` is equivalent to `owner`
+	 * @return true an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
+	 *         returning `owner AND owned`.
 	 */
-	static boolean isStricter(IValueMatcher owner, IValueMatcher owned) {
+	static Optional<IValueMatcher> merge(IValueMatcher owner, IValueMatcher owned) {
+		Optional<IValueMatcher> mergedNotSwapped = rawMerge(owner, owned);
+		if (mergedNotSwapped.isPresent()) {
+			return mergedNotSwapped;
+		}
+
+		// We try swapping as the merge output is the best merge whatever the order of arguments
+		// `rawMerge` does not swap its arguments for simpler implementation
+		Optional<IValueMatcher> mergedSwapped = rawMerge(owned, owner);
+		if (mergedSwapped.isPresent()) {
+			return mergedSwapped;
+		}
+
+		return Optional.empty();
+	}
+
+	/**
+	 * This will typically be called with `arg1` and `arg2`: the implementation does not need to swap the arguments.
+	 * 
+	 * @param owner
+	 * @param owned
+	 * @return
+	 */
+	private static Optional<IValueMatcher> rawMerge(IValueMatcher owner, IValueMatcher owned) {
 		if (owner.equals(owned)) {
-			return true;
-		} else if (owner instanceof ComparingMatcher ownerComparing) {
-			if (owned instanceof ComparingMatcher ownedComparing) {
-				if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
-					// `<=` can not own `>=`
-					return false;
-				} else if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
-					return false;
+			return Optional.of(owner);
+		} else if (MATCH_NONE.equals(owner) || MATCH_NONE.equals(owned)) {
+			return Optional.of(MATCH_NONE);
+		} else if (owned instanceof ComparingMatcher ownedComparing) {
+			if (owner instanceof ComparingMatcher ownerComparing) {
+				if (ownerComparing.isMatchIfEqual() != ownedComparing.isMatchIfEqual()) {
+					return Optional.empty();
 				} else if (ownerComparing.isMatchIfNull() != ownedComparing.isMatchIfNull()) {
 					// `null` needs to be managed the same way for ownership
-					return false;
+					return Optional.empty();
 				}
 
 				Object ownerOperand = ownerComparing.getOperand();
 				Object ownedOperand = ownedComparing.getOperand();
 				if (ownerOperand.getClass() != ownedOperand.getClass()) {
 					// Different class may lead to Comparing issues
-					return false;
+					return Optional.empty();
 				} else {
 					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
 
-					if (ownerComparing.isGreaterThan() && ownerMinusOwned >= 0) {
-						// `a >= X && a >= Y && X >= Y` ==> `a >= X`
-						return true;
+					if (ownerComparing.isGreaterThan() != ownedComparing.isGreaterThan()) {
+						// Either this is a between, or this is a matchNone
+						if (ownerComparing.isGreaterThan() && ownerMinusOwned > 0) {
+							// `a >= X && a <= Y && X >= Y` ==> `matchNone`
+							return Optional.of(IValueMatcher.MATCH_NONE);
+						} else if (!ownerComparing.isGreaterThan() && ownerMinusOwned < 0) {
+							// `a <= X && a >= Y && X <= Y` ==> `matchNone`
+							return Optional.of(IValueMatcher.MATCH_NONE);
+						} else {
+							// `a >= X && a <= Y && X <= Y` ==> `matchNone`
+							return Optional.empty();
+						}
+					} else {
+						// Necessarily owned
+
+						if (ownerComparing.isGreaterThan()) {
+							if (ownerMinusOwned >= 0) {
+								// `a >= X && a >= Y && X >= Y` ==> `a >= X`
+								// `a > X && a > Y && X >= Y` ==> `a > X`
+								return Optional.of(owner);
+							} else {
+								// `a >= X && a >= Y && X <= Y` ==> `a >= Y`
+								// `a > X && a > Y && X <= Y` ==> `a > Y`
+								return Optional.of(owned);
+							}
+						} else if (!ownerComparing.isGreaterThan()) {
+							// `a <= X && a <= Y && X <= Y` ==> `a <= X`
+							// `a < X && a < Y && X <= Y` ==> `a < X`
+							if (ownerMinusOwned <= 0) {
+								return Optional.of(owner);
+							} else {
+								return Optional.of(owned);
+							}
+						}
 					}
+
+				}
+			} else if (owner instanceof EqualsMatcher ownerEquals) {
+				Object ownedOperand = ownedComparing.getOperand();
+				Object ownerOperand = ownerEquals.getOperand();
+				if (ownerOperand.getClass() != ownedOperand.getClass()) {
+					// Different class may lead to Comparing issues
+					return Optional.empty();
+				} else {
+					int ownerMinusOwned = ((Comparable) ownerOperand).compareTo(ownedOperand);
+
+					if (ownerMinusOwned == 0) {
+						if (ownedComparing.isMatchIfEqual()) {
+							// `a == X && a >= Y && X == Y` ==> `a == X`
+							return Optional.of(ownerEquals);
+						} else {
+							return Optional.of(IValueMatcher.MATCH_NONE);
+						}
+					} else if (ownedComparing.isGreaterThan()) {
+						if (ownerMinusOwned > 0) {
+							// `a == X && a >= Y && X > Y` ==> `a >= X`
+							return Optional.of(ownerEquals);
+						} else {
+							// `a == X && a >= Y && X < Y` ==> `matchNone`
+							return Optional.of(IValueMatcher.MATCH_NONE);
+						}
+					} else if (!ownedComparing.isGreaterThan() && ownerMinusOwned < 0) {
+						if (ownerMinusOwned > 0) {
+							// `a == X && a <= Y && X < Y` ==> `a >= X`
+							return Optional.of(ownerEquals);
+						} else {
+							// `a == X && a <= Y && X > Y` ==> `matchNone`
+							return Optional.of(IValueMatcher.MATCH_NONE);
+						}
+					}
+				}
+			} else if (owner instanceof NullMatcher ownedNull) {
+				if (ownedComparing.isMatchIfNull()) {
+					// Can only be `null`
+					return Optional.of(ownedNull);
+				} else {
+					// Can not be both `null` and `!null`
+					return Optional.of(IValueMatcher.MATCH_NONE);
 				}
 			}
 		}
 
-		return false;
+		return Optional.empty();
 	}
 }

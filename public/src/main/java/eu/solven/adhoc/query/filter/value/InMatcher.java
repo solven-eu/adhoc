@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -73,7 +74,7 @@ public class InMatcher implements IValueMatcher {
 		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
 
 		AtomicInteger index = new AtomicInteger();
-		operands.stream().limit(128).forEach(filter -> {
+		operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 			toStringHelper.add("#" + index.getAndIncrement(), filter);
 		});
 
