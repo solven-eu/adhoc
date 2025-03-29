@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.table.sql;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import org.jooq.Record;
+import org.jooq.ResultQuery;
 
-public class AdhocBagOfMeasureBag {
-	final Map<String, IMeasureForest> nameToMeasureBag = new TreeMap<>();
+import eu.solven.adhoc.query.table.TableQuery;
 
-	public int size() {
-		return nameToMeasureBag.size();
-	}
+/**
+ * Converts a {@link TableQuery} into a sql {@link ResultQuery}
+ */
+public interface IJooqTableQueryFactory {
+	ResultQuery<Record> prepareQuery(TableQuery dbQuery);
 
-	public IMeasureForest getBag(String name) {
-		return nameToMeasureBag.get(name);
-	}
-
-	public AdhocBagOfMeasureBag putBag(String name, IMeasureForest bag) {
-		nameToMeasureBag.put(name, bag);
-
-		return this;
-	}
-
-	public Set<String> bagNames() {
-		return nameToMeasureBag.keySet();
-	}
+	/**
+	 * Typically used to convert JooQ {@link Record} to Adhoc record.
+	 * 
+	 * @param tableQuery
+	 * @return the ordered name of the selected columns.
+	 */
+	AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery);
 }

@@ -26,11 +26,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */

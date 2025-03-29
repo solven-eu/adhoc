@@ -33,17 +33,17 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
@@ -63,11 +63,11 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		forest.addMeasure(k2Sum);
 	}
 
-	private AdhocCubeWrapper makecube(IAdhocTableTranscoder transcoder) {
-		AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-				AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	private CubeWrapper makecube(IAdhocTableTranscoder transcoder) {
+		JooqTableWrapper table = new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 
-		AdhocCubeWrapper cubeWrapper = AdhocCubeWrapper.builder()
+		CubeWrapper cubeWrapper = CubeWrapper.builder()
 				.engine(aqe)
 				.table(table)
 				.forest(forest)
@@ -83,7 +83,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		IAdhocTableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -110,7 +110,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -139,7 +139,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
@@ -198,7 +198,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
@@ -231,7 +231,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -261,7 +261,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		IAdhocTableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)
@@ -294,7 +294,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
@@ -322,7 +322,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
 				.build();
 
-		AdhocCubeWrapper cube = makecube(transcoder);
+		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
 
 		dsl.createTableIfNotExists(tableName)

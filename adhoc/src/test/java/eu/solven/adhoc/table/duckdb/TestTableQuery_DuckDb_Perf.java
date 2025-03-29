@@ -37,7 +37,7 @@ import com.google.common.math.LongMath;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -48,9 +48,9 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -73,8 +73,8 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
@@ -82,10 +82,10 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	@BeforeEach

@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 
 /**
- * Used to separate aggregates from groupBy from {@link IAdhocTableWrapper}
+ * Used to separate aggregates from groupBy from {@link ITableWrapper}
  * 
  * @author Benoit Lacelle
  */

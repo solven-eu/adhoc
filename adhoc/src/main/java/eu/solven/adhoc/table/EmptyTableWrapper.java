@@ -33,13 +33,13 @@ import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * {@link IAdhocTableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet
- * known (e.g. when one has to switch the underlying table depending on some queried filter).
+ * {@link ITableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet known
+ * (e.g. when one has to switch the underlying table depending on some queried filter).
  *
  * @author Benoit Lacelle
  */
 @Builder
-public class EmptyTableWrapper implements IAdhocTableWrapper {
+public class EmptyTableWrapper implements ITableWrapper {
 
 	@NonNull
 	@Getter

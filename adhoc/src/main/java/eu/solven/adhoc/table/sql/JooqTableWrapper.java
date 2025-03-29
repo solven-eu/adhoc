@@ -49,8 +49,8 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ColumnMetadataHelpers;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters.AdhocJooqTableWrapperParametersBuilder;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -64,11 +64,11 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
+public class JooqTableWrapper implements ITableWrapper {
 
 	final String name;
 
-	final AdhocJooqTableWrapperParameters dbParameters;
+	final JooqTableWrapperParameters dbParameters;
 
 	@Override
 	public String getName() {
@@ -127,8 +127,8 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		return columnToType;
 	}
 
-	public static AdhocJooqTableWrapper newInstance(Map<String, ?> options) {
-		AdhocJooqTableWrapperParametersBuilder parametersBuilder = AdhocJooqTableWrapperParameters.builder();
+	public static JooqTableWrapper newInstance(Map<String, ?> options) {
+		JooqTableWrapperParametersBuilder parametersBuilder = JooqTableWrapperParameters.builder();
 
 		String tableName;
 		if (options.containsKey("tableName")) {
@@ -138,8 +138,8 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 			tableName = "someTableName";
 		}
 
-		AdhocJooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new AdhocJooqTableWrapper(tableName, parameters);
+		JooqTableWrapperParameters parameters = parametersBuilder.build();
+		return new JooqTableWrapper(tableName, parameters);
 	}
 
 	public DSLContext makeDsl() {
@@ -148,7 +148,7 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory();
+		IJooqTableQueryFactory queryFactory = makeQueryFactory();
 
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
 
@@ -167,10 +167,10 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		return new SuppliedTabularRecordStream(tableQuery, () -> tableStream);
 	}
 
-	protected IAdhocJooqTableQueryFactory makeQueryFactory() {
+	protected IJooqTableQueryFactory makeQueryFactory() {
 		DSLContext dslContext = makeDsl();
 
-		IAdhocJooqTableQueryFactory queryFactory = makeQueryFactory(dslContext);
+		IJooqTableQueryFactory queryFactory = makeQueryFactory(dslContext);
 		return queryFactory;
 	}
 
@@ -190,8 +190,8 @@ public class AdhocJooqTableWrapper implements IAdhocTableWrapper {
 		}
 	}
 
-	protected IAdhocJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-		return AdhocJooqTableQueryFactory.builder()
+	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
+		return JooqTableQueryFactory.builder()
 				.operatorsFactory(dbParameters.getOperatorsFactory())
 				.table(dbParameters.getTable())
 				.dslContext(dslContext)

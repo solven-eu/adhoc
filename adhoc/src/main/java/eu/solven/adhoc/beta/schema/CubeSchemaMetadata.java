@@ -24,7 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.Map;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.Builder;
@@ -33,7 +33,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A schema describing metadata for a {@link IAdhocCubeWrapper} and {@link IAdhocQuery}.
+ * A schema describing metadata for a {@link ICubeWrapper} and {@link IAdhocQuery}.
  * 
  * @author Benoit Lacelle
  */

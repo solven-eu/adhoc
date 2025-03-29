@@ -36,7 +36,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -55,7 +55,7 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
 	AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 

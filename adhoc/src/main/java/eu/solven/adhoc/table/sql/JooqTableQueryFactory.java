@@ -89,7 +89,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Builder
 @Slf4j
-public class AdhocJooqTableQueryFactory implements IAdhocJooqTableQueryFactory {
+public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	IOperatorsFactory operatorsFactory;
 

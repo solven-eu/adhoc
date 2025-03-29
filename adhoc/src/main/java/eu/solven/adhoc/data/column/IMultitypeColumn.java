@@ -29,7 +29,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * This is similar to a {@link Map}, but it is specialized for full-scan read operations and `.append`. If you need
@@ -49,8 +49,8 @@ public interface IMultitypeColumn<T> {
 	boolean isEmpty();
 
 	/**
-	 * Typically called by {@link AdhocQueryEngine} once an {@link IAdhocTableWrapper} measure is fully received, to
-	 * turn {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
+	 * Typically called by {@link AdhocQueryEngine} once an {@link ITableWrapper} measure is fully received, to turn
+	 * {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
 	 * differentiated with a column holding longs).
 	 */
 	void purgeAggregationCarriers();

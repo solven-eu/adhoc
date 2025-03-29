@@ -38,9 +38,9 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -69,8 +69,8 @@ public class InjectAdvancedCubesConfig {
 		if (!Files.isReadable(pathToParquet)) {
 			log.warn("path=`{}` is not readable", pathToParquet);
 		}
-		AdhocJooqTableWrapper table = new AdhocJooqTableWrapper("ban",
-				AdhocJooqTableWrapperParameters.builder()
+		JooqTableWrapper table = new JooqTableWrapper("ban",
+				JooqTableWrapperParameters.builder()
 						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 						.table(DSL.table("'%s'".formatted(pathToParquet)))
 						.build());

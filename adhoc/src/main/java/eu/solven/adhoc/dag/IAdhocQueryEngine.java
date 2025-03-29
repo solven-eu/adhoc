@@ -30,7 +30,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Holds the logic to execute a query, which means turning a {@link IAdhocQuery} into a {@link ITabularView}.
@@ -48,7 +48,7 @@ public interface IAdhocQueryEngine {
 	ITabularView execute(ExecutingQueryContext executingQueryContext);
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query, IMeasureForest measures, IAdhocTableWrapper table) {
+	default ITabularView executeUnsafe(IAdhocQuery query, IMeasureForest measures, ITableWrapper table) {
 		return executeUnsafe(query, Set.of(), measures, table, AdhocColumnsManager.builder().build());
 	}
 
@@ -56,7 +56,7 @@ public interface IAdhocQueryEngine {
 	default ITabularView executeUnsafe(IAdhocQuery query,
 			Set<? extends IQueryOption> options,
 			IMeasureForest measures,
-			IAdhocTableWrapper table,
+			ITableWrapper table,
 			IAdhocColumnsManager columnsManager) {
 		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
 

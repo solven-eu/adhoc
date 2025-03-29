@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 
 /**
  * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
@@ -32,7 +32,7 @@ import eu.solven.adhoc.cube.IAdhocCubeWrapper;
 public class DefaultMissingColumnManager implements IMissingColumnManager {
 
 	@Override
-	public Object onMissingColumn(IAdhocCubeWrapper cube, String column) {
+	public Object onMissingColumn(ICubeWrapper cube, String column) {
 		return "%s".formatted(cube.getName());
 	}
 

@@ -25,26 +25,22 @@ package eu.solven.adhoc.table.duckdb.var;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * Collecting the N underlying measures into a single array. This is due to most `table` not enabling aggregation over
+ * Collects the N underlying measures into a single array. This is due to most `table` not enabling aggregation over
  * arrays.
  * 
  * @author Benoit Lacelle
  */
-public class ExampleVaRArrayCombination implements ICombination, IColumnGenerator {
+public class ExampleVaRArrayCombination implements ICombination {
 
 	public static final String KEY = "ARRAY";
 
@@ -101,22 +97,6 @@ public class ExampleVaRArrayCombination implements ICombination, IColumnGenerato
 		} else {
 			return vr -> vr.onObject(valuesAsArray);
 		}
-
-	}
-
-	@Override
-	public Map<String, Class<?>> getColumns() {
-		return ImmutableMap.<String, Class<?>>builder()
-				.put(IExampleVaRConstants.C_SCENARIOINDEX, Integer.class)
-				.build();
-	}
-
-	@Override
-	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		return CoordinatesSample.builder()
-				.coordinates(IntStream.range(0, nbScenarios).mapToObj(i -> i).toList())
-				.estimatedCardinality(nbScenarios)
-				.build();
 	}
 
 }

@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * Used to transcode types, typically from/to {@link IAdhocTableWrapper}.
+ * Used to transcode types, typically from/to {@link ITableWrapper}.
  * 
  * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
  *

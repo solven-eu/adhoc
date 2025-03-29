@@ -40,16 +40,16 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTest implements IAdhocTestConstants {
@@ -74,8 +74,8 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(factTable,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(factTable,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.table(fromClause)
 					.build());
@@ -153,7 +153,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		initTables();
 		insertData();
 
-		AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
+		CubeWrapper cube = CubeWrapper.builder()
 				.columnsManager(AdhocColumnsManager.builder()
 						.transcoder(MapTableTranscoder.builder().queriedToUnderlying("name", "p.name").build())
 						.build())

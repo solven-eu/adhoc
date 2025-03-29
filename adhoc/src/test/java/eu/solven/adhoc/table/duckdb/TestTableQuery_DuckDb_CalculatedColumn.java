@@ -39,18 +39,18 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb_CalculatedColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
 	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.tableName(tableName)
 					.build());

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -41,9 +41,9 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdhocTestConstants {
 
@@ -56,18 +56,18 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
 
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	@Override

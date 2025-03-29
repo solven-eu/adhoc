@@ -23,14 +23,14 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A {@link CalculatedColumn} is a column which is not explicitly provided by the {@link IAdhocTableWrapper}, but
- * computed from it. It may be evaluated by the engine, or by Adhoc itself.
+ * A {@link CalculatedColumn} is a column which is not explicitly provided by the {@link ITableWrapper}, but computed
+ * from it. It may be evaluated by the engine, or by Adhoc itself.
  * 
  * @author Benoit Lacelle
  *

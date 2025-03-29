@@ -41,7 +41,7 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -131,7 +131,7 @@ public class TestManyToManyAdhocQuery_Large_Linear extends ADagTest implements I
 
 	public final AdhocQueryEngine aqe =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	public final CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 

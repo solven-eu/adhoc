@@ -44,7 +44,7 @@ import eu.solven.adhoc.util.IHasName;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocTableWrapper extends IHasColumns, IHasName {
+public interface ITableWrapper extends IHasColumns, IHasName {
 
 	/**
 	 *

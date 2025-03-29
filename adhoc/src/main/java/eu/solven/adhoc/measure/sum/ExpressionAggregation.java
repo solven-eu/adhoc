@@ -26,7 +26,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 
 /**
- * Used when the aggregation is an expression for {@link eu.solven.adhoc.table.IAdhocTableWrapper}.
+ * Used when the aggregation is an expression for {@link eu.solven.adhoc.table.ITableWrapper}.
  * 
  * The actual expression is provided through the {@link Aggregator} column.
  *

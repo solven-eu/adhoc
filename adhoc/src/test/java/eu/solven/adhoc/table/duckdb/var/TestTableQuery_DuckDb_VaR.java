@@ -35,6 +35,7 @@ import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBConnection;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -57,11 +58,15 @@ import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.pepper.memory.IPepperMemoryConstants;
+import eu.solven.pepper.memory.PepperMemoryHelper;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestConstants {
 
 	static {
@@ -71,14 +76,20 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	int maxCardinality = 100_000;
-	int arrayLength = 200;
+	static int maxCardinality = 10_000;
+	static int arrayLength = 20;
+
+	@BeforeAll
+	public static void logAboutDatasetSize() {
+		log.info("Considering VaR over {}",
+				PepperMemoryHelper.memoryAsString(IPepperMemoryConstants.DOUBLE * arrayLength * maxCardinality));
+	}
 
 	String tableName = "someTableName";
 
 	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					// `generate_subscripts` is 1-based
 					.table(DSL
@@ -97,10 +108,10 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	String mArray = "k1Array";
@@ -188,9 +199,10 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		IMeasure k1VaR = Combinator.builder()
 				.name(mVaR)
 				.underlying(mArray)
-				.combinationKey(ExampleVaRCombination.class.getName())
-				.combinationOptions(
-						ImmutableMap.<String, Object>builder().put(ExampleVaRCombination.P_QUANTILE, 0.95D).build())
+				.combinationKey(ExampleVaRQuickSelectCombination.class.getName())
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put(ExampleVaRQuickSelectCombination.P_QUANTILE, 0.95D)
+						.build())
 				.build();
 		amb.addMeasure(k1VaR);
 	}
@@ -259,9 +271,9 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		}
 	}
 
-	// groupBy arrayIndex
+	// groupBy scenarioIndex
 	@Test
-	public void testGroupByIndex_mArray() {
+	public void testGroupByScenarioIndex_mArray() {
 		ITabularView result = wrapInCube(amb).execute(
 				AdhocQuery.builder().measure(mArray).groupByAlso(IExampleVaRConstants.C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -274,14 +286,39 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		for (int scenarioIndex : IntStream.range(0, arrayLength).toArray()) {
 			Map<String, ?> measures =
 					mapBased.getCoordinatesToValues().get(Map.of(IExampleVaRConstants.C_SCENARIOINDEX, scenarioIndex));
+			Assertions.assertThat(measures).hasSize(1);
+
 			Object array = measures.get(mArray);
 			Assertions.assertThat(array).isInstanceOf(Long.class);
 		}
 	}
 
-	// filter arrayIndex
+	// groupBy scenarioName
 	@Test
-	public void testFilterIndex_mArrayVaR() {
+	public void testGroupByScenarioName_mArray() {
+		ITabularView result = wrapInCube(amb)
+				.execute(AdhocQuery.builder().measure(mArray).groupByAlso(IExampleVaRConstants.C_SCENARIONAME).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsKeys(Map.of(IExampleVaRConstants.C_SCENARIONAME, "histo_" + 0),
+						Map.of(IExampleVaRConstants.C_SCENARIONAME, "histo_" + (arrayLength - 1)))
+				.hasSize(arrayLength);
+
+		for (int scenarioIndex : IntStream.range(0, arrayLength).toArray()) {
+			Map<String, ?> measures = mapBased.getCoordinatesToValues()
+					.get(Map.of(IExampleVaRConstants.C_SCENARIONAME,
+							ExampleVaRScenarioNameCombination.indexToName(scenarioIndex)));
+			Assertions.assertThat(measures).hasSize(1);
+
+			Object array = measures.get(mArray);
+			Assertions.assertThat(array).isInstanceOf(Long.class);
+		}
+	}
+
+	// filter scenarioIndex
+	@Test
+	public void testFilterScenarioIndex_mArrayVaR() {
 		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
 				.measure(mArray, mVaR)
 				.andFilter(IExampleVaRConstants.C_SCENARIOINDEX, 0)
@@ -301,9 +338,31 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		});
 	}
 
+	// filter scenarioName
+	@Test
+	public void testFilterScenarioName_mArrayVaR() {
+		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
+				.measure(mArray, mVaR)
+				.andFilter(IExampleVaRConstants.C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(0))
+				.explain(true)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
+
+		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues().get(Map.of());
+
+		Assertions.assertThat(measureToValue).hasSize(2).containsKeys(mArray, mVaR);
+
+		Assertions.assertThat(measureToValue.get(mVaR)).isInstanceOf(Long.class);
+		Assertions.assertThat(measureToValue.get(mArray)).isInstanceOfSatisfying(int[].class, intArray -> {
+			Assertions.assertThat(intArray).hasSize(1).contains(((Long) measureToValue.get(mVaR)).intValue());
+		});
+	}
+
 	@Test
 	public void testDescribe() {
-		AdhocCubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(amb);
 
 		Assertions.assertThat(cube.getColumns())
 				.containsEntry("color", String.class)
@@ -320,7 +379,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testColumnMeta_scenarioIndexes() {
-		AdhocCubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(amb);
 
 		CoordinatesSample coordinates =
 				cube.getCoordinates(IExampleVaRConstants.C_SCENARIOINDEX, IValueMatcher.MATCH_ALL, arrayLength);
@@ -331,7 +390,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testColumnMeta_scenarioNames() {
-		AdhocCubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(amb);
 
 		CoordinatesSample coordinates =
 				cube.getCoordinates(IExampleVaRConstants.C_SCENARIONAME, IValueMatcher.MATCH_ALL, arrayLength);

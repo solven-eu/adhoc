@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -58,7 +58,7 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 	public final AdhocQueryEngine aqe =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final AdhocCubeWrapper aqw = ((ADagTest) this).aqw.toBuilder().engine(aqe).build();
+	public final CubeWrapper aqw = ((ADagTest) this).aqw.toBuilder().engine(aqe).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
 

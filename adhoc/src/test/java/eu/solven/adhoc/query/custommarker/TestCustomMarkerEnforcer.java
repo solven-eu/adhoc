@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -67,7 +67,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	LocalDate today = LocalDate.now();
 
 	public final AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	public final CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 

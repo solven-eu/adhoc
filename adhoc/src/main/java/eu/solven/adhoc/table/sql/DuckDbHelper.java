@@ -86,7 +86,7 @@ public class DuckDbHelper {
 		};
 	}
 
-	public static CoordinatesSample getCoordinates(AdhocJooqTableWrapper table,
+	public static CoordinatesSample getCoordinates(JooqTableWrapper table,
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {

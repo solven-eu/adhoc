@@ -55,9 +55,8 @@ public class PivotableServerApplication {
 		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
 
 		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT
-				// If the dataset is load available on disk, the cube will be automatically skipped
-				,IPivotableSpringProfiles.P_ADVANCED_DATASETS
-		);
+		// If the dataset is load available on disk, the cube will be automatically skipped
+				, IPivotableSpringProfiles.P_ADVANCED_DATASETS);
 
 		springApp.run(args);
 	}

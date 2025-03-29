@@ -48,7 +48,7 @@ public class TestAdhocJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new StandardOperatorsFactory(),
+	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 

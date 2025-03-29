@@ -34,13 +34,13 @@ import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
 
 /**
- * This is typically useful to manage cases where an {@link IAdhocTableWrapper} is not able to compute an aggregate, and
- * the aggregation has to be done by IAdhoc.
+ * This is typically useful to manage cases where an {@link ITableWrapper} is not able to compute an aggregate, and the
+ * aggregation has to be done by IAdhoc.
  * 
  * @author Benoit Lacelle
  */

@@ -144,13 +144,16 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 
 	/**
 	 *
-	 * @param valueMatcher some {@link IValueMatcher} expected to be an {@link EqualsMatcher}
-	 * @param clazz the expected type of the operand
-	 * @return an {@link Optional} of the operand, if {@link IValueMatcher} is an {@link EqualsMatcher} and its operand is an instance of clazz.
+	 * @param valueMatcher
+	 *            some {@link IValueMatcher} expected to be an {@link EqualsMatcher}
+	 * @param clazz
+	 *            the expected type of the operand
+	 * @return an {@link Optional} of the operand, if {@link IValueMatcher} is an {@link EqualsMatcher} and its operand
+	 *         is an instance of clazz.
 	 * @param <T>
 	 */
-	public static <T>Optional<T> extractOperand(IValueMatcher valueMatcher, Class<T> clazz) {
-		if (!(valueMatcher instanceof EqualsMatcher equalsMatcher) ) {
+	public static <T> Optional<T> extractOperand(IValueMatcher valueMatcher, Class<T> clazz) {
+		if (!(valueMatcher instanceof EqualsMatcher equalsMatcher)) {
 			return Optional.empty();
 		} else {
 			Object operand = equalsMatcher.getOperand();
@@ -165,7 +168,8 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 
 	/**
 	 *
-	 * @param valueMatcher some {@link IValueMatcher} expected to be an {@link EqualsMatcher}
+	 * @param valueMatcher
+	 *            some {@link IValueMatcher} expected to be an {@link EqualsMatcher}
 	 * @return an {@link Optional} of the operand, if {@link IValueMatcher} is an {@link EqualsMatcher}
 	 */
 	public static Optional<?> extractOperand(IValueMatcher valueMatcher) {

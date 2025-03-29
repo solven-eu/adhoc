@@ -34,12 +34,12 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
-	IAdhocTableWrapper table = InMemoryTable.builder().build();
+	ITableWrapper table = InMemoryTable.builder().build();
 
 	@Override
 	public void feedTable() {

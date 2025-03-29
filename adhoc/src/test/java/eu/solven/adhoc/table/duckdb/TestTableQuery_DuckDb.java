@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -53,9 +53,9 @@ import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstants {
 
@@ -68,8 +68,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
@@ -77,10 +77,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	@Override
@@ -270,7 +270,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		amb.addMeasure(k1Sum);
 		amb.addMeasure(k1SumSquared);
 
-		AdhocCubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(amb);
 
 		{
 			ITabularView result = cube.execute(AdhocQuery.builder()
@@ -546,7 +546,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		amb.addMeasure(k1Sum);
 
-		AdhocCubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(amb);
 
 		Assertions.assertThat(cube.getColumns())
 				.containsEntry("a", String.class)

@@ -28,12 +28,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import eu.solven.adhoc.beta.schema.*;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.beta.schema.*;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnMetadata;
@@ -88,7 +88,8 @@ public class PivotableEndpointsHandler {
 	/**
 	 *
 	 * @param request
-	 * @return a {@link List} of {@link TargetedEndpointSchemaMetadata}, filtered the optionally filtered table and cube.
+	 * @return a {@link List} of {@link TargetedEndpointSchemaMetadata}, filtered the optionally filtered table and
+	 *         cube.
 	 */
 	protected List<TargetedEndpointSchemaMetadata> matchingSchema(ServerRequest request) {
 		List<PivotableAdhocEndpointMetadata> endpoints = matchingEndpoints(request);

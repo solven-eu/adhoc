@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -60,12 +59,20 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMark
 	@Builder.Default
 	boolean debug = false;
 
-	public static MeasurelessQueryBuilder edit(AdhocQueryStep step) {
-		return MeasurelessQuery.builder()
-				.filter(step.getFilter())
-				.groupBy(step.getGroupBy())
-				.customMarker(step.getCustomMarker())
-				.explain(step.isExplain())
-				.debug(step.isDebug());
+	public static MeasurelessQueryBuilder edit(IWhereGroupbyAdhocQuery step) {
+		MeasurelessQueryBuilder builder =
+				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
+
+		if (step instanceof IIsExplainable isExplainable) {
+			builder.explain(isExplainable.isExplain());
+		}
+		if (step instanceof IIsDebugable isDebugable) {
+			builder.debug(isDebugable.isDebug());
+		}
+		if (step instanceof IHasCustomMarker hasCustomMarker) {
+			builder.customMarker(hasCustomMarker.getCustomMarker());
+		}
+
+		return builder;
 	}
 }

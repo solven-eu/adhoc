@@ -32,7 +32,7 @@ import org.jooq.impl.DSL;
 import lombok.NonNull;
 
 /**
- * Helps building a proper {@link DSLContext}, typically to {@link AdhocJooqTableWrapper}.
+ * Helps building a proper {@link DSLContext}, typically to {@link JooqTableWrapper}.
  * 
  * @author Benoit Lacelle
  *

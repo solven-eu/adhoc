@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -51,10 +51,10 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants {
@@ -77,15 +77,15 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	DSLContext dsl = dslSupplier.getDSLContext();
 
 	String tableName1 = "someTableName1";
-	AdhocJooqTableWrapper table1 = new AdhocJooqTableWrapper(tableName1,
-			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
+	JooqTableWrapper table1 = new JooqTableWrapper(tableName1,
+			JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
 
 	String tableName2 = "someTableName2";
-	AdhocJooqTableWrapper table2 = new AdhocJooqTableWrapper(tableName2,
-			AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
+	JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
+			JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest, AdhocJooqTableWrapper table) {
-		return AdhocCubeWrapper.builder()
+	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
+		return CubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
 				.forest(forest)
@@ -94,8 +94,8 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				.build();
 	}
 
-	private AdhocCubeWrapper makeAndFeedCompositeCube() {
-		AdhocCubeWrapper cube1;
+	private CubeWrapper makeAndFeedCompositeCube() {
+		CubeWrapper cube1;
 		{
 			dsl.createTableIfNotExists(tableName1)
 					.column("k1", SQLDataType.DOUBLE)
@@ -115,7 +115,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 			measureBag.addMeasure(Aggregator.countAsterisk());
 			cube1 = wrapInCube(measureBag, table1);
 		}
-		AdhocCubeWrapper cube2;
+		CubeWrapper cube2;
 		{
 			dsl.createTableIfNotExists(tableName2)
 					.column("k1", SQLDataType.DOUBLE)
@@ -144,7 +144,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 		IMeasureForest measureBagWithUnderlyings =
 				compositeCubesTable.injectUnderlyingMeasures(measureBagWithoutUnderlyings);
 
-		AdhocCubeWrapper cube3 = AdhocCubeWrapper.builder()
+		CubeWrapper cube3 = CubeWrapper.builder()
 				.engine(aqe)
 				.forest(measureBagWithUnderlyings)
 				.table(compositeCubesTable)
@@ -155,7 +155,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryCube1() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -184,7 +184,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryCube1Plus2() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -196,7 +196,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryCube1Plus2_groupByShared() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
 				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
@@ -210,7 +210,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryCube1Plus2_groupByUnshared() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
 				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
@@ -225,7 +225,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryCube1Plus2_filterShared() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
 				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("a", "a1").build());
@@ -240,7 +240,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	public void testQueryCube1Plus2_filterUnshared() {
 		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(
 				AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("b", "b1").explain(true).build());
@@ -262,7 +262,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQuery_Count() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
 				cube3.execute(AdhocQuery.builder().measure(Aggregator.countAsterisk()).debug(true).build());
@@ -276,10 +276,10 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	// Make sure Composite can not only do Linear SUMs
 	@Test
 	public void testQuery_Max() {
-		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
-		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+		CubeWrapper cube3 = initialCube3.toBuilder()
 				.forest(MeasureForest.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1Min")
@@ -306,10 +306,10 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	// are merged in the composite.
 	@Test
 	public void testQuery_Rank() {
-		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
-		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+		CubeWrapper cube3 = initialCube3.toBuilder()
 				.forest(MeasureForest.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1Rank1")
@@ -346,10 +346,10 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQuery_Avg() {
-		AdhocCubeWrapper initialCube3 = makeAndFeedCompositeCube();
+		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
-		AdhocCubeWrapper cube3 = initialCube3.toBuilder()
+		CubeWrapper cube3 = initialCube3.toBuilder()
 				.forest(MeasureForest.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1.avg")
@@ -372,7 +372,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryNoMeasures_common() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("a").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -385,7 +385,7 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 
 	@Test
 	public void testQueryNoMeasures_onlyOne() {
-		AdhocCubeWrapper cube3 = makeAndFeedCompositeCube();
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("b", "c").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

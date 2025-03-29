@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -42,9 +42,9 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 
@@ -54,8 +54,8 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 	String tableName = "someTableName";
 
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
@@ -63,7 +63,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(adhocEventBus).build();
 
@@ -92,7 +92,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		};
 		AdhocColumnsManager columnsManager =
 				AdhocColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
-		return AdhocCubeWrapper.builder()
+		return CubeWrapper.builder()
 				.engine(aqe)
 				.forest(forest)
 				.table(table)

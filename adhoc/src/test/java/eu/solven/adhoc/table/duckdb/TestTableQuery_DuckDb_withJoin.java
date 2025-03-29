@@ -39,15 +39,15 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements IAdhocTestConstants {
 
@@ -71,12 +71,12 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 	}
 
 	Connection dbConn = makeFreshInMemoryDb();
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(factTable,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(factTable,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.table(fromClause)
 					.build());
-	AdhocCubeWrapper cube = AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).build();
+	CubeWrapper cube = CubeWrapper.builder().engine(aqe).forest(forest).table(table).build();
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();

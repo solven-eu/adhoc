@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * This is used by {@link IAggregation} which need to differentiate clearly from inputs and a stateful-but-intermediate
@@ -44,7 +44,7 @@ public interface IAggregationCarrier {
 		/**
 		 * 
 		 * @param v
-		 *            some pre-aggregated value, typically computed by the {@link IAdhocTableWrapper}. Typically, for
+		 *            some pre-aggregated value, typically computed by the {@link ITableWrapper}. Typically, for
 		 *            `RankAggregation`, we want to wrap all input values, not a pre-ranked value.
 		 * @return an {@link IAggregationCarrier}
 		 */

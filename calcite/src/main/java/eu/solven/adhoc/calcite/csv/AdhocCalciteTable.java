@@ -49,7 +49,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -59,14 +59,14 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Table based on a {@link IAdhocCubeWrapper}.
+ * Table based on a {@link ICubeWrapper}.
  */
 @Slf4j
 public class AdhocCalciteTable extends AbstractQueryableTable implements TranslatableTable {
-	final IAdhocCubeWrapper cube;
+	final ICubeWrapper cube;
 	final Set<IQueryOption> queryOptions;
 
-	public AdhocCalciteTable(IAdhocCubeWrapper cube, Set<IQueryOption> queryOptions) {
+	public AdhocCalciteTable(ICubeWrapper cube, Set<IQueryOption> queryOptions) {
 		super(Object[].class);
 		this.cube = cube;
 		this.queryOptions = queryOptions;

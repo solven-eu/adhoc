@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.resource;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
+import java.util.Set;
 
-import eu.solven.adhoc.query.table.TableQuery;
+import com.google.common.collect.ImmutableMap;
 
-/**
- * Converts a {@link TableQuery} into a sql {@link ResultQuery}
- */
-public interface IAdhocJooqTableQueryFactory {
-	ResultQuery<Record> prepareQuery(TableQuery dbQuery);
+import eu.solven.adhoc.measure.IMeasureForest;
+import lombok.Builder;
+import lombok.Singular;
+import lombok.Value;
 
-	/**
-	 * Typically used to convert JooQ {@link Record} to Adhoc record.
-	 * 
-	 * @param tableQuery
-	 * @return the ordered name of the selected columns.
-	 */
-	AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery);
+@Value
+@Builder
+public class AdhocMeasureForests {
+	@Singular
+	final ImmutableMap<String, IMeasureForest> nameToForests;
+
+	public int size() {
+		return nameToForests.size();
+	}
+
+	public IMeasureForest getBag(String name) {
+		return nameToForests.get(name);
+	}
+
+	public Set<String> bagNames() {
+		return nameToForests.keySet();
+	}
 }

@@ -34,7 +34,7 @@
 			<version>${duckdb.version}</version>
 			<optional>true</optional>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>

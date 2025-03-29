@@ -25,12 +25,12 @@ package eu.solven.adhoc.beta.schema;
 import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -38,12 +38,11 @@ import lombok.Value;
 /**
  * Wraps together the core structures of Adhoc.
  * 
- * A schema is a bunch of {@link IAdhocTableWrapper}, {@link IMeasureForest} and {@link IAdhocCubeWrapper}.
+ * A schema is a bunch of {@link ITableWrapper}, {@link IMeasureForest} and {@link ICubeWrapper}.
  * 
  * @author Benoit Lacelle
  */
 public interface IAdhocSchema {
-
 
 	/**
 	 * Used to return a subset of {@link EndpointSchemaMetadata}
@@ -56,10 +55,10 @@ public interface IAdhocSchema {
 		Optional<String> cube = Optional.empty();
 		@NonNull
 		@Builder.Default
-		Optional<String> table= Optional.empty();
+		Optional<String> table = Optional.empty();
 		@NonNull
 		@Builder.Default
-		Optional<String> forest= Optional.empty();
+		Optional<String> forest = Optional.empty();
 	}
 
 	/**

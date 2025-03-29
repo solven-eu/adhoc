@@ -33,7 +33,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
@@ -43,7 +43,7 @@ import io.cucumber.java.en.When;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Basic step-definitions where the {@link IAdhocTableWrapper} is a {@link InMemoryTable}.
+ * Basic step-definitions where the {@link ITableWrapper} is a {@link InMemoryTable}.
  * 
  * @author Benoit Lacelle
  *

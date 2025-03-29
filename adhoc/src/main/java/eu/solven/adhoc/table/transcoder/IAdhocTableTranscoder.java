@@ -25,12 +25,12 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.Optional;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * Holds the logic mapping from the columns names in {@link IAdhocQuery} and columnNames in {@link IAdhocTableWrapper}.
+ * Holds the logic mapping from the columns names in {@link IAdhocQuery} and columnNames in {@link ITableWrapper}.
  * <p>
- * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link IAdhocTableWrapper}.
+ * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link ITableWrapper}.
  *
  * @see TranscodingContext
  * @see IAdhocTableReverseTranscoder

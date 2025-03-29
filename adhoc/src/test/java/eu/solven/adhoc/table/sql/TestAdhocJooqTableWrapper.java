@@ -35,7 +35,7 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -62,11 +62,11 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
-			AdhocJooqTableWrapperParameters dbParameters = AdhocJooqTableWrapperParameters.builder()
+			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 					.tableName(DSL.unquotedName(tableExpression))
 					.build();
-			AdhocJooqTableWrapper jooqDb = new AdhocJooqTableWrapper("fromParquet", dbParameters);
+			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
 
 			DSLContext dsl = jooqDb.makeDsl();
 
@@ -84,7 +84,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			{
 				UnsafeMeasureForestBag forest = UnsafeMeasureForestBag.builder().name("jooq").build();
 				forest.addMeasure(k1Sum);
-				AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
+				CubeWrapper aqw = CubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
 
 				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);

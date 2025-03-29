@@ -36,13 +36,13 @@ import org.apache.calcite.schema.SchemaPlus;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**
@@ -55,7 +55,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 	/** Public singleton, per factory contract. */
 	public static final AdhocCalciteSchemaFactory INSTANCE = new AdhocCalciteSchemaFactory();
 
-	public static final Map<String, IAdhocTableWrapper> nameToTable = new ConcurrentHashMap<>();
+	public static final Map<String, ITableWrapper> nameToTable = new ConcurrentHashMap<>();
 
 	final EventBus eventBus;
 
@@ -76,7 +76,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 		nameToTable.forEach((tableName, table) -> {
 			schema.getNameToTable().put(tableName, table);
 
-			AdhocCubeWrapper aqw = AdhocCubeWrapper.builder().name(name).engine(aqe).forest(amb).table(table).build();
+			CubeWrapper aqw = CubeWrapper.builder().name(name).engine(aqe).forest(amb).table(table).build();
 			schema.getNameToCube().put(tableName, aqw);
 		});
 
@@ -87,8 +87,8 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 		return new AdhocCalciteSchema(schema, queryOptions);
 	}
 
-	private IAdhocTableWrapper makeTableWrapper(String name, Map<String, ?> operand) {
-		IAdhocTableWrapper preparedTable = nameToTable.get(name);
+	private ITableWrapper makeTableWrapper(String name, Map<String, ?> operand) {
+		ITableWrapper preparedTable = nameToTable.get(name);
 		if (preparedTable != null) {
 			return preparedTable;
 		}
@@ -103,7 +103,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 		}
 
 		try {
-			return (IAdhocTableWrapper) clazz.getMethod("newInstance", Map.class).invoke(null, operand);
+			return (ITableWrapper) clazz.getMethod("newInstance", Map.class).invoke(null, operand);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
 			throw new IllegalArgumentException("Issue with class=" + dbWrapperClass, e);

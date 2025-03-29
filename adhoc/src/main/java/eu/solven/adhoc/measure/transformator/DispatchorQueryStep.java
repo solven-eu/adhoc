@@ -126,65 +126,67 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		Object value = underlyingVs.getFirst();
 
-		if (value != null) {
-			Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice.getSlice(), value);
+		if (value == null) {
+			// The underlyingStep is empty
+			return;
+		}
 
-			// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
-			// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
-			// G20`, `FR` should contributes only once).
-			boolean isMultiGroupSlice;
+		Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice.getSlice(), value);
 
-			{
-				Set<Set<String>> decompositionGroupBys =
-						decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
+		// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
+		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
+		// G20`, `FR` should contributes only once).
+		boolean isMultiGroupSlice;
 
-				NavigableSet<String> groupByColumns =
-						slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
-				if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {
-					// all group columns are expressed in groupBy
-					isMultiGroupSlice = false;
-				} else {
-					// TODO We may also manage the case where we filter a single group
-					isMultiGroupSlice = true;
-				}
+		{
+			Set<Set<String>> decompositionGroupBys =
+					decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
 
+			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
+			if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {
+				// all group columns are expressed in groupBy
+				isMultiGroupSlice = false;
+			} else {
+				// TODO We may also manage the case where we filter a single group
+				isMultiGroupSlice = true;
 			}
 
-			// This may actually be a mis-design, as `.decompose` should not have returned groups if groups are in
-			// filter.
-			Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
-
-			decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
-				if (isDebug()) {
-					log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
-				}
-
-				Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
-
-				if (
-				// Not multiGroupSlice: the group is single and clearly stated
-				!isMultiGroupSlice
-						// multiGroupSlice: ensure current element has not already been contributed
-						|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
-					SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
-					aggregatingView.merge(coordinateAsSlice).onObject(fragmentValue);
-
-					if (isDebug()) {
-						aggregatingView.onValue(coordinateAsSlice,
-								o -> log.info("[DEBUG] slice={} has been merged into agg={}",
-										fragmentCoordinate,
-										AdhocDebug.toString(o)));
-					}
-				} else {
-					// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
-					// times (for each contributed group). but the element should be counted only once.
-					// BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
-					// reason to keep. Though, a multi-filter on groups would be an unclear case.
-					// One weighted instead of another. But it is OK for many2many as all groups have the same weight.
-					log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
-				}
-			});
 		}
+
+		// This may actually be a mis-design, as `.decompose` should not have returned groups if groups are in
+		// filter.
+		Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
+
+		decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
+			if (isDebug()) {
+				log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
+			}
+
+			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
+
+			if (
+			// Not multiGroupSlice: the group is single and clearly stated
+			!isMultiGroupSlice
+					// multiGroupSlice: ensure current element has not already been contributed
+					|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
+				SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
+				aggregatingView.merge(coordinateAsSlice).onObject(fragmentValue);
+
+				if (isDebug()) {
+					aggregatingView.onValue(coordinateAsSlice,
+							o -> log.info("[DEBUG] slice={} has been merged into agg={}",
+									fragmentCoordinate,
+									AdhocDebug.toString(o)));
+				}
+			} else {
+				// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
+				// times (for each contributed group). but the element should be counted only once.
+				// BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
+				// reason to keep. Though, a multi-filter on groups would be an unclear case.
+				// One weighted instead of another. But it is OK for many2many as all groups have the same weight.
+				log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
+			}
+		});
 	}
 
 	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy queryGroupBy,

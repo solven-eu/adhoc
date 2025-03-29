@@ -40,15 +40,22 @@ import smile.sort.QuickSelect;
  * 
  * @author Benoit Lacelle
  */
-public class ExampleVaRCombination implements ICombination {
+@Deprecated(since = "This is unsafe as it relies on `QuickSelect` which modify in-place")
+public class ExampleVaRQuickSelectCombination implements ICombination {
 
-	public static final String KEY = "QUANTILE";
+	public static final String KEY = "EXAMPLEVAR_QUICKSELECT";
 
 	public static final String P_QUANTILE = "quantile";
 
 	final double quantile;
 
-	public ExampleVaRCombination(Map<String, ?> options) {
+	public ExampleVaRQuickSelectCombination(Map<String, ?> options) {
+		quantile = getQuantile(options);
+	}
+
+	public static double getQuantile(Map<String, ?> options) {
+		double quantile;
+
 		Optional<?> optRawQuantile = MapPathGet.getOptionalAs(options, P_QUANTILE);
 		if (optRawQuantile.isPresent()) {
 			Object rawQuantile = optRawQuantile.get();
@@ -67,12 +74,18 @@ public class ExampleVaRCombination implements ICombination {
 		if (quantile < 0D || quantile > 1D) {
 			throw new IllegalArgumentException("Expecting a quantile between 0 and 1");
 		}
+
+		return quantile;
 	}
 
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
 		Object rawArray = IValueProvider.getValue(vc -> slicedRecord.read(0, vc));
 		if (rawArray instanceof int[] array) {
+			if (array.length == 0) {
+				return vc -> vc.onObject(null);
+			}
+
 			long output;
 			if (quantile == 1D) {
 				output = MathEx.max(array);
@@ -85,6 +98,10 @@ public class ExampleVaRCombination implements ICombination {
 
 			return vc -> vc.onLong(output);
 		} else if (rawArray instanceof double[] array) {
+			if (array.length == 0) {
+				return vc -> vc.onObject(null);
+			}
+
 			double output;
 			if (quantile == 1D) {
 				output = MathEx.max(array);

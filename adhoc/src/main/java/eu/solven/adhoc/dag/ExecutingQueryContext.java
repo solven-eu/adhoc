@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -70,7 +70,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	IMeasureForest measures;
 
 	@NonNull
-	IAdhocTableWrapper table;
+	ITableWrapper table;
 
 	@NonNull
 	@Default

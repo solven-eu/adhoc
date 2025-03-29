@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -62,59 +63,77 @@ public class ExampleVaRDecomposition implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
+		MeasurelessQuery suppressedIndex = suppressColumn(step, IExampleVaRConstants.C_SCENARIOINDEX);
+		MeasurelessQuery suppressedName = suppressColumn(suppressedIndex, IExampleVaRConstants.C_SCENARIONAME);
+		return Collections.singletonList(suppressedName);
+	}
+
+	public static MeasurelessQuery suppressColumn(IWhereGroupbyAdhocQuery step, String column) {
 		MeasurelessQueryBuilder underlyingStep = MeasurelessQuery.edit(step);
 
-		if (step.getGroupBy().getGroupedByColumns().contains(IExampleVaRConstants.C_SCENARIOINDEX)) {
+		if (step.getGroupBy().getGroupedByColumns().contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
 			Map<String, IAdhocColumn> groupByWithoutIndex = new LinkedHashMap<>(step.getGroupBy().getNameToColumn());
-			groupByWithoutIndex.remove(IExampleVaRConstants.C_SCENARIOINDEX);
+			groupByWithoutIndex.remove(column);
 			underlyingStep.groupBy(GroupByColumns.of(groupByWithoutIndex.values())).build();
 		}
 
-		if (FilterHelpers.getFilteredColumns(step.getFilter()).contains(IExampleVaRConstants.C_SCENARIOINDEX)) {
+		if (FilterHelpers.getFilteredColumns(step.getFilter()).contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			IAdhocFilter supressedFilter =
-					SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(IExampleVaRConstants.C_SCENARIOINDEX));
+			IAdhocFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(column));
 
 			underlyingStep.filter(supressedFilter);
 			// BEWARE In a different design, we should ensure we query only the relevant underlying double columns.
 			// This is not done here as it would require more coupled logics
 		}
 
-		return Collections.singletonList(underlyingStep.build());
+		return underlyingStep.build();
 	}
 
 	@Override
 	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
-		if (slice.getQueryStep().getGroupBy().getGroupedByColumns().contains(IExampleVaRConstants.C_SCENARIOINDEX)) {
-			// Decompose by scenario
+		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+		boolean groupByScenario = groupedByColumns.contains(IExampleVaRConstants.C_SCENARIOINDEX)
+				|| groupedByColumns.contains(IExampleVaRConstants.C_SCENARIONAME);
 
-			IValueMatcher scenarioMatcher =
-					FilterHelpers.getValueMatcher(slice.asFilter(), IExampleVaRConstants.C_SCENARIOINDEX);
+		IValueMatcher scenarioIndexMatcher =
+				FilterHelpers.getValueMatcher(slice.asFilter(), IExampleVaRConstants.C_SCENARIOINDEX);
+		IValueMatcher scenarioNameMatcher =
+				FilterHelpers.getValueMatcher(slice.asFilter(), IExampleVaRConstants.C_SCENARIONAME);
+
+		if (groupByScenario) {
+			// Decompose by scenario: will return a value instead of an array
 
 			int[] array = (int[]) value;
 
 			Map<Map<String, ?>, Object> decomposition = new LinkedHashMap<>();
 
-			IntStream.range(0, nbScenarios).filter(scenario -> scenarioMatcher.match(scenario)).forEach(scenario -> {
-				decomposition.put(Map.of(IExampleVaRConstants.C_SCENARIOINDEX, scenario), array[scenario]);
-			});
+			IntStream.range(0, nbScenarios)
+					.filter(scenario -> scenarioIndexMatcher.match(scenario)
+							&& scenarioNameMatcher.match(ExampleVaRScenarioNameCombination.indexToName(scenario)))
+					.forEach(scenario -> {
+						decomposition.put(ImmutableMap.<String, Object>builder()
+								.put(IExampleVaRConstants.C_SCENARIOINDEX, scenario)
+								.put(IExampleVaRConstants.C_SCENARIONAME,
+										ExampleVaRScenarioNameCombination.indexToName(scenario))
+								.build(), array[scenario]);
+					});
 
 			return decomposition;
 		} else {
 			// Return an array, but possibly only a subset of scenarios
 
-			if (!FilterHelpers.getFilteredColumns(slice.asFilter()).contains(IExampleVaRConstants.C_SCENARIOINDEX)) {
+			Set<String> filteredColumns = FilterHelpers.getFilteredColumns(slice.asFilter());
+			if (!filteredColumns.contains(IExampleVaRConstants.C_SCENARIOINDEX)
+					&& !filteredColumns.contains(IExampleVaRConstants.C_SCENARIONAME)) {
 				// No filter on scenarios
 				return Map.of(Map.of(), value);
 			} else {
-				IValueMatcher scenarioMatcher =
-						FilterHelpers.getValueMatcher(slice.asFilter(), IExampleVaRConstants.C_SCENARIOINDEX);
-
 				int[] array = (int[]) value;
 
 				int[] filteredValuesAsArray = IntStream.range(0, nbScenarios)
-						.filter(scenario -> scenarioMatcher.match(scenario))
+						.filter(scenario -> scenarioIndexMatcher.match(scenario)
+								&& scenarioNameMatcher.match(ExampleVaRScenarioNameCombination.indexToName(scenario)))
 						.map(scenario -> array[scenario])
 						.toArray();
 
@@ -137,6 +156,13 @@ public class ExampleVaRDecomposition implements IDecomposition {
 		if (IExampleVaRConstants.C_SCENARIOINDEX.equals(column)) {
 			return CoordinatesSample.builder()
 					.coordinates(IntStream.range(0, nbScenarios).mapToObj(i -> i).toList())
+					.estimatedCardinality(nbScenarios)
+					.build();
+		} else if (IExampleVaRConstants.C_SCENARIONAME.equals(column)) {
+			return CoordinatesSample.builder()
+					.coordinates(IntStream.range(0, nbScenarios)
+							.mapToObj(i -> ExampleVaRScenarioNameCombination.indexToName(i))
+							.toList())
 					.estimatedCardinality(nbScenarios)
 					.build();
 		} else {

@@ -28,7 +28,7 @@ import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Generate {@link ExecutingQueryContext} given an {@link IAdhocQuery} and its context of execution.
@@ -39,14 +39,14 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  * @see IAdhocImplicitFilter
  */
 public interface IQueryPreparator {
-	default ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
+	default ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery query) {
 		return prepareQuery(table, measures, columnsManager, query, Set.of());
 	}
 
-	ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
+	ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery query,

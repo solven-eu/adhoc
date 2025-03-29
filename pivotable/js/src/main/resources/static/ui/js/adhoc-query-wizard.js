@@ -79,33 +79,33 @@ export default {
 
 			const searchedValue = search.value;
 			const searchedValueLowerCase = search.value.toLowerCase();
-			
+
 			for (const inputKey in inputsAsObjectOrArray) {
 				let match = false;
-				
+
 				const inputElement = inputsAsObjectOrArray[inputKey];
 
 				if (inputKey.includes(searchedValue) || JSON.stringify(inputElement).includes(searchedValue)) {
 					match = true;
 				}
-				
+
 				if (!match && !searchCaseSensitive.value) {
 					// Retry without case-sensitivity
 					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || JSON.stringify(inputElement).toLowerCase().includes(searchedValueLowerCase)) {
 						match = true;
 					}
 				}
-				
+
 				if (match) {
 					if (typeof inputsAsObjectOrArray === Array) {
 						filtereditems.push(inputElement);
 					} else {
 						// inputElement may be an Object or a primitive or a String
 						if (typeof inputElement === "object") {
-							filtereditems.push({...inputElement, ...{'key': inputKey}});
+							filtereditems.push({ ...inputElement, ...{ key: inputKey } });
 						} else {
-							filtereditems.push({'key': inputKey, 'value': inputElement});	
-						}	
+							filtereditems.push({ key: inputKey, value: inputElement });
+						}
 					}
 				}
 			}

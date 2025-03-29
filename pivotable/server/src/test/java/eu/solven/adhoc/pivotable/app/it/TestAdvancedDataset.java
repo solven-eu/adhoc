@@ -39,7 +39,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
@@ -92,7 +92,7 @@ public class TestAdvancedDataset {
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
-			IAdhocCubeWrapper cube = schema.getNameToCube().get("ban");
+			ICubeWrapper cube = schema.getNameToCube().get("ban");
 			AdhocQuery query = AdhocQuery.builder().build();
 			ITabularView view = cube.execute(query);
 
@@ -117,7 +117,7 @@ public class TestAdvancedDataset {
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
-			IAdhocCubeWrapper cube = schema.getNameToCube().get("ban");
+			ICubeWrapper cube = schema.getNameToCube().get("ban");
 
 			// PivotableCubeMetadata cube2 = cubesRegistry.getCube(PivotableCubeId.of(endpoint.getId(),
 			// cube.getName()));

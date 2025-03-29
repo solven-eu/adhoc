@@ -34,7 +34,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IQueryPreparator;
@@ -55,7 +55,7 @@ public class TestImplicitFilter_SpringSecurity {
 
 	InMemoryTable rows = InMemoryTable.builder().build();
 	UnsafeMeasureForestBag amb = UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
-	AdhocCubeWrapper aqw;
+	CubeWrapper aqw;
 
 	{
 		EventBus eventBus = new EventBus();
@@ -64,7 +64,7 @@ public class TestImplicitFilter_SpringSecurity {
 
 		IQueryPreparator queryPreparator =
 				DefaultQueryPreparator.builder().implicitFilter(new SpringSecurityAdhocImplicitFilter()).build();
-		aqw = AdhocCubeWrapper.builder()
+		aqw = CubeWrapper.builder()
 				.table(rows)
 				.engine(aqe)
 				.forest(amb)

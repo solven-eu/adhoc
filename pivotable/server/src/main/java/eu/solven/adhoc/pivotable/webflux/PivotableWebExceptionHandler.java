@@ -97,11 +97,7 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 					e);
 		} else {
 			// without stackTrace
-			log.warn("Returning a {} on path={} given {} ({})",
-					httpStatus,
-					requestPath,
-					e.getClass(),
-					e.getMessage());
+			log.warn("Returning a {} on path={} given {} ({})", httpStatus, requestPath, e.getClass(), e.getMessage());
 		}
 
 		Map<String, Object> responseBody = new LinkedHashMap<>();

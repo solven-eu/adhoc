@@ -32,7 +32,7 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -46,7 +46,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
 
 	@Override
-	public ExecutingQueryContext prepareQuery(IAdhocTableWrapper table,
+	public ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest measures,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery rawQuery,

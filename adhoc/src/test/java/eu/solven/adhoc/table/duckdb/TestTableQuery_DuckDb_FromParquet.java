@@ -46,16 +46,16 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implements IAdhocTestConstants {
 	Path tmpParquetPath;
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 
 	DSLContext dsl;
-	AdhocJooqTableWrapper table;
+	JooqTableWrapper table;
 
 	@BeforeEach
 	public void initParquetFiles() throws IOException {
@@ -64,8 +64,8 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 
 		Connection dbConn = makeFreshInMemoryDb();
-		table = new AdhocJooqTableWrapper(tableName,
-				AdhocJooqTableWrapperParameters.builder()
+		table = new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder()
 						.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
 						.tableName(tableName)
 						.build());

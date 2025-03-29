@@ -20,40 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube;
+package eu.solven.adhoc.table.sql;
 
-import java.util.Set;
+import org.jooq.Name;
+import org.jooq.TableLike;
+import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.IHasColumns;
-import eu.solven.adhoc.util.IHasName;
+import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 
-/**
- * Wrap the cube interface in Adhoc. It is similar to a table over which only aggregate queries are available.
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IAdhocCubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
+@Value
+@Builder
+public class JooqTableWrapperParameters {
+
+	@NonNull
+	@Default
+	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+
+	@NonNull
+	DSLSupplier dslSupplier;
+
+	@NonNull
+	final TableLike<?> table;
+
+	public static class JooqTableWrapperParametersBuilder {
+		public JooqTableWrapperParametersBuilder tableName(String tableName) {
+			this.tableName(DSL.quotedName(tableName));
+
+			return this;
+		}
+
+		public JooqTableWrapperParametersBuilder tableName(Name tableName) {
+			this.table(DSL.table(tableName));
+
+			return this;
+		}
 	}
-
-	/**
-	 * 
-	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
-	 * @return
-	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
-
-	// default
-	CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit);
 }

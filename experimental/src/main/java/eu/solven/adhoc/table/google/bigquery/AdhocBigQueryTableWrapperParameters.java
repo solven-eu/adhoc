@@ -28,7 +28,7 @@ import org.jooq.impl.DSL;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -38,7 +38,7 @@ import lombok.Value;
 @Builder
 public class AdhocBigQueryTableWrapperParameters {
 	@NonNull
-	AdhocJooqTableWrapperParameters base;
+	JooqTableWrapperParameters base;
 
 	@NonNull
 	@Default
@@ -59,7 +59,7 @@ public class AdhocBigQueryTableWrapperParameters {
 	}
 
 	public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
-		return new AdhocBigQueryTableWrapperParametersBuilder().base(AdhocJooqTableWrapperParameters.builder()
+		return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
 				// Google BigQuery seems not very far from MySQL
 				.dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
 				.tableName(tableName)

@@ -76,7 +76,7 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
@@ -214,7 +214,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 	}
 
 	protected ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
-		IAdhocTableWrapper table = executingQueryContext.getTable();
+		ITableWrapper table = executingQueryContext.getTable();
 		return executingQueryContext.getColumnsManager().openTableStream(table, tableQuery);
 	}
 
@@ -505,14 +505,15 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 
 				List<AdhocQueryStep> underlyingSteps;
 				try {
-					underlyingSteps=
-						wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
-							// Make sure the DAG has actual measure nodes, and not references
-							IMeasure notRefMeasure = executingQueryContext.resolveIfRef(underlyingStep.getMeasure());
-							return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
-						}).toList();
+					underlyingSteps = wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
+						// Make sure the DAG has actual measure nodes, and not references
+						IMeasure notRefMeasure = executingQueryContext.resolveIfRef(underlyingStep.getMeasure());
+						return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
+					}).toList();
 				} catch (RuntimeException e) {
-					throw new IllegalStateException("Issue computing the underlying querySteps for %s".formatted(queryStep), e);
+					throw new IllegalStateException(
+							"Issue computing the underlying querySteps for %s".formatted(queryStep),
+							e);
 				}
 
 				queryStepsDagBuilder.registerUnderlyings(queryStep, underlyingSteps);

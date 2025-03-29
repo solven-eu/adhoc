@@ -55,7 +55,7 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 
 	IAdhocTableTranscoder transcoder =
 			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
-	AdhocJooqTableQueryFactory streamOpener = new AdhocJooqTableQueryFactory(new StandardOperatorsFactory(),
+	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 

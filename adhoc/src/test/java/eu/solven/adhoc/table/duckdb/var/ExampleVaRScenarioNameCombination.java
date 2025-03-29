@@ -23,25 +23,19 @@
 package eu.solven.adhoc.table.duckdb.var;
 
 import java.util.Map;
-import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * Enabling a mapping from the column specifying a scenarioIndex to a column specifying a scenarioName.
  * 
  * @author Benoit Lacelle
  */
-public class ExampleVaRScenarioNameCombination implements ICombination, IColumnGenerator {
+public class ExampleVaRScenarioNameCombination implements ICombination {
 
 	public static final String KEY = "ARRAY";
 
@@ -64,12 +58,16 @@ public class ExampleVaRScenarioNameCombination implements ICombination, IColumnG
 		if (filteredScenarioIndex instanceof Number filteredScenarioIndexAsNumber) {
 			int indexAsInt = filteredScenarioIndexAsNumber.intValue();
 
-			Object scenarioName = "histo_" + indexAsInt;
+			Object scenarioName = indexToName(indexAsInt);
 			return vc -> vc.onObject(scenarioName);
 		} else {
 			// BEWARE Unclear case: some measure generated an unexpected scenarioIndex
 			return vc -> vc.onObject(filteredScenarioIndex);
 		}
+	}
+
+	public static String indexToName(int indexAsInt) {
+		return "histo_" + indexAsInt;
 	}
 
 	/**
@@ -79,19 +77,6 @@ public class ExampleVaRScenarioNameCombination implements ICombination, IColumnG
 	 */
 	protected Object noScenario() {
 		return "no_scenario";
-	}
-
-	@Override
-	public Map<String, Class<?>> getColumns() {
-		return ImmutableMap.<String, Class<?>>builder().put(IExampleVaRConstants.C_SCENARIONAME, String.class).build();
-	}
-
-	@Override
-	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		return CoordinatesSample.builder()
-				.coordinates(IntStream.range(0, nbScenarios).mapToObj(i -> "histo_" + i).toList())
-				.estimatedCardinality(nbScenarios)
-				.build();
 	}
 
 }

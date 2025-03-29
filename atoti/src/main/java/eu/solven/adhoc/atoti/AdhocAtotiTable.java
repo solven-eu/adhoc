@@ -46,7 +46,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -60,7 +60,7 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 @Builder
-public class AdhocAtotiTable implements IAdhocTableWrapper {
+public class AdhocAtotiTable implements ITableWrapper {
 	@NonNull
 	final IActivePivotManager apManager;
 

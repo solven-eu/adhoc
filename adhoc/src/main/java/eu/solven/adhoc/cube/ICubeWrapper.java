@@ -20,35 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.cube;
 
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.query.table.TableQuery;
+import java.util.Set;
+
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.measure.IHasMeasures;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.util.IHasColumns;
+import eu.solven.adhoc.util.IHasName;
 
 /**
- * Helps managing various edge-cases around columns, like missing columns or type transcoding.
+ * A cube can execute {@link IAdhocQuery}, returning an {@link ITabularView}.
+ * 
+ * It is generally wrapping an {@link IAdhocQueryEngine} over an {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
- * @see IMissingColumnManager
- * @see ICustomTypeManager
- * @see IAdhocTableTranscoder
+ *
  */
-public interface IAdhocColumnsManager {
-
-	ITabularRecordStream openTableStream(ITableWrapper table, TableQuery tableQuery);
-
-	Object onMissingColumn(String column);
+public interface ICubeWrapper extends IHasColumns, IHasName, IHasMeasures {
+	default ITabularView execute(IAdhocQuery query) {
+		return execute(query, Set.of());
+	}
 
 	/**
-	 * This is typically important when the table has JOINs, as a columnName may be ambiguous through the JOINs.
 	 * 
-	 * @param cubeColumn
-	 *            some cube column
-	 * @return the equivalent table column
+	 * @param query
+	 * @param options
+	 *            see {@link StandardQueryOptions}
+	 * @return
 	 */
-	String transcodeToTable(String cubeColumn);
+	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
 
+	// default
+	CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit);
 }

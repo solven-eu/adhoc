@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link IAdhocTableWrapper}.
+ * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */

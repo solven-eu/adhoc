@@ -28,7 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -40,17 +40,17 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest, AdhocJooqTableWrapper table) {
+	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder()
+		return CubeWrapper.builder()
 				.name(table.getName() + ".cube")
 				.engine(aqe)
 				.forest(forest)
@@ -66,21 +66,21 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 
 		String tableName1 = "someTableName1";
-		AdhocJooqTableWrapper table1 = new AdhocJooqTableWrapper(tableName1,
-				AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
+		JooqTableWrapper table1 = new JooqTableWrapper(tableName1,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
 
 		String tableName2 = "someTableName2";
-		AdhocJooqTableWrapper table2 = new AdhocJooqTableWrapper(tableName2,
-				AdhocJooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
+		JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
-		AdhocCubeWrapper cube1;
+		CubeWrapper cube1;
 		{
 			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
-		AdhocCubeWrapper cube2;
+		CubeWrapper cube2;
 		{
 			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);

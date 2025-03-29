@@ -45,8 +45,8 @@ import com.google.cloud.bigquery.TableResult;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocGoogleBigQueryTableWrapper extends AdhocJooqTableWrapper {
+public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 
 	final AdhocBigQueryTableWrapperParameters dbParameters;
 

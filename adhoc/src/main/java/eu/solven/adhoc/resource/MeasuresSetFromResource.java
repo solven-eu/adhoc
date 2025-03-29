@@ -43,7 +43,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -59,6 +58,7 @@ import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.resource.AdhocMeasureForests.AdhocMeasureForestsBuilder;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
@@ -408,20 +408,20 @@ public class MeasuresSetFromResource {
 		return AdhocJackson.makeObjectMapper(format);
 	}
 
-	public AdhocBagOfMeasureBag loadMapFromResource(String format, Resource resource) throws IOException {
+	public AdhocMeasureForests loadMapFromResource(String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
-			AdhocBagOfMeasureBag abmb = new AdhocBagOfMeasureBag();
+			AdhocMeasureForestsBuilder abmb = AdhocMeasureForests.builder();
 			List bags = objectMapper.readValue(inputStream, List.class);
 
 			bags.forEach(bag -> {
 				String name = MapPathGet.getRequiredString(bag, "name");
 				List measures = MapPathGet.getRequiredAs(bag, "measures");
-				abmb.putBag(name, makeBag(name, measures));
+				abmb.nameToForest(name, makeBag(name, measures));
 			});
 
-			return abmb;
+			return abmb.build();
 		}
 	}
 
@@ -445,7 +445,7 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	public String asString(String format, AdhocBagOfMeasureBag abmb) {
+	public String asString(String format, AdhocMeasureForests abmb) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();

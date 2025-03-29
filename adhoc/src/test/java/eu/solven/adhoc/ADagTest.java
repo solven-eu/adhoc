@@ -30,13 +30,13 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
-import eu.solven.adhoc.cube.AdhocCubeWrapper.AdhocCubeWrapperBuilder;
+import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
@@ -68,15 +68,11 @@ public abstract class ADagTest {
 			AdhocQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().build();
-	public final Supplier<IAdhocTableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
-	public final AdhocCubeWrapper aqw = AdhocCubeWrapper.builder()
-			.table(tableSupplier.get())
-			.engine(aqe)
-			.forest(amb)
-			.eventBus(eventBus::post)
-			.build();
+	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
+	public final CubeWrapper aqw =
+			CubeWrapper.builder().table(tableSupplier.get()).engine(aqe).forest(amb).eventBus(eventBus::post).build();
 
-	public IAdhocTableWrapper makeTable() {
+	public ITableWrapper makeTable() {
 		return rows;
 	}
 
@@ -99,7 +95,7 @@ public abstract class ADagTest {
 	/**
 	 * Typically used to edit the operatorsFactory
 	 */
-	public AdhocCubeWrapperBuilder editCube() {
+	public CubeWrapperBuilder editCube() {
 		return aqw.toBuilder();
 	}
 

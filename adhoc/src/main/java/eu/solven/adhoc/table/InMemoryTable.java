@@ -60,12 +60,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A simple {@link IAdhocTableWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not
- * execute groupBys, nor it handles calculated columns (over SQL expressions).
+ * A simple {@link ITableWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not execute
+ * groupBys, nor it handles calculated columns (over SQL expressions).
  */
 @Slf4j
 @Builder
-public class InMemoryTable implements IAdhocTableWrapper {
+public class InMemoryTable implements ITableWrapper {
 
 	public static InMemoryTable newInstance(Map<String, ?> options) {
 		return InMemoryTable.builder().build();

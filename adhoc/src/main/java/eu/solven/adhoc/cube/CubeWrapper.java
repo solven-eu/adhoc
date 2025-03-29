@@ -46,7 +46,7 @@ import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGene
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
@@ -57,7 +57,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link MeasureForest} and a {@link IAdhocTableWrapper}.
+ * Combines an {@link AdhocQueryEngine}, including its {@link MeasureForest} and a {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  *
@@ -65,7 +65,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder(toBuilder = true)
 @Slf4j
-public class AdhocCubeWrapper implements IAdhocCubeWrapper {
+public class CubeWrapper implements ICubeWrapper {
 	@NonNull
 	@Builder.Default
 	@Getter
@@ -77,7 +77,7 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 	// Holds the data
 	@NonNull
-	final IAdhocTableWrapper table;
+	final ITableWrapper table;
 	// Holds the indicators definitions
 	@NonNull
 	final IMeasureForest forest;
@@ -143,8 +143,8 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	}
 
 	/**
-	 * Typically useful when the {@link IAdhocTableWrapper} has to be changed, but the other parameters must be kept.
-	 * Another typical case is editing the measures.
+	 * Typically useful when the {@link ITableWrapper} has to be changed, but the other parameters must be kept. Another
+	 * typical case is editing the measures.
 	 *
 	 * @param template
 	 *            some template
@@ -154,8 +154,8 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	// return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
 	// }
 
-	public static class AdhocCubeWrapperBuilder {
-		public AdhocCubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
+	public static class CubeWrapperBuilder {
+		public CubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
 			// BEWARE Is this the proper way the ensure the eventBus is written in proper places?
 			AdhocColumnsManager columnsManager = (AdhocColumnsManager) this.build().getColumnsManager();
 			this.columnsManager(columnsManager.toBuilder().eventBus(eventBus).build());

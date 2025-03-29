@@ -40,7 +40,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.AdhocBagOfMeasureBag;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -178,8 +177,7 @@ public class TestMeasuresSetFromResource {
 				});
 
 		{
-			AdhocBagOfMeasureBag bagOfBag = new AdhocBagOfMeasureBag();
-			bagOfBag.putBag("someBagName", ams);
+			AdhocMeasureForests bagOfBag = AdhocMeasureForests.builder().nameToForest("someBagName", ams).build();
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
@@ -203,7 +201,7 @@ public class TestMeasuresSetFromResource {
 					    type: ".Aggregator"
 										""");
 
-			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
+			AdhocMeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(4);
@@ -244,8 +242,7 @@ public class TestMeasuresSetFromResource {
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
 		{
-			AdhocBagOfMeasureBag bagOfBag = new AdhocBagOfMeasureBag();
-			bagOfBag.putBag("someBagName", ams);
+			AdhocMeasureForests bagOfBag = AdhocMeasureForests.builder().nameToForest("someBagName", ams).build();
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
@@ -263,7 +260,7 @@ public class TestMeasuresSetFromResource {
 					    underlying: "k1"
 					""");
 
-			AdhocBagOfMeasureBag a = fromResource.loadMapFromResource("yaml",
+			AdhocMeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(2);
@@ -463,7 +460,7 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testBasicFile() throws IOException {
-		AdhocBagOfMeasureBag obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
+		AdhocMeasureForests obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
 
 		Assertions.assertThat(obj.size()).isEqualTo(1);
 

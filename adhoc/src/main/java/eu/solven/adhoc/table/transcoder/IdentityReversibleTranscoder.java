@@ -24,12 +24,12 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link IAdhocTableWrapper}. Then, the transcoding is
- * the identity.
+ * {@link eu.solven.adhoc.query.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is the
+ * identity.
  *
  * This always returns the input column, hence it is reversible.
  */

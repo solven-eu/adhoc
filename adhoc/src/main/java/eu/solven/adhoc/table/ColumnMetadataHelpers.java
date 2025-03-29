@@ -32,7 +32,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 
 public class ColumnMetadataHelpers {
 
-	public static CoordinatesSample getCoordinatesMostGeneric(IAdhocTableWrapper table,
+	public static CoordinatesSample getCoordinatesMostGeneric(ITableWrapper table,
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {

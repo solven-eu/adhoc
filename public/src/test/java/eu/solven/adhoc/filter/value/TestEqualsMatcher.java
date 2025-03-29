@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.value.InMatcher;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -37,6 +36,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestEqualsMatcher {
@@ -228,7 +228,8 @@ public class TestEqualsMatcher {
 		Assertions.assertThat((Optional) EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"))).contains("a");
 
 		// sub type
-		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), CharSequence.class)).contains("a");
+		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), CharSequence.class))
+				.contains("a");
 
 		// incompatible type
 		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), Double.class)).isEmpty();

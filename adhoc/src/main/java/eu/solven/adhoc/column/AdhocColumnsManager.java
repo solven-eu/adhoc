@@ -56,7 +56,7 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
@@ -98,7 +98,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	}
 
 	@Override
-	public ITabularRecordStream openTableStream(IAdhocTableWrapper table, TableQuery query) {
+	public ITabularRecordStream openTableStream(ITableWrapper table, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;

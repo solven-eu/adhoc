@@ -41,10 +41,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.cube.IAdhocCubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 
 /**
- * Relational expression representing a scan of a {@link IAdhocCubeWrapper}.
+ * Relational expression representing a scan of a {@link ICubeWrapper}.
  *
  * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.

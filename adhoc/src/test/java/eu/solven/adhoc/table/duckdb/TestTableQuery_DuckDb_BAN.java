@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.cube.AdhocCubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -43,9 +43,9 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapper;
-import eu.solven.adhoc.table.sql.AdhocJooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -65,8 +65,8 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	String tableName = "addressesFrance";
 
-	AdhocJooqTableWrapper table = new AdhocJooqTableWrapper(tableName,
-			AdhocJooqTableWrapperParameters.builder()
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
 					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.table(DSL.table(
 							"read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet')"))
@@ -74,10 +74,10 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	DSLContext dsl = table.makeDsl();
 
-	private AdhocCubeWrapper wrapInCube(IMeasureForest forest) {
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return AdhocCubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}
 
 	@Override
