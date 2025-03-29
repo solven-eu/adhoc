@@ -25,6 +25,7 @@ package eu.solven.adhoc.cube;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -35,21 +36,25 @@ import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.dag.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.measure.IHasOperatorsFactory;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Combines an {@link AdhocQueryEngine}, including its {@link MeasureForest} and a {@link IAdhocTableWrapper}.
@@ -59,6 +64,7 @@ import lombok.Value;
  */
 @Value
 @Builder(toBuilder = true)
+@Slf4j
 public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 	@NonNull
 	@Builder.Default
@@ -105,7 +111,33 @@ public class AdhocCubeWrapper implements IAdhocCubeWrapper {
 			columnToType.put(tableColumn, type);
 		});
 
-		// TODO Add columns from IColumnGenerator
+		IOperatorsFactory operatorsFactory = IHasOperatorsFactory.getOperatorsFactory(engine);
+		forest.getMeasures().forEach(measure -> {
+			if (measure instanceof IMayHaveColumnGenerator mayHaveColumnGenerator) {
+				try {
+
+					Optional<IColumnGenerator> optColumnGenerator =
+							mayHaveColumnGenerator.optColumnGenerator(operatorsFactory);
+
+					optColumnGenerator.ifPresent(columnGenerator -> {
+						// TODO How conflicts should be handled?
+						columnToType.putAll(columnGenerator.getColumns());
+					});
+				} catch (Exception e) {
+					if (AdhocUnsafe.failFast) {
+						String msg = "Issue looking for an %s in m=%s c=%s"
+								.formatted(IColumnGenerator.class.getSimpleName(), measure, this.getName());
+						throw new IllegalStateException(msg, e);
+					} else {
+						log.warn("Issue looking for an {} in m={} c={}",
+								IColumnGenerator.class.getSimpleName(),
+								measure,
+								this.getName(),
+								e);
+					}
+				}
+			}
+		});
 
 		return columnToType;
 	}

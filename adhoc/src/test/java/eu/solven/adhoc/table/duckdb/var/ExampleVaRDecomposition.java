@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb.quantile;
+package eu.solven.adhoc.table.duckdb.var;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -123,8 +125,11 @@ public class ExampleVaRDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Set<String> getOutputColumns() {
-		return Set.of(IExampleVaRConstants.C_SCENARIOINDEX, IExampleVaRConstants.C_SCENARIONAME);
+	public Map<String, Class<?>> getColumns() {
+		return ImmutableMap.<String, Class<?>>builder()
+				.put(IExampleVaRConstants.C_SCENARIOINDEX, Integer.class)
+				.put(IExampleVaRConstants.C_SCENARIONAME, String.class)
+				.build();
 	}
 
 	@Override

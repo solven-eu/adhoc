@@ -61,6 +61,7 @@ import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.measure.IHasOperatorsFactory;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
@@ -94,7 +95,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-public class AdhocQueryEngine implements IAdhocQueryEngine {
+public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory {
 	private final UUID engineId = UUID.randomUUID();
 
 	// This shall not conflict with any user measure

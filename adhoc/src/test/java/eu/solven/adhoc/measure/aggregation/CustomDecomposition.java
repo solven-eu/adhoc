@@ -24,7 +24,6 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
@@ -49,8 +48,8 @@ public class CustomDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Set<String> getOutputColumns() {
-		return Set.of();
+	public Map<String, Class<?>> getColumns() {
+		return Map.of();
 	}
 
 	@Override

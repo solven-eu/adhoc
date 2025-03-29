@@ -15,6 +15,6 @@ export default {
         <span v-else-if="measure.type == '.Combinator'">
             {{measure.name}} <small class="text-muted">{{measure.combinationKey}}({{measure.underlyings.join(', ')}})</small></span
         >
-        <span v-else> {{measure.name}}: {{measure}} </span>
+        <span v-else> {{measure.name}} <small class="text-muted">{{measure}}</small> </span>
     `,
 };

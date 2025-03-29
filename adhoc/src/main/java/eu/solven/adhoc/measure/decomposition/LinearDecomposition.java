@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -153,10 +155,10 @@ public class LinearDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Set<String> getOutputColumns() {
-		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
-
-		return Set.of(outputColumn);
+	public Map<String, Class<?>> getColumns() {
+		return ImmutableMap.<String, Class<?>>builder()
+				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Number.class)
+				.build();
 	}
 
 	@Override

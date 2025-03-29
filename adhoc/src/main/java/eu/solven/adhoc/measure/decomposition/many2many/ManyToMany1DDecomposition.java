@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -267,9 +269,10 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Set<String> getOutputColumns() {
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
-		return Set.of(groupColumn);
+	public Map<String, Class<?>> getColumns() {
+		return ImmutableMap.<String, Class<?>>builder()
+				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
+				.build();
 	}
 
 	@Override

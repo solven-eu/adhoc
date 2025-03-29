@@ -246,7 +246,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			let url = "/endpoints/schemas";
 			if (endpointId) {
 				// The schemas of a specific endpoint
-				url += "?endpoint_id=" + endpointId;
+				url += "?endpoint_id=" + encodeURIComponent(endpointId);
 			}
 			return this.loadEndpointIfMissing(endpointId).then(() => {
 				return fetchFromUrl(url);
@@ -332,9 +332,9 @@ export const useAdhocStore = defineStore("adhoc", {
 
 			let url = "/endpoints/schemas/columns";
 
-			url += "?endpoint_id=" + endpointId;
-			url += "&cube=" + cubeId;
-			url += "&name=" + column;
+			url += "?endpoint_id=" + encodeURIComponent(endpointId);
+			url += "&cube=" + encodeURIComponent(cubeId);
+			url += "&name=" + encodeURIComponent(column);
 
 			return this.loadEndpointIfMissing(endpointId).then(() => {
 				return fetchFromUrl(url);
@@ -349,42 +349,6 @@ export const useAdhocStore = defineStore("adhoc", {
 			} else {
 				return this.loadColumnCoordinates(cubeId, endpointId, column);
 			}
-		},
-
-		async executeQuery(cubeId, endpointId, query) {
-			return this.loadCubeSchemaIfMissing(cubeId, endpointId).then((contest) => {
-				if (contest.error === "unknown") {
-					return contest;
-				}
-
-				async function fetchFromUrl(url) {
-					store.nbBoardFetching++;
-					try {
-						const response = await store.authenticatedFetch(url);
-						if (!response.ok) {
-							throw new NetworkError("Rejected request for board: " + contestId, url, response);
-						}
-
-						const responseJson = await response.json();
-						const contestWithBoard = responseJson;
-
-						return contestWithBoard;
-					} catch (e) {
-						store.onSwallowedError(e);
-
-						return {
-							contestId: contestId,
-							error: e,
-						};
-					} finally {
-						store.nbBoardFetching--;
-					}
-				}
-
-				return fetchFromUrl(`/board?endpoint_id=${endpointId}&contest_id=${contestId}&player_id=${playerId}`).then((contestWithBoard) =>
-					this.mergeContest(contestWithBoard),
-				);
-			});
 		},
 	},
 });

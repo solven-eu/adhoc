@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb.quantile;
+package eu.solven.adhoc.table.duckdb.var;
 
 /**
  * Various constants related to the example VaR.

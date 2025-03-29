@@ -37,6 +37,11 @@
 		<!-- We suppose the developper would see the fixed and include them in his commit. -->
 		<!-- In the CI, we check BEFORE automatic fixes as the CI should report early invalid code -->
 		<staticChecks>process-sources</staticChecks>
+		
+		<!-- Optional dependencies -->
+		<!-- Typically not optional when referred by pivotable-server-->
+		<evalex.ezylang.version>3.4.0</evalex.ezylang.version>
+		<duckdb.version>1.2.1</duckdb.version>
 	</properties>
 
 	<dependencies>

@@ -13,6 +13,9 @@ import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
 
 import { useUserStore } from "./store-user.js";
 
+// Ordering of columns
+import _ from "lodashEs";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -63,24 +66,58 @@ export default {
 		const loading = ref(false);
 
 		const search = ref("");
+		// By default, not case-sensitive
+		// Else, a user not seeing a match may be confused
+		// While a user wanting case-sentitive can get more easily he has to click the toggle
+		const searchCaseSensitive = ref(false);
 
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
 
-		const filtered = function (input) {
-			const filter = {};
+		const filtered = function (inputsAsObjectOrArray) {
+			const filtereditems = [];
 
-			for (const column in input) {
-				if (column.includes(search.value) || JSON.stringify(input[column]).includes(search.value)) {
-					filter[column] = input[column];
+			const searchedValue = search.value;
+			const searchedValueLowerCase = search.value.toLowerCase();
+			
+			for (const inputKey in inputsAsObjectOrArray) {
+				let match = false;
+				
+				const inputElement = inputsAsObjectOrArray[inputKey];
+
+				if (inputKey.includes(searchedValue) || JSON.stringify(inputElement).includes(searchedValue)) {
+					match = true;
+				}
+				
+				if (!match && !searchCaseSensitive.value) {
+					// Retry without case-sensitivity
+					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || JSON.stringify(inputElement).toLowerCase().includes(searchedValueLowerCase)) {
+						match = true;
+					}
+				}
+				
+				if (match) {
+					if (typeof inputsAsObjectOrArray === Array) {
+						filtereditems.push(inputElement);
+					} else {
+						// inputElement may be an Object or a primitive or a String
+						if (typeof inputElement === "object") {
+							filtereditems.push({...inputElement, ...{'key': inputKey}});
+						} else {
+							filtereditems.push({'key': inputKey, 'value': inputElement});	
+						}	
+					}
 				}
 			}
 
-			return filter;
+			// Measures has to be sorted by name
+			// https://stackoverflow.com/questions/8996963/how-to-perform-case-insensitive-sorting-array-of-string-in-javascript
+			return _.sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
 		};
 
 		return {
 			search,
+			searchCaseSensitive,
 			filtered,
 
 			debugQuery,
@@ -105,7 +142,15 @@ export default {
             Build the query
 
             <form>
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
+				<div>
+                	<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
+					<small>
+						<div class="form-check form-switch">
+						  <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive">
+						  <label class="form-check-label" for="searchCaseSensitive">Aa</label>
+						</div>
+					</small>
+				</div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
 
@@ -122,9 +167,9 @@ export default {
                             >
                                 <span v-if="search">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.columns.columnToTypes).length}} </span>&nbsp;
-                                    <span> {{ Object.keys(filtered(cube.columns.columnToTypes)).length}} </span> Columns
+                                    <span> {{ Object.keys(filtered(cube.columns.columnToTypes)).length}} </span> columns
                                 </span>
-                                <span v-else> {{ Object.keys(cube.columns.columnToTypes).length}} Columns </span>
+                                <span v-else> {{ Object.keys(cube.columns.columnToTypes).length}} columns </span>
                             </button>
 
                             <div v-if="nbColumnFetching > 0">
@@ -149,12 +194,12 @@ export default {
                         </h2>
                         <div id="wizardColumns" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll">
-                                <ul v-for="(type, name) in filtered(cube.columns.columnToTypes)" class="list-group">
+                                <ul v-for="(columnToType) in filtered(cube.columns.columnToTypes)" class="list-group">
                                     <li class="list-group-item ">
                                         <AdhocQueryWizardColumn
                                             :queryModel="queryModel"
-                                            :column="name"
-                                            :type="type"
+                                            :column="columnToType.key"
+                                            :type="columnToType.value"
                                             :endpointId="endpointId"
                                             :cubeId="cubeId"
                                         />
@@ -175,24 +220,24 @@ export default {
                             >
                                 <span v-if="search">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
-                                    <span> {{ Object.keys(filtered(cube.measures)).length}} </span> Measures
+                                    <span> {{ Object.keys(filtered(cube.measures)).length}} </span> measures
                                 </span>
-                                <span v-else> {{ Object.keys(cube.measures).length}} Measures </span>
+                                <span v-else> {{ Object.keys(cube.measures).length}} measures </span>
                             </button>
                         </h2>
                         <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll">
-                                <ul v-for="(measure, name) in filtered(cube.measures)" class="list-group list-group-flush">
+                                <ul v-for="(measure) in filtered(cube.measures)" class="list-group list-group-flush">
                                     <li class="list-group-item">
                                         <div class="form-check form-switch">
                                             <input
                                                 class="form-check-input"
                                                 type="checkbox"
                                                 role="switch"
-                                                :id="'measure_' + name"
-                                                v-model="queryModel.selectedMeasures[name]"
+                                                :id="'measure_' + measure.name"
+                                                v-model="queryModel.selectedMeasures[measure.name]"
                                             />
-                                            <label class="form-check-label" :for="'measure_' + name">
+                                            <label class="form-check-label" :for="'measure_' + measure.name">
                                                 <AdhocMeasure :measure="measure" />
                                             </label>
                                         </div>

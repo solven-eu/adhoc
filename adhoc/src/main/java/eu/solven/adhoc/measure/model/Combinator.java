@@ -128,7 +128,7 @@ public class Combinator implements ICombinator, IMayHaveColumnGenerator {
 
 	@Override
 	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
-		ICombination combination = operatorsFactory.makeCombination(getCombinationKey(), getCombinationOptions());
+		ICombination combination = operatorsFactory.makeCombination(this);
 
 		if (combination instanceof IColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);

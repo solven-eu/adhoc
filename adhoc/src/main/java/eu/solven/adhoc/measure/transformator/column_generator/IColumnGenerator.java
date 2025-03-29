@@ -32,13 +32,14 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.IHasColumns;
 
 /**
  * Relates to measures generating their own columns.
  * 
  * @author Benoit Lacelle
  */
-public interface IColumnGenerator {
+public interface IColumnGenerator extends IHasColumns {
 
 	/**
 	 * Scan for {@link IColumnGenerator} amongst given measures, matching given column.
@@ -55,9 +56,8 @@ public interface IColumnGenerator {
 				.filter(m -> m instanceof IMayHaveColumnGenerator)
 				.map(m -> (IMayHaveColumnGenerator) m)
 				.map(m -> m.optColumnGenerator(operatorsFactory))
-				.filter(o -> o.isPresent())
-				.map(o -> o.get())
-				.filter(columnGenerator -> columnGenerator.getOutputColumns().contains(column))
+				.flatMap(o -> o.stream())
+				.filter(columnGenerator -> columnGenerator.getColumns().containsKey(column))
 				.toList();
 	}
 
@@ -91,7 +91,7 @@ public interface IColumnGenerator {
 	 * 
 	 * @return the {@link Set} of columns which are output by this {@link IDecomposition}
 	 */
-	Set<String> getOutputColumns();
+	// Set<String> getOutputColumns();
 
 	/**
 	 * 

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -286,10 +287,10 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Set<String> getOutputColumns() {
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
-
-		return Set.of(groupColumn);
+	public Map<String, Class<?>> getColumns() {
+		return ImmutableMap.<String, Class<?>>builder()
+				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
+				.build();
 	}
 
 	@Override

@@ -90,6 +90,7 @@ public class DuckDbHelper {
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {
+		// e.g. `p.name` from a `JOIN`
 		Name columnName = DSL.name(column.split("\\."));
 
 		// select approx_count_distinct("id") "approx_count_distinct" from

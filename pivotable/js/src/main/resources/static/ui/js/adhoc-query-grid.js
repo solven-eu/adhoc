@@ -10,6 +10,7 @@ import { useUserStore } from "./store-user.js";
 import { SlickGrid, SlickDataView, Formatters } from "slickgrid";
 import Sortable from "sortablejs";
 
+// Ordering of rows
 import _ from "lodashEs";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729

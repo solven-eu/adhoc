@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb.quantile;
+package eu.solven.adhoc.table.duckdb.var;
 
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -309,7 +309,13 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 				.containsEntry("color", String.class)
 				.containsEntry("0", Double.class)
 				.containsEntry(Integer.toString(arrayLength - 1), Double.class)
-				.hasSize(arrayLength + 1);
+				.containsEntry(IExampleVaRConstants.C_SCENARIOINDEX, Integer.class)
+				.containsEntry(IExampleVaRConstants.C_SCENARIONAME, String.class)
+				.hasSize(arrayLength
+						// color
+						+ 1
+						// scenarioIndex and scenarioName
+						+ 2);
 	}
 
 	@Test

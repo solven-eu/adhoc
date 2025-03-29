@@ -62,7 +62,7 @@
 		<dependency>
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>
-			<version>3.4.0</version>
+			<version>${evalex.ezylang.version}</version>
 			<!-- Many projects may not use EvalTranformation-->
 			<optional>true</optional>
 		</dependency>
@@ -71,7 +71,7 @@
 		<dependency>
 			<groupId>org.duckdb</groupId>
 			<artifactId>duckdb_jdbc</artifactId>
-			<version>1.2.1</version>
+			<version>${duckdb.version}</version>
 			<optional>true</optional>
 		</dependency>
 

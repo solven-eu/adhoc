@@ -41,11 +41,28 @@ public class AdhocUnsafe {
 		limitColumnLength = safeLoadIntegerProperty("adhoc.limitColumnLength", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
+		// Customize with `-Dadhoc.failfast=false`
+		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
 	}
 
 	static int safeLoadIntegerProperty(String key, int defaultValue) {
 		try {
 			return Integer.getInteger(key, defaultValue);
+		} catch (RuntimeException e) {
+			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
+		}
+		return defaultValue;
+	}
+
+	static boolean safeLoadBooleanProperty(String key, boolean defaultValue) {
+		// Duplicate `Boolean.getBoolean` but enabling a `true` defaultValue
+		try {
+			boolean result = defaultValue;
+			try {
+				result = Boolean.parseBoolean(System.getProperty(key));
+			} catch (IllegalArgumentException | NullPointerException e) {
+			}
+			return result;
 		} catch (RuntimeException e) {
 			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
 		}
@@ -68,4 +85,10 @@ public class AdhocUnsafe {
 	 * transformator columns.
 	 */
 	public static int limitColumnLength;
+
+	/**
+	 * On multiple occasions, we encounter exceptions which are not fatal. Should we be resilient, or fail-fast?
+	 */
+	// By default, failFast. This is a simple flag for projects preferring resiliency.
+	public static boolean failFast = true;
 }

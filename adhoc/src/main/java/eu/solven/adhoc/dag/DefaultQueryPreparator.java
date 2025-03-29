@@ -40,6 +40,7 @@ import lombok.NonNull;
 @Builder
 public class DefaultQueryPreparator implements IQueryPreparator {
 
+	// By default, the filters are not modified
 	@NonNull
 	@Default
 	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;

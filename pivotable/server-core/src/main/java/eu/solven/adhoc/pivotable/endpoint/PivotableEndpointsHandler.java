@@ -34,9 +34,17 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.ColumnIdentifier;
+import eu.solven.adhoc.beta.schema.ColumnMetadata;
+import eu.solven.adhoc.beta.schema.ColumnarMetadata;
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
+import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.RequiredArgsConstructor;
@@ -95,10 +103,22 @@ public class PivotableEndpointsHandler {
 				throw new NotYetImplementedException("%s".formatted(PepperLogHelper.getObjectAndClass(endpoint)));
 			}
 
-			return TargetedEndpointSchemaMetadata.builder()
-					.endpoint(endpoint)
-					.schema(schemasRegistry.getSchema(endpoint.getId()).getMetadata(query))
-					.build();
+			EndpointSchemaMetadata schemaMetadata;
+			try {
+				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query);
+			} catch (Exception e) {
+				if (AdhocUnsafe.failFast) {
+					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
+				} else {
+					log.warn("Issue loading schema for endpoint={}", endpoint, e);
+					// Loading Schema may fail as we load all Combinations for IColumnGenerators, and any configuration
+					// issue leads to a failure
+					schemaMetadata = EndpointSchemaMetadata.builder()
+							.cube("error-" + e.getMessage(), CubeSchemaMetadata.builder().build())
+							.build();
+				}
+			}
+			return TargetedEndpointSchemaMetadata.builder().endpoint(endpoint).schema(schemaMetadata).build();
 		}).toList();
 
 		log.debug("Schemas for {}: {}", endpoints, schemas);
