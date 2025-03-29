@@ -290,3 +290,4 @@ Most databases handles aggregations over primitive types (e.g. SUM over doubles)
 - [Feature] AdhocCompositeCube needs to handle `IAggregationCarrier.HasCarrier`
 - Work on query cancellations/queryTimeouts
 - Enables `getCoordinates` for cube.columns created by measures
+- [SECURITY] Ability to hide some measures from some Users

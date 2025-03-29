@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,6 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,111 +42,123 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
  * Wraps together a Set of {@link IAdhocTableWrapper}, {@link IMeasureForest}, {@link IAdhocCubeWrapper} and
- * {@link IAdhocQuery}. It is typically used for use through an API.
- * 
+ * {@link IAdhocQuery}. It is typically used for use through an API/Catalog.
+ *
  * @author Benoit Lacelle
  */
 @Value
 @Builder
 public class AdhocSchema implements IAdhocSchema {
-	@Builder.Default
-	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
+    @Builder.Default
+    final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 
-	final Map<String, IAdhocTableWrapper> nameToTable = new ConcurrentHashMap<>();
+    final Map<String, IAdhocTableWrapper> nameToTable = new ConcurrentHashMap<>();
 
-	final Map<String, IMeasureForest> nameToForest = new ConcurrentHashMap<>();
+    final Map<String, IMeasureForest> nameToForest = new ConcurrentHashMap<>();
 
-	final Map<String, IAdhocCubeWrapper> nameToCube = new ConcurrentHashMap<>();
+    final Map<String, IAdhocCubeWrapper> nameToCube = new ConcurrentHashMap<>();
 
-	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
+    // final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
-	public void registerCube(String cubeName, String tableName, String forestName) {
-		AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
-				.name(cubeName)
-				.engine(engine)
-				.forest(nameToForest.get(forestName))
-				.table(nameToTable.get(tableName))
-				.build();
+    public void registerCube(String cubeName, String tableName, String forestName) {
+        AdhocCubeWrapper cube = AdhocCubeWrapper.builder()
+                .name(cubeName)
+                .engine(engine)
+                .forest(nameToForest.get(forestName))
+                .table(nameToTable.get(tableName))
+                .build();
 
-		nameToCube.put(cubeName, cube);
-	}
+        nameToCube.put(cubeName, cube);
+    }
 
-	@Override
-	public EndpointSchemaMetadata getMetadata() {
-		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
+    @Override
+    public EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query) {
+        EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
-		nameToCube.forEach((name, cube) -> {
-			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+        nameToCube.entrySet().stream().filter(e -> query.getCube().isEmpty() || query.getCube().get().equals(e.getKey()))
+                .forEach(e -> {
+                    String name = e.getKey();
+                    IAdhocCubeWrapper cube = e.getValue();
 
-			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
-			cubeSchema.measures(cube.getNameToMeasure());
+                    CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-			metadata.cube(name, cubeSchema.build());
-		});
+                    // `getColumns` is an expensive operations, as it analyzes the underlying table
+                    // TODO Should we cache?
+                    cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
+                    cubeSchema.measures(cube.getNameToMeasure());
 
-		nameToForest.forEach((name, measureBag) -> {
-			List<IMeasure> measures = ImmutableList.copyOf(measureBag.getNameToMeasure().values());
-			metadata.measureBag(name, measures);
-		});
+                    metadata.cube(name, cubeSchema.build());
+                });
 
-		nameToTable.forEach((name, table) -> {
-			metadata.table(name, ColumnarMetadata.from(table.getColumns()));
-		});
+        nameToForest.entrySet().stream().filter(e -> query.getForest().isEmpty() || query.getForest().get().equals(e.getKey()))
+                .forEach(e -> {
+                    String name = e.getKey();
+                    IMeasureForest forest = e.getValue();
+                    List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
+                    metadata.measureBag(name, measures);
+                });
 
-		// nameToQuery.forEach((name, query) -> {
-		// metadata.query(name, AdhocQuery.edit(query).build());
-		// });
+        nameToTable.entrySet().stream().filter(e -> query.getTable().isEmpty() || query.getTable().get().equals(e.getKey()))
+                .forEach(e -> {
+                    String name = e.getKey();
+                    IAdhocTableWrapper table = e.getValue();
+                    // TODO Should we cache?
+                    metadata.table(name, ColumnarMetadata.from(table.getColumns()));
+                });
 
-		return metadata.build();
-	}
+        // nameToQuery.forEach((name, query) -> {
+        // metadata.query(name, AdhocQuery.edit(query).build());
+        // });
 
-	@Override
-	public ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options) {
-		IAdhocCubeWrapper cubeWrapper = nameToCube.get(cube);
+        return metadata.build();
+    }
 
-		if (cubeWrapper == null) {
-			throw new IllegalArgumentException("No cube named %s".formatted(cube));
-		}
+    @Override
+    public ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options) {
+        IAdhocCubeWrapper cubeWrapper = nameToCube.get(cube);
 
-		return cubeWrapper.execute(query, options);
-	}
+        if (cubeWrapper == null) {
+            throw new IllegalArgumentException("No cube named %s".formatted(cube));
+        }
 
-	public void registerTable(IAdhocTableWrapper table) {
-		nameToTable.put(table.getName(), table);
-	}
+        return cubeWrapper.execute(query, options);
+    }
 
-	public void registerMeasureBag(IMeasureForest measureBag) {
-		nameToForest.put(measureBag.getName(), measureBag);
-	}
+    public void registerTable(IAdhocTableWrapper table) {
+        nameToTable.put(table.getName(), table);
+    }
 
-	// public void registerMeasure(String measureBagName, IMeasure measure) {
-	// AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
-	// k -> AdhocMeasureBag.builder().name(measureBagName).build());
-	// measureBag.addMeasure(measure);
-	// }
+    public void registerMeasureBag(IMeasureForest measureBag) {
+        nameToForest.put(measureBag.getName(), measureBag);
+    }
 
-	/**
-	 * 
-	 * @param columnId
-	 * @param valueMatcher
-	 * @param limit
-	 *            if `-1` no limit, else the maximum number of coordinates to return.
-	 * @return
-	 */
-	public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
-		if (columnId.isCubeElseTable()) {
-			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
-		} else {
-			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
+    // public void registerMeasure(String measureBagName, IMeasure measure) {
+    // AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
+    // k -> AdhocMeasureBag.builder().name(measureBagName).build());
+    // measureBag.addMeasure(measure);
+    // }
 
-		}
-	}
+    /**
+     * @param columnId
+     * @param valueMatcher
+     * @param limit        if `-1` no limit, else the maximum number of coordinates to return.
+     * @return
+     */
+    public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
+        if (columnId.isCubeElseTable()) {
+            return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
+        } else {
+            return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
 
-	// public void registerQuery(String name, IAdhocQuery query) {
-	// nameToQuery.put(name, query);
-	// }
+        }
+    }
+
+    // public void registerQuery(String name, IAdhocQuery query) {
+    // nameToQuery.put(name, query);
+    // }
 }

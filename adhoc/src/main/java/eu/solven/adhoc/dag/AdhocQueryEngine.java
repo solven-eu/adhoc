@@ -502,12 +502,17 @@ public class AdhocQueryEngine implements IAdhocQueryEngine {
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
 				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
 
-				List<AdhocQueryStep> underlyingSteps =
+				List<AdhocQueryStep> underlyingSteps;
+				try {
+					underlyingSteps=
 						wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
 							// Make sure the DAG has actual measure nodes, and not references
 							IMeasure notRefMeasure = executingQueryContext.resolveIfRef(underlyingStep.getMeasure());
 							return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 						}).toList();
+				} catch (RuntimeException e) {
+					throw new IllegalStateException("Issue computing the underlying querySteps for %s".formatted(queryStep), e);
+				}
 
 				queryStepsDagBuilder.registerUnderlyings(queryStep, underlyingSteps);
 			} else {

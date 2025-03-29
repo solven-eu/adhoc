@@ -47,11 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableSecuritySpringConfig.class,
 		GitPropertySourceConfig.class,
 
-		PivotableQueryMonitoring.class,
-
-// RedisKumiteConfiguration.class,
-// KumiteWebSocketSpringConfig.class,
-
 })
 @Slf4j
 public class PivotableServerApplication {
@@ -59,8 +54,10 @@ public class PivotableServerApplication {
 	public static void main(String[] args) {
 		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
 
-		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT,
-				IPivotableSpringProfiles.P_ADVANCED_DATASETS);
+		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT
+				// If the dataset is load available on disk, the cube will be automatically skipped
+				,IPivotableSpringProfiles.P_ADVANCED_DATASETS
+		);
 
 		springApp.run(args);
 	}

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.cube.IAdhocCubeWrapper;
@@ -30,6 +31,9 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.IAdhocTableWrapper;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
  * Wraps together the core structures of Adhoc.
@@ -40,11 +44,29 @@ import eu.solven.adhoc.table.IAdhocTableWrapper;
  */
 public interface IAdhocSchema {
 
+
+	/**
+	 * Used to return a subset of {@link EndpointSchemaMetadata}
+	 */
+	@Value
+	@Builder
+	class AdhocSchemaQuery {
+		@NonNull
+		@Builder.Default
+		Optional<String> cube = Optional.empty();
+		@NonNull
+		@Builder.Default
+		Optional<String> table= Optional.empty();
+		@NonNull
+		@Builder.Default
+		Optional<String> forest= Optional.empty();
+	}
+
 	/**
 	 * 
 	 * @return the metadata of this instance.
 	 */
-	EndpointSchemaMetadata getMetadata();
+	EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query);
 
 	/**
 	 * 

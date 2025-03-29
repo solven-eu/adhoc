@@ -35,10 +35,11 @@ logging:
     level:
         org.springframework.security: INFO
         org.springframework.web.reactive: INFO
-        eu.solven.kumite.app.webflux.KumiteWebExceptionHandler: DEBUG
+        # In INFO, we are not provided a full-stack.
+        eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler: DEBUG
 
 adhoc.pivotable.oauth2:
-    # Used to sign the JWT, which are used to interact withthe API
+    # Used to sign the JWT, which are used to interact with the API
     signing-key: NEEDS_TO_BE_DEFINED
     issuer-base-url: NEEDS_TO_BE_DEFINED
 

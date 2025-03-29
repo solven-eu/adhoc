@@ -71,8 +71,8 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	int maxCardinality = 10_000;
-	int arrayLength = 20;
+	int maxCardinality = 100_000;
+	int arrayLength = 200;
 
 	String tableName = "someTableName";
 
@@ -261,7 +261,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	// groupBy arrayIndex
 	@Test
-	public void testGroupByIndexName_mArray() {
+	public void testGroupByIndex_mArray() {
 		ITabularView result = wrapInCube(amb).execute(
 				AdhocQuery.builder().measure(mArray).groupByAlso(IExampleVaRConstants.C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

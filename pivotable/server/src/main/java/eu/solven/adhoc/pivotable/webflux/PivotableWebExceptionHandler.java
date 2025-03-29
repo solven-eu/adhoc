@@ -88,6 +88,7 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 
 		response.setStatusCode(httpStatus);
 		if (log.isDebugEnabled() || PepperEnvHelper.inUnitTest()) {
+			// with stackTrace
 			log.warn("Returning a {} on path={} given {} ({})",
 					httpStatus,
 					requestPath,
@@ -95,12 +96,12 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 					e.getMessage(),
 					e);
 		} else {
+			// without stackTrace
 			log.warn("Returning a {} on path={} given {} ({})",
 					httpStatus,
 					requestPath,
 					e.getClass(),
-					e.getMessage(),
-					e);
+					e.getMessage());
 		}
 
 		Map<String, Object> responseBody = new LinkedHashMap<>();

@@ -23,8 +23,10 @@
 package eu.solven.adhoc.filter.value;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -214,5 +216,21 @@ public class TestEqualsMatcher {
 
 		Assertions.assertThat(matcher.match((int) 3)).isTrue();
 		Assertions.assertThat(matcher.match((long) 3)).isTrue();
+	}
+
+	@Test
+	public void testExtractOperand() {
+		// Not EqualsMatcher
+		Assertions.assertThat(EqualsMatcher.extractOperand(InMatcher.isIn("a", "b"))).isEmpty();
+
+		// Simple matching case
+		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), String.class)).contains("a");
+		Assertions.assertThat((Optional) EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"))).contains("a");
+
+		// sub type
+		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), CharSequence.class)).contains("a");
+
+		// incompatible type
+		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), Double.class)).isEmpty();
 	}
 }

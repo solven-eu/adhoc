@@ -28,17 +28,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import eu.solven.adhoc.beta.schema.*;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.beta.schema.ColumnIdentifier;
-import eu.solven.adhoc.beta.schema.ColumnMetadata;
-import eu.solven.adhoc.beta.schema.ColumnarMetadata;
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -82,8 +77,18 @@ public class PivotableEndpointsHandler {
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(schemas));
 	}
 
-	private List<TargetedEndpointSchemaMetadata> matchingSchema(ServerRequest request) {
+	/**
+	 *
+	 * @param request
+	 * @return a {@link List} of {@link TargetedEndpointSchemaMetadata}, filtered the optionally filtered table and cube.
+	 */
+	protected List<TargetedEndpointSchemaMetadata> matchingSchema(ServerRequest request) {
 		List<PivotableAdhocEndpointMetadata> endpoints = matchingEndpoints(request);
+
+		IAdhocSchema.AdhocSchemaQuery.AdhocSchemaQueryBuilder queryBuilder = IAdhocSchema.AdhocSchemaQuery.builder();
+		AdhocHandlerHelper.optString(request, "table").ifPresent(id -> queryBuilder.table(Optional.of(id)));
+		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> queryBuilder.cube(Optional.of(id)));
+		IAdhocSchema.AdhocSchemaQuery query = queryBuilder.build();
 
 		List<TargetedEndpointSchemaMetadata> schemas = endpoints.stream().map(endpoint -> {
 			if (!"http://localhost:self".equals(endpoint.getUrl())) {
@@ -92,7 +97,7 @@ public class PivotableEndpointsHandler {
 
 			return TargetedEndpointSchemaMetadata.builder()
 					.endpoint(endpoint)
-					.schema(schemasRegistry.getSchema(endpoint.getId()).getMetadata())
+					.schema(schemasRegistry.getSchema(endpoint.getId()).getMetadata(query))
 					.build();
 		}).toList();
 
@@ -101,7 +106,6 @@ public class PivotableEndpointsHandler {
 	}
 
 	public Mono<ServerResponse> searchColumns(ServerRequest request) {
-		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request);
 
 		AdhocColumnSearch.AdhocColumnSearchBuilder parameters = AdhocColumnSearch.builder();
 
@@ -127,6 +131,8 @@ public class PivotableEndpointsHandler {
 		if (columnSearch.getTable().isEmpty() && columnSearch.getCube().isEmpty()) {
 			throw new NotYetImplementedException("Need to explicit a table or acube");
 		}
+
+		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request);
 
 		List<ColumnMetadata> matchingColumns = schemas.stream().flatMap(endpointSchema -> {
 			EndpointSchemaMetadata schema = endpointSchema.getSchema();
