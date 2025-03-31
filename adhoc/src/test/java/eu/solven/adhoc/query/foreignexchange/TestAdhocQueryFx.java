@@ -48,7 +48,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.IStopwatch;
 import lombok.NonNull;
@@ -86,14 +86,14 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("color", "red", "ccyFrom", "USD", "k1", 123));
-		rows.add(Map.of("color", "red", "ccyFrom", "EUR", "k1", 234));
+		table.add(Map.of("color", "red", "letter", "a", "ccyFrom", "USD", "k1", 123));
+		table.add(Map.of("color", "red", "letter", "b", "ccyFrom", "EUR", "k1", 234));
 	}
 
 	String mName = "k1.CCY";
 
 	void prepareMeasures() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name(mName)
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))
@@ -102,7 +102,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 	}
 
 	@Test
@@ -127,7 +127,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testHasUnknownFromCcy() {
 		prepareMeasures();
 
-		rows.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
+		table.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
 
 		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
 
@@ -183,13 +183,13 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testLackBucketor() {
 		// We miss a bucketor aggregating the converted value per ccyFrom
 		{
-			amb.addMeasure(Bucketor.builder()
+			forest.addMeasure(Bucketor.builder()
 					.name(mName)
 					.underlyings(Arrays.asList("k1"))
 					.combinationKey(ForeignExchangeCombination.KEY)
 					.build());
 
-			amb.addMeasure(k1Sum);
+			forest.addMeasure(k1Sum);
 		}
 
 		Assertions.setMaxStackTraceElementsDisplayed(128);
@@ -264,9 +264,9 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 				.isEqualToNormalizingNewlines(
 						"""
 								#0 m=k1.CCY(Bucketor) filter=color=red groupBy=(letter) customMarker=JPY
-								   size=0 duration=123ms
+								   size=2 duration=123ms
 								\\-- #1 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
-								       size=0 duration=123ms
+								       size=2 duration=123ms
 								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, debug=false, explain=true)
 														"""
 								.trim());

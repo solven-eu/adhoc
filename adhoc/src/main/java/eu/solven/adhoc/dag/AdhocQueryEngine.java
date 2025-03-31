@@ -43,6 +43,8 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
@@ -61,21 +63,30 @@ import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.IHasOperatorsFactory;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
@@ -136,16 +147,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				explainDagSteps(queryStepsDag);
 			}
 
-			Set<TableQuery> tableQueries = prepareForTable(executingQueryContext, queryStepsDag);
-
-			Map<TableQuery, ITabularRecordStream> tableQueryToStream = new HashMap<>();
-			for (TableQuery tableQuery : tableQueries) {
-				ITabularRecordStream rowsStream = openTableStream(executingQueryContext, tableQuery);
-				tableQueryToStream.put(tableQuery, rowsStream);
-			}
-
-			ITabularView tabularView =
-					executeDagGivenRecordStreams(executingQueryContext, queryStepsDag, tableQueryToStream);
+			ITabularView tabularView = executeDag(executingQueryContext, queryStepsDag);
 
 			if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
 				explainDagPerfs(queryStepsDag);
@@ -178,7 +180,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 	protected void postAboutQueryStart(ExecutingQueryContext executingQueryContext) {
 		eventBus.post(AdhocLogEvent.builder()
 				.message("Executing on table=%s measures=%s query=%s".formatted(executingQueryContext.getTable()
-						.getName(), executingQueryContext.getMeasures().getName(), executingQueryContext.getQuery()))
+						.getName(), executingQueryContext.getForest().getName(), executingQueryContext.getQuery()))
 				.source(this)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_START)
@@ -198,7 +200,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				.message("Executed status=%s duration=%s on table=%s measures=%s query=%s".formatted(status,
 						stopWatch.elapsed(),
 						executingQueryContext.getTable().getName(),
-						executingQueryContext.getMeasures().getName(),
+						executingQueryContext.getForest().getName(),
 						executingQueryContext.getQuery()))
 				.source(this)
 				.performance(true)
@@ -211,262 +213,6 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
 				.build());
-	}
-
-	protected ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
-		ITableWrapper table = executingQueryContext.getTable();
-		return executingQueryContext.getColumnsManager().openTableStream(table, tableQuery);
-	}
-
-	protected ITabularView executeDagGivenRecordStreams(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag queryStepsDag,
-			Map<TableQuery, ITabularRecordStream> tableToRowsStream) {
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("prepare").source(this).build());
-
-		Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
-				preAggregate(executingQueryContext, tableToRowsStream, queryStepsDag);
-
-		// We're done with the input stream: the DB can be shutdown, we could answer the
-		// query
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
-
-		walkDagUpToQueriedMeasures(executingQueryContext, queryStepsDag, queryStepToValues);
-
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
-
-		ITabularView tabularView = toTabularView(executingQueryContext, queryStepsDag, queryStepToValues);
-
-		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
-
-		return tabularView;
-	}
-
-	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
-			Map<TableQuery, ITabularRecordStream> tableToRowsStream,
-			QueryStepsDag queryStepsDag) {
-		SetMultimap<String, Aggregator> columnToAggregators = columnToAggregators(executingQueryContext, queryStepsDag);
-
-		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
-
-		// This is the only step consuming the input stream
-		tableToRowsStream.forEach((tableQuery, rowsStream) -> {
-			IStopwatch stopWatch = stopwatchFactory.createStarted();
-
-			Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
-					aggregateStreamToAggregates(executingQueryContext, tableQuery, rowsStream, columnToAggregators);
-
-			Duration elapsed = stopWatch.elapsed();
-
-			tableQuery.getAggregators().forEach(aggregator -> {
-				AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
-
-				ISliceToValue column = oneQueryStepToValues.get(queryStep);
-
-				eventBus.post(QueryStepIsCompleted.builder()
-						.querystep(queryStep)
-						.nbCells(column.size())
-						// The duration is not decomposed per aggregator
-						.duration(elapsed)
-						.source(AdhocQueryEngine.this)
-						.build());
-
-				queryStepsDag.registerExecutionFeedback(queryStep,
-						SizeAndDuration.builder().size(column.size()).duration(elapsed).build());
-			});
-
-			queryStepToValues.putAll(oneQueryStepToValues);
-		});
-
-		if (executingQueryContext.isDebug()) {
-			queryStepToValues.forEach((aggregateStep, values) -> {
-				values.forEachSlice(row -> {
-					return rowValue -> {
-						eventBus.post(AdhocLogEvent.builder()
-								.debug(true)
-								.message("%s -> %s".formatted(rowValue, row))
-								.source(aggregateStep)
-								.build());
-					};
-				});
-
-			});
-		}
-		return queryStepToValues;
-	}
-
-	protected SetMultimap<String, Aggregator> columnToAggregators(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag dagHolder) {
-		SetMultimap<String, Aggregator> columnToAggregators =
-				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
-		dag.vertexSet()
-				.stream()
-				.filter(step -> dag.outDegreeOf(step) == 0)
-				.map(AdhocQueryStep::getMeasure)
-				.forEach(measure -> {
-					measure = executingQueryContext.resolveIfRef(measure);
-
-					if (measure instanceof Aggregator a) {
-						columnToAggregators.put(a.getColumnName(), a);
-					} else if (measure instanceof EmptyMeasure) {
-						// ???
-					} else if (measure instanceof Columnator) {
-						// ???
-						// Happens if we miss given column
-					} else {
-						throw new UnsupportedOperationException(
-								"%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
-					}
-				});
-		return columnToAggregators;
-	}
-
-	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
-			ExecutingQueryContext executingQueryContext,
-			TableQuery query,
-			ITabularRecordStream stream,
-			SetMultimap<String, Aggregator> columnToAggregators) {
-
-		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(executingQueryContext, query, stream, columnToAggregators);
-
-		return toImmutableChunks(executingQueryContext, query, coordinatesToAggregates);
-	}
-
-	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(ExecutingQueryContext executingQueryContext,
-			TableQuery tableQuery,
-			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
-		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
-		tableQuery.getAggregators().forEach(aggregator -> {
-			AdhocQueryStep queryStep = AdhocQueryStep.edit(tableQuery).measure(aggregator).build();
-
-			if (executingQueryContext.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
-					&& operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
-				throw new NotYetImplementedException(
-						"Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
-			}
-
-			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
-			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
-			// underlyings
-			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(aggregator);
-
-			// eventBus.post(QueryStepIsCompleted.builder()
-			// .querystep(queryStep)
-			// .nbCells(column.size())
-			// // TODO How to collect this duration? Especially as the tableQuery computes multiple aggregators at
-			// // the same time
-			// .duration(Duration.ZERO)
-			// .source(this)
-			// .build());
-			// log.debug("tableQuery={} generated a column with size={}", tableQuery, column.size());
-
-			// The aggregation step is done: the storage is supposed not to be edited: we
-			// re-use it in place, to spare a copy to an immutable container
-			queryStepToValues.put(queryStep, SliceToValue.builder().column(column).build());
-		});
-		return queryStepToValues;
-	}
-
-	/**
-	 *
-	 * @param queryStep
-	 * @return a simplistic version of the queryStep, for logging purposes
-	 */
-	protected String simplistic(AdhocQueryStep queryStep) {
-		return queryStep.getMeasure().getName();
-	}
-
-	/**
-	 *
-	 * @param queryStep
-	 * @return a dense version of the queryStep, for logging purposes
-	 */
-	protected String dense(AdhocQueryStep queryStep) {
-		// Do not log about debug, explainm or cache
-		return new StringBuilder().append("m=")
-				.append(queryStep.getMeasure().getName())
-				.append(" filter=")
-				.append(queryStep.getFilter())
-				.append(" groupBy=")
-				.append(queryStep.getGroupBy())
-				.append(" custom=")
-				.append(queryStep.getCustomMarker())
-				.toString();
-	}
-
-	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
-			TableQuery tableQuery,
-			ITabularRecordStream stream,
-			SetMultimap<String, Aggregator> columnToAggregators) {
-
-		IAggregatedRecordStreamReducer streamReducer =
-				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery, columnToAggregators);
-
-		return streamReducer.reduce(stream);
-
-	}
-
-	protected IAggregatedRecordStreamReducer makeAggregatedRecordStreamReducer(
-			ExecutingQueryContext executingQueryContext,
-			TableQuery tableQuery,
-			SetMultimap<String, Aggregator> columnToAggregators) {
-		return AggregatedRecordStreamReducer.builder()
-				.operatorsFactory(operatorsFactory)
-				.executingQueryContext(executingQueryContext)
-				.tableQuery(tableQuery)
-				.columnToAggregators(columnToAggregators)
-				.build();
-	}
-
-	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
-			String aggregatorName) {
-		return columnToAggregators.values()
-				.stream()
-				.flatMap(Collection::stream)
-				.filter(a -> a.getName().equals(aggregatorName))
-				.findAny();
-	}
-
-	/**
-	 * @param executingQueryContext
-	 * @param dagHolder2
-	 * @return the Set of {@link TableQuery} to be executed.
-	 */
-	protected Set<TableQuery> prepareForTable(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag queryStepsDag) {
-		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
-		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
-
-		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
-		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
-			IMeasure leafMeasure = executingQueryContext.resolveIfRef(step.getMeasure());
-
-			if (leafMeasure instanceof Aggregator leafAggregator) {
-				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
-
-				// We could analyze filters, to discard a query filter `k=v` if another query
-				// filters `k=v|v2`
-				measurelessToAggregators
-						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
-			} else if (leafMeasure instanceof EmptyMeasure) {
-				// ???
-			} else if (leafMeasure instanceof Columnator) {
-				// ???
-				// Happens if we miss given column
-			} else {
-				// Happens on Transformator with no underlying measure
-				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
-			}
-		});
-
-		return measurelessToAggregators.entrySet().stream().map(e -> {
-			MeasurelessQuery measurelessQuery = e.getKey();
-			Set<Aggregator> leafAggregators = e.getValue();
-			return TableQuery.edit(measurelessQuery).aggregators(leafAggregators).build();
-		}).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	protected void explainDagSteps(QueryStepsDag queryStepsDag) {
@@ -551,6 +297,375 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 
 	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {
 		return new QueryStepsDagBuilder(executingQueryContext.getTable().getName(), executingQueryContext.getQuery());
+	}
+
+	protected ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+		return executingQueryContext.getColumnsManager().openTableStream(executingQueryContext, tableQuery);
+	}
+
+	protected ITabularView executeDag(ExecutingQueryContext executingQueryContext, QueryStepsDag queryStepsDag) {
+		Map<TableQueryToActualTableQuery, ITabularRecordStream> tableQueryToStream =
+				openTableStreams(executingQueryContext, queryStepsDag);
+
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("opening").source(this).build());
+
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
+				preAggregate(executingQueryContext, queryStepsDag, tableQueryToStream);
+
+		// We're done with the input stream: the DB can be shutdown, we could answer the
+		// query
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
+
+		walkDagUpToQueriedMeasures(executingQueryContext, queryStepsDag, queryStepToValues);
+
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
+
+		ITabularView tabularView = toTabularView(executingQueryContext, queryStepsDag, queryStepToValues);
+
+		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
+
+		return tabularView;
+	}
+
+	protected Map<TableQueryToActualTableQuery, ITabularRecordStream> openTableStreams(
+			ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag) {
+		Set<TableQuery> tableQueries = prepareForTable(executingQueryContext, queryStepsDag);
+
+		Map<TableQueryToActualTableQuery, ITabularRecordStream> tableQueryToStream = new HashMap<>();
+		for (TableQuery tableQuery : tableQueries) {
+			TableQuery suppressedTableQuery = suppressGeneratedColumns(executingQueryContext, tableQuery);
+
+			// TODO We may be querying multiple times the same suppressedTableQuery
+			TableQueryToActualTableQuery toSuppressed = TableQueryToActualTableQuery.builder()
+					.dagTableQuery(tableQuery)
+					.suppressedTableQuery(suppressedTableQuery)
+					.build();
+
+			ITabularRecordStream rowsStream = openTableStream(executingQueryContext, suppressedTableQuery);
+			tableQueryToStream.put(toSuppressed, rowsStream);
+		}
+		return tableQueryToStream;
+	}
+
+	protected Map<AdhocQueryStep, ISliceToValue> preAggregate(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag,
+			Map<TableQueryToActualTableQuery, ITabularRecordStream> tableToRowsStream) {
+		SetMultimap<String, Aggregator> columnToAggregators = columnToAggregators(executingQueryContext, queryStepsDag);
+
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
+
+		// This is the only step consuming the input stream
+		tableToRowsStream.forEach((tableQuery, rowsStream) -> {
+			IStopwatch stopWatch = stopwatchFactory.createStarted();
+
+			Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
+					aggregateStreamToAggregates(executingQueryContext, tableQuery, rowsStream, columnToAggregators);
+
+			Duration elapsed = stopWatch.elapsed();
+
+			tableQuery.getDagTableQuery().getAggregators().forEach(aggregator -> {
+				AdhocQueryStep queryStep =
+						AdhocQueryStep.edit(tableQuery.getDagTableQuery()).measure(aggregator).build();
+
+				ISliceToValue column = oneQueryStepToValues.get(queryStep);
+
+				eventBus.post(QueryStepIsCompleted.builder()
+						.querystep(queryStep)
+						.nbCells(column.size())
+						// The duration is not decomposed per aggregator
+						.duration(elapsed)
+						.source(AdhocQueryEngine.this)
+						.build());
+
+				queryStepsDag.registerExecutionFeedback(queryStep,
+						SizeAndDuration.builder().size(column.size()).duration(elapsed).build());
+			});
+
+			queryStepToValues.putAll(oneQueryStepToValues);
+		});
+
+		if (executingQueryContext.isDebug()) {
+			queryStepToValues.forEach((aggregateStep, values) -> {
+				values.forEachSlice(row -> {
+					return rowValue -> {
+						eventBus.post(AdhocLogEvent.builder()
+								.debug(true)
+								.message("%s -> %s".formatted(rowValue, row))
+								.source(aggregateStep)
+								.build());
+					};
+				});
+
+			});
+		}
+		return queryStepToValues;
+	}
+
+	protected SetMultimap<String, Aggregator> columnToAggregators(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag dagHolder) {
+		SetMultimap<String, Aggregator> columnToAggregators =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
+		dag.vertexSet()
+				.stream()
+				.filter(step -> dag.outDegreeOf(step) == 0)
+				.map(AdhocQueryStep::getMeasure)
+				.forEach(measure -> {
+					measure = executingQueryContext.resolveIfRef(measure);
+
+					if (measure instanceof Aggregator a) {
+						columnToAggregators.put(a.getColumnName(), a);
+					} else if (measure instanceof EmptyMeasure) {
+						// ???
+					} else if (measure instanceof Columnator) {
+						// ???
+						// Happens if we miss given column
+					} else {
+						throw new UnsupportedOperationException(
+								"%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
+					}
+				});
+		return columnToAggregators;
+	}
+
+	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
+			ExecutingQueryContext executingQueryContext,
+			TableQueryToActualTableQuery query,
+			ITabularRecordStream stream,
+			SetMultimap<String, Aggregator> columnToAggregators) {
+
+		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
+				sinkToAggregates(executingQueryContext, query.getSuppressedTableQuery(), stream, columnToAggregators);
+
+		return toImmutableChunks(executingQueryContext, query, coordinatesToAggregates);
+	}
+
+	protected Map<AdhocQueryStep, ISliceToValue> toImmutableChunks(ExecutingQueryContext executingQueryContext,
+			TableQueryToActualTableQuery query,
+			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
+		Map<AdhocQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
+		TableQuery dagTableQuery = query.getDagTableQuery();
+
+		Set<String> suppressedGroupBys = query.getSuppressedGroupBy();
+
+		dagTableQuery.getAggregators().forEach(aggregator -> {
+			AdhocQueryStep queryStep = AdhocQueryStep.edit(dagTableQuery).measure(aggregator).build();
+
+			if (executingQueryContext.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
+					&& operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
+				throw new NotYetImplementedException(
+						"Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
+			}
+
+			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
+			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
+			// underlyings
+			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(aggregator);
+
+			// eventBus.post(QueryStepIsCompleted.builder()
+			// .querystep(queryStep)
+			// .nbCells(column.size())
+			// // TODO How to collect this duration? Especially as the tableQuery computes multiple aggregators at
+			// // the same time
+			// .duration(Duration.ZERO)
+			// .source(this)
+			// .build());
+			// log.debug("tableQuery={} generated a column with size={}", tableQuery, column.size());
+
+			IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed;
+			if (suppressedGroupBys.isEmpty()) {
+				columnWithSuppressed = column;
+			} else {
+				columnWithSuppressed = restoreSuppressedGroupBy(queryStep, suppressedGroupBys, column);
+			}
+
+			// The aggregation step is done: the storage is supposed not to be edited: we
+			// re-use it in place, to spare a copy to an immutable container
+			queryStepToValues.put(queryStep, SliceToValue.builder().column(columnWithSuppressed).build());
+		});
+		return queryStepToValues;
+	}
+
+	/**
+	 * Given a {@link IMultitypeColumnFastGet} from the {@link ITableWrapper}, we may have to add columns which has been
+	 * suppressed (e.g. due to IColumnGenerator).
+	 * 
+	 * Current implementation restore the suppressedColumn by writing a single member. Another project may prefer
+	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
+	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
+	 * columns).
+	 * 
+	 * @param suppressedColumns
+	 * @param aggregator
+	 * @param column
+	 * @return
+	 */
+	protected IMultitypeColumnFastGet<SliceAsMap> restoreSuppressedGroupBy(AdhocQueryStep queryStep,
+			Set<String> suppressedColumns,
+			IMultitypeColumnFastGet<SliceAsMap> column) {
+		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
+		IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed =
+				GroupByHelpers.addConstantColumns(column, constantValues);
+		return columnWithSuppressed;
+	}
+
+	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, AdhocQueryStep queryStep) {
+		return suppressedColumns.stream().collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
+	}
+
+	/**
+	 *
+	 * @param queryStep
+	 * @return a simplistic version of the queryStep, for logging purposes
+	 */
+	protected String simplistic(AdhocQueryStep queryStep) {
+		return queryStep.getMeasure().getName();
+	}
+
+	/**
+	 *
+	 * @param queryStep
+	 * @return a dense version of the queryStep, for logging purposes
+	 */
+	protected String dense(AdhocQueryStep queryStep) {
+		// Do not log about debug, explainm or cache
+		return new StringBuilder().append("m=")
+				.append(queryStep.getMeasure().getName())
+				.append(" filter=")
+				.append(queryStep.getFilter())
+				.append(" groupBy=")
+				.append(queryStep.getGroupBy())
+				.append(" custom=")
+				.append(queryStep.getCustomMarker())
+				.toString();
+	}
+
+	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
+			TableQuery tableQuery,
+			ITabularRecordStream stream,
+			SetMultimap<String, Aggregator> columnToAggregators) {
+
+		IAggregatedRecordStreamReducer streamReducer =
+				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery, columnToAggregators);
+
+		return streamReducer.reduce(stream);
+	}
+
+	protected IAggregatedRecordStreamReducer makeAggregatedRecordStreamReducer(
+			ExecutingQueryContext executingQueryContext,
+			TableQuery tableQuery,
+			SetMultimap<String, Aggregator> columnToAggregators) {
+		return AggregatedRecordStreamReducer.builder()
+				.operatorsFactory(operatorsFactory)
+				.executingQueryContext(executingQueryContext)
+				.tableQuery(tableQuery)
+				.columnToAggregators(columnToAggregators)
+				.build();
+	}
+
+	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
+			String aggregatorName) {
+		return columnToAggregators.values()
+				.stream()
+				.flatMap(Collection::stream)
+				.filter(a -> a.getName().equals(aggregatorName))
+				.findAny();
+	}
+
+	/**
+	 * @param executingQueryContext
+	 * @param dagHolder2
+	 * @return the Set of {@link TableQuery} to be executed.
+	 */
+	protected Set<TableQuery> prepareForTable(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag) {
+		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
+		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
+
+		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
+		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
+		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
+			IMeasure leafMeasure = executingQueryContext.resolveIfRef(step.getMeasure());
+
+			if (leafMeasure instanceof Aggregator leafAggregator) {
+				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
+
+				// We could analyze filters, to swallow a query filtering `k=v` if another query
+				// filters `k=v|v2`. This is valid only if they were having the same groupBy, and groupBy includes `k`
+				measurelessToAggregators
+						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
+			} else if (leafMeasure instanceof EmptyMeasure) {
+				// ???
+			} else if (leafMeasure instanceof Columnator) {
+				// ???
+				// Happens if we miss given column
+			} else {
+				// Happens on Transformator with no underlying measure
+				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
+			}
+		});
+
+		return measurelessToAggregators.entrySet().stream().map(e -> {
+			MeasurelessQuery measurelessQuery = e.getKey();
+			Set<Aggregator> leafAggregators = e.getValue();
+			return TableQuery.edit(measurelessQuery).aggregators(leafAggregators).build();
+		}).collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	/**
+	 * This step handles columns which are not relevant for the tables, but has not been suppressed by the measure tree.
+	 * It typically happens when a column is introduced by some {@link Dispatchor} measure, but the actually requested
+	 * measure is unrelated (which itself happens when selecting multiple measures, like `many2many+count(*)`).
+	 * 
+	 * @param executingQueryContext
+	 * 
+	 * @param tableQuery
+	 * @return {@link TableQuery} where calculated columns has been suppressed.
+	 */
+	protected TableQuery suppressGeneratedColumns(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+		// We list the generatedColumns instead of listing the table columns as many tables has lax resolution of
+		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
+		// probably return only one of the 2).
+		Set<String> generatedColumns = IColumnGenerator.getColumnGenerators(operatorsFactory,
+				// TODO Restrict to the DAG measures
+				executingQueryContext.getForest().getMeasures(),
+				IValueMatcher.MATCH_ALL)
+				.stream()
+				.flatMap(cg -> cg.getColumns().keySet().stream())
+				.collect(Collectors.toSet());
+
+		Set<String> groupedByCubeColumns =
+				tableQuery.getGroupBy().getNameToColumn().keySet().stream().collect(Collectors.toSet());
+
+		TableQueryBuilder edited = TableQuery.edit(tableQuery);
+
+		SetView<String> generatedColumnToSuppressFromGroupBy =
+				Sets.intersection(groupedByCubeColumns, generatedColumns);
+		if (!generatedColumnToSuppressFromGroupBy.isEmpty()) {
+			// All columns has been validated as being generated
+			IAdhocGroupBy originalGroupby = tableQuery.getGroupBy();
+			IAdhocGroupBy suppressedGroupby =
+					GroupByHelpers.suppressColumns(originalGroupby, generatedColumnToSuppressFromGroupBy);
+			log.debug("Suppressing generatedColumns in groupBy from {} to {}", originalGroupby, suppressedGroupby);
+			edited.groupBy(suppressedGroupby);
+		}
+
+		Set<String> filteredCubeColumnsToSuppress =
+				FilterHelpers.getFilteredColumns(tableQuery.getFilter()).stream().collect(Collectors.toSet());
+		Set<String> generatedColumnToSuppressFromFilter =
+				Sets.intersection(filteredCubeColumnsToSuppress, generatedColumns);
+
+		if (!generatedColumnToSuppressFromFilter.isEmpty()) {
+			IAdhocFilter originalFilter = tableQuery.getFilter();
+			IAdhocFilter suppressedFilter =
+					SimpleFilterEditor.suppressColumn(originalFilter, generatedColumnToSuppressFromFilter);
+			log.debug("Suppressing generatedColumns in filter from {} to {}", originalFilter, suppressedFilter);
+			edited.filter(suppressedFilter);
+		}
+
+		return edited.build();
 	}
 
 	protected void walkDagUpToQueriedMeasures(ExecutingQueryContext executingQueryContext,
@@ -638,6 +753,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 		}
 	}
 
+	/**
+	 * 
+	 * @param executingQueryContext
+	 * @param queryStepsDag
+	 * @param queryStepToValues
+	 * @return the output {@link ITabularView}
+	 */
 	protected ITabularView toTabularView(ExecutingQueryContext executingQueryContext,
 			QueryStepsDag queryStepsDag,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {

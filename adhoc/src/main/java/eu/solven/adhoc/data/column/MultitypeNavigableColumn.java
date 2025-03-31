@@ -89,10 +89,16 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	@Default
 	boolean locked = false;
 
+	// Used to report slowPathes, may be due to bugs/unoptimized_cases/mis-usages
 	final AtomicInteger slowPath = new AtomicInteger();
 
 	protected IValueReceiver merge(int index) {
-		throw new IllegalArgumentException("This does not allow merging. key=%s".formatted(keys.get(index)));
+		if (index < 0) {
+			throw new ArrayIndexOutOfBoundsException("index=%s must be positive".formatted(index));
+		} else if (index >= size()) {
+			throw new ArrayIndexOutOfBoundsException("index=%s must be lowerThan size=%s".formatted(index, size()));
+		}
+		throw new IllegalArgumentException("%s does not allow merging. key=%s".formatted(getClass(), keys.get(index)));
 	}
 
 	@Override
@@ -265,17 +271,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				return value;
 			}
 		});
-	}
-
-	@Override
-	public void onValue(T key, IValueReceiver valueConsumer) {
-		int index = getIndex(key);
-
-		if (index < 0) {
-			valueConsumer.onObject(null);
-		} else {
-			onValue(index, valueConsumer);
-		}
 	}
 
 	@Override

@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -86,5 +85,5 @@ public interface ITabularView {
 	 * @param <U>
 	 *            the output type of the rowConvertor
 	 */
-	<U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowConverter);
+	<U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowConverter);
 }

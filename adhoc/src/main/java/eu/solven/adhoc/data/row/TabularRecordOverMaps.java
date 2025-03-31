@@ -46,6 +46,11 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
+	public Map<String, ?> aggregatesAsMap() {
+		return aggregates;
+	}
+
+	@Override
 	public Object getAggregate(String aggregateName) {
 		return aggregates.get(aggregateName);
 	}

@@ -46,7 +46,7 @@ import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeStorage;
 import eu.solven.adhoc.query.foreignexchange.IForeignExchangeStorage;
@@ -67,7 +67,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	LocalDate today = LocalDate.now();
 
 	public final AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
-	public final CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -88,8 +88,8 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
-		rows.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
+		table.add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
+		table.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
 	}
 
 	// Default is EUR
@@ -98,7 +98,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	String mNameUSD = "k1.USD";
 
 	void prepareMeasures() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name(mName)
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))
@@ -107,17 +107,17 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 
-		amb.addMeasure(
+		forest.addMeasure(
 				CustomMarkerEditor.builder().name(mNameEUR).underlying(mName).customMarkerEditor(optCustomMarker -> {
 					return forceCcy("EUR", optCustomMarker);
 				}).build());
 
-		amb.addMeasure(
+		forest.addMeasure(
 				CustomMarkerEditor.builder().name(mNameUSD).underlying(mName).customMarkerEditor(optCustomMarker -> {
 					return forceCcy("USD", optCustomMarker);
 				}).build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 	}
 
 	private static Optional<String> forceCcy(String ccy, Optional<?> optCustomMarker) {

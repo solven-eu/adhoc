@@ -36,7 +36,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,12 +52,12 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
-		rows.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
-		rows.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
-		rows.add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
+		table.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
+		table.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
+		table.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
+		table.add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
 		// Lack measure: should not materialize coordinates on shift
-		rows.add(Map.of("color", "yellow", "ccy", "CHN"));
+		table.add(Map.of("color", "yellow", "ccy", "CHN"));
 	}
 
 	// Default is EUR
@@ -90,9 +90,9 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	}
 
 	void prepareMeasures() {
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		amb.addMeasure(Shiftor.builder()
+		forest.addMeasure(Shiftor.builder()
 				.name(mName)
 				.underlying(k1Sum.getName())
 				.editorKey(ToCcyShifter.class.getName())
@@ -103,7 +103,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker("EUR").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure(mName).customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -118,7 +118,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
+				cube.execute(AdhocQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -138,7 +138,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGroupByCcyFilterCcy_notFiltered() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = cube.execute(AdhocQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "USD")
 				.groupByAlso("ccy")
@@ -157,7 +157,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGroupByCcyFilterCcy_filteredCcy() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = cube.execute(AdhocQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "EUR")
 				.groupByAlso("ccy")
@@ -176,7 +176,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testUnknownCcy() {
 		prepareMeasures();
 
-		ITabularView output = aqw
+		ITabularView output = cube
 				.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "unknown").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -188,7 +188,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testUnknownCcy_groupByColor() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = cube.execute(AdhocQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "unknown")
 				.groupByAlso("color")
@@ -205,7 +205,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
+				cube.execute(AdhocQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

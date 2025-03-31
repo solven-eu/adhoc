@@ -42,7 +42,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**

@@ -50,6 +50,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -118,7 +119,9 @@ public class TestCalciteAdhocAdapter {
 		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"adhoc_table\"")
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
-						rows.streamSlices(TableQuery.builder().build()).asMap().count()))
+						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQuery.builder().build())
+								.asMap()
+								.count()))
 				.explainContains("""
 						PLAN=MongoToEnumerableConverter
 						  AdhocCalciteAggregate(group=[{}], EXPR$0=[COUNT()])

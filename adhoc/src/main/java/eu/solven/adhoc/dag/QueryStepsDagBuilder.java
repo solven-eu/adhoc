@@ -144,8 +144,8 @@ public class QueryStepsDagBuilder {
 	public void sanityChecks() {
 		// sanity check
 		dag.vertexSet().forEach(step -> {
-			if (step.getMeasure() instanceof ReferencedMeasure) {
-				throw new IllegalStateException("The DAG must not rely on ReferencedMeasure");
+			if (step.getMeasure() instanceof ReferencedMeasure ref) {
+				throw new IllegalStateException("The DAG must not rely on ReferencedMeasure=%s".formatted(ref));
 			}
 		});
 	}

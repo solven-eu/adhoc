@@ -37,32 +37,32 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfMaxOfSum_noGroupBy() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -73,7 +73,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 
 	@Test
 	public void testSumOfMaxOfSum_groupByA() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("a"))
@@ -81,10 +81,10 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -95,7 +95,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 
 	@Test
 	public void testSumOfMaxOfSum_groupByAandB() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("a", "b"))
@@ -103,10 +103,10 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -117,7 +117,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 
 	@Test
 	public void testSumOfMaxOfSum_groupByA_bothBucketorAndAdhoc() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2ByA")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("a"))
@@ -125,10 +125,10 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -140,27 +140,25 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 
 	@Test
 	public void testSumOfMaxOfSum_groupByAandBandUnknown() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.groupBy(GroupByColumns.named("a", "b", "unknown"))
+				.groupBy(GroupByColumns.named("a", "b", "unknownColumn"))
 				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure("maxK1K2").build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("unknownColumn");
 	}
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyA() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("a"))
@@ -168,10 +166,10 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -182,7 +180,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyB() {
-		amb.addMeasure(Bucketor.builder()
+		forest.addMeasure(Bucketor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("b"))
@@ -191,10 +189,10 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 				.tag("debug")
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

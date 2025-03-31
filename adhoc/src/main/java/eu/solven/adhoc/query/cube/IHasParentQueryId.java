@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.query.cube;
 
-import java.util.Set;
-
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
+ * Typically used in a {@link CompositeCubesTableWrapper}, where each query is split in 1 subQuery per subCube.
+ * 
+ * @author Benoit Lacelle
  */
-public class IdentityReversibleTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
-
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
-	}
+public interface IHasParentQueryId {
+	AdhocQueryId getParentQueryId();
 }

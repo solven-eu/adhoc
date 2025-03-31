@@ -50,7 +50,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.NonNull;
@@ -156,7 +156,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 
 	public final AdhocQueryEngine aqe =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
@@ -184,7 +184,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	@BeforeEach
 	public void feedTable() {
 		for (int i = 0; i <= maxElementInserted; i++) {
-			rows.add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
+			table.add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
 		}
 	}
 
@@ -206,14 +206,14 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 				.put(ManyToMany1DDecomposition.K_OUTPUT, cGroup)
 				.build();
 
-		amb.addMeasure(Dispatchor.builder()
+		forest.addMeasure(Dispatchor.builder()
 				.name(dispatchedMeasure)
 				.underlying("k1")
 				.decompositionKey(ManyToMany1DDecomposition.class.getName())
 				.decompositionOptions(options)
 				.build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 	}
 
 	@Test

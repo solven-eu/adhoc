@@ -31,8 +31,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery.AdhocQueryBuilder;
 
 /**
  * Relational expression that uses Mongo calling convention.

@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.column;
 
+import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 
@@ -38,7 +39,9 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
  */
 public interface IAdhocColumnsManager {
 
-	ITabularRecordStream openTableStream(ITableWrapper table, TableQuery tableQuery);
+	ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
+
+	Object onMissingColumn(ICubeWrapper cube, String column);
 
 	Object onMissingColumn(String column);
 

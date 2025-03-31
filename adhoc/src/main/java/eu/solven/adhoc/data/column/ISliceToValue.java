@@ -51,9 +51,9 @@ public interface ISliceToValue {
 
 	Set<SliceAsMap> slicesSet();
 
-	void onValue(SliceAsMap slice, IValueReceiver consumer);
+	void onValue(SliceAsMap slice, IValueReceiver valueReceiver);
 
-	void forEachSlice(IColumnScanner<SliceAsMap> rowScanner);
+	void forEachSlice(IColumnScanner<SliceAsMap> columnScanner);
 
 	/**
 	 * 

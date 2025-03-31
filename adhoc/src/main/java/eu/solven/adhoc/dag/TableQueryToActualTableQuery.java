@@ -20,45 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.dag;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.ITableWrapper;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
+
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.query.table.TableQuery;
 import lombok.Builder;
-import lombok.Singular;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
- * A schema describing metadata for a set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and
- * {@link IAdhocQuery}.
+ * Helps managing {@link IColumnGenerator} when these columns flows down to the {@link Aggregator}
+ * {@link AdhocQueryStep}.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-@Jacksonized
-public class EndpointSchemaMetadata {
+public class TableQueryToActualTableQuery {
+	// The TableQuery as queried by the DAG: it may still refer generated columns
+	TableQuery dagTableQuery;
+	// The TableQuery after having suppressed generated columns
+	TableQuery suppressedTableQuery;
 
-	@Singular
-	Map<String, ColumnarMetadata> tables;
-
-	@Singular
-	Map<String, List<IMeasure>> measureBags;
-
-	@Singular
-	Map<String, CubeSchemaMetadata> cubes;
-
-	@Singular
-	Map<String, AdhocQuery> queries;
-
-	@Singular
-	Map<String, Object> customMarkers;
+	public Set<String> getSuppressedGroupBy() {
+		Set<String> queriedColumns = dagTableQuery.getGroupBy().getNameToColumn().keySet();
+		Set<String> withoutSuppressedColumns = suppressedTableQuery.getGroupBy().getNameToColumn().keySet();
+		SetView<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
+		return ImmutableSet.copyOf(suppressedView);
+	}
 }

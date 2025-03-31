@@ -38,10 +38,11 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.column.DefaultMissingColumnManager;
+import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.IMissingColumnManager;
+import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -53,8 +54,9 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -74,7 +76,8 @@ import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This enables combining multiple {@link ITableWrapper}, and to evaluate {@link IMeasure} on top of them.
+ * This enables combining multiple {@link ICubeWrapper}, each appearing as an underlying {@link ITableWrapper}, and to
+ * evaluate {@link IMeasure} on top of them.
  * 
  * @author Benoit Lacelle
  */
@@ -90,8 +93,10 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	@Singular
 	final List<ICubeWrapper> cubes;
 
+	// Enable managing missing columns for subCubes
+	@NonNull
 	@Default
-	IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
+	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
 
 	@Override
 	public Map<String, Class<?>> getColumns() {
@@ -104,16 +109,21 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(TableQuery compositeQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery compositeQuery) {
+		if (executingQueryContext.getTable() != this) {
+			throw new IllegalStateException(
+					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+		}
+
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
 		Stream<ITabularRecord> streams = cubes.stream().flatMap(cube -> {
-
 			Set<String> cubeColumns = cube.getColumns().keySet();
 
-			IAdhocQuery query = makeSubCubeQuery(compositeQuery, compositeGroupBy, cube, cubeColumns);
+			IAdhocQuery subQuery =
+					makeSubCubeQuery(executingQueryContext, compositeQuery, compositeGroupBy, cube, cubeColumns);
 
-			ITabularView view = cube.execute(query,
+			ITabularView subView = cube.execute(subQuery,
 					Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY,
 							StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED));
 
@@ -121,10 +131,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			// current subCube.
 			NavigableSet<String> missingColumns =
 					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), cubeColumns));
-			return view.stream((slice) -> {
-				return o -> {
-					Map<String, ?> oAsMap = (Map<String, ?>) o;
-
+			return subView.stream((slice) -> {
+				return oAsMap -> {
 					return transcodeSliceToComposite(cube, slice, oAsMap, missingColumns);
 				};
 			});
@@ -133,7 +141,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return new SuppliedTabularRecordStream(compositeQuery, () -> streams);
 	}
 
-	protected IAdhocQuery makeSubCubeQuery(TableQuery compositeQuery,
+	protected IAdhocQuery makeSubCubeQuery(ExecutingQueryContext executingQueryContext,
+			TableQuery compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
 			ICubeWrapper cube,
 			Set<String> cubeColumns) {
@@ -159,18 +168,16 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				.filter(a -> cubeColumns.contains(a.getColumnName()))
 				.collect(Collectors.toSet());
 
-		IAdhocQuery query = AdhocQuery.builder()
+		IAdhocQuery query = AdhocQuery.edit(compositeQuery)
 				.filter(underlyingFilter)
 				.groupBy(GroupByColumns.of(underlyingGroupBy.values()))
 				// Reference the measures already known by the subCube
 				.measureNames(underlyingQueryMeasures)
 				// Add some measure given their definitions
 				.measures(missingButAddableMeasures)
-				.customMarker(compositeQuery.getCustomMarker())
-				.debug(compositeQuery.isDebug())
-				.explain(compositeQuery.isExplain())
 				.build();
-		return query;
+
+		return AdhocSubQuery.builder().subQuery(query).parentQueryId(executingQueryContext.getQueryId()).build();
 	}
 
 	/**
@@ -197,7 +204,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	protected Object missingColumn(ICubeWrapper cube, String column) {
-		return missingColumnManager.onMissingColumn(cube, column);
+		return columnsManager.onMissingColumn(cube, column);
 	}
 
 	/**

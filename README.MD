@@ -54,9 +54,9 @@ myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.build
         .build());
 ```
 
-4. Define a `MeasureBag`: it defines the measures and the links between them
+4. Define a `MeasureForest`: it defines the measures and the links between them, through their underlying measures.
 
-An early-stage measureBag could look like:
+An early-stage forest could look like:
 ```
 Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
 Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
@@ -68,22 +68,22 @@ Combinator k1PlusK2AsExpr = Combinator.builder()
         .combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)").build())
         .build();
 
-AdhocMeasureBag measureBag = AdhocMeasureBag.builder().build();
-measureBag.addMeasure(k1Sum);
-measureBag.addMeasure(k2Sum);
-measureBag.addMeasure(k1PlusK2AsExpr);
+MeasureForest.MeasureForestBuilder forestBuilder = MeasureForest.builder();
+forestBuilder.addMeasure(k1Sum);
+forestBuilder.addMeasure(k2Sum);
+forestBuilder.addMeasure(k1PlusK2AsExpr);
 ```
 
 5. Defines an Adhoc Engine: it know how to execute a query given the measure relationships
 
 ```
-AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).measureBag(measureBag).build();
+AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).forest(forestBuilder.build()).build();
 ```
 
 6. Define your query
 ```
-ITabularView result = aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
-MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+ITabularView view = aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
         .containsExactly(Map.of());
@@ -303,3 +303,4 @@ Most databases handles aggregations over primitive types (e.g. SUM over doubles)
 - Work on query cancellations/queryTimeouts
 - Enables `getCoordinates` for cube.columns created by measures
 - [SECURITY] Ability to hide some measures from some Users
+- [Performance] Enable querying multiple `AdhocQuery` in a single call, enabling further queryStep sharing for large reports.

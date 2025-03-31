@@ -40,30 +40,31 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.util.IStopwatch;
 
 public class TestAggregations_Filter extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfSum_filterA1() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -74,17 +75,17 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyA() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build());
+				cube.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -95,17 +96,17 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 
 	@Test
 	public void testSumOfSum_filterA1_groupbyB() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build());
+				cube.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -117,16 +118,16 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 
 	@Test
 	public void testSumOfSum_filterMatchNothing() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "none").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("a", "none").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -142,10 +143,10 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 	public void testLogs() {
 		List<String> messages = AdhocExplainerTestHelper.listenForLogs(eventBus);
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
+		cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(

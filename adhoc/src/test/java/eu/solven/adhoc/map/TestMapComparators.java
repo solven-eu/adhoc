@@ -20,15 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.maps;
+package eu.solven.adhoc.map;
 
 import java.util.Comparator;
 import java.util.Map;
 import java.util.NavigableMap;
 
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.map.MapComparators;
 
 public class TestMapComparators {
 	@Test

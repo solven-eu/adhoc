@@ -102,4 +102,5 @@ public interface IAdhocSlice {
 	 * @return the simple (i.e. without the queryStep) slice, as a {@link SliceAsMap}
 	 */
 	SliceAsMap getAdhocSliceAsMap();
+
 }

@@ -22,13 +22,11 @@
  */
 package eu.solven.adhoc.table.duckdb.var;
 
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
@@ -56,7 +54,8 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
@@ -67,7 +66,7 @@ import eu.solven.pepper.memory.PepperMemoryHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestConstants, IExampleVaRConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -111,7 +110,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).build();
 	}
 
 	String mArray = "k1Array";
@@ -134,6 +133,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 			s.execute(
 					"CREATE TABLE someTableName (color VARCHAR, doubles FLOAT[]);".formatted(arrayLength, arrayLength));
 
+			// https://github.com/duckdb/duckdb-java/issues/163
 			// doInsertSpecificArrays(duckDbConnection);
 
 			s.execute("""
@@ -152,14 +152,14 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	private void registerMeasures() {
 		List<String> underlyings = new ArrayList<>();
 
-		amb.addMeasure(countAsterisk);
+		forest.addMeasure(countAsterisk);
 
 		// DuckDB does not enable array aggregation: we aggregate each index individually
 		for (int i = 0; i < arrayLength; i++) {
 			String name = "k" + i;
 
 			underlyings.add(name);
-			amb.addMeasure(Aggregator.builder()
+			forest.addMeasure(Aggregator.builder()
 					.name(name)
 					.columnName(Integer.toString(i))
 					.aggregationKey(SumAggregation.KEY)
@@ -174,27 +174,27 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 					.name(mArray + "fromPrimitives")
 					.underlyings(underlyings)
 					.combinationKey(ExampleVaRArrayCombination.class.getName())
-					.combinationOptions(Map.of(IExampleVaRConstants.NB_SCENARIO, arrayLength))
+					.combinationOptions(Map.of(NB_SCENARIO, arrayLength))
 					.build();
-			amb.addMeasure(k1ArrayFromPrimitives);
+			forest.addMeasure(k1ArrayFromPrimitives);
 
 			k1Array = Dispatchor.builder()
 					.name(mArray)
 					.underlying(k1ArrayFromPrimitives.getName())
 					.decompositionKey(ExampleVaRDecomposition.class.getName())
-					.decompositionOptions(Map.of(IExampleVaRConstants.NB_SCENARIO, arrayLength))
+					.decompositionOptions(Map.of(NB_SCENARIO, arrayLength))
 					.aggregationKey(FirstNotNullAggregation.class.getName())
 					.build();
-			amb.addMeasure(k1Array);
+			forest.addMeasure(k1Array);
 
 			// This measure enables accessing each array index by a functional name
 			Combinator k1ScenariosNames = Combinator.builder()
 					.name(mNames)
 					.underlying(mArray)
 					.combinationKey(ExampleVaRScenarioNameCombination.class.getName())
-					.combinationOptions(Map.of(IExampleVaRConstants.NB_SCENARIO, arrayLength))
+					.combinationOptions(Map.of(NB_SCENARIO, arrayLength))
 					.build();
-			amb.addMeasure(k1ScenariosNames);
+			forest.addMeasure(k1ScenariosNames);
 		}
 		IMeasure k1VaR = Combinator.builder()
 				.name(mVaR)
@@ -204,12 +204,12 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 						.put(ExampleVaRQuickSelectCombination.P_QUANTILE, 0.95D)
 						.build())
 				.build();
-		amb.addMeasure(k1VaR);
+		forest.addMeasure(k1VaR);
 	}
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView result = wrapInCube(amb)
+		ITabularView result = wrapInCube(forest)
 				.execute(AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).debug(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -240,7 +240,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// groupBy standard column
 	@Test
 	public void testGroupByColor() {
-		ITabularView result = wrapInCube(amb).execute(
+		ITabularView result = wrapInCube(forest).execute(
 				AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).groupByAlso("color").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -274,18 +274,16 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// groupBy scenarioIndex
 	@Test
 	public void testGroupByScenarioIndex_mArray() {
-		ITabularView result = wrapInCube(amb).execute(
-				AdhocQuery.builder().measure(mArray).groupByAlso(IExampleVaRConstants.C_SCENARIOINDEX).build());
+		ITabularView result =
+				wrapInCube(forest).execute(AdhocQuery.builder().measure(mArray).groupByAlso(C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKeys(Map.of(IExampleVaRConstants.C_SCENARIOINDEX, 0),
-						Map.of(IExampleVaRConstants.C_SCENARIOINDEX, arrayLength - 1))
+				.containsKeys(Map.of(C_SCENARIOINDEX, 0), Map.of(C_SCENARIOINDEX, arrayLength - 1))
 				.hasSize(arrayLength);
 
 		for (int scenarioIndex : IntStream.range(0, arrayLength).toArray()) {
-			Map<String, ?> measures =
-					mapBased.getCoordinatesToValues().get(Map.of(IExampleVaRConstants.C_SCENARIOINDEX, scenarioIndex));
+			Map<String, ?> measures = mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, scenarioIndex));
 			Assertions.assertThat(measures).hasSize(1);
 
 			Object array = measures.get(mArray);
@@ -296,19 +294,18 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// groupBy scenarioName
 	@Test
 	public void testGroupByScenarioName_mArray() {
-		ITabularView result = wrapInCube(amb)
-				.execute(AdhocQuery.builder().measure(mArray).groupByAlso(IExampleVaRConstants.C_SCENARIONAME).build());
+		ITabularView result =
+				wrapInCube(forest).execute(AdhocQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKeys(Map.of(IExampleVaRConstants.C_SCENARIONAME, "histo_" + 0),
-						Map.of(IExampleVaRConstants.C_SCENARIONAME, "histo_" + (arrayLength - 1)))
+				.containsKeys(Map.of(C_SCENARIONAME, "histo_" + 0),
+						Map.of(C_SCENARIONAME, "histo_" + (arrayLength - 1)))
 				.hasSize(arrayLength);
 
 		for (int scenarioIndex : IntStream.range(0, arrayLength).toArray()) {
 			Map<String, ?> measures = mapBased.getCoordinatesToValues()
-					.get(Map.of(IExampleVaRConstants.C_SCENARIONAME,
-							ExampleVaRScenarioNameCombination.indexToName(scenarioIndex)));
+					.get(Map.of(C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(scenarioIndex)));
 			Assertions.assertThat(measures).hasSize(1);
 
 			Object array = measures.get(mArray);
@@ -319,11 +316,8 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// filter scenarioIndex
 	@Test
 	public void testFilterScenarioIndex_mArrayVaR() {
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
-				.measure(mArray, mVaR)
-				.andFilter(IExampleVaRConstants.C_SCENARIOINDEX, 0)
-				.explain(true)
-				.build());
+		ITabularView result = wrapInCube(forest)
+				.execute(AdhocQuery.builder().measure(mArray, mVaR).andFilter(C_SCENARIOINDEX, 0).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -341,10 +335,9 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// filter scenarioName
 	@Test
 	public void testFilterScenarioName_mArrayVaR() {
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
 				.measure(mArray, mVaR)
-				.andFilter(IExampleVaRConstants.C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(0))
-				.explain(true)
+				.andFilter(C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(0))
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -360,16 +353,52 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		});
 	}
 
+	// filter scenarioIndex on `count(*)`
+	@Test
+	public void testFilterScenarioIndex_countAsterisk_standardCube() {
+		ITabularView result = wrapInCube(forest)
+				.execute(AdhocQuery.builder().measure(countAsterisk).andFilter(C_SCENARIOINDEX, 0).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
+
+		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues().get(Map.of());
+
+		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
+
+		Assertions.assertThat(measureToValue.get(countAsterisk.getName())).isEqualTo(2L);
+	}
+
+	// groupBy scenarioIndex on `count(*)`
+	@Test
+	public void testGroupByScenarioIndex_countAsterisk() {
+		ITabularView view = wrapInCube(forest)
+				.execute(AdhocQuery.builder().measure(countAsterisk).groupByAlso(C_SCENARIOINDEX).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
+				.hasSize(1);
+
+		Map<String, ?> measureToValue =
+				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
+
+		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
+
+		Assertions.assertThat(measureToValue.get(countAsterisk.getName())).isEqualTo(2L);
+	}
+
 	@Test
 	public void testDescribe() {
-		CubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(forest);
 
 		Assertions.assertThat(cube.getColumns())
 				.containsEntry("color", String.class)
 				.containsEntry("0", Double.class)
 				.containsEntry(Integer.toString(arrayLength - 1), Double.class)
-				.containsEntry(IExampleVaRConstants.C_SCENARIOINDEX, Integer.class)
-				.containsEntry(IExampleVaRConstants.C_SCENARIONAME, String.class)
+				.containsEntry(C_SCENARIOINDEX, Integer.class)
+				.containsEntry(C_SCENARIONAME, String.class)
 				.hasSize(arrayLength
 						// color
 						+ 1
@@ -379,10 +408,9 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testColumnMeta_scenarioIndexes() {
-		CubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(forest);
 
-		CoordinatesSample coordinates =
-				cube.getCoordinates(IExampleVaRConstants.C_SCENARIOINDEX, IValueMatcher.MATCH_ALL, arrayLength);
+		CoordinatesSample coordinates = cube.getCoordinates(C_SCENARIOINDEX, IValueMatcher.MATCH_ALL, arrayLength);
 
 		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(arrayLength);
 		Assertions.assertThat(coordinates.getCoordinates()).hasSize(arrayLength).contains(0, 1, arrayLength - 1);
@@ -390,10 +418,9 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testColumnMeta_scenarioNames() {
-		CubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(forest);
 
-		CoordinatesSample coordinates =
-				cube.getCoordinates(IExampleVaRConstants.C_SCENARIONAME, IValueMatcher.MATCH_ALL, arrayLength);
+		CoordinatesSample coordinates = cube.getCoordinates(C_SCENARIONAME, IValueMatcher.MATCH_ALL, arrayLength);
 
 		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(arrayLength);
 		Assertions.assertThat(coordinates.getCoordinates())
@@ -401,75 +428,4 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 				.contains("histo_0", "histo_1", "histo_" + (arrayLength - 1));
 	}
 
-	// https://github.com/duckdb/duckdb-java/issues/163
-	private void doInsertSpecificArrays(DuckDBConnection duckDbConnection) throws SQLException {
-		// INSERT INTO someTableName VALUES ('red' , ['d0', 'd1'], [1.2, 2.3]);
-		// INSERT INTO someTableName VALUES ('blue', ['d0', 'd1'], [3.4, 4.5]);
-		// INSERT INTO someTableName VALUES ('blue', ['d0', 'd1'], [5.6, 6.7]);
-		// SELECT unnest(array_values), generate_subscripts(array_values, 1) AS index FROM someTableName;
-		// SELECT color, index, SUM(doubles) AS doubles FROM (SELECT color, unnest(array_values) AS doubles,
-		// generate_subscripts(array_values, 1) AS index FROM someTableName) GROUP BY color, index ORDER BY index
-		// ASC;
-		// PIVOT (SELECT color, index, SUM(doubles) AS doubles FROM (SELECT color, unnest(array_values) AS doubles,
-		// generate_subscripts(array_values, 1) AS index FROM someTableName) GROUP BY color, index ORDER BY index
-		// ASC) ON index USING SUM(doubles);
-
-		// duckDbConnection.createArrayOf(tableName, new double[] { 12.34 });
-
-		// https://duckdb.org/docs/stable/clients/java.html
-		// https://github.com/duckdb/duckdb-rs/issues/422
-		try (var appender = duckDbConnection.createAppender(DuckDBConnection.DEFAULT_SCHEMA, tableName)) {
-			for (int rowIndex = 0; rowIndex < 16; rowIndex++) {
-
-				double rowFactor = Math.sqrt(rowIndex);
-
-				appender.beginRow();
-				appender.append("red");
-				// appender.append(scenarioNames());
-				appender.append(IntStream.range(0, arrayLength)
-						.mapToDouble(i -> rowFactor * Math.sqrt(i))
-						.mapToObj(d -> Double.toString(d))
-						.collect(Collectors.joining(", ", "[", "]")));
-				appender.endRow();
-			}
-		}
-
-		// Arrow binding
-		// try (var allocator = new RootAllocator();
-		// ArrowStreamReader reader = null; // should not be null of course
-		// var arrow_array_stream = ArrowArrayStream.allocateNew(allocator)) {
-		// Data.exportArrayStream(allocator, reader, arrow_array_stream);
-		//
-		// // DuckDB setup
-		// try (var conn = (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:")) {
-		// conn.registerArrowStream("asdf", arrow_array_stream);
-		//
-		// // run a query
-		// try (var stmt = conn.createStatement();
-		// var rs = (DuckDBResultSet) stmt.executeQuery("SELECT count(*) FROM asdf")) {
-		// while (rs.next()) {
-		// System.out.println(rs.getInt(1));
-		// }
-		// }
-		// }
-		// }
-
-		// https://duckdb.org/docs/stable/clients/adbc.html
-		// final Map<String, Object> parameters = new HashMap<>();
-		// AdbcDriver.PARAM_URI.set(parameters, "jdbc:postgresql://localhost:5432/postgres");
-		// try (BufferAllocator allocator = new RootAllocator();
-		// AdbcDatabase db = new JdbcDriver(allocator).open(parameters);
-		// AdbcConnection adbcConnection = db.connect();
-		// AdbcStatement stmt = adbcConnection.createStatement()
-		//
-		// ) {
-		// stmt.setSqlQuery("select * from foo");
-		// AdbcStatement.QueryResult queryResult = stmt.executeQuery();
-		// while (queryResult.getReader().loadNextBatch()) {
-		// // process batch
-		// }
-		// } catch (AdbcException e) {
-		// // throw
-		// }
-	}
 }

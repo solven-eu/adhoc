@@ -40,7 +40,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -90,9 +90,9 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 				.aggregationKey(RankAggregation.KEY)
 				.aggregationOption(RankAggregation.P_RANK, 2)
 				.build();
-		amb.addMeasure(k1Rank2);
+		forest.addMeasure(k1Rank2);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder().measure(k1Rank2).build());
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -115,9 +115,10 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 				.aggregationKey(RankAggregation.KEY)
 				.aggregationOption(RankAggregation.P_RANK, 2)
 				.build();
-		amb.addMeasure(k1Rank2);
+		forest.addMeasure(k1Rank2);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("a").measure(k1Rank2).build());
+		ITabularView result =
+				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

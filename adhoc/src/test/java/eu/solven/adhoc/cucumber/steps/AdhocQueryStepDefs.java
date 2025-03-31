@@ -31,8 +31,8 @@ import org.assertj.core.api.Assertions;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.AdhocQuery;
-import eu.solven.adhoc.query.AdhocQuery.AdhocQueryBuilder;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery.AdhocQueryBuilder;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;
@@ -71,12 +71,12 @@ public class AdhocQueryStepDefs {
 	public void appendRows(DataTable data) {
 		List<Map<String, String>> maps = data.asMaps();
 
-		maps.forEach(aDagTest.rows::add);
+		maps.forEach(aDagTest.table::add);
 	}
 
 	@Given("Register aggregator name={word} column={word} key={word}")
 	public void registerAggregator(String name, String column, String key) {
-		aDagTest.amb.addMeasure(Aggregator.builder().name(name).columnName(column).aggregationKey(key).build());
+		aDagTest.forest.addMeasure(Aggregator.builder().name(name).columnName(column).aggregationKey(key).build());
 	}
 
 	@When("Query measure={word} debug={word}")
@@ -90,7 +90,7 @@ public class AdhocQueryStepDefs {
 		AdhocQuery query = queryBuilder.build();
 
 		try {
-			tabularView = aDagTest.aqe.executeUnsafe(query, aDagTest.amb, aDagTest.rows);
+			tabularView = aDagTest.engine.executeUnsafe(query, aDagTest.forest, aDagTest.table);
 		} catch (Throwable t) {
 			log.trace("A step thrown an exception (which may be expected by the scenario)", t);
 			this.t = t;

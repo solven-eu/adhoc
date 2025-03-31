@@ -29,6 +29,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -41,6 +44,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
+	// Implementations is generally a AdhocMap
 	final Map<String, ?> asMap;
 
 	protected SliceAsMap(Map<String, ?> asMap) {
@@ -136,5 +140,20 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	@Override
 	public String toString() {
 		return "slice:" + asMap;
+	}
+
+	/**
+	 * Typically used by {@link ConstantMaskMultitypeColumn}.
+	 * 
+	 * @param mask
+	 *            must not overlap existing columns.
+	 */
+	// @Override
+	public SliceAsMap addColumns(Map<String, ?> mask) {
+		if (mask.isEmpty()) {
+			return this;
+		} else {
+			return SliceAsMap.fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
+		}
 	}
 }

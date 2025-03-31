@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,33 +22,55 @@
  */
 package eu.solven.adhoc.query.cube;
 
-import java.util.List;
+import java.util.Set;
 
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IHasFilters;
-import eu.solven.adhoc.query.filter.NotFilter;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * An {@link IWhereGroupbyAdhocQuery} is view of a query, not expressing its measures.
- *
+ * Wraps an {@link IAdhocQuery} which is derived from a parent query.
+ * 
  * @author Benoit Lacelle
  */
-public interface IWhereGroupbyAdhocQuery extends IHasFilters, IHasGroupBy {
+@Value
+@Builder
+public final class AdhocSubQuery implements IAdhocQuery, IHasParentQueryId {
+	@NonNull
+	final IAdhocQuery subQuery;
+	@NonNull
+	final AdhocQueryId parentQueryId;
 
-	/**
-	 * The filter of current query. A filter refers to the condition for the data to be included. An AND over an empty
-	 * {@link List} means the whole data has to be included. Exclusions can be done through {@link NotFilter}
-	 *
-	 * @return a list of filters (to be interpreted as an OR over AND simple conditions).
-	 */
 	@Override
-	IAdhocFilter getFilter();
+	public IAdhocFilter getFilter() {
+		return subQuery.getFilter();
+	}
 
-	/**
-	 * The columns amongst which the result has to be ventilated/sliced.
-	 *
-	 * @return a Set of columns
-	 */
 	@Override
-	IAdhocGroupBy getGroupBy();
+	public IAdhocGroupBy getGroupBy() {
+		return subQuery.getGroupBy();
+	}
+
+	@Override
+	public Set<IMeasure> getMeasures() {
+		return subQuery.getMeasures();
+	}
+
+	@Override
+	public Object getCustomMarker() {
+		return subQuery.getCustomMarker();
+	}
+
+	@Override
+	public boolean isExplain() {
+		return subQuery.isExplain();
+	}
+
+	@Override
+	public boolean isDebug() {
+		return subQuery.isDebug();
+	}
 }

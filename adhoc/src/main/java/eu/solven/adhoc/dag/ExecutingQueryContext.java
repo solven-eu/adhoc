@@ -32,12 +32,14 @@ import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -67,7 +69,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures
 	@NonNull
-	IMeasureForest measures;
+	IMeasureForest forest;
 
 	@NonNull
 	ITableWrapper table;
@@ -89,14 +91,14 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 
 		if (options.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
 			if (measure instanceof ReferencedMeasure ref) {
-				return this.measures.resolveIfRefOpt(ref)
+				return this.forest.resolveIfRefOpt(ref)
 						.orElseGet(() -> EmptyMeasure.builder().name(ref.getRef()).build());
 			} else {
-				return this.measures.resolveIfRefOpt(measure)
+				return this.forest.resolveIfRefOpt(measure)
 						.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
 			}
 		} else {
-			return this.measures.resolveIfRef(measure);
+			return this.forest.resolveIfRef(measure);
 		}
 	}
 
@@ -123,5 +125,14 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 
 	public boolean isCancelled() {
 		return cancellationDate.get() != null;
+	}
+
+	@Deprecated(since = "Used for tests, or edge-cases")
+	public static ExecutingQueryContext forTable(ITableWrapper table) {
+		return ExecutingQueryContext.builder()
+				.table(table)
+				.query(AdhocQuery.builder().build())
+				.forest(MeasureForest.empty())
+				.build();
 	}
 }

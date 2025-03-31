@@ -39,30 +39,31 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfSum_noGroupBy() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -77,16 +78,16 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testSumOfSum_groupBy1String() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -102,16 +103,16 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testSumOfSum_groupBy1String_notAlwaysPresent() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("b").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("b").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -127,16 +128,16 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testSumOfMax_groupBy1String() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -152,16 +153,16 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testMaxOfSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(MaxCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").groupByAlso("a").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());

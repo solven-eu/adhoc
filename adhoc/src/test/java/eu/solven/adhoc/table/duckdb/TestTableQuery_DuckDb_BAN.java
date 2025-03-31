@@ -41,7 +41,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -87,13 +87,13 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	@BeforeEach
 	public void registerMeasures() {
-		amb.addMeasure(Aggregator.countAsterisk());
+		forest.addMeasure(Aggregator.countAsterisk());
 	}
 
 	@Test
 	public void testGrandTotal() {
 		ITabularView output =
-				wrapInCube(amb).execute(AdhocQuery.builder().measure(Aggregator.countAsterisk().getName()).build());
+				wrapInCube(forest).execute(AdhocQuery.builder().measure(Aggregator.countAsterisk().getName()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -104,7 +104,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testCoordinates_giganticCardinality() {
-		CoordinatesSample columnMeta = wrapInCube(amb).getCoordinates("id", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("id", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality())
 				.isCloseTo(26_045_333, Percentage.withPercentage(10));
@@ -113,7 +113,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testCoordinates_blob() {
-		CoordinatesSample columnMeta = wrapInCube(amb).getCoordinates("geom", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("geom", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality())
 				.isCloseTo(26_045_333, Percentage.withPercentage(10));
@@ -124,7 +124,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testCoordinates_ubigint() {
-		CoordinatesSample columnMeta = wrapInCube(amb).getCoordinates("h3_7", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("h3_7", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(107_635, Percentage.withPercentage(10));
 		Assertions.assertThat(columnMeta.getCoordinates()).hasSize(100);

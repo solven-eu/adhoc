@@ -46,7 +46,7 @@ import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
@@ -236,10 +236,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder().measure(k1SumSquared.getName()).build());
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(k1SumSquared.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -267,10 +267,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				DSL.field(DSL.name("b@b@b")),
 				DSL.field("k1")).values("a1", "b2", 345).execute();
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k1SumSquared);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1SumSquared);
 
-		CubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(forest);
 
 		{
 			ITabularView result = cube.execute(AdhocQuery.builder()
@@ -309,9 +309,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		Assertions.assertThatThrownBy(() -> wrapInCube(amb).execute(
+		Assertions.assertThatThrownBy(() -> wrapInCube(forest).execute(
 				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "unknownValue").build()))
 				.isInstanceOf(RuntimeException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!")
@@ -326,10 +326,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		Assertions
-				.assertThatThrownBy(() -> wrapInCube(amb)
+				.assertThatThrownBy(() -> wrapInCube(forest)
 						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
 				.isInstanceOf(RuntimeException.class)
 				.hasStackTraceContaining("source=TableQuery")
@@ -348,9 +348,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		Aggregator kSumOverk1 =
 				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregation.KEY).build();
 
-		amb.addMeasure(kSumOverk1);
+		forest.addMeasure(kSumOverk1);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).build());
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -367,9 +367,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
 				.measure(k1Sum.getName())
 				.andFilter("a", LikeMatcher.builder().like("a1%").build())
 				.build());
@@ -389,9 +389,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(amb)
+		ITabularView result = wrapInCube(forest)
 				.execute(AdhocQuery.builder().measure(k1Sum.getName()).filter(IAdhocFilter.MATCH_NONE).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -406,10 +406,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		Assertions.assertThatThrownBy(() -> {
-			wrapInCube(amb).execute(
+			wrapInCube(forest).execute(
 					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
 				.isInstanceOf(RuntimeException.class)
@@ -426,12 +426,12 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("k1").build();
 
-			ITabularView result = wrapInCube(amb).execute(query);
+			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -449,12 +449,12 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 
-		amb.addMeasure(countAsterisk);
+		forest.addMeasure(countAsterisk);
 
 		{
 			AdhocQuery query = AdhocQuery.builder().measure(countAsterisk).build();
 
-			ITabularView result = wrapInCube(amb).execute(query);
+			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -473,10 +473,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("a").build());
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -496,11 +496,11 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result =
-				wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.empty()).build());
+				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.empty()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -520,10 +520,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(amb)
+		ITabularView result = wrapInCube(forest)
 				.execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.countAsterisk()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -544,9 +544,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		CubeWrapper cube = wrapInCube(amb);
+		CubeWrapper cube = wrapInCube(forest);
 
 		Assertions.assertThat(cube.getColumns())
 				.containsEntry("a", String.class)
@@ -564,9 +564,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(amb).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
 				.groupByAlso("a")
 				.measure(k1Sum)
 				.andFilter(k1Sum.getName(),
@@ -597,9 +597,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Aggregator k1Sum =
 				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		Assertions.assertThatThrownBy(() -> wrapInCube(amb).execute(AdhocQuery.builder()
+		Assertions.assertThatThrownBy(() -> wrapInCube(forest).execute(AdhocQuery.builder()
 				.groupByAlso("a")
 				.measure(k1Sum)
 				.andFilter(k1Sum.getName(),

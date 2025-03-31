@@ -48,14 +48,14 @@ import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DInMemoryDefinition;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestConstants {
 
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
 	AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).build();
+	CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
@@ -86,9 +86,9 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 		manyToManyDefinition.putElementToGroup("FR", "G20");
 		manyToManyDefinition.putElementToGroup("CH", "G20");
 
-		rows.add(Map.of("l", "A", cElement, "FR", "k1", 123));
-		rows.add(Map.of("l", "A", cElement, "CH", "k1", 234));
-		rows.add(Map.of("l", "A", cElement, "ZW", "k1", 345));
+		table.add(Map.of("l", "A", cElement, "FR", "k1", 123));
+		table.add(Map.of("l", "A", cElement, "CH", "k1", 234));
+		table.add(Map.of("l", "A", cElement, "ZW", "k1", 345));
 	}
 
 	void prepareMeasures() {
@@ -97,14 +97,14 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 				.put(ManyToMany1DDecomposition.K_OUTPUT, cGroup)
 				.build();
 
-		amb.addMeasure(Dispatchor.builder()
+		forest.addMeasure(Dispatchor.builder()
 				.name(dispatchedMeasure)
 				.underlying("k1")
 				.decompositionKey(ManyToMany1DDecomposition.class.getName())
 				.decompositionOptions(options)
 				.build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 	}
 
 	@Test

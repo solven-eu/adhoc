@@ -33,7 +33,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -44,7 +44,7 @@ import lombok.Value;
 
 /**
  * Given an {@link IAdhocQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
- * {@link IWhereGroupbyAdhocQuery}.
+ * {@link IWhereGroupByQuery}.
  * 
  * @author Benoit Lacelle
  *
@@ -62,7 +62,7 @@ import lombok.Value;
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
-public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, IIsDebugable, IHasCustomMarker {
+public class AdhocQueryStep implements IWhereGroupByQuery, IIsExplainable, IIsDebugable, IHasCustomMarker {
 	@NonNull
 	IMeasure measure;
 	@NonNull
@@ -90,10 +90,10 @@ public class AdhocQueryStep implements IWhereGroupbyAdhocQuery, IIsExplainable, 
 	}
 
 	public static AdhocQueryStepBuilder edit(AdhocQueryStep step) {
-		return edit((IWhereGroupbyAdhocQuery) step).measure(step.getMeasure());
+		return edit((IWhereGroupByQuery) step).measure(step.getMeasure());
 	}
 
-	public static AdhocQueryStepBuilder edit(IWhereGroupbyAdhocQuery step) {
+	public static AdhocQueryStepBuilder edit(IWhereGroupByQuery step) {
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
 		if (step instanceof IIsExplainable explainable) {

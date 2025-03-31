@@ -38,7 +38,6 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -123,12 +122,12 @@ public class ListBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
 		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
 
-			return rowScanner.prepare(SliceAsMap.fromMap(k)).onObject(v);
+			return rowScanner.prepare(SliceAsMap.fromMap(k)).onMap(v);
 		});
 	}
 

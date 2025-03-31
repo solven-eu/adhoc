@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.data.tabular;
 
-import java.util.Set;
-
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.data.row.ITabularRecord;
 
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
+ * Enables conversion from a {@link ITabularRecord} to a custom type.
+ * 
+ * @param <T>
+ *            the type of some key
+ * @param <U>
+ *            the uniform output
+ * @author Benoit Lacelle
  */
-public class IdentityReversibleTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+public interface ITabularRecordConverter<T, U> {
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
-	}
+	/**
+	 * 
+	 * @param slice
+	 *            typically the groupedBy row
+	 * @return a {@link ITabularAggregatesFunction} to optionally convert the aggregates.
+	 */
+	ITabularAggregatesFunction<U> prepare(T slice);
+
 }

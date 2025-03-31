@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
-public class TestAdhocSlice {
+public class TestSliceAsMap {
 	@Test
 	public void testRequireFilter_String() {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
@@ -87,5 +87,22 @@ public class TestAdhocSlice {
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
 		}
+	}
+
+	@Test
+	public void testAddColumn() {
+		SliceAsMap slice = SliceAsMap.fromMap(Map.of("k", "v"));
+
+		SliceAsMap extended = slice.addColumns(Map.of("k2", "v2"));
+		Assertions.assertThat(extended.getCoordinates()).hasSize(2).containsEntry("k", "v").containsEntry("k2", "v2");
+	}
+
+	@Test
+	public void testAddColumn_overlap() {
+		SliceAsMap slice = SliceAsMap.fromMap(Map.of("k", "v"));
+
+		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("k", "v2");
 	}
 }

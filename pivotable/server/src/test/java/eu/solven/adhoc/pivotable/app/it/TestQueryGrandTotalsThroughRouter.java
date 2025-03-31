@@ -50,7 +50,7 @@ import eu.solven.adhoc.pivotable.client.PivotableWebclientServerProperties;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 

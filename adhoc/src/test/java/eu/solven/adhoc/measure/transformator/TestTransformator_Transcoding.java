@@ -39,29 +39,30 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
 	IAdhocColumnsManager columnsManager =
 			AdhocColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
-	CubeWrapper aqw = CubeWrapper.builder().table(rows).engine(aqe).forest(amb).columnsManager(columnsManager).build();
+	CubeWrapper aqw =
+			CubeWrapper.builder().table(table).engine(engine).forest(forest).columnsManager(columnsManager).build();
 
 	@Override
 	@BeforeEach
 	public void feedTable() {
 		// As assume the data in DB is already prefixed with `_p`
-		rows.add(Map.of("p_c", "v1", "p_k1", 123D));
-		rows.add(Map.of("p_c", "v2", "p_k2", 234D));
+		table.add(Map.of("p_c", "v1", "p_k1", 123D));
+		table.add(Map.of("p_c", "v2", "p_k2", 234D));
 
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 	}
 
 	@Test

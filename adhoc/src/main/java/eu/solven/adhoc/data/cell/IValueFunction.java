@@ -30,6 +30,7 @@ package eu.solven.adhoc.data.cell;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
+@Deprecated(since = "How/Where is it useful?")
 public interface IValueFunction<T> {
 
 	/**

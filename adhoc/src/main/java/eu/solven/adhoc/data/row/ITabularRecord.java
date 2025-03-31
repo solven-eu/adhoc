@@ -43,6 +43,8 @@ public interface ITabularRecord {
 	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
 	Object getAggregate(String aggregateName);
 
+	Map<String, ?> aggregatesAsMap();
+
 	Set<String> groupByKeySet();
 
 	Object getGroupBy(String columnName);
@@ -60,4 +62,5 @@ public interface ITabularRecord {
 	ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
 
 	ITabularRecord transcode(ICustomTypeManager customTypeManager);
+
 }

@@ -155,6 +155,10 @@ public class MeasureForest implements IMeasureForest {
 		return MeasureForest.builder().name(measures.getName()).measures(measures.getNameToMeasure().values());
 	}
 
+	public static IMeasureForest empty() {
+		return MeasureForest.builder().name("empty").build();
+	}
+
 	// TODO Why doesn't this compile?
 	// public static class AdhocMeasuresSetBuilder {
 	// public AdhocMeasuresSetBuilder measure(IMeasure measure) {

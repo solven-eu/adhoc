@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.query.cube;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,11 +33,12 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.IHasMeasures;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -103,6 +104,14 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 			return this;
 		}
 
+		/**
+		 * 
+		 * Append measures to the query.
+		 * 
+		 * @param measureNames
+		 *            referencing measures in the {@link IMeasureForest}
+		 * @return
+		 */
 		public AdhocQueryBuilder measureNames(Collection<String> measureNames) {
 			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measure);
 
@@ -110,6 +119,8 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 
 		/**
+		 * Append measures to the query.
+		 * 
 		 * BEWARE Even if we accept {@link IMeasure}, these measures are expected to be registered in the measure bag.
 		 * This may be lifted in a later version.
 		 *
@@ -189,13 +200,22 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		}
 	}
 
-	public static AdhocQueryBuilder edit(IAdhocQuery query) {
-		return AdhocQuery.builder()
-				.measures(query.getMeasures())
-				.filter(query.getFilter())
-				.groupBy(query.getGroupBy())
-				.customMarker(query.getCustomMarker())
-				.explain(query.isExplain())
-				.debug(query.isDebug());
+	public static AdhocQueryBuilder edit(IWhereGroupByQuery query) {
+		AdhocQueryBuilder builder = AdhocQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
+
+		if (query instanceof IHasMeasures hasMeasures) {
+			builder.measures(hasMeasures.getMeasures());
+		}
+		if (query instanceof IIsExplainable isExplainable) {
+			builder.explain(isExplainable.isExplain());
+		}
+		if (query instanceof IIsDebugable isDebugable) {
+			builder.debug(isDebugable.isDebug());
+		}
+		if (query instanceof IHasCustomMarker hasCustomMarker) {
+			builder.customMarker(hasCustomMarker.getCustomMarker());
+		}
+
+		return builder;
 	}
 }

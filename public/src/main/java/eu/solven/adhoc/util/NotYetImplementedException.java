@@ -28,6 +28,8 @@ package eu.solven.adhoc.util;
  * @author Benoit Lacelle
  */
 public class NotYetImplementedException extends UnsupportedOperationException {
+	private static final long serialVersionUID = 3594188852697266327L;
+
 	public NotYetImplementedException(String message) {
 		super(message + ". Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case");
 	}

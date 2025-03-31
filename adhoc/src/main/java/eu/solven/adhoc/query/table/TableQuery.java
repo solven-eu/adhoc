@@ -33,9 +33,10 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,7 +46,7 @@ import lombok.Singular;
 import lombok.Value;
 
 /**
- * A Database query is dedicated to querying external database.
+ * A query over an {@link ITableWrapper}, which typically represents an external database.
  * 
  * @author Benoit Lacelle
  * @see eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder
@@ -53,7 +54,7 @@ import lombok.Value;
 @Value
 @AllArgsConstructor
 @Builder
-public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
@@ -78,13 +79,13 @@ public class TableQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, II
 	@Default
 	boolean explain = false;
 
-	public static TableQueryBuilder edit(TableQuery dq) {
-		return edit((IWhereGroupbyAdhocQuery) dq).aggregators(dq.getAggregators())
-				.debug(dq.isDebug())
-				.explain(dq.isExplain());
+	public static TableQueryBuilder edit(TableQuery tableQuery) {
+		return edit((IWhereGroupByQuery) tableQuery).aggregators(tableQuery.getAggregators())
+				.debug(tableQuery.isDebug())
+				.explain(tableQuery.isExplain());
 	}
 
-	public static TableQueryBuilder edit(IWhereGroupbyAdhocQuery dq) {
+	public static TableQueryBuilder edit(IWhereGroupByQuery dq) {
 		TableQueryBuilder builder = TableQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
 
 		if (dq instanceof IHasCustomMarker hasCustomMarker) {

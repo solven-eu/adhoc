@@ -35,26 +35,27 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "percent", 1, "k1", 123));
-		rows.add(Map.of("a", "a1", "percent", 10, "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "percent", 100, "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a2", "percent", 50, "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "percent", 1, "k1", 123));
+		table.add(Map.of("a", "a1", "percent", 10, "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "percent", 100, "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a2", "percent", 50, "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfMaxOfSum_identity() {
-		amb.addMeasure(Dispatchor.builder().name("0or100").underlying("k1").aggregationKey(SumAggregation.KEY).build());
+		forest.addMeasure(
+				Dispatchor.builder().name("0or100").underlying("k1").aggregationKey(SumAggregation.KEY).build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -65,7 +66,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testSumOfMaxOfSum_0to100_inputNotRequested() {
-		amb.addMeasure(Dispatchor.builder()
+		forest.addMeasure(Dispatchor.builder()
 				.name("0or100")
 				.underlying("k1")
 				.decompositionKey("linear")
@@ -73,10 +74,10 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("0or100").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -87,7 +88,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testSumOfMaxOfSum_0to100() {
-		amb.addMeasure(Dispatchor.builder()
+		forest.addMeasure(Dispatchor.builder()
 				.name("0or100")
 				.underlying("k1")
 				// .combinatorKey(MaxTransformation.KEY)
@@ -97,11 +98,11 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 				.tag("debug")
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
+				cube.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

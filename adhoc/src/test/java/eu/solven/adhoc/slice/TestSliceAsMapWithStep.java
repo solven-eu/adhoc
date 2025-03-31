@@ -20,45 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.slice;
 
-import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.ITableWrapper;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A schema describing metadata for a set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and
- * {@link IAdhocQuery}.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder
-@Jacksonized
-public class EndpointSchemaMetadata {
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-	@Singular
-	Map<String, ColumnarMetadata> tables;
+public class TestSliceAsMapWithStep implements IAdhocTestConstants {
+	@Test
+	public void testAsFilter() {
+		IAdhocFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
+		AdhocQueryStep step =
+				AdhocQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
+		SliceAsMap parentSlice = SliceAsMap.fromMap(Map.of("c2", "v2"));
 
-	@Singular
-	Map<String, List<IMeasure>> measureBags;
+		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 
-	@Singular
-	Map<String, CubeSchemaMetadata> cubes;
-
-	@Singular
-	Map<String, AdhocQuery> queries;
-
-	@Singular
-	Map<String, Object> customMarkers;
+		Assertions.assertThat(slice.asFilter()).isEqualTo(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
+	}
 }

@@ -35,30 +35,31 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfSum_groupBy2String() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
+				cube.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

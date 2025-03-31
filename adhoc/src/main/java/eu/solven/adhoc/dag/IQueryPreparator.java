@@ -46,8 +46,17 @@ public interface IQueryPreparator {
 		return prepareQuery(table, measures, columnsManager, query, Set.of());
 	}
 
+	/**
+	 * 
+	 * @param table
+	 * @param forest
+	 * @param columnsManager
+	 * @param query
+	 * @param options
+	 * @return an {@link ExecutingQueryContext} which wraps together everything necessary to execute a query.
+	 */
 	ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest measures,
+			IMeasureForest forest,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery query,
 			Set<? extends IQueryOption> options);

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.query.groupby;
 
-import java.util.Set;
+import java.util.Map;
 
-import eu.solven.adhoc.table.ITableWrapper;
+import org.junit.jupiter.api.Test;
 
-/**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
- */
-public class IdentityReversibleTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
+public class TestGroupByHelpers {
+	@Test
+	public void testMask() {
+		IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+		GroupByHelpers.addConstantColumns(column, Map.of("k2", "v2"));
 	}
 }

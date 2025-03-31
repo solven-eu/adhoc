@@ -46,7 +46,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -105,7 +105,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 
 	@BeforeEach
 	public void registerMeasures() {
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		for (int i = 0; i < height; i++) {
 			if (i == 0) {
@@ -115,7 +115,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 			}
 			timesN = k1Sum.getName() + "x" + (1 << (i + 1));
 
-			amb.addMeasure(Combinator.builder()
+			forest.addMeasure(Combinator.builder()
 					.name(timesN)
 					.underlyings(Arrays.asList(timesNMinus1, timesNMinus1))
 					.combinationKey(SumCombination.KEY)
@@ -128,7 +128,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 		// SUM(0..N) = N * (N-1) / 2
 		long sum = LongMath.checkedMultiply(maxCardinality, maxCardinality - 1) / 2;
 
-		ITabularView output = wrapInCube(amb).execute(AdhocQuery.builder().measure(timesN).build());
+		ITabularView output = wrapInCube(forest).execute(AdhocQuery.builder().measure(timesN).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -141,7 +141,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	public void testChainOfSums() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = wrapInCube(amb)
+		ITabularView output = wrapInCube(forest)
 				.execute(AdhocQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -162,7 +162,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
 		ITabularView output =
-				wrapInCube(amb).execute(AdhocQuery.builder().groupByAlso("row_index").explain(true).build());
+				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

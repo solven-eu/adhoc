@@ -26,7 +26,7 @@ import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -39,7 +39,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 	@NonNull
 	IAdhocFilter filter;
@@ -59,7 +59,7 @@ public class MeasurelessQuery implements IWhereGroupbyAdhocQuery, IHasCustomMark
 	@Builder.Default
 	boolean debug = false;
 
-	public static MeasurelessQueryBuilder edit(IWhereGroupbyAdhocQuery step) {
+	public static MeasurelessQueryBuilder edit(IWhereGroupByQuery step) {
 		MeasurelessQueryBuilder builder =
 				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 

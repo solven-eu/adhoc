@@ -41,6 +41,7 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -73,7 +74,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
-	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();

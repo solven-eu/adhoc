@@ -24,11 +24,13 @@ package eu.solven.adhoc.data.column;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
 /**
  * For {@link IMultitypeColumn} which enables fast `.get` operations.
  * 
  * @param <T>
+ *            typically {@link SliceAsMap}
  * @author Benoit Lacelle
  */
 public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
@@ -37,9 +39,12 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 * Similar to a `.get` but the value is available through a {@link IValueReceiver}
 	 * 
 	 * @param slice
-	 * @param valueConsumer
+	 * @param valueReceiver
 	 */
-	void onValue(T slice, IValueReceiver valueConsumer);
+	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
+	default void onValue(T slice, IValueReceiver valueReceiver) {
+		onValue(slice).acceptConsumer(valueReceiver);
+	}
 
 	IValueProvider onValue(T key);
 

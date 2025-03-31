@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 
+import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -98,7 +100,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	}
 
 	@Override
-	public ITabularRecordStream openTableStream(ITableWrapper table, TableQuery query) {
+	public ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -131,7 +133,8 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 					.build());
 		}
 
-		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(transcodedQuery);
+		ITableWrapper table = executingQueryContext.getTable();
+		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(executingQueryContext, transcodedQuery);
 
 		return transcodeRows(transcodingContext, aggregatedRecordsStream);
 	}
@@ -260,6 +263,11 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	@Override
 	public Object onMissingColumn(String column) {
 		return missingColumnManager.onMissingColumn(column);
+	}
+
+	@Override
+	public Object onMissingColumn(ICubeWrapper cube, String column) {
+		return missingColumnManager.onMissingColumn(cube, column);
 	}
 
 }

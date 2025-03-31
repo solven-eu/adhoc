@@ -39,31 +39,34 @@ import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestTransformator_Aggregator extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 
 		// This first `k1` overlaps with the columnName
-		amb.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());
 		// This second `k1.SUM` does not overlap with the columnName
-		amb.addMeasure(Aggregator.builder().name("k1.sum").columnName("k1").aggregationKey(SumAggregation.KEY).build());
+		forest.addMeasure(
+				Aggregator.builder().name("k1.sum").columnName("k1").aggregationKey(SumAggregation.KEY).build());
 
-		amb.addMeasure(Aggregator.builder().name("k1.min").columnName("k1").aggregationKey(MinAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k1.max").columnName("k1").aggregationKey(MaxAggregation.KEY).build());
-		amb.addMeasure(
+		forest.addMeasure(
+				Aggregator.builder().name("k1.min").columnName("k1").aggregationKey(MinAggregation.KEY).build());
+		forest.addMeasure(
+				Aggregator.builder().name("k1.max").columnName("k1").aggregationKey(MaxAggregation.KEY).build());
+		forest.addMeasure(
 				Aggregator.builder().name("k1.count").columnName("k1").aggregationKey(CountAggregation.KEY).build());
 	}
 
 	@Test
 	public void testK1MinMax() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("k1", "k1.min", "k1.max").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("k1", "k1.min", "k1.max").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -75,7 +78,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testK1_SUM_COUNT() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("k1", "k1.count").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("k1", "k1.count").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -87,9 +90,9 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 	@Test
 	public void testCountAsterisk() {
 		Aggregator m = Aggregator.countAsterisk();
-		amb.addMeasure(m);
+		forest.addMeasure(m);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(m).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure(m).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -100,7 +103,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasure() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().debug(true).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().debug(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -111,7 +114,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasureGroupBy() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().groupByAlso("a").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -124,9 +127,9 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 	@Test
 	public void testDifferingColumnName() {
 		Aggregator m = Aggregator.builder().name("niceName").columnName("k1").build();
-		amb.addMeasure(m);
+		forest.addMeasure(m);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("niceName").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("niceName").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -143,9 +146,9 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 				.aggregationOption(RankAggregation.P_RANK, 2)
 				.columnName("k1")
 				.build();
-		amb.addMeasure(m);
+		forest.addMeasure(m);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("rank2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("rank2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

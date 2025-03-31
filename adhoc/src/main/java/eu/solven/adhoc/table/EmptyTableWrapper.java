@@ -25,6 +25,7 @@ package eu.solven.adhoc.table;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -46,7 +47,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
 		return new SuppliedTabularRecordStream("empty", Stream::empty);
 	}
 

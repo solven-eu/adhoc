@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 
 public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestConstants {
@@ -45,15 +45,15 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("a", "a1", "k1", 123));
-		rows.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		rows.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		rows.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table.add(Map.of("a", "a1", "k1", 123));
+		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
 	}
 
 	@Test
 	public void testSumOfSum_filterA1() {
-		amb
+		forest
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
@@ -73,11 +73,11 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 						.combinationKey(DivideCombination.KEY)
 						.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k1", "filterK1onA1").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -93,7 +93,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 
 	@Test
 	public void testSumOfSum_filterA1_divide() {
-		amb
+		forest
 
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
@@ -113,11 +113,11 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 						.combinationKey(DivideCombination.KEY)
 						.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("Ratio_k1_k1witha1").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());

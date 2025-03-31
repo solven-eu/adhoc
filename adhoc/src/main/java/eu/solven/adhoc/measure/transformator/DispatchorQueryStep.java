@@ -45,7 +45,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +68,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		IDecomposition decomposition = makeDecomposition();
 
-		List<IWhereGroupbyAdhocQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
+		List<IWhereGroupByQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
 
 		if (isDebug()) {
 			log.info("[DEBUG] {} underlyingSteps given step={}", measurelessSteps, step);
@@ -173,8 +173,8 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 				aggregatingView.merge(coordinateAsSlice).onObject(fragmentValue);
 
 				if (isDebug()) {
-					aggregatingView.onValue(coordinateAsSlice,
-							o -> log.info("[DEBUG] slice={} has been merged into agg={}",
+					aggregatingView.onValue(coordinateAsSlice)
+							.acceptConsumer(o -> log.info("[DEBUG] slice={} has been merged into agg={}",
 									fragmentCoordinate,
 									AdhocDebug.toString(o)));
 				}

@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.examples.RatioOverSpecificColumnValueCompositor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,20 +51,20 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		rows.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
-		rows.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
-		rows.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
-		rows.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
-		rows.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
+		table.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		table.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		table.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		table.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		table.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach
 	public void registerMeasures() {
-		amb.acceptVisitor(new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FR", "d"));
+		forest.acceptVisitor(new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FR", "d"));
 
-		amb.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 
-		amb.getNameToMeasure().forEach((measureName, measure) -> {
+		forest.getNameToMeasure().forEach((measureName, measure) -> {
 			log.debug("Measure: {}", measureName);
 		});
 	}
@@ -72,7 +72,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -85,7 +85,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 	@Test
 	public void testFR() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("country", "FR").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -97,7 +97,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 	@Test
 	public void testParis() {
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("city", "Paris").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -110,7 +110,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 	public void testUS() {
 		AdhocQuery adhocQuery =
 				AdhocQuery.builder().measure("d", "d_country=FR_ratio").andFilter("country", "US").build();
-		ITabularView output = aqw.execute(adhocQuery);
+		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -126,7 +126,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 		{
 			AdhocQuery adhocQuery =
 					AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("color", "blue").explain(true).build();
-			aqw.execute(adhocQuery);
+			cube.execute(adhocQuery);
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""

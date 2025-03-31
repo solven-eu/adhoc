@@ -31,7 +31,7 @@ import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
@@ -44,7 +44,7 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	}
 
 	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
 		return Collections.singletonList(step);
 	}
 

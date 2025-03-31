@@ -34,7 +34,7 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
@@ -51,7 +51,7 @@ public class TestAdhocQueryEngine {
 
 		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().values()).build();
 		ExecutingQueryContext queryWithContext = ExecutingQueryContext.builder()
-				.measures(amg)
+				.forest(amg)
 				.query(adhocQuery)
 				.table(InMemoryTable.builder().build())
 				.columnsManager(AdhocColumnsManager.builder().build())

@@ -50,7 +50,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
 public abstract class ADagTest {
 	public final EventBus eventBus = new EventBus();
 	public final Object toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel();
-	public final UnsafeMeasureForestBag amb =
+	public final UnsafeMeasureForestBag forest =
 			UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
 
 	public IStopwatch makeStopwatch() {
@@ -64,16 +64,20 @@ public abstract class ADagTest {
 			return makeStopwatch();
 		}
 	};
-	public final AdhocQueryEngine aqe =
+	public final AdhocQueryEngine engine =
 			AdhocQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 
-	public final InMemoryTable rows = InMemoryTable.builder().build();
+	public final InMemoryTable table = InMemoryTable.builder().build();
 	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
-	public final CubeWrapper aqw =
-			CubeWrapper.builder().table(tableSupplier.get()).engine(aqe).forest(amb).eventBus(eventBus::post).build();
+	public final CubeWrapper cube = CubeWrapper.builder()
+			.table(tableSupplier.get())
+			.engine(engine)
+			.forest(forest)
+			.eventBus(eventBus::post)
+			.build();
 
 	public ITableWrapper makeTable() {
-		return rows;
+		return table;
 	}
 
 	@BeforeEach
@@ -89,14 +93,14 @@ public abstract class ADagTest {
 	 * Typically used to edit the operatorsFactory
 	 */
 	public AdhocQueryEngine.AdhocQueryEngineBuilder editEngine() {
-		return aqe.toBuilder();
+		return engine.toBuilder();
 	}
 
 	/**
 	 * Typically used to edit the operatorsFactory
 	 */
 	public CubeWrapperBuilder editCube() {
-		return aqw.toBuilder();
+		return cube.toBuilder();
 	}
 
 }

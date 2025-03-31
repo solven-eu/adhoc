@@ -39,7 +39,10 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -88,22 +91,13 @@ public class InMemoryTable implements ITableWrapper {
 		return rows.stream();
 	}
 
-	// @Override
-	// public TableAggregatesMetadata getAggregatesMetadata(SetMultimap<String, Aggregator> columnToAggregators) {
-	// // We may receive raw columns, to be aggregated by ourselves
-	// ImmutableSetMultimap.Builder<String, Aggregator> nameToRawBuilder = ImmutableSetMultimap.builder();
-	//
-	// columnToAggregators.values().stream().forEach(a -> nameToRawBuilder.putAll(a.getColumnName(), a));
-	// SetMultimap<String, Aggregator> nameToRaw = nameToRawBuilder.build();
-	//
-	// Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
-	//
-	// return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
-	// }
-
 	@Override
-	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		// TODO throw if `tableQuery.getFilte`
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+		if (executingQueryContext.getTable() != this) {
+			throw new IllegalStateException(
+					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+		}
+
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());
 		if (tableQuery.getAggregators()
 				.stream()
@@ -123,6 +117,19 @@ public class InMemoryTable implements ITableWrapper {
 				|| tableQuery.getAggregators().stream().allMatch(a -> EmptyAggregation.isEmpty(a.getAggregationKey()));
 
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
+
+		{
+			Set<String> tableColumns = getColumns().keySet();
+			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
+			if (!unknownFilteredColumns.isEmpty()) {
+				throw new IllegalArgumentException("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+			}
+
+			SetView<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
+			if (!unknownGroupedByColumns.isEmpty()) {
+				throw new IllegalArgumentException("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+			}
+		}
 
 		int nbKeys = (int) Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count();
 

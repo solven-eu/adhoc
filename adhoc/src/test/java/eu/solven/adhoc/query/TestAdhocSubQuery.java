@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.query;
 
-import java.util.Set;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocSubQuery;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-/**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
- */
-public class IdentityReversibleTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
+public class TestAdhocSubQuery {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(AdhocSubQuery.class).verify();
 	}
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
+	// IHasMeasure may lead to StackOverFLow due to very lax default methods
+	@Test
+	public void testGetMeasures() {
+		IAdhocQuery query = AdhocQuery.builder().measure("m").build();
+		AdhocSubQuery subQuery =
+				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from(query)).build();
+
+		Assertions.assertThat(subQuery.getMeasures()).hasSize(1).contains(ReferencedMeasure.ref("m"));
 	}
 }

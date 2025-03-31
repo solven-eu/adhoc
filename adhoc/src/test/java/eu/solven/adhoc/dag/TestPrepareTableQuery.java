@@ -32,7 +32,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -48,22 +48,22 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 
 	@Test
 	public void testSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure(k1Sum).build())
-				.measures(amb)
+				.forest(forest)
 				.table(table)
 				.build();
 		Set<TableQuery> output =
-				aqe.prepareForTable(executingQueryContext, aqe.makeQueryStepsDag(executingQueryContext));
+				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -75,22 +75,22 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 
 	@Test
 	public void testSumOfSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
-				.measures(amb)
+				.forest(forest)
 				.table(table)
 				.build();
 		Set<TableQuery> output =
-				aqe.prepareForTable(executingQueryContext, aqe.makeQueryStepsDag(executingQueryContext));
+				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -102,22 +102,22 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 
 	@Test
 	public void testSum_SumOfSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
 				.query(AdhocQuery.builder().measure("sumK1K2").build())
-				.measures(amb)
+				.forest(forest)
 				.table(table)
 				.build();
 		Set<TableQuery> output =
-				aqe.prepareForTable(executingQueryContext, aqe.makeQueryStepsDag(executingQueryContext));
+				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

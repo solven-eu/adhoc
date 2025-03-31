@@ -25,8 +25,8 @@ package eu.solven.adhoc.beta.schema;
 import java.util.Set;
 import java.util.UUID;
 
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

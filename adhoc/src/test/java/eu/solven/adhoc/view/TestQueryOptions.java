@@ -38,30 +38,30 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		table.add(Map.of("k1", 123));
+		table.add(Map.of("k2", 234));
+		table.add(Map.of("k1", 345, "k2", 456));
 	}
 
 	@Test
 	public void testReturnUnderlyingMeasures() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build(),
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build(),
 				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -74,18 +74,18 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testUnknownMeasuresAreEmpty() {
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
 		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> aqe.executeUnsafe(adhocQuery, amb, rows))
+		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(adhocQuery, forest, table))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = aqe.executeUnsafe(adhocQuery,
+		ITabularView output = engine.executeUnsafe(adhocQuery,
 				Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY),
-				amb,
-				rows,
+				forest,
+				table,
 				AdhocColumnsManager.builder().build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();

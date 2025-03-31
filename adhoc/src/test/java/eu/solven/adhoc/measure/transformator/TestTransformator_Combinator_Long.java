@@ -39,29 +39,29 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestTransformator_Combinator_Long extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		rows.add(Map.of("k1", 123));
-		rows.add(Map.of("k2", 234));
-		rows.add(Map.of("k1", 345, "k2", 456));
+		table.add(Map.of("k1", 123));
+		table.add(Map.of("k2", 234));
+		table.add(Map.of("k1", 345, "k2", 456));
 	}
 
 	@Test
 	public void testSumOfSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -74,15 +74,15 @@ public class TestTransformator_Combinator_Long extends ADagTest implements IAdho
 
 	@Test
 	public void testTwiceSameMeasure() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K1")
 				.underlyings(Arrays.asList("k1", "k1"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K1").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -93,16 +93,16 @@ public class TestTransformator_Combinator_Long extends ADagTest implements IAdho
 
 	@Test
 	public void testSumOfMax() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(SumCombination.KEY)
 				.build());
 
-		amb.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
-		amb.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
+		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -115,16 +115,16 @@ public class TestTransformator_Combinator_Long extends ADagTest implements IAdho
 
 	@Test
 	public void testMaxOfSum() {
-		amb.addMeasure(Combinator.builder()
+		forest.addMeasure(Combinator.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(MaxCombination.KEY)
 				.build());
 
-		amb.addMeasure(k1Sum);
-		amb.addMeasure(k2Sum);
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

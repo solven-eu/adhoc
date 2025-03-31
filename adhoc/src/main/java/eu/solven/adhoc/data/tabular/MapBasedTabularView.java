@@ -35,7 +35,6 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.MapComparators;
@@ -110,10 +109,10 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
 		return coordinatesToValues.entrySet()
 				.stream()
-				.map(e -> rowScanner.prepare(SliceAsMap.fromMap(e.getKey())).onObject(e.getValue()));
+				.map(e -> rowScanner.prepare(SliceAsMap.fromMap(e.getKey())).onMap(e.getValue()));
 	}
 
 	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {

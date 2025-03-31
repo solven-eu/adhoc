@@ -25,16 +25,22 @@ package eu.solven.adhoc.query.cube;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IHasMeasures;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
  * A aggregation query. It is configured by:
  * 
- * - a filtering condition - axes along which the result is sliced - aggregations accumulating some measures
+ * - a filtering condition as an {@link IAdhocFilter}
+ * 
+ * - columns along which the result is sliced
+ * 
+ * - measures may be {@link Aggregator} or {@link ITransformator}
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocQuery
-		extends IWhereGroupbyAdhocQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public interface IAdhocQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable {
 
 }

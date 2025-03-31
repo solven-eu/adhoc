@@ -40,7 +40,7 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.MeasurelessQuery.MeasurelessQueryBuilder;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -62,13 +62,13 @@ public class ExampleVaRDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
 		MeasurelessQuery suppressedIndex = suppressColumn(step, IExampleVaRConstants.C_SCENARIOINDEX);
 		MeasurelessQuery suppressedName = suppressColumn(suppressedIndex, IExampleVaRConstants.C_SCENARIONAME);
 		return Collections.singletonList(suppressedName);
 	}
 
-	public static MeasurelessQuery suppressColumn(IWhereGroupbyAdhocQuery step, String column) {
+	public static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, String column) {
 		MeasurelessQueryBuilder underlyingStep = MeasurelessQuery.edit(step);
 
 		if (step.getGroupBy().getGroupedByColumns().contains(column)) {

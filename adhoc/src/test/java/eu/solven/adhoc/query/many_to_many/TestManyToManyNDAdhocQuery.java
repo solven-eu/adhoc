@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDInMemoryDefinition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.query.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -58,7 +58,7 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 
 	public final AdhocQueryEngine aqe =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final CubeWrapper aqw = ((ADagTest) this).aqw.toBuilder().engine(aqe).build();
+	public final CubeWrapper aqw = ((ADagTest) this).cube.toBuilder().engine(aqe).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
 
@@ -104,10 +104,10 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 				cElementAge,
 				EqualsMatcher.builder().operand("old").build()), Set.of("red"));
 
-		rows.add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
-		rows.add(Map.of("l", "A", cElementGender, "male", cElementAge, "old", "k1", 234));
-		rows.add(Map.of("l", "A", cElementGender, "female", cElementAge, "young", "k1", 345));
-		rows.add(Map.of("l", "A", cElementGender, "female", cElementAge, "old", "k1", 456));
+		table.add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
+		table.add(Map.of("l", "A", cElementGender, "male", cElementAge, "old", "k1", 234));
+		table.add(Map.of("l", "A", cElementGender, "female", cElementAge, "young", "k1", 345));
+		table.add(Map.of("l", "A", cElementGender, "female", cElementAge, "old", "k1", 456));
 	}
 
 	void prepareMeasures() {
@@ -116,14 +116,14 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 				.put(ManyToManyNDDecomposition.K_OUTPUT, cGroup)
 				.build();
 
-		amb.addMeasure(Dispatchor.builder()
+		forest.addMeasure(Dispatchor.builder()
 				.name(dispatchedMeasure)
 				.underlying("k1")
 				.decompositionKey(ManyToManyNDDecomposition.class.getName())
 				.decompositionOptions(options)
 				.build());
 
-		amb.addMeasure(k1Sum);
+		forest.addMeasure(k1Sum);
 	}
 
 	@Test

@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.dag.TableAggregatesMetadata;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -48,10 +49,15 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	/**
 	 *
+	 * @param executingQueryContext
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(TableQuery tableQuery);
+	ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
+
+	default ITabularRecordStream streamSlices(TableQuery estimatedCardinalityQuery) {
+		return streamSlices(ExecutingQueryContext.forTable(this), estimatedCardinalityQuery);
+	}
 
 	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		return ColumnMetadataHelpers.getCoordinatesMostGeneric(this, column, valueMatcher, limit);

@@ -26,9 +26,9 @@ import java.util.Set;
 
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.AdhocQuery;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -47,7 +47,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 
 	@Override
 	public ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest measures,
+			IMeasureForest forest,
 			IAdhocColumnsManager columnsManager,
 			IAdhocQuery rawQuery,
 			Set<? extends IQueryOption> options) {
@@ -58,7 +58,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.query(query)
 				.queryId(queryId)
 				.options(options)
-				.measures(measures)
+				.forest(forest)
 				.table(table)
 				.columnsManager(columnsManager)
 				.build();

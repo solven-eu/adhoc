@@ -28,6 +28,12 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+
 public class TestInMemoryTable {
 	@Test
 	public void testColumns() {
@@ -42,5 +48,35 @@ public class TestInMemoryTable {
 				.containsEntry("c", String.class)
 				.containsEntry("v", Number.class)
 				.containsEntry("date", LocalDate.class);
+	}
+
+	@Test
+	public void testFilterUnknownColumn() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder().name("count").measure(Aggregator.countAsterisk()).build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> cube.execute(AdhocQuery.builder().andFilter("unknownColumn", "anyValue").build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("unknownColumn");
+	}
+
+	@Test
+	public void testGroupByUnknownColumn() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder().name("count").measure(Aggregator.countAsterisk()).build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().groupByAlso("unknownColumn").build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("unknownColumn");
 	}
 }

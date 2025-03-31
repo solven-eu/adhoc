@@ -38,7 +38,7 @@ import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
-import eu.solven.adhoc.query.cube.IWhereGroupbyAdhocQuery;
+import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -136,7 +136,7 @@ public class LinearDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public List<IWhereGroupbyAdhocQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
 		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch

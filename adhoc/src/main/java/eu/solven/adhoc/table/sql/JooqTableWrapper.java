@@ -42,6 +42,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -147,7 +148,12 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+		if (executingQueryContext.getTable() != this) {
+			throw new IllegalStateException(
+					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+		}
+
 		IJooqTableQueryFactory queryFactory = makeQueryFactory();
 
 		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
