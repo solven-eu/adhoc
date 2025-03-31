@@ -2,6 +2,11 @@
 *.class
 target
 
+# mvn release
+release.properties
+pom.xml.releaseBackup
+pom.xml.tag
+
 # IntelliJ
 .idea
 
