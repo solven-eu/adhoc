@@ -105,6 +105,12 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield new DivideCombination(options);
 		}
 		case ExpressionCombination.KEY: {
+			try {
+				Class.forName("com.ezylang.evalex.Expression");
+			} catch (ClassNotFoundException ex) {
+				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loaded."
+						+ " It is an optional maven dependency you need to activate manually");
+			}
 			yield ExpressionCombination.parse(options);
 		}
 		case FindFirstCombination.KEY: {

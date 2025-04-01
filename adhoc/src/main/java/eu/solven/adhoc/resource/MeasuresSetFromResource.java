@@ -58,7 +58,6 @@ import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.resource.AdhocMeasureForests.AdhocMeasureForestsBuilder;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
@@ -87,7 +86,7 @@ public class MeasuresSetFromResource {
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
 
-	public MeasureForest loadToBag(String name, Collection<? extends Map<String, ?>> measuresAsMap) {
+	public MeasureForest loadToForest(String name, Collection<? extends Map<String, ?>> measuresAsMap) {
 		List<IMeasure> measures = measuresAsMap.stream().flatMap(m -> makeMeasure(m).stream()).toList();
 
 		return MeasureForest.builder().name(name).measures(measures).build();
@@ -394,13 +393,13 @@ public class MeasuresSetFromResource {
 		return minimizingDistance;
 	}
 
-	public MeasureForest loadBagFromResource(String name, String format, Resource resource) throws IOException {
+	public MeasureForest loadForestFromResource(String name, String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			List measures = objectMapper.readValue(inputStream, List.class);
 
-			return makeBag(name, measures);
+			return makeForest(name, measures);
 		}
 	}
 
@@ -408,24 +407,24 @@ public class MeasuresSetFromResource {
 		return AdhocJackson.makeObjectMapper(format);
 	}
 
-	public AdhocMeasureForests loadMapFromResource(String format, Resource resource) throws IOException {
+	public MeasureForests loadMapFromResource(String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
-			AdhocMeasureForestsBuilder abmb = AdhocMeasureForests.builder();
-			List bags = objectMapper.readValue(inputStream, List.class);
+			MeasureForests.MeasureForestsBuilder abmb = MeasureForests.builder();
+			List forests = objectMapper.readValue(inputStream, List.class);
 
-			bags.forEach(bag -> {
-				String name = MapPathGet.getRequiredString(bag, "name");
-				List measures = MapPathGet.getRequiredAs(bag, "measures");
-				abmb.nameToForest(name, makeBag(name, measures));
+			forests.forEach(forest -> {
+				String name = MapPathGet.getRequiredString(forest, "name");
+				List measures = MapPathGet.getRequiredAs(forest, "measures");
+				abmb.forest(makeForest(name, measures));
 			});
 
 			return abmb.build();
 		}
 	}
 
-	protected MeasureForest makeBag(String name, List<Map<String, ?>> rawMeasures) {
+	protected MeasureForest makeForest(String name, List<Map<String, ?>> rawMeasures) {
 		List<IMeasure> measures =
 				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
 
@@ -445,13 +444,13 @@ public class MeasuresSetFromResource {
 		}
 	}
 
-	public String asString(String format, AdhocMeasureForests abmb) {
+	public String asString(String format, MeasureForests abmb) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
-		List<Map<String, ?>> bagNameToMeasures = new ArrayList<>();
+		List<Map<String, ?>> nameToForest = new ArrayList<>();
 
-		abmb.bagNames().forEach(bagName -> {
-			IMeasureForest measures = abmb.getBag(bagName);
+		abmb.forestNames().forEach(forestName -> {
+			IMeasureForest measures = abmb.getForest(forestName);
 
 			List<?> asMaps = measures.getNameToMeasure()
 					.values()
@@ -459,11 +458,11 @@ public class MeasuresSetFromResource {
 					.map(m -> asMap(objectMapper, m))
 					.collect(Collectors.toList());
 
-			bagNameToMeasures.add(ImmutableMap.of("name", bagName, "measures", asMaps));
+			nameToForest.add(ImmutableMap.of("name", forestName, "measures", asMaps));
 		});
 
 		try {
-			return objectMapper.writeValueAsString(bagNameToMeasures);
+			return objectMapper.writeValueAsString(nameToForest);
 		} catch (JsonProcessingException e) {
 			throw new IllegalArgumentException(e);
 		}

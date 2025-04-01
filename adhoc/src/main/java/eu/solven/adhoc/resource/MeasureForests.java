@@ -22,30 +22,42 @@
  */
 package eu.solven.adhoc.resource;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.IMeasureForest;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
 
+/**
+ * A {@link List} of {@link IMeasureForest}, ensuring each forest to have a unique nam.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
-public class AdhocMeasureForests {
+public class MeasureForests {
 	@Singular
-	final ImmutableMap<String, IMeasureForest> nameToForests;
+	final ImmutableList<IMeasureForest> forests;
 
 	public int size() {
-		return nameToForests.size();
+		return forests.size();
 	}
 
-	public IMeasureForest getBag(String name) {
-		return nameToForests.get(name);
+	public IMeasureForest getForest(String name) {
+		return getNameToForest().get(name);
 	}
 
-	public Set<String> bagNames() {
-		return nameToForests.keySet();
+	public Set<String> forestNames() {
+		return getNameToForest().keySet();
+	}
+
+	public Map<String, IMeasureForest> getNameToForest() {
+		return forests.stream().collect(Collectors.toMap(f -> f.getName(), f -> f));
 	}
 }

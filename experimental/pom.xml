@@ -43,6 +43,13 @@
 		</dependency>
 
 		<dependency>
+			<!-- Helps generating .dot files for Graphviz, to understand measures -->
+			<groupId>guru.nidi</groupId>
+			<artifactId>graphviz-java</artifactId>
+			<version>0.18.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>

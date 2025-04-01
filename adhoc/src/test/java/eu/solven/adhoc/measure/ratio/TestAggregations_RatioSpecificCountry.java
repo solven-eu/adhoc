@@ -60,9 +60,9 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@BeforeEach
 	public void registerMeasures() {
-		forest.acceptVisitor(new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FR", "d"));
-
 		forest.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
+
+		forest.acceptVisitor(new RatioOverSpecificColumnValueCompositor().asCombinator("country", "FR", "d"));
 
 		forest.getNameToMeasure().forEach((measureName, measure) -> {
 			log.debug("Measure: {}", measureName);

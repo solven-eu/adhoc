@@ -10,9 +10,9 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 ### About performance
 
-Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. As the slow-part of a full `AdhocQuery` is generally the 
-table pre-aggregation, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables
-this project to remains simpler, given a query is generally slow due to the underlying table.
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `AdhocQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.
+
+Concurrency: as of `0.0.2`, `Adhoc` is fully mono-threaded. Parts of the engines would be multi-theaded at some point. Please report specific slow cases so they can be optimized the proper way.
 
 ## Related Projects
 
@@ -245,6 +245,10 @@ Tools to investigate these issues are:
 - Enable `debug` in your query: `AdhocQuery.builder()[...].debug(true).build()`
 - Enable `explain` in your query: `AdhocQuery.builder()[...].explain(true).build()`
 
+## Automated documentation
+
+`ForestAsGraphvizDag` can be used to generate [GraphViz](https://graphviz.org/) `.dot` files given an `IMeasureForest`.
+
 ## Debug vs Explain
 
 Debug will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
@@ -290,18 +294,16 @@ Most databases handles aggregations over primitive types (e.g. SUM over doubles)
 
 # Roadmap / Limitations to lift soon
 
-- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`
+- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`.
 - [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Explain] EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
 - [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
-- [Documentation] `MeasuresSetFromResource` should enable generation of Graphviz `.dot` files
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
-- [EXPLAIN] Provide metriuc about memory usage (e.g. footprint from table, footprint for each queryStep)
+- [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
 - [Feature] AdhocCompositeCube needs to handle `IAggregationCarrier.HasCarrier`
-- Work on query cancellations/queryTimeouts
-- Enables `getCoordinates` for cube.columns created by measures
-- [SECURITY] Ability to hide some measures from some Users
+- [Resiliency] Work on query cancellations/queryTimeouts
+- [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `AdhocQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Pivotable] Fetch all column details in a single query

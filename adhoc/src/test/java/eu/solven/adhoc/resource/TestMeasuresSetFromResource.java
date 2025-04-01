@@ -165,19 +165,19 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-0");
 				});
 
-		MeasureForest ams = MeasureForest.fromMeasures("testAnonymousUnderlyingNode", measures);
+		MeasureForest forest = MeasureForest.fromMeasures("testAnonymousUnderlyingNode", measures);
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(forest);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(4);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(4);
 
-		Assertions.assertThat(ams.resolveIfRef(ReferencedMeasure.builder().ref("k1Byk1k2").build()))
+		Assertions.assertThat(forest.resolveIfRef(ReferencedMeasure.builder().ref("k1Byk1k2").build()))
 				.isInstanceOfSatisfying(Combinator.class, c -> {
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1", "anonymous-0");
 				});
 
 		{
-			AdhocMeasureForests bagOfBag = AdhocMeasureForests.builder().nameToForest("someBagName", ams).build();
+			MeasureForests bagOfBag = MeasureForests.builder().forest(forest).build();
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
@@ -201,10 +201,10 @@ public class TestMeasuresSetFromResource {
 					    type: ".Aggregator"
 										""");
 
-			AdhocMeasureForests a = fromResource.loadMapFromResource("yaml",
+			MeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
-			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(4);
+			Assertions.assertThat(a.getForest("someBagName").getNameToMeasure()).hasSize(4);
 		}
 	}
 
@@ -235,14 +235,14 @@ public class TestMeasuresSetFromResource {
 					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.isEqualTo("c", "someString"));
 				});
 
-		MeasureForest ams = MeasureForest.fromMeasures("testWithFilter", measures);
+		MeasureForest forest = MeasureForest.fromMeasures("testWithFilter", measures);
 
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(ams);
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(forest);
 		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
 		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
 
 		{
-			AdhocMeasureForests bagOfBag = AdhocMeasureForests.builder().nameToForest("someBagName", ams).build();
+			MeasureForests bagOfBag = MeasureForests.builder().forest(forest).build();
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
@@ -260,10 +260,10 @@ public class TestMeasuresSetFromResource {
 					    underlying: "k1"
 					""");
 
-			AdhocMeasureForests a = fromResource.loadMapFromResource("yaml",
+			MeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
-			Assertions.assertThat(a.getBag("someBagName").getNameToMeasure()).hasSize(2);
+			Assertions.assertThat(a.getForest("someBagName").getNameToMeasure()).hasSize(2);
 		}
 	}
 
@@ -275,7 +275,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testUnfiltrator",
+		MeasureForest fromString = fromResource.loadForestFromResource("testUnfiltrator",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -305,7 +305,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testShiftor",
+		MeasureForest fromString = fromResource.loadForestFromResource("testShiftor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -340,7 +340,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k2Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testBucketor",
+		MeasureForest fromString = fromResource.loadForestFromResource("testBucketor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -376,7 +376,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testDispatchor",
+		MeasureForest fromString = fromResource.loadForestFromResource("testDispatchor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -413,7 +413,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testCustomMeasure",
+		MeasureForest fromString = fromResource.loadForestFromResource("testCustomMeasure",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -440,7 +440,7 @@ public class TestMeasuresSetFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadBagFromResource("testAggregator_countAsterisk",
+		MeasureForest fromString = fromResource.loadForestFromResource("testAggregator_countAsterisk",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -460,11 +460,11 @@ public class TestMeasuresSetFromResource {
 
 	@Test
 	public void testBasicFile() throws IOException {
-		AdhocMeasureForests obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
+		MeasureForests obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
 
 		Assertions.assertThat(obj.size()).isEqualTo(1);
 
-		MeasureForest bag = (MeasureForest) obj.getBag("niceBagName");
+		MeasureForest bag = (MeasureForest) obj.getForest("niceBagName");
 
 		DirectedAcyclicGraph<IMeasure, DefaultEdge> jgrapht = MeasureBagTestHelpers.makeMeasuresDag(bag);
 
@@ -508,7 +508,7 @@ public class TestMeasuresSetFromResource {
 
 			String asString = fromResource.asString("json", measureBag);
 			MeasureForest fromString =
-					fromResource.loadBagFromResource("testRemoveUselessProperties_Aggregator_differentColumnName",
+					fromResource.loadForestFromResource("testRemoveUselessProperties_Aggregator_differentColumnName",
 							"json",
 							new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 

@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.ClassUtils;
 
-import eu.solven.adhoc.resource.AdhocMeasureForests;
+import eu.solven.adhoc.resource.MeasureForests;
 import eu.solven.adhoc.resource.MeasuresSetFromResource;
 
 public class TestMeasureSetFromResourceWhenYamlIsMissing {
@@ -38,7 +38,7 @@ public class TestMeasureSetFromResourceWhenYamlIsMissing {
 		// This test is relevant only if YAMLFactory is not available
 		Assertions.assertThat(ClassUtils.isPresent(yamlFactoryClass, null)).isFalse();
 
-		AdhocMeasureForests emptyBag = AdhocMeasureForests.builder().build();
+		MeasureForests emptyBag = MeasureForests.builder().build();
 
 		Assertions.assertThat(new MeasuresSetFromResource().asString("json", emptyBag)).isEqualTo("[ ]");
 

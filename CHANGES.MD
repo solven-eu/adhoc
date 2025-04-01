@@ -1,8 +1,15 @@
-This document is intended for CleanThat developers and users (e.g. through [Spotless](https://github.com/diffplug/spotless)).
+This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.3]
+### Added
+- `ForestAsGraphvizDag`: can turn an `IMeasureForest` into a Graphviz DOT file.
+
+## [0.0.2]
+### Added
+- Enables m2central deployments: https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc
 
 ## [0.0.1]
 ### Added
-Initial version
+- Initial version
