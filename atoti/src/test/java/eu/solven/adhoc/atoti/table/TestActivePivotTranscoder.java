@@ -32,7 +32,7 @@ public class TestActivePivotTranscoder {
 	public void testRecursive() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on
 		// joins)
-		ActivePivotTranscoder transcoder = ActivePivotTranscoder.builder()
+		AtotiTranscoder transcoder = AtotiTranscoder.builder()
 				.priorityTranscoder(MapTableTranscoder.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
 				.build();
 
@@ -49,7 +49,7 @@ public class TestActivePivotTranscoder {
 	public void testNoPriority() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on
 		// joins)
-		ActivePivotTranscoder transcoder = ActivePivotTranscoder.builder().build();
+		AtotiTranscoder transcoder = AtotiTranscoder.builder().build();
 
 		Assertions.assertThat(transcoder.underlying("someL")).isEqualTo("someL");
 		Assertions.assertThat(transcoder.underlying("someL@someH")).isEqualTo("someL");

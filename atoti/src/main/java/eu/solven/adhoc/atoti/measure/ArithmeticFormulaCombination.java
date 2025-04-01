@@ -34,11 +34,15 @@ import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.ProductCombination;
+import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Equivalent to {@link com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor}
+ * Implements Polish-notations to express formulas. See https://en.wikipedia.org/wiki/Polish_notation.
+ *
+ * Can be used as alternative to {@link com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor}
  */
 @Slf4j
 public class ArithmeticFormulaCombination implements ICombination {
@@ -84,9 +88,6 @@ public class ArithmeticFormulaCombination implements ICombination {
 				List<Object> operands = new LinkedList<>(pendingOperands);
 				pendingOperands.clear();
 
-				// IAggregation aggregator = getAggregation(s);
-				// operandToAppend = operands.stream().reduce(aggregator::aggregate).orElse(null);
-
 				ICombination combination = getCombination(s);
 				operandToAppend = combination.combine(operands);
 			} else {
@@ -106,8 +107,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 
 	// TODO Rely on IOperatorsFactory
 	protected ICombination getCombination(String operator) {
-		if ("*".equals(operator) || ProductAggregation.KEY.equals(operator)) {
+		if (ProductAggregation.isProduct(operator)) {
 			return new ProductCombination();
+		} else if (SumAggregation.isSum(operator)) {
+			return new SumCombination();
 		} else {
 			throw new UnsupportedOperationException("Not-managed: " + operator);
 		}

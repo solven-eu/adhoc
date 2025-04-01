@@ -41,8 +41,8 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
-public class TestActivePivotConditionCubeToAdhoc {
-	ActivePivotConditionCubeToAdhoc apConditionToAdhoc = new ActivePivotConditionCubeToAdhoc();
+public class TestAtotiConditionCubeToAdhoc {
+	AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
 
 	@Test
 	public void testConditionToFilter_Raw() {

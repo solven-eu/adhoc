@@ -28,16 +28,15 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This {@link IAdhocTableTranscoder} is useful into translating from levelNames are configured in ActivePivot
- * processors, into names used in underlying PostProcessors. It assumes the underlying Parquet column matches the level
- * names.
+ * This {@link IAdhocTableTranscoder} is useful into translating from levelNames as configured in ActivePivot
+ * processors, into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the levelName.
  *
- * This is useful when loading a legacy ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor
+ * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor
  * properties). But this is not specific to querying ActivePivot as an Adhoc Database.
  */
 @Builder
 @Slf4j
-public class ActivePivotTranscoder implements IAdhocTableTranscoder {
+public class AtotiTranscoder implements IAdhocTableTranscoder {
 	private static final char LEVEL_SEPARATOR = '@';
 
 	@Builder.Default

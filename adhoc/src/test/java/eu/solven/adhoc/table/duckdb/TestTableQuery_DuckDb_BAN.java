@@ -22,12 +22,15 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Percentage;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,6 +66,15 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
+	public static String PATH_TO_BAN = "/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet";
+
+	@BeforeAll
+	public static void assumeFileisPresent() {
+		boolean banIsPresent = Paths.get(PATH_TO_BAN).toFile().isFile();
+		Assumptions.assumeTrue(banIsPresent, "BAN file is not present");
+		log.info("BAN file ({}) is not present: some benchmarks are skipped", PATH_TO_BAN);
+	}
+
 	String tableName = "addressesFrance";
 
 	JooqTableWrapper table = new JooqTableWrapper(tableName,
@@ -71,8 +83,6 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 					.table(DSL.table(
 							"read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet')"))
 					.build());
-
-	DSLContext dsl = table.makeDsl();
 
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();

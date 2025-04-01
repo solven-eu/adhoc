@@ -33,8 +33,8 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
-public class TestActivePivotConditionDatastoreToAdhoc {
-	ActivePivotConditionDatastoreToAdhoc apConditionToAdhoc = new ActivePivotConditionDatastoreToAdhoc();
+public class TestAtotiConditionDatastoreToAdhoc {
+	AtotiConditionDatastoreToAdhoc apConditionToAdhoc = new AtotiConditionDatastoreToAdhoc();
 
 	@Test
 	public void testAnd() {

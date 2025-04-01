@@ -4,6 +4,23 @@ Atoti/ActivePivot is a very performant in-memory database.
 
 https://www.atoti.io/
 
+## Commercial Considerations
+
+Atoti/ActivePivot is a commercial software, with strict intellectual property (IP) considerations. All the code here is
+suggested from Open-Sourced repositories distributed by ActiveViam.
+
+More specifically, this repository follows guidelines provided in:
+
+- [Memory Analysis Cube](https://github.com/activeviam/mac) ([License: Apache 2.0](https://github.com/activeviam/mac/blob/main/LICENSE))
+- [Atoti Spring-Boot Template](https://github.com/solven-eu/atoti-spring-boot-template) ([License: Apache 2.0](https://github.com/solven-eu/atoti-spring-boot-template/blob/6.1/LICENSE))
+- [Pivot Spring-Boot](https://github.com/activeviam/pivot-spring-boot) ([License: Apache 2.0](https://github.com/activeviam/pivot-spring-boot/blob/6.1.0/LICENSE))
+- [Atoti AutoPivot](https://github.com/activeviam/autopivot) ([License: Apache 2.0](https://github.com/activeviam/autopivot/blob/master/LICENSE))
+- [Java API Migration Tool to migrate Atoti](https://github.com/activeviam/java-api-migration-tool) (License: Unlicensed)
+
+[Licensing note](https://github.com/activeviam/autopivot?tab=readme-ov-file#licensing):
+
+> The code of the AutoPivot application is open source, licensed under the Apache License 2.0. The AutoPivot application depends on the ActivePivot (commercial) software, the ActivePivot jar files distributed by ActiveViam must be available in the maven repository for the application to build. Running the AutoPivot application requires a license for the ActivePivot software. To use the ActiveUI frontend, the ActivePivot license must have the ActiveUI option enabled.
+
 ## Major differences
 
 1. Atoti maintains in-memory all or part of the considered data, while Adhoc does not keep any data In-Memory.

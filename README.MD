@@ -33,7 +33,7 @@ CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes ad
 ## Set-up
 
 1. Ensure you have JDK 21 available
-2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.1` (yet to be released. You have to compile the project locally for now)
+2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.2` (they are deployed to m2central: https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 3. Define an `IAdhocTableWrapper`: it defines how Adhoc can access your data
 
 Assuming your data is queryable with JooQ:

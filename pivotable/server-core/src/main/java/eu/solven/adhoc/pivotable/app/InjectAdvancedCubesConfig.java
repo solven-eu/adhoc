@@ -67,7 +67,7 @@ public class InjectAdvancedCubesConfig {
 		Path pathToParquet = Path.of("/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet");
 
 		if (!Files.isReadable(pathToParquet)) {
-			log.warn("path=`{}` is not readable", pathToParquet);
+			log.warn("path=`{}` is not readable. The file probably does not exist.", pathToParquet);
 		}
 		JooqTableWrapper table = new JooqTableWrapper("ban",
 				JooqTableWrapperParameters.builder()

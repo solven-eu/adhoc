@@ -83,7 +83,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivePivotMeasureToAdhoc {
 	@Builder.Default
 	@Getter
-	final ActivePivotConditionCubeToAdhoc apConditionToAdhoc = new ActivePivotConditionCubeToAdhoc();
+	final AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
 
 	public IMeasureForest asBag(String pivotId, IActivePivotDescription desc) {
 		MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);

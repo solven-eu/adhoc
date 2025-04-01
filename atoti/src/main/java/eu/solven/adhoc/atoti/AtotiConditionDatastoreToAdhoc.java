@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  * Typically used for store filtering.
  */
 @Slf4j
-public class ActivePivotConditionDatastoreToAdhoc {
+public class AtotiConditionDatastoreToAdhoc {
 
 	public IAdhocFilter convertToAdhoc(Object rawCondition) {
 		if (rawCondition == null) {

@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.atoti.ActivePivotConditionCubeToAdhoc;
+import eu.solven.adhoc.atoti.AtotiConditionCubeToAdhoc;
 
 /**
  * Check we can customize ActivePivotConditionCubeToAdhoc
  */
-public class CustomActivePivotConditionCubeToAdhoc extends ActivePivotConditionCubeToAdhoc {
+public class CustomAtotiConditionCubeToAdhoc extends AtotiConditionCubeToAdhoc {
 }

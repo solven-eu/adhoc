@@ -1,3 +1,7 @@
+# Local compilation
+
+`mvn clean install [-Pactiveviam] [-Pfast]`
+
 # Corporate Environment
 
 From a Corporate environment with a strong Proxy, it may be difficult to clone/push code from/to Github.com

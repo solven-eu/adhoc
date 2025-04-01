@@ -42,7 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
-import eu.solven.adhoc.atoti.custom.CustomActivePivotConditionCubeToAdhoc;
+import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -331,6 +331,6 @@ public class TestActivePivotMeasureToAdhoc {
 		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
 
 		Assertions.assertThat(converter.getApConditionToAdhoc())
-				.isInstanceOf(CustomActivePivotConditionCubeToAdhoc.class);
+				.isInstanceOf(CustomAtotiConditionCubeToAdhoc.class);
 	}
 }

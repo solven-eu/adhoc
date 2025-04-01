@@ -56,7 +56,7 @@ import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * Wraps a {@link Connection} and rely on JooQ to use it as database for {@link TableQuery}.
+ * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */

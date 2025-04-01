@@ -1,5 +1,11 @@
 # Pivotable
 
+## Quick-Start
+
+Run the main in:
+
+    PivotableServerApplication
+
 ## Pivotable vs Adhoc
 
 While: 

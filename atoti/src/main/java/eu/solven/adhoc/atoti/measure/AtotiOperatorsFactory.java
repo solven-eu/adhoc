@@ -32,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Extends {@link StandardOperatorsFactory} with Atoti additional logics.
+ * Extends {@link StandardOperatorsFactory} with Atoti additional operators.
  */
 @Slf4j
 @RequiredArgsConstructor

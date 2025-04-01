@@ -52,7 +52,7 @@ import lombok.extern.slf4j.Slf4j;
  * Typically used for cube filtering.
  */
 @Slf4j
-public class ActivePivotConditionCubeToAdhoc {
+public class AtotiConditionCubeToAdhoc {
 
 	public IAdhocFilter convertToAdhoc(String level, Object rawCondition) {
 		if (rawCondition == null) {

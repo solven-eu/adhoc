@@ -31,6 +31,6 @@ import lombok.Builder;
 public class CustomActivePivotMeasureToAdhoc extends ActivePivotMeasureToAdhoc {
 	@Builder(builderMethodName = "customBuilder")
 	public CustomActivePivotMeasureToAdhoc() {
-		super(new CustomActivePivotConditionCubeToAdhoc());
+		super(new CustomAtotiConditionCubeToAdhoc());
 	}
 }
