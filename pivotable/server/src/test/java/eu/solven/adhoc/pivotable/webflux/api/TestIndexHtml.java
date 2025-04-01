@@ -93,7 +93,7 @@ public class TestIndexHtml {
 	}
 
 	private void checkUrl(AtomicInteger nbChecked, String href) {
-		if (href.startsWith("https://github.com/solven-eu/kumite/commit/")) {
+		if (href.startsWith("https://github.com/solven-eu/adhoc/commit/")) {
 			log.debug("Skip the Github link to commit as current commit may not be pushed yet");
 		} else if (href.startsWith("http")) {
 			try {

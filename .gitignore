@@ -5,6 +5,7 @@ target
 # mvn release
 release.properties
 pom.xml.releaseBackup
+pom.xml.versionsBackup
 pom.xml.tag
 
 # IntelliJ

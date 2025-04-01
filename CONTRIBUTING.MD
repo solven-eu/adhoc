@@ -15,4 +15,10 @@ See https://github.com/diffplug/spotless/issues/1658
 
 # Make a release
 
-    mvn release:clean release:prepare
+    mvn release:clean release:prepare release:perform -Pactiveviam
+    
+## In case of error:
+
+        mvn reset --hard HEAD~~
+        git tag -d vXXX
+        git push --delete origin vXXX
