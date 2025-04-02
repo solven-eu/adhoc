@@ -100,15 +100,15 @@ export default {
 		watch(
 			() => props.queryModel.selectedColumns[props.column],
 			(newX) => {
-				if (!props.queryModel.selectedColumns2) {
-					props.queryModel.selectedColumns2 = [];
+				if (!props.queryModel.selectedColumnsOrdered) {
+					props.queryModel.selectedColumnsOrdered = [];
 				}
 
-				const array = props.queryModel.selectedColumns2;
+				const array = props.queryModel.selectedColumnsOrdered;
 				const index = array.indexOf(props.column);
 				if (newX) {
 					if (index < 0) {
-						props.queryModel.selectedColumns2.push(props.column);
+						props.queryModel.selectedColumnsOrdered.push(props.column);
 					}
 				} else {
 					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript

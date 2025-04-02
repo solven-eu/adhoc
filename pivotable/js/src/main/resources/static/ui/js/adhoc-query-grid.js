@@ -7,7 +7,7 @@ import AdhocMeasure from "./adhoc-measure.js";
 
 import { useUserStore } from "./store-user.js";
 
-import { SlickGrid, SlickDataView, Formatters } from "slickgrid";
+import { SlickGrid, SlickDataView, Formatters, SlickHeaderButtons } from "slickgrid";
 import Sortable from "sortablejs";
 
 // Ordering of rows
@@ -34,6 +34,11 @@ export default {
 		loading: {
 			type: Boolean,
 			default: false,
+		},
+		// Used to remove columns from the grid
+		queryModel: {
+			type: Object,
+			required: false,
 		},
 	},
 	setup(props) {
@@ -135,8 +140,35 @@ export default {
 						field: columnName,
 						sortable: sortable,
 						asyncPostRender: renderCallback,
-						//, formatter: popoverFormatter
+						// formatter: popoverFormatter,
 					};
+
+					if (props.queryModel) {
+						// queryModel is available: show a button to edit the queryModel from the grid
+						column.header = {
+							buttons: [
+								{
+									command: "remove-column",
+									tooltip: "Remove this groupBy",
+									cssClass: "bi bi-x-circle",
+									itemVisibilityOverride: function (args) {
+										// for example don't show the header button on column "E"
+										return args.column.name !== "E";
+									},
+									itemUsabilityOverride: function (args) {
+										// for example the button usable everywhere except on last column "J"
+										return args.column.name !== "J";
+									},
+									action: function (e, args) {
+										// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
+										// do something
+										console.log("Requested removal of groupBy=" + args.column.name);
+									},
+								},
+							],
+						};
+					}
+
 					gridColumns.push(column);
 				}
 
@@ -148,6 +180,32 @@ export default {
 
 					if (measureName.indexOf("%") >= 0) {
 						column["formatter"] = percentFormatter;
+					}
+
+					if (props.queryModel) {
+						// queryModel is available: show a button to edit the queryModel from the grid
+						column.header = {
+							buttons: [
+								{
+									command: "remove-measure",
+									tooltip: "Remove this measure",
+									cssClass: "bi bi-x-circle",
+									itemVisibilityOverride: function (args) {
+										// for example don't show the header button on column "E"
+										return args.column.name !== "E";
+									},
+									itemUsabilityOverride: function (args) {
+										// for example the button usable everywhere except on last column "J"
+										return args.column.name !== "J";
+									},
+									action: function (e, args) {
+										// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
+										// do something
+										console.log("Requested removal of measure=" + args.column.name);
+									},
+								},
+							],
+						};
 					}
 
 					gridColumns.push(column);
@@ -368,6 +426,32 @@ export default {
 		onMounted(() => {
 			// SlickGrid requires the DOM to be ready: `onMounted` is needed
 			grid = new SlickGrid("#" + props.domId, dataView, gridColumns, options);
+
+			// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
+			{
+				var headerButtonsPlugin = new SlickHeaderButtons();
+
+				headerButtonsPlugin.onCommand.subscribe(function (e, args) {
+					var column = args.column;
+					var button = args.button;
+					var command = args.command;
+
+					if (command == "remove-column") {
+						props.queryModel.selectedColumns[column.name] = false;
+
+						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
+						// grid.invalidate();
+					} else if (command == "remove-measure") {
+						props.queryModel.selectedMeasures[column.name] = false;
+
+						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
+						// grid.invalidate();
+					}
+				});
+
+				grid.registerPlugin(headerButtonsPlugin);
+			}
+
 			dataView.refresh();
 
 			// TODO comparer function is never called?
@@ -461,17 +545,17 @@ export default {
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
             </div>
             <div :id="domId" style="width:100%;" class="vh-75"></div>
-			<div
-			    class="progress"
-			    role="progressbar"
-			    aria-label="Animated striped example"
-			    :aria-valuenow="loadingPercent()"
-			    aria-valuemin="0"
-			    aria-valuemax="100"
-			    v-if="isLoading()"
-			>
-			    <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
-			</div>
+            <div
+                class="progress"
+                role="progressbar"
+                aria-label="Animated striped example"
+                :aria-valuenow="loadingPercent()"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                v-if="isLoading()"
+            >
+                <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
+            </div>
             <div>clickedCell={{clickedCell}}</div>
             <div>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>

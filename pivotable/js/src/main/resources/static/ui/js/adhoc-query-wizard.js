@@ -142,15 +142,15 @@ export default {
             Build the query
 
             <form>
-				<div>
-                	<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
-					<small>
-						<div class="form-check form-switch">
-						  <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive">
-						  <label class="form-check-label" for="searchCaseSensitive">Aa</label>
-						</div>
-					</small>
-				</div>
+                <div>
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
+                    <small>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
+                            <label class="form-check-label" for="searchCaseSensitive">Aa</label>
+                        </div>
+                    </small>
+                </div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
 

@@ -263,6 +263,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
+		// TODO How should `null` be reported?
 		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {

@@ -100,10 +100,11 @@ export default {
 
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as this must not changed when playing with the wizard.
-			if (!props.queryModel.selectedColumns2) {
-				props.queryModel.selectedColumns2 = [];
+			if (!props.queryModel.selectedColumnsOrdered) {
+				props.queryModel.selectedColumnsOrdered = [];
 			}
-			const orderedColumns = props.queryModel.selectedColumns2.slice(0);
+			// `.slice` as we want an immutable snapshot
+			const orderedColumns = props.queryModel.selectedColumnsOrdered.slice(0);
 
 			return {
 				groupBy: { columns: orderedColumns },

@@ -12,33 +12,7 @@ import { useUserStore } from "./store-user.js";
 
 import AdhocQueryWizard from "./adhoc-query-wizard.js";
 import AdhocQueryExecutor from "./adhoc-query-executor.js";
-import AdhocQueryView from "./adhoc-query-grid.js";
-
-// https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
-String.prototype.hashCode = function () {
-	var hash = 0,
-		i,
-		chr;
-	if (this.length === 0) return hash;
-	for (i = 0; i < this.length; i++) {
-		chr = this.charCodeAt(i);
-		hash = (hash << 5) - hash + chr;
-		hash |= 0; // Convert to 32bit integer
-	}
-	return hash;
-};
-
-// Duplicated from store.js
-// TODO How can we share such a class?
-class NetworkError extends Error {
-	constructor(message, url, response) {
-		super(message);
-		this.name = this.constructor.name;
-
-		this.url = url;
-		this.response = response;
-	}
-}
+import AdhocQueryGrid from "./adhoc-query-grid.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -48,7 +22,7 @@ export default {
 		AdhocMeasure,
 		AdhocQueryWizard,
 		AdhocQueryExecutor,
-		AdhocQueryView,
+		AdhocQueryGrid,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -121,7 +95,7 @@ export default {
                     </div>
                 </div>
                 <div class="col-9">
-                    <AdhocQueryView :tabularView="tabularView" :loading="loading" :domId="domId" />
+                    <AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" />
                 </div>
             </div>
         </div>

@@ -62,7 +62,8 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
-		store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
+		// Do not load here, else all columns would be loaded when loading the wizard even if columns are not visible
+		// store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
 
 		const filterTypes = ["equals", "like", "json"];
 		const filterType = ref("no_filter");
