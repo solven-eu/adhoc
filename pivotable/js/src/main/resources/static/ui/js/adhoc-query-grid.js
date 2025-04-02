@@ -293,6 +293,8 @@ export default {
 								throw new Error(`Inconsistent columnNames: ${columnNames} vs ${Object.keys(coordinatesRow)}`);
 							}
 							if (measureNames.length == 0) {
+								// Happens when not selected any measure, but receiving values for the default measure
+								// TODO Is this still a legit behavior, since we return slices without columns on such  case?
 								for (let measureName of Object.keys(measuresRow)) {
 									const column = { id: measureName, name: measureName, field: measureName, sortable: true, asyncPostRender: renderCallback };
 
@@ -341,6 +343,32 @@ export default {
 			console.debug("rowSpans: ", metadata);
 
 			grid.setColumns(gridColumns);
+
+			// Update footer row
+			{
+				const columnToDistinctCount = {};
+				console.log("columns", grid.getColumns());
+				for (let column of grid.getColumns()) {
+					const columnName = column.name;
+					if ("id" === column.id) {
+						// rowIndex column has `distinctCount==length`
+						columnToDistinctCount[columnName] = view.coordinates.length;
+					} else {
+						const values = [];
+
+						for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
+							values.push(view.coordinates[rowIndex][columnName]);
+						}
+
+						// https://stackoverflow.com/questions/21661686/fastest-way-to-get-count-of-unique-elements-in-javascript-array
+						columnToDistinctCount[columnName] = new Set(values).size;
+					}
+
+					// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
+					var columnElement = grid.getFooterRowColumn(column.id);
+					columnElement.textContent = `#: ${columnToDistinctCount[columnName]}`;
+				}
+			}
 
 			dataView.getItemMetadata = (row) => {
 				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
@@ -418,6 +446,14 @@ export default {
 			// rowspan doesn't render well with 'transform', default is 'top'
 			// https://github.com/6pac/SlickGrid/blob/master/examples/example-0032-row-span-many-columns.html
 			rowTopOffsetRenderType: "top",
+
+			// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
+			createFooterRow: true,
+			showFooterRow: true,
+			footerRowHeight: 28,
+
+			// `rowIndex` column is frozen
+			frozenColumn: 1,
 		};
 
 		// Use AutoResizer?
