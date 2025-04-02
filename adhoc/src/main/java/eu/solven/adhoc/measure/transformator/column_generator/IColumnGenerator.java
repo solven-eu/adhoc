@@ -98,12 +98,6 @@ public interface IColumnGenerator extends IHasColumns {
 
 	/**
 	 * 
-	 * @return the {@link Set} of columns which are output by this {@link IDecomposition}
-	 */
-	// Set<String> getOutputColumns();
-
-	/**
-	 * 
 	 * @param column
 	 * @param valueMatcher
 	 * @param limit

@@ -38,10 +38,11 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	public static final String KEY = "PRODUCT";
 
 	public static boolean isProduct(String operator) {
-		return  "*".equals(operator) || ProductAggregation.KEY.equals(operator) || operator.equals(ProductAggregation.class.getName());
+		return "*".equals(operator) || ProductAggregation.KEY.equals(operator)
+				|| operator.equals(ProductAggregation.class.getName());
 	}
 
-    @Override
+	@Override
 	public Object aggregate(Object l, Object r) {
 		if (l == null) {
 			return r;

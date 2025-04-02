@@ -43,11 +43,12 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 
 	public static final String KEY = "SUM";
 
-    public static boolean isSum(String operator) {
-		return  "+".equals(operator) || SumAggregation.KEY.equals(operator) || operator.equals(SumAggregation.class.getName());
-    }
+	public static boolean isSum(String operator) {
+		return "+".equals(operator) || SumAggregation.KEY.equals(operator)
+				|| operator.equals(SumAggregation.class.getName());
+	}
 
-    @Override
+	@Override
 	public Object aggregate(Object l, Object r) {
 		if (l == null) {
 			return onlyOne(r);

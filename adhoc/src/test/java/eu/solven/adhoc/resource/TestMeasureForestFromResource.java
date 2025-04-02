@@ -52,8 +52,8 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees
 //An `anonymous` measure is a measure which has no name. It leads to more compact but less re-usable trees.
-public class TestMeasuresSetFromResource {
-	final MeasuresSetFromResource fromResource = new MeasuresSetFromResource();
+public class TestMeasureForestFromResource {
+	final MeasureForestFromResource fromResource = new MeasureForestFromResource();
 
 	@Test
 	public void testFaultInKey_type() {
@@ -181,7 +181,7 @@ public class TestMeasuresSetFromResource {
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
-					- name: "someBagName"
+					- name: "testAnonymousUnderlyingNode"
 					  measures:
 					  - name: "anonymous-0"
 					    type: ".Combinator"
@@ -204,7 +204,7 @@ public class TestMeasuresSetFromResource {
 			MeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
-			Assertions.assertThat(a.getForest("someBagName").getNameToMeasure()).hasSize(4);
+			Assertions.assertThat(a.getForest("testAnonymousUnderlyingNode").getNameToMeasure()).hasSize(4);
 		}
 	}
 
@@ -246,7 +246,7 @@ public class TestMeasuresSetFromResource {
 
 			String amsAsString = fromResource.asString("yml", bagOfBag);
 			Assertions.assertThat(amsAsString).isEqualTo("""
-					- name: "someBagName"
+					- name: "testWithFilter"
 					  measures:
 					  - name: "k1"
 					    type: ".Aggregator"
@@ -263,7 +263,7 @@ public class TestMeasuresSetFromResource {
 			MeasureForests a = fromResource.loadMapFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
-			Assertions.assertThat(a.getForest("someBagName").getNameToMeasure()).hasSize(2);
+			Assertions.assertThat(a.getForest("testWithFilter").getNameToMeasure()).hasSize(2);
 		}
 	}
 

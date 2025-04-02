@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.ClassUtils;
 
 import eu.solven.adhoc.resource.MeasureForests;
-import eu.solven.adhoc.resource.MeasuresSetFromResource;
+import eu.solven.adhoc.resource.MeasureForestFromResource;
 
 public class TestMeasureSetFromResourceWhenYamlIsMissing {
 	// This is especially useful to ensure our code manages properly when YAMLFactory is not Available
@@ -40,11 +40,11 @@ public class TestMeasureSetFromResourceWhenYamlIsMissing {
 
 		MeasureForests emptyBag = MeasureForests.builder().build();
 
-		Assertions.assertThat(new MeasuresSetFromResource().asString("json", emptyBag)).isEqualTo("[ ]");
+		Assertions.assertThat(new MeasureForestFromResource().asString("json", emptyBag)).isEqualTo("[ ]");
 
 		Assertions
 				.assertThatThrownBy(
-						() -> Assertions.assertThat(new MeasuresSetFromResource().asString("yaml", emptyBag)))
+						() -> Assertions.assertThat(new MeasureForestFromResource().asString("yaml", emptyBag)))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml");
 	}

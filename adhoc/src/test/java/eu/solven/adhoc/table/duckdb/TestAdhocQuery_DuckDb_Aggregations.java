@@ -41,9 +41,9 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdhocTestConstants {
 

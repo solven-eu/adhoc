@@ -168,7 +168,7 @@
 				<configuration>
 					<classifier>exec</classifier>
 
-					<mainClass>eu.solven.adhoc.app.AdhocContestServerApplication</mainClass>
+					<mainClass>eu.solven.adhoc.pivotable.app.PivotableServerApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>

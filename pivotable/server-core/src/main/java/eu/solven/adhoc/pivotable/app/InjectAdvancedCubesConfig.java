@@ -38,9 +38,9 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**

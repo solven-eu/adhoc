@@ -49,9 +49,9 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.ColumnMetadataHelpers;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -109,15 +109,13 @@ public class JooqTableWrapper implements ITableWrapper {
 		Stream.of(select).forEach(field -> {
 			String fieldName = field.getName();
 
-			// TODO Columns should express queryable columns, not underlying columns
-			// dbParameters.getTranscoder();
-
 			Class<?> fieldType = field.getType();
 			Class<?> previousType = columnToType.put(fieldName, fieldType);
 			if (previousType != null) {
 				log.debug("Multiple columns with same name. Typically happens on a JOIN");
 				if (!Objects.equals(fieldType, previousType)) {
-					log.warn("Multiple columns with same name (name=%s), and different types: %s != %s",
+					log.warn("Multiple columns with same name (table=%s column=%s), and different types: %s != %s",
+							getName(),
 							fieldName,
 							previousType,
 							fieldType);
@@ -259,7 +257,16 @@ public class JooqTableWrapper implements ITableWrapper {
 		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
-			return ColumnMetadataHelpers.getCoordinatesMostGeneric(this, column, valueMatcher, limit);
+			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
+		}
+	}
+
+	@Override
+	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
+		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
+			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
+		} else {
+			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);
 		}
 	}
 

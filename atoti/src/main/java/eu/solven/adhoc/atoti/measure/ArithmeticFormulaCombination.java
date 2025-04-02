@@ -115,11 +115,4 @@ public class ArithmeticFormulaCombination implements ICombination {
 			throw new UnsupportedOperationException("Not-managed: " + operator);
 		}
 	}
-	// protected IAggregation getAggregation(String operator) {
-	// if("*".equals(operator) || ProductAggregator.KEY.equals(operator)) {
-	// return new ProductAggregator();
-	// } else {
-	// throw new UnsupportedOperationException("Not-managed: " + operator);
-	// }
-	// }
 }

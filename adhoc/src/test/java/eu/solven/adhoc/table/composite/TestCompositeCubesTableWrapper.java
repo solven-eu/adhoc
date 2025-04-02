@@ -41,9 +41,9 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.table.sql.DSLSupplier;
-import eu.solven.adhoc.table.sql.DuckDbHelper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 

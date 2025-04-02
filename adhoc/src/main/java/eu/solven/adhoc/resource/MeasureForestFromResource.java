@@ -71,7 +71,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
-public class MeasuresSetFromResource {
+public class MeasureForestFromResource {
 	public static final String KEY_TYPE = "type";
 
 	private static final List<String> sortedKeys = List.of("name",

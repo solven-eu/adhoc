@@ -23,11 +23,11 @@
 package eu.solven.adhoc.table.duckdb;
 
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Percentage;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,9 +46,10 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.table.sql.DuckDbHelper;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -100,6 +101,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(Aggregator.countAsterisk());
 	}
 
+	// Sanity Check to ensure the dataset is large
 	@Test
 	public void testGrandTotal() {
 		ITabularView output =
@@ -110,6 +112,11 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 26_045_333L));
+	}
+
+	@Test
+	public void testGetColumns() {
+		Assertions.assertThat(wrapInCube(forest).getColumns()).hasSize(21);
 	}
 
 	@Test
@@ -138,6 +145,35 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(107_635, Percentage.withPercentage(10));
 		Assertions.assertThat(columnMeta.getCoordinates()).hasSize(100);
+	}
+
+	@Test
+	public void testCoordinates_allColumns_like() {
+		// Search through all columns for any coordinate matching `%abc%`
+		Map<String, IValueMatcher> columnsToAbc = new HashMap<>();
+		wrapInCube(forest).getColumns()
+				.forEach((column, type) -> columnsToAbc.put(column, LikeMatcher.matching("%ab%")));
+
+		Map<String, CoordinatesSample> columnsMeta = wrapInCube(forest).getCoordinates(columnsToAbc, 5);
+
+		Assertions.assertThat(columnsMeta).hasSize(21).anySatisfy((c, columnMeta) -> {
+			Assertions.assertThat(c).isEqualTo("rep");
+			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(12, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
+		}).anySatisfy((c, columnMeta) -> {
+			Assertions.assertThat(c).isEqualTo("nom_voie");
+			Assertions.assertThat(columnMeta.getEstimatedCardinality())
+					.isCloseTo(20_763, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
+		}).anySatisfy((c, columnMeta) -> {
+			Assertions.assertThat(c).isEqualTo("nom_commune");
+			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(292, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
+		}).anySatisfy((c, columnMeta) -> {
+			Assertions.assertThat(c).isEqualTo("nom_ld");
+			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(2324, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
+		});
 	}
 
 }

@@ -20,38 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.table.sql.duckdb;
 
-import com.google.common.collect.ImmutableSet;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 
-/**
- * Enables providing metadata about a column, especially a sample of available coordinates and an estimated cardinality.
- * 
- * The provided coordinates is a sample, given some limit. The estimatedVardinality is not impacted by this limit.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder
-public class CoordinatesSample {
-	public static final long NO_ESTIMATION = -1;
-
-	@Singular
-	ImmutableSet<Object> coordinates;
-
-	@Default
-	long estimatedCardinality = NO_ESTIMATION;
-
-	public long getEstimatedCardinality() {
-		return estimatedCardinality;
+public class TestDuckDbHelper {
+	@Test
+	public void testFilterExpr_like() {
+		Assertions.assertThat(DuckDbHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
 	}
 
-	public static CoordinatesSample empty() {
-		return CoordinatesSample.builder().build();
+	@Test
+	public void testFilterExpr_notLike() {
+		Assertions.assertThat(DuckDbHelper.toFilterExpression(NotMatcher.not(LikeMatcher.matching("%abc"))))
+				.isEqualTo("NOT LIKE '%abc'");
+	}
+
+	@Test
+	public void testFilterExpr_matchAll() {
+		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_ALL)).isEqualTo("1 = 1");
+	}
+
+	@Test
+	public void testFilterExpr_matchNone() {
+		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
 	}
 }

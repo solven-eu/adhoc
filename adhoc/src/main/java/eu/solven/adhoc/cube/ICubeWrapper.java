@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.cube;
 
+import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -58,6 +59,29 @@ public interface ICubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 	 */
 	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
 
-	// default
-	CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit);
+	/**
+	 * 
+	 * @param column
+	 * @param valueMatcher
+	 * @param limit
+	 *            the maximum number of sample coordinates to returns
+	 * @return
+	 */
+	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		CoordinatesSample coordinatesSample = getCoordinates(Map.of(column, valueMatcher), limit).get(column);
+
+		if (coordinatesSample == null) {
+			return CoordinatesSample.empty();
+		}
+		return coordinatesSample;
+	}
+
+	/**
+	 * 
+	 * @param columnToValueMatcher
+	 * @param limit
+	 *            the maximum number of sample coordinates to returns per column
+	 * @return
+	 */
+	Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit);
 }

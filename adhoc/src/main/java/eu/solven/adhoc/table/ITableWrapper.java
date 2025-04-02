@@ -24,6 +24,7 @@ package eu.solven.adhoc.table;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
@@ -55,12 +56,34 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 */
 	ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
 
-	default ITabularRecordStream streamSlices(TableQuery estimatedCardinalityQuery) {
-		return streamSlices(ExecutingQueryContext.forTable(this), estimatedCardinalityQuery);
+	@Deprecated(since = "Used for tests, or edge-cases")
+	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
+		return streamSlices(ExecutingQueryContext.forTable(this), tableQuery);
 	}
 
+	/**
+	 * 
+	 * @param column
+	 * @param valueMatcher
+	 * @param limit
+	 *            the maximum number of sample coordinates to return
+	 * @return
+	 */
 	default CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		return ColumnMetadataHelpers.getCoordinatesMostGeneric(this, column, valueMatcher, limit);
+	}
+
+	/**
+	 * 
+	 * @param columnToValueMatcher
+	 * @param limit
+	 *            the maximum number of sample coordinates to return by column
+	 * @return
+	 */
+	default Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
+		return columnToValueMatcher.entrySet()
+				.stream()
+				.collect(Collectors.toMap(e -> e.getKey(), e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
 
 	/**

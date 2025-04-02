@@ -41,7 +41,7 @@ import lombok.NonNull;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Used to check the behavior of {@link MeasuresSetFromResource} on a project custom {@link IMeasure}
+ * Used to check the behavior of {@link MeasureForestFromResource} on a project custom {@link IMeasure}
  */
 @JsonIgnoreProperties({ "underlyingNames" })
 @Builder
