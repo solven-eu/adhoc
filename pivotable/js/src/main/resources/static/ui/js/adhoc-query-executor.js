@@ -90,7 +90,7 @@ export default {
 			props.queryModel.selectedMeasures = {};
 		}
 
-		// This computed property does snapshots of the query
+		// This computed property snapshots of the query
 		const queryJson = computed(() => {
 			const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
 			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
@@ -106,12 +106,13 @@ export default {
 			// `.slice` as we want an immutable snapshot
 			const orderedColumns = props.queryModel.selectedColumnsOrdered.slice(0);
 
+			const options = Object.keys(props.queryModel.options).filter((option) => props.queryModel.options[option] === true);
+
 			return {
 				groupBy: { columns: orderedColumns },
 				measures: measures,
 				filter: filter,
-				debug: props.queryModel.debugQuery?.value,
-				explain: props.queryModel.explainQuery?.value,
+				options: options,
 			};
 		});
 
@@ -120,21 +121,24 @@ export default {
 
 		const sendMoveError = ref("");
 		function sendMove() {
-			let move = {};
+			let queryForApi = {};
 
-			move.endpointId = props.endpointId;
-			move.cube = props.cubeId;
-			move.query = queryJson.value;
+			queryForApi.endpointId = props.endpointId;
+			queryForApi.cube = props.cubeId;
+			queryForApi.query = queryJson.value;
+
+			queryForApi.options = queryJson.value.options;
+			delete queryForApi.query.options;
 
 			async function postFromUrl(url) {
 				try {
 					loading.value = true;
-					const stringifiedQuery = JSON.stringify(move);
+					const stringifiedQuery = JSON.stringify(queryForApi);
 
 					if (!store.queries["" + stringifiedQuery.hashCode()]) {
 						store.queries["" + stringifiedQuery.hashCode()] = {};
 					}
-					store.queries["" + stringifiedQuery.hashCode()].query = move;
+					store.queries["" + stringifiedQuery.hashCode()].query = queryForApi;
 
 					const fetchOptions = {
 						method: "POST",
@@ -180,8 +184,8 @@ export default {
 					// We need to couple the columns with the result
 					// as the wizard may have been edited while receiving the result
 					// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
-					Object.assign(props.tabularView, { query: move.query, view: responseTabularView });
-					// props.tabularView.value = {query: move.query, view: responseTabularView};
+					Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView });
+					// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
 
 					// TODO Rely on a named route and params
 					// router.push({ name: "board" });

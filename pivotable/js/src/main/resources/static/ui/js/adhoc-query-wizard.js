@@ -59,9 +59,6 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
-		const debugQuery = ref(false);
-		const explainQuery = ref(false);
-
 		const autoQuery = ref(true);
 		const loading = ref(false);
 
@@ -73,6 +70,10 @@ export default {
 
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
+
+		if (!props.queryModel.options) {
+			props.queryModel.options = {};
+		}
 
 		const filtered = function (inputsAsObjectOrArray) {
 			const filtereditems = [];
@@ -119,9 +120,6 @@ export default {
 			search,
 			searchCaseSensitive,
 			filtered,
-
-			debugQuery,
-			explainQuery,
 
 			loading,
 		};
@@ -261,13 +259,13 @@ export default {
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll">
+								<div class="form-check form-switch">
+								    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="queryModel.options.explain" />
+								    <label class="form-check-label" for="explainQuery">explain</label>
+								</div>
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="debugQuery" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="queryModel.options.debug" />
                                     <label class="form-check-label" for="debugQuery">debug</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="explainQuery" />
-                                    <label class="form-check-label" for="explainQuery">explain</label>
                                 </div>
                             </div>
                         </div>

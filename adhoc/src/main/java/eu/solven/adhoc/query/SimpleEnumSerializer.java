@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,42 @@
  */
 package eu.solven.adhoc.query;
 
-import javax.management.Query;
+import java.io.IOException;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 /**
- * A {@link Query} behavior can be customized through options.
+ * This is used to print a complex `(a -> ref(a), b -> ref(b)` into a simpler `[a, b]`
  * 
  * @author Benoit Lacelle
- *
  */
+// https://www.baeldung.com/jackson-custom-serialization
+public class SimpleEnumSerializer extends StdSerializer<StandardQueryOptions> {
+	private static final long serialVersionUID = 1L;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "type",
-		defaultImpl = StandardQueryOptions.class)
-public interface IQueryOption {
+	public SimpleEnumSerializer() {
+		this(null);
+	}
+
+	public SimpleEnumSerializer(Class<StandardQueryOptions> t) {
+		super(t);
+	}
+
+	@Override
+	public void serializeWithType(StandardQueryOptions value,
+			JsonGenerator gen,
+			SerializerProvider serializers,
+			TypeSerializer typeSer) throws IOException {
+		gen.writeObject(value.toValue());
+	}
+
+	@Override
+	public void serialize(StandardQueryOptions value, JsonGenerator gen, SerializerProvider provider)
+			throws IOException {
+		gen.writeObject(value.toString());
+	}
 
 }

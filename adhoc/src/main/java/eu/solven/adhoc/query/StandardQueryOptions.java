@@ -22,6 +22,11 @@
  */
 package eu.solven.adhoc.query;
 
+import java.util.Locale;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 
@@ -31,6 +36,7 @@ import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
  * @author Benoit Lacelle
  *
  */
+@JsonSerialize(using = SimpleEnumSerializer.class)
 public enum StandardQueryOptions implements IQueryOption {
 	/**
 	 * All underlying measures are kept in the output result. This is relevant as it does not induces additional
@@ -71,4 +77,17 @@ public enum StandardQueryOptions implements IQueryOption {
 	 */
 	@Deprecated(since = "Not ready yet. Should always be used only for internal purposes")
 	AGGREGATION_CARRIERS_STAY_WRAPPED,
+
+	;
+
+	@JsonCreator
+	public static StandardQueryOptions forValue(String value) {
+		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
+	}
+
+	// https://github.com/FasterXML/jackson-databind/issues/5030
+	// @JsonValue
+	public String toValue() {
+		return this.name();
+	}
 }

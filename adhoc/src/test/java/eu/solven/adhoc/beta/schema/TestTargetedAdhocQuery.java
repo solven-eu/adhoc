@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.beta.schema;
 
-import javax.management.Query;
+import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.junit.jupiter.api.Test;
 
-/**
- * A {@link Query} behavior can be customized through options.
- * 
- * @author Benoit Lacelle
- *
- */
+import com.fasterxml.jackson.core.JsonProcessingException;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "type",
-		defaultImpl = StandardQueryOptions.class)
-public interface IQueryOption {
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
+public class TestTargetedAdhocQuery {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(TargetedAdhocQuery.class).verify();
+	}
+
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		TargetedAdhocQuery query = TargetedAdhocQuery.builder()
+				.cube("someCube")
+				.endpointId(UUID.randomUUID())
+				.option(StandardQueryOptions.EXPLAIN)
+				.query(AdhocQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
+				.build();
+
+		TestMapBasedTabularView.verifyJackson(TargetedAdhocQuery.class, query);
+	}
 }

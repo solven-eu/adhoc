@@ -7,6 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `ForestAsGraphvizDag`: can turn an `IMeasureForest` into a Graphviz DOT file.
 - `ICubeWrapper.getCoordinates` can query multiple columns in one call, which is leveraged by `DuckDb` tables.
 - `Pivotable` can now drop column/measure from grid headers.
+- Fix serialization of `IQueryOptions`, and update `Pivotable` for proper options.
 
 ## [0.0.2]
 ### Added

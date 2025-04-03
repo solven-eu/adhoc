@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,28 @@
  */
 package eu.solven.adhoc.query;
 
-import javax.management.Query;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * A {@link Query} behavior can be customized through options.
- * 
- * @author Benoit Lacelle
- *
- */
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "type",
-		defaultImpl = StandardQueryOptions.class)
-public interface IQueryOption {
+public class TestStandardQueryOptions {
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
 
+		Assertions.assertThat(option).isEqualTo("""
+				"EXPLAIN"
+				""".trim());
+	}
+
+	@Test
+	public void testJackson_readLowerCase() throws JsonProcessingException {
+		ObjectMapper om = new ObjectMapper();
+
+		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
+	}
 }

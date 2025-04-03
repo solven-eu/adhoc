@@ -21,6 +21,16 @@ More specifically, this repository follows guidelines provided in:
 
 > The code of the AutoPivot application is open source, licensed under the Apache License 2.0. The AutoPivot application depends on the ActivePivot (commercial) software, the ActivePivot jar files distributed by ActiveViam must be available in the maven repository for the application to build. Running the AutoPivot application requires a license for the ActivePivot software. To use the ActiveUI frontend, the ActivePivot license must have the ActiveUI option enabled.
 
+[CVaRC Accelerator](https://docs.activeviam.com/products/solutions/cvarc/4.0/online-help/dev/dev-getting-started/how-to-build-and-deploy-the-accelerator.html#set-up-artifactory-access):
+
+```
+<repository>
+    <id>ActiveViamInternalRepository</id>
+    <name>ActiveViam Internal Repository</name>
+    <url>https://activeviam.jfrog.io/activeviam/activeviam-mvn-accelerators/</url>
+</repository>
+```
+
 ## Major differences
 
 1. Atoti maintains in-memory all or part of the considered data, while Adhoc does not keep any data In-Memory.

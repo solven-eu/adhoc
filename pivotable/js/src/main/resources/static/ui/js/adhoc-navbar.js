@@ -8,7 +8,7 @@ export default {
 		Logout,
 	},
 	computed: {
-		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching", "expectedToBeLoggedIn"]),
+		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching", "expectedToBeLoggedIn", "needsToRefreshAccessToken"]),
 	},
 	setup() {
 		const userStore = useUserStore();
@@ -52,7 +52,7 @@ export default {
                         />
                         <Logout />
                     </span>
-                    expectedToBeLoggedIn={{expectedToBeLoggedIn}}
+                    expectedToBeLoggedIn={{expectedToBeLoggedIn}} needsToRefreshAccessToken={{needsToRefreshAccessToken}}
                 </div>
             </div>
         </nav>
