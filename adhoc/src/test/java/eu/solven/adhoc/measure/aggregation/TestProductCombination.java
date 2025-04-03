@@ -27,51 +27,55 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 
 public class TestProductCombination {
+	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
 	@Test
 	public void testSimpleCases_default() {
 		ProductCombination combination = new ProductCombination();
 
-		Assertions.assertThat(combination.combine(Arrays.asList())).isNull();
-		Assertions.assertThat(combination.combine(Arrays.asList(123))).isEqualTo(123);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 24))).isEqualTo(0L + 12 * 24);
-		Assertions.assertThat(combination.combine(Arrays.asList(12D, 24D))).isEqualTo(12D * 24D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 24))).isEqualTo(0L + 12 * 24);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12D, 24D))).isEqualTo(12D * 24D);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(null, 234D))).isNull();
-		Assertions.assertThat(combination.combine(Arrays.asList(123, null))).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 234D))).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123, null))).isNull();
 
 		// BEWARE Should product returns NaN on such case?
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList(123, "Arg")))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(123, "Arg")))
 				.isInstanceOf(IllegalArgumentException.class);
-		Assertions.assertThat(combination.combine(Arrays.asList(null, "Arg"))).isNull();
-		Assertions.assertThat(combination.combine(Arrays.asList("Arg", null))).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList("Arg", null))).isNull();
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 0))).isEqualTo(0L);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 0))).isEqualTo(0L);
 	}
 
 	@Test
 	public void testSimpleCases_nullOperandIsNotNull() {
 		ProductCombination combination = new ProductCombination(Map.of("nullOperandIsNull", false));
 
-		Assertions.assertThat(combination.combine(Arrays.asList())).isNull();
-		Assertions.assertThat(combination.combine(Arrays.asList(123))).isEqualTo(123);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 24))).isEqualTo(0L + 12 * 24);
-		Assertions.assertThat(combination.combine(Arrays.asList(12D, 24D))).isEqualTo(12D * 24D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 24))).isEqualTo(0L + 12 * 24);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12D, 24D))).isEqualTo(12D * 24D);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(null, 234D))).isEqualTo(234.D);
-		Assertions.assertThat(combination.combine(Arrays.asList(123, null))).isEqualTo(123);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 234D))).isEqualTo(234.D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123, null))).isEqualTo(123);
 
 		// BEWARE Should product returns NaN on such case?
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList(123, "Arg")))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(123, "Arg")))
 				.isInstanceOf(IllegalArgumentException.class);
-		Assertions.assertThat(combination.combine(Arrays.asList(null, "Arg"))).isEqualTo("Arg");
-		Assertions.assertThat(combination.combine(Arrays.asList("Arg", null))).isEqualTo("Arg");
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isEqualTo("Arg");
+		Assertions.assertThat(combination.combine(slice, Arrays.asList("Arg", null))).isEqualTo("Arg");
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 0))).isEqualTo(0L);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 0))).isEqualTo(0L);
 	}
 }

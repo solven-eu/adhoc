@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.app.it;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,7 +40,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
@@ -92,9 +92,8 @@ public class TestAdvancedDataset {
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
-			ICubeWrapper cube = schema.getNameToCube().get("ban");
 			AdhocQuery query = AdhocQuery.builder().build();
-			ITabularView view = cube.execute(query);
+			ITabularView view = schema.execute("ban", query, Set.of());
 
 			nbViews.incrementAndGet();
 			lastView.set(view);
@@ -117,14 +116,12 @@ public class TestAdvancedDataset {
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
-			ICubeWrapper cube = schema.getNameToCube().get("ban");
-
 			// PivotableCubeMetadata cube2 = cubesRegistry.getCube(PivotableCubeId.of(endpoint.getId(),
 			// cube.getName()));
 
 			nbViews.incrementAndGet();
 
-			Assertions.assertThat(cube.getColumns()).hasSize(21);
+			Assertions.assertThat(schema.getCubeColumns("ban")).hasSize(21);
 		});
 
 		Assertions.assertThat(nbViews.get()).isGreaterThan(0);

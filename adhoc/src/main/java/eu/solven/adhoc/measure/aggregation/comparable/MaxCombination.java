@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 import java.util.List;
 import java.util.Objects;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 
@@ -37,7 +38,7 @@ public class MaxCombination implements ICombination {
 	final IAggregation agg = MaxAggregation.builder().build();
 
 	@Override
-	public Object combine(List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		return underlyingValues.stream().filter(Objects::nonNull).<Object>map(o -> o).reduce(null, agg::aggregate);
 	}
 

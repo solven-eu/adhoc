@@ -81,7 +81,8 @@ public class PivotableEndpointsHandler {
 	}
 
 	public Mono<ServerResponse> endpointSchema(ServerRequest request) {
-		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request);
+		// If no cube or table is specific, returns everything
+		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request, true);
 		return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(schemas));
 	}
 
@@ -91,7 +92,7 @@ public class PivotableEndpointsHandler {
 	 * @return a {@link List} of {@link TargetedEndpointSchemaMetadata}, filtered the optionally filtered table and
 	 *         cube.
 	 */
-	protected List<TargetedEndpointSchemaMetadata> matchingSchema(ServerRequest request) {
+	protected List<TargetedEndpointSchemaMetadata> matchingSchema(ServerRequest request, boolean allIfEmpty) {
 		List<PivotableAdhocEndpointMetadata> endpoints = matchingEndpoints(request);
 
 		IAdhocSchema.AdhocSchemaQuery.AdhocSchemaQueryBuilder queryBuilder = IAdhocSchema.AdhocSchemaQuery.builder();
@@ -106,7 +107,7 @@ public class PivotableEndpointsHandler {
 
 			EndpointSchemaMetadata schemaMetadata;
 			try {
-				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query);
+				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmpty);
 			} catch (Exception e) {
 				if (AdhocUnsafe.failFast) {
 					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
@@ -153,7 +154,8 @@ public class PivotableEndpointsHandler {
 			throw new NotYetImplementedException("Need to explicit a table or acube");
 		}
 
-		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request);
+		// Request columns only for expressed cube and table
+		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request, false);
 
 		List<ColumnMetadata> matchingColumns = schemas.stream().flatMap(endpointSchema -> {
 			EndpointSchemaMetadata schema = endpointSchema.getSchema();

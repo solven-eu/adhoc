@@ -44,16 +44,15 @@ public class AdhocCalciteSchema extends AbstractSchema {
 
 	@Override
 	public boolean isMutable() {
-		// Adhoc enables only queries to its own underlying database
-		// Mutability is necessary to enable views
+		// Adhoc enables read-only queries to its own underlying database
+		// Mutability is necessary to enable Calcite views
 		return true;
 	}
 
 	@Override
 	protected Map<String, Table> getTableMap() {
-		return schema.getNameToCube()
-				.entrySet()
+		return schema.getCubes()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> new AdhocCalciteTable(e.getValue(), queryOptions)));
+				.collect(Collectors.toMap(c -> c.getName(), c -> new AdhocCalciteTable(c, queryOptions)));
 	}
 }

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.eventbus.Subscribe;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -83,7 +84,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 		}
 
 		@Override
-		public Object combine(List<?> underlyingValues) {
+		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 			runnable.run();
 
 			return null;

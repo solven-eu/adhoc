@@ -27,6 +27,7 @@ import java.util.Map;
 
 import com.google.common.base.Functions;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -49,7 +50,7 @@ public class ProductCombination implements ICombination {
 	}
 
 	@Override
-	public Object combine(List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		if (nullOperandIsNull && underlyingValues.contains(null)) {
 			return null;
 		}

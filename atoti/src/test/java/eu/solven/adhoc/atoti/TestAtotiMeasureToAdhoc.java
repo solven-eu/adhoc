@@ -55,9 +55,9 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-public class TestActivePivotMeasureToAdhoc {
+public class TestAtotiMeasureToAdhoc {
 
-	final ActivePivotMeasureToAdhoc apMeasuresToAdhoc = ActivePivotMeasureToAdhoc.builder().build();
+	final AtotiMeasureToAdhoc apMeasuresToAdhoc = AtotiMeasureToAdhoc.builder().build();
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -71,26 +71,26 @@ public class TestActivePivotMeasureToAdhoc {
 	@Test
 	public void testSplitProperties() {
 		Properties properties = new Properties();
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).isEmpty();
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).isEmpty();
 
 		properties.setProperty("key", "");
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).isEmpty();
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).isEmpty();
 
 		properties.setProperty("key", "a");
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a");
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a");
 
 		properties.setProperty("key", "a,b");
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
 
 		properties.setProperty("key", "a,,b");
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
 
 		properties.setProperty("key", " a\t,\rb  ");
-		Assertions.assertThat(ActivePivotMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
+		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
 	}
 
 	@Test
-	public void testNativeimplicit() {
+	public void testNativeImplicit() {
 		IActivePivotInstanceDescription cubeDescription =
 				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("someL").build();
 
@@ -330,7 +330,6 @@ public class TestActivePivotMeasureToAdhoc {
 	public void testCustomConditions() {
 		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
 
-		Assertions.assertThat(converter.getApConditionToAdhoc())
-				.isInstanceOf(CustomAtotiConditionCubeToAdhoc.class);
+		Assertions.assertThat(converter.getApConditionToAdhoc()).isInstanceOf(CustomAtotiConditionCubeToAdhoc.class);
 	}
 }

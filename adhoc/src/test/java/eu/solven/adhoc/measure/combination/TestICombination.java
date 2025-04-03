@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,39 +24,47 @@ package eu.solven.adhoc.measure.combination;
 
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
 
-/**
- * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
- * {@link eu.solven.adhoc.measure.model.IMeasure}, it writes into current
- * {@link eu.solven.adhoc.data.row.slice.IAdhocSlice}.
- * 
- * At least one of the `.combine` methods has to be overridden.
- *
- * @author Benoit Lacelle
- */
-public interface ICombination {
+public class TestICombination {
+	@Test
+	public void testImplementSliceAndList() {
+		ICombination sliceAndList = new ICombination() {
+			@Override
+			public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+				// Return a copy
+				return underlyingValues.stream().toList();
+			}
+		};
 
-	// TODO This shall become the optimal API, not to require to provide Objects
-	default IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		return vc -> vc.onObject(combine(slice, slicedRecord.asList()));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+		ISlicedRecord record = SlicedRecordFromArray.builder().measure("inputA").build();
+
+		Object output = IValueProvider.getValue(sliceAndList.combine(slice, record));
+		Assertions.assertThat(output).isEqualTo(List.of("inputA"));
 	}
 
-	/**
-	 * @param slice
-	 * @param underlyingValues
-	 *            the underlying measures values for current slice.
-	 * @return the combined result at given given coordinate.
-	 */
-	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		IValueProvider valueProvider =
-				combine(slice, SlicedRecordFromArray.builder().measures(underlyingValues).build());
+	@Test
+	public void testImplementList() {
+		ICombination sliceAndList = new ICombination() {
+			@Override
+			public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+				// Return a copy
+				return underlyingValues.stream().toList();
+			}
+		};
 
-		return IValueProvider.getValue(valueProvider);
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+		ISlicedRecord record = SlicedRecordFromArray.builder().measure("inputA").build();
+
+		Object output = IValueProvider.getValue(sliceAndList.combine(slice, record));
+		Assertions.assertThat(output).isEqualTo(List.of("inputA"));
 	}
-
 }

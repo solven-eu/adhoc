@@ -22,8 +22,10 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,8 +42,9 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
-import lombok.Value;
+import lombok.NonNull;
 
 /**
  * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and {@link IAdhocQuery}.
@@ -49,10 +52,11 @@ import lombok.Value;
  *
  * @author Benoit Lacelle
  */
-@Value
+// @Value
 @Builder
 public class AdhocSchema implements IAdhocSchema {
 	@Builder.Default
+	@NonNull
 	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 
 	final Map<String, ITableWrapper> nameToTable = new ConcurrentHashMap<>();
@@ -75,51 +79,49 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	@Override
-	public EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query) {
+	public EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty) {
 		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
-		nameToCube.entrySet()
-				.stream()
-				.filter(e -> query.getCube().isEmpty() || query.getCube().get().equals(e.getKey()))
-				.forEach(e -> {
-					String name = e.getKey();
-					ICubeWrapper cube = e.getValue();
+		nameToCube.entrySet().stream().filter(e -> isRequested(query.getCube(), allIfEmpty, e)).forEach(e -> {
+			String name = e.getKey();
+			ICubeWrapper cube = e.getValue();
 
-					CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-					// `getColumns` is an expensive operations, as it analyzes the underlying table
-					// TODO Should we cache?
-					cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
-					cubeSchema.measures(cube.getNameToMeasure());
+			// `getColumns` is an expensive operations, as it analyzes the underlying table
+			// TODO Should we cache?
+			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
+			cubeSchema.measures(cube.getNameToMeasure());
 
-					metadata.cube(name, cubeSchema.build());
-				});
+			metadata.cube(name, cubeSchema.build());
+		});
 
-		nameToForest.entrySet()
-				.stream()
-				.filter(e -> query.getForest().isEmpty() || query.getForest().get().equals(e.getKey()))
-				.forEach(e -> {
-					String name = e.getKey();
-					IMeasureForest forest = e.getValue();
-					List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
-					metadata.measureBag(name, measures);
-				});
+		nameToForest.entrySet().stream().filter(e -> isRequested(query.getForest(), allIfEmpty, e)).forEach(e -> {
+			String name = e.getKey();
+			IMeasureForest forest = e.getValue();
+			List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
+			metadata.measureBag(name, measures);
+		});
 
-		nameToTable.entrySet()
-				.stream()
-				.filter(e -> query.getTable().isEmpty() || query.getTable().get().equals(e.getKey()))
-				.forEach(e -> {
-					String name = e.getKey();
-					ITableWrapper table = e.getValue();
-					// TODO Should we cache?
-					metadata.table(name, ColumnarMetadata.from(table.getColumns()));
-				});
+		nameToTable.entrySet().stream().filter(e -> isRequested(query.getTable(), allIfEmpty, e)).forEach(e -> {
+			String name = e.getKey();
+			ITableWrapper table = e.getValue();
+			// TODO Should we cache?
+			metadata.table(name, ColumnarMetadata.from(table.getColumns()));
+		});
 
 		// nameToQuery.forEach((name, query) -> {
 		// metadata.query(name, AdhocQuery.edit(query).build());
 		// });
 
 		return metadata.build();
+	}
+
+	protected boolean isRequested(Optional<String> optRequested,
+			boolean allIfEmpty,
+			Map.Entry<String, ? extends IHasName> e) {
+		return allIfEmpty && optRequested.isEmpty()
+				|| optRequested.isPresent() && optRequested.get().equals(e.getKey());
 	}
 
 	@Override
@@ -133,11 +135,15 @@ public class AdhocSchema implements IAdhocSchema {
 		return cubeWrapper.execute(query, options);
 	}
 
+	public void registerCube(ICubeWrapper cube) {
+		nameToCube.put(cube.getName(), cube);
+	}
+
 	public void registerTable(ITableWrapper table) {
 		nameToTable.put(table.getName(), table);
 	}
 
-	public void registerMeasureBag(IMeasureForest measureBag) {
+	public void registerForest(IMeasureForest measureBag) {
 		nameToForest.put(measureBag.getName(), measureBag);
 	}
 
@@ -161,6 +167,14 @@ public class AdhocSchema implements IAdhocSchema {
 			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
 
 		}
+	}
+
+	public Map<String, Class<?>> getCubeColumns(String cube) {
+		return nameToCube.get(cube).getColumns();
+	}
+
+	public Collection<ICubeWrapper> getCubes() {
+		return nameToCube.values();
 	}
 
 	// public void registerQuery(String name, IAdhocQuery query) {

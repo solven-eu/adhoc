@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.atoti.ActivePivotMeasureToAdhoc;
+import eu.solven.adhoc.atoti.AtotiMeasureToAdhoc;
 import lombok.Builder;
 
 /**
- * Demonstrate how to extends {@link ActivePivotMeasureToAdhoc} given it has a {@link Builder}
+ * Demonstrate how to extends {@link AtotiMeasureToAdhoc} given it has a {@link Builder}
  */
-public class CustomActivePivotMeasureToAdhoc extends ActivePivotMeasureToAdhoc {
+public class CustomActivePivotMeasureToAdhoc extends AtotiMeasureToAdhoc {
 	@Builder(builderMethodName = "customBuilder")
 	public CustomActivePivotMeasureToAdhoc() {
 		super(new CustomAtotiConditionCubeToAdhoc());

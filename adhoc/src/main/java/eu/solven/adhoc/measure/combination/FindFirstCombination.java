@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 import java.util.Objects;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
+
 /**
  * Return the first underlyingValue which is not null. Else null.
  */
@@ -33,7 +35,7 @@ public class FindFirstCombination implements ICombination {
 	public static final String KEY = "FIND_FIRST";
 
 	@Override
-	public Object combine(List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		return underlyingValues.stream().filter(Objects::nonNull).findFirst().orElse(null);
 	}
 

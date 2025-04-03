@@ -74,10 +74,14 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 		AdhocSchema schema = AdhocSchema.builder().build();
 
 		nameToTable.forEach((tableName, table) -> {
-			schema.getNameToTable().put(tableName, table);
+			if (!table.getName().equals(tableName)) {
+				throw new IllegalStateException(
+						"Inconsistent tableName: %s vs %s".formatted(tableName, table.getName()));
+			}
+			schema.registerTable(table);
 
-			CubeWrapper aqw = CubeWrapper.builder().name(name).engine(aqe).forest(amb).table(table).build();
-			schema.getNameToCube().put(tableName, aqw);
+			CubeWrapper cube = CubeWrapper.builder().name(tableName).engine(aqe).forest(amb).table(table).build();
+			schema.registerCube(cube);
 		});
 
 		Set<IQueryOption> queryOptions = Stream.of(StandardQueryOptions.values())

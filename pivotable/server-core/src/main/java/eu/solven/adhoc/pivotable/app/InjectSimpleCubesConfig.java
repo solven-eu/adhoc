@@ -100,7 +100,7 @@ public class InjectSimpleCubesConfig {
 						.build())
 				.build());
 
-		schema.registerMeasureBag(MeasureForest.fromMeasures("simple", measures));
+		schema.registerForest(MeasureForest.fromMeasures("simple", measures));
 
 		schema.registerCube("simple", "simple", "simple");
 	}

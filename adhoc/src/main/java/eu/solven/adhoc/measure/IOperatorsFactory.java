@@ -67,7 +67,7 @@ public interface IOperatorsFactory {
 
 	ICombination makeCombination(String key, Map<String, ?> options);
 
-	IDecomposition makeDecomposition(String key, Map<String, ?> decompositionOptions);
+	IDecomposition makeDecomposition(String key, Map<String, ?> options);
 
-	IFilterEditor makeEditor(String key, Map<String, ?> editorOptions);
+	IFilterEditor makeEditor(String key, Map<String, ?> options);
 }

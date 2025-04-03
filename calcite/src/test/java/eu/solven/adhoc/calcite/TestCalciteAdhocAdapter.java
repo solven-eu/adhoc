@@ -75,29 +75,33 @@ public class TestCalciteAdhocAdapter {
 	public final MeasureForest amb = MeasureForest.builder().name(this.getClass().getSimpleName()).build();
 	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
-	public final InMemoryTable rows = InMemoryTable.builder().build();
-	public final InMemoryTable zips = InMemoryTable.builder().build();
+	public final InMemoryTable rows = InMemoryTable.builder().name("rows").build();
+	public final InMemoryTable zips = InMemoryTable.builder().name("zips").build();
 
 	@BeforeEach
 	public void wireEvents() {
 		eventBus.register(toSlf4j);
 
-		rows.add(Map.of("k1", 123, "a", "a1"));
-		AdhocCalciteSchemaFactory.nameToTable.put("adhoc_table", rows);
+		{
+			rows.add(Map.of("k1", 123, "a", "a1"));
+			AdhocCalciteSchemaFactory.nameToTable.put(rows.getName(), rows);
+		}
 
-		String resourcePath = "zips-mini.json";
-		String zipsString = PepperResourceHelper.loadAsString(resourcePath, StandardCharsets.UTF_8);
+		{
+			String resourcePath = "zips-mini.json";
+			String zipsString = PepperResourceHelper.loadAsString(resourcePath, StandardCharsets.UTF_8);
 
-		ObjectMapper om = new ObjectMapper();
-		Stream.of(zipsString.split("[\r\n]+")).filter(s -> !s.startsWith("//")).forEach(row -> {
-			try {
-				Map<String, ?> asMap = om.readValue(row, Map.class);
-				zips.add(asMap);
-			} catch (JsonProcessingException e) {
-				throw new IllegalStateException("Issue processing %s from %s".formatted(row, "zips-mini.json"), e);
-			}
-		});
-		AdhocCalciteSchemaFactory.nameToTable.put("zips", zips);
+			ObjectMapper om = new ObjectMapper();
+			Stream.of(zipsString.split("[\r\n]+")).filter(s -> !s.startsWith("//")).forEach(row -> {
+				try {
+					Map<String, ?> asMap = om.readValue(row, Map.class);
+					zips.add(asMap);
+				} catch (JsonProcessingException e) {
+					throw new IllegalStateException("Issue processing %s from %s".formatted(row, "zips-mini.json"), e);
+				}
+			});
+			AdhocCalciteSchemaFactory.nameToTable.put(zips.getName(), zips);
+		}
 	}
 
 	private CalciteAssert.AssertThat assertModel(Resource resource) {
@@ -116,7 +120,7 @@ public class TestCalciteAdhocAdapter {
 
 	@Test
 	void testCountGroupByEmpty() {
-		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"adhoc_table\"")
+		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"rows\"")
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
 						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQuery.builder().build())
@@ -125,20 +129,20 @@ public class TestCalciteAdhocAdapter {
 				.explainContains("""
 						PLAN=MongoToEnumerableConverter
 						  AdhocCalciteAggregate(group=[{}], EXPR$0=[COUNT()])
-						    AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])
+						    AdhocCalciteTableScan(table=[[adhoc_schema, rows]])
 						""")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
 	@Test
 	void testSumK1GroupBya() {
-		assertModel(MODEL).query("select sum(k1) from \"adhoc_schema\".\"adhoc_table\" GROUP BY a")
+		assertModel(MODEL).query("select sum(k1) from \"adhoc_schema\".\"rows\" GROUP BY a")
 				.returns(String.format(Locale.ROOT, "EXPR$0=%d\n", 123))
 				.explainContains("""
 						PLAN=EnumerableCalc(expr#0..1=[{inputs}], EXPR$0=[$t1])
 						  MongoToEnumerableConverter
 						    AdhocCalciteAggregate(group=[{0}], EXPR$0=[$SUM0($1)])
-						      AdhocCalciteTableScan(table=[[adhoc_schema, adhoc_table]])
+						      AdhocCalciteTableScan(table=[[adhoc_schema, rows]])
 						""")
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}

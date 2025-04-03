@@ -66,7 +66,7 @@ public class AdhocTranscodingHelper {
 		});
 
 		if (transcoded.size() > underlyingMap.size()) {
-			log.info("Sub-optimal capacity");
+			log.info("Sub-optimal capacity ({} < {})", underlyingMap.size(), transcoded.size());
 		}
 
 		return transcoded;

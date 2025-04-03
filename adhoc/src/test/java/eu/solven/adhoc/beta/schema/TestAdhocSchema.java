@@ -20,32 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.beta.schema;
 
-import java.util.Arrays;
+import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
+import eu.solven.adhoc.table.InMemoryTable;
 
-public class TestFindFirstCombination {
-	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
-
-	FindFirstCombination combination = new FindFirstCombination();
-
+public class TestAdhocSchema {
 	@Test
-	public void testEmpty() {
-		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(new Object[] { null }))).isNull();
+	public void testColumns() {
+		AdhocSchema schema = AdhocSchema.builder().build();
+
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		schema.registerTable(table);
+
+		table.add(Map.of("k", "v"));
+
+		EndpointSchemaMetadata schemaAll = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+		Assertions.assertThat(schemaAll.getTables()).containsKey("simpleTable");
 	}
 
 	@Test
-	public void testNotEmpty() {
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(123, 234))).isEqualTo(123);
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 123))).isEqualTo(123);
+	public void testColumns_notAll() {
+		AdhocSchema schema = AdhocSchema.builder().build();
+
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		schema.registerTable(table);
+
+		table.add(Map.of("k", "v"));
+
+		EndpointSchemaMetadata schemaAll = schema.getMetadata(AdhocSchemaQuery.builder().build(), false);
+		Assertions.assertThat(schemaAll.getTables()).isEmpty();
 	}
 }

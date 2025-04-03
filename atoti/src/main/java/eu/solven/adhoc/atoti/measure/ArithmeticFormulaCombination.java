@@ -89,7 +89,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 				pendingOperands.clear();
 
 				ICombination combination = getCombination(s);
-				operandToAppend = combination.combine(operands);
+				operandToAppend = combination.combine(slice, operands);
 			} else {
 				log.warn("Not-managed: {}", s);
 				operandToAppend = s;

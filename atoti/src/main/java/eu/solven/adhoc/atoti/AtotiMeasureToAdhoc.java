@@ -80,7 +80,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
-public class ActivePivotMeasureToAdhoc {
+public class AtotiMeasureToAdhoc {
 	@Builder.Default
 	@Getter
 	final AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
@@ -212,6 +212,8 @@ public class ActivePivotMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
+		transferProperties(measure, combinatorBuilder::tag);
+
 		if (underlyingNames.isEmpty()) {
 			// When there is no explicit underlying measure, Atoti relies on contributors.COUNT
 			combinatorBuilder.underlying(getDefaultMeasure());
@@ -237,6 +239,7 @@ public class ActivePivotMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
 		Filtrator.FiltratorBuilder filtratorBuilder = Filtrator.builder().name(measure.getName());
+		transferProperties(measure, filtratorBuilder::tag);
 		filtratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		IAdhocFilter filter = makeFilter(measure, properties);
@@ -252,7 +255,7 @@ public class ActivePivotMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
 		Shiftor.ShiftorBuilder shiftorBuilder = Shiftor.builder().name(measure.getName());
-
+		transferProperties(measure, shiftorBuilder::tag);
 		shiftorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		shiftorBuilder.editorKey(measure.getPluginKey());
@@ -285,6 +288,7 @@ public class ActivePivotMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(properties);
 
 		Unfiltrator.UnfiltratorBuilder unfiltratorBuilder = Unfiltrator.builder().name(measure.getName());
+		transferProperties(measure, unfiltratorBuilder::tag);
 
 		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
@@ -339,6 +343,8 @@ public class ActivePivotMeasureToAdhoc {
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregation.KEY));
 
+		transferProperties(measure, bucketorBuilder::tag);
+
 		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
 		properties.stringPropertyNames()
 				.stream()
@@ -350,8 +356,6 @@ public class ActivePivotMeasureToAdhoc {
 				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
 
 		bucketorBuilder.combinationOptions(combinatorOptions);
-
-		transferProperties(measure, bucketorBuilder::tag);
 
 		return List.of(bucketorBuilder.build());
 	}
@@ -376,6 +380,10 @@ public class ActivePivotMeasureToAdhoc {
 		}
 		if (!Strings.isNullOrEmpty(apMeasure.getGroup())) {
 			tagConsumer.accept(apMeasure.getGroup());
+		}
+		String folder = apMeasure.getFolder();
+		if (!Strings.isNullOrEmpty(folder)) {
+			tagConsumer.accept("folder=" + folder);
 		}
 	}
 }

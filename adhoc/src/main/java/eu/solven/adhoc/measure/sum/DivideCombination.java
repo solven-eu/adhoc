@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import java.util.List;
 import java.util.Map;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -50,7 +51,7 @@ public class DivideCombination implements ICombination {
 	}
 
 	@Override
-	public Object combine(List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		if (underlyingValues.size() != 2) {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyingValues.size()));
 		}

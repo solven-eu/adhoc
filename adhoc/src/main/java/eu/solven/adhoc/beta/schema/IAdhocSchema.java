@@ -63,9 +63,13 @@ public interface IAdhocSchema {
 
 	/**
 	 * 
+	 * @param query
+	 *            possibly filtering the relevant cube and table.
+	 * @param allIfEmpty
+	 *            if true, return all cubes if no cub is filtered. Same for tables.
 	 * @return the metadata of this instance.
 	 */
-	EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query);
+	EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty);
 
 	/**
 	 * 

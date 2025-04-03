@@ -27,51 +27,55 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 
 public class TestDivideCombination {
+	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
 	@Test
 	public void testSimpleCases_default() {
 		DivideCombination combination = new DivideCombination();
 
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList()))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList()))
 				.isInstanceOf(IllegalArgumentException.class);
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList(123)))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(123)))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 24))).isEqualTo(0.5D);
-		Assertions.assertThat(combination.combine(Arrays.asList(12D, 24D))).isEqualTo(0.5D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 24))).isEqualTo(0.5D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12D, 24D))).isEqualTo(0.5D);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(null, 234D))).isEqualTo(null);
-		Assertions.assertThat(combination.combine(Arrays.asList(132, null))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 234D))).isEqualTo(null);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, null))).isEqualTo(Double.NaN);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
-		Assertions.assertThat(combination.combine(Arrays.asList(null, "Arg"))).isEqualTo(Double.NaN);
-		Assertions.assertThat(combination.combine(Arrays.asList("Arg", null))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList("Arg", null))).isEqualTo(Double.NaN);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 0))).isEqualTo(Double.POSITIVE_INFINITY);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 0))).isEqualTo(Double.POSITIVE_INFINITY);
 	}
 
 	@Test
 	public void testSimpleCases_nullNumeratorIsZero() {
 		DivideCombination combination = new DivideCombination(Map.of("nullNumeratorIsZero", true));
 
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList()))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList()))
 				.isInstanceOf(IllegalArgumentException.class);
-		Assertions.assertThatThrownBy(() -> combination.combine(Arrays.asList(123)))
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(123)))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 24))).isEqualTo(0.5D);
-		Assertions.assertThat(combination.combine(Arrays.asList(12D, 24D))).isEqualTo(0.5D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 24))).isEqualTo(0.5D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12D, 24D))).isEqualTo(0.5D);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(null, 234D))).isEqualTo(0.0D);
-		Assertions.assertThat(combination.combine(Arrays.asList(132, null))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 234D))).isEqualTo(0.0D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, null))).isEqualTo(Double.NaN);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
-		Assertions.assertThat(combination.combine(Arrays.asList(null, "Arg"))).isEqualTo(Double.NaN);
-		Assertions.assertThat(combination.combine(Arrays.asList("Arg", null))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isEqualTo(Double.NaN);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList("Arg", null))).isEqualTo(Double.NaN);
 
-		Assertions.assertThat(combination.combine(Arrays.asList(12, 0))).isEqualTo(Double.POSITIVE_INFINITY);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 0))).isEqualTo(Double.POSITIVE_INFINITY);
 	}
 }

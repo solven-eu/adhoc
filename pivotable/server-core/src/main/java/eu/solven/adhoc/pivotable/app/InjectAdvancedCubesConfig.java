@@ -81,7 +81,7 @@ public class InjectAdvancedCubesConfig {
 
 		measures.add(Aggregator.countAsterisk());
 
-		schema.registerMeasureBag(MeasureForest.fromMeasures("ban", measures));
+		schema.registerForest(MeasureForest.fromMeasures("ban", measures));
 
 		schema.registerCube("ban", "ban", "ban");
 	}

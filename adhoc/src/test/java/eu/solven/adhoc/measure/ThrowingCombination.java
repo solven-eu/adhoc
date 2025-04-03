@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure;
 
 import java.util.List;
 
+import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
@@ -31,7 +32,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
  */
 public class ThrowingCombination implements ICombination {
 	@Override
-	public Object combine(List<?> underlyingValues) {
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		throw new IllegalStateException("Throwing");
 	}
 }
