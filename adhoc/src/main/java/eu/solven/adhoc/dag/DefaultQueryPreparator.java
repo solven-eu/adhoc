@@ -22,12 +22,9 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Set;
-
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -49,15 +46,13 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 	public ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
 			IAdhocColumnsManager columnsManager,
-			IAdhocQuery rawQuery,
-			Set<? extends IQueryOption> options) {
+			IAdhocQuery rawQuery) {
 		AdhocQuery query = combineWithImplicitFilter(rawQuery);
 		AdhocQueryId queryId = AdhocQueryId.from(query);
 
 		return ExecutingQueryContext.builder()
 				.query(query)
 				.queryId(queryId)
-				.options(options)
 				.forest(forest)
 				.table(table)
 				.columnsManager(columnsManager)

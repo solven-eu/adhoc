@@ -23,7 +23,6 @@
 package eu.solven.adhoc.pivotable.app.it;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -93,7 +92,7 @@ public class TestAdvancedDataset {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
 			AdhocQuery query = AdhocQuery.builder().build();
-			ITabularView view = schema.execute("ban", query, Set.of());
+			ITabularView view = schema.execute("ban", query);
 
 			nbViews.incrementAndGet();
 			lastView.set(view);

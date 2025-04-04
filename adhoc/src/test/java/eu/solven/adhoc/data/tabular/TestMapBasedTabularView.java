@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -46,8 +47,12 @@ public class TestMapBasedTabularView {
 				.hasRootCauseInstanceOf(InvalidDefinitionException.class);
 	}
 
+	// To be removed by `PepperJacksonTestHelper` in Pepper 5.2
 	public static <T> String verifyJackson(Class<T> clazz, T object) throws JsonProcessingException {
 		ObjectMapper om = new ObjectMapper();
+
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		om.enable(SerializationFeature.INDENT_OUTPUT);
 
 		String asString = om.writeValueAsString(object);
 

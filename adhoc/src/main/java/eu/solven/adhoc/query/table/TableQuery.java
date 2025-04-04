@@ -31,8 +31,11 @@ import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
@@ -54,7 +57,8 @@ import lombok.Value;
 @Value
 @AllArgsConstructor
 @Builder
-public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public class TableQuery
+		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
@@ -74,28 +78,33 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExpl
 	@Default
 	AdhocTopClause topClause = AdhocTopClause.NO_LIMIT;
 
-	@Default
-	boolean debug = false;
-	@Default
-	boolean explain = false;
+	// @Default
+	// boolean debug = false;
+	// @Default
+	// boolean explain = false;
+
+	@NonNull
+	@Singular
+	ImmutableSet<IQueryOption> options;
 
 	public static TableQueryBuilder edit(TableQuery tableQuery) {
-		return edit((IWhereGroupByQuery) tableQuery).aggregators(tableQuery.getAggregators())
-				.debug(tableQuery.isDebug())
-				.explain(tableQuery.isExplain());
+		return edit((IWhereGroupByQuery) tableQuery).aggregators(tableQuery.getAggregators());
 	}
 
-	public static TableQueryBuilder edit(IWhereGroupByQuery dq) {
-		TableQueryBuilder builder = TableQuery.builder().filter(dq.getFilter()).groupBy(dq.getGroupBy());
+	public static TableQueryBuilder edit(IWhereGroupByQuery query) {
+		TableQueryBuilder builder = TableQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
 
-		if (dq instanceof IHasCustomMarker hasCustomMarker) {
+		if (query instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}
-		if (dq instanceof IIsDebugable isDebugable) {
-			builder.debug(isDebugable.isDebug());
+		if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+			builder.option(StandardQueryOptions.EXPLAIN);
 		}
-		if (dq instanceof IIsExplainable isExplainable) {
-			builder.explain(isExplainable.isExplain());
+		if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+			builder.option(StandardQueryOptions.DEBUG);
+		}
+		if (query instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
 		}
 
 		return builder;
@@ -120,5 +129,17 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExpl
 			columns.add(column.getName());
 		});
 		return AggregatedRecordFields.builder().aggregates(aggregatorNames).columns(columns).build();
+	}
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	public boolean isDebug() {
+		return options.contains(StandardQueryOptions.DEBUG);
+	}
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	public boolean isExplain() {
+		return options.contains(StandardQueryOptions.EXPLAIN);
 	}
 }

@@ -39,6 +39,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,9 +102,13 @@ public class CombinatorQueryStep extends ATransformator {
 
 			valueProvider.acceptConsumer(output.putSlice(slice.getSlice().getAdhocSliceAsMap()));
 		} catch (RuntimeException e) {
-			throw new IllegalArgumentException(
-					"Issue evaluating %s over %s in %s".formatted(combinator.getName(), slicedRecord, slice),
-					e);
+			if (step.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+				output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(e);
+			} else {
+				throw new IllegalArgumentException(
+						"Issue evaluating %s over %s in %s".formatted(combinator.getName(), slicedRecord, slice),
+						e);
+			}
 		}
 	}
 

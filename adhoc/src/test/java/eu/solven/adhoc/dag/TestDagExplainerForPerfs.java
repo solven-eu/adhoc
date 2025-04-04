@@ -20,39 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.dag;
 
-import java.util.Map;
+import java.util.List;
 
-import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 
-public class TestListBasedTabularView {
+public class TestDagExplainerForPerfs {
+	public final EventBus eventBus = new EventBus();
+	List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
+	@Disabled("TODO")
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		ListBasedTabularView view = ListBasedTabularView.builder().build();
+	public void testPerfLog() {
+		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
-		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
-
-		String asString = TestMapBasedTabularView.verifyJackson(ListBasedTabularView.class, view);
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "coordinates" : [ {
-				    "c1" : "v1"
-				  } ],
-				  "values" : [ {
-				    "m" : 123
-				  } ]
-				}""");
-
-		Assertions.assertThat(view.toString()).isEqualTo("""
-				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
+		dagExplainer.printStepAndUnderlyings(null, null, null, null, false);
 	}
-
 }

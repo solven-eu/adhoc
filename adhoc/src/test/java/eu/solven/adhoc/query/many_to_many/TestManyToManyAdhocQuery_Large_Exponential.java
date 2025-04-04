@@ -251,8 +251,8 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void testGrandTotal_filterSmallGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
-				AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).debug(false).build());
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -324,8 +324,8 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void test_NoGroupBy_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
-				AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).debug(false).build());
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

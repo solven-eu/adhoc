@@ -26,8 +26,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.ClassUtils;
 
-import eu.solven.adhoc.resource.MeasureForests;
 import eu.solven.adhoc.resource.MeasureForestFromResource;
+import eu.solven.adhoc.resource.MeasureForests;
 
 public class TestMeasureSetFromResourceWhenYamlIsMissing {
 	// This is especially useful to ensure our code manages properly when YAMLFactory is not Available

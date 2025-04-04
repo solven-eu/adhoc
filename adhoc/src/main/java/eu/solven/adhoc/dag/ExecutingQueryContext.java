@@ -41,11 +41,11 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
+public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHasQueryOptions {
 	// The query requested to the queryEngine
 	@NonNull
 	IAdhocQuery query;
@@ -78,9 +78,9 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 	@Default
 	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
 
-	@NonNull
-	@Singular
-	Set<? extends IQueryOption> options;
+	// @NonNull
+	// @Singular
+	// Set<? extends IQueryOption> options;
 
 	AtomicReference<OffsetDateTime> cancellationDate = new AtomicReference<>();
 
@@ -89,7 +89,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 			throw new IllegalArgumentException("Null input");
 		}
 
-		if (options.contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
+		if (query.getOptions().contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
 			if (measure instanceof ReferencedMeasure ref) {
 				return this.forest.resolveIfRefOpt(ref)
 						.orElseGet(() -> EmptyMeasure.builder().name(ref.getRef()).build());
@@ -102,12 +102,19 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 		}
 	}
 
+	@Override
 	public boolean isExplain() {
-		return getQuery().isExplain() || options.contains(StandardQueryOptions.EXPLAIN);
+		return getQuery().isExplain();
 	}
 
+	@Override
 	public boolean isDebug() {
-		return getQuery().isDebug() || options.contains(StandardQueryOptions.DEBUG);
+		return getQuery().isDebug();
+	}
+
+	@Override
+	public Set<IQueryOption> getOptions() {
+		return query.getOptions();
 	}
 
 	public void cancel() {
@@ -135,4 +142,5 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable {
 				.forest(MeasureForest.empty())
 				.build();
 	}
+
 }

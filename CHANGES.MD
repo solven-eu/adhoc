@@ -2,6 +2,11 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.4]
+### Changed
+- `IQueryOption` are now part of `IAdhocQuery`
+- `debug` and `explain` are now only togglable as `IQueryOption`
+
 ## [0.0.3]
 ### Added
 - `ForestAsGraphvizDag`: can turn an `IMeasureForest` into a Graphviz DOT file.

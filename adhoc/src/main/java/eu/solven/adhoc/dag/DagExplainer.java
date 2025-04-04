@@ -52,13 +52,17 @@ public class DagExplainer {
 	@NonNull
 	IAdhocEventBus eventBus;
 
-	public void explain(QueryStepsDag dag) {
+	public static class DagExplainerState {
 		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
 		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
+	}
+
+	public void explain(QueryStepsDag dag) {
+		DagExplainerState state = new DagExplainerState();
 
 		// For each explicit queryStep
 		dag.getQueried().stream().sorted(this.orderForExplain()).forEach(rootStep -> {
-			printStepAndUnderlyings(dag, stepToIndentation, stepToReference, rootStep, Optional.empty(), true);
+			printStepAndUnderlyings(dag, state, rootStep, Optional.empty(), true);
 		});
 	}
 
@@ -84,14 +88,13 @@ public class DagExplainer {
 	 *            true if this step is the last amongst its siblings.
 	 */
 	protected void printStepAndUnderlyings(QueryStepsDag queryStepsDag,
-			Map<AdhocQueryStep, String> stepToIndentation,
-			Map<AdhocQueryStep, Integer> stepToReference,
+			DagExplainerState dagState,
 			AdhocQueryStep step,
 			Optional<AdhocQueryStep> optParent,
 			boolean isLast) {
 		boolean isReferenced;
 		{
-			String parentIndentation = optParent.map(stepToIndentation::get).orElse("");
+			String parentIndentation = optParent.map(dagState.stepToIndentation::get).orElse("");
 
 			String indentation;
 			if (optParent.isEmpty()) {
@@ -107,9 +110,9 @@ public class DagExplainer {
 				}
 			}
 
-			stepToIndentation.putIfAbsent(step, indentation);
+			dagState.stepToIndentation.putIfAbsent(step, indentation);
 
-			String stepAsString = toString(stepToReference, step);
+			String stepAsString = toString(dagState.stepToReference, step);
 			String additionalStepInfo = additionalInfo(queryStepsDag, step, indentation);
 
 			isReferenced = stepAsString.startsWith("!");
@@ -127,8 +130,7 @@ public class DagExplainer {
 				AdhocQueryStep underlyingStep = Graphs.getOppositeVertex(dag, edge, step);
 
 				printStepAndUnderlyings(queryStepsDag,
-						stepToIndentation,
-						stepToReference,
+						dagState,
 						underlyingStep,
 						Optional.of(step),
 						i == underlyings.size() - 1);

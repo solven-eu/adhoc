@@ -36,6 +36,10 @@ public class TestCalculatedColumn {
 				CalculatedColumn.builder().name("someColumn").sql("someSQL").build());
 
 		Assertions.assertThat(asString).isEqualTo("""
-				{"type":"CalculatedColumn","name":"someColumn","sql":"someSQL"}""");
+				{
+				  "type" : "CalculatedColumn",
+				  "name" : "someColumn",
+				  "sql" : "someSQL"
+				}""");
 	}
 }

@@ -25,20 +25,25 @@ package eu.solven.adhoc.dag.step;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.ToString;
 import lombok.Value;
 
@@ -53,16 +58,18 @@ import lombok.Value;
 @Builder
 @EqualsAndHashCode(exclude = {
 		// being debug or not should not prevent 2 querySteps to be considered equals in some hashStructure
-		// This could lead to unexpected debug/notDebug
+		// This could lead to unexpected debug/notDebug. This is relevant if some measure is debugged but not the whole
+		// tree.
 		"debug",
-		// cache is typically used for performance improvments: it should not impact any hashStructure
+		// cache is typically used for performance improvements: it should not impact any hashStructure
 		"cache" })
 @ToString(exclude = {
 		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
-public class AdhocQueryStep implements IWhereGroupByQuery, IIsExplainable, IIsDebugable, IHasCustomMarker {
+public class AdhocQueryStep
+		implements IWhereGroupByQuery, IIsExplainable, IIsDebugable, IHasCustomMarker, IHasQueryOptions {
 	@NonNull
 	IMeasure measure;
 	@NonNull
@@ -70,15 +77,19 @@ public class AdhocQueryStep implements IWhereGroupByQuery, IIsExplainable, IIsDe
 	@NonNull
 	IAdhocGroupBy groupBy;
 
+	// This property is transported down to the DatabaseQuery
+	@Default
+	Object customMarker = null;
+
 	@Default
 	boolean explain = false;
 
 	@Default
 	boolean debug = false;
 
-	// This property is transported down to the DatabaseQuery
-	@Default
-	Object customMarker = null;
+	@NonNull
+	@Singular
+	ImmutableSet<IQueryOption> options;
 
 	// Used to store transient information, like slow-to-evaluate information
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
@@ -104,6 +115,9 @@ public class AdhocQueryStep implements IWhereGroupByQuery, IIsExplainable, IIsDe
 		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
+		}
+		if (step instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
 		}
 
 		return builder;

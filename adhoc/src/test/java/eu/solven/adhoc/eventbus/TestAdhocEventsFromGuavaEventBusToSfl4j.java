@@ -20,39 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.eventbus;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-
-public class TestListBasedTabularView {
-
+public class TestAdhocEventsFromGuavaEventBusToSfl4j {
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		ListBasedTabularView view = ListBasedTabularView.builder().build();
+	public void testExplainPerfAreSplitByEOL() {
+		AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
 
-		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
+		AdhocLogEvent event = AdhocLogEvent.builder()
+				.explain(true)
+				.message("someMessage\r\nsomeSubMessage")
+				.source("someSource")
+				.build();
 
-		String asString = TestMapBasedTabularView.verifyJackson(ListBasedTabularView.class, view);
+		List<String> receivedRows = new ArrayList<>();
+		BiConsumer<String, Object[]> logPrinter = (msg, values) -> {
+			// We receive SLF4J templates
+			Assertions.assertThat(msg).contains("{}").doesNotContain("%s");
 
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "coordinates" : [ {
-				    "c1" : "v1"
-				  } ],
-				  "values" : [ {
-				    "m" : 123
-				  } ]
-				}""");
+			String wholeMsg = msg.replaceAll("\\{\\}", "%s").formatted(values);
+			receivedRows.add(wholeMsg);
+		};
+		toSlf4j.printLogEvent(event, logPrinter);
 
-		Assertions.assertThat(view.toString()).isEqualTo("""
-				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
+		Assertions.assertThat(receivedRows).hasSize(2).satisfiesOnlyOnce(wholeMsg -> {
+			Assertions.assertThat(wholeMsg).contains("someMessage").doesNotContain("someSubMessage");
+		}).satisfiesOnlyOnce(wholeMsg -> {
+			Assertions.assertThat(wholeMsg).doesNotContain("someMessage").contains("someSubMessage");
+		});
 	}
-
 }

@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -39,14 +40,18 @@ import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -58,7 +63,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
+public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@NonNull
 	@Default
@@ -74,12 +79,30 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 	@Default
 	Object customMarker = null;
 
-	// If true, will print a log of debug information
-	@Default
-	boolean debug = false;
-	// If true, will print details about the query plan
-	@Default
-	boolean explain = false;
+	// // If true, will print a log of debug information
+	// @Default
+	// boolean debug = false;
+	// // If true, will print details about the query plan
+	// @Default
+	// boolean explain = false;
+
+	@NonNull
+	@Singular
+	ImmutableSet<IQueryOption> options;
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	@JsonIgnore
+	public boolean isDebug() {
+		return options.contains(StandardQueryOptions.DEBUG);
+	}
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	@JsonIgnore
+	public boolean isExplain() {
+		return options.contains(StandardQueryOptions.EXPLAIN);
+	}
 
 	@Override
 	public Optional<?> optCustomMarker() {
@@ -198,6 +221,24 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 
 			return this;
 		}
+
+		public AdhocQueryBuilder debug(boolean isDebug) {
+			if (isDebug) {
+				return this.option(StandardQueryOptions.DEBUG);
+			} else {
+				// It should be rare to remove debug
+				throw new NotYetImplementedException("TODO");
+			}
+		}
+
+		public AdhocQueryBuilder explain(boolean isExplain) {
+			if (isExplain) {
+				return this.option(StandardQueryOptions.EXPLAIN);
+			} else {
+				// It should be rare to remove explain
+				throw new NotYetImplementedException("TODO");
+			}
+		}
 	}
 
 	public static AdhocQueryBuilder edit(IWhereGroupByQuery query) {
@@ -206,14 +247,17 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker {
 		if (query instanceof IHasMeasures hasMeasures) {
 			builder.measures(hasMeasures.getMeasures());
 		}
-		if (query instanceof IIsExplainable isExplainable) {
-			builder.explain(isExplainable.isExplain());
+		if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+			builder.option(StandardQueryOptions.EXPLAIN);
 		}
-		if (query instanceof IIsDebugable isDebugable) {
-			builder.debug(isDebugable.isDebug());
+		if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+			builder.option(StandardQueryOptions.DEBUG);
 		}
 		if (query instanceof IHasCustomMarker hasCustomMarker) {
 			builder.customMarker(hasCustomMarker.getCustomMarker());
+		}
+		if (query instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
 		}
 
 		return builder;

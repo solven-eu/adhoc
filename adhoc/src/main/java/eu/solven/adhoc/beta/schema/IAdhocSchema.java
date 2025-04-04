@@ -23,12 +23,10 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.util.Optional;
-import java.util.Set;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -75,9 +73,8 @@ public interface IAdhocSchema {
 	 * 
 	 * @param cube
 	 * @param query
-	 * @param options
 	 * @return an {@link ITabularView} as computed for given query.
 	 */
-	ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options);
+	ITabularView execute(String cube, IAdhocQuery query);
 
 }

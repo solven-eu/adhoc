@@ -267,9 +267,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 								   size=2 duration=123ms
 								\\-- #1 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
 								       size=2 duration=123ms
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, debug=false, explain=true)
-														"""
-								.trim());
+								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(3);
 	}

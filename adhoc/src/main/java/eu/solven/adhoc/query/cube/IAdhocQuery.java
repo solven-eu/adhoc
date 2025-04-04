@@ -41,6 +41,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public interface IAdhocQuery
+		extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
 }

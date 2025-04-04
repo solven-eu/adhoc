@@ -105,7 +105,6 @@ public class TestTableGoogleBigQuery {
 						.sql("CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING))")
 						.build()))
 				.topClause(AdhocTopClause.builder().column(ReferencedColumn.ref("view_count")).limit(10).build())
-				.debug(true)
 				.build()).toList();
 
 		Assertions.assertThat(rows).hasSize(10);

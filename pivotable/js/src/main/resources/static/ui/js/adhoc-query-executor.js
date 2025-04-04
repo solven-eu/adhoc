@@ -127,9 +127,6 @@ export default {
 			queryForApi.cube = props.cubeId;
 			queryForApi.query = queryJson.value;
 
-			queryForApi.options = queryJson.value.options;
-			delete queryForApi.query.options;
-
 			async function postFromUrl(url) {
 				try {
 					loading.value = true;

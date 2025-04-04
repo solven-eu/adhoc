@@ -24,6 +24,7 @@ package eu.solven.adhoc.query;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,20 @@ public class TestAdhocQueryBuilder {
 	}
 
 	@Test
+	public void testUnionOptions() {
+		AdhocQuery query = AdhocQuery.builder().option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build();
+		AdhocQuery edited = AdhocQuery.edit(query)
+				// this test checks that `@Builder` `@Singular` does `.addAll` and not some `.clear`
+				.options(Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY))
+				.build();
+
+		Assertions.assertThat(edited.getOptions())
+				.hasSize(2)
+				.contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE,
+						StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY);
+	}
+
+	@Test
 	public void testEdit() {
 		AdhocQuery query = fullyCustomized();
 		AdhocQuery edited = AdhocQuery.edit(query).build();
@@ -155,8 +170,7 @@ public class TestAdhocQueryBuilder {
 				  },
 				  "measures" : [ "k1.SUM" ],
 				  "customMarker" : "somethingCustom",
-				  "debug" : true,
-				  "explain" : true
+				  "options" : [ "DEBUG", "EXPLAIN" ]
 				}""");
 	}
 }

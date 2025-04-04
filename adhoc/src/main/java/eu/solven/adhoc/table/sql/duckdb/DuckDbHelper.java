@@ -168,7 +168,7 @@ public class DuckDbHelper {
 							.build());
 		});
 
-		TableQuery tableQuery = queryBuilder.explain(true).build();
+		TableQuery tableQuery = queryBuilder.build();
 
 		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).asMap().findAny();
 		if (optCardinalityRecord.isEmpty()) {

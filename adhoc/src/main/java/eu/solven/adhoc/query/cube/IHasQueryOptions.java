@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,39 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.query.cube;
 
-import java.util.Map;
+import java.util.Set;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.query.IQueryOption;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-
-public class TestListBasedTabularView {
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		ListBasedTabularView view = ListBasedTabularView.builder().build();
-
-		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
-
-		String asString = TestMapBasedTabularView.verifyJackson(ListBasedTabularView.class, view);
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "coordinates" : [ {
-				    "c1" : "v1"
-				  } ],
-				  "values" : [ {
-				    "m" : 123
-				  } ]
-				}""");
-
-		Assertions.assertThat(view.toString()).isEqualTo("""
-				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
-	}
-
+/**
+ * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
+ * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}.
+ *
+ * For instance, in ActivePivot/Atoti, this could be an IContextValue.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+public interface IHasQueryOptions {
+	Set<IQueryOption> getOptions();
 }

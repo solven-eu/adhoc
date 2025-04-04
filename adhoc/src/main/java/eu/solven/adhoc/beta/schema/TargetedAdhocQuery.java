@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.Set;
 import java.util.UUID;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -54,5 +55,5 @@ public class TargetedAdhocQuery {
 
 	@Singular
 	@NonNull
-	Set<IQueryOption> options;
+	ImmutableSet<IQueryOption> options;
 }

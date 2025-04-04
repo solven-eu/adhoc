@@ -22,14 +22,18 @@
  */
 package eu.solven.adhoc.query;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -39,7 +43,8 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable {
+public class MeasurelessQuery
+		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
 	@NonNull
 	IAdhocFilter filter;
@@ -51,28 +56,47 @@ public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, I
 
 	// This is part of hashcodeEquals
 	// It means we may have a different queryPlan when a subset of querySteps are debuggable
-	@Builder.Default
-	boolean explain = false;
+	// @Builder.Default
+	// boolean explain = false;
 
 	// This is part of hashcodeEquals
 	// It means we may have a different queryPlan when a subset of querySteps are debuggable
-	@Builder.Default
-	boolean debug = false;
+	// @Builder.Default
+	// boolean debug = false;
+
+	@NonNull
+	@Singular
+	ImmutableSet<IQueryOption> options;
 
 	public static MeasurelessQueryBuilder edit(IWhereGroupByQuery step) {
 		MeasurelessQueryBuilder builder =
 				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
-		if (step instanceof IIsExplainable isExplainable) {
-			builder.explain(isExplainable.isExplain());
+		if (step instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+			builder.option(StandardQueryOptions.EXPLAIN);
 		}
-		if (step instanceof IIsDebugable isDebugable) {
-			builder.debug(isDebugable.isDebug());
+		if (step instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+			builder.option(StandardQueryOptions.DEBUG);
 		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			builder.customMarker(hasCustomMarker.getCustomMarker());
 		}
+		if (step instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
+		}
 
 		return builder;
+	}
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	public boolean isDebug() {
+		return options.contains(StandardQueryOptions.DEBUG);
+	}
+
+	@Deprecated(since = "Use .getOptions()")
+	@Override
+	public boolean isExplain() {
+		return options.contains(StandardQueryOptions.EXPLAIN);
 	}
 }

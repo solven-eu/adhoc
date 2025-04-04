@@ -10,12 +10,9 @@ One may clone with:
 
     git clone https://<username>@github.com/solven-eu/adhoc.git
 
-And authenticate with a PAT (with scope=repo) as password:
-https://github.com/settings/tokens
+And authenticate with a PAT (with `scope=repo`) as password, generated at https://github.com/settings/tokens
 
-You may also encounter Spotless issues around Proxy:
-
-See https://github.com/diffplug/spotless/issues/1658
+You may also encounter [Spotless issues around Proxy](https://github.com/diffplug/spotless/issues/1658):
 
 # Coding conventions
 

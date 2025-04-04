@@ -123,9 +123,14 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			IAdhocQuery subQuery =
 					makeSubCubeQuery(executingQueryContext, compositeQuery, compositeGroupBy, cube, cubeColumns);
 
-			ITabularView subView = cube.execute(subQuery,
-					Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY,
-							StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED));
+			ITabularView subView = cube.execute(AdhocQuery.edit(subQuery)
+					// Some of the queried measures may be unknown to some cubes
+					// (Is this relevant given we queried only the relevant measures?)
+					.option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
+					// We want carriers from the underlying cubes, to aggregate them properly
+					// (e.g. a Top2 cross-cubes needs each cube to return its Top2)
+					.option(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
+					.build());
 
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing from
 			// current subCube.

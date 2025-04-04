@@ -152,10 +152,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> tableStream = table.streamSlices(TableQuery.edit(qK1)
-				.filter(ColumnFilter.builder().column("a").matching("a1").build())
-				.explain(true)
-				.build()).toList();
+		List<Map<String, ?>> tableStream = table
+				.streamSlices(
+						TableQuery.edit(qK1).filter(ColumnFilter.builder().column("a").matching("a1").build()).build())
+				.toList();
 
 		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
 	}
@@ -175,7 +175,6 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		List<Map<String, ?>> tableStream = table.streamSlices(TableQuery.edit(qK1)
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
-				.explain(true)
 				.build()).toList();
 
 		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);

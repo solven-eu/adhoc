@@ -23,6 +23,7 @@
 package eu.solven.adhoc.eventbus;
 
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import com.google.common.eventbus.Subscribe;
 
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AdhocEventsFromGuavaEventBusToSfl4j {
+	public static final String EOL = System.lineSeparator();
 
 	// This must not have `@Subscribe`, else events would be processed multiple times
 	// This is useful when the EventBus is not Guava
@@ -86,12 +88,37 @@ public class AdhocEventsFromGuavaEventBusToSfl4j {
 		} else {
 			logMethod = log::info;
 		}
-		Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
-				event.isExplain() ? "[EXPLAIN]" : "",
-				event.getMessage(),
-				event.getSource() };
 
-		logMethod.accept("{}{} {} (source={})", arguments);
+		printLogEvent(event, logMethod);
+	}
+
+	/**
+	 * 
+	 * @param event
+	 * @param logMethod
+	 *            Will print, given a message template as key, and a array with values as value.
+	 */
+	protected void printLogEvent(AdhocLogEvent event, BiConsumer<String, Object[]> logMethod) {
+		if (event.isExplain() && event.getMessage().contains(EOL)) {
+			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
+					event.isExplain() ? "[EXPLAIN]" : "",
+					event.getMessage(),
+					event.getSource() };
+			// In EXPLAIN, we want rows to be well aligned, as we print some sort of ascii-graph
+			Stream.of(event.getMessage().split(EOL)).forEach(messageRow -> {
+				// TODO This is errorProne, and unitTests may need static mocking of SLF4J
+				arguments[2] = messageRow;
+
+				logMethod.accept("{}{} {} (source={})", arguments);
+			});
+		} else {
+
+			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
+					event.isExplain() ? "[EXPLAIN]" : "",
+					event.getMessage(),
+					event.getSource() };
+			logMethod.accept("{}{} {} (source={})", arguments);
+		}
 	}
 
 }

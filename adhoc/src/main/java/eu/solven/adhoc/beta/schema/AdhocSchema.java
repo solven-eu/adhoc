@@ -38,7 +38,6 @@ import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -125,14 +124,14 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	@Override
-	public ITabularView execute(String cube, IAdhocQuery query, Set<? extends IQueryOption> options) {
+	public ITabularView execute(String cube, IAdhocQuery query) {
 		ICubeWrapper cubeWrapper = nameToCube.get(cube);
 
 		if (cubeWrapper == null) {
 			throw new IllegalArgumentException("No cube named %s".formatted(cube));
 		}
 
-		return cubeWrapper.execute(query, options);
+		return cubeWrapper.execute(query);
 	}
 
 	public void registerCube(ICubeWrapper cube) {

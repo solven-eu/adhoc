@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.atoti;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

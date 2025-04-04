@@ -22,11 +22,8 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Set;
-
 import eu.solven.adhoc.column.IAdhocColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -39,25 +36,16 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @see IAdhocImplicitFilter
  */
 public interface IQueryPreparator {
-	default ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest measures,
-			IAdhocColumnsManager columnsManager,
-			IAdhocQuery query) {
-		return prepareQuery(table, measures, columnsManager, query, Set.of());
-	}
-
 	/**
 	 * 
 	 * @param table
 	 * @param forest
 	 * @param columnsManager
 	 * @param query
-	 * @param options
 	 * @return an {@link ExecutingQueryContext} which wraps together everything necessary to execute a query.
 	 */
 	ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
 			IAdhocColumnsManager columnsManager,
-			IAdhocQuery query,
-			Set<? extends IQueryOption> options);
+			IAdhocQuery query);
 }

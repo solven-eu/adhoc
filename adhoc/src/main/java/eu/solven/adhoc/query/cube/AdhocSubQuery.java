@@ -26,6 +26,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -73,4 +74,10 @@ public final class AdhocSubQuery implements IAdhocQuery, IHasParentQueryId {
 	public boolean isDebug() {
 		return subQuery.isDebug();
 	}
+
+	@Override
+	public Set<IQueryOption> getOptions() {
+		return subQuery.getOptions();
+	}
+
 }

@@ -48,7 +48,6 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
-import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -102,8 +101,8 @@ public class CubeWrapper implements ICubeWrapper {
 	}
 
 	@Override
-	public ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options) {
-		return engine.execute(queryPreparator.prepareQuery(table, forest, columnsManager, query, options));
+	public ITabularView execute(IAdhocQuery query) {
+		return engine.execute(queryPreparator.prepareQuery(table, forest, columnsManager, query));
 	}
 
 	@Override

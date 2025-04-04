@@ -23,14 +23,11 @@
 package eu.solven.adhoc.cube;
 
 import java.util.Map;
-import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -46,18 +43,12 @@ import eu.solven.adhoc.util.IHasName;
  *
  */
 public interface ICubeWrapper extends IHasColumns, IHasName, IHasMeasures {
-	default ITabularView execute(IAdhocQuery query) {
-		return execute(query, Set.of());
-	}
-
 	/**
 	 * 
 	 * @param query
-	 * @param options
-	 *            see {@link StandardQueryOptions}
 	 * @return
 	 */
-	ITabularView execute(IAdhocQuery query, Set<? extends IQueryOption> options);
+	ITabularView execute(IAdhocQuery query);
 
 	/**
 	 * 

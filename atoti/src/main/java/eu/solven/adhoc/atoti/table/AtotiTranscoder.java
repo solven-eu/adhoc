@@ -29,10 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * This {@link IAdhocTableTranscoder} is useful into translating from levelNames as configured in ActivePivot
- * processors, into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the levelName.
+ * processors, into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName
+ * matched the levelName.
  *
- * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor
- * properties). But this is not specific to querying ActivePivot as an Adhoc Database.
+ * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).
+ * But this is not specific to querying ActivePivot as an Adhoc Database.
  */
 @Builder
 @Slf4j

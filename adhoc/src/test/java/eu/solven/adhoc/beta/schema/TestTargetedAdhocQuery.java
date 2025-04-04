@@ -24,6 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.UUID;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -44,11 +45,37 @@ public class TestTargetedAdhocQuery {
 	public void testJackson() throws JsonProcessingException {
 		TargetedAdhocQuery query = TargetedAdhocQuery.builder()
 				.cube("someCube")
-				.endpointId(UUID.randomUUID())
+				.endpointId(UUID.fromString("12345678-1234-1234-1234-12345678abcd"))
 				.option(StandardQueryOptions.EXPLAIN)
 				.query(AdhocQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
 				.build();
 
-		TestMapBasedTabularView.verifyJackson(TargetedAdhocQuery.class, query);
+		String asString = TestMapBasedTabularView.verifyJackson(TargetedAdhocQuery.class, query);
+
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "endpointId" : "12345678-1234-1234-1234-12345678abcd",
+				  "cube" : "someCube",
+				  "query" : {
+				    "filter" : {
+				      "type" : "and",
+				      "filters" : [ ]
+				    },
+				    "groupBy" : {
+				      "columns" : [ "someColumn" ]
+				    },
+				    "measures" : [ {
+				      "type" : ".Aggregator",
+				      "name" : "count(*)",
+				      "tags" : [ ],
+				      "columnName" : "*",
+				      "aggregationKey" : "COUNT",
+				      "aggregationOptions" : { }
+				    } ],
+				    "customMarker" : null,
+				    "options" : [ ]
+				  },
+				  "options" : [ "EXPLAIN" ]
+				}""");
 	}
 }

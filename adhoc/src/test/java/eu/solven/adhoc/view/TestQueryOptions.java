@@ -25,7 +25,6 @@ package eu.solven.adhoc.view;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,8 +60,10 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build(),
-				Set.of(StandardQueryOptions.RETURN_UNDERLYING_MEASURES));
+		ITabularView output = cube.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
+				.option(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -76,14 +77,14 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	public void testUnknownMeasuresAreEmpty() {
 		forest.addMeasure(k1Sum);
 
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k2").build();
+		AdhocQuery query = AdhocQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(adhocQuery, forest, table))
+		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = engine.executeUnsafe(adhocQuery,
-				Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY),
+		ITabularView output = engine.executeUnsafe(
+				AdhocQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
 				forest,
 				table,
 				AdhocColumnsManager.builder().build());

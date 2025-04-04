@@ -25,6 +25,7 @@ package eu.solven.adhoc.dag;
 import java.util.concurrent.TimeUnit;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -39,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class DagExplainerForPerfs extends DagExplainer {
-	private static final String EOL = System.lineSeparator();
+	private static final String EOL = AdhocEventsFromGuavaEventBusToSfl4j.EOL;
 
 	@Override
 	protected AdhocLogEventBuilder openEventBuilder() {

@@ -60,13 +60,17 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const autoQuery = ref(true);
-		const loading = ref(false);
 
 		const search = ref("");
 		// By default, not case-sensitive
 		// Else, a user not seeing a match may be confused
 		// While a user wanting case-sentitive can get more easily he has to click the toggle
 		const searchCaseSensitive = ref(false);
+
+		// By default, we search along the names and the JSON
+		// This is useful to report measures by some of their defintition like som filter
+		// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
+		const searchJson = ref(true);
 
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
@@ -85,14 +89,17 @@ export default {
 				let match = false;
 
 				const inputElement = inputsAsObjectOrArray[inputKey];
+				// We consider only values, as keys are generic
+				// For instance, `name` should not match `name=NiceNick`
+				const inputElementAsString = JSON.stringify(Object.values(inputElement));
 
-				if (inputKey.includes(searchedValue) || JSON.stringify(inputElement).includes(searchedValue)) {
+				if (inputKey.includes(searchedValue) || inputElementAsString.includes(searchedValue)) {
 					match = true;
 				}
 
 				if (!match && !searchCaseSensitive.value) {
 					// Retry without case-sensitivity
-					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || JSON.stringify(inputElement).toLowerCase().includes(searchedValueLowerCase)) {
+					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || inputElementAsString.toLowerCase().includes(searchedValueLowerCase)) {
 						match = true;
 					}
 				}
@@ -119,9 +126,8 @@ export default {
 		return {
 			search,
 			searchCaseSensitive,
+			searchJson,
 			filtered,
-
-			loading,
 		};
 	},
 	template: /* HTML */ `
@@ -142,12 +148,18 @@ export default {
             <form>
                 <div>
                     <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
-                    <small>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
-                            <label class="form-check-label" for="searchCaseSensitive">Aa</label>
-                        </div>
-                    </small>
+					<small>
+					    <div class="form-check form-switch">
+					        <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
+					        <label class="form-check-label" for="searchCaseSensitive">Aa</label>
+					    </div>
+					</small>
+					<small>
+					    <div class="form-check form-switch">
+					        <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchJson" />
+					        <label class="form-check-label" for="searchJson">JSON</label>
+					    </div>
+					</small>
                 </div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
@@ -191,7 +203,7 @@ export default {
                             </div>
                         </h2>
                         <div id="wizardColumns" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body vh-50 overflow-scroll">
+                            <div class="accordion-body vh-50 overflow-scroll px-0">
                                 <ul v-for="(columnToType) in filtered(cube.columns.columnToTypes)" class="list-group">
                                     <li class="list-group-item ">
                                         <AdhocQueryWizardColumn
@@ -224,7 +236,7 @@ export default {
                             </button>
                         </h2>
                         <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body vh-50 overflow-scroll">
+                            <div class="accordion-body vh-50 overflow-scroll px-0">
                                 <ul v-for="(measure) in filtered(cube.measures)" class="list-group list-group-flush">
                                     <li class="list-group-item">
                                         <div class="form-check form-switch">
