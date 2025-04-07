@@ -6,10 +6,12 @@ import { useUserStore } from "./store-user.js";
 import { Modal } from "bootstrap";
 
 import LoginRef from "./login-ref.js";
+import LoginOptions from "./login-providers.js";
 
 export default {
 	components: {
 		LoginRef,
+		LoginOptions,
 	},
 	props: {
 		logout: {
@@ -54,11 +56,13 @@ export default {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+                        <h5 class="modal-title" id="loginModalLabel">Login to Pivotable</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <LoginRef data-bs-dismiss="modal" />
+                        <LoginRef :modal="true" data-bs-dismiss="modal" />
+						<hr/>
+						<LoginOptions :modal="true" />
                     </div>
                 </div>
             </div>

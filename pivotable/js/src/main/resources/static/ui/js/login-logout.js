@@ -3,12 +3,10 @@ import { useUserStore } from "./store-user.js";
 
 import { useRouter } from "vue-router";
 
-import LoginOptions from "./login-providers.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		LoginOptions,
 	},
 	props: {
 		logout: {

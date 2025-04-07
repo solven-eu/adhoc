@@ -593,7 +593,7 @@ export default {
                 <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
             </div>
             <div>clickedCell={{clickedCell}}</div>
-            <div>props.tabularView.loading={{tabularView.loading}}</div>
+            <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
         </div>
     `,

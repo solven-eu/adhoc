@@ -267,7 +267,7 @@ export const useUserStore = defineStore("user", {
 
 		async loadIfMissingUserTokens() {
 			if (this.tokens.access_token && !this.tokens.access_token_expired) {
-				console.debug("Authenticated and an access_tokenTokens is stored", this.tokens.access_token);
+				console.debug("Authenticated and a valid access_tokenTokens is stored", this.tokens.access_token);
 			} else {
 				await this.loadUserTokens();
 			}

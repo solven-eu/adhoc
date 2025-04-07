@@ -15,6 +15,10 @@ export default {
 			type: String,
 			required: false,
 		},
+		modal: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	computed: {
 		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
@@ -24,12 +28,13 @@ export default {
 			},
 		}),
 	},
-	setup() {
+	setup(props) {
 		const userStore = useUserStore();
 		const router = useRouter();
 
 		userStore.loadUser();
 
+		// Some default credentials for a fake user
 		const username = ref("11111111-1111-1111-1111-000000000000");
 		const password = ref("no_password");
 
@@ -55,9 +60,15 @@ export default {
 					const json = await response.json();
 
 					console.info("Login BASIC", json);
-
-					const loginSuccessHtmlRoute = json.Location;
-					router.push(loginSuccessHtmlRoute);
+					
+					if (props.modal) {
+						// Do not redirect as we're in a modal, and we want to stay on current location
+						// Though, some cookies has been update, enabling to get an access_token
+						userStore.loadUserTokens();
+					} else {
+						const loginSuccessHtmlRoute = json.Location;
+						router.push(loginSuccessHtmlRoute);						
+					}
 				} catch (e) {
 					console.error("Issue on Network: ", e);
 				}

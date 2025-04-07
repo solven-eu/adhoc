@@ -139,7 +139,7 @@ export default {
         <small>{{type}}</small>
 
         <button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
-            <span v-if="!columnMeta.estimatedCardinality"> ? </span>
+            <span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
             <!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
             <span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
             <span v-if="loading">
