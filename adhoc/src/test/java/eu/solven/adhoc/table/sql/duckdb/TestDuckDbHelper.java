@@ -93,4 +93,25 @@ public class TestDuckDbHelper {
 						"""
 								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
 	}
+
+	@Test
+	public void testAppendGetCoordinatesMeasures_withSpace() {
+		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
+
+		DuckDbHelper.appendGetCoordinatesMeasures(123,
+				"pre post",
+				IValueMatcher.MATCH_ALL,
+				7,
+				tableQueryBuilder);
+
+		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+				.table(DSL.table("someTable"))
+				.dslContext(DSL.using(SQLDialect.DUCKDB))
+				.build();
+
+		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ()""");
+	}
 }

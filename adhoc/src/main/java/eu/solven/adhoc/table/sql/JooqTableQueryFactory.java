@@ -28,22 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.jooq.AggregateFunction;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.GroupField;
-import org.jooq.Name;
-import org.jooq.OrderField;
+import org.jooq.*;
 import org.jooq.Record;
-import org.jooq.ResultQuery;
-import org.jooq.SelectConnectByStep;
-import org.jooq.SelectFieldOrAsterisk;
-import org.jooq.SelectHavingStep;
-import org.jooq.SelectJoinStep;
-import org.jooq.SortField;
-import org.jooq.TableLike;
-import org.jooq.True;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
 import org.jooq.impl.ParserException;
@@ -221,12 +207,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected boolean isExpression(String columnName) {
-		if (ICountMeasuresConstants.ASTERISK.equals(columnName)) {
-			// Typically on `COUNT(*)`
-			return true;
-		} else {
-			return false;
-		}
+		return AdhocJooqHelper.isExpression(columnName);
 	}
 
 	/**
@@ -237,24 +218,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * @return
 	 */
 	protected Name name(String name) {
-		if (isExpression(name)) {
-			// e.g. `name=*`
-			return DSL.unquotedName(name);
-		}
-
-		try {
-			return dslContext.parser()
-					.parseName(name)
-					// quoted as we may receive `a@b@c` which has a special meaning in SQL
-					.quotedName();
-		} catch (ParserException e) {
-			if (log.isDebugEnabled()) {
-				log.debug("Issue parsing `{}` as name. Quoting it ", name, e);
-			} else {
-				log.debug("Issue parsing `{}` as name. Quoting it ", name);
-			}
-			return DSL.quotedName(name);
-		}
+		return AdhocJooqHelper.name(name, dslContext::parser);
 	}
 
 	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {

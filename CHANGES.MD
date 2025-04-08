@@ -6,6 +6,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `IQueryOption` are now part of `IAdhocQuery`
 - `debug` and `explain` are now only togglable as `IQueryOption`
+- Normalize the way columns are parsed into SQL names (by relying on JooQ `Parser.parseName`).
 
 ## [0.0.3]
 ### Added

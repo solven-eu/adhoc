@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
@@ -194,10 +195,7 @@ public class DuckDbHelper {
 			TableQueryBuilder queryBuilder) {
 		String measuresSuffix = "_" + columnIndex;
 
-		// DSL.field(DSL.sql(column)).getName()
-		// SQLDialect.DUCKDB.
-		// e.g. `p.name` from a `JOIN`
-		Name columnName = DSL.using(SQLDialect.DUCKDB).parser().parseName(column);
+		Name columnName = AdhocJooqHelper.name(column, () -> DSL.using(SQLDialect.DUCKDB).parser());
 
 		int returnedCoordinates;
 
