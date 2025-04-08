@@ -38,6 +38,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestAdhocJooqTableQueryFactory {
@@ -104,6 +105,30 @@ public class TestAdhocJooqTableQueryFactory {
 
 		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null group by ()
+				""".trim());
+	}
+
+	@Test
+	public void testColumnWithAt() {
+		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder().name("k").build())
+				.groupBy(GroupByColumns.named("a@b@c"))
+				.build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k", "a@b@c" from "someTableName" where "k" is not null group by "a@b@c"
+				""".trim());
+	}
+
+	@Test
+	public void testColumnWithSpace() {
+		ResultQuery<Record> condition = streamOpener.prepareQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder().name("k").build())
+				.groupBy(GroupByColumns.named("pre post"))
+				.build());
+
+		Assertions.assertThat(condition.getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k", "pre post" from "someTableName" where "k" is not null group by "pre post"
 				""".trim());
 	}
 

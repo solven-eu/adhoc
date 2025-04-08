@@ -24,11 +24,11 @@ package eu.solven.adhoc.table;
 
 import java.util.Set;
 
-import eu.solven.adhoc.query.table.TableQuery;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestTableQuery implements IAdhocTestConstants {
 	@Test

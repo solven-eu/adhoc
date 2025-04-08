@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import org.jooq.AggregateFunction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -47,9 +46,11 @@ import org.jooq.TableLike;
 import org.jooq.True;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
+import org.jooq.impl.ParserException;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
@@ -223,27 +224,37 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		if (ICountMeasuresConstants.ASTERISK.equals(columnName)) {
 			// Typically on `COUNT(*)`
 			return true;
-		} else if (columnName.indexOf('"') >= 0) {
-			// Typically on `max("v") FILTER("color" in ('red'))`
-			return true;
 		} else {
 			return false;
 		}
 	}
 
+	/**
+	 * 
+	 * @param name
+	 *            may be a simple columnName (e.g. `someField`), or a joined field (e.g. `someTable.someField`),or a
+	 *            qualified name (e.g. `"someTable.someField"`).
+	 * @return
+	 */
 	protected Name name(String name) {
-		// BEWARE it is unclear what's the proper way of quoting
-		// `unquotedName` is useful to handle input columns referencing (e.g. joined) tables as in
-		// `tableName.columnName`, while `quoted` would treat `tableName.columnName` as a columnName
-
 		if (isExpression(name)) {
+			// e.g. `name=*`
 			return DSL.unquotedName(name);
 		}
 
-		// Split by dot as we expect a regular use of `.` to reference joined tables
-		String[] namesWithoutDot = name.split("\\.");
-
-		return DSL.quotedName(namesWithoutDot);
+		try {
+			return dslContext.parser()
+					.parseName(name)
+					// quoted as we may receive `a@b@c` which has a special meaning in SQL
+					.quotedName();
+		} catch (ParserException e) {
+			if (log.isDebugEnabled()) {
+				log.debug("Issue parsing `{}` as name. Quoting it ", name, e);
+			} else {
+				log.debug("Issue parsing `{}` as name. Quoting it ", name);
+			}
+			return DSL.quotedName(name);
+		}
 	}
 
 	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {
@@ -278,16 +289,16 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
 		String aggregationKey = a.getAggregationKey();
 		String columnName = a.getColumnName();
-		Name namedColumn = name(columnName);
 
-		if (ExpressionAggregation.KEY.equals(aggregationKey)) {
+		if (ExpressionAggregation.isExpression(aggregationKey)) {
 			// Do not call `name` to make sure it is not qualified
-			if (namedColumn.qualified()) {
-				// This is useful to ensure default expression detector is valid
-				log.warn("Ambiguous expression: {}", columnName);
-			}
-			return DSL.field(DSL.unquotedName(columnName)).as(a.getName());
+			return DSL.field(DSL.sql(columnName)).as(a.getName());
+		} else if (EmptyAggregation.isEmpty(aggregationKey)) {
+			// There is no aggregation for empty: we just want to fetch groupBys
+			return null;
 		} else {
+			Name namedColumn = name(columnName);
+
 			AggregateFunction<?> sqlAggFunction;
 			if (SumAggregation.KEY.equals(aggregationKey)) {
 				// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
@@ -324,9 +335,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
 				sqlAggFunction =
 						DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
-			} else if (EmptyAggregation.isEmpty(aggregationKey)) {
-				// There is no aggregation for empty: we just want to fetch groupBys
-				return null;
 			} else {
 				throw new UnsupportedOperationException(
 						"SQL does not support aggregationKey=%s".formatted(aggregationKey));
@@ -339,8 +347,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// We're interested in a row if at least one measure is not null
 		List<Condition> oneNotNullConditions = aggregators.stream()
 				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
+				.filter(a -> !ExpressionAggregation.isExpression(a.getAggregationKey()))
 				.map(Aggregator::getColumnName)
-				.filter(columnName -> !isExpression(columnName))
+				.filter(c -> !isExpression(c))
 				.map(c -> DSL.field(name(c)).isNotNull())
 				.collect(Collectors.toList());
 

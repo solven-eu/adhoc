@@ -45,4 +45,8 @@ public class ExpressionAggregation implements IAggregation {
 			throw new UnsupportedOperationException("Can not be evaluated. left=%s right=%s".formatted(left, right));
 		}
 	}
+
+	public static boolean isExpression(String aggregationKey) {
+		return KEY.equals(aggregationKey) || ExpressionAggregation.class.getName().equals(aggregationKey);
+	}
 }

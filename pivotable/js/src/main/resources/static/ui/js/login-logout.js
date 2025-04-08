@@ -3,11 +3,9 @@ import { useUserStore } from "./store-user.js";
 
 import { useRouter } from "vue-router";
 
-
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {
-	},
+	components: {},
 	props: {
 		logout: {
 			type: String,

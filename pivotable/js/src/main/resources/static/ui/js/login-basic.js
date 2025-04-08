@@ -60,14 +60,14 @@ export default {
 					const json = await response.json();
 
 					console.info("Login BASIC", json);
-					
+
 					if (props.modal) {
 						// Do not redirect as we're in a modal, and we want to stay on current location
 						// Though, some cookies has been update, enabling to get an access_token
 						userStore.loadUserTokens();
 					} else {
 						const loginSuccessHtmlRoute = json.Location;
-						router.push(loginSuccessHtmlRoute);						
+						router.push(loginSuccessHtmlRoute);
 					}
 				} catch (e) {
 					console.error("Issue on Network: ", e);

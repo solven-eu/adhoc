@@ -187,13 +187,17 @@ public class DuckDbHelper {
 
 	}
 
-	 static void appendGetCoordinatesMeasures(int limit, String column, IValueMatcher valueMatcher, int columnIndex, TableQueryBuilder queryBuilder) {
+	static void appendGetCoordinatesMeasures(int limit,
+			String column,
+			IValueMatcher valueMatcher,
+			int columnIndex,
+			TableQueryBuilder queryBuilder) {
 		String measuresSuffix = "_" + columnIndex;
 
-		 // DSL.field(DSL.sql(column)).getName()
-		 // SQLDialect.DUCKDB.
+		// DSL.field(DSL.sql(column)).getName()
+		// SQLDialect.DUCKDB.
 		// e.g. `p.name` from a `JOIN`
-		Name columnName =  DSL.name(column.split("\\."));
+		Name columnName = DSL.using(SQLDialect.DUCKDB).parser().parseName(column);
 
 		int returnedCoordinates;
 

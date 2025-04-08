@@ -1,115 +1,154 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.table.sql;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.jooq.Condition;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
 
 /**
- * This class helps building a star/snowflake schema, around some baseStore and various LEFT JOINs to provide additional columns.
+ * This class helps building a star/snowflake schema, around some baseStore and various LEFT JOINs to provide additional
+ * columns.
  * <p>
- * This also facilitate the registration of proper transcoder. This implementation give priority to the first encounter of a field, giving priority to the LEFT table over the RIGHT table.
+ * This also facilitate the registration of proper transcoder. This implementation give priority to the first encounter
+ * of a field, giving priority to the LEFT table over the RIGHT table.
  */
-//@Builder
+// @Builder
 public class JooqSnowflakeSchemaBuilder {
-    // JOINs often refers the same name from the joined tables: this map will record the qualified field to refer when the unqualified field is queried
-    // e.g. if `FROM table t JOIN joined j ON t.k = j.k`, then may decide that `k` always refers to `t.k`
-    @NonNull
-//    @Builder.Default
-    @Getter
-    final Map<String, String> queriedToUnderlying = new ConcurrentHashMap<>();
+	// JOINs often refers the same name from the joined tables: this map will record the qualified field to refer when
+	// the unqualified field is queried
+	// e.g. if `FROM table t JOIN joined j ON t.k = j.k`, then may decide that `k` always refers to `t.k`
+	@NonNull
+	// @Builder.Default
+	@Getter
+	final Map<String, String> queriedToUnderlying = new ConcurrentHashMap<>();
 
-    @NonNull
-    final Table<Record> baseTable ;
-    @NonNull
-    final String baseTableAlias;
+	@NonNull
+	final Table<Record> baseTable;
+	@NonNull
+	final String baseTableAlias;
 
-    @Getter
-    Table<Record> snowflakeTable;
+	@Getter
+	Table<Record> snowflakeTable;
 
-    // https://stackoverflow.com/questions/30717640/how-to-exclude-property-from-lombok-builder
-    // `snowflakeTable` is not built by the builder
-    @Builder
-    public JooqSnowflakeSchemaBuilder( Table<Record> baseTable, String baseTableAlias) {
-//        this.queriedToUnderlying=queriedToUnderlying;
-        this.baseTable=baseTable;
-        this.baseTableAlias=baseTableAlias;
+	// https://stackoverflow.com/questions/30717640/how-to-exclude-property-from-lombok-builder
+	// `snowflakeTable` is not built by the builder
+	@Builder
+	public JooqSnowflakeSchemaBuilder(Table<Record> baseTable, String baseTableAlias) {
+		// this.queriedToUnderlying=queriedToUnderlying;
+		this.baseTable = baseTable;
+		this.baseTableAlias = baseTableAlias;
 
-        this.snowflakeTable = baseTable.as(baseTableAlias);
-    }
+		this.snowflakeTable = baseTable.as(baseTableAlias);
+	}
 
-    /**
-     * Assumes the LEFT table is the base store.
-     *
-     * @param joinedTable the JOINed table
-     * @param joinName    the alias of the JOINed table
-     * @param on          a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
-     * @return
-     */
-    public JooqSnowflakeSchemaBuilder leftJoin(Table<?> joinedTable, String joinName, List<Map.Entry<String, String>> on) {
-        return leftJoin(baseTableAlias, joinedTable, joinName, on);
-    }
+	/**
+	 * Assumes the LEFT table is the base store.
+	 *
+	 * @param joinedTable
+	 *            the JOINed table
+	 * @param joinName
+	 *            the alias of the JOINed table
+	 * @param on
+	 *            a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
+	 * @return
+	 */
+	public JooqSnowflakeSchemaBuilder leftJoin(Table<?> joinedTable,
+			String joinName,
+			List<Map.Entry<String, String>> on) {
+		return leftJoin(baseTableAlias, joinedTable, joinName, on);
+	}
 
-    /**
-     * @param leftTableAlias the name of the LEFT/base table. May not be the root/base table given we manage snowflake schema.
-     * @param joinedTable    the JOINed table
-     * @param joinName       the alias of the JOINed table
-     * @param on             a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
-     * @return
-     */
-    public JooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias, Table<?> joinedTable, String joinName, List<Map.Entry<String, String>> on) {
-        List<Condition> onConditions = on.stream().map(e -> {
-            Name leftName;
-            if (e.getKey().contains(".")) {
-                // We assume we received a qualified path in its String form
-                // This would fail if the field was actually a field with a `.` in it
-                leftName = DSL.quotedName(e.getKey().split("\\."));
-            } else {
-                leftName = DSL.quotedName(leftTableAlias, e.getKey());
-            }
-            return DSL.field(leftName).eq(DSL.field(DSL.quotedName(joinName, e.getValue())));
-        }).toList();
+	/**
+	 * @param leftTableAlias
+	 *            the name of the LEFT/base table. May not be the root/base table given we manage snowflake schema.
+	 * @param joinedTable
+	 *            the JOINed table
+	 * @param joinName
+	 *            the alias of the JOINed table
+	 * @param on
+	 *            a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
+	 * @return
+	 */
+	public JooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
+			Table<?> joinedTable,
+			String joinName,
+			List<Map.Entry<String, String>> on) {
+		List<Condition> onConditions = on.stream().map(e -> {
+			Name leftName;
+			if (e.getKey().contains(".")) {
+				// We assume we received a qualified path in its String form
+				// This would fail if the field was actually a field with a `.` in it
+				leftName = DSL.quotedName(e.getKey().split("\\."));
+			} else {
+				leftName = DSL.quotedName(leftTableAlias, e.getKey());
+			}
+			return DSL.field(leftName).eq(DSL.field(DSL.quotedName(joinName, e.getValue())));
+		}).toList();
 
-        // Register in the transcoder
-        on.forEach(fromTo -> {
-            registerInTranscoder(leftTableAlias, joinName, fromTo);
-        });
+		// Register in the transcoder
+		on.forEach(fromTo -> {
+			registerInTranscoder(leftTableAlias, joinName, fromTo);
+		});
 
-        return leftJoinConditions(joinedTable.as(joinName), onConditions);
-    }
+		return leftJoinConditions(joinedTable.as(joinName), onConditions);
+	}
 
-    public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias, Table<?> joinedTable, String joinName, List<String> on) {
-return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f,f)).toList());
-    }
+	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
+			Table<?> joinedTable,
+			String joinName,
+			List<String> on) {
+		return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f, f)).toList());
+	}
 
-    protected void registerInTranscoder(String leftTableAlias, String joinTable, Map.Entry<String, String> fromTo) {
-        // `putIfAbsent`: priority to the first occurrence of the field
-        // `leftTableAlias`; priority to the LEFT/base table than the RIGHT/joined table
-        queriedToUnderlying.putIfAbsent(fromTo.getKey(), DSL.quotedName(leftTableAlias, fromTo.getKey()).toString());
-    }
+	protected void registerInTranscoder(String leftTableAlias, String joinTable, Map.Entry<String, String> fromTo) {
+		// `putIfAbsent`: priority to the first occurrence of the field
+		// `leftTableAlias`; priority to the LEFT/base table than the RIGHT/joined table
+		queriedToUnderlying.putIfAbsent(fromTo.getKey(), DSL.quotedName(leftTableAlias, fromTo.getKey()).toString());
+	}
 
-    public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
-        snowflakeTable = snowflakeTable.leftJoin(joinedTable)
-                .on(
-                        on.toArray(Condition[]::new));
+	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
+		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
 
-        return this;
-    }
+		return this;
+	}
 
-    public static class  JooqSnowflakeSchemaBuilderBuilder {
+	public static class JooqSnowflakeSchemaBuilderBuilder {
 
-        // https://github.com/projectlombok/lombok/issues/2307#issuecomment-1119511303
-        private JooqSnowflakeSchemaBuilderBuilder snowflakeTable(Table<Record> snowflakeTable){
-            return this;
-        }
-    }
+		// https://github.com/projectlombok/lombok/issues/2307#issuecomment-1119511303
+		private JooqSnowflakeSchemaBuilderBuilder snowflakeTable(Table<Record> snowflakeTable) {
+			return this;
+		}
+	}
 
 }

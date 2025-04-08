@@ -3,9 +3,9 @@ import { ref } from "vue";
 import LoginBasic from "./login-basic.js";
 
 export default {
-components: {
-	LoginBasic,
-},
+	components: {
+		LoginBasic,
+	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
 		modal: {

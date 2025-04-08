@@ -22,12 +22,11 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-
 import java.util.*;
 import java.util.stream.Stream;
+
+import lombok.Builder;
+import lombok.NonNull;
 
 /**
  * A decorating {@link IAdhocTableTranscoder} , which applies the transcoding logic recursively
@@ -69,14 +68,16 @@ public class RecursiveTranscoder implements IAdhocTableTranscoder {
 
 			if (first) {
 				// Linkde for ordering in case of issue
-				querieds  = new LinkedHashSet<>();
-			} else  if (querieds.size() >= LIMIT) {
-				throw new IllegalStateException("Transcoding too-deep from `%s` and through: %s".formatted(queried, querieds));
+				querieds = new LinkedHashSet<>();
+			} else if (querieds.size() >= LIMIT) {
+				throw new IllegalStateException(
+						"Transcoding too-deep from `%s` and through: %s".formatted(queried, querieds));
 			}
 			if (!querieds.add(nextQueried)) {
 				// `queried` has already been queried: this is a cycle
 				List<String> pathWithCycle = Stream.concat(querieds.stream(), Stream.of(nextQueried)).toList();
-				throw new IllegalStateException("Transcoding cycle from `%s` and through: %s".formatted(queried, pathWithCycle));
+				throw new IllegalStateException(
+						"Transcoding cycle from `%s` and through: %s".formatted(queried, pathWithCycle));
 			}
 
 			first = false;

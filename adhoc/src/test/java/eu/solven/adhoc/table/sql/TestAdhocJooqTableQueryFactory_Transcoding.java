@@ -83,7 +83,7 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 				select 1
 				from "someTableName"
 				where (
-				  "k1" = 'v1'
+				  tk1" = 'v1'
 				  and "k2" = 'v2'
 				)
 				group by ()

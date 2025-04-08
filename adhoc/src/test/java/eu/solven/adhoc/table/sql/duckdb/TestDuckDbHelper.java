@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
@@ -33,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 
 public class TestDuckDbHelper {
 	@Test
@@ -56,28 +56,41 @@ public class TestDuckDbHelper {
 		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
 	}
 
-
 	@Test
 	public void testAppendGetCoordinatesMeasures_qualified() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
 		DuckDbHelper.appendGetCoordinatesMeasures(123, "table.column", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
-		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder().table(DSL.table("someTable")).dslContext(DSL.using(SQLDialect.DUCKDB)).build();
+		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+				.table(DSL.table("someTable"))
+				.dslContext(DSL.using(SQLDialect.DUCKDB))
+				.build();
 
-		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED)).isEqualTo("""
-				select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
+		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select approx_count_distinct(table.column) "approx_count_distinct_7", approx_top_k(table.column, 123) "approx_top_k_7" from someTable group by ()""");
 	}
 
 	@Test
 	public void testAppendGetCoordinatesMeasures_qualified_quoted() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123, "\"table\".\"column\"", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
+		DuckDbHelper.appendGetCoordinatesMeasures(123,
+				"\"table\".\"column\"",
+				IValueMatcher.MATCH_ALL,
+				7,
+				tableQueryBuilder);
 
-		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder().table(DSL.table("someTable")).dslContext(DSL.using(SQLDialect.DUCKDB)).build();
+		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+				.table(DSL.table("someTable"))
+				.dslContext(DSL.using(SQLDialect.DUCKDB))
+				.build();
 
-		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED)).isEqualTo("""
-				select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
+		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
 	}
 }
