@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import org.jooq.AggregateFunction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -91,7 +92,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
-	IOperatorsFactory operatorsFactory;
+	@Builder.Default
+	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	@NonNull
 	final TableLike<?> table;

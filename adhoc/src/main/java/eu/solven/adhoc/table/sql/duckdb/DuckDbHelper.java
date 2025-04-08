@@ -129,43 +129,7 @@ public class DuckDbHelper {
 		columnToValueMatcher.forEach((column, valueMatcher) -> {
 			int columnIndex = columns.size();
 			columns.add(column);
-			String measuresSuffix = "_" + columnIndex;
-
-			// e.g. `p.name` from a `JOIN`
-			Name columnName = DSL.name(column.split("\\."));
-
-			int returnedCoordinates;
-
-			if (limit < 0) {
-				returnedCoordinates = Integer.MAX_VALUE;
-			} else {
-				returnedCoordinates = limit;
-			}
-			String countExpression = "approx_count_distinct(%s)".formatted(columnName);
-			String topKExpression = "approx_top_k(%s, %s)".formatted(columnName, returnedCoordinates);
-
-			if (!IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-				String filterExpression = toFilterExpression(valueMatcher);
-				String filterSuffix = " FILTER (CAST(%s AS VARCHAR) %s)".formatted(columnName, filterExpression);
-
-				countExpression += filterSuffix;
-				topKExpression += filterSuffix;
-			}
-
-			queryBuilder
-					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
-					.aggregator(Aggregator.builder()
-							.aggregationKey(ExpressionAggregation.KEY)
-							.name("approx_count_distinct" + measuresSuffix)
-							.columnName(countExpression)
-							.build())
-
-					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
-					.aggregator(Aggregator.builder()
-							.aggregationKey(ExpressionAggregation.KEY)
-							.name("approx_top_k" + measuresSuffix)
-							.columnName(topKExpression)
-							.build());
+			appendGetCoordinatesMeasures(limit, column, valueMatcher, columnIndex, queryBuilder);
 		});
 
 		TableQuery tableQuery = queryBuilder.build();
@@ -221,6 +185,48 @@ public class DuckDbHelper {
 			return columnToCoordinates;
 		}
 
+	}
+
+	 static void appendGetCoordinatesMeasures(int limit, String column, IValueMatcher valueMatcher, int columnIndex, TableQueryBuilder queryBuilder) {
+		String measuresSuffix = "_" + columnIndex;
+
+		 // DSL.field(DSL.sql(column)).getName()
+		 // SQLDialect.DUCKDB.
+		// e.g. `p.name` from a `JOIN`
+		Name columnName =  DSL.name(column.split("\\."));
+
+		int returnedCoordinates;
+
+		if (limit < 0) {
+			returnedCoordinates = Integer.MAX_VALUE;
+		} else {
+			returnedCoordinates = limit;
+		}
+		String countExpression = "approx_count_distinct(%s)".formatted(columnName);
+		String topKExpression = "approx_top_k(%s, %s)".formatted(columnName, returnedCoordinates);
+
+		if (!IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
+			String filterExpression = toFilterExpression(valueMatcher);
+			String filterSuffix = " FILTER (CAST(%s AS VARCHAR) %s)".formatted(columnName, filterExpression);
+
+			countExpression += filterSuffix;
+			topKExpression += filterSuffix;
+		}
+
+		queryBuilder
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+				.aggregator(Aggregator.builder()
+						.aggregationKey(ExpressionAggregation.KEY)
+						.name("approx_count_distinct" + measuresSuffix)
+						.columnName(countExpression)
+						.build())
+
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+				.aggregator(Aggregator.builder()
+						.aggregationKey(ExpressionAggregation.KEY)
+						.name("approx_top_k" + measuresSuffix)
+						.columnName(topKExpression)
+						.build());
 	}
 
 	/**

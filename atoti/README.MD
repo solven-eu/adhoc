@@ -31,6 +31,19 @@ More specifically, this repository follows guidelines provided in:
 </repository>
 ```
 
+---
+
+[Technical Documentation](https://docs.activeviam.com/products/atoti/server/latest/docs/start/license/)
+
+> To use Atoti Server, you should have a valid license.
+
+[Download](https://docs.activeviam.com/products/atoti/server/latest/docs/start/download/)
+
+> A customer account is required to download the Atoti Server application.
+
+> The released artifacts can be found on ActiveViam's JFrog Artifactory (https://activeviam.jfrog.io/artifactory/mvn/), with a different folder for each stable version.
+
+
 ## Major differences
 
 1. Atoti maintains in-memory all or part of the considered data, while Adhoc does not keep any data In-Memory.

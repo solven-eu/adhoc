@@ -294,6 +294,13 @@ Most databases handles aggregations over primitive types (e.g. SUM over doubles)
 
 # Roadmap / Limitations to lift soon
 
+## Recent changes
+
+[m2-central](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
+Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
+
+## Feature Candidates
+
 - [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`.
 - [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).

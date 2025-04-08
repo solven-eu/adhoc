@@ -20,10 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.table;
 
 import java.util.Set;
 
+import eu.solven.adhoc.query.table.TableQuery;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

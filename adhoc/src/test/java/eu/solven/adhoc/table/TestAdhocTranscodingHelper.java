@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.table;
 
 import java.util.Arrays;
 import java.util.HashMap;
