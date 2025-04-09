@@ -124,7 +124,7 @@ public class TestCalciteAdhocAdapter {
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
 						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQuery.builder().build())
-								.asMap()
+								.records()
 								.count()))
 				.explainContains("""
 						PLAN=MongoToEnumerableConverter

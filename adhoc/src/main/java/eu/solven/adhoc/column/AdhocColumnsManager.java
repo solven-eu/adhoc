@@ -141,7 +141,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
 			ITabularRecordStream aggregatedRecordsStream) {
-		Supplier<Stream<ITabularRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::asMap);
+		Supplier<Stream<ITabularRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::records);
 
 		return new ITabularRecordStream() {
 
@@ -152,7 +152,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			}
 
 			@Override
-			public Stream<ITabularRecord> asMap() {
+			public Stream<ITabularRecord> records() {
 				return memoized.get()
 						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
 						.map(row -> transcodeTypes(row));

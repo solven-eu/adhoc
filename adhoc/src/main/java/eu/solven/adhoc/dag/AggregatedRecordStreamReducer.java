@@ -85,7 +85,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			stream.asMap()
+			stream.records()
 					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 					// For any reason, `closeHandler` is not called automatically on a terminal operation
 					// .onClose(aggregatedRecordLogger.closeHandler())

@@ -41,7 +41,7 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	}
 
 	@Override
-	public Stream<ITabularRecord> asMap() {
+	public Stream<ITabularRecord> records() {
 		return streamSupplier.get();
 	}
 

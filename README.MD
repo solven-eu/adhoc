@@ -314,3 +314,5 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `AdhocQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Pivotable] Fetch all column details in a single query
+- [Composite] `getCoordinates` should be executed once per each underlying cube
+- [Composite] Enable a failing sub-query not to break the composite query

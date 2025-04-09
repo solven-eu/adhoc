@@ -24,12 +24,17 @@ package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import com.google.common.base.Functions;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
+/**
+ * Helpers related to fetch metadata information (e.g. cardinality, topK members, etc) about a table column.
+ */
 public class ColumnMetadataHelpers {
 
 	public static CoordinatesSample getCoordinatesMostGeneric(ITableWrapper table,
@@ -49,18 +54,23 @@ public class ColumnMetadataHelpers {
 			distinctCoordinates = new ArrayList<>(limit);
 		}
 
+		// Count the number of returned slices
 		long estimatedCardinality = table.streamSlices(tableQuery)
-				.asMap()
+				.records()
 				.map(r -> r.getGroupBy(column))
 				// TODO Should we return the information about null-ness?
-				.filter(c -> c != null)
+				.filter(Objects::nonNull)
 				// `.disinct()` is relevant only for InMemoryTable and related tables
 				.distinct()
+				.filter(valueMatcher::match)
+				// Collect a subset of coordinates: we may collect N coordinates while counting M matching coordinates
 				.peek(coordinate -> {
 					if (distinctCoordinates.size() < returnedCoordinates) {
 						distinctCoordinates.add(coordinate);
 					}
 				})
+				// This redundant filter helps to guarantee the sampling `.peek` is not optimized out
+				.filter(o -> true)
 				.count();
 
 		return CoordinatesSample.builder()

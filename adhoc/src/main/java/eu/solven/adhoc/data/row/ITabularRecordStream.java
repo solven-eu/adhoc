@@ -34,7 +34,11 @@ import eu.solven.adhoc.query.table.TableQuery;
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
-	Stream<ITabularRecord> asMap();
+	/**
+	 *
+	 * @return a {@link Stream} of {@link ITabularRecord}
+	 */
+	Stream<ITabularRecord> records();
 
 	/**
 	 * @deprecated Used for unitTests
@@ -42,6 +46,6 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return asMap().<Map<String, ?>>map(ITabularRecord::asMap).toList();
+		return records().<Map<String, ?>>map(ITabularRecord::asMap).toList();
 	}
 }
