@@ -316,3 +316,4 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 - [Pivotable] Fetch all column details in a single query
 - [Composite] `getCoordinates` should be executed once per each underlying cube
 - [Composite] Enable a failing sub-query not to break the composite query
+- [Feature] Enable a measure chain to be automatically injected in the measures DAG.

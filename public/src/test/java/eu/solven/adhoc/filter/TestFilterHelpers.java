@@ -25,6 +25,8 @@ package eu.solven.adhoc.filter;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -82,5 +84,17 @@ public class TestFilterHelpers {
 	public void testGetFilteredColumns_or() {
 		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
+	}
+
+	@Test
+	public void testWrapToString() throws JsonProcessingException {
+		IValueMatcher wrappedWithToString = FilterHelpers.wrapWithToString(v -> v.equals("foo"), () -> "someToString");
+
+		Assertions.assertThat(wrappedWithToString.toString()).isEqualTo("someToString");
+		Assertions.assertThat(new ObjectMapper().writeValueAsString(wrappedWithToString)).isEqualTo("""
+				{"type":"FilterHelpers$1","wrapped":"someToString"}""");
+
+		Assertions.assertThat(wrappedWithToString.match("foo")).isTrue();
+		Assertions.assertThat(wrappedWithToString.match("bar")).isFalse();
 	}
 }

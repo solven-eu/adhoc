@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
@@ -67,7 +68,10 @@ public class TestDuckDbHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(tableQueryBuilder.build());
+
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
 								select approx_count_distinct(table.column) "approx_count_distinct_7", approx_top_k(table.column, 123) "approx_top_k_7" from someTable group by ()""");
@@ -88,7 +92,10 @@ public class TestDuckDbHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+
+		Assertions.assertThat(queryWithLeftover.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
 								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
@@ -109,7 +116,10 @@ public class TestDuckDbHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		Assertions.assertThat(queryFactory.prepareQuery(tableQueryBuilder.build()).getSQL(ParamType.INLINED))
+		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+
+		Assertions.assertThat(queryWithLeftover.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
 								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ()""");

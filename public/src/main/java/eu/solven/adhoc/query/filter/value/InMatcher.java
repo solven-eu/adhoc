@@ -22,9 +22,7 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -127,5 +125,26 @@ public class InMatcher implements IValueMatcher {
 	 */
 	public static IValueMatcher isIn(Object first, Object second, Object... more) {
 		return isIn(Lists.asList(first, second, more));
+	}
+	/**
+	 *
+	 * @param valueMatcher
+	 *            some {@link IValueMatcher} expected to be an {@link EqualsMatcher} or an InMatcher
+	 * @param clazz
+	 *            the expected type of the operands
+	 * @return the {@link Set} of operands specifically defined by the IValueMatcher, assignable to clazz.
+	 * @param <T>
+	 */
+	public static <T> Set<T> extractOperands(IValueMatcher valueMatcher, Class<T> clazz) {
+		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+			return EqualsMatcher.extractOperand(equalsMatcher, clazz).map(ImmutableSet::of).orElse(ImmutableSet.of());
+		} else if (valueMatcher instanceof InMatcher inMatcher) {
+			ImmutableSet<?> operands = inMatcher.getOperands();
+
+			return operands.stream().filter(clazz::isInstance).map(clazz::cast).collect(ImmutableSet.toImmutableSet())
+;
+		} else {
+				return ImmutableSet.of();
+		}
 	}
 }

@@ -26,8 +26,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -136,5 +139,20 @@ public class FilterHelpers {
 						"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 			}
 		}
+	}
+
+	public static IValueMatcher wrapWithToString(IValueMatcher valueMatcher, Supplier<String> toString) {
+		return new IValueMatcher() {
+			@Override
+			public boolean match(Object value) {
+				return valueMatcher.match(value);
+			}
+
+			@JsonProperty(access = JsonProperty.Access.READ_ONLY, value = "wrapped")
+			@Override
+			public String toString() {
+				return toString.get();
+			}
+		};
 	}
 }

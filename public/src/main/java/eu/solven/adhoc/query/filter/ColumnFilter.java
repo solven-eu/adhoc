@@ -53,8 +53,9 @@ public class ColumnFilter implements IColumnFilter {
 	final IValueMatcher valueMatcher;
 
 	// If the input lacks the column, should we behave as if containing an explicit null, or return false.
-	// This flag does not have an effect on all IValueMatcher, but only on matchers which may returns true on null.
-	// For instance, it is noop for EqualsMatcher, which accepts only a non-null operand.
+	// This flag does not have an effect on most IValueMatcher, but only on matchers which may returns true on null.
+	// For instance, it is noop for EqualsMatcher, which accepts only a non-null operand. But it can be
+	// very important if one use a NullMatcher.
 	@Builder.Default
 	final boolean nullIfAbsent = true;
 

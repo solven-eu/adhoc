@@ -37,6 +37,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -111,12 +112,12 @@ public class TableQuery
 	}
 
 	/**
-	 * 
-	 * @param tableQuery
+	 * @param tableQuery the initial tableQuery
+	 * @param leftover the filter which has to be applied manually over the output slices (e.g. on a customFilter which can not be transcoded for given table)
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery) {
+	public static AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery, IAdhocFilter leftover) {
 		List<String> aggregatorNames = new ArrayList<>();
 		tableQuery.getAggregators()
 				.stream()
@@ -128,7 +129,16 @@ public class TableQuery
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
 			columns.add(column.getName());
 		});
-		return AggregatedRecordFields.builder().aggregates(aggregatorNames).columns(columns).build();
+
+		List<String> lateColumns = new ArrayList<>();
+		FilterHelpers.getFilteredColumns(leftover).forEach(lateColumn -> {
+			lateColumns.add(lateColumn);
+		});
+
+		// Make sure a latecolumn is not also a normal groupBy column
+		lateColumns.removeAll(columns);
+
+		return AggregatedRecordFields.builder().aggregates(aggregatorNames).columns(columns).lateColumns(lateColumns).build();
 	}
 
 	@Deprecated(since = "Use .getOptions()")

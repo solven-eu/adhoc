@@ -86,6 +86,10 @@ public class DuckDbHelper {
 	 */
 	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
 		DuckDBConnection duckDbConnection = DuckDbHelper.makeFreshInMemoryDb();
+		return dslSupplier(duckDbConnection);
+	}
+
+	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
 		return () -> {
 			Connection duplicated;
 			try {
@@ -93,7 +97,7 @@ public class DuckDbHelper {
 			} catch (SQLException e) {
 				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
 			}
-			return DSL.using(duplicated);
+			return DSLSupplier.fromConnection(() -> duplicated).getDSLContext();
 		};
 	}
 

@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.conf.ParamType;
@@ -66,8 +68,8 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(AggregatedRecordFields queriedColumns, ResultQuery<Record> sqlQuery) {
-		String sql = sqlQuery.getSQL(ParamType.INLINED);
+	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
 				// Use standard SQL syntax for queries.
@@ -115,7 +117,7 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 			Map<String, Object> aggregates = new LinkedHashMap<>();
 
 			{
-				List<String> aggregateColumns = queriedColumns.getAggregates();
+				List<String> aggregateColumns = sqlQuery.getFields().getAggregates();
 				for (int i = 0; i < aggregateColumns.size(); i++) {
 					Field field = schema.getFields().get(i);
 
@@ -135,7 +137,7 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 			Map<String, Object> groupBys = new LinkedHashMap<>();
 
 			{
-				List<String> aggregateGroupBys = queriedColumns.getColumns();
+				List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
 				for (int i = 0; i < aggregateGroupBys.size(); i++) {
 					Field field = schema.getFields().get(aggregateGroupBys.size() + i);
 
@@ -152,12 +154,16 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 				}
 			}
 
+			if (!sqlQuery.getFields().getLateColumns().isEmpty()) {
+				throw new NotYetImplementedException("TODO");
+			}
+
 			return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 		});
 	}
 
 	@Override
-	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
+	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
 		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
 		log.info("[DEBUG] TODO Google BigQuery");
 	}

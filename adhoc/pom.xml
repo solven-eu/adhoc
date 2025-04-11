@@ -10,6 +10,7 @@
 
 	<properties>
 		<cucumber.version>7.14.0</cucumber.version>
+		<jooq.version>3.20.3</jooq.version>
 	</properties>
 
 	<dependencies>
@@ -49,7 +50,7 @@
 		<dependency>
 			<groupId>org.jooq</groupId>
 			<artifactId>jooq</artifactId>
-			<version>3.19.13</version>
+			<version>${jooq.version}</version>
 		</dependency>
 
 		<dependency>

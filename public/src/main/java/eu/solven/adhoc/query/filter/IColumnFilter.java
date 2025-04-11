@@ -30,7 +30,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 /**
- * Filter along a specific column. Typically for `=` or `IN` matchers.
+ * Filter along a specific column. Typically, for `=` or `IN` matchers.
  *
  * @author Benoit Lacelle
  */
@@ -44,6 +44,8 @@ public interface IColumnFilter extends IAdhocFilter {
 
 	/**
 	 * The default is generally true, as it follows the fact that `Map.get(unknownKey)` returns null.
+	 *
+	 * BEWARE Explain actual use-case for this. May it plays a role for CompositeCube, when a column is missing on one subCube?
 	 *
 	 * @return true if a missing column would behave like containing NULL.
 	 */

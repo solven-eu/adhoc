@@ -24,12 +24,25 @@ package eu.solven.adhoc.table.sql;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
+/**
+ * Help transforming a {@link org.jooq.Record} into {@link eu.solven.adhoc.data.row.ITabularRecord}
+ */
 @Value
 @Builder
 public class AggregatedRecordFields {
-	List<String> aggregates;
-	List<String> columns;
+	@NonNull
+	@Singular
+	ImmutableList<String> aggregates;
+	@NonNull
+	@Singular
+	ImmutableList<String> columns;
+	@NonNull
+	@Singular
+	ImmutableList<String> lateColumns;
 }

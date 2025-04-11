@@ -55,7 +55,7 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 
 	IAdhocTableTranscoder transcoder =
 			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
-	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
+	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory( new StandardOperatorsFactory(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 
@@ -63,30 +63,30 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
-		Condition condition = streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
-		Assertions.assertThat(condition.toString()).isEqualTo("""
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
 				  and "k2" = 'v2'
-				)
-								""".trim());
+				)""");
 	}
 
 	@Test
 	public void testToTableQuery_transcodingLeadsToMatchNone() {
 		// BEWARE We expect a WARN. It should be turned into an Event at some point
-		ResultQuery<Record> condition = streamOpener.prepareQuery(
+		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(
 				TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build());
 
-		Assertions.assertThat(condition.toString()).isEqualTo("""
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getQuery().toString()).isEqualTo("""
 				select 1
 				from "someTableName"
 				where (
 				  tk1" = 'v1'
 				  and "k2" = 'v2'
 				)
-				group by ()
-								""".trim());
+				group by ()""");
 	}
 }

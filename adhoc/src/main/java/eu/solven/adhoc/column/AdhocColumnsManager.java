@@ -48,14 +48,7 @@ import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.query.filter.value.RegexMatcher;
+import eu.solven.adhoc.query.filter.value.*;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -221,13 +214,17 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 		} else if (valueMatcher instanceof NullMatcher || valueMatcher instanceof LikeMatcher
 				|| valueMatcher instanceof RegexMatcher) {
 			return valueMatcher;
+		} else if (valueMatcher instanceof AndMatcher andMatcher) {
+			List<IValueMatcher> transcoded =
+					andMatcher.getOperands().stream().map(operand -> transcodeType(column, operand)).toList();
+			return AndMatcher.and(transcoded);
 		} else if (valueMatcher instanceof OrMatcher orMatcher) {
 			List<IValueMatcher> transcoded =
 					orMatcher.getOperands().stream().map(operand -> transcodeType(column, operand)).toList();
 			return OrMatcher.or(transcoded);
 		} else {
-			throw new NotYetImplementedException(
-					"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
+			// For complex valueMatcher, the project may have a custom way to convert it into a table IValueMatcher
+			return customTypeManager.toTable(column, valueMatcher);
 		}
 	}
 

@@ -31,6 +31,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
@@ -154,19 +157,17 @@ public class JooqTableWrapper implements ITableWrapper {
 
 		IJooqTableQueryFactory queryFactory = makeQueryFactory();
 
-		ResultQuery<Record> resultQuery = queryFactory.prepareQuery(tableQuery);
+		IJooqTableQueryFactory.QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isExplain() || tableQuery.isDebug()) {
-			log.info("[EXPLAIN] SQL to db={}: `{}`", getName(), resultQuery.getSQL(ParamType.INLINED));
+			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}", getName(), resultQuery.getQuery().getSQL(ParamType.INLINED), resultQuery.getLeftover());
 			// resultQuery.fields()
 		}
 		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);
 		}
 
-		AggregatedRecordFields fields = queryFactory.makeSelectedColumns(tableQuery);
-
-		Stream<ITabularRecord> tableStream = toMapStream(fields, resultQuery);
+		Stream<ITabularRecord> tableStream = toMapStream(resultQuery);
 
 		return new SuppliedTabularRecordStream(tableQuery, () -> tableStream);
 	}
@@ -178,7 +179,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		return queryFactory;
 	}
 
-	protected void debugResultQuery(ResultQuery<Record> resultQuery) {
+	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
 		DSLContext dslContext = makeDsl();
 
 		try {
@@ -186,9 +187,10 @@ public class JooqTableWrapper implements ITableWrapper {
 			log.info("[DEBUG] {}", columnNameToType);
 
 			// https://stackoverflow.com/questions/76908078/how-to-check-if-a-query-is-valid-or-not-using-jooq
-			String plan = dslContext.explain(resultQuery).plan();
+			String plan = dslContext.explain(resultQuery.getQuery()).plan();
 
 			log.info("[DEBUG] Query plan: {}{}", System.lineSeparator(), plan);
+			log.info("[DEBUG] Late filter: {}", resultQuery.getLeftover());
 		} catch (RuntimeException e) {
 			log.warn("[DEBUG] Issue on EXPLAIN on query={}", resultQuery, e);
 		}
@@ -202,16 +204,20 @@ public class JooqTableWrapper implements ITableWrapper {
 				.build();
 	}
 
-	protected Stream<ITabularRecord> toMapStream(AggregatedRecordFields fields, ResultQuery<Record> sqlQuery) {
-		return sqlQuery.stream().map(r -> intoMap(fields, r));
+	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		return sqlQuery.getQuery().stream().map(r -> intoMap(sqlQuery.getFields(), r)).filter(row -> {
+			return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), sqlQuery.getLeftover(), row);
+		});
 
 	}
 
 	// Inspired from AbstractRecord.intoMap
-	// Take original `queriedColumns` as the record may not clearly expresses aliases (e.g. `p.name` vs `name`). And it
+	// Take original `queriedColumns` as the record may not clearly express aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
 	protected ITabularRecord intoMap(AggregatedRecordFields fields, Record r) {
 		Map<String, Object> aggregates;
+
+		int columnShift = 0;
 
 		List<String> aggregateFields = fields.getAggregates();
 		{
@@ -221,7 +227,7 @@ public class JooqTableWrapper implements ITableWrapper {
 			for (int i = 0; i < size; i++) {
 				String columnName = aggregateFields.get(i);
 
-				Object previousValue = aggregates.put(columnName, r.get(i));
+				Object previousValue = aggregates.put(columnName, r.get(columnShift + i));
 				if (previousValue != null) {
 					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 				}
@@ -229,6 +235,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		}
 
 		Map<String, Object> groupBys;
+		columnShift+= fields.getAggregates().size();
 		{
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
@@ -237,19 +244,32 @@ public class JooqTableWrapper implements ITableWrapper {
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 
-				Object previousValue = groupBys.put(columnName, r.get(aggregateFields.size() + i));
+				Object previousValue = groupBys.put(columnName, r.get(columnShift + i));
 				if (previousValue != null) {
 					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 				}
 			}
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
-	}
 
-	protected String toQualifiedName(Field<?> field) {
-		// field.getQualifiedName()
-		return Stream.of(field.getQualifiedName().parts()).map(Name::first).collect(Collectors.joining("."));
+		Map<String, Object> groupBysForLateFilter;
+		columnShift +=  fields.getColumns().size();
+		{
+			List<String> groupByFields = fields.getLateColumns();
+			int size = groupByFields.size();
+
+			groupBysForLateFilter = new LinkedHashMap<>(size);
+			for (int i = 0; i < size; i++) {
+				String columnName = groupByFields.get(i);
+
+				Object previousValue = groupBysForLateFilter.put(columnName, r.get(columnShift + i));
+				if (previousValue != null) {
+					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+				}
+			}
+		}
+
+		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBysForLateFilter).build();
 	}
 
 	@Override

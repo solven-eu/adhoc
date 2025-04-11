@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,17 +22,16 @@
  */
 package eu.solven.adhoc.table.sql;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.query.filter.*;
+import lombok.*;
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultDataType;
-import org.jooq.impl.ParserException;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -46,11 +45,6 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.ICountMeasuresConstants;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -63,9 +57,6 @@ import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -78,316 +69,396 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
-	@NonNull
-	@Builder.Default
-	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+    @NonNull
+    @Builder.Default
+    IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
-	@NonNull
-	final TableLike<?> table;
+    @NonNull
+    final TableLike<?> table;
 
-	@NonNull
-	DSLContext dslContext;
+    @NonNull
+    DSLContext dslContext;
 
-	@Override
-	public ResultQuery<Record> prepareQuery(TableQuery tableQuery) {
-		// `SELECT ...`
-		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(tableQuery);
+    /**
+     * Holds a Set of SQL {@link Condition}s, given an {@link IAdhocFilter}. Some filters may not be convertible into SQL. In such  case, we enxure the columns are i nthe groupBy for manual filtering.
+     */
+    @Value
+    @Builder
+    public static class ConditionWithFilter {
+        // SQL conditions, translated from an IAdhocFilter
+        @NonNull
+        @Builder.Default
+        Condition condition = DSL.trueCondition();
+        // Holds the filter of the conditions which were not translated into SQL
+        @NonNull
+        @Builder.Default
+        IAdhocFilter leftover = IAdhocFilter.MATCH_ALL;
 
-		// `FROM ...`
-		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
+    }
 
-		// `WHERE ...`
-		Collection<Condition> dbAndConditions = toConditions(tableQuery);
-		// Typically happens on `COUNT(*)`
-		dbAndConditions.removeIf(c -> c instanceof True);
+    @Override
+    public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
+        ConditionWithFilter conditionAndLeftover = toConditions(tableQuery);
+        AggregatedRecordFields fields = makeSelectedColumns(tableQuery, conditionAndLeftover.getLeftover());
 
-		SelectConnectByStep<Record> selectFromWhere;
-		if (dbAndConditions.isEmpty()) {
-			selectFromWhere = selectFrom;
-		} else {
-			selectFromWhere = selectFrom.where(dbAndConditions);
-		}
+        // `SELECT ...`
+        Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(tableQuery, fields);
 
-		// `GROUP BY ...`
-		Collection<GroupField> groupFields = makeGroupingFields(tableQuery);
-		SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
+        // `FROM ...`
+        SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
 
-		// `ORDER BY ...`
-		ResultQuery<Record> resultQuery;
-		if (tableQuery.getTopClause().isPresent()) {
-			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(tableQuery);
+        // `WHERE ...`
 
-			resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(tableQuery.getTopClause().getLimit());
-		} else {
-			resultQuery = selectFromWhereGroupBy;
-		}
+        SelectConnectByStep<Record> selectFromWhere;
+        if (conditionAndLeftover.getCondition() instanceof True) {
+            selectFromWhere = selectFrom;
+        } else {
+            selectFromWhere = selectFrom.where(conditionAndLeftover.getCondition());
+        }
 
-		// DO NOT EXPLAIN as it is already done in AdhocJooqTableWrapper.openDbStream
-		// if (dbQuery.isExplain() || dbQuery.isDebug()) {
-		// log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
-		// }
+        // `GROUP BY ...`
+        Collection<GroupField> groupFields = makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover());
+        SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
 
-		return resultQuery;
-	}
+        // `ORDER BY ...`
+        ResultQuery<Record> resultQuery;
+        if (tableQuery.getTopClause().isPresent()) {
+            Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(tableQuery);
 
-	protected Collection<Condition> toConditions(TableQuery dbQuery) {
-		Collection<Condition> dbAndConditions = new ArrayList<>();
+            resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(tableQuery.getTopClause().getLimit());
+        } else {
+            resultQuery = selectFromWhereGroupBy;
+        }
 
-		dbAndConditions.add(oneMeasureIsNotNull(dbQuery.getAggregators()));
+        // DO NOT EXPLAIN as it is already done in AdhocJooqTableWrapper.openDbStream
+        // if (dbQuery.isExplain() || dbQuery.isDebug()) {
+        // log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
+        // }
 
-		IAdhocFilter filter = dbQuery.getFilter();
-		if (!filter.isMatchAll()) {
-			dbAndConditions.add(toCondition(filter));
-		}
 
-		return dbAndConditions;
-	}
+        return QueryWithLeftover.builder().query(resultQuery).leftover(conditionAndLeftover.getLeftover()).fields(fields).build();
+    }
 
-	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery) {
-		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
-		tableQuery.getAggregators().stream().distinct().map(a -> {
-			try {
-				return toSqlAggregatedColumn(a);
-			} catch (RuntimeException e) {
-				throw new IllegalArgumentException("Issue converting to SQL: %s".formatted(a), e);
-			}
-		})
-				// EmptyAggregation leads to no SQL aggregation
-				.filter(a -> a != null)
-				.forEach(a -> selectedFields.add(a));
+    protected ConditionWithFilter toConditions(TableQuery tableQuery) {
+        Collection<Condition> conditions = new ArrayList<>();
+        Collection<IAdhocFilter> leftoverFilters = new ArrayList<>();
 
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			Field<Object> field = columnAsField(column);
-			selectedFields.add(field);
-		});
+        // Conditions from measures
+        {
+            conditions.add(oneMeasureIsNotNull(tableQuery.getAggregators()));
+        }
 
-		if (selectedFields.isEmpty()) {
-			// Typically happens on EmptyAggregation
-			// We force one field to prevent JooQ querying automatically for `*`
-			selectedFields.add(DSL.val(1));
-		}
+        // Conditions from filters
+        {
+            IAdhocFilter filter = tableQuery.getFilter();
+            ConditionWithFilter conditionWithFilter = toCondition(filter);
 
-		return selectedFields;
-	}
+            conditions.add(conditionWithFilter.getCondition());
+            leftoverFilters.add(conditionWithFilter.getLeftover());
+        }
 
-	@Override
-	public AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery) {
-		return TableQuery.makeSelectedColumns(tableQuery);
-	}
+        // AND conditions from measures and from filters
+        return and(conditions, leftoverFilters);
+    }
 
-	/**
-	 * Most usages are not groupBy.
-	 * 
-	 * @param column
-	 * @return a {@link Field} mapping to given column.
-	 */
-	protected Field<Object> columnAsField(IAdhocColumn column) {
-		return columnAsField(column, false);
-	}
+    protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery, AggregatedRecordFields fields) {
+        List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
+        tableQuery.getAggregators().stream().distinct().map(a -> {
+                    try {
+                        return toSqlAggregatedColumn(a);
+                    } catch (RuntimeException e) {
+                        throw new IllegalArgumentException("Issue converting to SQL: %s".formatted(a), e);
+                    }
+                })
+                // EmptyAggregation leads to no SQL aggregation
+                .filter(Objects::nonNull)
+                .forEach(selectedFields::add);
 
-	protected Field<Object> columnAsField(IAdhocColumn column, boolean isGroupBy) {
-		String columnName = column.getName();
-		Field<Object> field;
+        tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+            Field<Object> field = columnAsField(column);
+            selectedFields.add(field);
+        });
 
-		if (column instanceof IHasSqlExpression hasSql) {
-			// TODO How could we transcode column referred by the SQL?
-			// Should we add named columns from transcoder?
-			String sql = hasSql.getSql();
-			field = DSL.field(sql).as(columnName);
-		} else {
-			Field<Object> unaliasedField = DSL.field(name(columnName));
+        fields.getLateColumns().forEach(lateColumn -> {
+            Field<Object> field = columnAsField(ReferencedColumn.ref(lateColumn));
+            selectedFields.add(field);
+        });
 
-			// GroupBy: refer to the underlying column, to prevent ambiguities
-			// If we were to have some aliasing around here, aliases should probably not be appled on groupBy
-			// https://github.com/duckdb/duckdb/issues/16097
-			// https://github.com/jOOQ/jOOQ/issues/17980
-			field = unaliasedField;
-		}
-		return field;
-	}
+        if (selectedFields.isEmpty()) {
+            // Typically happens on EmptyAggregation
+            // We force one field to prevent JooQ querying automatically for `*`
+            selectedFields.add(DSL.val(1));
+        }
 
-	protected boolean isExpression(String columnName) {
-		return AdhocJooqHelper.isExpression(columnName);
-	}
+        return selectedFields;
+    }
 
-	/**
-	 * 
-	 * @param name
-	 *            may be a simple columnName (e.g. `someField`), or a joined field (e.g. `someTable.someField`),or a
-	 *            qualified name (e.g. `"someTable.someField"`).
-	 * @return
-	 */
-	protected Name name(String name) {
-		return AdhocJooqHelper.name(name, dslContext::parser);
-	}
+//    @Override
+    protected AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery, IAdhocFilter leftover) {
+        return TableQuery.makeSelectedColumns(tableQuery,leftover);
+    }
 
-	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery) {
-		List<GroupField> groupedFields = new ArrayList<>();
+    /**
+     * Most usages are not groupBy.
+     *
+     * @param column
+     * @return a {@link Field} mapping to given column.
+     */
+    protected Field<Object> columnAsField(IAdhocColumn column) {
+        String columnName = column.getName();
+        Field<Object> field;
 
-		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			Field<Object> field = columnAsField(column, true);
-			groupedFields.add(field);
-		});
+        if (column instanceof IHasSqlExpression hasSql) {
+            // TODO How could we transcode column referred by the SQL?
+            // Should we add named columns from transcoder?
+            String sql = hasSql.getSql();
+            field = DSL.field(sql).as(columnName);
+        } else {
+            Field<Object> unaliasedField = DSL.field(name(columnName));
 
-		return groupedFields;
-	}
+            // GroupBy: refer to the underlying column, to prevent ambiguities
+            // If we were to have some aliasing around here, aliases should probably not be appled on groupBy
+            // https://github.com/duckdb/duckdb/issues/16097
+            // https://github.com/jOOQ/jOOQ/issues/17980
+            field = unaliasedField;
+        }
+        return field;
+    }
 
-	private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
-		AdhocTopClause topClause = dbQuery.getTopClause();
-		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
-			Field<Object> field = columnAsField(c);
+    protected boolean isExpression(String columnName) {
+        return AdhocJooqHelper.isExpression(columnName);
+    }
 
-			SortField<Object> desc;
-			if (topClause.isDesc()) {
-				desc = field.desc();
-			} else {
-				desc = field.asc();
-			}
+    /**
+     *
+     * @param name
+     *            may be a simple columnName (e.g. `someField`), or a joined field (e.g. `someTable.someField`),or a
+     *            qualified name (e.g. `"someTable.someField"`).
+     * @return
+     */
+    protected Name name(String name) {
+        return AdhocJooqHelper.name(name, dslContext::parser);
+    }
 
-			return desc;
-		}).toList();
+    /**
+     *
+     * @param dbQuery
+     * @param leftoverFilter the filter which has not been able to be transcoded into a {@link Condition}
+     * @return
+     */
+    protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery, IAdhocFilter leftoverFilter) {
+        List<GroupField> groupedFields = new ArrayList<>();
 
-		return columns;
-	}
+        dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+            Field<Object> field = columnAsField(column);
+            groupedFields.add(field);
+        });
 
-	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
-		String aggregationKey = a.getAggregationKey();
-		String columnName = a.getColumnName();
+        FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+            Field<Object> field = columnAsField(ReferencedColumn.ref(column));
+            groupedFields.add(field);
+        });
 
-		if (ExpressionAggregation.isExpression(aggregationKey)) {
-			// Do not call `name` to make sure it is not qualified
-			return DSL.field(DSL.sql(columnName)).as(a.getName());
-		} else if (EmptyAggregation.isEmpty(aggregationKey)) {
-			// There is no aggregation for empty: we just want to fetch groupBys
-			return null;
-		} else {
-			Name namedColumn = name(columnName);
+        return groupedFields;
+    }
 
-			AggregateFunction<?> sqlAggFunction;
-			if (SumAggregation.KEY.equals(aggregationKey)) {
-				// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
-				// dialect `DEFAULT`
-				Field<Double> field =
-						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+    private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
+        AdhocTopClause topClause = dbQuery.getTopClause();
+        List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
+            Field<Object> field = columnAsField(c);
 
-				sqlAggFunction = DSL.sum(field);
-			} else if (MaxAggregation.KEY.equals(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.max(field);
-			} else if (MinAggregation.KEY.equals(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.min(field);
-			} else if (AvgAggregation.isAvg(aggregationKey)) {
-				Field<Double> field =
-						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
-				sqlAggFunction = DSL.avg(field);
-			} else if (CountAggregation.isCount(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.count(field);
-			} else if (RankAggregation.isRank(aggregationKey)) {
-				RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
+            SortField<Object> desc;
+            if (topClause.isDesc()) {
+                desc = field.desc();
+            } else {
+                desc = field.asc();
+            }
 
-				Field<?> field = DSL.field(namedColumn);
-				String duckDbFunction;
+            return desc;
+        }).toList();
 
-				if (agg.isAscElseDesc()) {
-					duckDbFunction = "arg_min";
-				} else {
-					duckDbFunction = "arg_max";
-				}
+        return columns;
+    }
 
-				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-				sqlAggFunction =
-						DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
-			} else {
-				throw new UnsupportedOperationException(
-						"SQL does not support aggregationKey=%s".formatted(aggregationKey));
-			}
-			return sqlAggFunction.as(a.getName());
-		}
-	}
+    protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
+        String aggregationKey = a.getAggregationKey();
+        String columnName = a.getColumnName();
 
-	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
-		// We're interested in a row if at least one measure is not null
-		List<Condition> oneNotNullConditions = aggregators.stream()
-				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
-				.filter(a -> !ExpressionAggregation.isExpression(a.getAggregationKey()))
-				.map(Aggregator::getColumnName)
-				.filter(c -> !isExpression(c))
-				.map(c -> DSL.field(name(c)).isNotNull())
-				.collect(Collectors.toList());
+        if (ExpressionAggregation.isExpression(aggregationKey)) {
+            // Do not call `name` to make sure it is not qualified
+            return DSL.field(DSL.sql(columnName)).as(a.getName());
+        } else if (EmptyAggregation.isEmpty(aggregationKey)) {
+            // There is no aggregation for empty: we just want to fetch groupBys
+            return null;
+        } else {
+            Name namedColumn = name(columnName);
 
-		if (oneNotNullConditions.isEmpty()) {
-			// Typically happens when the only measure is `COUNT(*)`
-			return DSL.trueCondition();
-		}
+            AggregateFunction<?> sqlAggFunction;
+            if (SumAggregation.KEY.equals(aggregationKey)) {
+                // DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
+                // dialect `DEFAULT`
+                Field<Double> field =
+                        DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
 
-		return DSL.or(oneNotNullConditions);
-	}
+                sqlAggFunction = DSL.sum(field);
+            } else if (MaxAggregation.KEY.equals(aggregationKey)) {
+                Field<?> field = DSL.field(namedColumn);
+                sqlAggFunction = DSL.max(field);
+            } else if (MinAggregation.KEY.equals(aggregationKey)) {
+                Field<?> field = DSL.field(namedColumn);
+                sqlAggFunction = DSL.min(field);
+            } else if (AvgAggregation.isAvg(aggregationKey)) {
+                Field<Double> field =
+                        DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+                sqlAggFunction = DSL.avg(field);
+            } else if (CountAggregation.isCount(aggregationKey)) {
+                Field<?> field = DSL.field(namedColumn);
+                sqlAggFunction = DSL.count(field);
+            } else if (RankAggregation.isRank(aggregationKey)) {
+                RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
 
-	protected Condition toCondition(IAdhocFilter filter) {
-		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			return toCondition(columnFilter);
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IAdhocFilter> operands = andFilter.getOperands();
-			// TODO Detect and report if multiple conditions hits the same column
-			// It would be the symptom of conflicting transcoding
-			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
+                Field<?> field = DSL.field(namedColumn);
+                String duckDbFunction;
 
-			return DSL.and(conditions);
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			Set<IAdhocFilter> operands = orFilter.getOperands();
-			List<Condition> conditions = operands.stream().map(this::toCondition).toList();
-			return DSL.or(conditions);
-		} else {
-			throw new UnsupportedOperationException(
-					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-		}
-	}
+                if (agg.isAscElseDesc()) {
+                    duckDbFunction = "arg_min";
+                } else {
+                    duckDbFunction = "arg_max";
+                }
 
-	protected Condition toCondition(IColumnFilter columnFilter) {
-		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-		String column = columnFilter.getColumn();
+                // https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
+                sqlAggFunction =
+                        DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
+            } else {
+                throw new UnsupportedOperationException(
+                        "SQL does not support aggregationKey=%s".formatted(aggregationKey));
+            }
+            return sqlAggFunction.as(a.getName());
+        }
+    }
 
-		Condition condition;
-		final Field<Object> field = DSL.field(name(column));
-		switch (valueMatcher) {
-		case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
-		case InMatcher inMatcher -> {
-			Set<?> operands = inMatcher.getOperands();
+    protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
+        // We're interested in a row if at least one measure is not null
+        List<Condition> oneNotNullConditions = aggregators.stream()
+                .filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
+                .filter(a -> !ExpressionAggregation.isExpression(a.getAggregationKey()))
+                .map(Aggregator::getColumnName)
+                .filter(c -> !isExpression(c))
+                .map(c -> DSL.field(name(c)).isNotNull())
+                .collect(Collectors.toList());
 
-			if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
-				// Please fill a ticket, various such cases could be handled
-				throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
-			}
+        if (oneNotNullConditions.isEmpty()) {
+            // Typically happens when the only measure is `COUNT(*)`
+            return DSL.trueCondition();
+        }
 
-			condition = DSL.condition(field.in(operands));
-		}
-		case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
-		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
-		case ComparingMatcher comparingMatcher -> {
-			Object operand = comparingMatcher.getOperand();
+        return DSL.or(oneNotNullConditions);
+    }
 
-			Condition jooqCondition;
-			if (comparingMatcher.isGreaterThan()) {
-				if (comparingMatcher.isMatchIfEqual()) {
-					jooqCondition = field.greaterOrEqual(operand);
-				} else {
-					jooqCondition = field.greaterThan(operand);
-				}
-			} else {
-				if (comparingMatcher.isMatchIfEqual()) {
-					jooqCondition = field.lessOrEqual(operand);
-				} else {
-					jooqCondition = field.lessThan(operand);
-				}
-			}
-			condition = DSL.condition(jooqCondition);
-		}
-		default -> throw new UnsupportedOperationException(
-				"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
-		}
-		return condition;
-	}
+    protected ConditionWithFilter toCondition(IAdhocFilter filter) {
+        if (filter.isMatchAll()) {
+            return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();
+        } else if (filter.isMatchNone()) {
+            return ConditionWithFilter.builder().condition(DSL.falseCondition()).build();
+        } else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+            Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter);
+            if (optColumnFilterAsCondition.isEmpty()) {
+                log.debug("{} will be applied manually", columnFilter);
+                return ConditionWithFilter.builder().leftover(columnFilter).build();
+            } else {
+                return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
+            }
+        } else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+            Set<IAdhocFilter> operands = andFilter.getOperands();
+            // TODO Detect and report if multiple conditions hits the same column
+            // It would be the symptom of conflicting transcoding
+            List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
+
+            List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
+            List<IAdhocFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
+
+            return and(sqlConditions, leftoversConditions);
+        } else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+            Set<IAdhocFilter> operands = orFilter.getOperands();
+
+            List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
+
+            List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
+            List<IAdhocFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
+
+            return ConditionWithFilter.builder().condition(DSL.or(sqlConditions)).leftover(OrFilter.or(leftoversConditions)).build();
+        } else {
+            throw new UnsupportedOperationException(
+                    "Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+        }
+    }
+
+    protected ConditionWithFilter and(Collection<Condition> sqlConditions, Collection<IAdhocFilter> leftoversConditions) {
+        return ConditionWithFilter.builder().condition(andSql(sqlConditions)).leftover(AndFilter.and(leftoversConditions)).build();
+    }
+
+    protected Condition andSql(Collection<Condition> sqlConditions) {
+        List<Condition> notTrueConditions = sqlConditions.stream()
+                // Typically happens on `COUNT(*)`
+                .filter(c -> !(c instanceof True)).toList();
+
+        if (notTrueConditions.isEmpty()) {
+            return DSL.trueCondition();
+        }
+
+        return DSL.and(notTrueConditions);
+    }
+
+    /**
+     *
+     * @param columnFilter
+     * @return
+     */
+    protected Optional<Condition> toCondition(IColumnFilter columnFilter) {
+        IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+        String column = columnFilter.getColumn();
+
+        Condition condition;
+        final Field<Object> field = DSL.field(name(column));
+        switch (valueMatcher) {
+            case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
+            case InMatcher inMatcher -> {
+                Set<?> operands = inMatcher.getOperands();
+
+                if (operands.stream().anyMatch(o -> o instanceof IValueMatcher)) {
+                    // Please fill a ticket, various such cases could be handled
+                    throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
+                }
+
+                condition = DSL.condition(field.in(operands));
+            }
+            case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
+            case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+            case ComparingMatcher comparingMatcher -> {
+                Object operand = comparingMatcher.getOperand();
+
+                Condition jooqCondition;
+                if (comparingMatcher.isGreaterThan()) {
+                    if (comparingMatcher.isMatchIfEqual()) {
+                        jooqCondition = field.greaterOrEqual(operand);
+                    } else {
+                        jooqCondition = field.greaterThan(operand);
+                    }
+                } else {
+                    if (comparingMatcher.isMatchIfEqual()) {
+                        jooqCondition = field.lessOrEqual(operand);
+                    } else {
+                        jooqCondition = field.lessThan(operand);
+                    }
+                }
+                condition = DSL.condition(jooqCondition);
+            }
+            default -> condition = null;
+//				throw new UnsupportedOperationException(
+//				"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
+        }
+
+        return Optional.ofNullable(condition);
+    }
 
 }

@@ -50,6 +50,11 @@ public interface IValueMatcher {
 	IValueMatcher MATCH_ALL = AndMatcher.builder().build();
 	IValueMatcher MATCH_NONE = OrMatcher.builder().build();
 
+	/**
+	 *
+	 * @param value may be null
+	 * @return true if the value is matched
+	 */
 	boolean match(Object value);
 
 	/**

@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
+import lombok.NonNull;
 
 /**
  * Used to transcode types, typically from/to {@link ITableWrapper}.
@@ -35,16 +37,16 @@ public interface ICustomTypeManager {
 	/**
 	 *
 	 * @param column
-	 * @param coordinate
-	 * @return
+	 * @param coordinate some coordinate, typically queried by a cube/measure/user
+	 * @return the equivalent object compatible with the underlying table
 	 */
 	Object toTable(String column, Object coordinate);
 
 	/**
 	 *
 	 * @param column
-	 * @param coordinate
-	 * @return
+	 * @param coordinate some coordinate, typically provided by a table.
+	 * @return the equivalent object compatible with the cube/measures/user
 	 */
 	Object fromTable(String column, Object coordinate);
 
@@ -56,4 +58,6 @@ public interface ICustomTypeManager {
 	 * @return true if this column may be transcoded
 	 */
 	boolean mayTranscode(String column);
+
+	IValueMatcher toTable(String column,IValueMatcher valueMatcher);
 }

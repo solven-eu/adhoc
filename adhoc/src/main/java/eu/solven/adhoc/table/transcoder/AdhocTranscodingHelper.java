@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -147,6 +148,37 @@ public class AdhocTranscodingHelper {
 
 			if (value == null) {
 				if (input.containsKey(underlyingColumn)) {
+					log.trace("Key to null-ref");
+				} else {
+					log.trace("Missing key");
+					if (columnFilter.isNullIfAbsent()) {
+						log.trace("Treat absent as null");
+					} else {
+						log.trace("Do not treat absent as null, but as missing, hence not matched");
+						return false;
+					}
+				}
+			}
+
+			return columnFilter.getValueMatcher().match(value);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return !match(transcoder, notFilter.getNegated(), input);
+		} else {
+			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
+		}
+	}
+
+	public static boolean match(IAdhocTableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
+			Object value = input.getGroupBy(underlyingColumn);
+
+			if (value == null) {
+				if (input.getGroupBys().containsKey(underlyingColumn)) {
 					log.trace("Key to null-ref");
 				} else {
 					log.trace("Missing key");
