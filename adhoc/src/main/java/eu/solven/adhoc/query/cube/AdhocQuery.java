@@ -194,17 +194,24 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 			return andFilter(ColumnFilter.builder().column(column).matching(value).build());
 		}
 
-		public AdhocQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
+		public AdhocQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
 			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
 
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
 			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());
-			Lists.asList(firstGroupBy, moreGroupBys)
-					.stream()
-					.map(ReferencedColumn::ref)
-					.forEach(allGroupByColumns::add);
+			groupBys.stream().forEach(allGroupByColumns::add);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
+
+			return this;
+		}
+
+		public AdhocQueryBuilder groupByAlso(IAdhocColumn firstGroupBy, IAdhocColumn... moreGroupBys) {
+			return groupByAlso(Lists.asList(firstGroupBy, moreGroupBys));
+		}
+
+		public AdhocQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
+			groupByAlso(Lists.asList(firstGroupBy, moreGroupBys).stream().map(ReferencedColumn::ref).toList());
 
 			return this;
 		}

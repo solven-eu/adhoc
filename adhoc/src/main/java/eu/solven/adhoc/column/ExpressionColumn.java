@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,27 @@
  */
 package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+/**
+ * A {@link ExpressionColumn} is a column which is not explicitly provided by the {@link ITableWrapper}, but computed
+ * from it. It may be evaluated by the engine, or by Adhoc itself.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+@Value
+@Builder
+@Jacksonized
+public class ExpressionColumn implements IAdhocColumn, IHasSqlExpression {
+	// The name of the evaluated column
+	String name;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+	// The sql expression evaluating this column
+	String sql;
 
-public class TestCalculatedColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(CalculatedColumn.class).verify();
-	}
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(CalculatedColumn.class,
-						CalculatedColumn.builder()
-								.name("someColumn")
-								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
-								.build()))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
-				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
-	}
 }

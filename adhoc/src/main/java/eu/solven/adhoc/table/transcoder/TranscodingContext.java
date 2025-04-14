@@ -22,12 +22,16 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.column.CalculatedColumn;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,6 +44,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
 	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
+
+	@Getter
+	final Map<String, CalculatedColumn> nameToCalculated = new LinkedHashMap<>();
 
 	@Builder.Default
 	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
@@ -63,4 +70,9 @@ public class TranscodingContext implements IAdhocTableTranscoder, IAdhocTableRev
 	public Set<String> underlyings() {
 		return underlyingToQueried.keySet();
 	}
+
+	public void addCalculatedColumn(CalculatedColumn calculatedColumn) {
+		nameToCalculated.put(calculatedColumn.getName(), calculatedColumn);
+	}
+
 }

@@ -26,26 +26,26 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class TestCalculatedColumn {
+public class TestExpressionColumn {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(CalculatedColumn.class).verify();
+		EqualsVerifier.forClass(ExpressionColumn.class).verify();
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(CalculatedColumn.class,
-						CalculatedColumn.builder()
-								.name("someColumn")
-								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
-								.build()))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
-				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
+		String asString = TestMapBasedTabularView.verifyJackson(ExpressionColumn.class,
+				ExpressionColumn.builder().name("someColumn").sql("someSQL").build());
+
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "type" : "ExpressionColumn",
+				  "name" : "someColumn",
+				  "sql" : "someSQL"
+				}""");
 	}
 }

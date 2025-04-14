@@ -22,30 +22,20 @@
  */
 package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.data.row.ITabularRecord;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+/**
+ * Typically extended by an {@link IAdhocColumn}
+ * 
+ * @author Benoit Lacelle
+ */
+public interface ICalculatedColumn {
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+	/**
+	 * 
+	 * @param record
+	 * @return a coordinate for given {@link ITabularRecord}. May rely both on slices or aggregates.
+	 */
+	Object computeCoordinate(ITabularRecord record);
 
-public class TestCalculatedColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(CalculatedColumn.class).verify();
-	}
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(CalculatedColumn.class,
-						CalculatedColumn.builder()
-								.name("someColumn")
-								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
-								.build()))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
-				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
-	}
 }

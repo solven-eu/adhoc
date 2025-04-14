@@ -25,7 +25,7 @@ package eu.solven.adhoc.data.row;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -38,11 +38,14 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 public interface ITabularRecord {
 	Set<String> aggregateKeySet();
 
-	void onAggregate(String aggregateName, IValueReceiver valueReceiver);
+	IValueProvider onAggregate(String aggregateName);
 
-	@Deprecated(since = "Prefer `void onAggregate(String aggregateName, IValueConsumer valueConsumer)`")
-	Object getAggregate(String aggregateName);
+	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
+	default Object getAggregate(String aggregateName) {
+		return IValueProvider.getValue(onAggregate(aggregateName));
+	}
 
+	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
 	Map<String, ?> aggregatesAsMap();
 
 	Set<String> groupByKeySet();
@@ -53,6 +56,7 @@ public interface ITabularRecord {
 	 * 
 	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
 	 */
+	@Deprecated(since = "Prefer processing aggregates then values")
 	Map<String, ?> asMap();
 
 	boolean isEmpty();

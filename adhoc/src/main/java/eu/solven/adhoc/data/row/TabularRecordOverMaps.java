@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
@@ -56,17 +56,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public void onAggregate(String aggregateName, IValueReceiver valueConsumer) {
+	public IValueProvider onAggregate(String aggregateName) {
 		Object aggregate = getAggregate(aggregateName);
 
 		if (AdhocPrimitiveHelpers.isLongLike(aggregate)) {
-			valueConsumer.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
+			return valueConsumer -> valueConsumer.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(aggregate)) {
-			valueConsumer.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
+			return valueConsumer -> valueConsumer.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
 		} else if (aggregate instanceof CharSequence charsequence) {
-			valueConsumer.onCharsequence(charsequence);
+			return valueConsumer -> valueConsumer.onCharsequence(charsequence);
 		} else {
-			valueConsumer.onObject(aggregate);
+			return valueConsumer -> valueConsumer.onObject(aggregate);
 		}
 	}
 

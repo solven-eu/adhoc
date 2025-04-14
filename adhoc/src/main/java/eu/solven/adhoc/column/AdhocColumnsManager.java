@@ -23,7 +23,10 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -34,8 +37,10 @@ import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -48,16 +53,26 @@ import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.*;
+import eu.solven.adhoc.query.filter.value.AndMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -147,7 +162,8 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 			public Stream<ITabularRecord> records() {
 				return memoized.get()
 						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
-						.map(row -> transcodeTypes(row));
+						.map(row -> transcodeTypes(row))
+						.map(row -> transcodeCalculated(transcodingContext, row));
 			}
 
 			@Override
@@ -155,6 +171,23 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 				return "Transcoding: " + aggregatedRecordsStream;
 			}
 		};
+	}
+
+	protected ITabularRecord transcodeCalculated(TranscodingContext transcodingContext, ITabularRecord row) {
+		Map<String, CalculatedColumn> columns = transcodingContext.getNameToCalculated();
+
+		if (columns.isEmpty()) {
+			return row;
+		}
+
+		Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys());
+
+		columns.forEach((columnName, column) -> {
+			// TODO handle recursive formulas (e.g. a formula relying on another formula)
+			enrichedGroupBy.put(columnName, column.computeCoordinate(row));
+		});
+
+		return TabularRecordOverMaps.builder().aggregates(row.aggregatesAsMap()).groupBys(enrichedGroupBy).build();
 	}
 
 	protected ITabularRecord transcodeTypes(ITabularRecord row) {
@@ -230,16 +263,26 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	protected IAdhocGroupBy transcodeGroupBy(TranscodingContext transcodingContext, IAdhocGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
 
-		List<IAdhocColumn> transcoded = nameToColumn.values().stream().<IAdhocColumn>map(c -> {
+		List<IAdhocColumn> transcoded = nameToColumn.values().stream().<IAdhocColumn>flatMap(c -> {
 			if (c instanceof ReferencedColumn referencedColumn) {
-				return ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getName()));
+				return Stream.of(ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getName())));
+			} else if (c instanceof ExpressionColumn expressionColumn) {
+				// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
+				eventBus.post(AdhocLogEvent.builder()
+						.warn(true)
+						.message("BEWARE If %s should be impacted by transcoding".formatted(expressionColumn))
+						.source(this)
+						.build());
+				return Stream.of(expressionColumn);
 			} else if (c instanceof CalculatedColumn calculatedColumn) {
+				transcodingContext.addCalculatedColumn(calculatedColumn);
+
 				eventBus.post(AdhocLogEvent.builder()
 						.warn(true)
 						.message("BEWARE If %s should be impacted by transcoding".formatted(calculatedColumn))
 						.source(this)
 						.build());
-				return calculatedColumn;
+				return getUnderlyingColumns(calculatedColumn).stream();
 			} else {
 				throw new UnsupportedOperationException(
 						"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(c)));
@@ -247,6 +290,76 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 		}).toList();
 
 		return GroupByColumns.of(transcoded);
+	}
+
+	private static class RecordingRecord implements ITabularRecord {
+		@Getter
+		final Set<String> usedColumn = new HashSet<>();
+
+		@Override
+		public Set<String> aggregateKeySet() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Object getAggregate(String aggregateName) {
+			throw new NotYetImplementedException("Calculated Column over aggregates");
+		}
+
+		@Override
+		public IValueProvider onAggregate(String aggregateName) {
+			throw new NotYetImplementedException("Calculated Column over aggregates");
+		}
+
+		@Override
+		public Map<String, ?> aggregatesAsMap() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Set<String> groupByKeySet() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Object getGroupBy(String columnName) {
+			usedColumn.add(columnName);
+			return null;
+		}
+
+		@Override
+		public Map<String, ?> asMap() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			// Indicates this is not empty to preventing short-cutting reading any field
+			return false;
+		}
+
+		@Override
+		public Map<String, ?> getGroupBys() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+	}
+
+	private Collection<ReferencedColumn> getUnderlyingColumns(CalculatedColumn calculatedColumn) {
+		RecordingRecord recording = new RecordingRecord();
+
+		calculatedColumn.getRecordToCoordinate().apply(recording);
+		return recording.getUsedColumn().stream().map(c -> ReferencedColumn.ref(c)).toList();
 	}
 
 	protected Collection<? extends Aggregator> transcodeAggregators(TranscodingContext transcodingContext,

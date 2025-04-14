@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import java.util.function.Function;
+
+import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
@@ -38,11 +40,16 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class CalculatedColumn implements IAdhocColumn, IHasSqlExpression {
+public class CalculatedColumn implements IAdhocColumn, ICalculatedColumn {
 	// The name of the evaluated column
 	String name;
 
-	// The sql expression evaluating this column
-	String sql;
+	// Compute a coordinate given current record
+	Function<ITabularRecord, Object> recordToCoordinate;
+
+	@Override
+	public Object computeCoordinate(ITabularRecord record) {
+		return recordToCoordinate.apply(record);
+	}
 
 }

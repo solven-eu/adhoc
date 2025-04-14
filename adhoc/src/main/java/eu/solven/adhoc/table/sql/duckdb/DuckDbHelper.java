@@ -154,11 +154,11 @@ public class DuckDbHelper {
 				String measuresSuffix = "_" + columnIndex;
 
 				long estimatedCardinality = (long) IValueProvider
-						.getValue(vc -> tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix, vc));
+						.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix));
 
 				// TODO Is it important to call `Array.free()`?
 				java.sql.Array array = (java.sql.Array) IValueProvider
-						.getValue(vc -> tabularRecord.onAggregate("approx_top_k" + measuresSuffix, vc));
+						.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
 
 				List<Object> coordinates;
 				if (array == null) {

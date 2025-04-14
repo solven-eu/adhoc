@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -140,12 +141,8 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				valueConsumers.add(sliceToAgg.contributePre(preAggregation, coordinates));
 
 				if (executingQueryContext.isDebug()) {
-					tableRow.onAggregate(aggregatedMeasure, aggregateValue -> {
-						log.info("[DEBUG] Table contributes {}={} -> {}",
-								aggregatedMeasure,
-								aggregateValue,
-								coordinates);
-					});
+					Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(aggregatedMeasure));
+					log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
 				}
 			}
 
@@ -159,7 +156,7 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 				// TODO Introduce .onBoolean
 				valueConsumers.forEach(vc -> vc.onLong(0));
 			} else {
-				tableRow.onAggregate(aggregatedMeasure, new IValueReceiver() {
+				tableRow.onAggregate(aggregatedMeasure).acceptConsumer(new IValueReceiver() {
 
 					@Override
 					public void onLong(long v) {

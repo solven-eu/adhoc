@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.cloud.bigquery.BigQueryOptions;
 
-import eu.solven.adhoc.column.CalculatedColumn;
+import eu.solven.adhoc.column.ExpressionColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -100,7 +100,7 @@ public class TestTableGoogleBigQuery {
 
 		List<Map<String, ?>> rows = bgDbWrapper.streamSlices(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))
-				.groupBy(GroupByColumns.of(CalculatedColumn.builder()
+				.groupBy(GroupByColumns.of(ExpressionColumn.builder()
 						.name("url")
 						.sql("CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING))")
 						.build()))
