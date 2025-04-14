@@ -23,9 +23,6 @@
 package eu.solven.adhoc.table.sql;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.Condition;
-import org.jooq.Record;
-import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
@@ -45,7 +42,7 @@ import eu.solven.adhoc.table.transcoder.TranscodingContext;
  * 
  * @author Benoit Lacelle
  */
-public class TestAdhocJooqTableQueryFactory_Transcoding {
+public class TestJooqTableQueryFactory_Transcoding {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -55,7 +52,7 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 
 	IAdhocTableTranscoder transcoder =
 			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
-	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory( new StandardOperatorsFactory(),
+	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
 			DSL.table(DSL.name("someTableName")),
 			DSL.using(SQLDialect.DUCKDB));
 
@@ -63,9 +60,10 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
-		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+		JooqTableQueryFactory.ConditionWithFilter condition =
+				streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -84,7 +82,7 @@ public class TestAdhocJooqTableQueryFactory_Transcoding {
 				select 1
 				from "someTableName"
 				where (
-				  tk1" = 'v1'
+				  "k1" = 'v1'
 				  and "k2" = 'v2'
 				)
 				group by ()""");

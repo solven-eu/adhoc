@@ -49,10 +49,10 @@ public class TestJooqSnowflakeSchemaBuilder {
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
 		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
-				"base"
-				  left outer join "joined"
+				baseTable "base"
+				  left outer join joinedTable "joined"
 				    on "base"."baseA" = "joined"."joinedA"
-				""".trim());
+								""".trim());
 
 		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
 				.hasSize(1)
@@ -71,12 +71,12 @@ public class TestJooqSnowflakeSchemaBuilder {
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
 		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
-				"base"
-				  left outer join "joined1"
+				baseTable "base"
+				  left outer join joinedTable1 "joined1"
 				    on "base"."baseA" = "joined1"."joined1A"
-				  left outer join "joined2"
+				  left outer join joinedTable2 "joined2"
 				    on "joined1"."baseA" = "joined2"."joined2A"
-				                """.trim());
+								                """.trim());
 
 		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
 				.hasSize(2)

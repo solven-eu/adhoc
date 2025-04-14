@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.sql.Connection;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,7 +38,6 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
@@ -48,10 +46,9 @@ public class TestTableQuery_DuckDb_CalculatedColumn extends ADuckDbJooqTest impl
 
 	String tableName = "someTableName";
 
-	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
 	JooqTableWrapper table = new JooqTableWrapper(tableName,
 			JooqTableWrapperParameters.builder()
-					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.tableName(tableName)
 					.build());
 

@@ -52,7 +52,8 @@ public interface IValueMatcher {
 
 	/**
 	 *
-	 * @param value may be null
+	 * @param value
+	 *            may be null
 	 * @return true if the value is matched
 	 */
 	boolean match(Object value);

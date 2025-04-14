@@ -27,10 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
-import eu.solven.adhoc.util.NotYetImplementedException;
-import org.jooq.Record;
-import org.jooq.ResultQuery;
 import org.jooq.conf.ParamType;
 
 import com.google.cloud.bigquery.BigQuery;
@@ -47,8 +43,9 @@ import com.google.cloud.bigquery.TableResult;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.table.sql.AggregatedRecordFields;
+import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 /**

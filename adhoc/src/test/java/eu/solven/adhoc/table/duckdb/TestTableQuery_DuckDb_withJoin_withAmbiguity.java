@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,9 +44,9 @@ import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTest implements IAdhocTestConstants {
@@ -65,18 +62,9 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 			.leftJoin(DSL.table(DSL.name(joinedFurtherTable)).as("c"))
 			.using(DSL.field("countryId"));
 
-	private Connection makeFreshInMemoryDb() {
-		try {
-			return DriverManager.getConnection("jdbc:duckdb:");
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	Connection dbConn = makeFreshInMemoryDb();
 	JooqTableWrapper table = new JooqTableWrapper(factTable,
 			JooqTableWrapperParameters.builder()
-					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
 					.table(fromClause)
 					.build());
 

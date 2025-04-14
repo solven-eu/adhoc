@@ -25,10 +25,11 @@ package eu.solven.adhoc.filter;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -88,7 +89,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testWrapToString() throws JsonProcessingException {
-		IValueMatcher wrappedWithToString = FilterHelpers.wrapWithToString(v -> v.equals("foo"), () -> "someToString");
+		IValueMatcher wrappedWithToString = FilterHelpers.wrapWithToString(v -> "foo".equals(v), () -> "someToString");
 
 		Assertions.assertThat(wrappedWithToString.toString()).isEqualTo("someToString");
 		Assertions.assertThat(new ObjectMapper().writeValueAsString(wrappedWithToString)).isEqualTo("""

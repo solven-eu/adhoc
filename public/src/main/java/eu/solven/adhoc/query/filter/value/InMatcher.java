@@ -126,6 +126,7 @@ public class InMatcher implements IValueMatcher {
 	public static IValueMatcher isIn(Object first, Object second, Object... more) {
 		return isIn(Lists.asList(first, second, more));
 	}
+
 	/**
 	 *
 	 * @param valueMatcher
@@ -141,10 +142,9 @@ public class InMatcher implements IValueMatcher {
 		} else if (valueMatcher instanceof InMatcher inMatcher) {
 			ImmutableSet<?> operands = inMatcher.getOperands();
 
-			return operands.stream().filter(clazz::isInstance).map(clazz::cast).collect(ImmutableSet.toImmutableSet())
-;
+			return operands.stream().filter(clazz::isInstance).map(clazz::cast).collect(ImmutableSet.toImmutableSet());
 		} else {
-				return ImmutableSet.of();
+			return ImmutableSet.of();
 		}
 	}
 }

@@ -44,8 +44,8 @@ public class DefaultCustomTypeManager implements ICustomTypeManager {
 	}
 
 	@Override
-	public IValueMatcher toTable(String column,IValueMatcher valueMatcher) {
-			throw new NotYetImplementedException(
-					"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
+	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
+		throw new NotYetImplementedException(
+				"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
 	}
 }

@@ -28,17 +28,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
@@ -55,6 +49,8 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
+import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -160,7 +156,10 @@ public class JooqTableWrapper implements ITableWrapper {
 		IJooqTableQueryFactory.QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isExplain() || tableQuery.isDebug()) {
-			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}", getName(), resultQuery.getQuery().getSQL(ParamType.INLINED), resultQuery.getLeftover());
+			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
+					getName(),
+					resultQuery.getQuery().getSQL(ParamType.INLINED),
+					resultQuery.getLeftover());
 			// resultQuery.fields()
 		}
 		if (tableQuery.isDebug()) {
@@ -235,7 +234,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		}
 
 		Map<String, Object> groupBys;
-		columnShift+= fields.getAggregates().size();
+		columnShift += fields.getAggregates().size();
 		{
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
@@ -251,25 +250,22 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		}
 
-
-		Map<String, Object> groupBysForLateFilter;
-		columnShift +=  fields.getColumns().size();
+		columnShift += fields.getColumns().size();
 		{
 			List<String> groupByFields = fields.getLateColumns();
 			int size = groupByFields.size();
 
-			groupBysForLateFilter = new LinkedHashMap<>(size);
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 
-				Object previousValue = groupBysForLateFilter.put(columnName, r.get(columnShift + i));
+				Object previousValue = groupBys.put(columnName, r.get(columnShift + i));
 				if (previousValue != null) {
 					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 				}
 			}
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBysForLateFilter).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
 	}
 
 	@Override

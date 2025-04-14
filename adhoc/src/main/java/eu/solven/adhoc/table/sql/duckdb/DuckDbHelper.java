@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
-import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
@@ -49,6 +48,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;

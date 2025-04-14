@@ -7,6 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `IQueryOption` are now part of `IAdhocQuery`
 - `debug` and `explain` are now only togglable as `IQueryOption`
 - Normalize the way columns are parsed into SQL names (by relying on JooQ `Parser.parseName`).
+- Enable complex filtering, by additional groupBy from table and manual post-filtering (e.g. `JooqTableQueryFactory.ConditionWithFilter`)
 
 ## [0.0.3]
 ### Added

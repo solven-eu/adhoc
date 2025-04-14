@@ -27,13 +27,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.value.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+
+import eu.solven.adhoc.query.filter.value.*;
 
 public class TestInMatcher {
 	@Test
@@ -106,13 +107,16 @@ public class TestInMatcher {
 	@Test
 	public void testGetOperands() {
 		// equals case
-		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.isEqualTo("foo"), String.class)).containsExactly("foo");
+		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.isEqualTo("foo"), String.class))
+				.containsExactly("foo");
 
 		// Incompatible class
 		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.isEqualTo("foo"), LocalDate.class)).isEmpty();
 
-		Assertions.assertThat(InMatcher.extractOperands(InMatcher.isIn("foo", LocalDate.now(), "bar"), String.class)).containsExactly("foo", "bar");
+		Assertions.assertThat(InMatcher.extractOperands(InMatcher.isIn("foo", LocalDate.now(), "bar"), String.class))
+				.containsExactly("foo", "bar");
 
-		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.isEqualTo("foo")), String.class)).isEmpty();
+		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.isEqualTo("foo")), String.class))
+				.isEmpty();
 	}
 }

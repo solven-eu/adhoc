@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.sql.Connection;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -55,8 +54,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 	String tableName = "someTableName";
 
-	Connection dbConn = DuckDbHelper.makeFreshInMemoryDb();
-	DSLSupplier dslSupplier = DSLSupplier.fromConnection(() -> dbConn);
+	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 
 	{
 		forest.addMeasure(k1Sum);

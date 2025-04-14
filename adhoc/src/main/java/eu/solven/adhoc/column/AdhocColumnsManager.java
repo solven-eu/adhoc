@@ -58,7 +58,6 @@ import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;

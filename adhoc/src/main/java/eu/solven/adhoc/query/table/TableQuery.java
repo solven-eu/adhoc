@@ -79,11 +79,6 @@ public class TableQuery
 	@Default
 	AdhocTopClause topClause = AdhocTopClause.NO_LIMIT;
 
-	// @Default
-	// boolean debug = false;
-	// @Default
-	// boolean explain = false;
-
 	@NonNull
 	@Singular
 	ImmutableSet<IQueryOption> options;
@@ -112,8 +107,11 @@ public class TableQuery
 	}
 
 	/**
-	 * @param tableQuery the initial tableQuery
-	 * @param leftover the filter which has to be applied manually over the output slices (e.g. on a customFilter which can not be transcoded for given table)
+	 * @param tableQuery
+	 *            the initial tableQuery
+	 * @param leftover
+	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
+	 *            not be transcoded for given table)
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
@@ -138,7 +136,11 @@ public class TableQuery
 		// Make sure a latecolumn is not also a normal groupBy column
 		lateColumns.removeAll(columns);
 
-		return AggregatedRecordFields.builder().aggregates(aggregatorNames).columns(columns).lateColumns(lateColumns).build();
+		return AggregatedRecordFields.builder()
+				.aggregates(aggregatorNames)
+				.columns(columns)
+				.lateColumns(lateColumns)
+				.build();
 	}
 
 	@Deprecated(since = "Use .getOptions()")

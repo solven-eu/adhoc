@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
@@ -33,6 +32,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 
 public class TestDuckDbHelper {
@@ -74,7 +74,7 @@ public class TestDuckDbHelper {
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
-								select approx_count_distinct(table.column) "approx_count_distinct_7", approx_top_k(table.column, 123) "approx_top_k_7" from someTable group by ()""");
+								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
 	}
 
 	@Test
@@ -92,9 +92,11 @@ public class TestDuckDbHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover =
+				queryFactory.prepareQuery(tableQueryBuilder.build());
 
-		Assertions.assertThat(queryWithLeftover.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(queryWithLeftover.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
@@ -105,20 +107,18 @@ public class TestDuckDbHelper {
 	public void testAppendGetCoordinatesMeasures_withSpace() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123,
-				"pre post",
-				IValueMatcher.MATCH_ALL,
-				7,
-				tableQueryBuilder);
+		DuckDbHelper.appendGetCoordinatesMeasures(123, "pre post", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
 		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 				.table(DSL.table("someTable"))
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover =
+				queryFactory.prepareQuery(tableQueryBuilder.build());
 
-		Assertions.assertThat(queryWithLeftover.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(queryWithLeftover.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
