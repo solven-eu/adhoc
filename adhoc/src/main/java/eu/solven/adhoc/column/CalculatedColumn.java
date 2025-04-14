@@ -27,6 +27,8 @@ import java.util.function.Function;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -42,7 +44,12 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class CalculatedColumn implements IAdhocColumn, ICalculatedColumn {
 	// The name of the evaluated column
+	@NonNull
 	String name;
+
+	@NonNull
+	@Default
+	Class<?> type = Object.class;
 
 	// Compute a coordinate given current record
 	Function<ITabularRecord, Object> recordToCoordinate;
@@ -50,6 +57,11 @@ public class CalculatedColumn implements IAdhocColumn, ICalculatedColumn {
 	@Override
 	public Object computeCoordinate(ITabularRecord record) {
 		return recordToCoordinate.apply(record);
+	}
+
+	@Override
+	public Class<?> getType() {
+		return type;
 	}
 
 }

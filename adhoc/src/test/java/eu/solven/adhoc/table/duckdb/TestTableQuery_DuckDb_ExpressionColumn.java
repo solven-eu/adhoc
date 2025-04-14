@@ -42,7 +42,7 @@ import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestTableQuery_DuckDb_CalculatedColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 

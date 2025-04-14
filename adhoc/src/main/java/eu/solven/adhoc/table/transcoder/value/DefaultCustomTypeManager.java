@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
+import java.util.Map;
+
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -47,5 +49,10 @@ public class DefaultCustomTypeManager implements ICustomTypeManager {
 	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
 		throw new NotYetImplementedException(
 				"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
+	}
+
+	@Override
+	public Map<String, Class<?>> getColumns() {
+		return Map.of();
 	}
 }

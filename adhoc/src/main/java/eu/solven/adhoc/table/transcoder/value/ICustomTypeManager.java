@@ -24,6 +24,7 @@ package eu.solven.adhoc.table.transcoder.value;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.IHasColumns;
 
 /**
  * Used to transcode types, typically from/to {@link ITableWrapper}.
@@ -32,7 +33,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  *
  * @author Benoit Lacelle
  */
-public interface ICustomTypeManager {
+public interface ICustomTypeManager extends IHasColumns {
 	/**
 	 *
 	 * @param column

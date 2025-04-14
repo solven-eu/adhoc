@@ -67,6 +67,10 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(adhocEventBus).build();
 
 		ICustomTypeManager customTypeManager = new ICustomTypeManager() {
+			@Override
+			public Map<String, Class<?>> getColumns() {
+				return Map.of("letter", Letter.class);
+			}
 
 			@Override
 			public boolean mayTranscode(String column) {
@@ -123,6 +127,16 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("A", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("B", 234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("C", 345).execute();
+	}
+
+	@Test
+	public void testGetColumns() {
+		initAndInsert();
+
+		Assertions.assertThat(wrapInCube(forest).getColumns())
+				.hasSize(2)
+				.containsEntry("letter", Letter.class)
+				.containsEntry("k1", Double.class);
 	}
 
 	@Test

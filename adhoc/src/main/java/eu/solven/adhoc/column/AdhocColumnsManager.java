@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dag.ExecutingQueryContext;
@@ -78,6 +80,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 @Builder(toBuilder = true)
@@ -100,6 +103,10 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	@NonNull
 	@Default
 	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
+
+	@NonNull
+	@Singular
+	final ImmutableSet<CalculatedColumn> calculatedColumns;
 
 	@Override
 	public String transcodeToTable(String cubeColumn) {
@@ -377,6 +384,17 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	@Override
 	public Object onMissingColumn(ICubeWrapper cube, String column) {
 		return missingColumnManager.onMissingColumn(cube, column);
+	}
+
+	@Override
+	public Map<String, Class<?>> getColumns() {
+		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
+
+		// BEWARE What if they is conflicts? Should pick the higher type? (i.e. potential fallback to Object)
+		calculatedColumns.forEach(c -> columnToType.put(c.getName(), c.getType()));
+		columnToType.putAll(customTypeManager.getColumns());
+
+		return ImmutableMap.copyOf(columnToType);
 	}
 
 }

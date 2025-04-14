@@ -38,4 +38,6 @@ public interface ICalculatedColumn {
 	 */
 	Object computeCoordinate(ITabularRecord record);
 
+	Class<?> getType();
+
 }

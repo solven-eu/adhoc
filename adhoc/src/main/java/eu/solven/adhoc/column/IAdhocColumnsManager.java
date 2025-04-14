@@ -28,6 +28,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.util.IHasColumns;
 
 /**
  * Helps managing various edge-cases around columns, like missing columns or type transcoding.
@@ -37,7 +38,7 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
  * @see ICustomTypeManager
  * @see IAdhocTableTranscoder
  */
-public interface IAdhocColumnsManager {
+public interface IAdhocColumnsManager extends IHasColumns {
 
 	ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
 

@@ -116,6 +116,10 @@ public class CubeWrapper implements ICubeWrapper {
 			columnToType.put(tableColumn, type);
 		});
 
+		getColumnsManager().getColumns().forEach((calculatedColumn, type) -> {
+			columnToType.put(calculatedColumn, type);
+		});
+
 		IOperatorsFactory operatorsFactory = IHasOperatorsFactory.getOperatorsFactory(engine);
 		forest.getMeasures().forEach(measure -> {
 			if (measure instanceof IMayHaveColumnGenerator mayHaveColumnGenerator) {
