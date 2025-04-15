@@ -33,7 +33,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  *
  * This always returns the input column, hence it is reversible.
  */
-public class IdentityReversibleTranscoder implements IAdhocTableTranscoder, IAdhocTableReverseTranscoder {
+public class IdentityReversibleTranscoder implements ITableTranscoder, IAdhocTableReverseTranscoder {
 	@Override
 	public String underlying(String queried) {
 		return queried;

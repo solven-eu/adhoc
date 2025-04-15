@@ -48,15 +48,31 @@ public class DagExplainerForPerfs extends DagExplainer {
 	}
 
 	@Override
-	protected String additionalInfo(QueryStepsDag queryStepsDag, AdhocQueryStep step, String indentation) {
-		SizeAndDuration cost = queryStepsDag.getStepToCost().get(step);
+	protected String additionalInfo(DagExplainerState dagState,
+			AdhocQueryStep step,
+			String indentation,
+			boolean isLast,
+			boolean isReferenced) {
+		if (isReferenced) {
+			// This is a referenced step: no point in duplicating the performance information
+			return "";
+		}
+		SizeAndDuration cost = dagState.getDag().getStepToCost().get(step);
 
-		indentation = indentation.replace('\\', ' ').replace('-', ' ') + "   ";
+		String prefix = indentation.replace('\\', ' ').replace('-', ' ');
+
+		boolean hasNoChildren = dagState.getUnderlyingSteps(step).isEmpty();
+		if (hasNoChildren) {
+			prefix += "\\  ";
+		} else {
+			// Propagate the `|` to the children rows
+			prefix += "|  ";
+		}
 		if (cost == null) {
-			return EOL + indentation + "No cost info";
+			return EOL + prefix + "No cost info";
 		}
 
-		return EOL + "%ssize=%s duration=%s".formatted(indentation,
+		return EOL + "%ssize=%s duration=%s".formatted(prefix,
 				cost.getSize(),
 				PepperLogHelper.humanDuration(cost.getDuration().toNanos(), TimeUnit.NANOSECONDS));
 	}

@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.Multimaps;
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -39,33 +39,33 @@ import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocQueryEngine {
-	UnsafeMeasureForestBag amg = UnsafeMeasureForestBag.builder().name("engine").build();
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(new EventBus()::post).build();
+	UnsafeMeasureForestBag forest = UnsafeMeasureForestBag.builder().name("engine").build();
+	AdhocQueryEngine engine = AdhocQueryEngine.builder().eventBus(new EventBus()::post).build();
 
 	@Test
 	public void testColumnToAggregationKeys() {
-		amg.addMeasure(Aggregator.builder().name("n1").columnName("c1").aggregationKey("A").build());
-		amg.addMeasure(Aggregator.builder().name("n2").columnName("c1").aggregationKey("B").build());
-		amg.addMeasure(Aggregator.builder().name("n3").aggregationKey("C").build());
-		amg.addMeasure(Aggregator.builder().name("n4").build());
+		forest.addMeasure(Aggregator.builder().name("n1").columnName("c1").aggregationKey("A").build());
+		forest.addMeasure(Aggregator.builder().name("n2").columnName("c1").aggregationKey("B").build());
+		forest.addMeasure(Aggregator.builder().name("n3").aggregationKey("C").build());
+		forest.addMeasure(Aggregator.builder().name("n4").build());
 
-		IAdhocQuery adhocQuery = AdhocQuery.builder().measures(amg.getNameToMeasure().values()).build();
+		IAdhocQuery query = AdhocQuery.builder().measures(forest.getNameToMeasure().values()).build();
 		ExecutingQueryContext queryWithContext = ExecutingQueryContext.builder()
-				.forest(amg)
-				.query(adhocQuery)
+				.forest(forest)
+				.query(query)
 				.table(InMemoryTable.builder().build())
-				.columnsManager(AdhocColumnsManager.builder().build())
+				.columnsManager(ColumnsManager.builder().build())
 				.build();
-		QueryStepsDag fromQueriedToAggregates = aqe.makeQueryStepsDag(queryWithContext);
+		QueryStepsDag fromQueriedToAggregates = engine.makeQueryStepsDag(queryWithContext);
 		Map<String, Set<Aggregator>> columnToAggregators =
-				Multimaps.asMap(aqe.columnToAggregators(queryWithContext, fromQueriedToAggregates));
+				Multimaps.asMap(engine.columnToAggregators(queryWithContext, fromQueriedToAggregates));
 
 		Assertions.assertThat(columnToAggregators)
 				.hasSize(3)
 				.containsEntry("c1",
-						Set.of((Aggregator) amg.getNameToMeasure().get("n1"),
-								(Aggregator) amg.getNameToMeasure().get("n2")))
-				.containsEntry("n3", Set.of((Aggregator) amg.getNameToMeasure().get("n3")))
-				.containsEntry("n4", Set.of((Aggregator) amg.getNameToMeasure().get("n4")));
+						Set.of((Aggregator) forest.getNameToMeasure().get("n1"),
+								(Aggregator) forest.getNameToMeasure().get("n2")))
+				.containsEntry("n3", Set.of((Aggregator) forest.getNameToMeasure().get("n3")))
+				.containsEntry("n4", Set.of((Aggregator) forest.getNameToMeasure().get("n4")));
 	}
 }

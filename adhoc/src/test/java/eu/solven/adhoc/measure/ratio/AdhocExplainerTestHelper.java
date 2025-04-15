@@ -30,6 +30,7 @@ import com.google.common.eventbus.Subscribe;
 
 import eu.solven.adhoc.dag.DagExplainer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 /**
  * Useful to test {@link DagExplainer}
@@ -42,6 +43,7 @@ public class AdhocExplainerTestHelper {
 	}
 
 	public static List<String> listenForExplainNoPerf(EventBus eventBus) {
+		AdhocUnsafe.resetDeterministicQueryIds();
 		List<String> messages = new ArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results
@@ -63,6 +65,7 @@ public class AdhocExplainerTestHelper {
 	}
 
 	public static List<String> listenForPerf(EventBus eventBus) {
+		AdhocUnsafe.resetDeterministicQueryIds();
 		List<String> messages = new ArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results
@@ -84,6 +87,7 @@ public class AdhocExplainerTestHelper {
 	}
 
 	public static List<String> listenForLogs(EventBus eventBus) {
+		AdhocUnsafe.resetDeterministicQueryIds();
 		List<String> messages = new ArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results

@@ -22,24 +22,96 @@
  */
 package eu.solven.adhoc.dag;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
 public class TestDagExplainerForPerfs {
-	public final EventBus eventBus = new EventBus();
+	EventBus eventBus = new EventBus();
 	List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-	@Disabled("TODO")
 	@Test
 	public void testPerfLog() {
 		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
-		dagExplainer.printStepAndUnderlyings(null, null, null, null, false);
+		QueryStepsDagBuilder queryStepsDagBuilder =
+				new QueryStepsDagBuilder(new StandardOperatorsFactory(), "someCube", AdhocQuery.builder().build());
+
+		Map<String, IMeasure> refToMeasure = new HashMap<>();
+
+		ICanResolveMeasure canResolve = m -> {
+			if (m instanceof ReferencedMeasure ref) {
+				return refToMeasure.get(ref.getRef());
+			} else {
+				return m;
+			}
+		};
+
+		Combinator root = Combinator.builder().name("root").underlying("underlying1").underlying("underlying2").build();
+
+		Combinator underlying1 =
+				Combinator.builder().name("underlying1").underlying("underlying11").underlying("underlying12").build();
+		Combinator underlying2 =
+				Combinator.builder().name("underlying2").underlying("underlying21").underlying("underlying22").build();
+
+		Combinator underlying11 = Combinator.builder().name("underlying11").underlying("a").build();
+		Combinator underlying12 = Combinator.builder().name("underlying12").underlying("a").build();
+		Combinator underlying21 = Combinator.builder().name("underlying21").underlying("a").build();
+		Combinator underlying22 = Combinator.builder().name("underlying22").underlying("a").build();
+
+		Aggregator aggregator111 = Aggregator.sum("a");
+
+		refToMeasure.put("underlying1", underlying1);
+		refToMeasure.put("underlying2", underlying2);
+		refToMeasure.put("underlying11", underlying11);
+		refToMeasure.put("underlying12", underlying12);
+		refToMeasure.put("underlying21", underlying21);
+		refToMeasure.put("underlying22", underlying22);
+		refToMeasure.put("a", aggregator111);
+
+		queryStepsDagBuilder.registerRootWithUnderlyings(canResolve, Set.of(root));
+
+		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
+
+		dagExplainer.explain(AdhocQueryId.from("someCube", AdhocQuery.builder().build()), dag);
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				#0 s=someCube id=00000000-0000-0000-0000-000000000000
+				|  No cost info
+				\\-- #1 m=root(Combinator) filter=matchAll groupBy=grandTotal
+				    |  No cost info
+				    |\\- #2 m=underlying1(Combinator) filter=matchAll groupBy=grandTotal
+				    |   |  No cost info
+				    |   |\\- #3 m=underlying11(Combinator) filter=matchAll groupBy=grandTotal
+				    |   |   |  No cost info
+				    |   |   \\-- #4 m=a(Aggregator) filter=matchAll groupBy=grandTotal
+				    |   |       \\  No cost info
+				    |   \\-- #5 m=underlying12(Combinator) filter=matchAll groupBy=grandTotal
+				    |       |  No cost info
+				    |       \\-- !4
+				    \\-- #6 m=underlying2(Combinator) filter=matchAll groupBy=grandTotal
+				        |  No cost info
+				        |\\- #7 m=underlying21(Combinator) filter=matchAll groupBy=grandTotal
+				        |   |  No cost info
+				        |   \\-- !4
+				        \\-- #8 m=underlying22(Combinator) filter=matchAll groupBy=grandTotal
+				            |  No cost info
+				            \\-- !4""");
 	}
 }

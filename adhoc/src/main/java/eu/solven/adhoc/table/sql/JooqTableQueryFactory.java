@@ -77,7 +77,7 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -87,7 +87,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This is especially important to make sure all calls to {@link IAdhocTableTranscoder} relies on a
+ * This is especially important to make sure all calls to {@link ITableTranscoder} relies on a
  * {@link TranscodingContext}
  *
  * @author Benoit Lacelle

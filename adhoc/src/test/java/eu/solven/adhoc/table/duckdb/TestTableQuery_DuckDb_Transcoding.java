@@ -31,7 +31,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -43,7 +43,7 @@ import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 /**
@@ -61,7 +61,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		forest.addMeasure(k2Sum);
 	}
 
-	private CubeWrapper makecube(IAdhocTableTranscoder transcoder) {
+	private CubeWrapper makecube(ITableTranscoder transcoder) {
 		JooqTableWrapper table = new JooqTableWrapper(tableName,
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 
@@ -69,7 +69,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.engine(aqe)
 				.table(table)
 				.forest(forest)
-				.columnsManager(AdhocColumnsManager.builder().transcoder(transcoder).build())
+				.columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
 				.build();
 
 		return cubeWrapper;
@@ -78,7 +78,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testDifferentQueriedSameUnderlying() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder =
+		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
 		CubeWrapper cube = makecube(transcoder);
@@ -106,7 +106,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testOverlap() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
 		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
@@ -130,7 +130,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testCycle_measure() {
 		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
+		ITableTranscoder transcoder = MapTableTranscoder.builder()
 				.queriedToUnderlying("k1", "k2")
 				.queriedToUnderlying("k2", "k3")
 				.queriedToUnderlying("k3", "k4")
@@ -189,7 +189,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testCycle_groupBy() {
 		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
+		ITableTranscoder transcoder = MapTableTranscoder.builder()
 				.queriedToUnderlying("k1", "k2")
 				.queriedToUnderlying("k2", "k3")
 				.queriedToUnderlying("k3", "k4")
@@ -227,7 +227,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testAdhocQuery() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
 		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
@@ -256,7 +256,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testAdhocQuery_aliasWithNameAlreadyInTable() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder =
+		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
 		CubeWrapper cube = makecube(transcoder);
@@ -290,7 +290,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testAdhocQuery_sumFilterGroupByk1() {
 		// Let's say k1 and k2 rely on the single k DB column
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
 		CubeWrapper cube = makecube(transcoder);
 		DSLContext dsl = dslSupplier.getDSLContext();
@@ -316,7 +316,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// In this useCase, we rely on a simple FILTER expression
 		// While this could be done with a Filtrator, it demonstrate useCases like: potentially more complex
 		// expressions, or Atoti ColumnCalculator
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder()
+		ITableTranscoder transcoder = MapTableTranscoder.builder()
 				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
 				.build();
 

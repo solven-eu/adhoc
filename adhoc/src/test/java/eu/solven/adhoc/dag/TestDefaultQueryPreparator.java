@@ -22,55 +22,40 @@
  */
 package eu.solven.adhoc.dag;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.table.ITableWrapper;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
 
-@Builder
-public class DefaultQueryPreparator implements IQueryPreparator {
+public class TestDefaultQueryPreparator {
+	ITableWrapper table = Mockito.mock(ITableWrapper.class);
+	IMeasureForest forest = Mockito.mock(IMeasureForest.class);
+	IColumnsManager columnManager = Mockito.mock(IColumnsManager.class);
 
-	// By default, the filters are not modified
-	@NonNull
-	@Default
-	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
-
-	@Override
-	public ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest forest,
-			IColumnsManager columnsManager,
-			IAdhocQuery rawQuery) {
-		IAdhocQuery query = combineWithImplicitFilter(rawQuery);
-		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), query);
-
-		return ExecutingQueryContext.builder()
-				.query(query)
-				.queryId(queryId)
-				.forest(forest)
-				.table(table)
-				.columnsManager(columnsManager)
-				.build();
+	{
+		Mockito.when(table.getName()).thenReturn("someTableName");
 	}
 
-	protected IAdhocQuery combineWithImplicitFilter(IAdhocQuery rawQuery) {
-		IAdhocFilter preprocessedFilter =
-				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
+	@Test
+	public void testSubQuery() {
+		DefaultQueryPreparator queryPreparator =
+				DefaultQueryPreparator.builder().implicitFilter(f -> ColumnFilter.isEqualTo("c", "v")).build();
 
-		AdhocQuery query = AdhocQuery.edit(rawQuery).filter(preprocessedFilter).build();
+		IAdhocQuery query = AdhocQuery.builder().measure("m").build();
+		AdhocSubQuery subQuery =
+				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from("someCube", query)).build();
 
-		if (rawQuery instanceof AdhocSubQuery subQuery) {
-			return subQuery.toBuilder().subQuery(query).build();
-		} else {
-			return query;
-		}
+		ExecutingQueryContext prepared = queryPreparator.prepareQuery(table, forest, columnManager, subQuery);
+
+		Assertions.assertThat(prepared.getQueryId().getParentQueryId())
+				.isEqualTo(subQuery.getParentQueryId().getQueryId());
 	}
-
 }

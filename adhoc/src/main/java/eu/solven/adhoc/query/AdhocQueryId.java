@@ -23,29 +23,30 @@
 package eu.solven.adhoc.query;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.IHasParentQueryId;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
- * An {@link AdhocQueryId} is useful to atatch properly logs to a given query, especially in logs and eventBus events.
+ * An {@link AdhocQueryId} is useful to attach properly logs to a given query, especially in logs and eventBus events.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
 public class AdhocQueryId {
-	private static AtomicLong NEXT_QUERY_INDEX = new AtomicLong();
-
 	@Default
-	long queryIndex = NEXT_QUERY_INDEX.getAndIncrement();
+	long queryIndex = AdhocUnsafe.nextQueryIndex();
 
 	// queryId is defaulted to a random UUID, with very low collision probability
+	@NonNull
 	@Default
-	UUID queryId = UUID.randomUUID();
+	UUID queryId = AdhocUnsafe.randomUUID();
 
 	// a query may have a parent, for instance in a CompositeCube, the compositeQuery would be the parent of the
 	// underlyingQuerys
@@ -53,10 +54,28 @@ public class AdhocQueryId {
 	UUID parentQueryId = null;
 
 	// Some queryHash to help as a human to see/search given query is re-used or edited
+	@NonNull
 	@Default
 	String queryHash = "";
 
-	public static AdhocQueryId from(IAdhocQuery query) {
-		return AdhocQueryId.builder().queryHash(Integer.toHexString(query.toString().hashCode())).build();
+	@NonNull
+	String cube;
+
+	/**
+	 * 
+	 * @param cubeOrTable
+	 *            the name of the queried structure.
+	 * @param query
+	 * @return
+	 */
+	public static AdhocQueryId from(String cubeOrTable, IAdhocQuery query) {
+		AdhocQueryIdBuilder builder =
+				AdhocQueryId.builder().queryHash(Integer.toHexString(query.toString().hashCode())).cube(cubeOrTable);
+
+		if (query instanceof IHasParentQueryId hasParentQueryId) {
+			builder.parentQueryId(hasParentQueryId.getParentQueryId().getQueryId());
+		}
+
+		return builder.build();
 	}
 }

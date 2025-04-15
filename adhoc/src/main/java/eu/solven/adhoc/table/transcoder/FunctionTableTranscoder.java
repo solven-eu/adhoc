@@ -27,10 +27,10 @@ import java.util.function.Function;
 import lombok.Builder;
 
 /**
- * A {@link IAdhocTableTranscoder} over a {@link Function}.
+ * A {@link ITableTranscoder} over a {@link Function}.
  */
 @Builder
-public class FunctionTableTranscoder implements IAdhocTableTranscoder {
+public class FunctionTableTranscoder implements ITableTranscoder {
 	final Function<String, String> queriedToUnderlying;
 
 	@Override

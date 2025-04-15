@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -43,8 +43,8 @@ import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
-	IAdhocColumnsManager columnsManager =
-			AdhocColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
+	IColumnsManager columnsManager =
+			ColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
 	CubeWrapper aqw =
 			CubeWrapper.builder().table(table).engine(engine).forest(forest).columnsManager(columnsManager).build();
 

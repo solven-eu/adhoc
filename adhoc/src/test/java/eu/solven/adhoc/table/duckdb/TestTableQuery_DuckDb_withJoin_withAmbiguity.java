@@ -36,7 +36,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -142,7 +142,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		insertData();
 
 		CubeWrapper cube = CubeWrapper.builder()
-				.columnsManager(AdhocColumnsManager.builder()
+				.columnsManager(ColumnsManager.builder()
 						.transcoder(MapTableTranscoder.builder().queriedToUnderlying("name", "p.name").build())
 						.build())
 				.table(table)

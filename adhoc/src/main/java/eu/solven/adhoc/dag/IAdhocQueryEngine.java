@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -46,14 +46,14 @@ public interface IAdhocQueryEngine {
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(IAdhocQuery query, IMeasureForest measures, ITableWrapper table) {
-		return executeUnsafe(query, measures, table, AdhocColumnsManager.builder().build());
+		return executeUnsafe(query, measures, table, ColumnsManager.builder().build());
 	}
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(IAdhocQuery query,
 			IMeasureForest measures,
 			ITableWrapper table,
-			IAdhocColumnsManager columnsManager) {
+			IColumnsManager columnsManager) {
 		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
 
 		ExecutingQueryContext executingQueryContext =

@@ -40,6 +40,7 @@ import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -248,6 +249,13 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		}
 	}
 
+	/**
+	 * BEWARE This may lose additional information not fitting into an {@link AdhocQuery}, like the {@link AdhocQueryId}
+	 * of a {@link AdhocSubQuery}.
+	 * 
+	 * @param query
+	 * @return
+	 */
 	public static AdhocQueryBuilder edit(IWhereGroupByQuery query) {
 		AdhocQueryBuilder builder = AdhocQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
 

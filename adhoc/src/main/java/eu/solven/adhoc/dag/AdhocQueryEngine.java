@@ -144,13 +144,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 			QueryStepsDag queryStepsDag = makeQueryStepsDag(executingQueryContext);
 
 			if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
-				explainDagSteps(queryStepsDag);
+				explainDagSteps(executingQueryContext, queryStepsDag);
 			}
 
 			ITabularView tabularView = executeDag(executingQueryContext, queryStepsDag);
 
 			if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
-				explainDagPerfs(queryStepsDag);
+				explainDagPerfs(executingQueryContext, queryStepsDag);
 			}
 
 			postAboutQueryDone(executingQueryContext, "OK", stopWatch);
@@ -215,12 +215,12 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				.build());
 	}
 
-	protected void explainDagSteps(QueryStepsDag queryStepsDag) {
-		makeDagExplainer().explain(queryStepsDag);
+	protected void explainDagSteps(ExecutingQueryContext executingQueryContext, QueryStepsDag queryStepsDag) {
+		makeDagExplainer().explain(executingQueryContext.getQueryId(), queryStepsDag);
 	}
 
-	protected void explainDagPerfs(QueryStepsDag queryStepsDag) {
-		makeDagExplainerForPerfs().explain(queryStepsDag);
+	protected void explainDagPerfs(ExecutingQueryContext executingQueryContext, QueryStepsDag queryStepsDag) {
+		makeDagExplainerForPerfs().explain(executingQueryContext.getQueryId(), queryStepsDag);
 	}
 
 	protected DagExplainer makeDagExplainer() {
@@ -232,56 +232,35 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 	}
 
 	protected QueryStepsDag makeQueryStepsDag(ExecutingQueryContext executingQueryContext) {
-		QueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext);
+		IQueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext);
 
 		// Add explicitly requested steps
-		Set<IMeasure> queriedMeasures = convertToQueriedSteps(executingQueryContext);
-		queriedMeasures.forEach(queryStepsDagBuilder::addRoot);
+		Set<IMeasure> queriedMeasures = getRootMeasures(executingQueryContext);
 
-		// Add implicitly requested steps
-		while (queryStepsDagBuilder.hasLeftovers()) {
-			AdhocQueryStep queryStep = queryStepsDagBuilder.pollLeftover();
-
-			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
-
-			if (measure instanceof Aggregator aggregator) {
-				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
-			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
-
-				List<AdhocQueryStep> underlyingSteps;
-				try {
-					underlyingSteps = wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
-						// Make sure the DAG has actual measure nodes, and not references
-						IMeasure notRefMeasure = executingQueryContext.resolveIfRef(underlyingStep.getMeasure());
-						return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
-					}).toList();
-				} catch (RuntimeException e) {
-					throw new IllegalStateException(
-							"Issue computing the underlying querySteps for %s".formatted(queryStep),
-							e);
-				}
-
-				queryStepsDagBuilder.registerUnderlyings(queryStep, underlyingSteps);
-			} else {
-				throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(measure).toString());
-			}
-		}
-
-		queryStepsDagBuilder.sanityChecks();
+		queryStepsDagBuilder.registerRootWithUnderlyings(executingQueryContext::resolveIfRef, queriedMeasures);
 
 		return queryStepsDagBuilder.getQueryDag();
 	}
 
-	protected Set<IMeasure> convertToQueriedSteps(ExecutingQueryContext executingQueryContext) {
+	/**
+	 * This is especially important to manage the case where no measure is requested, and we have to add some default
+	 * measure.
+	 * 
+	 * @param executingQueryContext
+	 * @return the {@link Set} of root measures
+	 */
+	protected Set<IMeasure> getRootMeasures(ExecutingQueryContext executingQueryContext) {
 		Set<IMeasure> measures = executingQueryContext.getQuery().getMeasures();
 		Set<IMeasure> queriedMeasures;
 		if (measures.isEmpty()) {
 			IMeasure defaultMeasure = defaultMeasure();
 			queriedMeasures = Set.of(defaultMeasure);
 		} else {
-			queriedMeasures =
-					measures.stream().map(ref -> executingQueryContext.resolveIfRef(ref)).collect(Collectors.toSet());
+			queriedMeasures = measures.stream().peek(m -> {
+				if (emptyMeasureName.equals(m.getName())) {
+					throw new IllegalArgumentException("The defaultEmptyMeasure can not be requested explicitly");
+				}
+			}).map(ref -> executingQueryContext.resolveIfRef(ref)).collect(Collectors.toSet());
 		}
 		return queriedMeasures;
 	}
@@ -295,8 +274,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 		return Aggregator.builder().name(emptyMeasureName).aggregationKey(EmptyAggregation.KEY).build();
 	}
 
-	protected QueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {
-		return new QueryStepsDagBuilder(executingQueryContext.getTable().getName(), executingQueryContext.getQuery());
+	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(ExecutingQueryContext executingQueryContext) {
+		return new QueryStepsDagBuilder(operatorsFactory,
+				executingQueryContext.getTable().getName(),
+				executingQueryContext.getQuery());
 	}
 
 	protected ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {

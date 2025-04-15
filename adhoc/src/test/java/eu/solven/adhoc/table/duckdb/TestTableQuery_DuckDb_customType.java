@@ -31,7 +31,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
@@ -100,8 +100,8 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 				return coordinate;
 			}
 		};
-		AdhocColumnsManager columnsManager =
-				AdhocColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
+		ColumnsManager columnsManager =
+				ColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
 		return CubeWrapper.builder()
 				.engine(aqe)
 				.forest(forest)

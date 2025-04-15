@@ -8,6 +8,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `debug` and `explain` are now only togglable as `IQueryOption`
 - Normalize the way columns are parsed into SQL names (by relying on JooQ `Parser.parseName`).
 - Improve `.getColumns` relatively to various column customizations (e.g. customType, calculatedColumn, etc)
+- Improve `EXPLAIN` by reporting the queried cube, the queryId and its parentQueryId.
 
 ### Added
 - Enable complex filtering, by additional groupBy from table and manual post-filtering (e.g. `JooqTableQueryFactory.ConditionWithFilter`)

@@ -47,6 +47,7 @@ import lombok.Value;
  * Holds the details about the queryPlan as a DAG.
  * 
  * @author Benoit Lacelle
+ * @see QueryStepsDagBuilder
  */
 @Value
 @Builder

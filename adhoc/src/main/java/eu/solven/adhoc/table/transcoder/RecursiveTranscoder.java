@@ -29,19 +29,19 @@ import lombok.Builder;
 import lombok.NonNull;
 
 /**
- * A decorating {@link IAdhocTableTranscoder} , which applies the transcoding logic recursively
+ * A decorating {@link ITableTranscoder} , which applies the transcoding logic recursively
  */
 @Builder
-public class RecursiveTranscoder implements IAdhocTableTranscoder {
+public class RecursiveTranscoder implements ITableTranscoder {
 	/**
 	 * The maximum depth of recursivity
 	 */
 	public static final int LIMIT = 1024;
 
 	@NonNull
-	final IAdhocTableTranscoder transcoder;
+	final ITableTranscoder transcoder;
 
-	public static IAdhocTableTranscoder wrap(IAdhocTableTranscoder transcoder) {
+	public static ITableTranscoder wrap(ITableTranscoder transcoder) {
 		return RecursiveTranscoder.builder().transcoder(transcoder).build();
 	}
 

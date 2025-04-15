@@ -53,7 +53,7 @@ import lombok.Value;
  * A query over an {@link ITableWrapper}, which typically represents an external database.
  * 
  * @author Benoit Lacelle
- * @see eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder
+ * @see eu.solven.adhoc.table.transcoder.ITableTranscoder
  */
 @Value
 @AllArgsConstructor

@@ -27,8 +27,8 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -63,8 +63,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 	IAdhocQuery query;
 
 	@NonNull
-	@Default
-	AdhocQueryId queryId = AdhocQueryId.builder().build();
+	AdhocQueryId queryId;
 
 	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
 	// measures
@@ -76,11 +75,7 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 
 	@NonNull
 	@Default
-	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
-
-	// @NonNull
-	// @Singular
-	// Set<? extends IQueryOption> options;
+	final IColumnsManager columnsManager = ColumnsManager.builder().build();
 
 	AtomicReference<OffsetDateTime> cancellationDate = new AtomicReference<>();
 
@@ -140,7 +135,38 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 				.table(table)
 				.query(AdhocQuery.builder().build())
 				.forest(MeasureForest.empty())
+				.queryId(AdhocQueryId.builder().cube(table.getName()).build())
 				.build();
+	}
+
+	public static class ExecutingQueryContextBuilder {
+		IAdhocQuery query;
+		AdhocQueryId queryId;
+		IMeasureForest forest;
+		ITableWrapper table;
+
+		// https://projectlombok.org/features/Builder
+		// columnsManager is problematic as it has @Default
+		// https://stackoverflow.com/questions/47883931/default-value-in-lombok-how-to-init-default-with-both-constructor-and-builder
+		IColumnsManager columnsManager;
+		// boolean columnsManager$set;
+
+		public ExecutingQueryContextBuilder columnsManager(IColumnsManager columnsManager) {
+			this.columnsManager = columnsManager;
+
+			return this;
+		}
+
+		public ExecutingQueryContext build() {
+			if (queryId == null) {
+				queryId = AdhocQueryId.from(table.getName(), query);
+			}
+			if (columnsManager == null) {
+				columnsManager = ColumnsManager.builder().build();
+			}
+
+			return new ExecutingQueryContext(query, queryId, forest, table, columnsManager);
+		}
 	}
 
 }

@@ -30,8 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.column.AdhocColumnsManager;
 import eu.solven.adhoc.column.CalculatedColumn;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -59,7 +59,7 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 
 	@Test
 	public void testColumns_withTranscoding() {
-		AdhocColumnsManager originalColumnsManager = (AdhocColumnsManager) cube.getColumnsManager();
+		ColumnsManager originalColumnsManager = (ColumnsManager) cube.getColumnsManager();
 		CubeWrapper cubeWithTranscoding = cube.toBuilder()
 				.columnsManager(originalColumnsManager.toBuilder().customTypeManager(new DefaultCustomTypeManager() {
 					@Override
@@ -83,7 +83,7 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 
 	@Test
 	public void testColumns_withCalculatedColumn() {
-		AdhocColumnsManager originalColumnsManager = (AdhocColumnsManager) cube.getColumnsManager();
+		ColumnsManager originalColumnsManager = (ColumnsManager) cube.getColumnsManager();
 		CubeWrapper cubeWithCalculated = cube.toBuilder()
 				.columnsManager(originalColumnsManager.toBuilder()
 						.calculatedColumn(CalculatedColumn.builder()

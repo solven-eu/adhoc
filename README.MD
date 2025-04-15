@@ -301,7 +301,7 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 
 ## Feature Candidates
 
-- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`.
+- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`. Or through each cube of a `CompositeCube`
 - [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.

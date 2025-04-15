@@ -31,7 +31,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  *
  * This always returns `null`, hence it is not reversible.
  */
-public class IdentityImplicitTranscoder implements IAdhocTableTranscoder {
+public class IdentityImplicitTranscoder implements ITableTranscoder {
 	@Override
 	public String underlying(String queried) {
 		return null;

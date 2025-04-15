@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
-/**
- * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
- * effectively queried.
- */
-public interface IAdhocTableReverseTranscoder {
+import eu.solven.adhoc.measure.model.IMeasure;
+
+public interface IQueryStepsDagBuilder {
 
 	/**
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the queried columns which were mapping to given underlying.
+	 * 
+	 * @param canResolveMeasures
+	 *            typically an {@link ExecutingQueryContext}
+	 * @param rootMeasures
+	 *            the measures requested directly by the IAdhocQuery
 	 */
-	Set<String> queried(String underlying);
+	void registerRootWithUnderlyings(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
+
+	QueryStepsDag getQueryDag();
+
 }

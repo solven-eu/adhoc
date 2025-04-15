@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import java.util.Set;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -77,5 +79,15 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	 */
 	public static boolean isEmpty(Aggregator aggregator) {
 		return isEmpty(aggregator.getAggregationKey());
+	}
+
+	public static boolean isEmpty(Set<Aggregator> aggregators) {
+		boolean hasEmpty = aggregators.stream().anyMatch(EmptyAggregation::isEmpty);
+
+		if (hasEmpty && aggregators.size() >= 2) {
+			throw new IllegalArgumentException("Must not query must empty and non-empty: " + aggregators);
+		}
+
+		return hasEmpty;
 	}
 }

@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 public class TestRecursiveTranscoder {
 	@Test
 	public void testRecursive() {
-		IAdhocTableTranscoder transcoder = RecursiveTranscoder.wrap(
+		ITableTranscoder transcoder = RecursiveTranscoder.wrap(
 				MapTableTranscoder.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build());
 
 		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
@@ -39,7 +39,7 @@ public class TestRecursiveTranscoder {
 
 	@Test
 	public void testRecursive_cycle() {
-		IAdhocTableTranscoder transcoder = RecursiveTranscoder.wrap(MapTableTranscoder.builder()
+		ITableTranscoder transcoder = RecursiveTranscoder.wrap(MapTableTranscoder.builder()
 				.queriedToUnderlying("k", "_k")
 				.queriedToUnderlying("_k", "__k")
 				.queriedToUnderlying("__k", "k")
@@ -65,7 +65,7 @@ public class TestRecursiveTranscoder {
 		for (int i = 0; i <= depth; i++) {
 			mapTableTranscoderBuilder.queriedToUnderlying("k_" + i, "k_" + (i + 1));
 		}
-		IAdhocTableTranscoder transcoder = RecursiveTranscoder.wrap(mapTableTranscoderBuilder.build());
+		ITableTranscoder transcoder = RecursiveTranscoder.wrap(mapTableTranscoderBuilder.build());
 
 		Assertions.assertThat(transcoder.underlying("k_" + (depth - 1))).isEqualTo("k_" + (depth + 1));
 		Assertions.assertThatThrownBy(() -> transcoder.underlying("k_" + 0))

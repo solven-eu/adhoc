@@ -22,6 +22,11 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.common.base.Strings;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -91,4 +96,33 @@ public class AdhocUnsafe {
 	 */
 	// By default, failFast. This is a simple flag for projects preferring resiliency.
 	public static boolean failFast = true;
+
+	/**
+	 * Used for unitTests
+	 */
+	public static boolean deterministicUUID = false;
+	public static AtomicLong deterministicUUIDIndex = new AtomicLong();
+	public static AtomicLong deterministicQueryIndex = new AtomicLong();
+
+	public static UUID randomUUID() {
+		if (deterministicUUID) {
+			String uuidIndexAsString = Long.toString(deterministicUUIDIndex.getAndIncrement());
+			return UUID.fromString("00000000-0000-0000-0000-" + Strings.padStart(uuidIndexAsString, 12, '0'));
+		} else {
+			return UUID.randomUUID();
+		}
+	}
+
+	public static void resetDeterministicQueryIds() {
+		if (!AdhocUnsafe.deterministicUUID) {
+			log.warn("queryIds are now deterministic. This should not happen in PRD");
+		}
+		AdhocUnsafe.deterministicUUID = true;
+		AdhocUnsafe.deterministicUUIDIndex.set(0);
+		AdhocUnsafe.deterministicQueryIndex.set(0);
+	}
+
+	public static long nextQueryIndex() {
+		return deterministicQueryIndex.getAndIncrement();
+	}
 }

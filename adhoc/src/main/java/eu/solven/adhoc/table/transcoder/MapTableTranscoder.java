@@ -28,10 +28,10 @@ import lombok.Builder;
 import lombok.Singular;
 
 /**
- * An {@link IAdhocTableTranscoder} based on a (not-necessarily bijective) mapping.
+ * An {@link ITableTranscoder} based on a (not-necessarily bijective) mapping.
  */
 @Builder
-public class MapTableTranscoder implements IAdhocTableTranscoder {
+public class MapTableTranscoder implements ITableTranscoder {
 	@Singular
 	final Map<String, String> queriedToUnderlyings;
 

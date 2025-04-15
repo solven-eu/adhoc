@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -32,12 +35,9 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.eventbus.EventBus;
-
+import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -55,9 +55,10 @@ import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
-public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants {
+public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAdhocTestConstants {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -67,11 +68,6 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	}
 
 	Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
-
-	EventBus eventBus = AdhocTestHelper.eventBus();
-
-	// We can re-use a single engine for each cubes
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 
 	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 	DSLContext dsl = dslSupplier.getDSLContext();
@@ -84,14 +80,13 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 	JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
 			JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
+	@Override
+	public void feedTable() {
+		// no feeding by default
+	}
+
 	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
-		return CubeWrapper.builder()
-				.name(table.getName() + ".cube")
-				.engine(aqe)
-				.forest(forest)
-				.table(table)
-				.engine(aqe)
-				.build();
+		return CubeWrapper.builder().name(table.getName() + ".cube").engine(engine).forest(forest).table(table).build();
 	}
 
 	private CubeWrapper makeAndFeedCompositeCube() {
@@ -137,7 +132,6 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				UnsafeMeasureForestBag.builder().name("composite").build();
 		measureBagWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
@@ -145,24 +139,16 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				compositeCubesTable.injectUnderlyingMeasures(measureBagWithoutUnderlyings);
 
 		CubeWrapper cube3 = CubeWrapper.builder()
-				.engine(aqe)
+				.engine(engine)
 				.forest(measureBagWithUnderlyings)
 				.table(compositeCubesTable)
-				.engine(aqe)
 				.build();
 		return cube3;
 	}
 
 	@Test
-	public void testQueryCube1() {
+	public void testGetColumns() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
-
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
-		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k2Sum.getName(), 0L + 234 + 456))
-				.hasSize(1);
 
 		Assertions.assertThat(cube3.getColumns())
 				.containsEntry("a", String.class)
@@ -180,6 +166,44 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				.contains(k3Sum.getColumnName())
 				.contains(Aggregator.countAsterisk().getName())
 				.hasSize(5);
+	}
+
+	@Test
+	public void testQueryCube1() {
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
+
+		// `k2` does not exists in cube2
+		{
+
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k2Sum.getName(), 0L + 234 + 456))
+					.hasSize(1);
+		}
+
+		// `k2` does not exists in cube2 and `a` is in both cubes
+		{
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).groupByAlso("a").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("a", "a1"), Map.of(k2Sum.getName(), 0L + 234))
+					.containsEntry(Map.of("a", "a2"), Map.of(k2Sum.getName(), 0L + 456))
+					.hasSize(2);
+		}
+
+		// `k2` does not exists in cube2 and `b` does not exists in cube2
+		{
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).groupByAlso("b").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("b", "b1"), Map.of(k2Sum.getName(), 0L + 234))
+					.containsEntry(Map.of("b", "b2"), Map.of(k2Sum.getName(), 0L + 456))
+					.hasSize(2);
+		}
 	}
 
 	@Test
@@ -250,14 +274,20 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 1234))
 				.hasSize(1);
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
-				|\\- #1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
-				\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
-				#0 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
-				#1 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
-				#0 m=k1(Aggregator) filter=matchAll groupBy=grandTotal""".trim());
-		Assertions.assertThat(messages).hasSize(6);
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								#0 s=composite id=00000000-0000-0000-0000-000000000000
+								\\-- #1 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
+								    |\\- #2 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+								    \\-- #3 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|\\- #1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
+								\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal"""
+								.trim());
+		Assertions.assertThat(messages).hasSize(9);
 	}
 
 	@Test
@@ -395,5 +425,58 @@ public class TestTableQuery_DuckDb_CompositeCube implements IAdhocTestConstants 
 				.containsEntry(Map.of("b", "b2", "c", "someTableName1.cube"), Map.of())
 				.containsEntry(Map.of("b", "someTableName2.cube", "c", "c1"), Map.of())
 				.hasSize(3);
+	}
+
+	AtomicInteger stopWatchCount = new AtomicInteger();
+
+	@Override
+	public IStopwatch makeStopwatch() {
+		int stopWatchIndex = stopWatchCount.incrementAndGet();
+
+		return () -> Duration.ofMillis(123 * stopWatchIndex);
+	}
+
+	@Test
+	public void testLogPerfs() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		CubeWrapper cube3 = makeAndFeedCompositeCube();
+
+		cube3.execute(AdhocQuery.builder()
+				.measure("k1", "k2", "k3")
+				.customMarker(Optional.of("JPY"))
+				.groupByAlso("letter")
+				.andFilter("color", "red")
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualToNormalizingNewlines(
+						"""
+								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|  No cost info
+								|\\- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								|   \\  size=1 duration=492ms
+								\\-- #2 m=k2(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								    \\  size=1 duration=492ms
+								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								|  No cost info
+								|\\- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								|   \\  size=1 duration=738ms
+								\\-- #2 m=k3(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								    \\  size=1 duration=738ms
+								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								#0 s=composite id=00000000-0000-0000-0000-000000000000
+								|  No cost info
+								|\\- #1 m=k1(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								|   \\  size=2 duration=246ms
+								|\\- #2 m=k2(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								|   \\  size=1 duration=246ms
+								\\-- #3 m=k3(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								    \\  size=1 duration=246ms
+								Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""");
+
+		Assertions.assertThat(messages).hasSize(13);
 	}
 }

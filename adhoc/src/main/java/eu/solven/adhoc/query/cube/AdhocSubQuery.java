@@ -38,7 +38,7 @@ import lombok.Value;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public final class AdhocSubQuery implements IAdhocQuery, IHasParentQueryId {
 	@NonNull
 	final IAdhocQuery subQuery;

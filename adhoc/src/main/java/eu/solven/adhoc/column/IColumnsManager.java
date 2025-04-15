@@ -20,32 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.util.IHasColumns;
 
 /**
- * Generate {@link ExecutingQueryContext} given an {@link IAdhocQuery} and its context of execution.
+ * Helps managing various edge-cases around columns, like missing columns or type transcoding.
  * 
  * @author Benoit Lacelle
- * 
- * @see IColumnsManager
- * @see IAdhocImplicitFilter
+ * @see IMissingColumnManager
+ * @see ICustomTypeManager
+ * @see ITableTranscoder
  */
-public interface IQueryPreparator {
+public interface IColumnsManager extends IHasColumns {
+
+	ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
+
+	Object onMissingColumn(ICubeWrapper cube, String column);
+
+	Object onMissingColumn(String column);
+
 	/**
+	 * This is typically important when the table has JOINs, as a columnName may be ambiguous through the JOINs.
 	 * 
-	 * @param table
-	 * @param forest
-	 * @param columnsManager
-	 * @param query
-	 * @return an {@link ExecutingQueryContext} which wraps together everything necessary to execute a query.
+	 * @param cubeColumn
+	 *            some cube column
+	 * @return the equivalent table column
 	 */
-	ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest forest,
-			IColumnsManager columnsManager,
-			IAdhocQuery query);
+	String transcodeToTable(String cubeColumn);
+
 }

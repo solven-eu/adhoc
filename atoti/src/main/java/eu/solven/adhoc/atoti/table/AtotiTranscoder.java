@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.atoti.table;
 
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This {@link IAdhocTableTranscoder} is useful into translating from levelNames as configured in ActivePivot
+ * This {@link ITableTranscoder} is useful into translating from levelNames as configured in ActivePivot
  * processors, into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName
  * matched the levelName.
  *
@@ -37,12 +37,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-public class AtotiTranscoder implements IAdhocTableTranscoder {
+public class AtotiTranscoder implements ITableTranscoder {
 	private static final char LEVEL_SEPARATOR = '@';
 
 	@Builder.Default
 	// DO not use an IdentityTranscoder, else `priorityUnderlying != null` would always be true
-	final IAdhocTableTranscoder priorityTranscoder = MapTableTranscoder.builder().build();
+	final ITableTranscoder priorityTranscoder = MapTableTranscoder.builder().build();
 
 	@Override
 	public String underlying(String queried) {

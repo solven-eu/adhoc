@@ -167,14 +167,14 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 m=d_country=current_ratio(Columnator) filter=country=US groupBy=grandTotal
-				\\-- #1 m=d_country=current_ratio_postcheck(Combinator) filter=country=US groupBy=grandTotal
-				    |\\- #2 m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
-				    |   \\-- #3 m=d(Aggregator) filter=country=US groupBy=(country)
-				    \\-- #4 m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
-				        \\-- !2
-																  		""".trim());
+				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+				\\-- #1 m=d_country=current_ratio(Columnator) filter=country=US groupBy=grandTotal
+				    \\-- #2 m=d_country=current_ratio_postcheck(Combinator) filter=country=US groupBy=grandTotal
+				        |\\- #3 m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
+				        |   \\-- #4 m=d(Aggregator) filter=country=US groupBy=(country)
+				        \\-- #5 m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
+				            \\-- !3""");
 
-		Assertions.assertThat(messages).hasSize(6);
+		Assertions.assertThat(messages).hasSize(7);
 	}
 }

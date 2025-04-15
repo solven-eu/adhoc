@@ -20,39 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.dag;
 
-import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
-import eu.solven.adhoc.util.IHasColumns;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.util.IAdhocEventBus;
 
 /**
- * Helps managing various edge-cases around columns, like missing columns or type transcoding.
+ * Will publish `EXPLAIN` information into {@link IAdhocEventBus}.
  * 
  * @author Benoit Lacelle
- * @see IMissingColumnManager
- * @see ICustomTypeManager
- * @see IAdhocTableTranscoder
  */
-public interface IAdhocColumnsManager extends IHasColumns {
+public interface IDagExplainer {
 
-	ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
-
-	Object onMissingColumn(ICubeWrapper cube, String column);
-
-	Object onMissingColumn(String column);
-
-	/**
-	 * This is typically important when the table has JOINs, as a columnName may be ambiguous through the JOINs.
-	 * 
-	 * @param cubeColumn
-	 *            some cube column
-	 * @return the equivalent table column
-	 */
-	String transcodeToTable(String cubeColumn);
+	void explain(AdhocQueryId adhocQueryId, QueryStepsDag dag);
 
 }

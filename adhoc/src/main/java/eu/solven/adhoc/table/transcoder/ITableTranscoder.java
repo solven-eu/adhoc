@@ -36,7 +36,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @see IAdhocTableReverseTranscoder
  *
  */
-public interface IAdhocTableTranscoder {
+public interface ITableTranscoder {
 	/**
 	 * This may return null for convenience of implementation.
 	 *

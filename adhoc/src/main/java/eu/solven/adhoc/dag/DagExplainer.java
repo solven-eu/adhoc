@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -35,9 +36,15 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,32 +55,62 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class DagExplainer {
+public class DagExplainer implements IDagExplainer {
+	private static final String FAKE_ROOT_MEASURE = "$ADHOC$fakeRoot";
+
+	static final AdhocQueryStep fakeRoot = AdhocQueryStep.builder()
+			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
+			.filter(IAdhocFilter.MATCH_ALL)
+			.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+			.build();
+
 	@NonNull
 	IAdhocEventBus eventBus;
 
+	@Value
+	@RequiredArgsConstructor
 	public static class DagExplainerState {
-		Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
-		Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
+		final Map<AdhocQueryStep, String> stepToIndentation = new HashMap<>();
+		final Map<AdhocQueryStep, Integer> stepToReference = new HashMap<>();
+
+		AdhocQueryId queryId;
+		QueryStepsDag dag;
+
+		public List<AdhocQueryStep> getUnderlyingSteps(AdhocQueryStep step) {
+			if (step == fakeRoot) {
+				// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
+				return dag.getQueried().stream().sorted(this.orderForExplain()).toList();
+			} else {
+				// Return the actual underlying steps
+				DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> rawDag = dag.getDag();
+				return rawDag.outgoingEdgesOf(step)
+						.stream()
+						.map(edge -> Graphs.getOppositeVertex(rawDag, edge, step))
+						.toList();
+			}
+		}
+
+		/**
+		 * 
+		 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN
+		 */
+		protected Comparator<AdhocQueryStep> orderForExplain() {
+			return Comparator.<AdhocQueryStep, String>comparing(qr -> qr.getMeasure().toString())
+					.thenComparing(qr -> qr.getFilter().toString())
+					.thenComparing(qr -> qr.getGroupBy().toString());
+		}
+
 	}
 
-	public void explain(QueryStepsDag dag) {
-		DagExplainerState state = new DagExplainerState();
+	@Override
+	public void explain(AdhocQueryId queryId, QueryStepsDag dag) {
+		DagExplainerState state = newDagExplainerState(queryId, dag);
 
-		// For each explicit queryStep
-		dag.getQueried().stream().sorted(this.orderForExplain()).forEach(rootStep -> {
-			printStepAndUnderlyings(dag, state, rootStep, Optional.empty(), true);
-		});
+		printStepAndUnderlyings(state, fakeRoot, Optional.empty(), true);
 	}
 
-	/**
-	 * 
-	 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN
-	 */
-	protected Comparator<AdhocQueryStep> orderForExplain() {
-		return Comparator.<AdhocQueryStep, String>comparing(qr -> qr.getMeasure().toString())
-				.thenComparing(qr -> qr.getFilter().toString())
-				.thenComparing(qr -> qr.getGroupBy().toString());
+	protected DagExplainerState newDagExplainerState(AdhocQueryId queryId, QueryStepsDag dag) {
+		return new DagExplainerState(queryId, dag);
 	}
 
 	/**
@@ -87,8 +124,7 @@ public class DagExplainer {
 	 * @param isLast
 	 *            true if this step is the last amongst its siblings.
 	 */
-	protected void printStepAndUnderlyings(QueryStepsDag queryStepsDag,
-			DagExplainerState dagState,
+	protected void printStepAndUnderlyings(DagExplainerState dagState,
 			AdhocQueryStep step,
 			Optional<AdhocQueryStep> optParent,
 			boolean isLast) {
@@ -112,29 +148,23 @@ public class DagExplainer {
 
 			dagState.stepToIndentation.putIfAbsent(step, indentation);
 
-			String stepAsString = toString(dagState.stepToReference, step);
-			String additionalStepInfo = additionalInfo(queryStepsDag, step, indentation);
-
+			String stepAsString = toString(dagState, step);
 			isReferenced = stepAsString.startsWith("!");
+
+			String additionalStepInfo = additionalInfo(dagState, step, indentation, isLast, isReferenced);
 
 			eventBus.post(openEventBuilder().message("%s%s%s".formatted(indentation, stepAsString, additionalStepInfo))
 					.build());
 		}
 
 		if (!isReferenced) {
-			DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
-			List<DefaultEdge> underlyings = dag.outgoingEdgesOf(step).stream().toList();
+			List<AdhocQueryStep> underlyings = dagState.getUnderlyingSteps(step);
 
 			for (int i = 0; i < underlyings.size(); i++) {
-				DefaultEdge edge = underlyings.get(i);
-				AdhocQueryStep underlyingStep = Graphs.getOppositeVertex(dag, edge, step);
+				AdhocQueryStep underlyingStep = underlyings.get(i);
 
-				printStepAndUnderlyings(queryStepsDag,
-						dagState,
-						underlyingStep,
-						Optional.of(step),
-						i == underlyings.size() - 1);
-
+				boolean isLastUnderlying = i == underlyings.size() - 1;
+				printStepAndUnderlyings(dagState, underlyingStep, Optional.of(step), isLastUnderlying);
 			}
 		}
 	}
@@ -144,21 +174,36 @@ public class DagExplainer {
 	}
 
 	// Typically overriden by DagExplainerForPerfs
-	protected String additionalInfo(QueryStepsDag queryStepsDag, AdhocQueryStep step, String indentation) {
+	protected String additionalInfo(DagExplainerState dagState,
+			AdhocQueryStep step,
+			String indentation,
+			boolean isLast,
+			boolean isReferenced) {
 		return "";
 	}
 
-	protected String toString(Map<AdhocQueryStep, Integer> stepToReference, AdhocQueryStep step) {
+	protected String toString(DagExplainerState dagState, AdhocQueryStep step) {
+		Map<AdhocQueryStep, Integer> stepToReference = dagState.getStepToReference();
 		if (stepToReference.containsKey(step)) {
 			return "!" + stepToReference.get(step);
 		} else {
 			int ref = stepToReference.size();
 			stepToReference.put(step, ref);
-			return "#" + ref + " " + toString(step);
+			return "#" + ref + " " + toString2(dagState, step);
 		}
 	}
 
-	protected String toString(AdhocQueryStep step) {
+	protected String toString2(DagExplainerState dagState, AdhocQueryStep step) {
+		if (step == fakeRoot) {
+			AdhocQueryId queryId = dagState.getQueryId();
+			UUID parentQueryId = queryId.getParentQueryId();
+			if (parentQueryId == null) {
+				return "s=%s id=%s".formatted(queryId.getCube(), queryId.getQueryId());
+			} else {
+				return "s=%s id=%s (parentId=%s)".formatted(queryId.getCube(), queryId.getQueryId(), parentQueryId);
+			}
+		}
+
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("m=")

@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.column.AdhocColumnsManager;
-import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
@@ -89,7 +89,7 @@ public class CubeWrapper implements ICubeWrapper {
 	// Enable transcoding from table to cube
 	@NonNull
 	@Default
-	final IAdhocColumnsManager columnsManager = AdhocColumnsManager.builder().build();
+	final IColumnsManager columnsManager = ColumnsManager.builder().build();
 	// Wrap a query (e.g. with queryId, implicitFilter, etc)
 	@NonNull
 	@Default
@@ -166,7 +166,7 @@ public class CubeWrapper implements ICubeWrapper {
 	public static class CubeWrapperBuilder {
 		public CubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
 			// BEWARE Is this the proper way the ensure the eventBus is written in proper places?
-			AdhocColumnsManager columnsManager = (AdhocColumnsManager) this.build().getColumnsManager();
+			ColumnsManager columnsManager = (ColumnsManager) this.build().getColumnsManager();
 			this.columnsManager(columnsManager.toBuilder().eventBus(eventBus).build());
 
 			return this;

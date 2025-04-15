@@ -20,32 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
-import eu.solven.adhoc.table.ITableWrapper;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Generate {@link ExecutingQueryContext} given an {@link IAdhocQuery} and its context of execution.
- * 
- * @author Benoit Lacelle
- * 
- * @see IColumnsManager
- * @see IAdhocImplicitFilter
- */
-public interface IQueryPreparator {
-	/**
-	 * 
-	 * @param table
-	 * @param forest
-	 * @param columnsManager
-	 * @param query
-	 * @return an {@link ExecutingQueryContext} which wraps together everything necessary to execute a query.
-	 */
-	ExecutingQueryContext prepareQuery(ITableWrapper table,
-			IMeasureForest forest,
-			IColumnsManager columnsManager,
-			IAdhocQuery query);
+import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.AdhocSubQuery;
+
+public class TestAdhocQueryId {
+	@Test
+	public void testQueryId() {
+		AdhocQueryId queryId = AdhocQueryId.from("someCube", AdhocQuery.builder().build());
+
+		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
+		Assertions.assertThat(queryId.getParentQueryId()).isNull();
+		Assertions.assertThat(queryId.getQueryId()).isNotNull();
+	}
+
+	@Test
+	public void testQueryId_withparent() {
+		AdhocQueryId queryId = AdhocQueryId.from("parentCube", AdhocQuery.builder().build());
+
+		AdhocQueryId subQueryId = AdhocQueryId.from("subCube",
+				AdhocSubQuery.builder().subQuery(AdhocQuery.builder().build()).parentQueryId(queryId).build());
+
+		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
+		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
+		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
+	}
 }

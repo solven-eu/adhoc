@@ -37,12 +37,12 @@ public class TestAdhocSubQuery {
 		EqualsVerifier.forClass(AdhocSubQuery.class).verify();
 	}
 
-	// IHasMeasure may lead to StackOverFLow due to very lax default methods
+	// IHasMeasure may lead to StackOverFlow due to very lax default methods
 	@Test
 	public void testGetMeasures() {
 		IAdhocQuery query = AdhocQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =
-				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from(query)).build();
+				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from("someCube", query)).build();
 
 		Assertions.assertThat(subQuery.getMeasures()).hasSize(1).contains(ReferencedMeasure.ref("m"));
 	}

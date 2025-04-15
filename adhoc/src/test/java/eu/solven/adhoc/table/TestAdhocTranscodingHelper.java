@@ -38,7 +38,7 @@ import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
@@ -46,7 +46,7 @@ import eu.solven.adhoc.table.transcoder.TranscodingContext;
 public class TestAdhocTranscodingHelper {
 	@Test
 	public void testSimpleMapping_Empty() {
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
@@ -61,7 +61,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping() {
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
@@ -77,7 +77,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping_RequestUnderlying() {
-		IAdhocTableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
+		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
@@ -95,7 +95,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testOverlap() {
-		IAdhocTableTranscoder transcoder =
+		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k2").queriedToUnderlying("k2", "k3").build();
 		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
 
@@ -143,7 +143,7 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testIn_Transcoded() {
-		IAdhocTableTranscoder transcoder = PrefixTranscoder.builder().prefix("p_").build();
+		ITableTranscoder transcoder = PrefixTranscoder.builder().prefix("p_").build();
 
 		Assertions
 				.assertThat(AdhocTranscodingHelper

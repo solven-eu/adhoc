@@ -68,7 +68,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
@@ -85,7 +85,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Builder(toBuilder = true)
 @Slf4j
-public class AdhocColumnsManager implements IAdhocColumnsManager {
+public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
@@ -94,7 +94,7 @@ public class AdhocColumnsManager implements IAdhocColumnsManager {
 	@Default
 	@NonNull
 	@Getter
-	final IAdhocTableTranscoder transcoder = new IdentityImplicitTranscoder();
+	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@NonNull
 	@Default

@@ -137,7 +137,7 @@ public class AdhocTranscodingHelper {
 	 * @param input
 	 * @return true if the input matches the filter, where each column in input is transcoded.
 	 */
-	public static boolean match(IAdhocTableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
+	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
 		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
@@ -168,7 +168,7 @@ public class AdhocTranscodingHelper {
 		}
 	}
 
-	public static boolean match(IAdhocTableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
+	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
 		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {

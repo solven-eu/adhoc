@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.AdhocColumnsManager;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -87,7 +87,7 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 				AdhocQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
 				forest,
 				table,
-				AdhocColumnsManager.builder().build());
+				ColumnsManager.builder().build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
 	}

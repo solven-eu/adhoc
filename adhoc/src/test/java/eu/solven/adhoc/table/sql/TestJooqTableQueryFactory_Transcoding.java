@@ -29,16 +29,16 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.column.IAdhocColumnsManager;
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.transcoder.IAdhocTableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
 /**
- * BEWARE This unitTests is useless since transcoding has been moved to {@link IAdhocColumnsManager}.
+ * BEWARE This unitTests is useless since transcoding has been moved to {@link IColumnsManager}.
  * 
  * @author Benoit Lacelle
  */
@@ -50,7 +50,7 @@ public class TestJooqTableQueryFactory_Transcoding {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	IAdhocTableTranscoder transcoder =
+	ITableTranscoder transcoder =
 			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
 			DSL.table(DSL.name("someTableName")),
