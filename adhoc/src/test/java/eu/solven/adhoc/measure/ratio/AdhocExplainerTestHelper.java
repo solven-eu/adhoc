@@ -28,7 +28,7 @@ import java.util.List;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
-import eu.solven.adhoc.dag.DagExplainer;
+import eu.solven.adhoc.dag.observability.DagExplainer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.util.AdhocUnsafe;
 

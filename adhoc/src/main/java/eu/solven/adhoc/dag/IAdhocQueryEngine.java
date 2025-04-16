@@ -24,6 +24,9 @@ package eu.solven.adhoc.dag;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.IAdhocQuery;

@@ -13,6 +13,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - Enable complex filtering, by additional groupBy from table and manual post-filtering (e.g. `JooqTableQueryFactory.ConditionWithFilter`)
 - Enable `CalculatedColumn` which can evaluate additional columns based on table columns.
+- Introduce `IImplicitOptions` in `DefaultQueryPreparator`
+- Initial work around `CONCURRENT` option.
 
 ## [0.0.3]
 ### Added

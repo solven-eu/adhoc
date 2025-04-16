@@ -32,8 +32,8 @@ import org.greenrobot.eventbus.Subscribe;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
-import eu.solven.adhoc.dag.AdhocQueryMonitor;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.dag.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 
 /**

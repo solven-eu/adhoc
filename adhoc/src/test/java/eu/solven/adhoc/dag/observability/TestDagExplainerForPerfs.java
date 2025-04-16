@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.observability;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +33,9 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.dag.ICanResolveMeasure;
+import eu.solven.adhoc.dag.QueryStepsDag;
+import eu.solven.adhoc.dag.QueryStepsDagBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.model.Aggregator;

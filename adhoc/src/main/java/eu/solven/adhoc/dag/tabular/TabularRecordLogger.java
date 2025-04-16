@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.tabular;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Builder
-public class AggregatedRecordLogger {
+public class TabularRecordLogger {
 	final AtomicInteger nbIn = new AtomicInteger();
 	final AtomicInteger nbOut = new AtomicInteger();
 

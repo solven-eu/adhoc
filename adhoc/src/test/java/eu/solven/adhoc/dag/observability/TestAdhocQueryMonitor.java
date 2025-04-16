@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.observability;
 
 import java.time.OffsetDateTime;
 import java.util.List;

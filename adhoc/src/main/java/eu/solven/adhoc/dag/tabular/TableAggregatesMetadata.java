@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.tabular;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +32,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.table.ITableWrapper;

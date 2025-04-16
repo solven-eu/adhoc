@@ -25,7 +25,7 @@ package eu.solven.adhoc.table;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;

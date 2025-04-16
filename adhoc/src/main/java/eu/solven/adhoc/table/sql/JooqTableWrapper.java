@@ -39,7 +39,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;

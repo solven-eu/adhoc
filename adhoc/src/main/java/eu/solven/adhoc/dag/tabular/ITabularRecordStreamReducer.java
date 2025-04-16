@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.tabular;
 
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -31,7 +31,7 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
  * 
  * @author Benoit Lacelle
  */
-public interface IAggregatedRecordStreamReducer {
+public interface ITabularRecordStreamReducer {
 
 	IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream);
 

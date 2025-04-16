@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.observability;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +33,7 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import eu.solven.adhoc.dag.QueryStepsDag;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;

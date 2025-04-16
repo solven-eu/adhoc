@@ -20,39 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.query;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.util.AdhocUnsafe;
 
-public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest implements IAdhocTestConstants {
-
-	@BeforeEach
-	public void setLimitTo2() {
-		System.setProperty("adhoc.limitColumnLength", "2");
-		AdhocUnsafe.reloadProperties();
-	}
-
-	@AfterEach
-	public void resetLimit() {
-		System.clearProperty("adhoc.limitColumnLength");
-		AdhocUnsafe.reloadProperties();
-	}
+public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
@@ -73,6 +62,10 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 	@Test
 	public void testGrandTotal() {
+		CubeWrapper cube = editCube().queryPreparator(
+				DefaultQueryPreparator.builder().implicitOptions(q -> Set.of(StandardQueryOptions.CONCURRENT)).build())
+				.build();
+
 		ITabularView output = cube.execute(AdhocQuery.builder().measure(countAsterisk.getName()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -80,35 +73,6 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of(countAsterisk.getName(), 3L));
-	}
-
-	@Test
-	public void testGroupByK_countAggregator() {
-		Assertions.setMaxStackTraceElementsDisplayed(300);
-
-		Assertions.assertThatThrownBy(
-				() -> cube.execute(AdhocQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
-	}
-
-	@Test
-	public void testGroupByK_noAggregator() {
-		Assertions.setMaxStackTraceElementsDisplayed(300);
-
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().groupByAlso("k").build()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
-	}
-
-	@Test
-	public void testBucketorByK() {
-		Assertions.setMaxStackTraceElementsDisplayed(300);
-
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure("byK").build()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
 	}
 
 }

@@ -26,11 +26,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,7 +44,7 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -75,6 +77,7 @@ import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -105,9 +108,16 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, Class<?>> columnToJavaType = new LinkedHashMap<>();
 
 		// TODO Manage conflicts (e.g. same column but different types)
-		cubes.forEach(table -> columnToJavaType.putAll(table.getColumns()));
+		cubes.forEach(cube -> columnToJavaType.putAll(cube.getColumns()));
 
 		return columnToJavaType;
+	}
+
+	@Value
+	@Builder
+	public static class SubQueryParameters {
+		ICubeWrapper cube;
+		IAdhocQuery query;
 	}
 
 	@Override
@@ -119,27 +129,71 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
-		Stream<ITabularRecord> streams =
-				cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).flatMap(subCube -> {
-					Set<String> subColumns = subCube.getColumns().keySet();
+		Map<String, IAdhocQuery> cubeToQuery = new LinkedHashMap<>();
 
-					IAdhocQuery subQuery =
-							makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube, subColumns);
+		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
+			Set<String> subColumns = subCube.getColumns().keySet();
 
-					ITabularView subView = subCube.execute(subQuery);
+			IAdhocQuery subQuery =
+					makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube, subColumns);
 
-					// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
-					// from current subCube.
-					NavigableSet<String> subMissingColumns =
-							new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), subColumns));
-					return subView.stream((slice) -> {
-						return oAsMap -> {
-							return transcodeSliceToComposite(subCube, slice, oAsMap, subMissingColumns);
-						};
-					});
-				});
+			var previous = cubeToQuery.put(subCube.getName(), subQuery);
+			if (previous != null) {
+				throw new IllegalStateException("Multiple cubes are named: " + subCube.getName());
+			}
+		});
+
+		// Actual execution is the only concurrent section
+		final Map<String, ITabularView> cubeToView = executeSubQueries(executingQueryContext, cubeToQuery);
+
+		Map<String, ICubeWrapper> nameToCube = getNameToCube();
+		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
+			ICubeWrapper subCube = nameToCube.get(e.getKey());
+			Set<String> subColumns = subCube.getColumns().keySet();
+
+			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
+			// from current subCube.
+			NavigableSet<String> subMissingColumns =
+					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), subColumns));
+
+			ITabularView subView = e.getValue();
+			return subView.stream((slice) -> {
+				return oAsMap -> {
+					return transcodeSliceToComposite(subCube, slice, oAsMap, subMissingColumns);
+				};
+			});
+		});
 
 		return new SuppliedTabularRecordStream(compositeQuery, () -> streams);
+	}
+
+	protected Map<String, ICubeWrapper> getNameToCube() {
+		Map<String, ICubeWrapper> nameToCube = new LinkedHashMap<>();
+		cubes.forEach(cube -> nameToCube.put(cube.getName(), cube));
+		return nameToCube;
+	}
+
+	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
+			Map<String, IAdhocQuery> cubeToQuery) {
+		Map<String, ICubeWrapper> nameToCube = getNameToCube();
+
+		return CompletableFuture.supplyAsync(() -> {
+			Stream<Entry<String, IAdhocQuery>> stream = cubeToQuery.entrySet().stream();
+
+			if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				stream = stream.parallel();
+			}
+
+			return stream.collect(Collectors.toMap(e -> e.getKey(), e -> {
+				ICubeWrapper subCube = nameToCube.get(e.getKey());
+				IAdhocQuery query = e.getValue();
+				return executeSubQuery(subCube, query);
+			}));
+		}, executingQueryContext.getFjp()).join();
+	}
+
+	protected ITabularView executeSubQuery(ICubeWrapper subCube, IAdhocQuery query) {
+		return subCube.execute(query);
 	}
 
 	protected boolean isEligible(ICubeWrapper subCube, TableQuery compositeQuery) {

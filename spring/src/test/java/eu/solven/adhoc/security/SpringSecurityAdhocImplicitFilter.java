@@ -30,7 +30,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import eu.solven.adhoc.dag.IAdhocImplicitFilter;
+import eu.solven.adhoc.dag.context.IImplicitFilter;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  * An example {@link IAdhocImplicitFilter} based on Spring Security.
  */
 @Slf4j
-public class SpringSecurityAdhocImplicitFilter implements IAdhocImplicitFilter {
+public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 	public static final String ROLE_ADMIN = "ADMIN";
 	public static final String ROLE_EUR = "EUR";
 

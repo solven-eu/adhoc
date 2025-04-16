@@ -50,7 +50,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.query.table.TableQuery;

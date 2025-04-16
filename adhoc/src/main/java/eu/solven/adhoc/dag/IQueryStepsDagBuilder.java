@@ -24,6 +24,7 @@ package eu.solven.adhoc.dag;
 
 import java.util.Set;
 
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.model.IMeasure;
 
 public interface IQueryStepsDagBuilder {

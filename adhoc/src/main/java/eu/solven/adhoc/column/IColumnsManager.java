@@ -23,7 +23,7 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;

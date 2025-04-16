@@ -36,8 +36,8 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.DefaultQueryPreparator;
-import eu.solven.adhoc.dag.IQueryPreparator;
+import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
+import eu.solven.adhoc.dag.context.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;

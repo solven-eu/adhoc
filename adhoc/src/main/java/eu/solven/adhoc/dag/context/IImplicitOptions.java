@@ -20,16 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag.observability;
+package eu.solven.adhoc.dag.context;
 
-import java.time.Duration;
+import java.util.Set;
 
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.cube.IAdhocQuery;
 
-@Value
-@Builder
-public class SizeAndDuration {
-	long size;
-	Duration duration;
+/**
+ * Enables adding automatically some options (e.g. `EXPLAIN` or `CONCURRENT`).
+ */
+public interface IImplicitOptions {
+	/**
+	 * @param query
+	 *            the query requested by a user. It may be ignored (e.g. if `EXPLAIN` is always activated).
+	 * @return the options to automatically kick-in.
+	 */
+	Set<IQueryOption> getOptions(IAdhocQuery query);
 }

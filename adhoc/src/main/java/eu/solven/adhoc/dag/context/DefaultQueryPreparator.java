@@ -20,11 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.context;
+
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -41,18 +46,22 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 	// By default, the filters are not modified
 	@NonNull
 	@Default
-	final IAdhocImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
+	final IImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
+
+	@NonNull
+	@Default
+	final IImplicitOptions implicitOptions = query -> ImmutableSet.of();
 
 	@Override
 	public ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
 			IColumnsManager columnsManager,
 			IAdhocQuery rawQuery) {
-		IAdhocQuery query = combineWithImplicitFilter(rawQuery);
-		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), query);
+		IAdhocQuery preparedQuery = combineWithImplicit(rawQuery);
+		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
 
 		return ExecutingQueryContext.builder()
-				.query(query)
+				.query(preparedQuery)
 				.queryId(queryId)
 				.forest(forest)
 				.table(table)
@@ -60,11 +69,12 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.build();
 	}
 
-	protected IAdhocQuery combineWithImplicitFilter(IAdhocQuery rawQuery) {
+	protected IAdhocQuery combineWithImplicit(IAdhocQuery rawQuery) {
 		IAdhocFilter preprocessedFilter =
 				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
 
-		AdhocQuery query = AdhocQuery.edit(rawQuery).filter(preprocessedFilter).build();
+		Set<IQueryOption> addedOptions = implicitOptions.getOptions(rawQuery);
+		AdhocQuery query = AdhocQuery.edit(rawQuery).filter(preprocessedFilter).options(addedOptions).build();
 
 		if (rawQuery instanceof AdhocSubQuery subQuery) {
 			return subQuery.toBuilder().subQuery(query).build();

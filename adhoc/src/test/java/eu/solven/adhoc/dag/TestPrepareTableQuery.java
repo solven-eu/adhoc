@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -40,6 +41,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
 	ITableWrapper table = InMemoryTable.builder().build();
+	AdhocTableQueryEngine tableQueryEngine = engine.makeTableQueryEngine();
 
 	@Override
 	public void feedTable() {
@@ -62,8 +64,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output =
-				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
+				engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -89,8 +91,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output =
-				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
+				engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -116,8 +118,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output =
-				engine.prepareForTable(executingQueryContext, engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
+				engine.makeQueryStepsDag(executingQueryContext));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

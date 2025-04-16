@@ -40,7 +40,7 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.context;
 
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -28,7 +28,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 /**
  * This provides an implicit {@link IAdhocFilter}, typically based on a static security context.
  */
-public interface IAdhocImplicitFilter {
+public interface IImplicitFilter {
 	/**
 	 * BEWARE The output filter does not require to include the query own filter.
 	 *

@@ -10,6 +10,7 @@ import AdhocMeasure from "./adhoc-measure.js";
 
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
 import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
+import AdhocQueryWizardOptions from "./adhoc-query-wizard-options.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -22,6 +23,7 @@ export default {
 		AdhocMeasure,
 		AdhocQueryWizardColumn,
 		AdhocQueryWizardFilter,
+		AdhocQueryWizardOptions,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -74,10 +76,6 @@ export default {
 
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
-
-		if (!props.queryModel.options) {
-			props.queryModel.options = {};
-		}
 
 		const filtered = function (inputsAsObjectOrArray) {
 			const filtereditems = [];
@@ -271,14 +269,7 @@ export default {
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll">
-								<div class="form-check form-switch">
-								    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="queryModel.options.explain" />
-								    <label class="form-check-label" for="explainQuery">explain</label>
-								</div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="queryModel.options.debug" />
-                                    <label class="form-check-label" for="debugQuery">debug</label>
-                                </div>
+								<AdhocQueryWizardOptions :queryModel="queryModel" />
                             </div>
                         </div>
                     </div>

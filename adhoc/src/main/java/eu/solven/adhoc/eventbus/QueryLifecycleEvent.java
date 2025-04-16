@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

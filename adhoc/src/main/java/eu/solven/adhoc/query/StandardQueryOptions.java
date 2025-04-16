@@ -73,6 +73,12 @@ public enum StandardQueryOptions implements IQueryOption {
 	DEBUG,
 
 	/**
+	 * Enable concurrent execution of inner parts of a query.
+	 */
+	// https://stackoverflow.com/questions/1050222/what-is-the-difference-between-concurrency-and-parallelism
+	CONCURRENT,
+
+	/**
 	 * Keep {@link IAggregationCarrier} wrapped. Especially useful for {@link CompositeCubesTableWrapper}.
 	 */
 	@Deprecated(since = "Not ready yet. Should always be used only for internal purposes")

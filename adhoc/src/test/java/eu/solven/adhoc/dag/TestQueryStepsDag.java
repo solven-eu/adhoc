@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Combinator;

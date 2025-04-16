@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.observability;
 
+import eu.solven.adhoc.dag.QueryStepsDag;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.util.IAdhocEventBus;
 

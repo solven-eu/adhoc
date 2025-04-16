@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.filter.editor;
 
-import eu.solven.adhoc.dag.IAdhocImplicitFilter;
+import eu.solven.adhoc.dag.context.IImplicitFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -34,7 +34,7 @@ import lombok.Value;
 /**
  * Used by {@link Shiftor}.
  * 
- * Similar to {@link IAdhocImplicitFilter} but this is expected to be used by a {@link ITransformator}.
+ * Similar to {@link IImplicitFilter} but this is expected to be used by a {@link ITransformator}.
  *
  * @author Benoit Lacelle
  */

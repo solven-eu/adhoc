@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.AdhocQuery;

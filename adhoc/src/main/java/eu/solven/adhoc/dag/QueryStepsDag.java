@@ -35,6 +35,7 @@ import org.jgrapht.graph.DirectedMultigraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import eu.solven.adhoc.dag.observability.SizeAndDuration;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -51,7 +52,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class QueryStepsDag {
+public class QueryStepsDag implements ISinkExecutionFeedback {
 	// The DAG of a given IAdhocQuery, from queried to aggregators
 	@NonNull
 	DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag;
@@ -93,6 +94,7 @@ public class QueryStepsDag {
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
 	}
 
+	@Override
 	public void registerExecutionFeedback(AdhocQueryStep queryStep, SizeAndDuration sizeAndDuration) {
 		stepToCost.put(queryStep, sizeAndDuration);
 	}

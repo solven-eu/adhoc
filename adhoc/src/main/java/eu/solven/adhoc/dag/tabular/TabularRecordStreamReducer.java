@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.tabular;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -54,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamReducer {
+public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	IOperatorsFactory operatorsFactory;
 
@@ -76,8 +77,8 @@ public class AggregatedRecordStreamReducer implements IAggregatedRecordStreamRed
 		TableAggregatesMetadata tableAggregatesMetadata =
 				TableAggregatesMetadata.from(executingQueryContext, columnToAggregators);
 
-		AggregatedRecordLogger aggregatedRecordLogger =
-				AggregatedRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
+		TabularRecordLogger aggregatedRecordLogger =
+				TabularRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed

@@ -20,16 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag.observability;
+package eu.solven.adhoc.dag;
 
-import java.time.Duration;
+import java.util.Map;
 
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.query.table.TableQuery;
 
-@Value
-@Builder
-public class SizeAndDuration {
-	long size;
-	Duration duration;
+/**
+ * Part if {@link IAdhocQueryEngine} dedicated to {@link TableQuery}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IAdhocTableQueryEngine {
+
+	Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
+			QueryStepsDag queryStepsDag);
+
 }

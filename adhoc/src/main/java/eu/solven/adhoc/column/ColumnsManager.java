@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -139,7 +139,7 @@ public class ColumnsManager implements IColumnsManager {
 				.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()))
 				.build();
 
-		if (query.isDebug()) {
+		if (executingQueryContext.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.debug(true)
 					.message("Transcoded query is `%s` given `%s`".formatted(transcodedQuery, query))

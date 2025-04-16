@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.observability;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -31,6 +31,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import lombok.extern.slf4j.Slf4j;
 

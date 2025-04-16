@@ -20,20 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.context;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Generate {@link ExecutingQueryContext} given an {@link IAdhocQuery} and its context of execution.
  * 
+ * The {@link IAdhocQuery} may be modified. For instance, {@link IImplicitFilter} may add {@link IAdhocFilter} given
+ * security context. Or some options may be added by default.
+ * 
  * @author Benoit Lacelle
  * 
  * @see IColumnsManager
- * @see IAdhocImplicitFilter
+ * @see IImplicitFilter
  */
 public interface IQueryPreparator {
 	/**

@@ -25,6 +25,7 @@ package eu.solven.adhoc.dag;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestExecutingQueryContext {

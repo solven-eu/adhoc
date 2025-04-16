@@ -32,6 +32,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -56,9 +57,10 @@ public class TestAdhocQueryEngine {
 				.table(InMemoryTable.builder().build())
 				.columnsManager(ColumnsManager.builder().build())
 				.build();
-		QueryStepsDag fromQueriedToAggregates = engine.makeQueryStepsDag(queryWithContext);
+		QueryStepsDag dag = engine.makeQueryStepsDag(queryWithContext);
+		AdhocTableQueryEngine tableQueryEngine = engine.makeTableQueryEngine();
 		Map<String, Set<Aggregator>> columnToAggregators =
-				Multimaps.asMap(engine.columnToAggregators(queryWithContext, fromQueriedToAggregates));
+				Multimaps.asMap(tableQueryEngine.columnToAggregators(queryWithContext, dag));
 
 		Assertions.assertThat(columnToAggregators)
 				.hasSize(3)

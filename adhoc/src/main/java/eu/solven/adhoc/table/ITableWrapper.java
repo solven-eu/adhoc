@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.dag.ExecutingQueryContext;
-import eu.solven.adhoc.dag.TableAggregatesMetadata;
+import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.dag.tabular.TableAggregatesMetadata;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocQuery;

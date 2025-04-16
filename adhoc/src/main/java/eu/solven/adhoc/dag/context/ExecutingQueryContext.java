@@ -20,15 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag;
+package eu.solven.adhoc.dag.context;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.ICanResolveMeasure;
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -57,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHasQueryOptions {
+public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHasQueryOptions, ICanResolveMeasure {
 	// The query requested to the queryEngine
 	@NonNull
 	IAdhocQuery query;
@@ -75,11 +79,25 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 
 	@NonNull
 	@Default
-	final IColumnsManager columnsManager = ColumnsManager.builder().build();
+	IColumnsManager columnsManager = ColumnsManager.builder().build();
 
+	// @NonNull
+	// @Default
+	// ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+
+	// Using a ForkJoinPool is much more complex than using an ExecutorService
+	// But it enable smooth usage of Stream API.
+	@NonNull
+	@Default
+	ForkJoinPool fjp = ForkJoinPool.commonPool();
+
+	/**
+	 * Once turned to nut-null, can not be nulled again.
+	 */
 	AtomicReference<OffsetDateTime> cancellationDate = new AtomicReference<>();
 
-	protected IMeasure resolveIfRef(IMeasure measure) {
+	@Override
+	public IMeasure resolveIfRef(IMeasure measure) {
 		if (measure == null) {
 			throw new IllegalArgumentException("Null input");
 		}
@@ -151,6 +169,9 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 		IColumnsManager columnsManager;
 		// boolean columnsManager$set;
 
+		ExecutorService executorService;
+		ForkJoinPool fjp;
+
 		public ExecutingQueryContextBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
@@ -164,8 +185,16 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();
 			}
+			// if (executorService == null) {
+			// executorService = MoreExecutors.newDirectExecutorService();
+			// }
+			if (fjp == null) {
+				fjp = ForkJoinPool.commonPool();
+			}
 
-			return new ExecutingQueryContext(query, queryId, forest, table, columnsManager);
+			return new ExecutingQueryContext(query, queryId, forest, table, columnsManager
+			// , executorService
+					, fjp);
 		}
 	}
 

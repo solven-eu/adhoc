@@ -20,16 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dag.observability;
+package eu.solven.adhoc.dag;
 
-import java.time.Duration;
+import eu.solven.adhoc.dag.observability.SizeAndDuration;
+import eu.solven.adhoc.dag.step.AdhocQueryStep;
 
-import lombok.Builder;
-import lombok.Value;
+public interface ISinkExecutionFeedback {
 
-@Value
-@Builder
-public class SizeAndDuration {
-	long size;
-	Duration duration;
+	void registerExecutionFeedback(AdhocQueryStep queryStep, SizeAndDuration sizeAndDuration);
+
 }
