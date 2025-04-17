@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -48,9 +49,12 @@ public class AdhocTranscodingHelper {
 		// hidden
 	}
 
-	public static Map<String, ?> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
+	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
+
+	public static Map<String, Object> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
-		Map<String, Object> transcoded = new HashMap<>(underlyingMap.size());
+		int initialCapacity = reverseTranscoder.estimateSize(underlyingMap.keySet());
+		Map<String, Object> transcoded = new HashMap<>(initialCapacity);
 
 		underlyingMap.forEach((underlyingKey, v) -> {
 			Set<String> queriedKeys = reverseTranscoder.queried(underlyingKey);
@@ -66,8 +70,13 @@ public class AdhocTranscodingHelper {
 			}
 		});
 
-		if (transcoded.size() > underlyingMap.size()) {
-			log.info("Sub-optimal capacity ({} < {})", underlyingMap.size(), transcoded.size());
+		if (initialCapacity < transcoded.size()) {
+			long count = COUNT_SUBOPTIMAL.incrementAndGet();
+			if (Long.bitCount(count) == 1) {
+				log.warn("Sub-optimal capacity (capacity={} < reversedSize={})", initialCapacity, transcoded.size());
+			} else {
+				log.debug("Sub-optimal capacity (capacity={} < reversedSize={})", initialCapacity, transcoded.size());
+			}
 		}
 
 		return transcoded;

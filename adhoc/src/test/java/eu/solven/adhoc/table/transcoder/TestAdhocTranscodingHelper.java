@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.table.transcoder;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,11 +37,6 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
-import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
 
 public class TestAdhocTranscodingHelper {
 	@Test
@@ -264,5 +259,52 @@ public class TestAdhocTranscodingHelper {
 
 		Assertions.assertThat(AdhocTranscodingHelper.match(kIsNull, Map.of("k", "v"))).isTrue();
 		Assertions.assertThat(AdhocTranscodingHelper.match(kIsNull, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testSubOptimal_OK() {
+		AdhocTranscodingHelper.COUNT_SUBOPTIMAL.set(0);
+
+		Set<String> outputKeys = Set.of("k1", "k2");
+
+		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+			@Override
+			public Set<String> queried(String underlying) {
+				return outputKeys;
+			}
+
+			@Override
+			public int estimateSize(Set<String> underlyingKeys) {
+				return outputKeys.size();
+			}
+		};
+		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+
+		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(0);
+	}
+
+	@Test
+	public void testSubOptimal_TooLow() {
+		AdhocTranscodingHelper.COUNT_SUBOPTIMAL.set(0);
+
+		Set<String> outputKeys = Set.of("k1", "k2");
+
+		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+			@Override
+			public Set<String> queried(String underlying) {
+				return outputKeys;
+			}
+
+			@Override
+			public int estimateSize(Set<String> underlyingKeys) {
+				// `-1`: we are underestimating the actual number of entries to write
+				return outputKeys.size() - 1;
+			}
+		};
+		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+
+		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(1);
 	}
 }

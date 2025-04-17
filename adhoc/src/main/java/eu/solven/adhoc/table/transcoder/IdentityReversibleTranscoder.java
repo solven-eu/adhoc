@@ -43,4 +43,9 @@ public class IdentityReversibleTranscoder implements ITableTranscoder, IAdhocTab
 	public Set<String> queried(String underlying) {
 		return Set.of(underlying);
 	}
+
+	@Override
+	public int estimateSize(Set<String> underlyingKeys) {
+		return underlyingKeys.size();
+	}
 }

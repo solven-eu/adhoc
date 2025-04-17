@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,4 +38,12 @@ public interface IAdhocTableReverseTranscoder {
 	 * @return the queried columns which were mapping to given underlying.
 	 */
 	Set<String> queried(String underlying);
+
+	/**
+	 *
+	 * Typically used for provisioning the reversed {@link java.util.Map}.
+	 * @param underlyingKeys
+	 * @return the number of queriedKeys through all underlyings
+	 */
+	int estimateSize(Set<String> underlyingKeys);
 }

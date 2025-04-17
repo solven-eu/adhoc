@@ -29,6 +29,8 @@ import java.util.Set;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import eu.solven.adhoc.column.CalculatedColumn;
 import lombok.Builder;
 import lombok.Getter;
@@ -73,6 +75,12 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 
 	public void addCalculatedColumn(CalculatedColumn calculatedColumn) {
 		nameToCalculated.put(calculatedColumn.getName(), calculatedColumn);
+	}
+
+	@Override
+	public int estimateSize(Set<String> underlyingKeys) {
+		long asLong = underlyingKeys.stream().mapToLong(k -> underlyingToQueried.get(k).size()).sum();
+		return Ints.checkedCast(asLong);
 	}
 
 }

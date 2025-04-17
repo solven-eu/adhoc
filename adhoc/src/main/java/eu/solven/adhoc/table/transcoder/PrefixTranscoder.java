@@ -56,4 +56,9 @@ public class PrefixTranscoder implements ITableTranscoder, IAdhocTableReverseTra
 					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
 		}
 	}
+
+	@Override
+	public int estimateSize(Set<String> underlyingKeys) {
+		return underlyingKeys.size();
+	}
 }
