@@ -73,8 +73,19 @@ export default {
 		const rawFilterAsJson = ref("rawFilterAsJson");
 
 		const pendingChanges = ref(false);
+
+		const columnMeta = computed(() => {
+			const columnId = `${props.endpointId}-${props.cubeId}-${props.column}`;
+			return store.columns[columnId] || { error: "not_loaded" };
+		});
+
+		console.log(columnMeta.value);
 		watch(filterType, () => {
 			pendingChanges.value = true;
+
+			if (filterType.value === "equals" && columnMeta.value.error === "not_loaded") {
+				store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
+			}
 		});
 		watch(equalsValue, () => {
 			pendingChanges.value = true;

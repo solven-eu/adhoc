@@ -27,19 +27,22 @@ export const useUserStore = defineStore("user", {
 		account: { details: {} },
 		tokens: {},
 		// Some very first check to know if we are potentially logged-in
-		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if logged-in)
+		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
 		needsToCheckLogin: true,
 
 		// Typically turned to true by an `authenticatedFetch` while loggedOut
-		expectedToBeLoggedIn: false,
+		// Means the User is doing a connected operation, while being logged out
+		// Hence, will probably open the login modal
+		needsToLogin: false,
 
 		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
 		// Playing players are stores in contests
 		nbAccountLoading: 0,
 	}),
 	getters: {
-		// If true, we have an account details. Hence we can logout.
-		// If false, we need to check `needsToCheckLogin`
+		// If true, we have an account details. We typically have a session. Hence we can logout.
+		// BEWARE The session may be expired: we can have `isLoggedIn && `
+		// If false, we need to check `needsToCheckLogin && needsToLogin`
 		isLoggedIn: (store) => store.account.details.username,
 		isLoggedOut: (store) => {
 			if (store.isLoggedIn) {
@@ -111,20 +114,21 @@ export const useUserStore = defineStore("user", {
 			const json = await response.json();
 
 			const loginHttpStatus = json.login;
-			console.log("login", loginHttpStatus);
+			console.log("login status", loginHttpStatus);
 
 			return loginHttpStatus;
 		},
 
 		// This would not fail if the User needs to login.
-		// Callers would generally rely on `ensureUser()`
+		// Hence, this method does not turn `needsToLogin` to true
+		// Callers would generally rely on `ensureUser()` which may turn `needsToLogin` to true
 		async loadUser() {
 			const store = this;
 
 			async function fetchFromUrl(url) {
 				let response;
 
-				// The following block can fail if there is no netwrk connection
+				// The following block can fail if there is no network connection
 				// (Are we sure? Where are the unitTests?)
 				{
 					store.nbAccountLoading++;
@@ -137,6 +141,7 @@ export const useUserStore = defineStore("user", {
 				}
 
 				if (response.status === 401) {
+					// `fetchLoginStatus` said we were logged-in. What does this case mean?
 					throw new UserNeedsToLoginError("User needs to login");
 				} else if (!response.ok) {
 					// What is this scenario? EndpointInternalError?
@@ -187,6 +192,7 @@ export const useUserStore = defineStore("user", {
 			});
 		},
 
+		// do not throw if not logged-in
 		async loadUserIfMissing() {
 			if (this.isLoggedIn) {
 				// We have loaded a user: we assume it does not need to login
@@ -195,8 +201,8 @@ export const useUserStore = defineStore("user", {
 				// We are not logged-out
 				return this.loadUser();
 			} else {
-				// return Promise.reject(new UserNeedsToLoginError("User needs to login"));
-				return Promise.resolve({ error: "UserNeedsToLogin" });
+				// The user may not need to login: we're loading if missing
+				return Promise.resolve({ error: "UserIsLoggedOut" });
 			}
 		},
 
@@ -205,6 +211,7 @@ export const useUserStore = defineStore("user", {
 			return loadUserIfMissing().then((user) => {
 				if (user.error) {
 					// We are not logged-in
+					this.needsToLogin = true;
 					throw new UserNeedsToLoginError("User needs to login");
 				}
 			});
@@ -219,8 +226,13 @@ export const useUserStore = defineStore("user", {
 					// Rely on session for authentication
 					const response = await fetch(url);
 					if (response.status === 401) {
+						// This call was done as the application believed we were logged-in
+						// But we we receive a 401, it means we're not logged-in
+
 						// This will update the logout status
-						store.loadUser();
+						// store.loadUser();
+
+						this.needsToLogin = true;
 						throw new UserNeedsToLoginError("User needs to login");
 					} else if (!response.ok) {
 						throw new NetworkError("Rejected request for tokens", url, response);
@@ -283,7 +295,7 @@ export const useUserStore = defineStore("user", {
 			await this.loadIfMissingUserTokens();
 
 			if (this.isLoggedOut) {
-				this.expectedToBeLoggedIn = true;
+				this.needsToLogin = true;
 				throw new UserNeedsToLoginError("User needs to login");
 			}
 

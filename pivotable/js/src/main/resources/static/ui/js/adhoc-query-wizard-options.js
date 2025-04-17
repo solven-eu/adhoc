@@ -19,17 +19,17 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-	<div class="form-check form-switch">
-	    <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="queryModel.options.explain" />
-	    <label class="form-check-label" for="explainQuery">explain</label>
-	</div>
-	<div class="form-check form-switch">
-	    <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="queryModel.options.debug" />
-	    <label class="form-check-label" for="debugQuery">debug</label>
-	</div>
-	<div class="form-check form-switch">
-	    <input class="form-check-input" type="checkbox" role="switch" id="concurrentQuery" v-model="queryModel.options.concurrent" />
-	    <label class="form-check-label" for="concurrentQuery">concurrent</label>
-	</div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="queryModel.options.explain" />
+            <label class="form-check-label" for="explainQuery">explain</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="queryModel.options.debug" />
+            <label class="form-check-label" for="debugQuery">debug</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="concurrentQuery" v-model="queryModel.options.concurrent" />
+            <label class="form-check-label" for="concurrentQuery">concurrent</label>
+        </div>
     `,
 };

@@ -106,7 +106,7 @@ export default {
 				const index = array.indexOf(props.column);
 				if (newX) {
 					if (index < 0) {
-						// Append the column 
+						// Append the column
 						props.queryModel.selectedColumnsOrdered.push(props.column);
 					} else {
 						console.warn("Adding a column already here?", props.column);

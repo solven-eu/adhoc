@@ -82,9 +82,7 @@ export default {
 		return { username, password, doLoginBasic };
 	},
 	template: /* HTML */ `
-        <span v-if="isLoggedIn">
-            <Logout />
-        </span>
+        <span v-if="isLoggedIn"> <Logout /><small>BASIC session lasts 1hour.</small> </span>
         <span v-else>
             <div class="input-group mb-3">
                 <input type="text" class="form-control" placeholder="Username" aria-label="Username" v-model="username" />

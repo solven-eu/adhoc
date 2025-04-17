@@ -73,7 +73,7 @@ export default {
 		// This is useful to report measures by some of their defintition like som filter
 		// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
 		const searchJson = ref(true);
-		
+
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
 
@@ -146,18 +146,18 @@ export default {
             <form>
                 <div>
                     <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
-					<small>
-					    <div class="form-check form-switch">
-					        <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
-					        <label class="form-check-label" for="searchCaseSensitive">Aa</label>
-					    </div>
-					</small>
-					<small>
-					    <div class="form-check form-switch">
-					        <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchJson" />
-					        <label class="form-check-label" for="searchJson">JSON</label>
-					    </div>
-					</small>
+                    <small>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
+                            <label class="form-check-label" for="searchCaseSensitive">Aa</label>
+                        </div>
+                    </small>
+                    <small>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchJson" />
+                            <label class="form-check-label" for="searchJson">JSON</label>
+                        </div>
+                    </small>
                 </div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
@@ -269,7 +269,7 @@ export default {
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll">
-								<AdhocQueryWizardOptions :queryModel="queryModel" />
+                                <AdhocQueryWizardOptions :queryModel="queryModel" />
                             </div>
                         </div>
                     </div>

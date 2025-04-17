@@ -5,6 +5,8 @@ import { useAdhocStore } from "./store.js";
 
 import AdhocMeasure from "./adhoc-measure.js";
 
+import AdhocCellModal from "./adhoc-grid-cell-modal.js";
+
 import { useUserStore } from "./store-user.js";
 
 import { SlickGrid, SlickDataView, Formatters, SlickHeaderButtons } from "slickgrid";
@@ -13,6 +15,9 @@ import Sortable from "sortablejs";
 // Ordering of rows
 import _ from "lodashEs";
 
+// BEWARE: Should probably push an event to the Modal component so it open itself
+import { Modal } from "bootstrap";
+
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
 
@@ -20,6 +25,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocMeasure,
+		AdhocCellModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -416,17 +422,31 @@ export default {
 
 		dataView.setItems(data);
 
+		// Cell Modal
+
 		// Initialize with `-1` to have a nice default value
 		const clickedCell = ref({ id: "-1" });
+		{
+			function openCellModal(cell) {
+				// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+				// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+				// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
+				let cellModal = new Modal(document.getElementById("cellModal"), {});
+				// https://getbootstrap.com/docs/5.0/components/modal/#show
+				cellModal.show();
 
-		watch(
-			() => clickedCell,
-			() => {
-				// TODO Make it easy to filter by clicking a cell
-				console.log("Open menu for cell", clickedCell.value);
-			},
-			{ deep: true },
-		);
+				console.log("Showing modal for cell", cell);
+			}
+
+			watch(
+				() => clickedCell,
+				() => {
+					// TODO Make it easy to filter by clicking a cell
+					openCellModal(clickedCell.value);
+				},
+				{ deep: true },
+			);
+		}
 
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
@@ -571,11 +591,14 @@ export default {
 
 		return { rendering, gridMetadata, clickedCell, isLoading, loadingPercent, loadingMessage };
 	},
+	// :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId"
 	template: /* HTML */ `
         <div>
             <div class="spinner-grow" role="status" v-if="loading">
                 <span class="visually-hidden">Loading...</span>
             </div>
+
+            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" />
 
             <div>
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>

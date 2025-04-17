@@ -33,11 +33,11 @@ export default {
 		userStore.loadUser();
 
 		watch(
-			() => userStore.expectedToBeLoggedIn,
+			() => userStore.needsToLogin,
 			(newValue, olValue) => {
 				if (newValue && !olValue) {
-					// Open the modal only when transitionning into expectedToBeLoggedIn
-					console.log("expectedToBeLoggedIn turned to true. Opening the loginModal");
+					// Open the modal only when transitionning into needsToLogin
+					console.log("needsToLogin turned to true. Opening the loginModal");
 
 					// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
 					// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
@@ -61,8 +61,8 @@ export default {
                     </div>
                     <div class="modal-body">
                         <LoginRef :modal="true" data-bs-dismiss="modal" />
-						<hr/>
-						<LoginOptions :modal="true" />
+                        <hr />
+                        <LoginOptions :modal="true" />
                     </div>
                 </div>
             </div>
