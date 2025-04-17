@@ -14,6 +14,8 @@ import AdhocQueryWizard from "./adhoc-query-wizard.js";
 import AdhocQueryExecutor from "./adhoc-query-executor.js";
 import AdhocQueryGrid from "./adhoc-query-grid.js";
 
+import { useRouter } from "vue-router";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -56,8 +58,58 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const loading = ref(false);
-		const queryModel = reactive({ selectedColumns: {}, selectedMeasures: {} });
+		const queryModel = reactive({
+			// `columnName->boolean` 
+			selectedColumns: {},
+			// `measureName->boolean`
+			selectedMeasures: {},
+			// `orderedArray of columnNames`
+			selectedColumnsOrdered:[] });
 		const tabularView = reactive({});
+		
+		const router = useRouter();
+		{
+			const currentHashDecoded = router.currentRoute.value.hash;
+
+			if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
+				try {
+					const currentHashObject = JSON.parse(currentHashDecoded.substring(1));
+					const queryModelFromHash = currentHashObject.query;
+					
+					if (queryModelFromHash) {	
+						for (const [columnIndex, columnName] of Object.entries(queryModelFromHash.columns)) {
+						  queryModel.selectedColumns[columnName] = true;
+						  // Poor design: we have to compute manually selectedColumnsOrdered
+						  queryModel.selectedColumnsOrdered.push(columnName);
+						}
+
+						console.log("queryModel after loading from hash: ", JSON.stringify( queryModel));
+					}
+				} catch (error) {
+					console.warn("Issue parsing queryModel from hash", currentHashDecoded, error);
+				}
+			}
+			
+			  
+			  watch(queryModel, async (newQueryModel) => {
+					const currentHashDecoded = router.currentRoute.value.hash;
+
+					var currentHashObject;
+					if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
+						currentHashObject = JSON.parse(currentHashDecoded.substring(1));
+					} else {
+						currentHashObject = {};
+					}
+					currentHashObject.query = {};
+					currentHashObject.query.columns = Object.values(newQueryModel.selectedColumnsOrdered);
+					
+					console.warn("Saving queryModel to hash", JSON.stringify( newQueryModel));
+
+					// https://stackoverflow.com/questions/51337255/silently-update-url-without-triggering-route-in-vue-router
+					const newUrl = router.currentRoute.value.path + '#' + encodeURIComponent(JSON.stringify(currentHashObject));
+					history.pushState({}, null, newUrl);
+			  });
+		}
 
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));

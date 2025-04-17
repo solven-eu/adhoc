@@ -73,7 +73,7 @@ export default {
 		// This is useful to report measures by some of their defintition like som filter
 		// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
 		const searchJson = ref(true);
-
+		
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
 

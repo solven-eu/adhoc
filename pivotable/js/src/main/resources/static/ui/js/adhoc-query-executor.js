@@ -92,17 +92,14 @@ export default {
 
 		// This computed property snapshots of the query
 		const queryJson = computed(() => {
-			const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
+			//const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
 			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
 
 			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
 			const filter = JSON.parse(JSON.stringify(props.queryModel.filter || {}));
 
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
-			// We do a copy as this must not changed when playing with the wizard.
-			if (!props.queryModel.selectedColumnsOrdered) {
-				props.queryModel.selectedColumnsOrdered = [];
-			}
+			// We do a copy as `queryJson` must not changed when playing with the wizard.
 			// `.slice` as we want an immutable snapshot
 			const orderedColumns = props.queryModel.selectedColumnsOrdered.slice(0);
 
@@ -208,6 +205,11 @@ export default {
 				}
 			},
 		);
+		
+		if (autoQuery.value && (props.queryModel.selectedColumnsOrdered.length > 0) {
+			console.log("Trigger queryExecution on component load");
+			sendMove();
+		}
 
 		return {
 			queryJson,

@@ -66,12 +66,12 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
-		const loading = ref(false);
+		const loadingCoordinates = ref(false);
 
 		function loadColumnCoordinates() {
-			loading.value = true;
+			loadingCoordinates.value = true;
 			store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column).finally(() => {
-				loading.value = false;
+				loadingCoordinates.value = false;
 			});
 		}
 
@@ -86,6 +86,7 @@ export default {
 			console.log("Showing modal for column", props.column);
 		}
 
+		// Indicates if there a filter (i.e. not `matchAll`) on given column
 		function isFiltered() {
 			if (!props.queryModel?.filter?.type) {
 				return false;
@@ -97,18 +98,18 @@ export default {
 			}
 		}
 
+		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
 		watch(
 			() => props.queryModel.selectedColumns[props.column],
 			(newX) => {
-				if (!props.queryModel.selectedColumnsOrdered) {
-					props.queryModel.selectedColumnsOrdered = [];
-				}
-
 				const array = props.queryModel.selectedColumnsOrdered;
 				const index = array.indexOf(props.column);
 				if (newX) {
 					if (index < 0) {
+						// Append the column 
 						props.queryModel.selectedColumnsOrdered.push(props.column);
+					} else {
+						console.warn("Adding a column already here?", props.column);
 					}
 				} else {
 					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
@@ -116,6 +117,8 @@ export default {
 					if (index >= 0) {
 						// 2nd parameter means remove one item only
 						array.splice(index, 1);
+					} else {
+						console.warn("Removing a column already absent?", props.column);
 					}
 				}
 
@@ -125,7 +128,7 @@ export default {
 
 		return {
 			loadColumnCoordinates,
-			loading,
+			loadingCoordinates,
 			openFilterModal,
 			isFiltered,
 		};
@@ -142,7 +145,7 @@ export default {
             <span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
             <!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
             <span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
-            <span v-if="loading">
+            <span v-if="loadingCoordinates">
                 <div class="spinner-grow" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>

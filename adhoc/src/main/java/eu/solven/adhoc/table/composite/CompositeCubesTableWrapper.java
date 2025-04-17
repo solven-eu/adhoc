@@ -383,7 +383,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				.entrySet()
 				.stream()
 				.filter(e -> e.getValue().size() >= 2)
-				.forEach(e -> log.info("measure={} is provided by cubes: {}", e.getKey(), e.getValue()));
+				.forEach(e -> log.debug("measure={} is provided by cubes: {}", e.getKey(), e.getValue()));
 
 		MeasureForest.MeasureForestBuilder builder = MeasureForest.edit(measureBag);
 
