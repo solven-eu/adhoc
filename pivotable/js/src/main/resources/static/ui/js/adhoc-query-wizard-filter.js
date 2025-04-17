@@ -28,14 +28,13 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="filter.type == 'and'">
-            AND ->
-            <span v-for="operand in filter.filters">
-                <AdhocQueryWizardFilter :filter="operand" />
-            </span>
-            <- AND
+        <div v-if="filter.type === 'and'">
+            <span v-for="(operand, index) in filter.filters"> <span v-if="index !== 0">&amp;&amp;</span> <AdhocQueryWizardFilter :filter="operand" /> </span>
         </div>
-        <span v-else-if="filter.type='column'"> {{filter.column}}={{filter.valueMatcher}} </span>
+        <div v-else-if="filter.type === 'or'">
+            <span v-for="(operand, index) in filter.filters"> <span v-if="index !== 0">||</span> <AdhocQueryWizardFilter :filter="operand" /> </span>
+        </div>
+        <span v-else-if="filter.type==='column'"> {{filter.column}}={{filter.valueMatcher}} </span>
         <div v-else>{{filter}}</div>
     `,
 };

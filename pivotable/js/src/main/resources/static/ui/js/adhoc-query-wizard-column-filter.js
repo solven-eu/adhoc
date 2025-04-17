@@ -79,10 +79,10 @@ export default {
 			return store.columns[columnId] || { error: "not_loaded" };
 		});
 
-		console.log(columnMeta.value);
 		watch(filterType, () => {
 			pendingChanges.value = true;
 
+			// The User selected `equals` filter: ensure we have a subset of coordinate to help him making his filter
 			if (filterType.value === "equals" && columnMeta.value.error === "not_loaded") {
 				store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
 			}

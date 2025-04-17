@@ -5,23 +5,10 @@ import { useAdhocStore } from "./store.js";
 
 import { useUserStore } from "./store-user.js";
 
-import AdhocQueryWizardColumnFilter from "./adhoc-query-wizard-column-filter.js";
-
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {
-		AdhocQueryWizardColumnFilter,
-	},
+	components: {},
 	props: {
-		//		cubeId: {
-		//			type: String,
-		//			required: true,
-		//		},
-		//		endpointId: {
-		//			type: String,
-		//			required: true,
-		//		},
-
 		queryModel: {
 			type: Object,
 			required: true,
@@ -30,47 +17,36 @@ export default {
 			type: Object,
 			required: true,
 		},
-
-		//		column: {
-		//			type: String,
-		//			required: true,
-		//		},
-		//		type: {
-		//			type: String,
-		//			required: true,
-		//		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
-		//		...mapState(useAdhocStore, {
-		//			endpoint(store) {
-		//				return store.endpoints[this.endpointId] || { error: "not_loaded" };
-		//			},
-		//			schema(store) {
-		//				return store.schemas[this.endpointId] || { error: "not_loaded" };
-		//			},
-		//			cube(store) {
-		//				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
-		//			},
-		//		}),
 	},
-	emits: ["saveFilter"],
 	setup(props) {
 		const store = useAdhocStore();
 		const userStore = useUserStore();
 
-		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
-		//		const filterRef = ref(null);
-		//
-		//		// Enable saving the filter from the Modal control
-		//		function saveFilter() {
-		//			filterRef.value.saveFilter();
-		//		}
+		const applyEqualsFilter = function (column, coordinate) {
+			// BEWARE This is poor design. We should send some event  managing the queryModel/filters
+			if (!props.queryModel.filter || !props.queryModel.filter.type) {
+				props.queryModel.filter = {};
+				props.queryModel.filter.type = "and";
+				props.queryModel.filter.filters = [];
+			} else if (props.queryModel.filter.type !== "and") {
+				throw new Error("We support only 'and'");
+			}
+
+			const columnFilter = { type: "column", column: column, valueMatcher: coordinate };
+			props.queryModel.filter.filters.push(columnFilter);
+			console.log("Added filter", columnFilter);
+		};
+
+		const columnIsFilterable = function (column) {
+			return props.queryModel.selectedColumnsOrdered.includes(column);
+		};
 
 		return {
-			//			filterRef,
-			//
-			//			saveFilter,
+			applyEqualsFilter,
+			columnIsFilterable,
 		};
 	},
 	template: /* HTML */ `
@@ -83,7 +59,14 @@ export default {
                     </div>
                     <div class="modal-body">
                         <ul>
-                            <li v-for="(item, key) in clickedCell">{{ key }}: {{ item }}</li>
+                            <li v-for="(coordinate, column) in clickedCell">
+                                {{ column }}: {{ coordinate }}
+                                <span v-if="columnIsFilterable(column)">
+                                    <button type="button" class="btn btn-primary" @click="applyEqualsFilter(column, coordinate)">
+                                        Filter {{column}}={{coordinate}}
+                                    </button>
+                                </span>
+                            </li>
                         </ul>
                     </div>
                     <div class="modal-footer">

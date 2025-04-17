@@ -318,4 +318,3 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 - [Composite] Enable a failing sub-query not to break the composite query
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Enable calculated columns, computed right after the table
-- [Feature] Pivotable Wizard Search should highlight matching portions

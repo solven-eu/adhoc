@@ -3,7 +3,6 @@ import { computed, reactive, ref, watch, onMounted } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store.js";
 
-import AdhocMeasure from "./adhoc-measure.js";
 import AdhocQueryRawModal from "./adhoc-query-raw-modal.js";
 
 import { useUserStore } from "./store-user.js";
@@ -37,7 +36,6 @@ class NetworkError extends Error {
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocMeasure,
 		AdhocQueryRawModal,
 	},
 	// https://vuejs.org/guide/components/props.html

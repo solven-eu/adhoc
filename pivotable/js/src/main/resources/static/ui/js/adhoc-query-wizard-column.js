@@ -8,6 +8,8 @@ import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocQueryWizardColumnFilterModal from "./adhoc-query-wizard-column-filter-modal.js";
 
+import { markMatchingWizard } from "./adhoc-query-wizard-search-helpers.js";
+
 import { useUserStore } from "./store-user.js";
 
 // BEWARE: Should probably push an event to the Modal component so it open itself
@@ -39,6 +41,10 @@ export default {
 		},
 		type: {
 			type: String,
+			required: true,
+		},
+		searchOptions: {
+			type: Object,
 			required: true,
 		},
 	},
@@ -88,11 +94,12 @@ export default {
 
 		// Indicates if there a filter (i.e. not `matchAll`) on given column
 		function isFiltered() {
+			// TODO Handle `not`
 			if (!props.queryModel?.filter?.type) {
 				return false;
-			} else if (props.queryModel.filter.type == "and" || props.queryModel.filter.type == "or") {
+			} else if (props.queryModel.filter.type === "and" || props.queryModel.filter.type === "or") {
 				const filters = props.queryModel.filter.filters;
-				return filters.some((filter) => filter.type == "column" && filter.column == props.column);
+				return filters.some((filter) => filter.type === "column" && filter.column == props.column);
 			} else {
 				return false;
 			}
@@ -126,17 +133,22 @@ export default {
 			},
 		);
 
+		const mark = function (text) {
+			return markMatchingWizard(props.searchOptions, text);
+		};
+
 		return {
 			loadColumnCoordinates,
 			loadingCoordinates,
 			openFilterModal,
 			isFiltered,
+			mark,
 		};
 	},
 	template: /* HTML */ `
         <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-            <label class="form-check-label  text-wrap" :for="'column_' + column">{{column}}</label>
+            <label class="form-check-label  text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
         </div>
 
         <small>{{type}}</small>

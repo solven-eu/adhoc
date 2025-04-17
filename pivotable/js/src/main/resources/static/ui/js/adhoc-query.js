@@ -6,8 +6,6 @@ import { useAdhocStore } from "./store.js";
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
-import AdhocMeasure from "./adhoc-measure.js";
-
 import { useUserStore } from "./store-user.js";
 
 import AdhocQueryWizard from "./adhoc-query-wizard.js";
@@ -21,7 +19,6 @@ export default {
 	components: {
 		AdhocEndpointHeader,
 		AdhocCubeHeader,
-		AdhocMeasure,
 		AdhocQueryWizard,
 		AdhocQueryExecutor,
 		AdhocQueryGrid,
@@ -72,6 +69,7 @@ export default {
 		{
 			const currentHashDecoded = router.currentRoute.value.hash;
 
+			// Restore queryModel from URL hash
 			if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
 				try {
 					const currentHashObject = JSON.parse(currentHashDecoded.substring(1));
@@ -83,6 +81,10 @@ export default {
 							// Poor design: we have to compute manually selectedColumnsOrdered
 							queryModel.selectedColumnsOrdered.push(columnName);
 						}
+						for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
+							queryModel.selectedMeasures[measureName] = true;
+						}
+						queryModel.filter = queryModelFromHash.filter;
 
 						console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
 					}
@@ -91,6 +93,7 @@ export default {
 				}
 			}
 
+			// Save queryModel into URL hash
 			watch(queryModel, async (newQueryModel) => {
 				const currentHashDecoded = router.currentRoute.value.hash;
 
@@ -102,6 +105,8 @@ export default {
 				}
 				currentHashObject.query = {};
 				currentHashObject.query.columns = Object.values(newQueryModel.selectedColumnsOrdered);
+				currentHashObject.query.measures = Object.keys(newQueryModel.selectedMeasures).filter((measure) => newQueryModel.selectedMeasures[measure] === true);
+				currentHashObject.query.filter = newQueryModel.filter;
 
 				console.debug("Saving queryModel to hash", JSON.stringify(newQueryModel));
 

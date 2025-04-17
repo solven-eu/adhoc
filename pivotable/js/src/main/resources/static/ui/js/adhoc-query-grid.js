@@ -3,9 +3,7 @@ import { ref, watch, onMounted, reactive } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store.js";
 
-import AdhocMeasure from "./adhoc-measure.js";
-
-import AdhocCellModal from "./adhoc-grid-cell-modal.js";
+import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -24,7 +22,6 @@ window.Sortable = Sortable;
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocMeasure,
 		AdhocCellModal,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -55,20 +52,10 @@ export default {
 		let data = [];
 		const gridMetadata = reactive({});
 
+		const formatMeasureCcy = ref("");
+		const formatMeasureMaxDigits = ref(3);
+
 		let gridColumns = [];
-
-		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
-		const numberFormat = new Intl.NumberFormat({ maximumSignificantDigits: 3 });
-
-		// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
-		function percentFormatter(row, cell, value, columnDef, dataContext) {
-			var rtn = {};
-
-			rtn.text = numberFormat.format(value * 100) + "%";
-			rtn.toolTip = value;
-
-			return rtn;
-		}
 
 		const rendering = ref(false);
 
@@ -103,6 +90,44 @@ export default {
 			{
 				const column = { id: "id", name: "#row", field: "id", width: 5, sortable: sortable, asyncPostRender: renderCallback };
 				gridColumns.push(column);
+			}
+
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
+			const numberFormatOptions = {};
+			numberFormatOptions.maximumSignificantDigits = formatMeasureMaxDigits.value;
+			if (formatMeasureCcy.value) {
+				numberFormatOptions.style = "currency";
+				numberFormatOptions.currency = formatMeasureCcy.value;
+			}
+			const numberFormat = new Intl.NumberFormat(numberFormatOptions);
+
+			function measureFormatter(row, cell, value, columnDef, dataContext) {
+				var rtn = {};
+
+				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
+				if (typeof value === "number") {
+					rtn.text = numberFormat.format(value);
+				} else {
+					rtn.text = value;
+				}
+				rtn.toolTip = value;
+
+				return rtn;
+			}
+
+			const percentFormatOptions = {};
+			percentFormatOptions.maximumSignificantDigits = formatMeasureMaxDigits.value;
+			numberFormatOptions.style = "percent";
+			const percentFormat = new Intl.NumberFormat(percentFormatOptions);
+
+			// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
+			function percentFormatter(row, cell, value, columnDef, dataContext) {
+				var rtn = {};
+
+				rtn.text = percentFormat.format(value * 100);
+				rtn.toolTip = value;
+
+				return rtn;
 			}
 
 			data = [];
@@ -182,10 +207,24 @@ export default {
 				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
 				for (let measureName of measureNames) {
-					const column = { id: measureName, name: measureName, field: measureName, sortable: sortable, asyncPostRender: renderCallback };
+					const column = {
+						id: measureName,
+						name: measureName,
+						field: measureName,
+						sortable: sortable,
+						asyncPostRender: renderCallback,
+						// Align measures to the right to make it easier to detect large number
+						cssClass: "text-end",
+					};
+
+					// BEWARE For an unknwon reason, this does not apply.
+					// The css is added by SlickGrid, but the header is not aligned to the right
+					column.headerCssClass = "text-end";
 
 					if (measureName.indexOf("%") >= 0) {
 						column["formatter"] = percentFormatter;
+					} else {
+						column["formatter"] = measureFormatter;
 					}
 
 					if (props.queryModel) {
@@ -426,26 +465,16 @@ export default {
 
 		// Initialize with `-1` to have a nice default value
 		const clickedCell = ref({ id: "-1" });
-		{
-			function openCellModal(cell) {
-				// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
-				// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
-				// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
-				let cellModal = new Modal(document.getElementById("cellModal"), {});
-				// https://getbootstrap.com/docs/5.0/components/modal/#show
-				cellModal.show();
 
-				console.log("Showing modal for cell", cell);
-			}
+		function openCellModal(cell) {
+			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
+			let cellModal = new Modal(document.getElementById("cellModal"), {});
+			// https://getbootstrap.com/docs/5.0/components/modal/#show
+			cellModal.show();
 
-			watch(
-				() => clickedCell,
-				() => {
-					// TODO Make it easy to filter by clicking a cell
-					openCellModal(clickedCell.value);
-				},
-				{ deep: true },
-			);
+			console.log("Showing modal for cell", cell);
 		}
 
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
@@ -532,8 +561,11 @@ export default {
 			grid.onDblClick.subscribe(function (e, args) {
 				var item = dataView.getItem(args.row);
 
-				// Update a reactive for event propagation in Vue
+				// Update a reactive
+				// It is not used for event propagation, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
 				clickedCell.value = item;
+
+				openCellModal(clickedCell.value);
 			});
 		});
 
@@ -589,7 +621,17 @@ export default {
 			return "Unclear but not done yet";
 		}
 
-		return { rendering, gridMetadata, clickedCell, isLoading, loadingPercent, loadingMessage };
+		return {
+			rendering,
+			gridMetadata,
+			clickedCell,
+			isLoading,
+			loadingPercent,
+			loadingMessage,
+
+			formatMeasureCcy,
+			formatMeasureMaxDigits,
+		};
 	},
 	// :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId"
 	template: /* HTML */ `
@@ -618,6 +660,24 @@ export default {
             <div>clickedCell={{clickedCell}}</div>
             <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
+
+            <form>
+                <div>
+                    Currency:
+                    <input class="form-control mr-sm-2" type="text" placeholder="Currency" aria-label="Currency" id="currency" v-model="formatMeasureCcy" />
+                </div>
+                <div>
+                    Max Digits:
+                    <input
+                        class="form-control mr-sm-2"
+                        type="text"
+                        placeholder="Max digits"
+                        aria-label="Max digits"
+                        id="maxDigits"
+                        v-model="formatMeasureMaxDigits"
+                    />
+                </div>
+            </form>
         </div>
     `,
 };

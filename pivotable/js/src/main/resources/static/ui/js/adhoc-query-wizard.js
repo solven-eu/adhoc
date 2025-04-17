@@ -6,7 +6,7 @@ import { useAdhocStore } from "./store.js";
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
-import AdhocMeasure from "./adhoc-measure.js";
+import AdhocMeasure from "./adhoc-query-wizard-measure.js";
 
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
 import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
@@ -63,16 +63,19 @@ export default {
 
 		const autoQuery = ref(true);
 
-		const search = ref("");
-		// By default, not case-sensitive
-		// Else, a user not seeing a match may be confused
-		// While a user wanting case-sentitive can get more easily he has to click the toggle
-		const searchCaseSensitive = ref(false);
+		const searchOptions = reactive({
+			text: "",
 
-		// By default, we search along the names and the JSON
-		// This is useful to report measures by some of their defintition like som filter
-		// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
-		const searchJson = ref(true);
+			// By default, not case-sensitive
+			// Else, a user not seeing a match may be confused
+			// While a user wanting case-sentitive can get more easily he has to click the toggle
+			caseSensitive: false,
+
+			// By default, we search along the names and the JSON
+			// This is useful to report measures by some of their defintition like som filter
+			// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
+			throughJson: true,
+		});
 
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
@@ -80,8 +83,8 @@ export default {
 		const filtered = function (inputsAsObjectOrArray) {
 			const filtereditems = [];
 
-			const searchedValue = search.value;
-			const searchedValueLowerCase = search.value.toLowerCase();
+			const searchedValue = searchOptions.text;
+			const searchedValueLowerCase = searchedValue.toLowerCase();
 
 			for (const inputKey in inputsAsObjectOrArray) {
 				let match = false;
@@ -89,13 +92,13 @@ export default {
 				const inputElement = inputsAsObjectOrArray[inputKey];
 				// We consider only values, as keys are generic
 				// For instance, `name` should not match `name=NiceNick`
-				const inputElementAsString = JSON.stringify(Object.values(inputElement));
+				const inputElementAsString = searchOptions.throughJson ? JSON.stringify(Object.values(inputElement)) : "";
 
 				if (inputKey.includes(searchedValue) || inputElementAsString.includes(searchedValue)) {
 					match = true;
 				}
 
-				if (!match && !searchCaseSensitive.value) {
+				if (!match && !searchOptions.caseSensitive) {
 					// Retry without case-sensitivity
 					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || inputElementAsString.toLowerCase().includes(searchedValueLowerCase)) {
 						match = true;
@@ -122,9 +125,7 @@ export default {
 		};
 
 		return {
-			search,
-			searchCaseSensitive,
-			searchJson,
+			searchOptions,
 			filtered,
 		};
 	},
@@ -141,20 +142,18 @@ export default {
         </div>
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
-            Build the query
-
             <form>
                 <div>
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="search" />
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="searchOptions.text" />
                     <small>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchCaseSensitive" />
+                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchOptions.caseSensitive" />
                             <label class="form-check-label" for="searchCaseSensitive">Aa</label>
                         </div>
                     </small>
                     <small>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchJson" />
+                            <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchOptions.throughJson" />
                             <label class="form-check-label" for="searchJson">JSON</label>
                         </div>
                     </small>
@@ -173,7 +172,7 @@ export default {
                                 aria-expanded="false"
                                 aria-controls="wizardColumns"
                             >
-                                <span v-if="search">
+                                <span v-if="searchOptions.text">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.columns.columnToTypes).length}} </span>&nbsp;
                                     <span> {{ Object.keys(filtered(cube.columns.columnToTypes)).length}} </span> columns
                                 </span>
@@ -210,6 +209,7 @@ export default {
                                             :type="columnToType.value"
                                             :endpointId="endpointId"
                                             :cubeId="cubeId"
+                                            :searchOptions="searchOptions"
                                         />
                                     </li>
                                 </ul>
@@ -226,7 +226,7 @@ export default {
                                 aria-expanded="false"
                                 aria-controls="wizardMeasures"
                             >
-                                <span v-if="search">
+                                <span v-if="searchOptions.text">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
                                     <span> {{ Object.keys(filtered(cube.measures)).length}} </span> measures
                                 </span>
@@ -246,7 +246,7 @@ export default {
                                                 v-model="queryModel.selectedMeasures[measure.name]"
                                             />
                                             <label class="form-check-label" :for="'measure_' + measure.name">
-                                                <AdhocMeasure :measure="measure" />
+                                                <AdhocMeasure :measure="measure" :showDetails="searchOptions.throughJson" :searchOptions="searchOptions" />
                                             </label>
                                         </div>
                                     </li>
