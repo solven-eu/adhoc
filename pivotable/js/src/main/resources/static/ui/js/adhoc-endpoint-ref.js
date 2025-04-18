@@ -1,7 +1,7 @@
 import {} from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 export default {
 	components: {},

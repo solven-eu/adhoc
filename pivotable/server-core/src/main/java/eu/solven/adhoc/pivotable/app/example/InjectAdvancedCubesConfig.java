@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app;
+package eu.solven.adhoc.pivotable.app.example;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

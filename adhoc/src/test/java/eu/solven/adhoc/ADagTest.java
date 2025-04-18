@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 
@@ -54,7 +53,7 @@ public abstract class ADagTest {
 			UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
 
 	public IStopwatch makeStopwatch() {
-		return Stopwatch.createStarted()::elapsed;
+		return IStopwatchFactory.guavaStopwatchFactory().createStarted();
 	}
 
 	public final IStopwatchFactory stopwatchFactory = new IStopwatchFactory() {

@@ -7,6 +7,11 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
 - `Pivotable` search now highlights/marks matching elements.
 
+
+### Added
+- Enable `customMarkerMetadata` in `AdhocSchema`
+- Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
+
 ## [0.0.4]
 ### Changed
 - `IQueryOption` is now part of `IAdhocQuery`

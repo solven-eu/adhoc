@@ -1,7 +1,7 @@
 import { ref, watch, onMounted, reactive } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 

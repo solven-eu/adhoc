@@ -219,6 +219,10 @@ export const useAdhocStore = defineStore("adhoc", {
 				store.nbSchemaFetching++;
 				try {
 					const response = await store.authenticatedFetch(url);
+					if (!response.ok) {
+						throw new Error("Rejected request for endpointId=" + endpointId);
+					}
+
 					const responseJson = await response.json();
 
 					console.debug("responseJson", responseJson);
@@ -236,6 +240,15 @@ export const useAdhocStore = defineStore("adhoc", {
 					});
 					return store.schemas;
 				} catch (e) {
+					if (endpointId) {
+						store.$patch({
+							schemas: {
+								...store.schemas,
+								[endpointId]: { error: e },
+							},
+						});
+					}
+
 					store.onSwallowedError(e);
 					return {};
 				} finally {

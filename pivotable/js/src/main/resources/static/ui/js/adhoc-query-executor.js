@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch, onMounted } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocQueryRawModal from "./adhoc-query-raw-modal.js";
 
@@ -103,11 +103,15 @@ export default {
 
 			const options = Object.keys(props.queryModel.options).filter((option) => props.queryModel.options[option] === true);
 
+			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
+			const customMarkers = JSON.parse(JSON.stringify(props.queryModel.customMarkers || {}));
+
 			return {
 				groupBy: { columns: orderedColumns },
 				measures: measures,
 				filter: filter,
 				options: options,
+				customMarker: customMarkers,
 			};
 		});
 

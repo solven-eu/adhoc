@@ -22,6 +22,32 @@
  */
 package eu.solven.adhoc.util;
 
+import com.google.common.base.Stopwatch;
+
+import eu.solven.adhoc.dag.observability.DagExplainerForPerfs;
+
+/**
+ * Factory pattern for {@link IStopwatch}. Typically used by {@link DagExplainerForPerfs}.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IStopwatchFactory {
 	IStopwatch createStarted();
+
+	/**
+	 * 
+	 * @return an {@link IStopwatchFactory} based on Guava {@link Stopwatch}
+	 */
+	public static IStopwatchFactory guavaStopwatchFactory() {
+		return new IStopwatchFactory() {
+
+			@Override
+			public IStopwatch createStarted() {
+				Stopwatch stopwatch = Stopwatch.createStarted();
+
+				return stopwatch::elapsed;
+			}
+		};
+
+	}
 }

@@ -168,7 +168,7 @@ export const useUserStore = defineStore("user", {
 					return fetchFromUrl("/api/login/v1/user")
 						.then((user) => {
 							// `isLoggedIn` is computed from this value
-							store.$patch({ account: user });
+							store.$patch({ account: user, needsToLogin: false });
 
 							return user;
 						})
@@ -177,7 +177,7 @@ export const useUserStore = defineStore("user", {
 							console.warn("User needs to login");
 
 							const user = { error: e };
-							store.$patch({ account: user });
+							store.$patch({ account: user, needsToLogin: true });
 							return user;
 						});
 				} else {
@@ -232,7 +232,7 @@ export const useUserStore = defineStore("user", {
 						// This will update the logout status
 						// store.loadUser();
 
-						this.needsToLogin = true;
+						store.needsToLogin = true;
 						throw new UserNeedsToLoginError("User needs to login");
 					} else if (!response.ok) {
 						throw new NetworkError("Rejected request for tokens", url, response);

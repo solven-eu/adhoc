@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch, onMounted } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
@@ -10,6 +10,7 @@ import AdhocMeasure from "./adhoc-query-wizard-measure.js";
 
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
 import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
+import AdhocQueryWizardCustomMarker from "./adhoc-query-wizard-custommarker.js";
 import AdhocQueryWizardOptions from "./adhoc-query-wizard-options.js";
 
 import { useUserStore } from "./store-user.js";
@@ -23,6 +24,7 @@ export default {
 		AdhocMeasure,
 		AdhocQueryWizardColumn,
 		AdhocQueryWizardFilter,
+		AdhocQueryWizardCustomMarker,
 		AdhocQueryWizardOptions,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -222,9 +224,9 @@ export default {
                                 class="accordion-button collapsed"
                                 type="button"
                                 data-bs-toggle="collapse"
-                                data-bs-target="#wizardMeasures"
+                                data-bs-target="#wizardCustoms"
                                 aria-expanded="false"
-                                aria-controls="wizardMeasures"
+                                aria-controls="wizardCustoms"
                             >
                                 <span v-if="searchOptions.text">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
@@ -233,7 +235,7 @@ export default {
                                 <span v-else> {{ Object.keys(cube.measures).length}} measures </span>
                             </button>
                         </h2>
-                        <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                        <div id="wizardCustoms" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll px-0">
                                 <ul v-for="(measure) in filtered(cube.measures)" class="list-group list-group-flush">
                                     <li class="list-group-item">
@@ -249,6 +251,29 @@ export default {
                                                 <AdhocMeasure :measure="measure" :showDetails="searchOptions.throughJson" :searchOptions="searchOptions" />
                                             </label>
                                         </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button
+                                class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#wizardMeasures"
+                                aria-expanded="false"
+                                aria-controls="wizardMeasures"
+                            >
+                                {{ Object.keys(cube.customMarkers).length}} custom markers
+                            </button>
+                        </h2>
+                        <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                            <div class="accordion-body vh-50 overflow-scroll px-0">
+                                <ul v-for="(customMarker) in cube.customMarkers" class="list-group list-group-flush">
+                                    <li class="list-group-item">
+                                        <AdhocQueryWizardCustomMarker :queryModel="queryModel" :customMarker="customMarker" />
                                     </li>
                                 </ul>
                             </div>

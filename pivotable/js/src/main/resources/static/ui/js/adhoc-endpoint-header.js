@@ -1,5 +1,5 @@
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
 

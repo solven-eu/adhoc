@@ -36,7 +36,7 @@ import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @AllArgsConstructor
-public class AccountSearchHandler {
+public class UsersSearchHandler {
 	final PivotableUsersRegistry usersRegistry;
 
 	public Mono<ServerResponse> searchAccounts(ServerRequest request) {

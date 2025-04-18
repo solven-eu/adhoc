@@ -60,5 +60,5 @@ public class EndpointSchemaMetadata {
 	Map<String, AdhocQuery> queries;
 
 	@Singular
-	Map<String, Object> customMarkers;
+	Map<String, CustomMarkerMetadata> customMarkers;
 }

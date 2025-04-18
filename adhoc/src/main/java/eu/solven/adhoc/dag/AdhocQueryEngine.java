@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.traverse.BreadthFirstIterator;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
@@ -95,15 +94,13 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 
 	@NonNull
 	@Default
+	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
+	@Getter
 	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
 
 	@NonNull
 	@Default
-	IStopwatchFactory stopwatchFactory = () -> {
-		Stopwatch stopwatch = Stopwatch.createStarted();
-
-		return stopwatch::elapsed;
-	};
+	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 
 	@Override
 	public String toString() {

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.pivotable.app;
 
-import org.greenrobot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +29,7 @@ import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
@@ -60,9 +59,8 @@ public class InjectPivotableSelfEndpointConfig {
 	@Profile(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Bean
-	public AdhocSchema registerSelfSchema(EventBus eventBus, PivotableAdhocSchemaRegistry schemaRegistry) {
-		AdhocSchema selfSchema =
-				AdhocSchema.builder().engine(AdhocQueryEngine.builder().eventBus(eventBus::post).build()).build();
+	public AdhocSchema registerSelfSchema(IAdhocQueryEngine engine, PivotableAdhocSchemaRegistry schemaRegistry) {
+		AdhocSchema selfSchema = AdhocSchema.builder().engine(engine).build();
 
 		PivotableAdhocEndpointMetadata self = PivotableAdhocEndpointMetadata.localhost();
 		schemaRegistry.registerEntrypoint(self.getId(), selfSchema);

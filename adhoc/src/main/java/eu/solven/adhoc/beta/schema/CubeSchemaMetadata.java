@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.Map;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -45,8 +46,14 @@ public class CubeSchemaMetadata {
 	ColumnarMetadata columns;
 
 	@Singular
-	Map<String, IMeasure> measures;
+	@NonNull
+	ImmutableMap<String, IMeasure> measures;
 
 	@Singular
-	Map<String, IAdhocQuery> queries;
+	@NonNull
+	ImmutableMap<String, IAdhocQuery> queries;
+
+	@Singular
+	@NonNull
+	ImmutableMap<String, CustomMarkerMetadata> customMarkers;
 }

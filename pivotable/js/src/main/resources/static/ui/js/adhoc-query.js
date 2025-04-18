@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch, onMounted } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
@@ -35,6 +35,7 @@ export default {
 		},
 	},
 	computed: {
+		...mapState(useUserStore, ["needsToLogin"]),
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
@@ -62,6 +63,7 @@ export default {
 			selectedMeasures: {},
 			// `orderedArray of columnNames`
 			selectedColumnsOrdered: [],
+			customMarkers: {},
 		});
 		const tabularView = reactive({});
 
@@ -127,7 +129,8 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
+        <div v-if="needsToLogin">Needs to login</div>
+        <div v-else-if="(!endpoint || !cube)">
             <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
                 <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading cubeId={{cubeId}}</span>

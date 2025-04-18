@@ -1,7 +1,7 @@
 import { watch } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 import { useUserStore } from "./store-user.js";
 
 import AdhocNavbar from "./adhoc-navbar.js";

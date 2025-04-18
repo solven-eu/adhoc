@@ -26,8 +26,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.collect.ImmutableList;
 
@@ -44,6 +45,8 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and {@link IAdhocQuery}.
@@ -53,6 +56,7 @@ import lombok.NonNull;
  */
 // @Value
 @Builder
+@Slf4j
 public class AdhocSchema implements IAdhocSchema {
 	@Builder.Default
 	@NonNull
@@ -64,7 +68,17 @@ public class AdhocSchema implements IAdhocSchema {
 
 	final Map<String, ICubeWrapper> nameToCube = new ConcurrentHashMap<>();
 
+	final List<Map.Entry<CustomMarkerMatchingKey, CustomMarkerMetadataGenerator>> nameToCustomMarker =
+			new CopyOnWriteArrayList<>();
+
 	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
+
+	@Value
+	@Builder
+	public static class CustomMarkerMatchingKey {
+		String name;
+		IValueMatcher cubeMatcher;
+	}
 
 	public void registerCube(String cubeName, String tableName, String forestName) {
 		CubeWrapper cube = CubeWrapper.builder()
@@ -82,7 +96,7 @@ public class AdhocSchema implements IAdhocSchema {
 		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
 		nameToCube.entrySet().stream().filter(e -> isRequested(query.getCube(), allIfEmpty, e)).forEach(e -> {
-			String name = e.getKey();
+			String cubeName = e.getKey();
 			ICubeWrapper cube = e.getValue();
 
 			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
@@ -92,7 +106,27 @@ public class AdhocSchema implements IAdhocSchema {
 			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
 			cubeSchema.measures(cube.getNameToMeasure());
 
-			metadata.cube(name, cubeSchema.build());
+			Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
+
+			nameToCustomMarker.stream()
+					.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
+					.forEach(customMarker -> {
+						String customMarkerName = customMarker.getKey().getName();
+						CustomMarkerMetadata customMarkerMetadata = customMarker.getValue().snapshot(customMarkerName);
+						CustomMarkerMetadata previous =
+								customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
+
+						if (previous != null) {
+							log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
+									cubeName,
+									customMarkerName,
+									customMarkerMetadata,
+									previous);
+						}
+					});
+			cubeSchema.customMarkers(customMarkerNameToMetadata);
+
+			metadata.cube(cubeName, cubeSchema.build());
 		});
 
 		nameToForest.entrySet().stream().filter(e -> isRequested(query.getForest(), allIfEmpty, e)).forEach(e -> {
@@ -144,6 +178,14 @@ public class AdhocSchema implements IAdhocSchema {
 
 	public void registerForest(IMeasureForest measureBag) {
 		nameToForest.put(measureBag.getName(), measureBag);
+	}
+
+	public void registerCustomMarker(String name,
+			IValueMatcher cubeMatcher,
+			CustomMarkerMetadataGenerator customMarker) {
+		CustomMarkerMatchingKey matchingKey =
+				CustomMarkerMatchingKey.builder().name(name).cubeMatcher(cubeMatcher).build();
+		nameToCustomMarker.add(Map.entry(matchingKey, customMarker));
 	}
 
 	// public void registerMeasure(String measureBagName, IMeasure measure) {

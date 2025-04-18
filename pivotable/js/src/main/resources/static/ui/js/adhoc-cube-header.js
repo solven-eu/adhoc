@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted } from "vue";
 
 import { mapState } from "pinia";
-import { useAdhocStore } from "./store.js";
+import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 import AdhocAccountRef from "./adhoc-account-ref.js";

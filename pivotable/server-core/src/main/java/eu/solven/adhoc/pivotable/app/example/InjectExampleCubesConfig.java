@@ -20,11 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app;
+package eu.solven.adhoc.pivotable.app.example;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
@@ -37,12 +39,14 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -55,7 +59,7 @@ import net.datafaker.providers.base.Country;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class InjectSimpleCubesConfig {
+public class InjectExampleCubesConfig {
 
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
@@ -90,7 +94,7 @@ public class InjectSimpleCubesConfig {
 				.combinationKey(SumCombination.KEY)
 				.build());
 		measures.add(Combinator.builder()
-				.name("% delta / delta+gamma")
+				.name("% delta / (delta+gamma)")
 				.underlying("delta")
 				.underlying("gamma")
 				.combinationKey(ExpressionCombination.KEY)
@@ -100,9 +104,24 @@ public class InjectSimpleCubesConfig {
 						.build())
 				.build());
 
+		measures.add(Combinator.builder()
+				.name("ccyFromCustomMarker")
+				.combinationKey(ReferenceCcyCombination.class.getName())
+				.underlying("delta")
+				.underlying("gamma")
+				.build());
+
 		schema.registerForest(MeasureForest.fromMeasures("simple", measures));
 
 		schema.registerCube("simple", "simple", "simple");
+
+		schema.registerCustomMarker("ccy",
+				EqualsMatcher.isEqualTo("simple"),
+				CustomMarkerMetadataGenerator.builder()
+						.path("$.ccy")
+						.possibleValues(() -> Set.of("EUR", "USD", "JPY"))
+						.defaultValue(() -> Optional.of("EUR"))
+						.build());
 	}
 
 	protected InMemoryTable prefillInmemoryTable() {

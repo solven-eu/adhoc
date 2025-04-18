@@ -46,16 +46,16 @@ public class InjectPivotableAccountsConfig {
 	@Profile(IPivotableSpringProfiles.P_FAKEUSER)
 	@Qualifier(IPivotableSpringProfiles.P_FAKEUSER)
 	@Bean
-	public PivotableUser initFakePlayer(PivotableUsersRegistry usersRegistry) {
-		log.info("Registering the {} account and players", IPivotableSpringProfiles.P_FAKEUSER);
+	public PivotableUser initFakeUser(PivotableUsersRegistry usersRegistry) {
+		log.info("Registering the {} users", IPivotableSpringProfiles.P_FAKEUSER);
 
 		return usersRegistry.registerOrUpdate(FakeUser.pre());
 	}
 
 	@Qualifier("random")
 	@Bean
-	public PivotableUser initRandomPlayer(PivotableUsersRegistry usersRegistry) {
-		log.info("Registering the random account and players");
+	public PivotableUser initRandomUser(PivotableUsersRegistry usersRegistry) {
+		log.info("Registering the random user");
 
 		return usersRegistry.registerOrUpdate(RandomUser.pre());
 	}

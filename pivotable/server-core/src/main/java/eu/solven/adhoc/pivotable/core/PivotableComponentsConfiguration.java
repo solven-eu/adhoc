@@ -29,10 +29,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
-import eu.solven.adhoc.pivotable.app.InjectAdvancedCubesConfig;
 import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
 import eu.solven.adhoc.pivotable.app.InjectPivotableSelfEndpointConfig;
-import eu.solven.adhoc.pivotable.app.InjectSimpleCubesConfig;
+import eu.solven.adhoc.pivotable.app.example.InjectAdvancedCubesConfig;
+import eu.solven.adhoc.pivotable.app.example.InjectExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.persistence.InMemoryPivotableConfiguration;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
@@ -57,9 +57,12 @@ import lombok.extern.slf4j.Slf4j;
 		// Only one of the following persistence options will actually kicks-in
 		InMemoryPivotableConfiguration.class,
 
+		// Adhoc specific beans, like the engine
+		// AdhocAutoConfiguration.class,
+
 		InjectPivotableAccountsConfig.class,
 		InjectPivotableSelfEndpointConfig.class,
-		InjectSimpleCubesConfig.class,
+		InjectExampleCubesConfig.class,
 		InjectAdvancedCubesConfig.class,
 
 })
@@ -70,6 +73,7 @@ public class PivotableComponentsConfiguration {
 		return new EventBusLogger();
 	}
 
+	// BEWARE Is it legit for Pivotable to prefer Greenrobot?
 	@Bean
 	public EventBus eventBus() {
 		EventBus eventBus = EventBus.builder()
