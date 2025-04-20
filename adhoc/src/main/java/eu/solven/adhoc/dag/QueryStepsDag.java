@@ -22,18 +22,16 @@
  */
 package eu.solven.adhoc.dag;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
-import org.jgrapht.graph.EdgeReversedGraph;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import eu.solven.adhoc.dag.observability.SizeAndDuration;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
@@ -43,6 +41,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Holds the details about the queryPlan as a DAG.
@@ -52,6 +51,7 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Slf4j
 public class QueryStepsDag implements ISinkExecutionFeedback {
 	// The DAG of a given IAdhocQuery, from queried to aggregators
 	@NonNull
@@ -83,15 +83,8 @@ public class QueryStepsDag implements ISinkExecutionFeedback {
 		return outgoingEdges.stream().map(edge -> Graphs.getOppositeVertex(dag, edge, queryStep)).toList();
 	}
 
-	// TODO Enable returning the Set of queyrSteps which can be executed concurrently
-	public Iterator<AdhocQueryStep> fromAggregatesToQueried() {
-		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
-		EdgeReversedGraph<AdhocQueryStep, DefaultEdge> fromAggregatesToQueried = new EdgeReversedGraph<>(dag);
-
-		// https://en.wikipedia.org/wiki/Topological_sorting
-		// TopologicalOrder guarantees processing a vertex after dependent vertices are
-		// done.
-		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
+	public Stream<AdhocQueryStep> fromAggregatesToQueried() {
+		return TopologicalOrderSpliterator.fromDAG(dag);
 	}
 
 	@Override

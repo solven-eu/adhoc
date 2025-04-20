@@ -208,7 +208,7 @@ export default {
 			},
 		);
 
-		if (autoQuery.value && props.queryModel.selectedColumnsOrdered.length > 0) {
+		if (autoQuery.value) {
 			console.log("Trigger queryExecution on component load");
 			sendMove();
 		}

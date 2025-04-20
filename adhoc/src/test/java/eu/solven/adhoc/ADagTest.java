@@ -22,23 +22,9 @@
  */
 package eu.solven.adhoc;
 
-import java.util.function.Supplier;
-
-import org.junit.jupiter.api.BeforeEach;
-
-import com.google.common.base.Suppliers;
-import com.google.common.eventbus.EventBus;
-
-import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
-import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
-import eu.solven.adhoc.util.IStopwatch;
-import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
  * Helps testing anything related with a {@link MeasureForest} or a {@link AdhocQueryEngine}
@@ -46,60 +32,17 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  * @author Benoit Lacelle
  *
  */
-public abstract class ADagTest {
-	public final EventBus eventBus = new EventBus();
-	public final Object toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel();
-	public final UnsafeMeasureForestBag forest =
-			UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
+public abstract class ADagTest extends ARawDagTest {
 
-	public IStopwatch makeStopwatch() {
-		return IStopwatchFactory.guavaStopwatchFactory().createStarted();
-	}
-
-	public final IStopwatchFactory stopwatchFactory = new IStopwatchFactory() {
-
-		@Override
-		public IStopwatch createStarted() {
-			return makeStopwatch();
-		}
-	};
-	public final AdhocQueryEngine engine =
-			AdhocQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
-
-	public final InMemoryTable table = InMemoryTable.builder().build();
-	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
-	public final CubeWrapper cube = CubeWrapper.builder()
-			.table(tableSupplier.get())
-			.engine(engine)
-			.forest(forest)
-			.eventBus(eventBus::post)
-			.build();
-
-	public ITableWrapper makeTable() {
-		return table;
-	}
-
-	@BeforeEach
-	public void wireEvents() {
-		eventBus.register(toSlf4j);
+	@Override
+	public InMemoryTable makeTable() {
+		return InMemoryTable.builder().build();
 	}
 
 	// `@BeforeEach` has to be duplicated on each implementation
 	// @BeforeEach
 	public abstract void feedTable();
 
-	/**
-	 * Typically used to edit the operatorsFactory
-	 */
-	public AdhocQueryEngine.AdhocQueryEngineBuilder editEngine() {
-		return engine.toBuilder();
-	}
-
-	/**
-	 * Typically used to edit the operatorsFactory
-	 */
-	public CubeWrapperBuilder editCube() {
-		return cube.toBuilder();
-	}
+	public InMemoryTable table = (InMemoryTable) tableSupplier.get();
 
 }

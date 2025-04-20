@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Phaser;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,23 +33,26 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.table.sql.DSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
-	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
+	private CubeWrapper wrapInCube(IMeasureForest forest, ITableWrapper table) {
 		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return CubeWrapper.builder()
@@ -63,15 +68,11 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 	public void testAddUnderlyingMeasures_sameMeasurenameInUnderlyingAndInComposite() {
 		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
 
-		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-
 		String tableName1 = "someTableName1";
-		JooqTableWrapper table1 = new JooqTableWrapper(tableName1,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName1).build());
+		ITableWrapper table1 = InMemoryTable.builder().name(tableName1).build();
 
 		String tableName2 = "someTableName2";
-		JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
+		ITableWrapper table2 = InMemoryTable.builder().name(tableName2).build();
 
 		CubeWrapper cube1;
 		{
@@ -147,5 +148,67 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		Assertions.assertThat(composite.filterForColumns(
 				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+	}
+
+	// This test will ensure 2 underlying tables are queried concurrently
+	@Test
+	public void testConcurrency() {
+		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
+
+		TableWrapperPhasers phasers = TableWrapperPhasers.parties(2);
+
+		String tableName1 = "someTableName1";
+		ITableWrapper table1 = PhasedTableWrapper.builder().name(tableName1).phasers(phasers).build();
+
+		String tableName2 = "someTableName2";
+		ITableWrapper table2 = PhasedTableWrapper.builder().name(tableName2).phasers(phasers).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			measureBag.addMeasure(countAsterisk);
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(k2Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			measureBag.addMeasure(countAsterisk);
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(k3Max);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForestBag measuresWithoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		measuresWithoutUnderlyings.addMeasure(k1Sum);
+		measuresWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
+
+		CubeWrapper cube = CubeWrapper.builder().table(compositeCubesTable).forest(withUnderlyings).build();
+		ITabularView view = cube.execute(AdhocQuery.builder()
+				.measure(Aggregator.countAsterisk())
+				.option(StandardQueryOptions.CONCURRENT)
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 0L + 2))
+				.hasSize(1);
+
+		Phaser opening = phasers.getOpening();
+		Assertions.assertThat(opening.getPhase()).isEqualTo(1);
+		Assertions.assertThat(opening.getArrivedParties()).isEqualTo(0);
+
+		Phaser streaming = phasers.getStreaming();
+		Assertions.assertThat(streaming.getPhase()).isEqualTo(1);
+		Assertions.assertThat(streaming.getArrivedParties()).isEqualTo(0);
+
+		Phaser closing = phasers.getClosing();
+		Assertions.assertThat(closing.getPhase()).isEqualTo(1);
+		Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
 	}
 }

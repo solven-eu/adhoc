@@ -155,12 +155,13 @@ public class ColumnsManager implements IColumnsManager {
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
 			ITabularRecordStream aggregatedRecordsStream) {
+		// Use a Supplier to open the stream lazily
 		Supplier<Stream<ITabularRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::records);
 
 		return new ITabularRecordStream() {
 
 			@Override
-			public void close() throws Exception {
+			public void close() {
 				// TODO This would open even if it was not closed yet
 				memoized.get().close();
 			}
@@ -194,7 +195,7 @@ public class ColumnsManager implements IColumnsManager {
 			enrichedGroupBy.put(columnName, column.computeCoordinate(row));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(row.aggregatesAsMap()).groupBys(enrichedGroupBy).build();
+		return TabularRecordOverMaps.builder().aggregates(row.aggregatesAsMap()).slice(enrichedGroupBy).build();
 	}
 
 	protected ITabularRecord transcodeTypes(ITabularRecord row) {

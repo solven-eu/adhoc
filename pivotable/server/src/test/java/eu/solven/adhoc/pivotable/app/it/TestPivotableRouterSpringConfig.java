@@ -24,6 +24,7 @@ package eu.solven.adhoc.pivotable.app.it;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -40,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 				JwtUserContextHolder.class, },
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Slf4j
+@EnableAutoConfiguration
 public class TestPivotableRouterSpringConfig {
 
 	@Test

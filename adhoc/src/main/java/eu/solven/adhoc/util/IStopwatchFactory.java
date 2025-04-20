@@ -38,7 +38,7 @@ public interface IStopwatchFactory {
 	 * 
 	 * @return an {@link IStopwatchFactory} based on Guava {@link Stopwatch}
 	 */
-	public static IStopwatchFactory guavaStopwatchFactory() {
+	static IStopwatchFactory guavaStopwatchFactory() {
 		return new IStopwatchFactory() {
 
 			@Override

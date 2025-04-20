@@ -25,9 +25,10 @@ package eu.solven.adhoc.measure.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -56,15 +57,15 @@ public class Columnator implements ICombinator {
 
 	@NonNull
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	@NonNull
 	@Singular
-	Set<String> requiredColumns;
+	ImmutableSet<String> requiredColumns;
 
 	@NonNull
 	@Singular
-	List<String> underlyings;
+	ImmutableList<String> underlyings;
 
 	/**
 	 * @see eu.solven.adhoc.measure.combination.ICombination

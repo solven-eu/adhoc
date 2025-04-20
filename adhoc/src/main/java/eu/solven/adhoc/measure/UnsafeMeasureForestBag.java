@@ -61,6 +61,10 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 		return nameToMeasure;
 	}
 
+	public void clear() {
+		nameToMeasure.clear();
+	}
+
 	/**
 	 * @param measure
 	 * @return this

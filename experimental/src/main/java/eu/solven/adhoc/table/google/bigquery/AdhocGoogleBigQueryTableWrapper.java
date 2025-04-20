@@ -131,7 +131,7 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 				}
 			}
 
-			Map<String, Object> groupBys = new LinkedHashMap<>();
+			Map<String, Object> slice = new LinkedHashMap<>();
 
 			{
 				List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
@@ -155,7 +155,7 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 				throw new NotYetImplementedException("TODO");
 			}
 
-			return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
 		});
 	}
 

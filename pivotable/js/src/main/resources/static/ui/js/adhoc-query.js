@@ -45,7 +45,15 @@ export default {
 				return store.schemas[this.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				const endpoint = store.schemas[this.endpointId];
+
+				if (!endpoint) {
+					return { error: "endpoint_not_loaded" };
+				} else if (endpoint.error) {
+					return { error: "endpoint_error=" + endpoint.error };
+				}
+
+				return endpoint.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -86,7 +94,8 @@ export default {
 						for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
 							queryModel.selectedMeasures[measureName] = true;
 						}
-						queryModel.filter = queryModelFromHash.filter;
+						queryModel.filter = queryModelFromHash.filter || {};
+						queryModel.customMarkers = queryModelFromHash.customMarkers || {};
 
 						console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
 					}
@@ -108,7 +117,8 @@ export default {
 				currentHashObject.query = {};
 				currentHashObject.query.columns = Object.values(newQueryModel.selectedColumnsOrdered);
 				currentHashObject.query.measures = Object.keys(newQueryModel.selectedMeasures).filter((measure) => newQueryModel.selectedMeasures[measure] === true);
-				currentHashObject.query.filter = newQueryModel.filter;
+				currentHashObject.query.filter = newQueryModel.filter || {};
+				currentHashObject.query.customMarkers = newQueryModel.customMarkers || {};
 
 				console.debug("Saving queryModel to hash", JSON.stringify(newQueryModel));
 

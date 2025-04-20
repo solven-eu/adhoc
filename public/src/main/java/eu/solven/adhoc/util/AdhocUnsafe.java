@@ -23,6 +23,8 @@
 package eu.solven.adhoc.util;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
@@ -48,6 +50,8 @@ public class AdhocUnsafe {
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
 		// Customize with `-Dadhoc.failfast=false`
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
+		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
+		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
 	}
 
 	static int safeLoadIntegerProperty(String key, int defaultValue) {
@@ -97,6 +101,8 @@ public class AdhocUnsafe {
 	// By default, failFast. This is a simple flag for projects preferring resiliency.
 	public static boolean failFast = true;
 
+	private static int parallelism = defaultParallelism();
+
 	/**
 	 * Used for unitTests
 	 */
@@ -125,4 +131,20 @@ public class AdhocUnsafe {
 	public static long nextQueryIndex() {
 		return deterministicQueryIndex.getAndIncrement();
 	}
+
+	private static int defaultParallelism() {
+		// Multiply by 2 as we expect some thread to be stuck on external calls like a `ITableQuery` waiting for the
+		// computation by an external ITableWrapper
+		return Runtime.getRuntime().availableProcessors() * 2;
+	}
+
+	/**
+	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 */
+	public static int parallelism() {
+		return parallelism;
+	}
+
+	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
+	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(AdhocUnsafe.parallelism());
 }

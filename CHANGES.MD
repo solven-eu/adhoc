@@ -10,6 +10,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`
+- Enable `tags` measure filtering in `Pivotable`
 - Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
 
 ## [0.0.4]

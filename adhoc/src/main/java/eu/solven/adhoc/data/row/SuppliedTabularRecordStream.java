@@ -46,7 +46,7 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		streamSupplier.get().close();
 	}
 

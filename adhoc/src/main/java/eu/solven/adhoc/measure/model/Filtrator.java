@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link IAdhocFilter}. The
- * input {@link IAdhocFilter} will be `AND`-ed with the {@link AdhocQueryStep} own {@link IAdhocFilter}.
+ * input {@link IAdhocFilter} will be `AND`-ed with {@link AdhocQueryStep} own {@link IAdhocFilter}.
  * 
  * @author Benoit Lacelle
  *

@@ -180,7 +180,7 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 
 					resultIterator = result.stream(slice -> {
 						return v -> TabularRecordOverMaps.builder()
-								.groupBys(slice.getCoordinates())
+								.slice(slice.getCoordinates())
 								.aggregates((Map<String, ?>) v)
 								.build();
 					}).iterator();

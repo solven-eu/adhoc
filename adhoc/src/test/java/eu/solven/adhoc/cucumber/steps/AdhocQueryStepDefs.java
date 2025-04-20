@@ -57,6 +57,7 @@ public class AdhocQueryStepDefs {
 		public void feedTable() {
 
 		}
+
 	};
 
 	ITabularView tabularView;

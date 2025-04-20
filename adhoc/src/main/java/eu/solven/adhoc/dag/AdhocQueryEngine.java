@@ -31,7 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jgrapht.traverse.BreadthFirstIterator;
 
@@ -329,42 +331,58 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 	protected void walkDagUpToQueriedMeasures(ExecutingQueryContext executingQueryContext,
 			QueryStepsDag queryStepsDag,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValues) {
-		queryStepsDag.fromAggregatesToQueried().forEachRemaining(queryStep -> {
 
-			if (queryStepToValues.containsKey(queryStep)) {
-				// This typically happens on aggregator measures, as they are fed in a previous
-				// step. Here, we want to process a measure once its underlying steps are completed
-				return;
-			} else if (queryStep.getMeasure() instanceof Aggregator a) {
-				throw new IllegalStateException("Missing values for %s".formatted(a));
-			}
+		try {
+			executingQueryContext.getFjp().submit(() -> {
+				Stream<AdhocQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
 
-			eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
+				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+					topologicalOrder = topologicalOrder.parallel();
+				}
 
-			IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
+				topologicalOrder.forEach(queryStep -> {
 
-			List<AdhocQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
+					if (queryStepToValues.containsKey(queryStep)) {
+						// This typically happens on aggregator measures, as they are fed in a previous
+						// step. Here, we want to process a measure once its underlying steps are completed
+						return;
+					} else if (queryStep.getMeasure() instanceof Aggregator a) {
+						throw new IllegalStateException("Missing values for %s".formatted(a));
+					}
 
-			IStopwatch stepWatch = stopwatchFactory.createStarted();
+					eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
 
-			Optional<ISliceToValue> optOutputColumn =
-					processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+					IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
 
-			// Would be empty on table steps (leaves of the DAG)
-			optOutputColumn.ifPresent(outputColumn -> {
-				Duration elapsed = stepWatch.elapsed();
-				eventBus.post(QueryStepIsCompleted.builder()
-						.querystep(queryStep)
-						.nbCells(outputColumn.size())
-						.source(this)
-						.duration(elapsed)
-						.build());
-				queryStepsDag.registerExecutionFeedback(queryStep,
-						SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
+					List<AdhocQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 
-				queryStepToValues.put(queryStep, outputColumn);
-			});
-		});
+					IStopwatch stepWatch = stopwatchFactory.createStarted();
+
+					Optional<ISliceToValue> optOutputColumn =
+							processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+
+					// Would be empty on table steps (leaves of the DAG)
+					optOutputColumn.ifPresent(outputColumn -> {
+						Duration elapsed = stepWatch.elapsed();
+						eventBus.post(QueryStepIsCompleted.builder()
+								.querystep(queryStep)
+								.nbCells(outputColumn.size())
+								.source(this)
+								.duration(elapsed)
+								.build());
+						queryStepsDag.registerExecutionFeedback(queryStep,
+								SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
+
+						queryStepToValues.put(queryStep, outputColumn);
+					});
+				});
+			}).get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Interrupted", e);
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("Failed", e);
+		}
 	}
 
 	protected Optional<ISliceToValue> processDagStep(Map<AdhocQueryStep, ISliceToValue> queryStepToValues,

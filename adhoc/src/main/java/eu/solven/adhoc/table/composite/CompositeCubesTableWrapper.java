@@ -32,7 +32,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,23 +173,33 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return nameToCube;
 	}
 
+	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
 			Map<String, IAdhocQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
-		return CompletableFuture.supplyAsync(() -> {
-			Stream<Entry<String, IAdhocQuery>> stream = cubeToQuery.entrySet().stream();
+		try {
+			// https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
+			return executingQueryContext.getFjp().submit(() -> {
+				Stream<Entry<String, IAdhocQuery>> stream = cubeToQuery.entrySet().stream();
 
-			if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-				stream = stream.parallel();
-			}
+				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+					stream = stream.parallel();
+				}
 
-			return stream.collect(Collectors.toMap(e -> e.getKey(), e -> {
-				ICubeWrapper subCube = nameToCube.get(e.getKey());
-				IAdhocQuery query = e.getValue();
-				return executeSubQuery(subCube, query);
-			}));
-		}, executingQueryContext.getFjp()).join();
+				return stream.collect(Collectors.toMap(e -> e.getKey(), e -> {
+					ICubeWrapper subCube = nameToCube.get(e.getKey());
+					IAdhocQuery query = e.getValue();
+					return executeSubQuery(subCube, query);
+				}));
+
+			}).get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Interrupted", e);
+		} catch (ExecutionException e) {
+			throw new IllegalStateException("Failed", e);
+		}
 	}
 
 	protected ITabularView executeSubQuery(ICubeWrapper subCube, IAdhocQuery query) {
@@ -285,10 +295,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
 
 		// TODO ensureCapacity given missingColumns
-		Map<String, Object> groupBys = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
-		missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
+		Map<String, Object> groupBys;
+		if (missingColumns.isEmpty()) {
+			groupBys = slice.getAdhocSliceAsMap().getCoordinates();
+		} else {
+			groupBys = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
+			missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
+		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupBys).build();
 	}
 
 	protected Object missingColumn(ICubeWrapper cube, String column) {

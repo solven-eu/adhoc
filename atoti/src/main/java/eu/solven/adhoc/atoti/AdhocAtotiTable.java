@@ -104,14 +104,14 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return new SuppliedTabularRecordStream(tableQuery, asList::stream);
 	}
 
-	protected ITabularRecord asMap(TableQuery dbQuery, ICellSet result, int locationIndex) {
-		Map<String, Object> groupBys = new LinkedHashMap<>();
+	protected ITabularRecord asMap(TableQuery tableQuery, ICellSet result, int locationIndex) {
+		Map<String, Object> slice = new LinkedHashMap<>();
 
-		dbQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
-			groupBys.put(column, getColumnCoordinate(dbQuery, result, locationIndex, column));
+		tableQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
+			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(slice).build();
 	}
 
 	private Object getColumnCoordinate(TableQuery dbQuery, ICellSet result, int locationIndex, String column) {

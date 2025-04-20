@@ -22,10 +22,26 @@ export default {
 			return markMatchingWizard(props.searchOptions, text);
 		};
 
-		return { mark };
+		const toggleTag = function (tag) {
+			console.log("Toggling", tag);
+
+			const tags = props.searchOptions.tags;
+			if (tags.includes(tag)) {
+				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+				const tagIndex = tags.indexOf(tag);
+				tags.splice(tagIndex, 1);
+			} else {
+				tags.push(tag);
+			}
+		};
+
+		return { mark, toggleTag };
 	},
 	template: /* HTML */ `
         <span v-html="mark(measure.name)" />
+		<span v-for="tag in measure.tags" :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')" @click.prevent="toggleTag(tag)">
+			{{tag}}
+		</span>
         <span v-if="showDetails" class="text-muted">
             <span v-if="measure.type == '.Aggregator'">
                 <small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />

@@ -233,17 +233,17 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		}
 
-		Map<String, Object> groupBys;
+		Map<String, Object> slice;
 		columnShift += fields.getAggregates().size();
 		{
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
 
-			groupBys = new LinkedHashMap<>(size);
+			slice = new LinkedHashMap<>(size);
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 
-				Object previousValue = groupBys.put(columnName, r.get(columnShift + i));
+				Object previousValue = slice.put(columnName, r.get(columnShift + i));
 				if (previousValue != null) {
 					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 				}
@@ -258,14 +258,14 @@ public class JooqTableWrapper implements ITableWrapper {
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 
-				Object previousValue = groupBys.put(columnName, r.get(columnShift + i));
+				Object previousValue = slice.put(columnName, r.get(columnShift + i));
 				if (previousValue != null) {
 					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 				}
 			}
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
 	}
 
 	@Override

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.app.example;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -84,14 +85,15 @@ public class InjectExampleCubesConfig {
 
 		List<IMeasure> measures = new ArrayList<>();
 
-		measures.add(Aggregator.sum("delta"));
-		measures.add(Aggregator.sum("gamma"));
+		measures.add(Aggregator.sum("delta").toBuilder().tag("δ").build());
+		measures.add(Aggregator.sum("gamma").toBuilder().tag("γ").build());
 
 		measures.add(Combinator.builder()
 				.name("delta+gamma")
 				.underlying("delta")
 				.underlying("gamma")
 				.combinationKey(SumCombination.KEY)
+				.tags(Arrays.asList("δ", "γ"))
 				.build());
 		measures.add(Combinator.builder()
 				.name("% delta / (delta+gamma)")
@@ -102,6 +104,7 @@ public class InjectExampleCubesConfig {
 						.put(ExpressionCombination.KEY_EXPRESSION,
 								"IF(delta == null, 0, IF(gamma == null, 1, delta / (delta + gamma)))")
 						.build())
+				.tags(Arrays.asList("δ", "γ"))
 				.build());
 
 		measures.add(Combinator.builder()

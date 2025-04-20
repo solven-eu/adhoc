@@ -41,6 +41,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -131,7 +132,8 @@ public class InMemoryTable implements ITableWrapper {
 			}
 		}
 
-		int nbKeys = (int) Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count();
+		int nbKeys =
+				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
 
 		return new SuppliedTabularRecordStream(tableQuery, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
@@ -154,7 +156,7 @@ public class InMemoryTable implements ITableWrapper {
 						.stream()
 						.filter(e -> e.getValue().isPresent())
 						.map(e -> TabularRecordOverMaps.builder()
-								.groupBys(e.getKey())
+								.slice(e.getKey())
 								.aggregates(e.getValue().get().asMap())
 								.build());
 				return distinctStream;
@@ -208,14 +210,12 @@ public class InMemoryTable implements ITableWrapper {
 			}
 		});
 
-		Map<String, Object> groupBys =
+		Map<String, Object> slice = row.entrySet()
+				.stream()
+				.filter(e -> groupByColumns.contains(e.getKey()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-				row.entrySet()
-						.stream()
-						.filter(e -> groupByColumns.contains(e.getKey()))
-						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
 	}
 
 	@Override

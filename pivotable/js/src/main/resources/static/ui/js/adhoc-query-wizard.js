@@ -77,6 +77,9 @@ export default {
 			// This is useful to report measures by some of their defintition like som filter
 			// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
 			throughJson: true,
+
+			// Tags can be focused by being added to this list
+			tags: [],
 		});
 
 		// Used for manual input of a JSON
@@ -89,25 +92,40 @@ export default {
 			const searchedValueLowerCase = searchedValue.toLowerCase();
 
 			for (const inputKey in inputsAsObjectOrArray) {
-				let match = false;
-
+				let matchAllTags = true;
 				const inputElement = inputsAsObjectOrArray[inputKey];
+
+				if (typeof inputElement === "object" && searchOptions.tags.length >= 1) {
+					// Accept only if input has at least one requested tag
+					if (inputElement.tags) {
+						for (const tag of searchOptions.tags) {
+							if (!inputElement.tags.includes(tag)) {
+								matchAllTags = false;
+							}
+						}
+					} else {
+						// No a single tag or input not taggable
+					}
+				}
+
+				let matchText = false;
+
 				// We consider only values, as keys are generic
 				// For instance, `name` should not match `name=NiceNick`
 				const inputElementAsString = searchOptions.throughJson ? JSON.stringify(Object.values(inputElement)) : "";
 
 				if (inputKey.includes(searchedValue) || inputElementAsString.includes(searchedValue)) {
-					match = true;
+					matchText = true;
 				}
 
-				if (!match && !searchOptions.caseSensitive) {
+				if (!matchText && !searchOptions.caseSensitive) {
 					// Retry without case-sensitivity
 					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || inputElementAsString.toLowerCase().includes(searchedValueLowerCase)) {
-						match = true;
+						matchText = true;
 					}
 				}
 
-				if (match) {
+				if (matchAllTags && matchText) {
 					if (typeof inputsAsObjectOrArray === Array) {
 						filtereditems.push(inputElement);
 					} else {
@@ -126,9 +144,19 @@ export default {
 			return _.sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
 		};
 
+		const removeTag = function (tag) {
+			const tags = searchOptions.tags;
+			if (tags.includes(tag)) {
+				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+				const tagIndex = tags.indexOf(tag);
+				tags.splice(tagIndex, 1);
+			}
+		};
+
 		return {
 			searchOptions,
 			filtered,
+			removeTag,
 		};
 	},
 	template: /* HTML */ `
@@ -159,6 +187,10 @@ export default {
                             <label class="form-check-label" for="searchJson">JSON</label>
                         </div>
                     </small>
+
+					<small v-for="tag in searchOptions.tags" class="badge text-bg-primary" @click="removeTag(tag)">
+						{{tag}} <i class="bi bi-x-circle"></i>
+					</small>
                 </div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
@@ -228,7 +260,7 @@ export default {
                                 aria-expanded="false"
                                 aria-controls="wizardCustoms"
                             >
-                                <span v-if="searchOptions.text">
+                                <span v-if="searchOptions.text || searchOptions.tags.length > 0">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
                                     <span> {{ Object.keys(filtered(cube.measures)).length}} </span> measures
                                 </span>

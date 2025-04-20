@@ -28,9 +28,8 @@ import java.util.Set;
 
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-
 import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+
 import eu.solven.adhoc.column.CalculatedColumn;
 import lombok.Builder;
 import lombok.Getter;

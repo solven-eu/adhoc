@@ -47,6 +47,7 @@ import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -87,9 +88,11 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 
 	// Using a ForkJoinPool is much more complex than using an ExecutorService
 	// But it enable smooth usage of Stream API.
+	// Given part of the query is actually waiting for an external database (i.e. ITableQuery), it may be preferably not
+	// to rely on the commonPool.
 	@NonNull
 	@Default
-	ForkJoinPool fjp = ForkJoinPool.commonPool();
+	ExecutorService fjp = AdhocUnsafe.adhocCommonPool; // ForkJoinPool.commonPool();
 
 	/**
 	 * Once turned to nut-null, can not be nulled again.

@@ -29,8 +29,8 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.query.table.TableQuery;
 
 /**
- * Holds a resource to a stream of data, typically given a {@link TableQuery}
- *
+ * Holds a resource to a stream of data, typically given a {@link TableQuery}.
+ * 
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
@@ -48,4 +48,8 @@ public interface ITabularRecordStream extends AutoCloseable {
 	default List<Map<String, ?>> toList() {
 		return records().<Map<String, ?>>map(ITabularRecord::asMap).toList();
 	}
+
+	// Force not to throw an explicit Exception
+	@Override
+	void close();
 }

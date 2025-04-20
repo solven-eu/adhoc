@@ -31,8 +31,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -150,26 +150,39 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 		}
 	}
 
-	private Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
+	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
+	protected Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
 			ISinkExecutionFeedback queryStepsDag,
 			Set<TableQuery> tableQueries,
 			SetMultimap<String, Aggregator> columnToAggregators) {
-		return CompletableFuture.supplyAsync(() -> {
-			Stream<TableQuery> tableQueriesStream = tableQueries.stream();
 
-			if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-				tableQueriesStream = tableQueriesStream.parallel();
+		try {
+			return executingQueryContext.getFjp().submit(() -> {
+				Stream<TableQuery> tableQueriesStream = tableQueries.stream();
+
+				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+					tableQueriesStream = tableQueriesStream.parallel();
+				}
+				Map<AdhocQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
+				tableQueriesStream.forEach(tableQuery -> {
+					Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
+							processOneTableQuery(executingQueryContext, queryStepsDag, columnToAggregators, tableQuery);
+
+					queryStepToValuesInner.putAll(oneQueryStepToValues);
+				});
+
+				return queryStepToValuesInner;
+			}).get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Interrupted", e);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof IllegalStateException) {
+				throw new IllegalStateException("Failed", e);
+			} else {
+				throw new IllegalArgumentException("Failed", e);
 			}
-			Map<AdhocQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
-			tableQueriesStream.forEach(tableQuery -> {
-				Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
-						processOneTableQuery(executingQueryContext, queryStepsDag, columnToAggregators, tableQuery);
-
-				queryStepToValuesInner.putAll(oneQueryStepToValues);
-			});
-
-			return queryStepToValuesInner;
-		}, executingQueryContext.getFjp()).join();
+		}
 	}
 
 	protected Map<AdhocQueryStep, ISliceToValue> processOneTableQuery(ExecutingQueryContext executingQueryContext,
@@ -187,11 +200,12 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 
+		Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues;
 		// Open the stream: the table may or may not return after the actual execution
-		ITabularRecordStream rowsStream = openTableStream(executingQueryContext, suppressedTableQuery);
-
-		Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
-				aggregateStreamToAggregates(executingQueryContext, toSuppressed, rowsStream, columnToAggregators);
+		try (ITabularRecordStream rowsStream = openTableStream(executingQueryContext, suppressedTableQuery)) {
+			oneQueryStepToValues =
+					aggregateStreamToAggregates(executingQueryContext, toSuppressed, rowsStream, columnToAggregators);
+		}
 
 		Duration elapsed = stopWatch.elapsed();
 

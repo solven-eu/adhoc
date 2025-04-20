@@ -32,13 +32,18 @@ import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
 import lombok.ToString;
 
 @Builder
 @ToString
 public class TabularRecordOverMaps implements ITabularRecord {
+	@NonNull
+	final Map<String, ?> slice;
+	@NonNull
+	@Singular
 	final Map<String, ?> aggregates;
-	final Map<String, ?> groupBys;
 
 	@Override
 	public Set<String> aggregateKeySet() {
@@ -72,12 +77,12 @@ public class TabularRecordOverMaps implements ITabularRecord {
 
 	@Override
 	public Set<String> groupByKeySet() {
-		return groupBys.keySet();
+		return slice.keySet();
 	}
 
 	@Override
 	public Object getGroupBy(String columnName) {
-		return groupBys.get(columnName);
+		return slice.get(columnName);
 	}
 
 	@Override
@@ -85,38 +90,37 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		asMap.putAll(aggregates);
-		asMap.putAll(groupBys);
+		asMap.putAll(slice);
 
 		return asMap;
 	}
 
 	public static ITabularRecord empty() {
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).groupBys(Map.of()).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(Map.of()).build();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return aggregates.isEmpty() && groupBys.isEmpty();
+		return aggregates.isEmpty() && slice.isEmpty();
 	}
 
 	@Override
 	public Map<String, ?> getGroupBys() {
-		return groupBys;
+		return slice;
 	}
 
 	@Override
 	public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
-		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBys);
+		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice);
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(transcodedGroupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(transcodedGroupBys).build();
 	}
 
 	@Override
 	public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
-		Map<String, ?> transcodedGroupBys =
-				AdhocTranscodingHelper.transcodeValues(customTypeManager::fromTable, groupBys);
+		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeValues(customTypeManager::fromTable, slice);
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).groupBys(transcodedGroupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(transcodedGroupBys).build();
 	}
 
 }

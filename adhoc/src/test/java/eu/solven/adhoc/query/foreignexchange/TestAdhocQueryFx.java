@@ -64,8 +64,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	LocalDate today = LocalDate.now();
 
-	public final AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
-	public final CubeWrapper aqw = editCube().engine(aqe).build();
+	public final AdhocQueryEngine engine = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final CubeWrapper cube = editCube().engine(engine).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -109,7 +109,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure(mName).build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -129,7 +129,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		table.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure(mName).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -148,7 +148,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
+		ITabularView output =
+				cube.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -169,8 +170,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		ITabularView output = cube
+				.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -194,7 +195,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.setMaxStackTraceElementsDisplayed(128);
 
-		Assertions.assertThatThrownBy(() -> aqw.execute(AdhocQuery.builder().measure(mName).build()))
+		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("ccyFrom is not a sliced column");
@@ -207,7 +208,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		aqw.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		cube.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
@@ -224,7 +225,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		aqw.execute(AdhocQuery.builder()
+		cube.execute(AdhocQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")
@@ -252,7 +253,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		aqw.execute(AdhocQuery.builder()
+		cube.execute(AdhocQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")
@@ -273,4 +274,5 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.assertThat(messages).hasSize(4);
 	}
+
 }

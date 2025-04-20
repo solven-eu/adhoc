@@ -27,9 +27,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -65,11 +67,11 @@ public class Combinator implements ICombinator, IMayHaveColumnGenerator {
 
 	@NonNull
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	@NonNull
 	@Singular
-	List<String> underlyings;
+	ImmutableList<String> underlyings;
 
 	/**
 	 * @see eu.solven.adhoc.measure.combination.ICombination
@@ -135,5 +137,9 @@ public class Combinator implements ICombinator, IMayHaveColumnGenerator {
 		} else {
 			return Optional.empty();
 		}
+	}
+
+	public static IMeasure sum(String name, String underlying, String... moreUnderlyings) {
+		return Combinator.builder().name(name).underlyings(Lists.asList(underlying, moreUnderlyings)).build();
 	}
 }
