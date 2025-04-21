@@ -3,6 +3,8 @@
     npm audit
     npm run lint
 
+The following commands will reformat properly the whole JS code
+
     npm run format && mvn spotless:apply
 
     npm outdated

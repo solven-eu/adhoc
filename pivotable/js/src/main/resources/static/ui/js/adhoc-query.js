@@ -150,7 +150,8 @@ export default {
                 <span>Issue loading cubeId={{cubeId}}</span>
             </div>
         </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+        <div v-else-if="endpoint.error">Endpoint error: {{endpoint.error}}</div>
+        <div v-else-if="cube.error">Cube error: {{cube.error}}</div>
         <div v-else>
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 

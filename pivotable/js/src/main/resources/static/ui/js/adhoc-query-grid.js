@@ -8,16 +8,14 @@ import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import { useUserStore } from "./store-user.js";
 
 import { SlickGrid, SlickDataView, Formatters, SlickHeaderButtons } from "slickgrid";
-import Sortable from "sortablejs";
 
 // Ordering of rows
 import _ from "lodashEs";
 
+import gridHelper from "./adhoc-query-grid-helper.js";
+
 // BEWARE: Should probably push an event to the Modal component so it open itself
 import { Modal } from "bootstrap";
-
-// https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
-window.Sortable = Sortable;
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -52,8 +50,14 @@ export default {
 		let data = [];
 		const gridMetadata = reactive({});
 
-		const formatMeasureCcy = ref("");
-		const formatMeasureMaxDigits = ref(3);
+		const formatOptions = reactive({
+			// https://stackoverflow.com/questions/673905/how-can-i-determine-a-users-locale-within-the-browser
+			locale: navigator.languages && navigator.languages.length ? navigator.languages[0] : navigator.language,
+			// May defaulted to `EUR`
+			measureCcy: "",
+			// Assume we have no interest in finer than percent of percent
+			measureMaxDigits: 4,
+		});
 
 		let gridColumns = [];
 
@@ -82,7 +86,7 @@ export default {
 			gridColumns = [];
 
 			// Do not allow sorting until it is compatible with rowSpans
-			const sortable = false;
+			const sortable = gridHelper.isSortable();
 
 			// We always show the id column
 			// It is especially useful on the grandTotal without measure: the idColumn enables the grid not to be empty
@@ -92,58 +96,24 @@ export default {
 				gridColumns.push(column);
 			}
 
-			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
-			const numberFormatOptions = {};
-			numberFormatOptions.maximumSignificantDigits = formatMeasureMaxDigits.value;
-			if (formatMeasureCcy.value) {
-				numberFormatOptions.style = "currency";
-				numberFormatOptions.currency = formatMeasureCcy.value;
-			}
-			const numberFormat = new Intl.NumberFormat(numberFormatOptions);
-
-			function measureFormatter(row, cell, value, columnDef, dataContext) {
-				var rtn = {};
-
-				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
-				if (typeof value === "number") {
-					rtn.text = numberFormat.format(value);
-				} else {
-					rtn.text = value;
-				}
-				rtn.toolTip = value;
-
-				return rtn;
-			}
-
-			const percentFormatOptions = {};
-			percentFormatOptions.maximumSignificantDigits = formatMeasureMaxDigits.value;
-			numberFormatOptions.style = "percent";
-			const percentFormat = new Intl.NumberFormat(percentFormatOptions);
-
-			// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
-			function percentFormatter(row, cell, value, columnDef, dataContext) {
-				var rtn = {};
-
-				rtn.text = percentFormat.format(value * 100);
-				rtn.toolTip = value;
-
-				return rtn;
-			}
-
 			data = [];
 
 			// from rowIndex to columnIndex to span height
-			// We leave an example rowSpan but it will reset on first dataset
 			const metadata = {
+				// We leave an example rowSpan but it will reset on first dataset
 				0: {
 					columns: {
 						1: { rowspan: 3 },
 					},
 				},
 			};
+			// Delete the example
 			delete metadata[0];
 
-			if (!view.coordinates) {
+			const columnNames = props.tabularView.query.groupBy.columns;
+
+			if (view.coordinates.length === 0) {
+				// TODO Why do we show an empty column? Maybe to force having something to render
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
 
 				gridColumns.push(column);
@@ -162,223 +132,39 @@ export default {
 				//				}
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
-				const columnNames = props.tabularView.query.groupBy.columns;
 				console.log(`Rendering columnNames=${columnNames}`);
-				for (let columnName of columnNames) {
-					const column = {
-						id: columnName,
-						name: columnName,
-						field: columnName,
-						sortable: sortable,
-						asyncPostRender: renderCallback,
-						// formatter: popoverFormatter,
-					};
-
-					if (props.queryModel) {
-						// queryModel is available: show a button to edit the queryModel from the grid
-						column.header = {
-							buttons: [
-								{
-									command: "remove-column",
-									tooltip: "Remove this groupBy",
-									cssClass: "bi bi-x-circle",
-									itemVisibilityOverride: function (args) {
-										// for example don't show the header button on column "E"
-										return args.column.name !== "E";
-									},
-									itemUsabilityOverride: function (args) {
-										// for example the button usable everywhere except on last column "J"
-										return args.column.name !== "J";
-									},
-									action: function (e, args) {
-										// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-										// do something
-										console.log("Requested removal of groupBy=" + args.column.name);
-									},
-								},
-							],
-						};
-					}
-
-					gridColumns.push(column);
-				}
+				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
-				for (let measureName of measureNames) {
-					const column = {
-						id: measureName,
-						name: measureName,
-						field: measureName,
-						sortable: sortable,
-						asyncPostRender: renderCallback,
-						// Align measures to the right to make it easier to detect large number
-						cssClass: "text-end",
-					};
+				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
 
-					// BEWARE For an unknwon reason, this does not apply.
-					// The css is added by SlickGrid, but the header is not aligned to the right
-					column.headerCssClass = "text-end";
-
-					if (measureName.indexOf("%") >= 0) {
-						column["formatter"] = percentFormatter;
-					} else {
-						column["formatter"] = measureFormatter;
+				{
+					props.tabularView.loading.sorting = true;
+					const sortingStart = new Date();
+					try {
+						gridHelper.sortRows(columnNames, view.coordinates, view.values);
+					} finally {
+						props.tabularView.loading.sorting = false;
+						props.tabularView.timing.sorting = new Date() - sortingStart;
 					}
-
-					if (props.queryModel) {
-						// queryModel is available: show a button to edit the queryModel from the grid
-						column.header = {
-							buttons: [
-								{
-									command: "remove-measure",
-									tooltip: "Remove this measure",
-									cssClass: "bi bi-x-circle",
-									itemVisibilityOverride: function (args) {
-										// for example don't show the header button on column "E"
-										return args.column.name !== "E";
-									},
-									itemUsabilityOverride: function (args) {
-										// for example the button usable everywhere except on last column "J"
-										return args.column.name !== "J";
-									},
-									action: function (e, args) {
-										// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
-										// do something
-										console.log("Requested removal of measure=" + args.column.name);
-									},
-								},
-							],
-						};
-					}
-
-					gridColumns.push(column);
 				}
-
-				props.tabularView.loading.sorting = true;
-				const sortingStart = new Date();
-				try {
-					// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
-					const index = _.map(view.coordinates, (x, i) => [view.coordinates[i], view.values[i]]);
-
-					const sortingFunctions = [];
-					const sortingOrders = [];
-					for (let column of columnNames) {
-						sortingFunctions.push(function (item) {
-							return item[0][column];
-						});
-						// or `desc`
-						sortingOrders.push("asc");
-					}
-					const indexSorted = _.orderBy(index, sortingFunctions, sortingOrders);
-
-					for (let i = 0; i < view.coordinates.length; i++) {
-						view.coordinates[i] = indexSorted[i][0];
-						view.values[i] = indexSorted[i][1];
-					}
-				} finally {
-					props.tabularView.loading.sorting = false;
-					props.tabularView.timing.sorting = new Date() - sortingStart;
-				}
-
-				// This is used for rowSpan evaluation
-				let previousCoordinates = undefined;
 
 				props.tabularView.loading.rowSpanning = true;
 				const rowSpanningStart = new Date();
 				try {
-					const runningRowSpans = {};
-
-					// https://github.com/6pac/SlickGrid/issues/1114
-					function updateRowSpan(rowIndex, coordinatesRow, lastRow) {
-						if (previousCoordinates) {
-							for (const column of columnNames) {
-								if (!lastRow && coordinatesRow[column] == previousCoordinates[column]) {
-									// In a rowSpan
-									if (!runningRowSpans[column]?.isRunning) {
-										// Let's start running
-										runningRowSpans[column] = {};
-										runningRowSpans[column].isRunning = true;
-										runningRowSpans[column].startRowIndex = rowIndex - 1;
-									}
-								} else {
-									// Not in a rowSpan
-									if (runningRowSpans[column]?.isRunning) {
-										// Let's stop running
-										const rowSpan = rowIndex - runningRowSpans[column].startRowIndex;
-
-										const columnIndex = columnNames.indexOf(column);
-
-										const rowIndexStart = rowIndex - rowSpan;
-										if (!metadata[rowIndexStart]) {
-											metadata[rowIndexStart] = { columns: {} };
-										}
-
-										// `1+` due to `id` column which is always enforced
-										metadata[rowIndexStart].columns[1 + columnIndex] = { rowspan: rowSpan };
-
-										console.debug(`rowSpan for ${column}=${previousCoordinates[column]} from rowIndex=${rowIndexStart} with rowSpan=${rowSpan}`);
-
-										delete runningRowSpans[column];
-									}
-								}
-							}
-						}
-					}
-
-					// https://github.com/6pac/SlickGrid/blob/master/examples/example-grouping-esm.html
-					for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
+					if (view.coordinates.length >= 1) {
+						const rowIndex = 0;
 						const coordinatesRow = view.coordinates[rowIndex];
 						const measuresRow = view.values[rowIndex];
 
-						if (rowIndex == 0) {
-							// https://stackoverflow.com/questions/29951293/using-lodash-to-compare-jagged-arrays-items-existence-without-order
-							if (!_.isEqual(_.sortBy(columnNames), _.sortBy(Object.keys(coordinatesRow)))) {
-								throw new Error(`Inconsistent columnNames: ${columnNames} vs ${Object.keys(coordinatesRow)}`);
-							}
-							if (measureNames.length == 0) {
-								// Happens when not selected any measure, but receiving values for the default measure
-								// TODO Is this still a legit behavior, since we return slices without columns on such  case?
-								for (let measureName of Object.keys(measuresRow)) {
-									const column = { id: measureName, name: measureName, field: measureName, sortable: true, asyncPostRender: renderCallback };
-
-									if (measureName.indexOf("%") >= 0) {
-										column["formatter"] = percentFormatter;
-									}
-
-									measureNames.push(measureName);
-									gridColumns.push(column);
-								}
-							} else if (!_.isEqual(_.sortBy(measureNames), _.sortBy(Object.keys(measuresRow)))) {
-								// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
-
-								// This typically happens when not requesting a single measure, and receiving the default measure
-								console.log(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
-							}
-						}
-
-						let d = {};
-
-						d["id"] = rowIndex;
-
-						for (const property of columnNames) {
-							d[property] = coordinatesRow[property];
-						}
-						for (const property of measureNames) {
-							d[property] = measuresRow[property];
-						}
-
-						updateRowSpan(rowIndex, coordinatesRow, false);
-
-						// console.log(d);
-
-						data.push(d);
-						previousCoordinates = coordinatesRow;
+						gridHelper.sanityCheckFirstRow(columnNames, coordinatesRow, measureNames, measuresRow);
 					}
 
-					// Purge rowSpan after the lastRow
-					updateRowSpan(view.coordinates.length, null, true);
+					data.push(...gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
+
+					gridHelper.computeRowSpan(columnNames, metadata, view.coordinates);
 				} finally {
 					props.tabularView.loading.rowSpanning = false;
 					props.tabularView.timing.rowSpanning = new Date() - rowSpanningStart;
@@ -389,31 +175,7 @@ export default {
 
 			grid.setColumns(gridColumns);
 
-			// Update footer row
-			{
-				const columnToDistinctCount = {};
-				console.log("columns", grid.getColumns());
-				for (let column of grid.getColumns()) {
-					const columnName = column.name;
-					if ("id" === column.id) {
-						// rowIndex column has `distinctCount==length`
-						columnToDistinctCount[columnName] = view.coordinates.length;
-					} else {
-						const values = [];
-
-						for (let rowIndex = 0; rowIndex < view.coordinates.length; rowIndex++) {
-							values.push(view.coordinates[rowIndex][columnName]);
-						}
-
-						// https://stackoverflow.com/questions/21661686/fastest-way-to-get-count-of-unique-elements-in-javascript-array
-						columnToDistinctCount[columnName] = new Set(values).size;
-					}
-
-					// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
-					var columnElement = grid.getFooterRowColumn(column.id);
-					columnElement.textContent = `#: ${columnToDistinctCount[columnName]}`;
-				}
-			}
+			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values);
 
 			dataView.getItemMetadata = (row) => {
 				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
@@ -629,8 +391,7 @@ export default {
 			loadingPercent,
 			loadingMessage,
 
-			formatMeasureCcy,
-			formatMeasureMaxDigits,
+			formatOptions,
 		};
 	},
 	// :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId"
@@ -663,8 +424,19 @@ export default {
 
             <form>
                 <div>
+                    Locale:
+                    <input class="form-control mr-sm-2" type="text" placeholder="Locale" aria-label="Locale" id="locale" v-model="formatOptions.locale" />
+                </div>
+                <div>
                     Currency:
-                    <input class="form-control mr-sm-2" type="text" placeholder="Currency" aria-label="Currency" id="currency" v-model="formatMeasureCcy" />
+                    <input
+                        class="form-control mr-sm-2"
+                        type="text"
+                        placeholder="Currency"
+                        aria-label="Currency"
+                        id="currency"
+                        v-model="formatOptions.measureCcy"
+                    />
                 </div>
                 <div>
                     Max Digits:
@@ -674,7 +446,7 @@ export default {
                         placeholder="Max digits"
                         aria-label="Max digits"
                         id="maxDigits"
-                        v-model="formatMeasureMaxDigits"
+                        v-model="formatOptions.measureMaxDigits"
                     />
                 </div>
             </form>

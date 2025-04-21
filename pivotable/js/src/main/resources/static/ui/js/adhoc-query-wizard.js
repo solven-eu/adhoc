@@ -188,9 +188,9 @@ export default {
                         </div>
                     </small>
 
-					<small v-for="tag in searchOptions.tags" class="badge text-bg-primary" @click="removeTag(tag)">
-						{{tag}} <i class="bi bi-x-circle"></i>
-					</small>
+                    <small v-for="tag in searchOptions.tags" class="badge text-bg-primary" @click="removeTag(tag)">
+                        {{tag}} <i class="bi bi-x-circle"></i>
+                    </small>
                 </div>
 
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />

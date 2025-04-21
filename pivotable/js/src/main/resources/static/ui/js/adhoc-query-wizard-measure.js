@@ -39,9 +39,13 @@ export default {
 	},
 	template: /* HTML */ `
         <span v-html="mark(measure.name)" />
-		<span v-for="tag in measure.tags" :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')" @click.prevent="toggleTag(tag)">
-			{{tag}}
-		</span>
+        <span
+            v-for="tag in measure.tags"
+            :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')"
+            @click.prevent="toggleTag(tag)"
+        >
+            {{tag}}
+        </span>
         <span v-if="showDetails" class="text-muted">
             <span v-if="measure.type == '.Aggregator'">
                 <small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />
