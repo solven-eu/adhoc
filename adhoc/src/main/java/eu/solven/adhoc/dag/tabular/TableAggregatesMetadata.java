@@ -22,15 +22,14 @@
  */
 package eu.solven.adhoc.dag.tabular;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -49,16 +48,12 @@ import lombok.Value;
 @Builder
 public class TableAggregatesMetadata {
 	// a mapping from measureName to aggregator when the aggregates are evaluated by the table
+	// even simpler table could apply Aggregator to simple values (see InMemotyTable)
 	final Map<String, Aggregator> measureToPre;
 
-	// mapping from table columns to the aggregators when the aggregates are evaluated by Adhoc
-	@Deprecated
-	final SetMultimap<String, Aggregator> columnToRaw;
-
-	// set of tables measures. They may not be only actual measures if `columnToRaw` is not empty
-	final Supplier<Set<String>> names = Suppliers
-			.memoize(() -> Stream.concat(getMeasureToPre().keySet().stream(), getColumnToRaw().keySet().stream())
-					.collect(ImmutableSet.toImmutableSet()));
+	// set of tables measures.
+	final Supplier<Set<String>> names =
+			Suppliers.memoize(() -> getMeasureToPre().keySet().stream().collect(ImmutableSet.toImmutableSet()));
 
 	/**
 	 * 
@@ -79,17 +74,18 @@ public class TableAggregatesMetadata {
 
 	/**
 	 * 
-	 * @param aggregatedMeasure
-	 * @return the {@link Aggregator} associated to given column, when Adhoc is responsible for aggregation.
+	 * @param columnToAggregators
+	 * @return hints about which aggregates can be executed by the table or not
 	 */
-	@Deprecated
-	public Set<Aggregator> getRaw(String aggregatedMeasure) {
-		return columnToRaw.get(aggregatedMeasure);
-	}
-
 	public static TableAggregatesMetadata from(ExecutingQueryContext executingQueryContext,
-			SetMultimap<String, Aggregator> columnToAggregators) {
-		return executingQueryContext.getTable().getAggregatesMetadata(columnToAggregators);
+			Set<Aggregator> aggregators) {
+		// We consider all other tables can do all aggregations
+		// BEWARE What if a table would not be able to do only a subset of aggregations?
+		Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
+
+		aggregators.stream().forEach(a -> nameToPre.put(a.getName(), a));
+
+		return TableAggregatesMetadata.builder().measureToPre(nameToPre).build();
 	}
 
 }

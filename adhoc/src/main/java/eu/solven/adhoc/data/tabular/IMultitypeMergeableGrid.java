@@ -37,18 +37,6 @@ import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
 public interface IMultitypeMergeableGrid<T> {
 
 	/**
-	 * Useful when the DB has not done the aggregation.
-	 * 
-	 * @param aggregator
-	 * @param key
-	 * @param v
-	 */
-	@Deprecated(since = "Prefer `IValueConsumer contributeRaw(Aggregator aggregator, T key)`")
-	void contributeRaw(Aggregator aggregator, T key, Object v);
-
-	IValueReceiver contributeRaw(Aggregator aggregator, T key);
-
-	/**
 	 * Useful when the DB has done the aggregation
 	 * 
 	 * Especially important for {@link IHasCarriers}
@@ -58,7 +46,9 @@ public interface IMultitypeMergeableGrid<T> {
 	 * @param v
 	 */
 	@Deprecated(since = "Prefer `IValueConsumer contributePre(Aggregator aggregator, T key)`")
-	void contributePre(Aggregator aggregator, T key, Object v);
+	default void contributePre(Aggregator aggregator, T key, Object v) {
+		contributePre(aggregator, key).onObject(v);
+	}
 
 	IValueReceiver contributePre(Aggregator aggregator, T key);
 

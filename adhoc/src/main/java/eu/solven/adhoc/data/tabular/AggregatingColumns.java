@@ -49,10 +49,6 @@ import lombok.Value;
 @Value
 @Builder
 public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMergeableGrid<T> {
-	// The table can not do aggregations, so Adhoc does the aggregation
-	@NonNull
-	@Default
-	Map<Aggregator, IMultitypeMergeableColumn<T>> aggregatorToRawAggregated = new HashMap<>();
 	// The table can do aggregations, so Adhoc does not need to do the aggregation
 	// Need to aggregate partitioned results, like from CompositeCube providing aggregates for same slice
 	@NonNull
@@ -62,11 +58,6 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	@NonNull
 	IOperatorsFactory operatorsFactory;
 
-	protected IMultitypeMergeableColumn<T> makeRawColumn(IAggregation agg) {
-		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).build();
-	}
-
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
@@ -75,26 +66,6 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	protected IMultitypeMergeableColumn<T> makePreColumn(IAggregation agg) {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
 		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).build();
-	}
-
-	@Override
-	public void contributeRaw(Aggregator aggregator, T key, Object v) {
-		contributeRaw(aggregator, key).onObject(v);
-	}
-
-	@Override
-	public IValueReceiver contributeRaw(Aggregator aggregator, T key) {
-		IAggregation agg = operatorsFactory.makeAggregation(aggregator);
-
-		IMultitypeMergeableColumn<T> column =
-				aggregatorToRawAggregated.computeIfAbsent(aggregator, k -> makeRawColumn(agg));
-
-		return column.merge(key);
-	}
-
-	@Override
-	public void contributePre(Aggregator aggregator, T key, Object v) {
-		contributePre(aggregator, key).onObject(v);
 	}
 
 	@Override
@@ -119,11 +90,6 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	public long size(Aggregator aggregator) {
 		long size = 0L;
 
-		IMultitypeColumn<T> rawColumn = aggregatorToRawAggregated.get(aggregator);
-		if (rawColumn != null) {
-			size += rawColumn.size();
-		}
-
 		IMultitypeColumn<T> preColumn = aggregatorToPreAggregated.get(aggregator);
 		if (preColumn != null) {
 			size += preColumn.size();
@@ -134,18 +100,11 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(Aggregator aggregator) {
-		IMultitypeColumnFastGet<T> rawColumn = aggregatorToRawAggregated.get(aggregator);
 		IMultitypeColumnFastGet<T> preColumn = aggregatorToPreAggregated.get(aggregator);
 
-		IMultitypeColumnFastGet<T> column;
+		IMultitypeColumnFastGet<T> column = null;
 		if (preColumn != null) {
 			column = preColumn;
-
-			if (rawColumn != null) {
-				throw new IllegalStateException("Did not expected both a raw and a pre for a=%s".formatted(aggregator));
-			}
-		} else {
-			column = rawColumn;
 		}
 
 		if (column == null) {

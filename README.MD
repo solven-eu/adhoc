@@ -12,7 +12,19 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `AdhocQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.
 
-Concurrency: as of `0.0.2`, `Adhoc` is fully mono-threaded. Parts of the engines would be multi-theaded at some point. Please report specific slow cases so they can be optimized the proper way.
+#### Concurrent
+
+As of `0.0.5`, concurrency is not enabled by default, but it can be enabled through `StandardQueryOptions.CONCURRENT`.
+
+Concurrent sections are:
+
+- subQueries in a `CompositeCubesTableWrapper`: each underlying cube can be queried concurrently.
+- tableQueries in a `AdhocQuery`: if the DAG leads to multiple tableQueries, these can be queried concurrently.
+- `AdhocQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these can be executed concurrently.
+
+For now, we do not try to make Adhoc fully parallelized. It enables a simpler implementation, fast-enough is many cases.
+
+If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
 
 ## Related Projects
 

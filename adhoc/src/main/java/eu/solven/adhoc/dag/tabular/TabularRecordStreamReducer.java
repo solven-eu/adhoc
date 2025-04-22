@@ -30,8 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import com.google.common.collect.SetMultimap;
-
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
@@ -63,8 +61,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	ExecutingQueryContext executingQueryContext;
 	@NonNull
 	TableQuery tableQuery;
-	@NonNull
-	SetMultimap<String, Aggregator> columnToAggregators;
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures() {
 		return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
@@ -75,7 +71,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures();
 
 		TableAggregatesMetadata tableAggregatesMetadata =
-				TableAggregatesMetadata.from(executingQueryContext, columnToAggregators);
+				TableAggregatesMetadata.from(executingQueryContext, tableQuery.getAggregators());
 
 		TabularRecordLogger aggregatedRecordLogger =
 				TabularRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
@@ -127,14 +123,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// TODO Compute valueConsumers once for all rows
 			List<IValueReceiver> valueConsumers = new ArrayList<>();
 
-			Set<Aggregator> rawAggregations = aggregatesMetadata.getRaw(aggregatedMeasure);
-			if (!rawAggregations.isEmpty()) {
-				// What we receive is actually an underlying column, to be dispatched to the N aggregations
-				// The DB provides the column raw value, and not an aggregated value
-				// So we aggregate row values ourselves (e.g. InMemoryTable)
-				rawAggregations.forEach(agg -> valueConsumers.add(sliceToAgg.contributeRaw(agg, coordinates)));
-			}
-
 			Aggregator preAggregation = aggregatesMetadata.getAggregation(aggregatedMeasure);
 			if (preAggregation != null) {
 				// We received a pre-aggregated measure
@@ -152,8 +140,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				continue;
 			}
 
-			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)
-					|| EmptyAggregation.isEmpty(rawAggregations)) {
+			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)) {
 				// TODO Introduce .onBoolean
 				valueConsumers.forEach(vc -> vc.onLong(0));
 			} else {

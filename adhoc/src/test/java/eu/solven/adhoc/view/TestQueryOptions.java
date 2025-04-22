@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.view;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -34,9 +32,6 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 
@@ -47,30 +42,6 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		table.add(Map.of("k1", 123));
 		table.add(Map.of("k2", 234));
 		table.add(Map.of("k1", 345, "k2", 456));
-	}
-
-	@Test
-	public void testReturnUnderlyingMeasures() {
-		forest.addMeasure(Combinator.builder()
-				.name("sumK1K2")
-				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(SumCombination.KEY)
-				.build());
-
-		forest.addMeasure(k1Sum);
-		forest.addMeasure(k2Sum);
-
-		ITabularView output = cube.execute(AdhocQuery.builder()
-				.measure("sumK1K2")
-				.option(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)
-				.build());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						Map.of("k1", 0L + 123 + 345, "k2", 0L + 234 + 456, "sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
 
 	@Test

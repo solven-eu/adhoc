@@ -39,16 +39,6 @@ import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 @JsonSerialize(using = SimpleEnumSerializer.class)
 public enum StandardQueryOptions implements IQueryOption {
 	/**
-	 * All underlying measures are kept in the output result. This is relevant as it does not induces additional
-	 * computations, but it induces additional RAM consumptions (as these implicitly requested measures can not be
-	 * discarded).
-	 */
-	// BROKEN as there is no underlyingMeasures, but underlyingSteps
-	// How could we return an ITabularView with not homogeneous slices?
-	@Deprecated
-	RETURN_UNDERLYING_MEASURES,
-
-	/**
 	 * Request for an unknown measure will treat it as if it returned only empty values.
 	 *
 	 * It is useful when a {@link eu.solven.adhoc.measure.IAdhocMeasureBag} refers a

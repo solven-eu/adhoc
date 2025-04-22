@@ -40,8 +40,6 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
@@ -84,7 +82,6 @@ import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -122,17 +119,15 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 			QueryStepsDag queryStepsDag) {
 		Set<TableQuery> tableQueries = prepareForTable(executingQueryContext, queryStepsDag);
 
-		SetMultimap<String, Aggregator> columnToAggregators = columnToAggregators(executingQueryContext, queryStepsDag);
-
 		Map<AdhocQueryStep, ISliceToValue> queryStepToValuesOuter =
-				executeTableQueries(executingQueryContext, queryStepsDag, tableQueries, columnToAggregators);
+				executeTableQueries(executingQueryContext, queryStepsDag, tableQueries);
 
 		reportAfterTableQueries(executingQueryContext, queryStepToValuesOuter);
 
 		return queryStepToValuesOuter;
 	}
 
-	private void reportAfterTableQueries(ExecutingQueryContext executingQueryContext,
+	protected void reportAfterTableQueries(ExecutingQueryContext executingQueryContext,
 			Map<AdhocQueryStep, ISliceToValue> queryStepToValuesOuter) {
 		if (executingQueryContext.isDebug()) {
 			queryStepToValuesOuter.forEach((queryStep, values) -> {
@@ -153,9 +148,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
 			ISinkExecutionFeedback queryStepsDag,
-			Set<TableQuery> tableQueries,
-			SetMultimap<String, Aggregator> columnToAggregators) {
-
+			Set<TableQuery> tableQueries) {
 		try {
 			return executingQueryContext.getFjp().submit(() -> {
 				Stream<TableQuery> tableQueriesStream = tableQueries.stream();
@@ -165,10 +158,10 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 				}
 				Map<AdhocQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
-					Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues =
-							processOneTableQuery(executingQueryContext, queryStepsDag, columnToAggregators, tableQuery);
+					Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
+							processOneTableQuery(executingQueryContext, queryStepsDag, tableQuery);
 
-					queryStepToValuesInner.putAll(oneQueryStepToValues);
+					queryStepToValuesInner.putAll(queryStepToValues);
 				});
 
 				return queryStepToValuesInner;
@@ -187,7 +180,6 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 
 	protected Map<AdhocQueryStep, ISliceToValue> processOneTableQuery(ExecutingQueryContext executingQueryContext,
 			ISinkExecutionFeedback queryStepsDag,
-			SetMultimap<String, Aggregator> columnToAggregators,
 			TableQuery tableQuery) {
 		TableQuery suppressedTableQuery = suppressGeneratedColumns(executingQueryContext, tableQuery);
 
@@ -203,8 +195,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 		Map<AdhocQueryStep, ISliceToValue> oneQueryStepToValues;
 		// Open the stream: the table may or may not return after the actual execution
 		try (ITabularRecordStream rowsStream = openTableStream(executingQueryContext, suppressedTableQuery)) {
-			oneQueryStepToValues =
-					aggregateStreamToAggregates(executingQueryContext, toSuppressed, rowsStream, columnToAggregators);
+			oneQueryStepToValues = aggregateStreamToAggregates(executingQueryContext, toSuppressed, rowsStream);
 		}
 
 		Duration elapsed = stopWatch.elapsed();
@@ -326,65 +317,33 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 		return executingQueryContext.getColumnsManager().openTableStream(executingQueryContext, tableQuery);
 	}
 
-	protected SetMultimap<String, Aggregator> columnToAggregators(ExecutingQueryContext executingQueryContext,
-			QueryStepsDag dagHolder) {
-		SetMultimap<String, Aggregator> columnToAggregators =
-				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-
-		DirectedAcyclicGraph<AdhocQueryStep, DefaultEdge> dag = dagHolder.getDag();
-		dag.vertexSet()
-				.stream()
-				.filter(step -> dag.outDegreeOf(step) == 0)
-				.map(AdhocQueryStep::getMeasure)
-				.forEach(measure -> {
-					measure = executingQueryContext.resolveIfRef(measure);
-
-					if (measure instanceof Aggregator a) {
-						columnToAggregators.put(a.getColumnName(), a);
-					} else if (measure instanceof EmptyMeasure) {
-						// ???
-					} else if (measure instanceof Columnator) {
-						// ???
-						// Happens if we miss given column
-					} else {
-						throw new UnsupportedOperationException(
-								"%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
-					}
-				});
-		return columnToAggregators;
-	}
-
 	protected Map<AdhocQueryStep, ISliceToValue> aggregateStreamToAggregates(
 			ExecutingQueryContext executingQueryContext,
 			TableQueryToActualTableQuery query,
-			ITabularRecordStream stream,
-			SetMultimap<String, Aggregator> columnToAggregators) {
+			ITabularRecordStream stream) {
 
 		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(executingQueryContext, query.getSuppressedTableQuery(), stream, columnToAggregators);
+				sinkToAggregates(executingQueryContext, query.getSuppressedTableQuery(), stream);
 
 		return toImmutableChunks(executingQueryContext, query, coordinatesToAggregates);
 	}
 
 	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(ExecutingQueryContext executingQueryContext,
 			TableQuery tableQuery,
-			ITabularRecordStream stream,
-			SetMultimap<String, Aggregator> columnToAggregators) {
+			ITabularRecordStream stream) {
 
 		ITabularRecordStreamReducer streamReducer =
-				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery, columnToAggregators);
+				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery);
 
 		return streamReducer.reduce(stream);
 	}
 
 	protected ITabularRecordStreamReducer makeAggregatedRecordStreamReducer(ExecutingQueryContext executingQueryContext,
-			TableQuery tableQuery,
-			SetMultimap<String, Aggregator> columnToAggregators) {
+			TableQuery tableQuery) {
 		return TabularRecordStreamReducer.builder()
 				.operatorsFactory(operatorsFactory)
 				.executingQueryContext(executingQueryContext)
 				.tableQuery(tableQuery)
-				.columnToAggregators(columnToAggregators)
 				.build();
 	}
 

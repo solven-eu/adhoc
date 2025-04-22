@@ -443,20 +443,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 			return MapBasedTabularView.empty();
 		}
 
-		long expectedOutputCardinality;
-		Iterator<AdhocQueryStep> stepsToReturn;
-		if (executingQueryContext.getOptions().contains(StandardQueryOptions.RETURN_UNDERLYING_MEASURES)) {
-			// BEWARE Should we return steps with same groupBy?
-			// BEWARE This does not work if there is multiple steps on same measure, as we later groupBy measureName
-			// What about measures appearing multiple times in the DAG?
-			stepsToReturn = new BreadthFirstIterator<>(queryStepsDag.getDag());
-			expectedOutputCardinality = 0;
-		} else {
-			// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
-			stepsToReturn = queryStepsDag.getQueried().iterator();
-			expectedOutputCardinality =
-					queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
-		}
+		// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
+		Iterator<AdhocQueryStep> stepsToReturn = queryStepsDag.getQueried().iterator();
+		long expectedOutputCardinality =
+				queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
 
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
 				// Force a HashMap not to rely on default TreeMap

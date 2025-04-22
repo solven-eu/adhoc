@@ -6,12 +6,15 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
 - `Pivotable` search now highlights/marks matching elements.
-
+- `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`
 - Enable `tags` measure filtering in `Pivotable`
 - Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
+
+### Removed
+- Remove `StandardQueryOptions.RETURN_UNDERLYING_MEASURES` as it is meaningful only for aggregators and combinators
 
 ## [0.0.4]
 ### Changed

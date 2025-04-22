@@ -195,7 +195,7 @@ public class InMemoryTable implements ITableWrapper {
 						aggregates.put(a.getName(), 1L);
 					}
 				} else if (aggregatorUnderlyingValue != null) {
-					// SUM, MIN, MAX, AVG, etc
+					// SUM, MIN, MAX, AVG, RANK, etc
 					aggregates.put(a.getName(), aggregatorUnderlyingValue);
 				}
 			});

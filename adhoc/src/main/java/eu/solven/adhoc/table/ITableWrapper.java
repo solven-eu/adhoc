@@ -22,18 +22,12 @@
  */
 package eu.solven.adhoc.table;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
-import eu.solven.adhoc.dag.tabular.TableAggregatesMetadata;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -86,19 +80,4 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 				.collect(Collectors.toMap(e -> e.getKey(), e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
 
-	/**
-	 * 
-	 * @param columnToAggregators
-	 * @return hints about which aggregates can be executed by the table or not
-	 */
-	default TableAggregatesMetadata getAggregatesMetadata(SetMultimap<String, Aggregator> columnToAggregators) {
-		// We consider all other tables can do all aggregations
-		// BEWARE What if a table would not be able to do only a subset of aggregations?
-		Map<String, Aggregator> nameToPre = new LinkedHashMap<>();
-		columnToAggregators.values().forEach(a -> nameToPre.put(a.getName(), a));
-
-		SetMultimap<String, Aggregator> nameToRaw = ImmutableSetMultimap.of();
-
-		return TableAggregatesMetadata.builder().measureToPre(nameToPre).columnToRaw(nameToRaw).build();
-	}
 }
