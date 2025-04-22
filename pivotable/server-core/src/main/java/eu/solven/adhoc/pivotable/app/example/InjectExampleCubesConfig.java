@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.app.example;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -41,11 +42,13 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -107,6 +110,15 @@ public class InjectExampleCubesConfig {
 				.tags(Arrays.asList("δ", "γ"))
 				.build());
 
+		measures.add(Shiftor.builder()
+				.name("delta.FRANCE")
+				.underlying("delta")
+				.editorKey(SimpleFilterEditor.KEY)
+				.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("country", "France")))
+				.tags(Arrays.asList("δ"))
+				.build());
+
+		// Helps testing customMarkers
 		measures.add(Combinator.builder()
 				.name("ccyFromCustomMarker")
 				.combinationKey(ReferenceCcyCombination.class.getName())

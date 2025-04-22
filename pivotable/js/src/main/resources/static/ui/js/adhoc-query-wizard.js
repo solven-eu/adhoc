@@ -8,6 +8,7 @@ import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocMeasure from "./adhoc-query-wizard-measure.js";
 
+import AdhocQueryWizardSearch from "./adhoc-query-wizard-search.js";
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
 import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
 import AdhocQueryWizardCustomMarker from "./adhoc-query-wizard-custommarker.js";
@@ -22,6 +23,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocMeasure,
+		AdhocQueryWizardSearch,
 		AdhocQueryWizardColumn,
 		AdhocQueryWizardFilter,
 		AdhocQueryWizardCustomMarker,
@@ -173,28 +175,9 @@ export default {
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
             <form>
-                <div>
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" id="search" v-model="searchOptions.text" />
-                    <small>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchOptions.caseSensitive" />
-                            <label class="form-check-label" for="searchCaseSensitive">Aa</label>
-                        </div>
-                    </small>
-                    <small>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchOptions.throughJson" />
-                            <label class="form-check-label" for="searchJson">JSON</label>
-                        </div>
-                    </small>
-
-                    <small v-for="tag in searchOptions.tags" class="badge text-bg-primary" @click="removeTag(tag)">
-                        {{tag}} <i class="bi bi-x-circle"></i>
-                    </small>
-                </div>
-
-                <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
-
+				<AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
+				<AdhocQueryWizardSearch :searchOptions="searchOptions" />
+							
                 <div class="accordion" id="accordionWizard">
                     <div class="accordion-item">
                         <h2 class="accordion-header">

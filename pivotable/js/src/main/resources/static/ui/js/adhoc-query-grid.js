@@ -196,28 +196,6 @@ export default {
 			grid.remapAllColumnsRowSpan();
 		};
 
-		watch(
-			() => props.tabularView.view,
-			() => {
-				console.log("Detected change");
-				if (!props.tabularView.loading) {
-					props.tabularView.loading = {};
-				}
-				if (!props.tabularView.timing) {
-					props.tabularView.timing = {};
-				}
-				props.tabularView.loading.preparingGrid = true;
-				const startPreparingGrid = new Date();
-				try {
-					resyncData();
-				} finally {
-					props.tabularView.loading.preparingGrid = false;
-					props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
-				}
-			},
-			{ deep: true },
-		);
-
 		// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view
 		dataView = new SlickDataView({});
 
@@ -323,12 +301,36 @@ export default {
 			grid.onDblClick.subscribe(function (e, args) {
 				var item = dataView.getItem(args.row);
 
-				// Update a reactive
-				// It is not used for event propagation, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
+				// Update a reactive: Used to feel the modal content, but not to trigger its opening.
+				// It is not used for opening event, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
 				clickedCell.value = item;
 
 				openCellModal(clickedCell.value);
 			});
+			
+
+			// Register the watch once the grid is mounted and initialized 
+			watch(
+				() => props.tabularView.view,
+				(newView, oldView) => {
+					console.log("Detected change", newView, oldView);
+					if (!props.tabularView.loading) {
+						props.tabularView.loading = {};
+					}
+					if (!props.tabularView.timing) {
+						props.tabularView.timing = {};
+					}
+					props.tabularView.loading.preparingGrid = true;
+					const startPreparingGrid = new Date();
+					try {
+						resyncData();
+					} finally {
+						props.tabularView.loading.preparingGrid = false;
+						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
+					}
+				},
+				{ deep: true },
+			);
 		});
 
 		function isLoading() {

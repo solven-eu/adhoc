@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, reactive, ref, watch, onMounted, provide } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -73,6 +73,10 @@ export default {
 			selectedColumnsOrdered: [],
 			customMarkers: {},
 		});
+
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide('queryModel', queryModel);
+		
 		const tabularView = reactive({});
 
 		const router = useRouter();

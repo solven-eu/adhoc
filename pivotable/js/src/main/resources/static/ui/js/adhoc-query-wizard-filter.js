@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, reactive, ref, watch, onMounted, inject } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -19,22 +19,75 @@ export default {
 			type: Object,
 			required: true,
 		},
+		path: {
+			type: Array,
+			default: [],
+		}
 	},
 	computed: {},
+	// emits: ['removeFilter'],
 	setup(props) {
 		const store = useAdhocStore();
 		const userStore = useUserStore();
+		
+		const childrenPath = function(subComponent) {
+			let newArray = props.path.slice();
+			
+			newArray.push(subComponent);
+			
+			return newArray;
+		}
 
-		return {};
+		const queryModel = inject('queryModel');
+		
+		const removeFilter = function() {
+			// ctx.emit('removeFilter', {path: props.path});
+			
+			// Start drilling from the root
+			let filterSubObject = queryModel.filter;
+			
+			const pathLength = props.path.length;
+			for (let pathIndex = 0 ; pathIndex < pathLength ; pathIndex++) {
+				if (!filterSubObject) {
+					console.log("Drilled filter is empty");
+					break
+				} else if (filterSubObject.type === 'and' || filterSubObject.type === 'or') {
+					filterSubObject = filterSubObject.filters;
+				}
+				
+				const pathComponent = props.path[pathIndex];
+				
+				if (pathIndex == pathLength -1) {
+					console.log("Removing", pathComponent, "from", filterSubObject);
+					// delete filterSubObject[pathComponent];
+					filterSubObject.splice(pathComponent, 1);
+				} else {
+					const drilledFilterSubObject = filterSubObject[pathComponent];
+					console.log("Drilling for filter removal. ", pathComponent, filterSubObject, drilledFilterSubObject);
+					filterSubObject = drilledFilterSubObject;
+				}
+			}
+		};
+
+		return {childrenPath, removeFilter};
 	},
 	template: /* HTML */ `
-        <div v-if="filter.type === 'and'">
-            <span v-for="(operand, index) in filter.filters"> <span v-if="index !== 0">&amp;&amp;</span> <AdhocQueryWizardFilter :filter="operand" /> </span>
+		<div v-if="!filter">NULL?</div>
+        <div v-else-if="filter.type === 'and'">
+			AND<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+			<ul>
+            	<li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
+			</ul>
         </div>
         <div v-else-if="filter.type === 'or'">
-            <span v-for="(operand, index) in filter.filters"> <span v-if="index !== 0">||</span> <AdhocQueryWizardFilter :filter="operand" /> </span>
+			OR<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+			<ul>
+            	<li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
+			</ul>
         </div>
-        <span v-else-if="filter.type==='column'"> {{filter.column}}={{filter.valueMatcher}} </span>
+        <span v-else-if="filter.type==='column'" class="text-nowrap">
+			{{filter.column}}={{filter.valueMatcher}} <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+		</span>
         <div v-else>{{filter}}</div>
     `,
 };

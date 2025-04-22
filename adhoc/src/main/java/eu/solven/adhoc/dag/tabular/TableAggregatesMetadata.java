@@ -48,7 +48,7 @@ import lombok.Value;
 @Builder
 public class TableAggregatesMetadata {
 	// a mapping from measureName to aggregator when the aggregates are evaluated by the table
-	// even simpler table could apply Aggregator to simple values (see InMemotyTable)
+	// even simpler table could apply Aggregator to simple values (see InMemoryTable)
 	final Map<String, Aggregator> measureToPre;
 
 	// set of tables measures.
