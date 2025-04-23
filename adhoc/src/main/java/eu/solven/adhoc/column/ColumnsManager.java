@@ -46,24 +46,8 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.AndMatcher;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.query.filter.value.RegexMatcher;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -206,67 +190,13 @@ public class ColumnsManager implements IColumnsManager {
 		return TranscodingContext.builder().transcoder(getTranscoder()).build();
 	}
 
-	protected IAdhocFilter transcodeFilter(TranscodingContext transcodingContext, IAdhocFilter filter) {
-		// TODO Transcode types
-
-		if (filter.isMatchAll() || filter.isMatchNone()) {
-			return filter;
-		} else if (filter instanceof IColumnFilter columnFilter) {
-			String column = columnFilter.getColumn();
-			return ColumnFilter.builder()
-					.column(transcodingContext.underlying(column))
-					.valueMatcher(transcodeType(column, columnFilter.getValueMatcher()))
-					.build();
-		} else if (filter instanceof IAndFilter andFilter) {
-			return AndFilter.and(andFilter.getOperands()
-					.stream()
-					.map(operand -> transcodeFilter(transcodingContext, operand))
-					.toList());
-		} else if (filter instanceof IOrFilter orFilter) {
-			return OrFilter.or(orFilter.getOperands()
-					.stream()
-					.map(operand -> transcodeFilter(transcodingContext, operand))
-					.toList());
-		} else if (filter instanceof INotFilter notFilter) {
-			return NotFilter.not(transcodeFilter(transcodingContext, notFilter.getNegated()));
-		} else {
-			throw new UnsupportedOperationException(
-					"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-		}
+	protected IAdhocFilter transcodeFilter(ITableTranscoder tableTranscoder, IAdhocFilter filter) {
+		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
-	protected @NonNull IValueMatcher transcodeType(String column, IValueMatcher valueMatcher) {
-		if (!customTypeManager.mayTranscode(column)) {
-			return valueMatcher;
-		}
-
-		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return EqualsMatcher.isEqualTo(customTypeManager.toTable(column, equalsMatcher.getOperand()));
-		} else if (valueMatcher instanceof InMatcher inMatcher) {
-			List<Object> transcodedOperands = inMatcher.getOperands()
-					.stream()
-					.map(operand -> customTypeManager.toTable(column, operand))
-					.toList();
-
-			return InMatcher.isIn(transcodedOperands);
-		} else if (valueMatcher instanceof NotMatcher notMatcher) {
-			return NotMatcher.builder().negated(transcodeType(column, notMatcher.getNegated())).build();
-		} else if (valueMatcher instanceof NullMatcher || valueMatcher instanceof LikeMatcher
-				|| valueMatcher instanceof RegexMatcher) {
-			return valueMatcher;
-		} else if (valueMatcher instanceof AndMatcher andMatcher) {
-			List<IValueMatcher> transcoded =
-					andMatcher.getOperands().stream().map(operand -> transcodeType(column, operand)).toList();
-			return AndMatcher.and(transcoded);
-		} else if (valueMatcher instanceof OrMatcher orMatcher) {
-			List<IValueMatcher> transcoded =
-					orMatcher.getOperands().stream().map(operand -> transcodeType(column, operand)).toList();
-			return OrMatcher.or(transcoded);
-		} else {
-			// For complex valueMatcher, the project may have a custom way to convert it into a table IValueMatcher
-			return customTypeManager.toTable(column, valueMatcher);
-		}
-	}
+	// protected IValueMatcher transcodeType(String column, IValueMatcher valueMatcher) {
+	// return MoreFilterHelpers.transcodeType(customTypeManager, column, valueMatcher);
+	// }
 
 	protected IAdhocGroupBy transcodeGroupBy(TranscodingContext transcodingContext, IAdhocGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();

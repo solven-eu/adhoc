@@ -59,4 +59,12 @@ public interface ITableTranscoder {
 
 		return Optional.ofNullable(underlyingColumn).orElse(queried);
 	}
+
+	/**
+	 * 
+	 * @return a {@link ITableTranscoder} which does not transcode anything.
+	 */
+	static ITableTranscoder identity() {
+		return new IdentityImplicitTranscoder();
+	}
 }

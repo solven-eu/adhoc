@@ -74,6 +74,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
@@ -158,11 +159,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		} else {
 			resultQuery = selectFromWhereGroupBy;
 		}
-
-		// DO NOT EXPLAIN as it is already done in AdhocJooqTableWrapper.openDbStream
-		// if (dbQuery.isExplain() || dbQuery.isDebug()) {
-		// log.info("[EXPLAIN] SQL to db: `{}`", resultQuery.getSQL(ParamType.INLINED));
-		// }
 
 		return QueryWithLeftover.builder()
 				.query(resultQuery)
@@ -484,6 +480,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 		case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
 		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+		case StringMatcher stringMatcher -> condition =
+				DSL.condition(field.cast(String.class).eq(stringMatcher.getString()));
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();
 

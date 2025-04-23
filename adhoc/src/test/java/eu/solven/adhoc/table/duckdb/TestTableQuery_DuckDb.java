@@ -24,6 +24,7 @@ package eu.solven.adhoc.table.duckdb;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -610,5 +612,30 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 								.operand(400)
 								.build())
 				.build())).hasStackTraceContaining("Binder Error: WHERE clause cannot contain aggregates!");
+	}
+
+	@Test
+	public void testFilterOnLocalDate_asString() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.LOCALDATE)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		LocalDate today = LocalDate.now();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today, 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today.plusDays(1), 234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today, 345).execute();
+
+		Aggregator k1Sum =
+				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
+		forest.addMeasure(k1Sum);
+
+		ITabularView result = wrapInCube(forest)
+				.execute(AdhocQuery.builder().andFilter("a", StringMatcher.hasToString(today)).measure(k1Sum).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.hasSize(1);
 	}
 }

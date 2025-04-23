@@ -23,6 +23,7 @@
 package eu.solven.adhoc.filter.value;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +35,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.query.filter.value.*;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 
 public class TestInMatcher {
 	@Test
@@ -94,6 +101,16 @@ public class TestInMatcher {
 	}
 
 	@Test
+	public void testNullInNestedCollection() {
+		Set<Object> nestedMayNull = new HashSet<>();
+		nestedMayNull.add(Arrays.asList("foo"));
+		nestedMayNull.add(Arrays.asList(null, "bar"));
+
+		Assertions.assertThat(InMatcher.isIn(nestedMayNull))
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.isIn("foo", "bar")));
+	}
+
+	@Test
 	public void testNullAndNotNull1And2() {
 		Set<Object> singletonNull = new HashSet<>();
 		singletonNull.add(null);
@@ -118,5 +135,18 @@ public class TestInMatcher {
 
 		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.isEqualTo("foo")), String.class))
 				.isEmpty();
+	}
+
+	@Test
+	public void testValueMatcherOperand() {
+		IValueMatcher operandValueMatcher = StringMatcher.hasToString("foo");
+
+		IValueMatcher inMatcher = InMatcher.isIn(operandValueMatcher, "bar");
+
+		Assertions.assertThat(inMatcher)
+				.isEqualTo(OrMatcher.builder()
+						.operand(operandValueMatcher)
+						.operand(EqualsMatcher.isEqualTo("bar"))
+						.build());
 	}
 }

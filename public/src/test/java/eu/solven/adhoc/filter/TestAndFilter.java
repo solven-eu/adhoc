@@ -192,6 +192,15 @@ public class TestAndFilter {
 	}
 
 	@Test
+	public void testMultipleEqualsSameColumn_deep() {
+		IAdhocFilter a1Andb1 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		IAdhocFilter a1Andb1AndB2 = AndFilter.and(a1Andb1, ColumnFilter.isEqualTo("b", "b2"));
+
+		Assertions.assertThat(a1Andb1AndB2).isEqualTo(IAdhocFilter.MATCH_NONE);
+	}
+
+	@Test
 	public void testMultipleEqualsSameColumn_joint_andComplexNotColumn() {
 		IAdhocFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
 				ColumnFilter.isEqualTo("a", "a1"),

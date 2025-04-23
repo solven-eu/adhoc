@@ -45,7 +45,8 @@ import eu.solven.pepper.core.PepperLogHelper;
 		@JsonSubTypes.Type(value = NullMatcher.class, name = "null"),
 		@JsonSubTypes.Type(value = AndMatcher.class, name = "and"),
 		@JsonSubTypes.Type(value = OrMatcher.class, name = "or"),
-		@JsonSubTypes.Type(value = ComparingMatcher.class, name = "compare") })
+		@JsonSubTypes.Type(value = ComparingMatcher.class, name = "compare"),
+		@JsonSubTypes.Type(value = StringMatcher.class, name = "string") })
 public interface IValueMatcher {
 	IValueMatcher MATCH_ALL = AndMatcher.builder().build();
 	IValueMatcher MATCH_NONE = OrMatcher.builder().build();

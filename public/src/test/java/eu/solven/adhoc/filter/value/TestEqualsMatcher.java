@@ -38,6 +38,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 
 public class TestEqualsMatcher {
 	@Test
@@ -233,5 +234,13 @@ public class TestEqualsMatcher {
 
 		// incompatible type
 		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.isEqualTo("a"), Double.class)).isEmpty();
+	}
+
+	@Test
+	public void testValueMatcherOperand() {
+		IValueMatcher operandValueMatcher = StringMatcher.hasToString("foo");
+		IValueMatcher equalsMatcher = EqualsMatcher.isEqualTo(operandValueMatcher);
+
+		Assertions.assertThat(equalsMatcher).isEqualTo(operandValueMatcher);
 	}
 }

@@ -12,6 +12,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Enable `customMarkerMetadata` in `AdhocSchema`
 - Enable `tags` measure filtering in `Pivotable`
 - Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
+- `AdhocQuery`s executed through `AdhocSchema` now see their `AdhocFilter` being transcoded (e.g. to manage a filter over a `date`, expressed as a JSON String).
 
 ### Removed
 - Remove `StandardQueryOptions.RETURN_UNDERLYING_MEASURES` as it is meaningful only for aggregators and combinators

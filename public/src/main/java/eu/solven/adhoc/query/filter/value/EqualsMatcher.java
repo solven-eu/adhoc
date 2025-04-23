@@ -134,9 +134,18 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 		}
 	}
 
+	/**
+	 * 
+	 * @param operand
+	 *            typically a value for which `.equals` is relevant. `null` and `IValueMatcher` are special cases.
+	 * @return
+	 */
 	public static IValueMatcher isEqualTo(Object operand) {
 		if (operand == null) {
 			return NullMatcher.matchNull();
+		} else if (operand instanceof IValueMatcher valueMatcher) {
+			// Typically used by CubeWrapperTypeTranscoder
+			return valueMatcher;
 		} else {
 			return EqualsMatcher.builder().operand(operand).build();
 		}

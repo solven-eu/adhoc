@@ -22,8 +22,14 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
@@ -82,40 +88,47 @@ public class InMatcher implements IValueMatcher {
 	/**
 	 *
 	 * @param allowedValues
-	 *            {@link Collection} will be unnested.
+	 *            {@link Collection} will be unnested. `null` and `IValueMatchers` are managed specifically.
 	 * @return
 	 */
 	public static IValueMatcher isIn(Collection<?> allowedValues) {
-		// One important edge-case is getting away from `java.util.Set.of` which generates NPE on .contains(null)
-		// https://github.com/adoptium/adoptium-support/issues/1186
-		boolean hasNull = allowedValues.stream().anyMatch(Objects::isNull);
-
+		// TODO Unnest recursively
 		List<Object> unnested = allowedValues.stream().flatMap(allowed -> {
-			if (allowed == null) {
-				return Stream.empty();
-			} else if (allowed instanceof Collection<?> asCollection) {
+			if (allowed instanceof Collection<?> asCollection) {
 				return asCollection.stream();
 			} else {
+				// `allowed` may be null
 				return Stream.of(allowed);
 			}
 		}).toList();
 
-		IValueMatcher notNullMatcher;
 		if (unnested.isEmpty()) {
-			notNullMatcher = IValueMatcher.MATCH_NONE;
+			return IValueMatcher.MATCH_NONE;
 		} else if (unnested.size() == 1) {
 			Object singleValue = unnested.getFirst();
-			notNullMatcher = EqualsMatcher.isEqualTo(singleValue);
-		} else {
-			notNullMatcher = InMatcher.builder().operands(unnested).build();
+			return EqualsMatcher.isEqualTo(singleValue);
 		}
+
+		boolean hasNull = unnested.contains(null);
+
+		Map<Boolean, List<Object>> byValueMatcher = unnested.stream()
+				.filter(Objects::nonNull)
+				.collect(Collectors.partitioningBy(operand -> operand instanceof IValueMatcher));
+
+		List<Object> unnestedNotNull = byValueMatcher.getOrDefault(Boolean.FALSE, List.of());
+		List<IValueMatcher> valueMatchers = (List) byValueMatcher.getOrDefault(Boolean.TRUE, List.of());
+
+		List<IValueMatcher> orOperands = new ArrayList<>();
 
 		if (hasNull) {
-			return OrMatcher.or(NullMatcher.matchNull(), notNullMatcher);
-		} else {
-			return notNullMatcher;
+			orOperands.add(NullMatcher.matchNull());
+		}
+		orOperands.addAll(valueMatchers);
+		if (!unnestedNotNull.isEmpty()) {
+			orOperands.add(InMatcher.builder().operands(unnestedNotNull).build());
 		}
 
+		return OrMatcher.or(orOperands);
 	}
 
 	/**

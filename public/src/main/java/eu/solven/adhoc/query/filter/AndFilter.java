@@ -125,7 +125,17 @@ public class AndFilter implements IAndFilter {
 			return MATCH_NONE;
 		}
 
-		return andNotOptimized(packColumnFilters(filters));
+		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
+		IAdhocFilter flatten = andNotOptimized(filters);
+		if (flatten instanceof IAndFilter andFilter) {
+			// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
+			Collection<? extends IAdhocFilter> packedColumns = packColumnFilters(andFilter.getOperands());
+
+			// Then simplify the AND (e.g. `AND(a=a1)` to `a=a1`)
+			return andNotOptimized(packedColumns);
+		} else {
+			return flatten;
+		}
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
@@ -154,6 +164,12 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
+	/**
+	 * Optimize input filters if they cover same columns. Typically, `a=a1&a=a2` can be simplified into `matchNone`.
+	 * 
+	 * @param filters
+	 * @return
+	 */
 	private static Collection<? extends IAdhocFilter> packColumnFilters(Collection<? extends IAdhocFilter> filters) {
 		Map<Boolean, List<IAdhocFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.groupingBy(f -> f instanceof IColumnFilter));

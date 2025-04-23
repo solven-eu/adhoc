@@ -22,12 +22,19 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
+import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {
@@ -55,5 +62,31 @@ public class TestAdhocSchema {
 
 		EndpointSchemaMetadata schemaAll = schema.getMetadata(AdhocSchemaQuery.builder().build(), false);
 		Assertions.assertThat(schemaAll.getTables()).isEmpty();
+	}
+
+	@Test
+	public void testTranscodeFilter() {
+		InMemoryTable table = InMemoryTable.builder().name("simple").build();
+
+		LocalDate today = LocalDate.now();
+		table.add(Map.of("k", "v", "date", today));
+
+		AdhocSchema schema = AdhocSchema.builder().build();
+		schema.registerTable(table);
+		schema.registerForest(MeasureForest.builder().name("simple").measure(Aggregator.countAsterisk()).build());
+
+		CubeWrapper cube = schema.registerCube("simple", "simple", "simple");
+
+		Assertions.assertThat(cube.getColumns()).containsEntry("date", LocalDate.class);
+
+		ITabularView view = schema.execute("simple",
+				AdhocQuery.builder()
+						.measure(Aggregator.countAsterisk().getName())
+						.andFilter("date", today.toString())
+						.build());
+		MapBasedTabularView mapBasedView = MapBasedTabularView.load(view);
+		Assertions.assertThat(mapBasedView.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 0L + 1))
+				.hasSize(1);
 	}
 }

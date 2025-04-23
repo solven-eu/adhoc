@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,9 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -40,9 +44,14 @@ import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.NonNull;
@@ -74,6 +83,18 @@ public class AdhocSchema implements IAdhocSchema {
 
 	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
+	// `getColumns` is an expensive operations, as it analyzes the underlying table
+	final LoadingCache<String, Map<String, Class<?>>> cacheCubeToColumnToType =
+			CacheBuilder.newBuilder().expireAfterWrite(Duration.ofHours(1)).build(CacheLoader.from(cubeName -> {
+				ICubeWrapper cube = nameToCube.get(cubeName);
+
+				if (cube == null) {
+					return Map.of();
+				} else {
+					return cube.getColumns();
+				}
+			}));
+
 	@Value
 	@Builder
 	public static class CustomMarkerMatchingKey {
@@ -81,13 +102,23 @@ public class AdhocSchema implements IAdhocSchema {
 		IValueMatcher cubeMatcher;
 	}
 
+	public void invalidateAll() {
+		cacheCubeToColumnToType.invalidateAll();
+	}
+
 	public CubeWrapper registerCube(String cubeName, String tableName, String forestName) {
-		CubeWrapper cube = CubeWrapper.builder()
-				.name(cubeName)
-				.engine(engine)
-				.forest(nameToForest.get(forestName))
-				.table(nameToTable.get(tableName))
-				.build();
+		ITableWrapper table = nameToTable.get(tableName);
+		if (table == null) {
+			throw new IllegalArgumentException(
+					"No table named %s amongst %s".formatted(tableName, nameToTable.keySet()));
+		}
+
+		IMeasureForest forest = nameToForest.get(forestName);
+		if (forest == null) {
+			throw new IllegalArgumentException(
+					"No forest named %s amongst %s".formatted(forestName, nameToForest.keySet()));
+		}
+		CubeWrapper cube = CubeWrapper.builder().name(cubeName).engine(engine).table(table).forest(forest).build();
 
 		nameToCube.put(cubeName, cube);
 
@@ -104,9 +135,7 @@ public class AdhocSchema implements IAdhocSchema {
 
 			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-			// `getColumns` is an expensive operations, as it analyzes the underlying table
-			// TODO Should we cache?
-			cubeSchema.columns(ColumnarMetadata.from(cube.getColumns()));
+			cubeSchema.columns(ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)));
 			cubeSchema.measures(cube.getNameToMeasure());
 
 			Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
@@ -168,7 +197,31 @@ public class AdhocSchema implements IAdhocSchema {
 			throw new IllegalArgumentException("No cube named %s".formatted(cube));
 		}
 
-		return cubeWrapper.execute(query);
+		IAdhocQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
+		return cubeWrapper.execute(transcodedQuery);
+	}
+
+	/**
+	 * 
+	 * @param cubeWrapper
+	 * @param query
+	 *            a query typically received by API, hence transcoded by Jackson. it would typically have improper types
+	 *            on some filters.
+	 * @return
+	 */
+	protected IAdhocQuery transcodeQuery(ICubeWrapper cubeWrapper, IAdhocQuery query) {
+		return AdhocQuery.edit(query).filter(transcodeFilter(cubeWrapper, query.getFilter())).build();
+	}
+
+	protected IAdhocFilter transcodeFilter(ICubeWrapper cubeWrapper, IAdhocFilter filter) {
+		ICustomTypeManagerSimple customTypeManager = makeTypeManager(cubeWrapper);
+		return MoreFilterHelpers.transcodeFilter(customTypeManager, ITableTranscoder.identity(), filter);
+	}
+
+	protected ICustomTypeManagerSimple makeTypeManager(ICubeWrapper cubeWrapper) {
+		Map<String, Class<?>> cubeColumns = cacheCubeToColumnToType.getUnchecked(cubeWrapper.getName());
+		ICustomTypeManagerSimple customTypeManager = new CubeWrapperTypeTranscoder(cubeColumns);
+		return customTypeManager;
 	}
 
 	public void registerCube(ICubeWrapper cube) {

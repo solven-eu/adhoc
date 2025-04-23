@@ -97,11 +97,11 @@ public class FilterHelpers {
 			}
 		} else if (slice.isAnd() && slice instanceof IAndFilter andFilter) {
 			if (andFilter.getOperands().stream().anyMatch(f -> !f.isColumnFilter())) {
-				throw new IllegalArgumentException("Only AND of IColumnMatcher can not turned into a Map");
+				throw new IllegalArgumentException("Only AND of IColumnMatcher can be turned into a Map");
 			}
 			List<IColumnFilter> columnMatchers = andFilter.getOperands().stream().map(f -> (IColumnFilter) f).toList();
 			if (columnMatchers.stream().anyMatch(f -> !(f.getValueMatcher() instanceof EqualsMatcher))) {
-				throw new IllegalArgumentException("Only AND of EqualsMatcher can not turned into a Map");
+				throw new IllegalArgumentException("Only AND of EqualsMatcher can be turned into a Map");
 			}
 			Map<String, Object> asMap = new HashMap<>();
 
