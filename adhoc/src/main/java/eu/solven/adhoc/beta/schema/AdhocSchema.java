@@ -33,6 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
@@ -80,7 +81,7 @@ public class AdhocSchema implements IAdhocSchema {
 		IValueMatcher cubeMatcher;
 	}
 
-	public void registerCube(String cubeName, String tableName, String forestName) {
+	public CubeWrapper registerCube(String cubeName, String tableName, String forestName) {
 		CubeWrapper cube = CubeWrapper.builder()
 				.name(cubeName)
 				.engine(engine)
@@ -89,6 +90,8 @@ public class AdhocSchema implements IAdhocSchema {
 				.build();
 
 		nameToCube.put(cubeName, cube);
+
+		return cube;
 	}
 
 	@Override
@@ -216,6 +219,10 @@ public class AdhocSchema implements IAdhocSchema {
 
 	public Collection<ICubeWrapper> getCubes() {
 		return nameToCube.values();
+	}
+
+	public CubeWrapperBuilder openCubeWrapperBuilder() {
+		return CubeWrapper.builder().engine(engine);
 	}
 
 	// public void registerQuery(String name, IAdhocQuery query) {

@@ -139,7 +139,8 @@ export default {
 			// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
 
 			// This typically happens when not requesting a single measure, and receiving the default measure
-			console.log(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
+			// This typically happens when the first row missed some measures (e.g. due to `value==null`)
+			console.debug(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
 		}
 	},
 

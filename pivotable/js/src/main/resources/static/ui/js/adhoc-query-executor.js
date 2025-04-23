@@ -118,13 +118,19 @@ export default {
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
 
-		const sendMoveError = ref("");
-		function sendMove() {
+		const latestSentQueryId = ref(-1);
+
+		const sendQueryError = ref("");
+		function sendQuery() {
 			let queryForApi = {};
 
 			queryForApi.endpointId = props.endpointId;
 			queryForApi.cube = props.cubeId;
 			queryForApi.query = queryJson.value;
+
+			// To be checked on after any `await`
+			const latestSendQueryIdSnapshot = ++latestSentQueryId.value;
+			console.info(`Submitting query for ${latestSendQueryIdSnapshot}`);
 
 			async function postFromUrl(url) {
 				try {
@@ -153,6 +159,11 @@ export default {
 					props.tabularView.loading.sending = true;
 
 					const response = await userStore.authenticatedFetch(url, fetchOptions);
+					if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+						console.warn(`Received response for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+						return;
+					}
+
 					props.tabularView.loading.sending = false;
 					props.tabularView.timing.sending = new Date() - startSending;
 
@@ -164,6 +175,10 @@ export default {
 					props.tabularView.loading.downloading = true;
 
 					const responseTabularView = await response.json();
+					if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+						console.warn(`Received response.json for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+						return;
+					}
 
 					props.tabularView.loading.downloading = false;
 					props.tabularView.timing.downloading = new Date() - startDownloading;
@@ -175,7 +190,7 @@ export default {
 						store.queries["" + stringifiedQuery.hashCode()].result = responseTabularView;
 						//state.contests[contestId].stale = true;
 					});
-					sendMoveError.value = "";
+					sendQueryError.value = "";
 
 					// We need to couple the columns with the result
 					// as the wizard may have been edited while receiving the result
@@ -187,7 +202,7 @@ export default {
 					// router.push({ name: "board" });
 				} catch (e) {
 					console.error("Issue on Network:", e);
-					sendMoveError.value = e.message;
+					sendQueryError.value = e.message;
 				} finally {
 					loading.value = false;
 					props.tabularView.loading.sending = false;
@@ -203,22 +218,22 @@ export default {
 			() => queryJson.value,
 			() => {
 				if (autoQuery.value) {
-					sendMove();
+					sendQuery();
 				}
 			},
 		);
 
 		if (autoQuery.value) {
 			console.log("Trigger queryExecution on component load");
-			sendMove();
+			sendQuery();
 		}
 
 		return {
 			queryJson,
 			autoQuery,
 
-			sendMove,
-			sendMoveError,
+			sendQuery,
+			sendQueryError,
 
 			loading,
 		};
@@ -239,8 +254,8 @@ export default {
             <!-- Move Submitter-->
             <span>
                 <div>
-                    <button type="button" @click="sendMove()" class="btn btn-outline-primary">Submit</button>
-                    <span v-if="sendMoveError" class="alert alert-warning" role="alert">{{sendMoveError}}</span>
+                    <button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
+                    <span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
                 </div>
 
                 <div class="form-check form-switch">

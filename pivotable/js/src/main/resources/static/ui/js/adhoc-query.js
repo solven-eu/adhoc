@@ -33,6 +33,11 @@ export default {
 			type: String,
 			required: true,
 		},
+
+		cube: {
+			type: Object,
+			required: true,
+		},
 	},
 	computed: {
 		...mapState(useUserStore, ["needsToLogin"]),
@@ -43,17 +48,6 @@ export default {
 			},
 			schema(store) {
 				return store.schemas[this.endpointId] || { error: "not_loaded" };
-			},
-			cube(store) {
-				const endpoint = store.schemas[this.endpointId];
-
-				if (!endpoint) {
-					return { error: "endpoint_not_loaded" };
-				} else if (endpoint.error) {
-					return { error: "endpoint_error=" + endpoint.error };
-				}
-
-				return endpoint.cubes[this.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -75,8 +69,8 @@ export default {
 		});
 
 		// https://vuejs.org/guide/components/provide-inject.html
-		provide('queryModel', queryModel);
-		
+		provide("queryModel", queryModel);
+
 		const tabularView = reactive({});
 
 		const router = useRouter();
@@ -143,35 +137,19 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="needsToLogin">Needs to login</div>
-        <div v-else-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+        <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
+        <div class="row">
+            <div class="col-3">
+                <div class="row">
+                    <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
+                </div>
+
+                <div class="row">
+                    <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
                 </div>
             </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error">Endpoint error: {{endpoint.error}}</div>
-        <div v-else-if="cube.error">Cube error: {{cube.error}}</div>
-        <div v-else>
-            <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
-
-            <div class="row">
-                <div class="col-3">
-                    <div class="row">
-                        <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
-                    </div>
-
-                    <div class="row">
-                        <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
-                    </div>
-                </div>
-                <div class="col-9">
-                    <AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" />
-                </div>
+            <div class="col-9">
+                <AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
             </div>
         </div>
     `,

@@ -35,8 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jgrapht.traverse.BreadthFirstIterator;
-
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
@@ -48,6 +46,7 @@ import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -60,6 +59,7 @@ import eu.solven.adhoc.measure.IHasOperatorsFactory;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
@@ -397,7 +397,11 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				ISliceToValue values = queryStepToValues.get(underlyingStep);
 
 				if (values == null) {
-					throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+					if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
+						return SliceToValue.empty();
+					} else {
+						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+					}
 				}
 
 				return values;

@@ -17,6 +17,10 @@ export default {
 			type: Object,
 			required: true,
 		},
+		cube: {
+			type: Object,
+			required: true,
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
@@ -44,9 +48,34 @@ export default {
 			return props.queryModel.selectedColumnsOrdered.includes(column);
 		};
 
+		const getUnderlyingsIfMeasure = function (column) {
+			if (Object.keys(props.cube.measures).includes(column)) {
+				const measure = props.cube.measures[column];
+
+				const underlyings = [];
+
+				if (measure.underlying) {
+					underlyings.push(measure.underlying);
+				} else if (measure.underlyings) {
+					underlyings.push(...measure.underlyings);
+				}
+
+				return underlyings;
+			} else {
+				return [];
+			}
+		};
+
+		const addMeasure = function (measure) {
+			// TODO This should be a toggle
+			props.queryModel.selectedMeasures[measure] = true;
+		};
+
 		return {
 			applyEqualsFilter,
 			columnIsFilterable,
+			getUnderlyingsIfMeasure,
+			addMeasure,
 		};
 	},
 	template: /* HTML */ `
@@ -62,10 +91,17 @@ export default {
                             <li v-for="(coordinate, column) in clickedCell">
                                 {{ column }}: {{ coordinate }}
                                 <span v-if="columnIsFilterable(column)">
-                                    <button type="button" class="btn btn-primary" @click="applyEqualsFilter(column, coordinate)">
-                                        Filter {{column}}={{coordinate}}
+                                    <button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
+                                        <i class="bi bi-filter-circle"></i>
                                     </button>
                                 </span>
+                                <ul v-if="getUnderlyingsIfMeasure(column)">
+                                    <li v-for="underlying in getUnderlyingsIfMeasure(column)">
+                                        <button type="button" class="btn" @click="addMeasure(underlying)">
+                                            {{underlying}} <i class="bi bi-plus-circle"></i>
+                                        </button>
+                                    </li>
+                                </ul>
                             </li>
                         </ul>
                     </div>

@@ -155,10 +155,17 @@ export default {
 			}
 		};
 
+		const clearFilters = function () {
+			searchOptions.text = "";
+			// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+			searchOptions.tags.length = 0;
+		};
+
 		return {
 			searchOptions,
 			filtered,
 			removeTag,
+			clearFilters,
 		};
 	},
 	template: /* HTML */ `
@@ -175,9 +182,9 @@ export default {
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
             <form>
-				<AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
-				<AdhocQueryWizardSearch :searchOptions="searchOptions" />
-							
+                <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
+                <AdhocQueryWizardSearch :searchOptions="searchOptions" />
+
                 <div class="accordion" id="accordionWizard">
                     <div class="accordion-item">
                         <h2 class="accordion-header">
@@ -230,6 +237,9 @@ export default {
                                         />
                                     </li>
                                 </ul>
+                                <span v-if="0 === filtered(cube.columns.columnToTypes).length">
+                                    Search options match no column. <button type="button" class="btn btn-secondary" @click="clearFilters">clearFilters</button>
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -41,6 +41,11 @@ export default {
 			type: Object,
 			required: false,
 		},
+		// Used to feed the cellModal with cube details, like measures underlyings
+		cube: {
+			type: Object,
+			required: true,
+		},
 	},
 	setup(props) {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
@@ -307,9 +312,8 @@ export default {
 
 				openCellModal(clickedCell.value);
 			});
-			
 
-			// Register the watch once the grid is mounted and initialized 
+			// Register the watch once the grid is mounted and initialized
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {
@@ -403,7 +407,7 @@ export default {
                 <span class="visually-hidden">Loading...</span>
             </div>
 
-            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" />
+            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 
             <div>
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
@@ -420,7 +424,6 @@ export default {
             >
                 <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
             </div>
-            <div>clickedCell={{clickedCell}}</div>
             <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
 

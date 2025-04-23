@@ -42,10 +42,7 @@ import lombok.ToString;
 @ToString
 public class SliceToValue implements ISliceToValue {
 	@NonNull
-	// @Default
-	final IMultitypeColumnFastGet<SliceAsMap> column
-	// = MultiTypeStorageHash.<SliceAsMap>builder().build()
-	;
+	final IMultitypeColumnFastGet<SliceAsMap> column;
 
 	public static SliceToValue empty() {
 		return SliceToValue.builder().column(MultitypeHashColumn.empty()).build();

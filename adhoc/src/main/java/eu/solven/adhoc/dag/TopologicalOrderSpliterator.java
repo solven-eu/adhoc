@@ -84,7 +84,7 @@ public class TopologicalOrderSpliterator implements Spliterator<AdhocQueryStep> 
 
 			if (indexBeingProcessed >= size) {
 				// Happens when multiple trySplit occurred and we reach the end of the iterator
-				log.info("Closing a forked spliterator due to completion");
+				log.debug("Closing a forked spliterator due to completion");
 				return false;
 			}
 
@@ -96,7 +96,7 @@ public class TopologicalOrderSpliterator implements Spliterator<AdhocQueryStep> 
 				indexNext.incrementAndGet();
 			} else {
 				// This will close the spliterator: fine, as we typically needs to reduce our concurrency
-				log.info("Closing a forked spliterator due to diminished parallelism (stepIndex={})",
+				log.debug("Closing a forked spliterator due to diminished parallelism (stepIndex={})",
 						indexBeingProcessed);
 				return false;
 			}

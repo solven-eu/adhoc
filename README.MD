@@ -313,15 +313,13 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 
 ## Feature Candidates
 
-- [Perf] Concurrency: for instance when processing the DAG given the results from the `TableQuery`. Or through each cube of a `CompositeCube`
 - [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
-- [Explain] EXPLAIN should go through CompositeCube and down to `IAdhocTableWrapper` own EXPLAIN
+- [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN ` from a composite-cube to its subQueries.
 - [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
-- [Feature] AdhocCompositeCube needs to handle `IAggregationCarrier.HasCarrier`
 - [Resiliency] Work on query cancellations/queryTimeouts
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `AdhocQuery` in a single call, enabling further queryStep sharing for large reports.

@@ -210,12 +210,40 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testQueryCube1Plus2() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
-		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+		// grandTotal
+		{
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 345 + 456 + 1234))
-				.hasSize(1);
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 345 + 456 + 1234))
+					.hasSize(1);
+		}
+
+		// `a` is in both cubes
+		{
+			ITabularView result =
+					cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("a", "a1"), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234 + 1234))
+					.containsEntry(Map.of("a", "a2"), Map.of(k1PlusK2AsExpr.getName(), 0L + 345 + 456))
+					.hasSize(2);
+		}
+
+		// `b` does not exists in cube2
+		{
+			ITabularView result =
+					cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of("b", "b1"), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234))
+					.containsEntry(Map.of("b", "b2"), Map.of(k1PlusK2AsExpr.getName(), 0L + 345 + 456))
+					.containsEntry(Map.of("b", "someTableName2.cube"), Map.of(k1PlusK2AsExpr.getName(), 0L + 1234))
+					.hasSize(3);
+		}
 	}
 
 	@Test
@@ -294,8 +322,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testQuery_Count() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result =
-				cube3.execute(AdhocQuery.builder().measure(Aggregator.countAsterisk()).debug(true).build());
+		ITabularView result = cube3.execute(AdhocQuery.builder().measure(Aggregator.countAsterisk()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

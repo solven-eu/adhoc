@@ -63,7 +63,7 @@ import net.datafaker.providers.base.Country;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class InjectExampleCubesConfig {
+public class InjectSimpleExampleCubesConfig {
 
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean

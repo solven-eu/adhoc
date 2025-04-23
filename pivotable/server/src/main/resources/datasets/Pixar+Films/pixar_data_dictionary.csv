@@ -1,0 +1,29 @@
+﻿Table,Field,Description
+pixar_films,number,"Unique identifier for each Pixar film, in order of release"
+pixar_films,film,Title of the Pixar film
+pixar_films,release_date,Release date of the film
+pixar_films,run_time,Duration of the film in minutes
+pixar_films,film_rating,"Official film rating (e.g., G, PG, PG-13)"
+pixar_films,plot,Short summary of the film’s story
+pixar_people,film,Title of the Pixar film
+pixar_people,role_type,"Role of the person (e.g., director, producer)"
+pixar_people,name,Name of the individual
+genres,film,Title of the Pixar film
+genres,category,Genre or Subgenre
+genres,value,"Genre or Subgenre type (e.g., Animation, Adventure)"
+box_office,film,Title of the Pixar film
+box_office,budget,Estimated production budget
+box_office,box_office_us_canada,Box office earnings in the US and Canada
+box_office,box_office_other,Box office earnings outside the US and Canada
+box_office,box_office_worldwide,Total worldwide box office earnings
+public_response,film,Title of the Pixar film
+public_response,rotten_tomatoes_score,Rotten Tomatoes critic score (out of 100)
+public_response,rotten_tomatoes_counts,Number of reviews on Rotten Tomatoes
+public_response,metacritic_score,Metacritic critic score (out of 100)
+public_response,metacritic_counts,Number of reviews on Metacritic
+public_response,cinema_score,"CinemaScore rating (e.g., A+, A, B)"
+public_response,imdb_score,IMDb user rating (out of 10)
+public_response,imdb_counts,Number of user ratings on IMDb
+academy,film,Title of the Pixar film
+academy,award_type,"Type of Academy Award (e.g., Best Animated Feature)"
+academy,status,"Status of the award (e.g., won, nominated)"

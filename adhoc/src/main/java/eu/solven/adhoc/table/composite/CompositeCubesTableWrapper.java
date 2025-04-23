@@ -116,7 +116,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	@Value
 	@Builder
 	public static class SubQueryParameters {
+		@NonNull
 		ICubeWrapper cube;
+		@NonNull
 		IAdhocQuery query;
 	}
 
@@ -354,8 +356,6 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	 *            the measureBag to be applied on top of this composite cube
 	 */
 	public IMeasureForest injectUnderlyingMeasures(IMeasureForest measureBag) {
-		// The aggregationKey is important in case multiple cubes contribute to the same measure
-
 		Set<String> compositeMeasures = new HashSet<>(measureBag.getNameToMeasure().keySet());
 
 		SetMultimap<String, String> measureToCubes = HashMultimap.create();
@@ -363,7 +363,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Set<IMeasure> measuresToAdd = new HashSet<>();
 
 		cubes.forEach(cube -> {
-			cube.getNameToMeasure().values().stream().forEach(underlyingMeasure -> {
+			cube.getMeasures().stream().forEach(underlyingMeasure -> {
 				String measureName = underlyingMeasure.getName();
 
 				String compositeMeasureName;
@@ -371,7 +371,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				String cubeName = cube.getName();
 				if (compositeMeasures.contains(measureName)) {
 					log.debug("{} is a measureName both in composite and in {}", measureName, cubeName);
-					compositeMeasureName = measureName + "." + cubeName;
+					compositeMeasureName = conflictingSubMeasureName(measureName, cubeName);
 
 					if (compositeMeasures.contains(compositeMeasureName)) {
 						// TODO Loop until we find an available measureName
@@ -388,7 +388,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				Aggregator compositeMeasure = Aggregator.builder()
 						.name(compositeMeasureName)
 						// If some measure is returned by different cubes, we SUM the returned values
-						.aggregationKey(SumAggregation.KEY)
+						// TODO The aggregationKey should be evaluated given the Set of providing Cubes
+						.aggregationKey(aggregationKeyForSubMeasure(cube, underlyingMeasure))
 						.build();
 				measuresToAdd.add(compositeMeasure);
 			});
@@ -405,5 +406,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		measuresToAdd.forEach(builder::measure);
 
 		return builder.build();
+	}
+
+	protected String conflictingSubMeasureName(String measureName, String cubeName) {
+		return measureName + "." + cubeName;
+	}
+
+	protected String aggregationKeyForSubMeasure(ICubeWrapper cube, IMeasure underlyingMeasure) {
+		return SumAggregation.KEY;
 	}
 }

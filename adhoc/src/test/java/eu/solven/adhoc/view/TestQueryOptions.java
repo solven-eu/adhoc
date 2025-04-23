@@ -32,6 +32,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 
@@ -45,7 +46,7 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	}
 
 	@Test
-	public void testUnknownMeasuresAreEmpty() {
+	public void testUnknownMeasuresAreEmpty_direct() {
 		forest.addMeasure(k1Sum);
 
 		AdhocQuery query = AdhocQuery.builder().measure("k2").build();
@@ -61,5 +62,29 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 				ColumnsManager.builder().build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
+	}
+
+	@Test
+	public void testUnknownMeasuresAreEmpty_indirect() {
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k1PlusK2AsExpr);
+
+		AdhocQuery query = AdhocQuery.builder().measure(k1PlusK2AsExpr).build();
+
+		// By default, an exception is thrown
+		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
+				.isInstanceOf(IllegalArgumentException.class);
+
+		ITabularView output = engine.executeUnsafe(
+				AdhocQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
+				forest,
+				table,
+				ColumnsManager.builder().build());
+
+		MapBasedTabularView mapBasedView = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBasedView.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 345))
+				.hasSize(1);
 	}
 }

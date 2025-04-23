@@ -66,7 +66,7 @@
             import AdhocEndpoints from "./ui/js/adhoc-endpoints.js";
             import AdhocEndpoint from "./ui/js/adhoc-endpoint.js";
             import AdhocCube from "./ui/js/adhoc-cube.js";
-            import AdhocQuery from "./ui/js/adhoc-query.js";
+            import AdhocWrapperQuery from "./ui/js/adhoc-wrapper-query.js";
             import Login from "./ui/js/login.js";
             import LoginBasic from "./ui/js/login-basic.js";
             import AboutView from "./ui/js/about.js";
@@ -123,7 +123,7 @@
                 },
                 {
                     path: "/html/endpoints/:endpointId/cubes/:cubeId/query",
-                    component: AdhocQuery,
+                    component: AdhocWrapperQuery,
                     props: (route) => ({
                         cubeId: route.params.cubeId,
                         endpointId: route.params.endpointId,

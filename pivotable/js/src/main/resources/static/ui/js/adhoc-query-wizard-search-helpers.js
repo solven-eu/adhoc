@@ -7,7 +7,7 @@ export function markMatchingWizard(searchOptions, text) {
 		// TODO We should mark only along values, not keys
 		text = JSON.stringify(text);
 	}
-	
+
 	if (!searchOptions.text) {
 		// No regex: nothing to highlight/mark
 		return text;

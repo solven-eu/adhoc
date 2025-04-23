@@ -185,9 +185,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 						return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 					}).toList();
 				} catch (RuntimeException e) {
-					throw new IllegalStateException(
-							"Issue computing the underlying querySteps for %s".formatted(queryStep),
-							e);
+					String msgE = "Issue computing the underlying querySteps for %s".formatted(queryStep);
+					if (e instanceof IllegalStateException) {
+						throw new IllegalStateException(msgE, e);
+					} else {
+						throw new IllegalArgumentException(msgE, e);
+					}
 				}
 
 				registerUnderlyings(queryStep, underlyingSteps);

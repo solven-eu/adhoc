@@ -23,8 +23,10 @@ export const useAdhocStore = defineStore("adhoc", {
 		accounts: {},
 		nbAccountFetching: 0,
 
-		// The loaded endpoints and schemas
+		// endpoints are the available servers. Typically loading `self`, which is the same endpoint than the one serving JS
 		endpoints: {},
+		// schemas are the cubes. They are grouped by endpoints, as multiple endpoints may have cubes with the same name
+		// we should consider schema for a endpoint+cube only if the endpoint is properly loaded
 		schemas: {},
 		nbSchemaFetching: 0,
 		columns: {},
@@ -76,7 +78,9 @@ export const useAdhocStore = defineStore("adhoc", {
 				const responseJson = await response.json();
 				const metadata = responseJson;
 
-				store.$patch({ metadata: metadata });
+				store.$patch((state) => {
+					state.metadata = metadata;
+				});
 			}
 
 			return fetchFromUrl(prefix + "/public/metadata");
@@ -98,8 +102,8 @@ export const useAdhocStore = defineStore("adhoc", {
 
 					accounts.forEach((account) => {
 						console.log("Storing accountId", account.accountId);
-						store.$patch({
-							accounts: { ...store.accounts, [account.accountId]: account },
+						store.$patch((state) => {
+							state.accounts[account.accountId] = account;
 						});
 
 						store.loadAccountIfMissing(account.playerId);
@@ -123,7 +127,33 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
+		/**
+		 * returns either a valid endpoint, or an object with an `error` key.
+		 */
+		getLoadedEndpoint(endpointId) {
+			const store = this;
+
+			if (!store.endpoints[endpointId]) {
+				return { error: "endpoint_notloaded" };
+				//			} else if (store.endpoints[endpointId].error) {
+				//				return {'error': "endpoint_" + store.endpoints[endpointId].error};
+				//			} else if (!store.schemas[endpointId]) {
+				//				return {'error': "endpoint_notloaded"};
+				//			} else if (store.schemas[endpointId].error) {
+				//				return {'error': "endpoint_" + store.schemas[endpointId].error};
+				//			} else if (!store.schemas[endpointId].cubes[cubeId]) {
+				//				return {'error': "cube_notloaded"};
+			} else {
+				// May hold an error
+				return store.endpoints[endpointId];
+			}
+		},
+
+		// Load endpoints from self url `/endpoints`
+		// TODO The User should be able to add endpoints manually
 		async loadEndpoints() {
+			console.log("About to load all endpoints");
+
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -138,8 +168,8 @@ export const useAdhocStore = defineStore("adhoc", {
 
 					responseJson.forEach((item) => {
 						console.log("Registering endpointId", item.id);
-						store.$patch({
-							endpoints: { ...store.endpoints, [item.id]: item },
+						store.$patch((state) => {
+							state.endpoints[item.id] = item;
 						});
 					});
 				} catch (e) {
@@ -177,10 +207,9 @@ export const useAdhocStore = defineStore("adhoc", {
 						endpoint = responseJson[0];
 					}
 
-					// https://github.com/vuejs/pinia/discussions/440
 					console.log("Registering endpointId", endpointId);
-					store.$patch({
-						endpoints: { ...store.endpoints, [endpointId]: endpoint },
+					store.$patch((state) => {
+						state.endpoints[endpointId] = endpoint;
 					});
 
 					return endpoint;
@@ -191,8 +220,8 @@ export const useAdhocStore = defineStore("adhoc", {
 						endpointId: endpointId,
 						error: e,
 					};
-					store.$patch({
-						endpoints: { ...store.endpoints, [endpointId]: endpoint },
+					store.$patch((state) => {
+						state.endpoints[endpointId] = endpoint;
 					});
 
 					return endpoint;
@@ -203,12 +232,19 @@ export const useAdhocStore = defineStore("adhoc", {
 			return fetchFromUrl(`/endpoints?endpoint_id=${endpointId}`);
 		},
 
+		/**
+		 * returns a promise with either a valid endpoint, or a loading endpoint
+		 */
 		async loadEndpointIfMissing(endpointId) {
-			if (this.endpoints[endpointId]) {
+			const store = this;
+			const availableEndpoint = store.getLoadedEndpoint(endpointId);
+
+			if (availableEndpoint.error) {
+				console.log("Loading endpoint due to error=", availableEndpoint.error);
+				return this.loadEndpoint(endpointId);
+			} else {
 				console.debug("Skip loading endpointId=", endpointId);
 				return Promise.resolve(this.endpoints[endpointId]);
-			} else {
-				return this.loadEndpoint(endpointId);
 			}
 		},
 
@@ -231,21 +267,15 @@ export const useAdhocStore = defineStore("adhoc", {
 					schemas.forEach((schemaAndEndpoint) => {
 						console.log("Registering schemaId", schemaAndEndpoint.endpoint.id);
 
-						store.$patch({
-							schemas: {
-								...store.schemas,
-								[schemaAndEndpoint.endpoint.id]: schemaAndEndpoint.schema,
-							},
+						store.$patch((state) => {
+							state.schemas[schemaAndEndpoint.endpoint.id] = schemaAndEndpoint.schema;
 						});
 					});
 					return store.schemas;
 				} catch (e) {
 					if (endpointId) {
-						store.$patch({
-							schemas: {
-								...store.schemas,
-								[endpointId]: { error: e },
-							},
+						store.$patch((state) => {
+							state.schemas[endpointId] = { error: e };
 						});
 					}
 
@@ -266,34 +296,81 @@ export const useAdhocStore = defineStore("adhoc", {
 			});
 		},
 
-		async loadEndpointSchemaIfMissing(endpointId) {
-			if (this.schemas[endpointId]) {
-				console.debug("Skip loading schema for endpointId=", endpointId);
-				return Promise.resolve(this.schemas[endpointId]);
+		/**
+		 * returns either a valid cube, or an object with an `error` key.
+		 */
+		getLoadedSchema(endpointId) {
+			const store = this;
+
+			if (!store.schemas[endpointId]) {
+				return { error: "endpoint_notloaded" };
+				//			} else if (store.schemas[endpointId].error) {
+				//				return {'error': "endpoint_" + store.schemas[endpointId].error};
+				//			} else if (!store.schemas[endpointId].cubes[cubeId]) {
+				//				return {'error': "cube_notloaded"};
 			} else {
-				return this.loadEndpointSchemas(endpointId).then((schemas) => {
-					return schemas[endpointId];
+				// May hold an error
+				return store.schemas[endpointId];
+			}
+		},
+
+		async loadEndpointSchemaIfMissing(endpointId) {
+			const store = this;
+			const availableSchema = store.getLoadedSchema(endpointId);
+
+			if (availableSchema.error) {
+				console.log("Loading schema due to error=", availableSchema.error);
+				return this.loadEndpointSchemas(endpointId).then(() => {
+					return store.getLoadedSchema(endpointId);
 				});
+			} else {
+				console.debug("Skip loading schema for endpointId=", endpointId);
+				return Promise.resolve(availableSchema);
+			}
+		},
+
+		/**
+		 * returns either a valid cube, or an object with an `error` key.
+		 */
+		getLoadedCube(cubeId, endpointId) {
+			const store = this;
+
+			const availableEndpoint = store.getLoadedEndpoint(endpointId);
+			const availableSchema = store.getLoadedSchema(endpointId);
+
+			if (availableEndpoint.error) {
+				return { error: "endpoint_" + availableEndpoint.error };
+			} else if (availableSchema.error) {
+				return { error: "schema_" + availableSchema.error };
+			} else if (!availableSchema.cubes || !availableSchema.cubes[cubeId]) {
+				return { error: "cube_notloaded" };
+			} else {
+				return availableSchema.cubes[cubeId];
 			}
 		},
 
 		async loadCubeSchema(cubeId, endpointId) {
-			return this.loadEndpointSchemas(endpointId).then((schemas) => {
+			const store = this;
+
+			return store.loadEndpointSchemas(endpointId).then((schemas) => {
 				if (schemas.length == 0) {
+					const cubes = [];
+					if (cubeId) {
+						cubes.push({
+							cubeId: cubeId,
+							error: "None matching",
+						});
+					}
+
 					const schema = {
 						endpointId: endpointId,
 						error: "None matching",
-						cubes: [
-							{
-								cubeId: cubeId,
-								error: "None matching",
-							},
-						],
+						cubes: cubes,
 					};
 
 					return schema;
 				} else {
-					return schemas[endpointId]?.cubes[cubeId];
+					return store.getLoadedCube(cubeId, endpointId);
 				}
 			});
 		},
@@ -301,11 +378,13 @@ export const useAdhocStore = defineStore("adhoc", {
 		async loadCubeSchemaIfMissing(cubeId, endpointId) {
 			const store = this;
 			return this.loadEndpointIfMissing(endpointId).then(() => {
-				if (store.schemas[endpointId]?.cubes[cubeId]) {
-					console.debug("Skip loading cubeId=", cubeId);
-					return Promise.resolve(store.schemas[endpointId]?.cubes[cubeId]);
-				} else {
+				const cube = store.getLoadedCube(cubeId, endpointId);
+				if (cube.error) {
+					console.info("Loading cube due to error=", cube.error);
 					return this.loadCubeSchema(cubeId, endpointId);
+				} else {
+					console.debug("Skip loading cubeId=", cubeId);
+					return Promise.resolve(cube);
 				}
 			});
 		},
@@ -327,11 +406,8 @@ export const useAdhocStore = defineStore("adhoc", {
 						const columnId = `${endpointId}-${cubeId}-${column}`;
 						console.log("Registering column", columnId, columnJson);
 
-						store.$patch({
-							columns: {
-								...store.columns,
-								[columnId]: columnJson,
-							},
+						store.$patch((state) => {
+							state.columns[columnId] = columnJson;
 						});
 					});
 					return columns[0];
