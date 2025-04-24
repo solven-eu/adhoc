@@ -20,36 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.query.table;
 
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
- * Useful to transcode from Pivotable/JSON as String to a known value with given type.
+ * Couple an {@link Aggregator} with an {@link IAdhocFilter}, planning for a `FILTER` sql.
+ * 
+ * https://modern-sql.com/feature/filter
  * 
  * @author Benoit Lacelle
  */
 @Value
-@Builder
-@Jacksonized
-public class StringMatcher implements IValueMatcher {
+@Builder(toBuilder = true)
+public class FilteredAggregator {
 	@NonNull
-	String string;
+	Aggregator aggregator;
 
-	@Override
-	public boolean match(Object value) {
-		if (value == null) {
-			return false;
-		} else {
-			return string.equals(value.toString());
-		}
-	}
-
-	public static IValueMatcher hasToString(Object hasToString) {
-		String string = String.valueOf(hasToString);
-		return StringMatcher.builder().string(string).build();
-	}
+	@NonNull
+	IAdhocFilter filter;
 }

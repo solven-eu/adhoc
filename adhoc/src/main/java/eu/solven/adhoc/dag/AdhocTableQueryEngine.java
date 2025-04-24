@@ -147,7 +147,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
-			ISinkExecutionFeedback queryStepsDag,
+			ISinkExecutionFeedback sinkExecutionFeedback,
 			Set<TableQuery> tableQueries) {
 		try {
 			return executingQueryContext.getFjp().submit(() -> {
@@ -159,7 +159,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 				Map<AdhocQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
 					Map<AdhocQueryStep, ISliceToValue> queryStepToValues =
-							processOneTableQuery(executingQueryContext, queryStepsDag, tableQuery);
+							processOneTableQuery(executingQueryContext, sinkExecutionFeedback, tableQuery);
 
 					queryStepToValuesInner.putAll(queryStepToValues);
 				});
@@ -179,7 +179,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 	}
 
 	protected Map<AdhocQueryStep, ISliceToValue> processOneTableQuery(ExecutingQueryContext executingQueryContext,
-			ISinkExecutionFeedback queryStepsDag,
+			ISinkExecutionFeedback sinkExecutionFeedback,
 			TableQuery tableQuery) {
 		TableQuery suppressedTableQuery = suppressGeneratedColumns(executingQueryContext, tableQuery);
 
@@ -213,7 +213,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 					.source(AdhocTableQueryEngine.this)
 					.build());
 
-			queryStepsDag.registerExecutionFeedback(queryStep,
+			sinkExecutionFeedback.registerExecutionFeedback(queryStep,
 					SizeAndDuration.builder().size(column.size()).duration(elapsed).build());
 		});
 		return oneQueryStepToValues;

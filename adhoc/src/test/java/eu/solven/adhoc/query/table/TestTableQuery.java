@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.query.table;
 
 import java.util.Set;
 
@@ -28,7 +28,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestTableQuery implements IAdhocTestConstants {
 	@Test

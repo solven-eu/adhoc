@@ -296,7 +296,7 @@ export default {
 	updateFooters: function (grid, columnNames, coordinates, values) {
 		// Update footer row
 		const columnToDistinctCount = {};
-		console.log("columns", grid.getColumns());
+
 		for (let column of grid.getColumns()) {
 			const columnName = column.name;
 

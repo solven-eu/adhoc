@@ -278,6 +278,10 @@ export default {
                                         </div>
                                     </li>
                                 </ul>
+
+                                <span v-if="0 === filtered(cube.measures).length">
+                                    Search options match no column. <button type="button" class="btn btn-secondary" @click="clearFilters">clearFilters</button>
+                                </span>
                             </div>
                         </div>
                     </div>

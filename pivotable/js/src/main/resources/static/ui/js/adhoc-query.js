@@ -66,6 +66,32 @@ export default {
 			// `orderedArray of columnNames`
 			selectedColumnsOrdered: [],
 			customMarkers: {},
+
+			onColumnToggled: function (column) {
+				const array = queryModel.selectedColumnsOrdered;
+				const index = array.indexOf(column);
+
+				// May be missing on first toggle
+				const toggledIn = !!queryModel.selectedColumns[column];
+				if (toggledIn) {
+					if (index < 0) {
+						// Append the column
+						array.push(column);
+					} else {
+						console.warn("Adding a column already here?", column);
+					}
+				} else {
+					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+					// only splice array when item is found
+					if (index >= 0) {
+						// 2nd parameter means remove one item only
+						array.splice(index, 1);
+					} else {
+						console.warn("Removing a column already absent?", column);
+					}
+				}
+				console.log(`groupBy: ${column} is now ${toggledIn}`);
+			},
 		});
 
 		// https://vuejs.org/guide/components/provide-inject.html
@@ -86,8 +112,7 @@ export default {
 					if (queryModelFromHash) {
 						for (const [columnIndex, columnName] of Object.entries(queryModelFromHash.columns)) {
 							queryModel.selectedColumns[columnName] = true;
-							// Poor design: we have to compute manually selectedColumnsOrdered
-							queryModel.selectedColumnsOrdered.push(columnName);
+							props.queryModel.onColumnToggled(columnName);
 						}
 						for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
 							queryModel.selectedMeasures[measureName] = true;

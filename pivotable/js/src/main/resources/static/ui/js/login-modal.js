@@ -1,4 +1,4 @@
-import { watch } from "vue";
+import { watch, onMounted } from "vue";
 
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
@@ -30,24 +30,34 @@ export default {
 	setup() {
 		const userStore = useUserStore();
 
-		userStore.loadUser();
+		userStore.initializeUser();
 
-		watch(
-			() => userStore.needsToLogin,
-			(newValue, olValue) => {
-				if (newValue && !olValue) {
-					// Open the modal only when transitionning into needsToLogin
-					console.log("needsToLogin turned to true. Opening the loginModal");
+		onMounted(() => {
+			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+			// https://getbootstrap.com/docs/5.3/components/modal/#via-javascript
+			let loginModal = new Modal(document.getElementById("loginModal"), {});
 
-					// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
-					// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
-					// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
-					let loginModal = new Modal(document.getElementById("loginModal"), {});
-					// https://getbootstrap.com/docs/5.0/components/modal/#show
-					loginModal.show();
-				}
-			},
-		);
+			// This watch will open automatically the LoginModal if we detect the User needs to be login for current action
+			watch(
+				() => userStore.needsToLogin,
+				(newValue, oldValue) => {
+					if (newValue && !oldValue) {
+						// Open the modal only when transitionning into `needsToLogin`
+						console.log("needsToLogin toggled to true. Opening the loginModal");
+
+						// https://getbootstrap.com/docs/5.0/components/modal/#show
+						loginModal.show();
+					} else if (!newValue && oldValue) {
+						// Close the modal only when transitionning into `!needsToLogin`
+						console.log("needsToLogin toggled to false. Closing the loginModal");
+
+						// https://getbootstrap.com/docs/5.3/components/modal/
+						loginModal.hide();
+					}
+				},
+			);
+		});
 
 		return {};
 	},

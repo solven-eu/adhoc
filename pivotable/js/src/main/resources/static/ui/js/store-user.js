@@ -26,6 +26,10 @@ export const useUserStore = defineStore("user", {
 		// Currently connected account
 		account: { details: {} },
 		tokens: {},
+
+		// Used to know when a first `loadUser` has kicked-in
+		hasTriedLoadingUser: false,
+
 		// Some very first check to know if we are potentially logged-in
 		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
 		needsToCheckLogin: true,
@@ -53,7 +57,7 @@ export const useUserStore = defineStore("user", {
 				return false;
 			}
 
-			// Not logged-in and login-status is checked explicitly
+			// Not logged-in and login-status is checked explicitly: we're definitely logged-out
 			return true;
 		},
 		// Default headers: we authenticate ourselves
@@ -157,39 +161,66 @@ export const useUserStore = defineStore("user", {
 				return user;
 			}
 
-			return store.fetchLoginStatus().then((loginHttpStatus) => {
-				store.needsToCheckLogin = false;
+			// Switch `needsToCheckLogin` synchronously in order to signal
+			store.hasTriedLoadingUser = true;
+			return store
+				.fetchLoginStatus()
+				.then((loginHttpStatus) => {
+					if (loginHttpStatus === 200) {
+						// We are logged-in
+						// BEWARE: Current login mechanism does not handle the period while fetching user details
+						// `needsToCheckLogin` is false and `account.details.username` is empty, hence we are considered loggedOut
 
-				if (loginHttpStatus === 200) {
-					// We are logged-in
-					// BEWARE: Current login mechanism does not handle the period while fetching user details
-					// `needsToCheckLogin` is false and `account.details.username` is empty, hence we are considered loggedOut
+						return fetchFromUrl("/api/login/v1/user")
+							.then((user) => {
+								store.needsToCheckLogin = false;
 
-					return fetchFromUrl("/api/login/v1/user")
-						.then((user) => {
-							// `isLoggedIn` is computed from this value
-							store.$patch({ account: user, needsToLogin: false });
+								// Ability to fetch current user: we are fully logged-in
+								// `isLoggedIn` is computed from this value
+								store.$patch({ account: user, needsToLogin: false });
 
-							return user;
-						})
-						.catch((e) => {
-							// Issue loadingUser while we checked the browser is logged-in
-							console.warn("User needs to login");
+								return user;
+							})
+							.catch((e) => {
+								// The `login` status is OK, but there is an issue while fetching user details
+								// Issue loadingUser while we checked the browser is logged-in
+								console.warn("User needs to login", e);
 
-							const user = { error: e };
-							store.$patch({ account: user, needsToLogin: true });
-							return user;
-						});
-				} else {
-					// Typically happens on first visit
-					console.info("User needs to login");
+								const user = { error: e };
+								// Turns `needsToLogin` to true as we're partially logged-in
+								store.$patch({ account: user, needsToLogin: true });
+								return user;
+							});
+					} else {
+						// Typically happens on first visit
+						console.info("User is not logged-in");
+						store.needsToCheckLogin = false;
 
-					// We are not logged-in
-					const e = new UserNeedsToLoginError("User needs to login");
-					const user = { error: e };
-					return user;
-				}
-			});
+						// We are not logged-in at all: do NOT turn `needsToLogin` to true
+						const e = new UserNeedsToLoginError("User needs to login");
+						const user = { error: e };
+						return user;
+					}
+				})
+				.catch((e) => {
+					console.warn("Issue while checking login status", e);
+					store.needsToCheckLogin = true;
+				});
+		},
+
+		/**
+		 * Calls this method from any component needed to know about the User.
+		 *
+		 * Contrary to `loadUser`, this will not trigger the loading of login state and userInfo on each call. It is especially userful not to have a spike of `loadUser` at startup.
+		 */
+		async initializeUser() {
+			if (this.hasTriedLoadingUser) {
+				console.log(`Skip initializeUser as hasTriedLoadingUser=${this.hasTriedLoadingUser}`);
+
+				return Promise.resolve({ error: "UserIsLoggedOut" });
+			} else {
+				return this.loadUserIfMissing();
+			}
 		},
 
 		// do not throw if not logged-in

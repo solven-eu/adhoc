@@ -137,6 +137,14 @@ public class InjectSimpleExampleCubesConfig {
 						.possibleValues(() -> Set.of("EUR", "USD", "JPY"))
 						.defaultValue(() -> Optional.of("EUR"))
 						.build());
+
+		schema.registerCustomMarker("deepCcy",
+				EqualsMatcher.isEqualTo("simple"),
+				CustomMarkerMetadataGenerator.builder()
+						.path("$.deep.ccy")
+						.possibleValues(() -> Set.of("EUR", "USD", "JPY"))
+						.defaultValue(() -> Optional.of("EUR"))
+						.build());
 	}
 
 	protected InMemoryTable prefillInmemoryTable() {

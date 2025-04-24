@@ -58,4 +58,13 @@ public class AdhocTopClause {
 	public boolean isPresent() {
 		return !columns.isEmpty();
 	}
+
+	@Override
+	public String toString() {
+		if (limit == NO_TOP) {
+			return "noLimit";
+		}
+
+		return "limit=%s desc=%s columns=%s".formatted(limit, desc, columns);
+	}
 }

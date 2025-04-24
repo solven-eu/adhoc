@@ -32,12 +32,14 @@ import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
 
 /**
  * Helps managing {@link IColumnGenerator} when these columns flows down to the {@link Aggregator}
- * {@link AdhocQueryStep}.
+ * {@link AdhocQueryStep}. Indeed, {@link IColumnGenerator} may generate columns which are not relevant for the
+ * {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */

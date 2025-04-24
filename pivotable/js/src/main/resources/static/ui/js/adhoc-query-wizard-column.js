@@ -109,27 +109,7 @@ export default {
 		watch(
 			() => props.queryModel.selectedColumns[props.column],
 			(newX) => {
-				const array = props.queryModel.selectedColumnsOrdered;
-				const index = array.indexOf(props.column);
-				if (newX) {
-					if (index < 0) {
-						// Append the column
-						props.queryModel.selectedColumnsOrdered.push(props.column);
-					} else {
-						console.warn("Adding a column already here?", props.column);
-					}
-				} else {
-					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-					// only splice array when item is found
-					if (index >= 0) {
-						// 2nd parameter means remove one item only
-						array.splice(index, 1);
-					} else {
-						console.warn("Removing a column already absent?", props.column);
-					}
-				}
-
-				console.log(`${props.column} is ${newX}`);
+				props.queryModel.onColumnToggled(props.column);
 			},
 		);
 

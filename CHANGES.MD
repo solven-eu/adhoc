@@ -7,6 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
 - `Pivotable` search now highlights/marks matching elements.
 - `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
+- Prepare querySharing for aggregators with same groupBy but differents filters, with `FILTER` sql keyword. See `QueryTableV2`
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`

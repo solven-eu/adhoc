@@ -42,7 +42,6 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -56,7 +55,6 @@ import lombok.Value;
  * @see eu.solven.adhoc.table.transcoder.ITableTranscoder
  */
 @Value
-@AllArgsConstructor
 @Builder
 public class TableQuery
 		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasColumns;
 

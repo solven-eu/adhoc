@@ -29,7 +29,7 @@ export default {
 	setup() {
 		const userStore = useUserStore();
 
-		userStore.loadUser();
+		userStore.initializeUser();
 
 		return {};
 	},

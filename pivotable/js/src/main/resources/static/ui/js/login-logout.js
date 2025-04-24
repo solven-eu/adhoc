@@ -6,12 +6,7 @@ import { useRouter } from "vue-router";
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {},
-	props: {
-		logout: {
-			type: String,
-			required: false,
-		},
-	},
+	props: {},
 	computed: {
 		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
 	},
@@ -19,10 +14,10 @@ export default {
 		const userStore = useUserStore();
 		const router = useRouter();
 
-		userStore.loadUser();
+		userStore.initializeUser();
 
 		const doLogout = function () {
-			console.info("Logout");
+			console.info("Executing Logout");
 			async function fetchFromUrl(url, csrfToken) {
 				// https://stackoverflow.com/questions/60265617/how-do-you-include-a-csrf-token-in-a-vue-js-application-with-a-spring-boot-backe
 				const headers = { [csrfToken.header]: csrfToken.token };

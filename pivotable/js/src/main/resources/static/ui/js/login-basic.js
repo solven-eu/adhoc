@@ -32,7 +32,7 @@ export default {
 		const userStore = useUserStore();
 		const router = useRouter();
 
-		userStore.loadUser();
+		userStore.initializeUser();
 
 		// Some default credentials for a fake user
 		const username = ref("11111111-1111-1111-1111-000000000000");

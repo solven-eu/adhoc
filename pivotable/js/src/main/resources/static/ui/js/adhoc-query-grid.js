@@ -4,6 +4,7 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
+import AdhocGridFormat from "./adhoc-query-grid-format.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -21,6 +22,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocCellModal,
+		AdhocGridFormat,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -60,8 +62,8 @@ export default {
 			locale: navigator.languages && navigator.languages.length ? navigator.languages[0] : navigator.language,
 			// May defaulted to `EUR`
 			measureCcy: "",
-			// Assume we have no interest in finer than percent of percent
-			measureMaxDigits: 4,
+			// After this number of digits, numbers are simplified with `0`s.
+			measureMaxDigits: 9,
 		});
 
 		let gridColumns = [];
@@ -130,11 +132,6 @@ export default {
 				rendering.value = true;
 				props.tabularView.loading.rendering = true;
 				props.tabularView.timing.rendering_start = new Date();
-
-				// https://stackoverflow.com/questions/9840548/how-to-put-html-into-slickgrid-cell
-				//				function popoverFormatter(row, cell, value, columnDef, dataContext) {
-				//					return '<span class="h-100 w-100" style="width=100%;" data-bs-toggle="popover" title="someTitle" data-bs-content="popoverContent">' + value + '</span>';
-				//				}
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
@@ -268,6 +265,7 @@ export default {
 
 					if (command == "remove-column") {
 						props.queryModel.selectedColumns[column.name] = false;
+						props.queryModel.onColumnToggled(column.name);
 
 						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
 						// grid.invalidate();
@@ -427,34 +425,7 @@ export default {
             <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
 
-            <form>
-                <div>
-                    Locale:
-                    <input class="form-control mr-sm-2" type="text" placeholder="Locale" aria-label="Locale" id="locale" v-model="formatOptions.locale" />
-                </div>
-                <div>
-                    Currency:
-                    <input
-                        class="form-control mr-sm-2"
-                        type="text"
-                        placeholder="Currency"
-                        aria-label="Currency"
-                        id="currency"
-                        v-model="formatOptions.measureCcy"
-                    />
-                </div>
-                <div>
-                    Max Digits:
-                    <input
-                        class="form-control mr-sm-2"
-                        type="text"
-                        placeholder="Max digits"
-                        aria-label="Max digits"
-                        id="maxDigits"
-                        v-model="formatOptions.measureMaxDigits"
-                    />
-                </div>
-            </form>
+            <AdhocGridFormat :formatOptions="formatOptions" />
         </div>
     `,
 };

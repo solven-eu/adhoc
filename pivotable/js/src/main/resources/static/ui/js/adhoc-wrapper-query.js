@@ -55,15 +55,30 @@ export default {
 		const store = useAdhocStore();
 		const userStore = useUserStore();
 
-		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
+		// store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
+
+		// Needs to be logged-in to do queries
+		userStore.initializeUser().then((user) => {
+			if (user.error) {
+				console.info("Do not load schema as user.error", user.error);
+
+				// Ensure the app knows we want to login
+				userStore.needsToLogin = true;
+			} else {
+				store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
+			}
+		});
 
 		watch(
-			() => userStore.needsToLogin,
+			() => userStore.isLoggedIn,
 			(newLoginState) => {
-				console.log("needsToLogin", newLoginState);
-
-				store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
+				if (newLoginState) {
+					store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
+				} else {
+					userStore.needsToLogin = true;
+				}
 			},
+			{ deep: true },
 		);
 
 		return { store };

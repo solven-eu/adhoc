@@ -43,7 +43,7 @@ export default {
 
 		// We may not be logged-in
 		userStore
-			.loadUser()
+			.initializeUser()
 			.then(() => {
 				return userStore.loadUserTokens();
 			})
