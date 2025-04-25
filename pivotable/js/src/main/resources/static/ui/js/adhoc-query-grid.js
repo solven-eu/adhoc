@@ -203,22 +203,6 @@ export default {
 
 		dataView.setItems(data);
 
-		// Cell Modal
-
-		// Initialize with `-1` to have a nice default value
-		const clickedCell = ref({ id: "-1" });
-
-		function openCellModal(cell) {
-			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
-			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
-			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
-			let cellModal = new Modal(document.getElementById("cellModal"), {});
-			// https://getbootstrap.com/docs/5.0/components/modal/#show
-			cellModal.show();
-
-			console.log("Showing modal for cell", cell);
-		}
-
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
 			// Do not allow re-ordering until it is compatible with rowSpans
@@ -246,6 +230,9 @@ export default {
 			// `rowIndex` column is frozen
 			frozenColumn: 1,
 		};
+
+		// Initialize with `-1` to have a nice default value
+		const clickedCell = ref({ id: "-1" });
 
 		// Use AutoResizer?
 		// https://6pac.github.io/SlickGrid/examples/example15-auto-resize.html
@@ -278,6 +265,19 @@ export default {
 				});
 
 				grid.registerPlugin(headerButtonsPlugin);
+			}
+
+			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
+			let cellModal = new Modal(document.getElementById("cellModal"), {});
+
+			// Cell Modal
+			function openCellModal(cell) {
+				// https://getbootstrap.com/docs/5.0/components/modal/#show
+				cellModal.show();
+
+				console.log("Showing modal for cell", cell);
 			}
 
 			dataView.refresh();

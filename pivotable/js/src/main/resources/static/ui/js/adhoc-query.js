@@ -112,7 +112,7 @@ export default {
 					if (queryModelFromHash) {
 						for (const [columnIndex, columnName] of Object.entries(queryModelFromHash.columns)) {
 							queryModel.selectedColumns[columnName] = true;
-							props.queryModel.onColumnToggled(columnName);
+							queryModel.onColumnToggled(columnName);
 						}
 						for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
 							queryModel.selectedMeasures[measureName] = true;
@@ -123,6 +123,7 @@ export default {
 						console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
 					}
 				} catch (error) {
+					// log but not re-throw as we do not want the hash to prevent the application from loading
 					console.warn("Issue parsing queryModel from hash", currentHashDecoded, error);
 				}
 			}
