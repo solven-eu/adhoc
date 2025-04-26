@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.table.composite;
 
+import java.util.Map;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.ITableMeasure;
+import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * An event enabling to be notified on query lifecycle events (e.g. start, done).
+ * Used to represent an underlying cube measure. It is similar as an Aggregator from {@link CompositeCubesTableWrapper}
+ * perspective. But other usages would see it as a whole measure (e.g. Pivotable would like to see underlying measures).
  * 
  * @author Benoit Lacelle
+ *
  */
 @Value
-@Builder
-public class QueryLifecycleEvent implements IAdhocEvent {
-	ExecutingQueryContext query;
-
-	// Useful for event filtering
+@Builder(toBuilder = true)
+@Jacksonized
+public class SubMeasureAsAggregator implements ITableMeasure, IHasAggregationKey {
+	// The name/identifier of the measure
 	@NonNull
+	String name;
+
 	@Singular
 	ImmutableSet<String> tags;
+
+	@NonNull
+	@Default
+	String aggregationKey = SumAggregation.KEY;
+
+	@Singular
+	Map<String, Object> aggregationOptions;
+
+	@NonNull
+	@Singular
+	ImmutableList<String> underlyings;
+
+	@Override
+	public Aggregator toAggregator() {
+		return Aggregator.builder()
+				.name(name)
+				.aggregationKey(aggregationKey)
+				.aggregationOptions(aggregationOptions)
+				.build();
+	}
+
 }

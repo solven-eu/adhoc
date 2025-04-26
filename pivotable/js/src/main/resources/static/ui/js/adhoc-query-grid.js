@@ -5,6 +5,7 @@ import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridFormat from "./adhoc-query-grid-format.js";
+import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -23,6 +24,7 @@ export default {
 	components: {
 		AdhocCellModal,
 		AdhocGridFormat,
+		AdhocGridExportCsv,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -54,7 +56,6 @@ export default {
 		let dataView;
 
 		let grid;
-		let data = [];
 		const gridMetadata = reactive({});
 
 		const formatOptions = reactive({
@@ -63,7 +64,11 @@ export default {
 			// May defaulted to `EUR`
 			measureCcy: "",
 			// After this number of digits, numbers are simplified with `0`s.
-			measureMaxDigits: 9,
+			maximumSignificantDigits: 9,
+			// Minumum number of decimals
+			minimumFractionDigits: 2,
+			// Maximum number of decimals
+			maximumFractionDigits: 2,
 		});
 
 		let gridColumns = [];
@@ -86,6 +91,8 @@ export default {
 			renderingDone();
 		}
 
+		const data = reactive({ array: [] });
+
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.view;
@@ -103,7 +110,7 @@ export default {
 				gridColumns.push(column);
 			}
 
-			data = [];
+			data.array = [];
 
 			// from rowIndex to columnIndex to span height
 			const metadata = {
@@ -124,7 +131,7 @@ export default {
 				const column = { id: "empty", name: "empty", field: "empty", sortable: sortable, asyncPostRender: renderCallback };
 
 				gridColumns.push(column);
-				data.push({ id: "0", empty: "empty" });
+				data.array.push({ id: "0", empty: "empty" });
 				gridMetadata.nb_rows = 0;
 
 				// TODO How to know when the empty grid is rendered? (This may be slow if previous grid was large)
@@ -164,7 +171,7 @@ export default {
 						gridHelper.sanityCheckFirstRow(columnNames, coordinatesRow, measureNames, measuresRow);
 					}
 
-					data.push(...gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
+					data.array.push(...gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
 
 					gridHelper.computeRowSpan(columnNames, metadata, view.coordinates);
 				} finally {
@@ -185,10 +192,10 @@ export default {
 
 			// https://github.com/6pac/SlickGrid/wiki/DataView#batching-updates
 			dataView.beginUpdate();
-			dataView.setItems(data);
+			dataView.setItems(data.array);
 			dataView.endUpdate();
 
-			gridMetadata.nb_rows = data.length;
+			gridMetadata.nb_rows = data.array.length;
 
 			// https://github.com/6pac/SlickGrid/wiki/Slick.Grid#invalidate
 			// since we have a rowspan that spans nearly the entire length to the bottom,
@@ -201,7 +208,7 @@ export default {
 		// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view
 		dataView = new SlickDataView({});
 
-		dataView.setItems(data);
+		dataView.setItems([]);
 
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
@@ -315,7 +322,7 @@ export default {
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {
-					console.log("Detected change", newView, oldView);
+					console.debug("Detected grid data change", newView, oldView);
 					if (!props.tabularView.loading) {
 						props.tabularView.loading = {};
 					}
@@ -396,6 +403,8 @@ export default {
 			loadingMessage,
 
 			formatOptions,
+
+			data,
 		};
 	},
 	// :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId"
@@ -424,6 +433,7 @@ export default {
             </div>
             <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
+            <AdhocGridExportCsv :array="data.array" />
 
             <AdhocGridFormat :formatOptions="formatOptions" />
         </div>

@@ -29,6 +29,8 @@ import java.util.NavigableMap;
 import org.junit.jupiter.api.Test;
 
 public class TestMapComparators {
+	// Test to check the API over advanced generics
+	@SuppressWarnings("unused")
 	@Test
 	public void testGenerics() {
 		Comparator<Map<?, ?>> comparatorWildcardWildcard = MapComparators.mapComparator();
@@ -37,6 +39,8 @@ public class TestMapComparators {
 				MapComparators.<Map<String, ?>>mapComparator();
 	}
 
+	// Test to check the API over advanced generics
+	@SuppressWarnings("unused")
 	@Test
 	public void testGenerics_mapIntonavigable() {
 		Comparator<NavigableMap<?, ?>> comparatorWildcardWildcard = MapComparators.mapComparator();
@@ -45,6 +49,8 @@ public class TestMapComparators {
 				MapComparators.<NavigableMap<String, ?>>mapComparator();
 	}
 
+	// Test to check the API over advanced generics
+	@SuppressWarnings("unused")
 	@Test
 	public void testGenerics_navigableIntoNavigable() {
 		Comparator<NavigableMap<?, ?>> comparatorWildcardWildcard = MapComparators.navigableMapComparator();

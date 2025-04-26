@@ -243,7 +243,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				if (emptyMeasureName.equals(m.getName())) {
 					throw new IllegalArgumentException("The defaultEmptyMeasure can not be requested explicitly");
 				}
-			}).map(ref -> executingQueryContext.resolveIfRef(ref)).collect(Collectors.toSet());
+			}).collect(Collectors.toSet());
 		}
 		return queriedMeasures;
 	}

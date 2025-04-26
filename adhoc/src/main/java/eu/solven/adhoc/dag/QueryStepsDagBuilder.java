@@ -36,6 +36,7 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -164,7 +165,11 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	@Override
 	public void registerRootWithUnderlyings(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
-		queriedMeasures.forEach(this::addRoot);
+		queriedMeasures.forEach(queriedMeasure -> {
+			queriedMeasure = resolveMeasure(canResolveMeasures, queriedMeasure);
+
+			addRoot(queriedMeasure);
+		});
 
 		// Add implicitly requested steps
 		while (hasLeftovers()) {
@@ -180,8 +185,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 				List<AdhocQueryStep> underlyingSteps;
 				try {
 					underlyingSteps = wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
-						// Make sure the DAG has actual measure nodes, and not references
-						IMeasure notRefMeasure = canResolveMeasures.resolveIfRef(underlyingStep.getMeasure());
+						IMeasure notRefMeasure = resolveMeasure(canResolveMeasures, underlyingStep.getMeasure());
+
 						return AdhocQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 					}).toList();
 				} catch (RuntimeException e) {
@@ -201,5 +206,24 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		}
 
 		sanityChecks();
+	}
+
+	/**
+	 * 
+	 * @param canResolveMeasures
+	 * @param queriedMeasure
+	 *            any measure
+	 * @return
+	 */
+	protected IMeasure resolveMeasure(ICanResolveMeasure canResolveMeasures, IMeasure measure) {
+		// Make sure the DAG has actual measure nodes, and not references
+		IMeasure resolved = canResolveMeasures.resolveIfRef(measure);
+
+		// Simplify ITableMeasure into Aggregator, as ITableMeasure should not play a role in the engine
+		if (resolved instanceof ITableMeasure tableMeasure && !(tableMeasure instanceof Aggregator)) {
+			resolved = tableMeasure.toAggregator();
+		}
+
+		return resolved;
 	}
 }

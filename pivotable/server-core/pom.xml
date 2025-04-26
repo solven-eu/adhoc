@@ -32,12 +32,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>net.datafaker</groupId>
-			<artifactId>datafaker</artifactId>
-			<version>2.4.2</version>
-		</dependency>
-
-		<dependency>
 			<!-- A lightweight EventBus-->
 			<!-- https://github.com/greenrobot/EventBus -->
 			<groupId>org.greenrobot</groupId>

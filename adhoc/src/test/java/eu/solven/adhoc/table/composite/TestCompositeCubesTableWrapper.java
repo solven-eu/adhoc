@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.composite;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Phaser;
 
@@ -64,15 +65,16 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 				.build();
 	}
 
+	// `k1` is both an underdlyingCube measure, and an explicit cube measure.
 	@Test
 	public void testAddUnderlyingMeasures_sameMeasurenameInUnderlyingAndInComposite() {
 		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
 
 		String tableName1 = "someTableName1";
-		ITableWrapper table1 = InMemoryTable.builder().name(tableName1).build();
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
 
 		String tableName2 = "someTableName2";
-		ITableWrapper table2 = InMemoryTable.builder().name(tableName2).build();
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
 
 		CubeWrapper cube1;
 		{
@@ -89,28 +91,34 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag measuresWithoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
-		measuresWithoutUnderlyings.addMeasure(k1Sum);
-		measuresWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
+		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+
+		// In the composite cube, we want `k1` to be the maximum through cubes
+		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
+		// Check there is a conflict on the measure name
+		Assertions.assertThat(k1Max.getName()).isEqualTo(k1Sum.getName());
+
+		withoutUnderlyings.addMeasure(k1Max);
+		withoutUnderlyings.addMeasure(k1PlusK2AsExpr);
 
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(withoutUnderlyings);
 
 		Assertions.assertThat(withUnderlyings.getNameToMeasure().values())
 				.hasSize(6)
 				// Composite own measures
-				.contains(k1Sum, k1PlusK2AsExpr)
+				.contains(k1Max, k1PlusK2AsExpr)
 
 				// Cube1 measures, available through composite
-				.contains(Aggregator.builder()
+				.contains(SubMeasureAsAggregator.builder()
 						// k1 is both a compositeMeasure and a cube1 measure
 						// We aliased the underlyingMeasure
 						.name(k1Sum.getName() + "." + tableName1 + ".cube")
 						.aggregationKey(SumAggregation.KEY)
 						.build())
-				.contains(Aggregator.builder()
+				.contains(SubMeasureAsAggregator.builder()
 						// k2 is only a cube1 measure
 						// Not aliased
 						.name(k2Sum.getName())
@@ -118,17 +126,36 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 						.build())
 
 				// Cube2 measures, available through composite
-				.contains(Aggregator.builder()
+				.contains(SubMeasureAsAggregator.builder()
 						.name(k1Sum.getName() + "." + tableName2 + ".cube")
 						.aggregationKey(SumAggregation.KEY)
 						.build())
-				.contains(Aggregator.builder()
+				.contains(SubMeasureAsAggregator.builder()
 						.name(k3Max.getName())
 						// k3 is a MAX, but it is fed by a single cube: SUM is KO
 						// BEWARE: if k3.MAX was provided by multiple cubes, we should probably prefer MAX in composite
 						// aggregator
 						.aggregationKey(SumAggregation.KEY)
 						.build());
+
+		// Test an actual query result
+		{
+			table1.add(Map.of("k1", 123));
+			table1.add(Map.of("k1", 234));
+
+			table2.add(Map.of("k1", 345));
+			table2.add(Map.of("k1", 456));
+
+			CubeWrapper compositeCube =
+					CubeWrapper.builder().name("composite").table(compositeCubesTable).forest(withUnderlyings).build();
+
+			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max.getName()).build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of(k1Max.getName(), 0L + Math.max(123 + 234, 345 + 456)))
+					.hasSize(1);
+		}
 	}
 
 	@Test
@@ -153,8 +180,6 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 	// This test will ensure 2 underlying tables are queried concurrently
 	@Test
 	public void testConcurrency() {
-		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
-
 		TableWrapperPhasers phasers = TableWrapperPhasers.parties(2);
 
 		String tableName1 = "someTableName1";
@@ -167,28 +192,21 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		{
 			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
 			measureBag.addMeasure(countAsterisk);
-			measureBag.addMeasure(k1Sum);
-			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
 			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
 			measureBag.addMeasure(countAsterisk);
-			measureBag.addMeasure(k1Sum);
-			measureBag.addMeasure(k3Max);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag measuresWithoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
-		measuresWithoutUnderlyings.addMeasure(k1Sum);
-		measuresWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
+		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
 
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
-		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(measuresWithoutUnderlyings);
 
-		CubeWrapper cube = CubeWrapper.builder().table(compositeCubesTable).forest(withUnderlyings).build();
+		CubeWrapper cube = CubeWrapper.builder().table(compositeCubesTable).forest(withoutUnderlyings).build();
 		ITabularView view = cube.execute(AdhocQuery.builder()
 				.measure(Aggregator.countAsterisk())
 				.option(StandardQueryOptions.CONCURRENT)
@@ -210,5 +228,194 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		Phaser closing = phasers.getClosing();
 		Assertions.assertThat(closing.getPhase()).isEqualTo(1);
 		Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
+	}
+
+	// When a cube does not know a column, and given column is grouped by, Adhoc behave like the cube has a static given
+	// coordinate. This test filtering on given coordinate.
+	@Test
+	public void testFilterOnMissingColumn() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(k1Sum);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		{
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			table2.add(Map.of("k1", 345));
+			table2.add(Map.of("k1", 456));
+
+			// Consider a column in one table but not the other
+			Assertions.assertThat(table1.getColumns()).containsKey("a");
+			Assertions.assertThat(table2.getColumns()).doesNotContainKey("a");
+
+			CubeWrapper compositeCube = CubeWrapper.builder()
+					.name("composite")
+					.table(compositeCubesTable)
+					.forest(withoutUnderlyings)
+					.build();
+
+			// groupBy:a
+			String missingColumnCoordinate = tableName2 + ".cube";
+			{
+				ITabularView view =
+						compositeCube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("a").build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of("a", "a1"), Map.of(k1Sum.getName(), 0L + 123))
+						.containsEntry(Map.of("a", "a2"), Map.of(k1Sum.getName(), 0L + 234))
+						.containsEntry(Map.of("a", missingColumnCoordinate), Map.of(k1Sum.getName(), 0L + 345 + 456))
+						.hasSize(3);
+			}
+
+			// filter unknownCoordinate grandTotal
+			{
+				ITabularView view = compositeCube.execute(
+						AdhocQuery.builder().measure(k1Sum.getName()).andFilter("a", missingColumnCoordinate).build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 345 + 456))
+						.hasSize(1);
+			}
+
+			// filter unknownCoordinate groupBy:a
+			{
+				ITabularView view = compositeCube.execute(AdhocQuery.builder()
+						.measure(k1Sum.getName())
+						.andFilter("a", missingColumnCoordinate)
+						.groupByAlso("a")
+						.build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of("a", missingColumnCoordinate), Map.of(k1Sum.getName(), 0L + 345 + 456))
+						.hasSize(1);
+			}
+		}
+	}
+
+	@Test
+	public void testCubeSlicer_onByDefault() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		Assertions.assertThat(compositeCubesTable.getColumns()).containsKey("adhocCubeSlicer");
+	}
+
+	@Test
+	public void testCubeSlicer() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(k1Sum);
+
+		CompositeCubesTableWrapper compositeCubesTable = CompositeCubesTableWrapper.builder()
+				.cube(cube1)
+				.cube(cube2)
+				.optCubeSlicer(Optional.of("cubeSlicer"))
+				.build();
+
+		{
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			table2.add(Map.of("k1", 345));
+			table2.add(Map.of("k1", 456));
+
+			// Consider a column in one table but not the other
+			Assertions.assertThat(compositeCubesTable.getColumns()).containsKey("cubeSlicer");
+
+			CubeWrapper compositeCube = CubeWrapper.builder()
+					.name("composite")
+					.table(compositeCubesTable)
+					.forest(withoutUnderlyings)
+					.build();
+
+			// groupBy:cubeSlicer
+			String m = k1Sum.getName();
+			{
+				ITabularView view =
+						compositeCube.execute(AdhocQuery.builder().measure(m).groupByAlso("cubeSlicer").build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of("cubeSlicer", tableName1 + ".cube"), Map.of(m, 0L + 123 + 234))
+						.containsEntry(Map.of("cubeSlicer", tableName2 + ".cube"), Map.of(m, 0L + 345 + 456))
+						.hasSize(2);
+			}
+
+			// groupBy:cubeSlicer&a
+			{
+				ITabularView view =
+						compositeCube.execute(AdhocQuery.builder().measure(m).groupByAlso("cubeSlicer", "a").build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of("a", "a1", "cubeSlicer", tableName1 + ".cube"), Map.of(m, 0L + 123))
+						.containsEntry(Map.of("a", "a2", "cubeSlicer", tableName1 + ".cube"), Map.of(m, 0L + 234))
+						.containsEntry(Map.of("a", tableName2 + ".cube", "cubeSlicer", tableName2 + ".cube"),
+								Map.of(m, 0L + 345 + 456))
+						.hasSize(3);
+			}
+		}
 	}
 }

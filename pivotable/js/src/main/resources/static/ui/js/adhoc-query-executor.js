@@ -264,7 +264,7 @@ export default {
                 </div>
             </span>
 
-            <AdhocQueryRawModal :queryJson="queryJson" />
+            <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
         </div>
     `,
 };

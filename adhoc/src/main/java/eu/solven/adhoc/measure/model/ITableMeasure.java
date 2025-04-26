@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.model;
 
-import java.util.List;
-
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
+import eu.solven.adhoc.table.composite.SubMeasureAsAggregator;
 
 /**
- * For {@link IMeasure} which has underlying measures.
+ * {@link IMeasure} which are evaluated by the {@link ITableWrapper}. They have no real underlying measures.
+ * 
+ * Typical case is {@link SubMeasureAsAggregator} for {@link CompositeCubesTableWrapper}.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+public interface ITableMeasure extends IMeasure {
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+	/**
+	 * 
+	 * @return the equivalent {@link Aggregator}, as used by {@link TableQuery}.
+	 */
+	Aggregator toAggregator();
+
 }

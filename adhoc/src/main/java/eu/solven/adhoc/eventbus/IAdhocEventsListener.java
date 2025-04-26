@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.eventbus;
 
-import java.util.List;
-
+import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * For {@link IMeasure} which has underlying measures.
+ * Describe each event which may be submitted by Adhoc.
+ * 
+ * An alternative is to just listen for {@link IAdhocEvent}
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+public interface IAdhocEventsListener {
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+	void onQueryLifecycleEvent(QueryLifecycleEvent event);
+
+	/**
+	 * Refers to {@link IAdhocQueryEngine} main phases.
+	 * 
+	 * @param event
+	 */
+	void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event);
+
+	/**
+	 * Given a tree of {@link AdhocQueryStep}, this inform each step being processed.
+	 * 
+	 * @param event
+	 */
+	void onQueryStepIsEvaluating(QueryStepIsEvaluating event);
+
+	/**
+	 * An {@link eu.solven.adhoc.query.cube.AdhocQuery} is resolved through a DAG of
+	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}. This will log when an
+	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep} is completed.
+	 * 
+	 * @param event
+	 */
+	void onQueryStepIsCompleted(QueryStepIsCompleted event);
+
+	/**
+	 * Some message to be submitted to the logging layer.
+	 * 
+	 * @param event
+	 */
+	void onAdhocLogEvent(AdhocLogEvent event);
+
 }

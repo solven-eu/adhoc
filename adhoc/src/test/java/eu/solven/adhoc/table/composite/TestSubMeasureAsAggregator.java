@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.table.composite;
 
-import java.util.List;
+import java.util.Arrays;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.model.IMeasure;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * For {@link IMeasure} which has underlying measures.
- * 
- * @author Benoit Lacelle
- */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+import com.fasterxml.jackson.core.JsonProcessingException;
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import nl.jqno.equalsverifier.EqualsVerifier;
+
+public class TestSubMeasureAsAggregator {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(SubMeasureAsAggregator.class).verify();
+	}
+
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		SubMeasureAsAggregator subMeasure =
+				SubMeasureAsAggregator.builder().name("someName").underlyings(Arrays.asList("u1", "u2")).build();
+
+		String asString = TestMapBasedTabularView.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
+
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "type" : ".SubMeasureAsAggregator",
+				  "name" : "someName",
+				  "tags" : [ ],
+				  "aggregationKey" : "SUM",
+				  "aggregationOptions" : { },
+				  "underlyings" : [ "u1", "u2" ]
+				}""");
+	}
 }

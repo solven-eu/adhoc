@@ -120,8 +120,14 @@ public class InjectSimpleExampleCubesConfig {
 
 		// Helps testing customMarkers
 		measures.add(Combinator.builder()
-				.name("ccyFromCustomMarker")
-				.combinationKey(ReferenceCcyCombination.class.getName())
+				.name("ccyFromCustomMarker_Shallow")
+				.combinationKey(ReferenceCcyShallowCombination.class.getName())
+				.underlying("delta")
+				.underlying("gamma")
+				.build());
+		measures.add(Combinator.builder()
+				.name("ccyFromCustomMarker_Deep")
+				.combinationKey(ReferenceCcyDeepCombination.class.getName())
 				.underlying("delta")
 				.underlying("gamma")
 				.build());
@@ -133,17 +139,17 @@ public class InjectSimpleExampleCubesConfig {
 		schema.registerCustomMarker("ccy",
 				EqualsMatcher.isEqualTo("simple"),
 				CustomMarkerMetadataGenerator.builder()
-						.path("$.ccy")
-						.possibleValues(() -> Set.of("EUR", "USD", "JPY"))
-						.defaultValue(() -> Optional.of("EUR"))
+						.path(ReferenceCcyShallowCombination.PATH_SHALLOW_CCY)
+						.possibleValues(() -> Set.of(ReferenceCcyShallowCombination.CCY_DEFAULT, "USD", "JPY"))
+						.defaultValue(() -> Optional.of(ReferenceCcyShallowCombination.CCY_DEFAULT))
 						.build());
 
 		schema.registerCustomMarker("deepCcy",
 				EqualsMatcher.isEqualTo("simple"),
 				CustomMarkerMetadataGenerator.builder()
-						.path("$.deep.ccy")
-						.possibleValues(() -> Set.of("EUR", "USD", "JPY"))
-						.defaultValue(() -> Optional.of("EUR"))
+						.path(ReferenceCcyDeepCombination.PATH_DEEP_CCY)
+						.possibleValues(() -> Set.of(ReferenceCcyDeepCombination.CCY_DEFAULT, "USD", "JPY"))
+						.defaultValue(() -> Optional.of(ReferenceCcyDeepCombination.CCY_DEFAULT))
 						.build());
 	}
 

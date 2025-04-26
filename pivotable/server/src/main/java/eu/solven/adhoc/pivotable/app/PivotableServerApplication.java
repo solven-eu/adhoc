@@ -33,7 +33,9 @@ import org.springframework.session.ReactiveMapSessionRepository;
 import org.springframework.session.ReactiveSessionRepository;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivotable.app.example.InjectAdvancedCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectPixarExampleCubesConfig;
+import eu.solven.adhoc.pivotable.app.example.InjectSimpleExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
@@ -48,6 +50,8 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableSecuritySpringConfig.class,
 		GitPropertySourceConfig.class,
 
+		InjectSimpleExampleCubesConfig.class,
+		InjectAdvancedCubesConfig.class,
 		InjectPixarExampleCubesConfig.class,
 
 })

@@ -328,11 +328,8 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 - [Composite] Enable a failing sub-query not to break the composite query
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Enable calculated columns, computed right after the table
-- [Issue] Filtering along missing columns of `CompositeCube`
 - [Feature] Break rowspan on right columns
-- [Feature] Improve rowspan when very high. For instance, selecting a rowspan scroll automatically to the top
-- [Feature] Export pivottable to CSV
+- [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
-- [Feature] Cube hierarchy for CompositeCube
 - [Pivotable] Handle customMarkers with deep path

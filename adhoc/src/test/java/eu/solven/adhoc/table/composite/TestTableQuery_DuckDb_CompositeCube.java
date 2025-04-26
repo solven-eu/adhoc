@@ -157,7 +157,8 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.containsEntry(k1Sum.getColumnName(), Double.class)
 				.containsEntry(k2Sum.getColumnName(), Double.class)
 				.containsEntry(k3Sum.getColumnName(), Double.class)
-				.hasSize(6);
+				.containsEntry("adhocCubeSlicer", Object.class)
+				.hasSize(7);
 
 		Assertions.assertThat(cube3.getNameToMeasure().keySet())
 				.contains(k1Sum.getColumnName())
@@ -174,7 +175,6 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		// `k2` does not exists in cube2
 		{
-
 			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

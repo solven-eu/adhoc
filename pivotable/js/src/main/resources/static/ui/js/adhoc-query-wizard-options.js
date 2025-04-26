@@ -31,5 +31,15 @@ export default {
             <input class="form-check-input" type="checkbox" role="switch" id="concurrentQuery" v-model="queryModel.options.concurrent" />
             <label class="form-check-label" for="concurrentQuery">concurrent</label>
         </div>
+        <div class="form-check form-switch">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="UNKNOWN_MEASURES_ARE_EMPTYQuery"
+                v-model="queryModel.options.UNKNOWN_MEASURES_ARE_EMPTY"
+            />
+            <label class="form-check-label" for="UNKNOWN_MEASURES_ARE_EMPTYQuery">UNKNOWN_MEASURES_ARE_EMPTY</label>
+        </div>
     `,
 };

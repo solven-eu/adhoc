@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.slice;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -104,5 +105,14 @@ public class TestSliceAsMap {
 		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("k", "v2");
+	}
+
+	// Typically happens with nullable columns
+	@Test
+	public void testCompare_differentType() {
+		SliceAsMap sliceDate = SliceAsMap.fromMap(Map.of("d", LocalDate.now()));
+		SliceAsMap sliceString = SliceAsMap.fromMap(Map.of("d", "NULL"));
+
+		Assertions.assertThat(sliceDate).isGreaterThan(sliceString);
 	}
 }

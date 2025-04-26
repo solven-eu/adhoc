@@ -23,7 +23,8 @@
 package eu.solven.adhoc.measure.model;
 
 import java.util.Map;
-import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -46,13 +47,13 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder(toBuilder = true)
 @Jacksonized
-public class Aggregator implements IMeasure, IHasAggregationKey {
+public class Aggregator implements ITableMeasure, IHasAggregationKey {
 	// The name/identifier of the measure
 	@NonNull
 	String name;
 
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	// The name of the underlying aggregated column
 	String columnName;
@@ -101,5 +102,10 @@ public class Aggregator implements IMeasure, IHasAggregationKey {
 				.columnName("empty")
 				.aggregationKey(EmptyAggregation.KEY)
 				.build();
+	}
+
+	@Override
+	public Aggregator toAggregator() {
+		return this;
 	}
 }

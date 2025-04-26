@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
-public class AdhocEventsFromGuavaEventBusToSfl4j {
+public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener {
 	public static final String EOL = System.lineSeparator();
 
 	// This must not have `@Subscribe`, else events would be processed multiple times
@@ -63,6 +63,7 @@ public class AdhocEventsFromGuavaEventBusToSfl4j {
 	 * @param event
 	 */
 	@Subscribe
+	@Override
 	public void onQueryStepIsCompleted(QueryStepIsCompleted event) {
 		log.info("size={} for queryStep={} on completed (source={})",
 				event.getNbCells(),
@@ -71,16 +72,25 @@ public class AdhocEventsFromGuavaEventBusToSfl4j {
 	}
 
 	@Subscribe
+	@Override
 	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
 		log.info("query phase={} is completed (source={})", event.getPhase(), event.getSource());
 	}
 
 	@Subscribe
+	@Override
 	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
 		log.info("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
 	}
 
 	@Subscribe
+	@Override
+	public void onQueryLifecycleEvent(QueryLifecycleEvent event) {
+		log.info("queryLifecycleEvent queryId={} tags={}", event.getQuery().getQueryId(), event.getTags());
+	}
+
+	@Subscribe
+	@Override
 	public void onAdhocLogEvent(AdhocLogEvent event) {
 		BiConsumer<String, Object[]> logMethod;
 		if (event.isWarn()) {

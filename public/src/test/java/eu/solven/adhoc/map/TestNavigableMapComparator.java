@@ -20,40 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app.example;
+package eu.solven.adhoc.map;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.pepper.mappath.MapPathGet;
-import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A {@link ICombination} returning the reference currency parameter. it can be used as underlying of other
- * {@link IMeasure}, or just used for the User to check this value.
- * 
- * @author Benoit Lacelle
- */
-@Slf4j
-public class ReferenceCcyCombination implements ICombination {
-	public static final String CCY_DEFAULT = "EUR";
+public class TestNavigableMapComparator {
+	Comparator<Map> comparator = MapComparators.mapComparator();
 
-	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Object customMarker = slice.getQueryStep().getCustomMarker();
+	@Test
+	public void simple() {
+		Assertions.assertThat(comparator.compare(Map.of(), Map.of("k1", "v1"))).isPositive();
+		Assertions.assertThat(comparator.compare(Map.of(), Map.of("k1", "v1", "k2", "v2"))).isPositive();
 
-		if (customMarker == null) {
-			return CCY_DEFAULT;
-		} else if (customMarker instanceof Map<?, ?> asMap) {
-			Optional<String> optReferenceCcy = MapPathGet.getOptionalString(asMap, "ccy");
-			return optReferenceCcy.orElse(CCY_DEFAULT);
-		} else {
-			log.warn("Not-managed customMarker: {}", customMarker);
-			return CCY_DEFAULT;
-		}
+		Assertions.assertThat(comparator.compare(Map.of("k1", "v1"), Map.of("k2", "v2"))).isNegative();
+		Assertions.assertThat(comparator.compare(Map.of("k1", "v1"), Map.of("k1", "v2"))).isNegative();
+
+		Assertions.assertThat(comparator.compare(Map.of("k1", "v1"), Map.of("k1", LocalDate.now()))).isNegative();
+
+		Map<String, Object> k1ToNull = new HashMap<>();
+		k1ToNull.put("k1", null);
+		Assertions.assertThat(comparator.compare(Map.of("k1", "v1"), k1ToNull)).isNegative();
 	}
 }

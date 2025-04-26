@@ -24,7 +24,9 @@ const formatters = function (formatOptions) {
 
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
 	const numberFormatOptions = {};
-	numberFormatOptions.maximumSignificantDigits = formatOptions.measureMaxDigits;
+	numberFormatOptions.maximumSignificantDigits = formatOptions.maximumSignificantDigits;
+	numberFormatOptions.minimumFractionDigits = formatOptions.minimumFractionDigits;
+	numberFormatOptions.maximumFractionDigits = formatOptions.maximumFractionDigits;
 	if (formatOptions.measureCcy) {
 		numberFormatOptions.style = "currency";
 		numberFormatOptions.currency = formatOptions.measureCcy;
@@ -46,7 +48,9 @@ const formatters = function (formatOptions) {
 	}
 
 	const percentFormatOptions = {};
-	percentFormatOptions.maximumSignificantDigits = formatOptions.measureMaxDigits;
+	percentFormatOptions.maximumSignificantDigits = formatOptions.maximumSignificantDigits;
+	// TODO Should we have a different fraction digit for %?
+	// percentFormatOptions.maximumFractionDigits = formatOptions.maximumFractionDigits;
 	percentFormatOptions.style = "percent";
 	const percentFormat = new Intl.NumberFormat(formatOptions.locale, percentFormatOptions);
 

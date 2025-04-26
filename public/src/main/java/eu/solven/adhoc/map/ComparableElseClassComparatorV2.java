@@ -36,6 +36,8 @@ import java.util.Objects;
  */
 // @SuppressFBWarnings("SE_COMPARATOR_SHOULD_BE_SERIALIZABLE")
 public class ComparableElseClassComparatorV2 implements Comparator<Object> {
+	static final Comparator<Object> NULLS_HIGH = nullsHigh();
+
 	final Comparator<Object> nullComparator;
 
 	/**
@@ -45,7 +47,7 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 	 */
 	// Duplicated from Spring Comparators
 	@SuppressWarnings("unchecked")
-	private static <T> Comparator<T> nullsHigh() {
+	static <T> Comparator<T> nullsHigh() {
 		return nullsHigh((Comparator<T>) Comparator.naturalOrder());
 	}
 
@@ -55,12 +57,15 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 	 * @see Comparator#nullsLast(Comparator)
 	 */
 	// Duplicated from Spring Comparators
-	private static <T> Comparator<T> nullsHigh(Comparator<T> comparator) {
+	static <T> Comparator<T> nullsHigh(Comparator<T> comparator) {
 		return Comparator.nullsLast(comparator);
 	}
 
+	/**
+	 * By default, `null` is considered greater than anything else
+	 */
 	public ComparableElseClassComparatorV2() {
-		this(nullsHigh());
+		this(NULLS_HIGH);
 	}
 
 	public ComparableElseClassComparatorV2(Comparator<Object> nullComparator) {

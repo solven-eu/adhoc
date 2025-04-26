@@ -2,12 +2,21 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+
+## [0.0.6]
+### Fixed
+- `SliceAsMap` did not handle a column with different `Comparable`, typically happening on `LocalDate` column with a `NULL` String on failed JOIN.
+
+### Added
+- Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube
+- Enable Export to CSV in `Pivotable`
+
 ## [0.0.5]
 ### Changed
 - `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
 - `Pivotable` search now highlights/marks matching elements.
 - `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
-- Prepare querySharing for aggregators with same groupBy but differents filters, with `FILTER` sql keyword. See `QueryTableV2`
+- Prepare querySharing for aggregators with same groupBy but different filters, with `FILTER` sql keyword. See `QueryTableV2`
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`

@@ -64,7 +64,12 @@ export default {
 					if (props.modal) {
 						// Do not redirect as we're in a modal, and we want to stay on current location
 						// Though, some cookies has been update, enabling to get an access_token
-						userStore.loadUserTokens();
+
+						// force loading updated user (givne we have received a fresh session cookie)
+						userStore.loadUser().then(() => {
+							// load tokens for current user
+							userStore.loadUserTokens();
+						});
 					} else {
 						const loginSuccessHtmlRoute = json.Location;
 						router.push(loginSuccessHtmlRoute);

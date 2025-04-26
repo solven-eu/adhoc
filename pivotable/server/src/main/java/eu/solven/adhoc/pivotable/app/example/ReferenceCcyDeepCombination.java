@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.pivotable.app.example;
 
-import java.util.List;
-
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.custom_marker.ACustomMarkerCombination;
 import eu.solven.adhoc.measure.model.IMeasure;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * For {@link IMeasure} which has underlying measures.
+ * A {@link ICombination} returning the reference currency parameter. it can be used as underlying of other
+ * {@link IMeasure}, or just used for the User to check this value.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+@Slf4j
+public class ReferenceCcyDeepCombination extends ACustomMarkerCombination {
+	public static final String CCY_DEFAULT = "EUR";
+	public static final String PATH_DEEP_CCY = "$.deep.ccy";
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+	protected Object getDefault() {
+		return CCY_DEFAULT;
+	}
+
+	protected String getJoinedMapPath() {
+		return PATH_DEEP_CCY;
+	}
 }

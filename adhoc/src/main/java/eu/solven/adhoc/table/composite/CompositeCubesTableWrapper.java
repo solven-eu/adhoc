@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -57,6 +58,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
@@ -72,6 +74,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
+import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -103,6 +106,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	@Default
 	final IColumnsManager columnsManager = ColumnsManager.builder().build();
 
+	// A column which shall not exist in any underlying cube
+	// Useful to let a user slice through underlying cubes
+	@NonNull
+	@Default
+	// Default name refer to `adhoc` to insist on the fact it does not come from the data
+	final Optional<String> optCubeSlicer = Optional.of("adhocCubeSlicer");
+
 	@Override
 	public Map<String, Class<?>> getColumns() {
 		Map<String, Class<?>> columnToJavaType = new LinkedHashMap<>();
@@ -110,7 +120,14 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		// TODO Manage conflicts (e.g. same column but different types)
 		cubes.forEach(cube -> columnToJavaType.putAll(cube.getColumns()));
 
+		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn, Object.class));
+
 		return columnToJavaType;
+	}
+
+	@Override
+	public String toString() {
+		return "CompositeCube over " + cubes.stream().map(ICubeWrapper::getName).collect(Collectors.joining("&"));
 	}
 
 	@Value
@@ -385,12 +402,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 				measureToCubes.put(compositeMeasureName, cubeName);
 
-				Aggregator compositeMeasure = Aggregator.builder()
-						.name(compositeMeasureName)
-						// If some measure is returned by different cubes, we SUM the returned values
-						// TODO The aggregationKey should be evaluated given the Set of providing Cubes
-						.aggregationKey(aggregationKeyForSubMeasure(cube, underlyingMeasure))
-						.build();
+				IMeasure compositeMeasure = wrapAsCompositeMeasure(cube, underlyingMeasure, compositeMeasureName);
 				measuresToAdd.add(compositeMeasure);
 			});
 		});
@@ -406,6 +418,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		measuresToAdd.forEach(builder::measure);
 
 		return builder.build();
+	}
+
+	protected IMeasure wrapAsCompositeMeasure(ICubeWrapper cube,
+			IMeasure underlyingMeasure,
+			String compositeMeasureName) {
+		SubMeasureAsAggregatorBuilder measureBuilder = SubMeasureAsAggregator.builder().name(compositeMeasureName);
+
+		// If some measure is returned by different cubes, we SUM the returned values
+		// TODO The aggregationKey should be evaluated given the Set of providing Cubes
+		measureBuilder.aggregationKey(aggregationKeyForSubMeasure(cube, underlyingMeasure));
+
+		if (underlyingMeasure instanceof IHasUnderlyingMeasures hasUndelryingMeasures) {
+			measureBuilder.underlyings(hasUndelryingMeasures.getUnderlyingNames());
+		}
+
+		return measureBuilder.build();
 	}
 
 	protected String conflictingSubMeasureName(String measureName, String cubeName) {

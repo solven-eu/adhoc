@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.pivotable.app.example;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,6 +41,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -112,31 +120,31 @@ public class InjectPixarExampleCubesConfig {
 					String csv = PepperResourceHelper.loadAsString("/datasets/Pixar+Films/%s.csv".formatted(fileName),
 							StandardCharsets.UTF_8);
 
-					csv.lines()
-							// skip header row
-							.skip(1)
-							.forEach(row -> {
-								if (row.contains(",\"") || row.contains("\",")) {
-									// `split.(',')` is not enough
-									log.warn("Skipping complex CSV row: {}", row);
-									return;
-								}
-								try {
-									appender.beginRow();
-									Stream.of(row.split(",")).forEach(cell -> {
-										try {
-											appender.append(cell);
-										} catch (SQLException e) {
-											throw new IllegalStateException(
-													"Issue loading cell=%s for file=%s".formatted(cell, fileName),
-													e);
-										}
-									});
-									appender.endRow();
-								} catch (SQLException e) {
-									throw new IllegalStateException("Issue loading " + fileName, e);
-								}
-							});
+					CSVParser parser = new CSVParserBuilder().withSeparator(',').build();
+
+					try (CSVReader csvReader = new CSVReaderBuilder(new StringReader(csv)).withSkipLines(1)
+							.withCSVParser(parser)
+							.build()) {
+						csvReader.forEach(row -> {
+							try {
+								appender.beginRow();
+								Stream.of(row).forEach(cell -> {
+									try {
+										appender.append(cell);
+									} catch (SQLException e) {
+										throw new IllegalStateException(
+												"Issue loading cell=%s for file=%s".formatted(cell, fileName),
+												e);
+									}
+								});
+								appender.endRow();
+							} catch (SQLException e) {
+								throw new IllegalStateException("Issue loading " + fileName, e);
+							}
+						});
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 
 				} catch (SQLException e) {
 					throw new IllegalStateException("Issue processing tableName=%s".formatted(fileName), e);

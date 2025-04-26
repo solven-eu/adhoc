@@ -28,7 +28,7 @@ export const useUserStore = defineStore("user", {
 		tokens: {},
 
 		// Used to know when a first `loadUser` has kicked-in
-		hasTriedLoadingUser: false,
+		// hasTriedLoadingUser: false,
 
 		// Some very first check to know if we are potentially logged-in
 		// (May check some Cookie or localStorage, or some API preferably returning 2XX even if not logged-in)
@@ -45,9 +45,9 @@ export const useUserStore = defineStore("user", {
 	}),
 	getters: {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
-		// BEWARE The session may be expired: we can have `isLoggedIn && `
+		// BEWARE `store.account.details.username` is not null after a session expiry, but `needsToLogin` would turn to true
 		// If false, we need to check `needsToCheckLogin && needsToLogin`
-		isLoggedIn: (store) => store.account.details.username,
+		isLoggedIn: (store) => !store.needsToLogin && store.account.details.username,
 		isLoggedOut: (store) => {
 			if (store.isLoggedIn) {
 				// No need to login as we have an account (hence presumably relevant Cookies/tokens)
@@ -161,8 +161,6 @@ export const useUserStore = defineStore("user", {
 				return user;
 			}
 
-			// Switch `needsToCheckLogin` synchronously in order to signal
-			store.hasTriedLoadingUser = true;
 			return store
 				.fetchLoginStatus()
 				.then((loginHttpStatus) => {
@@ -214,13 +212,13 @@ export const useUserStore = defineStore("user", {
 		 * Contrary to `loadUser`, this will not trigger the loading of login state and userInfo on each call. It is especially userful not to have a spike of `loadUser` at startup.
 		 */
 		async initializeUser() {
-			if (this.hasTriedLoadingUser) {
-				console.log(`Skip initializeUser as hasTriedLoadingUser=${this.hasTriedLoadingUser}`);
-
-				return Promise.resolve({ error: "UserIsLoggedOut" });
+			if (!!this.initializeUserPromise) {
+				console.log(`Skip initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);
 			} else {
-				return this.loadUserIfMissing();
+				console.log(`Doing initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);
+				this.initializeUserPromise = this.loadUserIfMissing();
 			}
+			return this.initializeUserPromise;
 		},
 
 		// do not throw if not logged-in
@@ -298,7 +296,7 @@ export const useUserStore = defineStore("user", {
 				}
 			}
 
-			return this.loadUser().then((user) => {
+			return this.loadUserIfMissing().then((user) => {
 				if (store.isLoggedIn) {
 					console.log("We do have a User. Let's fetch tokens", user);
 					return fetchFromUrl(`/api/login/v1/oauth2/token`);
