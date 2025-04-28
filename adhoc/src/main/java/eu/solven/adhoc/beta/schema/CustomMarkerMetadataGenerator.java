@@ -38,6 +38,7 @@ import lombok.Value;
 @Builder
 public class CustomMarkerMetadataGenerator {
 	// jsonPath to the data-point
+	// For instance `$.myProject.ccy`
 	String path;
 
 	// String type;

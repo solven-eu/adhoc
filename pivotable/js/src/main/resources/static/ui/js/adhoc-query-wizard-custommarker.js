@@ -15,12 +15,12 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="mb-3">
+        <div class="mb-3">{{customMarker.path}}
             <label :for="'customMarker_' + customMarker.name" class="form-label">{{customMarker.name}}</label>
 
             <span :id="'customMarker_' + customMarker.name">
                 <span v-if="customMarker.possibleValues.length >= 1">
-                    <select class="form-select" :aria-label="customMarker.defaultValue" v-model="queryModel.customMarkers[customMarker.name]">
+                    <select class="form-select" :aria-label="customMarker.defaultValue" v-model="queryModel.customMarkers[customMarker.path]">
                         <option :value="customMarker.defaultValue" selected v-if="customMarker.defaultValue">{{customMarker.defaultValue}}</option>
                         <option :value="possibleValue" v-for="possibleValue in customMarker.possibleValues">{{possibleValue}}</option>
                     </select>

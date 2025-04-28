@@ -29,7 +29,7 @@ export default {
                     type="text"
                     placeholder="Min fraction digits"
                     aria-label="Min fraction digits"
-                    id="maxDigits"
+                    id="minimumFractionDigits"
                     v-model="formatOptions.minimumFractionDigits"
                 />
             </div>
@@ -40,7 +40,7 @@ export default {
                     type="text"
                     placeholder="Max fraction digits"
                     aria-label="Max fraction digits"
-                    id="maxDigits"
+                    id="maximumFractionDigits"
                     v-model="formatOptions.maximumFractionDigits"
                 />
             </div>
@@ -51,7 +51,7 @@ export default {
                     type="text"
                     placeholder="Max significant digits"
                     aria-label="Max significant digits"
-                    id="maxDigits"
+                    id="maximumSignificantDigits"
                     v-model="formatOptions.maximumSignificantDigits"
                 />
             </div>

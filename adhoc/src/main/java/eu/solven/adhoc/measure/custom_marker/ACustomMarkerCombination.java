@@ -47,8 +47,15 @@ public abstract class ACustomMarkerCombination implements ICombination {
 		if (customMarker == null) {
 			return defaultValue;
 		} else if (customMarker instanceof Map<?, ?> asMap) {
-			Optional<Object> optReferenceCcy = MapPathGet.getOptionalAs(asMap, getSplitMapPath());
-			return optReferenceCcy.orElse(defaultValue);
+			// Dig supposing asMap is a recursiveMap
+			Optional<Object> optCustomMarker = MapPathGet.getOptionalAs(asMap, getSplitMapPath());
+
+			// Dig supposing asMap is a flatMap
+			if (optCustomMarker.isEmpty()) {
+				optCustomMarker = MapPathGet.getOptionalAs(asMap, getJoinedMapPath());
+			}
+
+			return optCustomMarker.orElse(defaultValue);
 		} else {
 			log.warn("Not-managed customMarker: {}", customMarker);
 			return defaultValue;
