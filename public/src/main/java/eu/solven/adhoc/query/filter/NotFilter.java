@@ -41,6 +41,11 @@ public class NotFilter implements INotFilter {
 	}
 
 	public static IAdhocFilter not(IAdhocFilter filter) {
+		if (filter.isMatchAll()) {
+			return MATCH_NONE;
+		} else if (filter.isMatchNone()) {
+			return MATCH_ALL;
+		}
 		return NotFilter.builder().negated(filter).build();
 	}
 

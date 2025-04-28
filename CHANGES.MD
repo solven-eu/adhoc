@@ -10,6 +10,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Changed
 - `DuckDB` is upgraded to 1.2.2.0
+- In `Pivotbale`, `customMarkers` are written on a per-value basis, with the `path` as key.
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube

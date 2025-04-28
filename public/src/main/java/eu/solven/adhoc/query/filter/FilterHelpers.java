@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,25 @@ public class FilterHelpers {
 				// column is not filtered
 				return IValueMatcher.MATCH_ALL;
 			}
+		}  else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			IAdhocFilter negated = notFilter.getNegated();
+
+			// Some INotFilter may not be optimized into `matchAll` or `matchNone`
+			// We analyse these cases manually as we'll later keep `matchAll` if current column is unrelated to the filter
+			if (negated.isMatchAll()) {
+				return IValueMatcher.MATCH_NONE;
+			} else if (negated.isMatchNone()) {
+				return IValueMatcher.MATCH_NONE;
+			}
+			IValueMatcher valueMatcher = getValueMatcher(negated, column);
+
+			if (valueMatcher.equals(IValueMatcher.MATCH_ALL)) {
+				// The underlying filter is unrelated to `column`: should not negate `matchAll`
+				return valueMatcher;
+			}
+
+			// This is a not trivial valueMatcher: negate it
+			return NotMatcher.not(valueMatcher);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IValueMatcher> filters =
 					andFilter.getOperands().stream().map(f -> getValueMatcher(f, column)).collect(Collectors.toSet());

@@ -33,11 +33,7 @@ import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.*;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -98,7 +94,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	}
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+		return MultitypeNavigableMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
 	@Override

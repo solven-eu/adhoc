@@ -111,15 +111,15 @@ public class JooqTableWrapper implements ITableWrapper {
 			String fieldName = field.getName();
 
 			Class<?> fieldType = field.getType();
-			ColumnMetadata previousType =
+			ColumnMetadata previousColumn =
 					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
-			if (previousType != null) {
+			if (previousColumn != null) {
 				log.debug("Multiple columns with same name. Typically happens on a JOIN");
-				if (!Objects.equals(fieldType, previousType)) {
-					log.warn("Multiple columns with same name (table=%s column=%s), and different types: %s != %s",
+				if (!Objects.equals(fieldType, previousColumn.getType())) {
+					log.warn("Multiple columns with same name (table={} column={}), and different types: {} != {}",
 							getName(),
 							fieldName,
-							previousType,
+							previousColumn,
 							fieldType);
 				}
 			}
