@@ -20,34 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.client;
+package eu.solven.adhoc.measure.model;
 
-import eu.solven.adhoc.beta.schema.ColumnStatistics;
-import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import java.util.Set;
 
 /**
- * Wraps Pivotable API
+ * Used to provide synthetic information.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IPivotableServer {
-	Flux<PivotableAdhocEndpointMetadata> searchEntrypoints(AdhocEndpointSearch search);
+public interface IHasTags {
 
-	Flux<TargetedEndpointSchemaMetadata> searchSchemas(AdhocEndpointSearch search);
-
-	Flux<ColumnStatistics> columnMetadata(AdhocColumnSearch search);
-
-	Flux<ColumnStatistics> searchMembers(AdhocCoordinatesSearch search);
-
-	Mono<ITabularView> executeQuery(TargetedAdhocQuery query);
-
+	/**
+	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
+	 * 
+	 * @return the tags applied to this measure.
+	 */
+	Set<String> getTags();
 }

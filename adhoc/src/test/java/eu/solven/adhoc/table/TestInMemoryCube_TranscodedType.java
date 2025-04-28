@@ -75,10 +75,10 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 				}).build())
 				.build();
 
-		Assertions.assertThat(cube.getColumns()).containsEntry("date_as_string", String.class);
+		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date_as_string", String.class);
 		// TODO This should be reported as a LocalDate
 		// Though, how can we infer the type given no data?
-		Assertions.assertThat(cubeWithTranscoding.getColumns()).containsEntry("date_as_string", String.class);
+		Assertions.assertThat(cubeWithTranscoding.getColumnTypes()).containsEntry("date_as_string", String.class);
 	}
 
 	@Test
@@ -101,8 +101,8 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 						.build())
 				.build();
 
-		Assertions.assertThat(cube.getColumns()).containsEntry("date_as_string", String.class);
-		Assertions.assertThat(cubeWithCalculated.getColumns())
+		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date_as_string", String.class);
+		Assertions.assertThat(cubeWithCalculated.getColumnTypes())
 				.containsEntry("date_as_string", String.class)
 				.containsEntry("date", LocalDate.class);
 	}

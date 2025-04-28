@@ -35,7 +35,7 @@ import org.springframework.web.reactive.function.client.WebClient.RequestHeaders
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import eu.solven.adhoc.beta.schema.ColumnMetadata;
+import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
@@ -186,7 +186,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	}
 
 	@Override
-	public Flux<ColumnMetadata> columnMetadata(AdhocColumnSearch search) {
+	public Flux<ColumnStatistics> columnMetadata(AdhocColumnSearch search) {
 		return accessToken().map(accessToken -> {
 			RequestHeadersSpec<?> spec = getWebClient().get()
 					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints/schemas/columns")
@@ -205,13 +205,13 @@ public class PivotableWebclientServer implements IPivotableServer {
 					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
 				}
 				log.info("Search for columns: {}", r.statusCode());
-				return r.bodyToFlux(ColumnMetadata.class);
+				return r.bodyToFlux(ColumnStatistics.class);
 			});
 		});
 	}
 
 	@Override
-	public Flux<ColumnMetadata> searchMembers(AdhocCoordinatesSearch search) {
+	public Flux<ColumnStatistics> searchMembers(AdhocCoordinatesSearch search) {
 		// TODO Auto-generated method stub
 		return null;
 	}

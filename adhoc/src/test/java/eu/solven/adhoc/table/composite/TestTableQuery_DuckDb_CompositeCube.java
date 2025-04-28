@@ -150,15 +150,20 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testGetColumns() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		Assertions.assertThat(cube3.getColumns())
+		Assertions.assertThat(cube3.getColumnTypes())
 				.containsEntry("a", String.class)
 				.containsEntry("b", String.class)
 				.containsEntry("c", String.class)
 				.containsEntry(k1Sum.getColumnName(), Double.class)
 				.containsEntry(k2Sum.getColumnName(), Double.class)
 				.containsEntry(k3Sum.getColumnName(), Double.class)
-				.containsEntry("adhocCubeSlicer", Object.class)
+				.containsEntry("cubeSlicer", Object.class)
 				.hasSize(7);
+
+		Assertions.assertThat(cube3.getColumns()).anySatisfy(c -> {
+			Assertions.assertThat(c.getName()).isEqualTo("cubeSlicer");
+			Assertions.assertThat(c.getTags()).contains("adhoc");
+		}).hasSize(7);
 
 		Assertions.assertThat(cube3.getNameToMeasure().keySet())
 				.contains(k1Sum.getColumnName())

@@ -22,19 +22,28 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import eu.solven.adhoc.column.ColumnMetadata;
 
 /**
  * Helps describing the column of some data-structure.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasColumns {
+public interface IHasColumns extends IHasColumnTypes {
 
 	/**
+	 * Must be distinct per name.
 	 * 
-	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
+	 * @return the columns available for groupBy operations
 	 */
-	Map<String, Class<?>> getColumns();
+	Collection<ColumnMetadata> getColumns();
 
+	@Override
+	default Map<String, Class<?>> getColumnTypes() {
+		return getColumns().stream().collect(Collectors.toMap(c -> c.getName(), c -> c.getType()));
+	}
 }

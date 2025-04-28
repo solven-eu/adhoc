@@ -43,6 +43,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -120,7 +121,7 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
 		{
-			Set<String> tableColumns = getColumns().keySet();
+			Set<String> tableColumns = getColumnTypes().keySet();
 			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
 			if (!unknownFilteredColumns.isEmpty()) {
 				throw new IllegalArgumentException("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
@@ -219,7 +220,7 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public List<ColumnMetadata> getColumns() {
 		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
 
 		rows.stream().flatMap(row -> row.entrySet().stream()).forEach(e -> {
@@ -244,7 +245,10 @@ public class InMemoryTable implements ITableWrapper {
 			}
 		});
 
-		return columnToClass;
+		return columnToClass.entrySet()
+				.stream()
+				.map(e -> ColumnMetadata.builder().name(e.getKey()).type(e.getValue()).build())
+				.toList();
 	}
 
 	@Override

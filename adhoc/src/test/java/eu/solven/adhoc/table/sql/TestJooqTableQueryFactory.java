@@ -37,6 +37,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -78,12 +79,26 @@ public class TestJooqTableQueryFactory {
 
 	@Test
 	public void testToCondition_OrColumnsEquals() {
-		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener
-				.toCondition(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
+		IAdhocFilter filter = OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2"));
+		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
+				  "k1" = 'v1'
+				  or "k2" = 'v2'
+				)""");
+	}
+
+	@Test
+	public void testToCondition_Not() {
+		IAdhocFilter filter =
+				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
+		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(filter);
+
+		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				not (
 				  "k1" = 'v1'
 				  or "k2" = 'v2'
 				)""");
@@ -179,6 +194,20 @@ public class TestJooqTableQueryFactory {
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(orFilter));
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k", "c", "d" from "someTableName" where "k" is not null group by "c", "d"
+				""".trim());
+	}
+
+	@Test
+	public void testFilter_custom_NOT() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
+		IAdhocFilter orFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") "k", "c", "d" from "someTableName" where "k" is not null group by "c", "d"
 				""".trim());

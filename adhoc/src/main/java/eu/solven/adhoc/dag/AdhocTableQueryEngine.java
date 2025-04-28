@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
@@ -108,11 +107,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 
 	@NonNull
 	@Default
-	IStopwatchFactory stopwatchFactory = () -> {
-		Stopwatch stopwatch = Stopwatch.createStarted();
-
-		return stopwatch::elapsed;
-	};
+	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 
 	@Override
 	public Map<AdhocQueryStep, ISliceToValue> executeTableQueries(ExecutingQueryContext executingQueryContext,
@@ -278,7 +273,7 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 				executingQueryContext.getForest().getMeasures(),
 				IValueMatcher.MATCH_ALL)
 				.stream()
-				.flatMap(cg -> cg.getColumns().keySet().stream())
+				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
 				.collect(Collectors.toSet());
 
 		Set<String> groupedByCubeColumns =

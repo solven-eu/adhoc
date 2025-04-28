@@ -144,7 +144,7 @@ public class ExampleVaRDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public Map<String, Class<?>> getColumnTypes() {
 		return ImmutableMap.<String, Class<?>>builder()
 				.put(IExampleVaRConstants.C_SCENARIOINDEX, Integer.class)
 				.put(IExampleVaRConstants.C_SCENARIONAME, String.class)

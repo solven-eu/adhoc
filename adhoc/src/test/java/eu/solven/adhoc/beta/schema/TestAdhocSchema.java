@@ -77,7 +77,7 @@ public class TestAdhocSchema {
 
 		CubeWrapper cube = schema.registerCube("simple", "simple", "simple");
 
-		Assertions.assertThat(cube.getColumns()).containsEntry("date", LocalDate.class);
+		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date", LocalDate.class);
 
 		ITabularView view = schema.execute("simple",
 				AdhocQuery.builder()

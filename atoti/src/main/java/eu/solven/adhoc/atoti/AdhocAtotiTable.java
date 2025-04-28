@@ -24,11 +24,12 @@ package eu.solven.adhoc.atoti;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
+import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.ILocation;
@@ -40,6 +41,8 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.QueryException;
 
+import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -135,13 +138,37 @@ public class AdhocAtotiTable implements ITableWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
-		Map<String, Class<?>> columns = new HashMap<>();
+	public List<ColumnMetadata> getColumns() {
+		List<ColumnMetadata> columns = new ArrayList<>();
+
+		AtomicLongMap<String> nameToCount = AtomicLongMap.create();
 
 		inferPivotId().getDimensions().forEach(d -> {
 			d.getHierarchies().forEach(h -> {
 				h.getLevels().forEach(l -> {
-					columns.put("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()), Object.class);
+					nameToCount.incrementAndGet("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
+					nameToCount.incrementAndGet("%s@%s".formatted(l.getName(), h.getName()));
+					nameToCount.incrementAndGet("%s".formatted(l.getName()));
+				});
+			});
+		});
+
+		inferPivotId().getDimensions().forEach(d -> {
+			d.getHierarchies().forEach(h -> {
+				h.getLevels().forEach(l -> {
+					ColumnMetadataBuilder columnBuilder =
+							ColumnMetadata.builder().name("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
+
+					columnBuilder.tag("d=" + d.getName());
+					columnBuilder.tag("h=" + h.getName());
+
+					Stream.of("%s@%s".formatted(l.getName(), h.getName()), "%s".formatted(l.getName()))
+							// Register a simpler alias if it is not ambiguous
+							.filter(s -> nameToCount.get(s) == 1)
+							.forEach(alias -> columnBuilder.alias(alias));
+
+					ColumnMetadata column = columnBuilder.build();
+					columns.add(column);
 				});
 			});
 		});

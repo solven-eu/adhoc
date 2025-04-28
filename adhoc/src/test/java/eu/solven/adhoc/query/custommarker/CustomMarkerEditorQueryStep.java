@@ -78,7 +78,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 	}
 
 	private boolean isDebug() {
-		return customMarkerEditor.isDebug() || step.isDebug();
+		return step.isDebug();
 	}
 
 	protected void onSlice(ISliceWithStep slice, Object value, ISliceAndValueConsumer output) {

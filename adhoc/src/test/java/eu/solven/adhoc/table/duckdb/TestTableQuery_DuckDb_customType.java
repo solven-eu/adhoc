@@ -68,7 +68,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 		ICustomTypeManager customTypeManager = new ICustomTypeManager() {
 			@Override
-			public Map<String, Class<?>> getColumns() {
+			public Map<String, Class<?>> getColumnTypes() {
 				return Map.of("letter", Letter.class);
 			}
 
@@ -133,7 +133,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	public void testGetColumns() {
 		initAndInsert();
 
-		Assertions.assertThat(wrapInCube(forest).getColumns())
+		Assertions.assertThat(wrapInCube(forest).getColumnTypes())
 				.hasSize(2)
 				.containsEntry("letter", Letter.class)
 				.containsEntry("k1", Double.class);

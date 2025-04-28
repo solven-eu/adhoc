@@ -116,7 +116,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testGetColumns() {
-		Assertions.assertThat(wrapInCube(forest).getColumns()).hasSize(21);
+		Assertions.assertThat(wrapInCube(forest).getColumnTypes()).hasSize(21);
 	}
 
 	@Test
@@ -151,7 +151,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 	public void testCoordinates_allColumns_like() {
 		// Search through all columns for any coordinate matching `%abc%`
 		Map<String, IValueMatcher> columnsToAbc = new HashMap<>();
-		wrapInCube(forest).getColumns()
+		wrapInCube(forest).getColumnTypes()
 				.forEach((column, type) -> columnsToAbc.put(column, LikeMatcher.matching("%ab%")));
 
 		Map<String, CoordinatesSample> columnsMeta = wrapInCube(forest).getCoordinates(columnsToAbc, 5);

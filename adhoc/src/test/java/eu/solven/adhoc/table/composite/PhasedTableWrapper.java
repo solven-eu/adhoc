@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Phaser;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -91,8 +93,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
-		return Map.of();
+	public List<ColumnMetadata> getColumns() {
+		return List.of();
 	}
 
 	@Override

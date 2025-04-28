@@ -67,7 +67,9 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -80,6 +82,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -397,6 +400,36 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			} else {
 				return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
 			}
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			ConditionWithFilter negated = toCondition(notFilter.getNegated());
+
+			// `!(sqlCondition && postFilter) === !sqlCondition || !postFilter`
+			// ConditionWithFilter can not express an OR, so we just ensure one of `sqlCondition` or `postFilter` is
+			// `matchAll`.
+			boolean oneIsMatchAll = false;
+
+			IAdhocFilter negatedPostFilter;
+			if (negated.getPostFilter().isMatchAll()) {
+				negatedPostFilter = IAdhocFilter.MATCH_ALL;
+				oneIsMatchAll = true;
+			} else {
+				// There is no postFilter: keep it as matchAll
+				negatedPostFilter = NotFilter.not(negated.getPostFilter());
+			}
+
+			Condition negatedCondition;
+			if (negated.getCondition() instanceof True) {
+				negatedCondition = DSL.trueCondition();
+				oneIsMatchAll = true;
+			} else {
+				negatedCondition = negated.getCondition().not();
+			}
+
+			if (!oneIsMatchAll) {
+				throw new NotYetImplementedException("Converting `%s` to SQL".formatted(filter));
+			}
+
+			return ConditionWithFilter.builder().postFilter(negatedPostFilter).condition(negatedCondition).build();
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column

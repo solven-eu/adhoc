@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.beta.schema.*;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
-import eu.solven.adhoc.beta.schema.ColumnMetadata;
+import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
@@ -157,10 +157,10 @@ public class PivotableEndpointsHandler {
 		// Request columns only for expressed cube and table
 		List<TargetedEndpointSchemaMetadata> schemas = matchingSchema(request, false);
 
-		List<ColumnMetadata> matchingColumns = schemas.stream().flatMap(endpointSchema -> {
+		List<ColumnStatistics> matchingColumns = schemas.stream().flatMap(endpointSchema -> {
 			EndpointSchemaMetadata schema = endpointSchema.getSchema();
 
-			List<ColumnMetadata> endpointColumns = new ArrayList<>();
+			List<ColumnStatistics> endpointColumns = new ArrayList<>();
 
 			// If neither table nor cube, search all?
 			columnSearch.getTable().ifPresent(tableName -> {
@@ -190,11 +190,11 @@ public class PivotableEndpointsHandler {
 				.body(BodyInserters.fromValue(matchingColumns));
 	}
 
-	protected List<ColumnMetadata> addMatchingColumns(TargetedEndpointSchemaMetadata schemaMetadata,
+	protected List<ColumnStatistics> addMatchingColumns(TargetedEndpointSchemaMetadata schemaMetadata,
 			ColumnIdentifier tableId,
 			AdhocColumnSearch columnSearch,
 			ColumnarMetadata holderColumns) {
-		List<ColumnMetadata> columns = new ArrayList<>();
+		List<ColumnStatistics> columns = new ArrayList<>();
 
 		if (holderColumns != null) {
 			UUID endpointId = schemaMetadata.getEndpoint().getId();
@@ -217,7 +217,7 @@ public class PivotableEndpointsHandler {
 								columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL),
 								columnSearch.getLimitCoordinates());
 
-						columns.add(ColumnMetadata.builder()
+						columns.add(ColumnStatistics.builder()
 								.entrypointId(endpointId)
 								.holder(tableId.getHolder())
 								.column(column)

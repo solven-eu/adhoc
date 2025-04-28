@@ -267,8 +267,8 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			table2.add(Map.of("k1", 456));
 
 			// Consider a column in one table but not the other
-			Assertions.assertThat(table1.getColumns()).containsKey("a");
-			Assertions.assertThat(table2.getColumns()).doesNotContainKey("a");
+			Assertions.assertThat(table1.getColumnTypes()).containsKey("a");
+			Assertions.assertThat(table2.getColumnTypes()).doesNotContainKey("a");
 
 			CubeWrapper compositeCube = CubeWrapper.builder()
 					.name("composite")
@@ -341,7 +341,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		Assertions.assertThat(compositeCubesTable.getColumns()).containsKey("adhocCubeSlicer");
+		Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
 	}
 
 	@Test
@@ -382,7 +382,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			table2.add(Map.of("k1", 456));
 
 			// Consider a column in one table but not the other
-			Assertions.assertThat(compositeCubesTable.getColumns()).containsKey("cubeSlicer");
+			Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
 
 			CubeWrapper compositeCube = CubeWrapper.builder()
 					.name("composite")

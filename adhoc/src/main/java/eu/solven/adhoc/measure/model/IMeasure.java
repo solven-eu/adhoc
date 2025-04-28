@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -46,25 +43,12 @@ import eu.solven.adhoc.util.IHasName;
 // https://github.com/FasterXML/jackson-annotations/issues/279
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type", defaultImpl = ReferencedMeasure.class)
 @JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
-public interface IMeasure extends IHasName {
+public interface IMeasure extends IHasName, IHasTags {
 
 	/**
 	 * 
 	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link MeasureForest}.
 	 */
 	String getName();
-
-	/**
-	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).
-	 * 
-	 * @return the tags applied to this measure.
-	 */
-	Set<String> getTags();
-
-	// JsonIgnore as implied by tags
-	@JsonIgnore
-	default boolean isDebug() {
-		return getTags().contains("debug");
-	}
 
 }

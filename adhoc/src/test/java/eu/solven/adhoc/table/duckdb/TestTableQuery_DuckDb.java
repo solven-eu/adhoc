@@ -549,7 +549,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		CubeWrapper cube = wrapInCube(forest);
 
-		Assertions.assertThat(cube.getColumns())
+		Assertions.assertThat(cube.getColumnTypes())
 				.containsEntry("a", String.class)
 				.containsEntry("k1", Double.class)
 				.hasSize(2);

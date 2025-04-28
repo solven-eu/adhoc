@@ -60,7 +60,7 @@ public class UnderlyingQueryStepHelpers {
 	 */
 	public static Stream<SliceAndMeasures> distinctSlices(AdhocQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings) {
-		boolean debug = queryStep.isDebug() || queryStep.getMeasure().isDebug();
+		boolean debug = queryStep.isDebug();
 
 		if (!debug && underlyings.size() == 1) {
 			// Fast track

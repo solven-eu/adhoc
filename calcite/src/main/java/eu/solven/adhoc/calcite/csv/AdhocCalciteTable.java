@@ -82,7 +82,7 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 		List<String> fieldNames = new ArrayList<>();
 		List<SqlTypeName> fieldTypes = new ArrayList<>();
 
-		cube.getColumns().forEach((fieldName, fieldType) -> {
+		cube.getColumnTypes().forEach((fieldName, fieldType) -> {
 			fieldNames.add(fieldName);
 
 			if (fieldType == Integer.class) {

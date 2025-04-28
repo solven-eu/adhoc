@@ -48,7 +48,7 @@ public class CustomDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public Map<String, Class<?>> getColumnTypes() {
 		return Map.of();
 	}
 

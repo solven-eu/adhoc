@@ -6,10 +6,15 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ## [0.0.6]
 ### Fixed
 - `SliceAsMap` did not handle a column with different `Comparable`, typically happening on `LocalDate` column with a `NULL` String on failed JOIN.
+- `not` now works with `FilterHelpers.getFilteredColumns(IAdhocFilter)` and `JooqTableQueryFactory.toCondition(IAdhocFilter)`
+
+### Changed
+- `DuckDB` is upgraded to 1.2.2.0
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube
 - Enable Export to CSV in `Pivotable`
+- Enable Export to Clipboard in `Pivotable`
 
 ## [0.0.5]
 ### Changed

@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.table;
 
-import java.util.Map;
+import java.util.List;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -52,7 +53,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
-		return Map.of();
+	public List<ColumnMetadata> getColumns() {
+		return List.of();
 	}
 }

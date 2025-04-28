@@ -393,7 +393,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	public void testDescribe() {
 		CubeWrapper cube = wrapInCube(forest);
 
-		Assertions.assertThat(cube.getColumns())
+		Assertions.assertThat(cube.getColumnTypes())
 				.containsEntry("color", String.class)
 				.containsEntry("0", Double.class)
 				.containsEntry(Integer.toString(arrayLength - 1), Double.class)

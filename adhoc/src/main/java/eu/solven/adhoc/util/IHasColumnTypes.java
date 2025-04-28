@@ -20,44 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.util;
 
-import java.util.Set;
-import java.util.UUID;
+import java.util.Map;
 
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
-import lombok.extern.slf4j.Slf4j;
+/**
+ * Helps describing the column of some data-structure.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IHasColumnTypes {
 
-@Value
-@Builder
-@Jacksonized
-@Slf4j
-public class ColumnMetadata {
-	// May be null, in context where there is no entrypoint
-	UUID entrypointId;
-
-	// Typically a cube or a table
-	@NonNull
-	String holder;
-
-	@NonNull
-	String column;
-
-	@NonNull
-	String type;
-
-	// The number of different coordinates. This is contextual to a cube/table.
-	// -1 means the cardinality has not been estimated
-	@Default
-	long estimatedCardinality = -1;
-
-	// A subset of matching coordinates. Typically not exhaustive.
-	@Singular
-	Set<?> coordinates;
+	/**
+	 * 
+	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
+	 */
+	Map<String, Class<?>> getColumnTypes();
 
 }

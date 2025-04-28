@@ -34,7 +34,7 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.ColumnMetadata;
+import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
@@ -115,7 +115,7 @@ public class PivotableApiRouter {
 								.parameter(coordinate)
 								.parameter(coordinatesLimit)
 								.response(responseBuilder().responseCode("200")
-										.implementationArray(ColumnMetadata.class)))
+										.implementationArray(ColumnStatistics.class)))
 
 				.GET(json("/cubes/schemas"),
 						queryHandler::loadCubeSchema,

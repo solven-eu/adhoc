@@ -38,9 +38,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.MultimapBuilder.SetMultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
@@ -111,18 +113,20 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	@NonNull
 	@Default
 	// Default name refer to `adhoc` to insist on the fact it does not come from the data
-	final Optional<String> optCubeSlicer = Optional.of("adhocCubeSlicer");
+	final Optional<String> optCubeSlicer = Optional.of("cubeSlicer");
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
-		Map<String, Class<?>> columnToJavaType = new LinkedHashMap<>();
+	public List<ColumnMetadata> getColumns() {
+		SetMultimap<String, ColumnMetadata> columnToJavaType = SetMultimapBuilder.treeKeys().hashSetValues().build();
 
-		// TODO Manage conflicts (e.g. same column but different types)
-		cubes.forEach(cube -> columnToJavaType.putAll(cube.getColumns()));
+		cubes.stream().flatMap(cube -> cube.getColumns().stream()).forEach(c -> columnToJavaType.put(c.getName(), c));
 
-		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn, Object.class));
+		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn,
+				ColumnMetadata.builder().name(cubeColumn).tag("adhoc").build()));
 
-		return columnToJavaType;
+		return columnToJavaType.asMap().entrySet().stream().map(e -> {
+			return ColumnMetadata.merge(e.getValue());
+		}).toList();
 	}
 
 	@Override
@@ -151,7 +155,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, IAdhocQuery> cubeToQuery = new LinkedHashMap<>();
 
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
-			Set<String> subColumns = subCube.getColumns().keySet();
+			Set<String> subColumns = subCube.getColumnTypes().keySet();
 
 			IAdhocQuery subQuery =
 					makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube, subColumns);
@@ -168,7 +172,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
-			Set<String> subColumns = subCube.getColumns().keySet();
+			Set<String> subColumns = subCube.getColumnTypes().keySet();
 
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
 			// from current subCube.
@@ -230,7 +234,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			// Requesting for slices: to be propagated to each underlying cube
 			return true;
 		} else {
-			Set<String> subColumns = subCube.getColumns().keySet();
+			Set<String> subColumns = subCube.getColumnTypes().keySet();
 			CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, subColumns);
 
 			return !compatible.isEmpty();

@@ -53,7 +53,7 @@ public abstract class ATransformator implements ITransformator {
 	}
 
 	protected boolean isDebug() {
-		return getMeasure().isDebug() || getStep().isDebug();
+		return getStep().isDebug();
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {

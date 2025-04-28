@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
@@ -41,8 +42,8 @@ public class TestAdhocQueryStep {
 				.filter(IAdhocFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.customMarker("somethingCutom")
-				.debug(true)
-				.explain(true)
+				.option(StandardQueryOptions.DEBUG)
+				.option(StandardQueryOptions.EXPLAIN)
 				.build();
 
 		step.getCache().put("k", "v");
@@ -70,10 +71,10 @@ public class TestAdhocQueryStep {
 				.build();
 		Assertions.assertThat(stepNotDebug.isDebug()).isFalse();
 
-		AdhocQueryStep stepDebug = AdhocQueryStep.edit(stepNotDebug).debug(true).build();
+		AdhocQueryStep stepDebug = AdhocQueryStep.edit(stepNotDebug).option(StandardQueryOptions.DEBUG).build();
 		Assertions.assertThat(stepDebug.isDebug()).isTrue();
 
-		Assertions.assertThat(stepDebug).isEqualTo(stepNotDebug);
+		Assertions.assertThat(stepDebug).isNotEqualTo(stepNotDebug);
 	}
 
 	@Test

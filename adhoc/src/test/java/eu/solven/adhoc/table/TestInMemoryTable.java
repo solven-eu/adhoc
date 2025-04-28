@@ -43,7 +43,7 @@ public class TestInMemoryTable {
 		table.add(Map.of("c", "someString", "v", 12.34));
 		table.add(Map.of("c", "someString", "date", LocalDate.now()));
 
-		Assertions.assertThat(table.getColumns())
+		Assertions.assertThat(table.getColumnTypes())
 				.hasSize(3)
 				.containsEntry("c", String.class)
 				.containsEntry("v", Number.class)

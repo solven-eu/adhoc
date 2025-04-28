@@ -127,7 +127,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
 		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
 
-		Assertions.assertThat(table.getColumns())
+		Assertions.assertThat(table.getColumnTypes())
 				.containsEntry("countryId", String.class)
 				.containsEntry("countryName", String.class)
 				.containsEntry("productId", String.class)

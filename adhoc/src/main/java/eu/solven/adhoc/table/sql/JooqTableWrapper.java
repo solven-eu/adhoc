@@ -23,7 +23,9 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -76,7 +79,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public Collection<ColumnMetadata> getColumns() {
 		Field<?>[] select;
 
 		try {
@@ -95,21 +98,21 @@ public class JooqTableWrapper implements ITableWrapper {
 					// The failure may be missing anywhere in the SQL (e.g. the main `FROM`, or any `JOIN`)
 					log.warn("No column for table=`{}` due to missing files. sqlMsg={}", getName(), e.getMessage());
 				}
-				return Collections.emptyMap();
+				return Collections.emptyList();
 			} else {
 				throw e;
 			}
 		}
 
 		// https://duckdb.org/docs/sql/expressions/star.html
-
-		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
+		Map<String, ColumnMetadata> columnToType = new HashMap<>();
 
 		Stream.of(select).forEach(field -> {
 			String fieldName = field.getName();
 
 			Class<?> fieldType = field.getType();
-			Class<?> previousType = columnToType.put(fieldName, fieldType);
+			ColumnMetadata previousType =
+					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
 			if (previousType != null) {
 				log.debug("Multiple columns with same name. Typically happens on a JOIN");
 				if (!Objects.equals(fieldType, previousType)) {
@@ -122,7 +125,7 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		});
 
-		return columnToType;
+		return columnToType.values();
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {
@@ -182,7 +185,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		DSLContext dslContext = makeDsl();
 
 		try {
-			Map<String, Class<?>> columnNameToType = getColumns();
+			Map<String, Class<?>> columnNameToType = getColumnTypes();
 			log.info("[DEBUG] {}", columnNameToType);
 
 			// https://stackoverflow.com/questions/76908078/how-to-check-if-a-query-is-valid-or-not-using-jooq

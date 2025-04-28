@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -84,6 +85,12 @@ public class TestFilterHelpers {
 	@Test
 	public void testGetFilteredColumns_or() {
 		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
+		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
+	}
+
+	@Test
+	public void testGetFilteredColumns_not() {
+		IAdhocFilter filter = NotFilter.not(OrFilter.or(Map.of("c1", "v1", "c2", "v2")));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
 	}
 

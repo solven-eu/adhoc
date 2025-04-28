@@ -33,6 +33,7 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -60,7 +61,7 @@ import lombok.Value;
 		// being debug or not should not prevent 2 querySteps to be considered equals in some hashStructure
 		// This could lead to unexpected debug/notDebug. This is relevant if some measure is debugged but not the whole
 		// tree.
-		"debug",
+		// "debug",
 		// cache is typically used for performance improvements: it should not impact any hashStructure
 		"cache" })
 @ToString(exclude = {
@@ -80,12 +81,6 @@ public class AdhocQueryStep
 	// This property is transported down to the DatabaseQuery
 	@Default
 	Object customMarker = null;
-
-	@Default
-	boolean explain = false;
-
-	@Default
-	boolean debug = false;
 
 	@NonNull
 	@Singular
@@ -107,11 +102,11 @@ public class AdhocQueryStep
 	public static AdhocQueryStepBuilder edit(IWhereGroupByQuery step) {
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
-		if (step instanceof IIsExplainable explainable) {
-			builder.explain(explainable.isExplain());
+		if (step instanceof IIsExplainable explainable && explainable.isExplain()) {
+			builder.option(StandardQueryOptions.EXPLAIN);
 		}
-		if (step instanceof IIsDebugable debuggable) {
-			builder.debug(debuggable.isDebug());
+		if (step instanceof IIsDebugable debuggable && debuggable.isDebug()) {
+			builder.option(StandardQueryOptions.DEBUG);
 		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
@@ -121,6 +116,16 @@ public class AdhocQueryStep
 		}
 
 		return builder;
+	}
+
+	@Override
+	public boolean isExplain() {
+		return getOptions().contains(StandardQueryOptions.EXPLAIN);
+	}
+
+	@Override
+	public boolean isDebug() {
+		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains("debug");
 	}
 
 }

@@ -39,7 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.ColumnMetadata;
+import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -139,7 +139,7 @@ public class TestQueryGrandTotalsThroughRouter {
 
 		AtomicInteger nbColumns = new AtomicInteger();
 
-		ColumnMetadata lastColumn = pivotable
+		ColumnStatistics lastColumn = pivotable
 				// Search for self endpoint
 				.searchEntrypoints(AdhocEndpointSearch.builder()
 						.endpointId(Optional.of(PivotableAdhocEndpointMetadata.SELF_ENTRYPOINT_ID))

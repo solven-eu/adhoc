@@ -42,15 +42,15 @@
 			<!-- Many projects may not use EvalTranformation-->
 			<optional>true</optional>
 		</dependency>
-		
+
 		<!-- Used by Pixar example -->
-<dependency>
-    <groupId>com.opencsv</groupId>
-    <artifactId>opencsv</artifactId>
-    <version>5.10</version>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>5.10</version>
 			<!-- Many projects may not use CSVParsing-->
 			<optional>true</optional>
-</dependency>
+		</dependency>
 		<!-- Used by Simple example -->
 		<dependency>
 			<groupId>net.datafaker</groupId>

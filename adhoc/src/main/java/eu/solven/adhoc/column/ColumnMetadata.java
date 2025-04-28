@@ -20,34 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.client;
+package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.beta.schema.ColumnStatistics;
-import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import java.util.Collection;
+import java.util.Set;
 
-/**
- * Wraps Pivotable API
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IPivotableServer {
-	Flux<PivotableAdhocEndpointMetadata> searchEntrypoints(AdhocEndpointSearch search);
+import eu.solven.adhoc.measure.model.IHasTags;
+import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
 
-	Flux<TargetedEndpointSchemaMetadata> searchSchemas(AdhocEndpointSearch search);
+@Value
+@Builder
+public class ColumnMetadata implements IHasName, IHasTags {
 
-	Flux<ColumnStatistics> columnMetadata(AdhocColumnSearch search);
+	@NonNull
+	String name;
 
-	Flux<ColumnStatistics> searchMembers(AdhocCoordinatesSearch search);
+	@Singular
+	Set<String> tags;
 
-	Mono<ITabularView> executeQuery(TargetedAdhocQuery query);
+	@NonNull
+	@Default
+	Class<?> type = Object.class;
+
+	// Alternative names referring to this given. This may not be exhaustive.
+	@Singular
+	Set<String> aliases;
+
+	public static ColumnMetadata merge(Collection<? extends ColumnMetadata> columns) {
+		if (columns.isEmpty()) {
+			throw new IllegalArgumentException("Need at least one column");
+		}
+
+		// TODO Manage conflicts (e.g. same column but different types)
+		return columns.iterator().next();
+	}
 
 }

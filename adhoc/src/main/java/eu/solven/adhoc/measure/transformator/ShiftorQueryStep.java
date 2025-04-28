@@ -127,7 +127,7 @@ public class ShiftorQueryStep implements ITransformator {
 	}
 
 	protected boolean isDebug() {
-		return shiftor.isDebug() || getStep().isDebug();
+		return getStep().isDebug();
 	}
 
 	protected void forEachDistinctSlice1(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {

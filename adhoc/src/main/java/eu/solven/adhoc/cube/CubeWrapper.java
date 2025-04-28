@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.cube;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
@@ -106,18 +108,18 @@ public class CubeWrapper implements ICubeWrapper {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
-		Map<String, Class<?>> columnToType = new HashMap<>();
+	public Collection<ColumnMetadata> getColumns() {
+		Map<String, ColumnMetadata> columnToType = new HashMap<>();
 
-		// First we register table columns
-		table.getColumns().forEach((tableColumn, type) -> {
-			// String tableColumn = columnsManager.transcodeToTable(column);
-
-			columnToType.put(tableColumn, type);
+		// First, register table columns
+		table.getColumns().forEach((table) -> {
+			columnToType.put(table.getName(), table);
 		});
 
-		getColumnsManager().getColumns().forEach((calculatedColumn, type) -> {
-			columnToType.put(calculatedColumn, type);
+		// Then, register calculated columns (e.g. based on an expression)
+		getColumnsManager().getColumnTypes().forEach((columnName, type) -> {
+			columnToType.put(columnName,
+					ColumnMetadata.builder().name(columnName).tag("calculated").type(type).build());
 		});
 
 		IOperatorsFactory operatorsFactory = IHasOperatorsFactory.getOperatorsFactory(engine);
@@ -130,7 +132,10 @@ public class CubeWrapper implements ICubeWrapper {
 
 					optColumnGenerator.ifPresent(columnGenerator -> {
 						// TODO How conflicts should be handled?
-						columnToType.putAll(columnGenerator.getColumns());
+						columnGenerator.getColumnTypes().forEach((columnName, type) -> {
+							columnToType.put(columnName,
+									ColumnMetadata.builder().name(columnName).tag("generated").type(type).build());
+						});
 					});
 				} catch (Exception e) {
 					if (AdhocUnsafe.failFast) {
@@ -148,20 +153,8 @@ public class CubeWrapper implements ICubeWrapper {
 			}
 		});
 
-		return columnToType;
+		return columnToType.values();
 	}
-
-	/**
-	 * Typically useful when the {@link ITableWrapper} has to be changed, but the other parameters must be kept. Another
-	 * typical case is editing the measures.
-	 *
-	 * @param template
-	 *            some template
-	 * @return
-	 */
-	// public static AdhocCubeWrapperBuilder edit(AdhocCubeWrapper template) {
-	// return AdhocCubeWrapper.builder().engine(template.engine).measures(template.measures).table(template.table);
-	// }
 
 	public static class CubeWrapperBuilder {
 		public CubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
@@ -181,8 +174,9 @@ public class CubeWrapper implements ICubeWrapper {
 				forest.getMeasures(),
 				InMatcher.isIn(columnToValueMatcher.keySet()));
 
-		Set<String> generatedColumns =
-				columnGenerators.stream().flatMap(cg -> cg.getColumns().keySet().stream()).collect(Collectors.toSet());
+		Set<String> generatedColumns = columnGenerators.stream()
+				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
+				.collect(Collectors.toSet());
 
 		Map<String, CoordinatesSample> columnToSample = new TreeMap<>();
 

@@ -318,12 +318,12 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public Map<String, Class<?>> getColumnTypes() {
 		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
 
 		// BEWARE What if they is conflicts? Should pick the higher type? (i.e. potential fallback to Object)
 		calculatedColumns.forEach(c -> columnToType.put(c.getName(), c.getType()));
-		columnToType.putAll(customTypeManager.getColumns());
+		columnToType.putAll(customTypeManager.getColumnTypes());
 
 		return ImmutableMap.copyOf(columnToType);
 	}

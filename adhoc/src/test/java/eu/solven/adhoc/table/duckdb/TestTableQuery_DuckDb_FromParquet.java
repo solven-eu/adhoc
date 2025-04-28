@@ -108,7 +108,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		Files.delete(tmpParquetPath);
 
 		// This should not throw not to prevent Pivotable from loading
-		Assertions.assertThat(table.getColumns()).isEmpty();
+		Assertions.assertThat(table.getColumnTypes()).isEmpty();
 	}
 
 	@Test

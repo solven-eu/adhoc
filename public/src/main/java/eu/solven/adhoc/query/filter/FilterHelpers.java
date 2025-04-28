@@ -123,7 +123,7 @@ public class FilterHelpers {
 			if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 				return Set.of(columnFilter.getColumn());
 			} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-				return getFilteredColumns(notFilter);
+				return getFilteredColumns(notFilter.getNegated());
 			} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 				return andFilter.getOperands()
 						.stream()

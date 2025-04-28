@@ -287,7 +287,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<String, Class<?>> getColumns() {
+	public Map<String, Class<?>> getColumnTypes() {
 		return ImmutableMap.<String, Class<?>>builder()
 				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
 				.build();

@@ -91,7 +91,7 @@ public class AdhocSchema implements IAdhocSchema {
 				if (cube == null) {
 					return Map.of();
 				} else {
-					return cube.getColumns();
+					return cube.getColumnTypes();
 				}
 			}));
 
@@ -172,7 +172,7 @@ public class AdhocSchema implements IAdhocSchema {
 			String name = e.getKey();
 			ITableWrapper table = e.getValue();
 			// TODO Should we cache?
-			metadata.table(name, ColumnarMetadata.from(table.getColumns()));
+			metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()));
 		});
 
 		// nameToQuery.forEach((name, query) -> {
@@ -267,7 +267,7 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	public Map<String, Class<?>> getCubeColumns(String cube) {
-		return nameToCube.get(cube).getColumns();
+		return nameToCube.get(cube).getColumnTypes();
 	}
 
 	public Collection<ICubeWrapper> getCubes() {

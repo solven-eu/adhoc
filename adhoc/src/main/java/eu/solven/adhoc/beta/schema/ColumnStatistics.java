@@ -20,34 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.client;
+package eu.solven.adhoc.beta.schema;
 
-import eu.solven.adhoc.beta.schema.ColumnStatistics;
-import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
-import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import java.util.Set;
+import java.util.UUID;
 
-/**
- * Wraps Pivotable API
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IPivotableServer {
-	Flux<PivotableAdhocEndpointMetadata> searchEntrypoints(AdhocEndpointSearch search);
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
-	Flux<TargetedEndpointSchemaMetadata> searchSchemas(AdhocEndpointSearch search);
+@Value
+@Builder
+@Jacksonized
+@Slf4j
+public class ColumnStatistics {
+	// May be null, in context where there is no entrypoint
+	UUID entrypointId;
 
-	Flux<ColumnStatistics> columnMetadata(AdhocColumnSearch search);
+	// Typically a cube or a table
+	@NonNull
+	String holder;
 
-	Flux<ColumnStatistics> searchMembers(AdhocCoordinatesSearch search);
+	@NonNull
+	String column;
 
-	Mono<ITabularView> executeQuery(TargetedAdhocQuery query);
+	@NonNull
+	String type;
+
+	// The number of different coordinates. This is contextual to a cube/table.
+	// -1 means the cardinality has not been estimated
+	@Default
+	long estimatedCardinality = -1;
+
+	// A subset of matching coordinates. Typically not exhaustive.
+	@Singular
+	Set<?> coordinates;
 
 }
