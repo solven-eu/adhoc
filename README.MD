@@ -333,3 +333,4 @@ Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
 - [Pivotable] Handle customMarkers with deep path
+- [Pivotable] Clarify pivottable when latest execution failed. May offer to go back to previous OK query
