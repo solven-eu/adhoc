@@ -57,7 +57,7 @@ public class MapAggregator<K, V> implements IAggregation {
 		} else if (rAsMap == null) {
 			return (Map<K, V>) lAsMap;
 		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will through
+			// BEWARE In case on conflict, ImmutableMap.builder() will throw
 			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
 		}
 	}

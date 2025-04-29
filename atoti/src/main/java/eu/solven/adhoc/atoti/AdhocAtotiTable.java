@@ -49,6 +49,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
@@ -76,7 +77,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();
@@ -107,7 +108,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return new SuppliedTabularRecordStream(tableQuery, asList::stream);
 	}
 
-	protected ITabularRecord asMap(TableQuery tableQuery, ICellSet result, int locationIndex) {
+	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {
 		Map<String, Object> slice = new LinkedHashMap<>();
 
 		tableQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
@@ -117,7 +118,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(slice).build();
 	}
 
-	private Object getColumnCoordinate(TableQuery dbQuery, ICellSet result, int locationIndex, String column) {
+	private Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
 		// result.getCoordinate(locationIndex, result., locationIndex)
 		ILocation l = result.getLocation(locationIndex);
 

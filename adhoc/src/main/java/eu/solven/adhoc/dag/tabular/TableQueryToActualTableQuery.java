@@ -31,7 +31,7 @@ import com.google.common.collect.Sets.SetView;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
@@ -47,13 +47,13 @@ import lombok.Value;
 @Builder
 public class TableQueryToActualTableQuery {
 	// The TableQuery as queried by the DAG: it may still refer generated columns
-	TableQuery dagTableQuery;
+	TableQueryV2 dagQuery;
 	// The TableQuery after having suppressed generated columns
-	TableQuery suppressedTableQuery;
+	TableQueryV2 suppressedQuery;
 
 	public Set<String> getSuppressedGroupBy() {
-		Set<String> queriedColumns = dagTableQuery.getGroupBy().getNameToColumn().keySet();
-		Set<String> withoutSuppressedColumns = suppressedTableQuery.getGroupBy().getNameToColumn().keySet();
+		Set<String> queriedColumns = dagQuery.getGroupBy().getNameToColumn().keySet();
+		Set<String> withoutSuppressedColumns = suppressedQuery.getGroupBy().getNameToColumn().keySet();
 		SetView<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
 		return ImmutableSet.copyOf(suppressedView);
 	}

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
@@ -36,6 +36,7 @@ import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
+import eu.solven.adhoc.query.table.IAliasedAggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -53,7 +54,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	// Need to aggregate partitioned results, like from CompositeCube providing aggregates for same slice
 	@NonNull
 	@Default
-	Map<Aggregator, IMultitypeMergeableColumn<T>> aggregatorToPreAggregated = new HashMap<>();
+	Map<IAliasedAggregator, IMultitypeMergeableColumn<T>> aggregatorToPreAggregated = new LinkedHashMap<>();
 
 	@NonNull
 	IOperatorsFactory operatorsFactory;
@@ -69,8 +70,8 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IValueReceiver contributePre(Aggregator aggregator, T key) {
-		IAggregation agg = operatorsFactory.makeAggregation(aggregator);
+	public IValueReceiver contributePre(IAliasedAggregator aggregator, T key) {
+		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
 
 		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 
@@ -99,7 +100,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(Aggregator aggregator) {
+	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator) {
 		IMultitypeColumnFastGet<T> preColumn = aggregatorToPreAggregated.get(aggregator);
 
 		IMultitypeColumnFastGet<T> column = null;

@@ -31,6 +31,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
+import eu.solven.adhoc.query.table.IAliasedAggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -47,7 +48,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder(toBuilder = true)
 @Jacksonized
-public class Aggregator implements ITableMeasure, IHasAggregationKey {
+public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAggregator {
 	// The name/identifier of the measure
 	@NonNull
 	String name;
@@ -106,6 +107,16 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey {
 
 	@Override
 	public Aggregator toAggregator() {
+		return this;
+	}
+
+	@Override
+	public String getAlias() {
+		return getName();
+	}
+
+	@Override
+	public Aggregator getAggregator() {
 		return this;
 	}
 }

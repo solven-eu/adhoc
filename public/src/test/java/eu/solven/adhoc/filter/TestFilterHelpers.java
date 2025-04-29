@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.value.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +37,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.*;
 
 public class TestFilterHelpers {
 
@@ -76,16 +76,20 @@ public class TestFilterHelpers {
 	@Test
 	public void testGetValueMatcher_Not() {
 		IAdhocFilter filter = NotFilter.not(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
-		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v1")));
-		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1"))
+				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v1")));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
+				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 
 	@Test
 	public void testGetValueMatcher_Not_inAnd() {
-		IAdhocFilter filter = AndFilter.and(ColumnFilter.isEqualTo("c1","v1"), NotFilter.not( ColumnFilter.isEqualTo("c2","v2")));
+		IAdhocFilter filter =
+				AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), NotFilter.not(ColumnFilter.isEqualTo("c2", "v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
-		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
+				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 
@@ -93,7 +97,8 @@ public class TestFilterHelpers {
 	public void testGetValueMatcher_Not_matcher() {
 		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", NotMatcher.not(EqualsMatcher.isEqualTo("v2"))));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
-		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
+				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 

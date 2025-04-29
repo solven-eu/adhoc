@@ -27,6 +27,7 @@ import org.jooq.ResultQuery;
 
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.Value;
 
@@ -44,14 +45,6 @@ public interface IJooqTableQueryFactory {
 		AggregatedRecordFields fields;
 	}
 
-	QueryWithLeftover prepareQuery(TableQuery dbQuery);
+	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
 
-	/**
-	 * Typically used to convert JooQ {@link Record} to Adhoc record.
-	 *
-	 * @param tableQuery
-	 * @param leftover
-	 * @return the ordered name of the selected columns.
-	 */
-	// AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery, @NonNull IAdhocFilter leftover);
 }

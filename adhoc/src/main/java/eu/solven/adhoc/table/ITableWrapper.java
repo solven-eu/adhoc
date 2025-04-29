@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
@@ -48,11 +49,24 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery);
+	ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery);
+
+	@Deprecated(since = "Used for tests, or edge-cases")
+	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {
+		return streamSlices(ExecutingQueryContext.forTable(this), tableQuery);
+	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		return streamSlices(ExecutingQueryContext.forTable(this), tableQuery);
+		TableQueryV2 queryV2 = TableQueryV2.fromV1(tableQuery);
+
+		if (queryV2.getAggregators().stream().anyMatch(fa -> !fa.getAlias().equals(fa.getAggregator().getName()))) {
+			// We throw else we would return result for aliases which does not match the requested measureNames
+			throw new IllegalArgumentException(
+					"You must a tableQueryV2 manually due to ambiguity in measure names and aliases");
+		}
+
+		return streamSlices(queryV2);
 	}
 
 	/**

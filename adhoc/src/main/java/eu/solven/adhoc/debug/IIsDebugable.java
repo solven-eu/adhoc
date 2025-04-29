@@ -28,6 +28,7 @@ package eu.solven.adhoc.debug;
  * @author Benoit Lacelle
  *
  */
+@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.DEBUG)")
 public interface IIsDebugable {
 	boolean isDebug();
 }

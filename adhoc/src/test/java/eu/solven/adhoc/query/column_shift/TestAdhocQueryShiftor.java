@@ -160,8 +160,12 @@ public class TestAdhocQueryShiftor extends ADagTest implements IAdhocTestConstan
 	public void testUnknownCcy_groupByColor() {
 		prepareMeasures();
 
-		ITabularView output = cube
-				.execute(AdhocQuery.builder().measure(mName).andFilter("ccy", "unknown").groupByAlso("color").build());
+		ITabularView output = cube.execute(AdhocQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", "unknown")
+				.groupByAlso("color")
+				.debug(true)
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

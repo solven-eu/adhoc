@@ -33,8 +33,10 @@ public class CompositeCubeHelper {
 	@Builder
 	public static class CompatibleMeasures {
 
-		Set<String> underlyingQueryMeasures;
+		// Measures which are known by the subCube, which we refer to
+		Set<Aggregator> underlyingQueryMeasures;
 
+		// Measures which are not known by the subCube, but for which we provide a definition
 		Set<Aggregator> missingButAddableMeasures;
 
 		public boolean isEmpty() {

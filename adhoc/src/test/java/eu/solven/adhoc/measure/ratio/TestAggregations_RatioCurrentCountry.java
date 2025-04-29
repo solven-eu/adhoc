@@ -171,7 +171,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				\\-- #1 m=d_country=current_ratio(Columnator) filter=country=US groupBy=grandTotal
 				    \\-- #2 m=d_country=current_ratio_postcheck(Combinator) filter=country=US groupBy=grandTotal
 				        |\\- #3 m=d_country=current_slice(Bucketor) filter=country=US groupBy=grandTotal
-				        |   \\-- #4 m=d(Aggregator) filter=country=US groupBy=(country)
+				        |   \\-- #4 m=d(SUM) filter=country=US groupBy=(country)
 				        \\-- #5 m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
 				            \\-- !3""");
 

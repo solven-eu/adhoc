@@ -67,11 +67,12 @@ public class FilterHelpers {
 				// column is not filtered
 				return IValueMatcher.MATCH_ALL;
 			}
-		}  else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			IAdhocFilter negated = notFilter.getNegated();
 
 			// Some INotFilter may not be optimized into `matchAll` or `matchNone`
-			// We analyse these cases manually as we'll later keep `matchAll` if current column is unrelated to the filter
+			// We analyse these cases manually as we'll later keep `matchAll` if current column is unrelated to the
+			// filter
 			if (negated.isMatchAll()) {
 				return IValueMatcher.MATCH_NONE;
 			} else if (negated.isMatchNone()) {
@@ -79,7 +80,7 @@ public class FilterHelpers {
 			}
 			IValueMatcher valueMatcher = getValueMatcher(negated, column);
 
-			if (valueMatcher.equals(IValueMatcher.MATCH_ALL)) {
+			if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
 				// The underlying filter is unrelated to `column`: should not negate `matchAll`
 				return valueMatcher;
 			}

@@ -29,6 +29,7 @@ import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
+import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**
  * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
@@ -81,8 +82,8 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 		return isEmpty(aggregator.getAggregationKey());
 	}
 
-	public static boolean isEmpty(Set<Aggregator> aggregators) {
-		boolean hasEmpty = aggregators.stream().anyMatch(EmptyAggregation::isEmpty);
+	public static boolean isEmpty(Set<? extends IAliasedAggregator> aggregators) {
+		boolean hasEmpty = aggregators.stream().map(aa -> aa.getAggregator()).anyMatch(EmptyAggregation::isEmpty);
 
 		if (hasEmpty && aggregators.size() >= 2) {
 			throw new IllegalArgumentException("Must not query must empty and non-empty: " + aggregators);
@@ -90,4 +91,5 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 
 		return hasEmpty;
 	}
+
 }

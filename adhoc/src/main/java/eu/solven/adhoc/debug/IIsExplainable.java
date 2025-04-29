@@ -29,6 +29,7 @@ package eu.solven.adhoc.debug;
  * @author Benoit Lacelle
  *
  */
+@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.EXPLAIN)")
 public interface IIsExplainable {
 
 	boolean isExplain();

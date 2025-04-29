@@ -29,7 +29,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -48,7 +48,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
 		return new SuppliedTabularRecordStream("empty", Stream::empty);
 	}
 

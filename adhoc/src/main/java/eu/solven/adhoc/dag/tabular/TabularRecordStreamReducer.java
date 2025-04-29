@@ -22,12 +22,9 @@
  */
 package eu.solven.adhoc.dag.tabular;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
@@ -44,7 +41,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -60,7 +58,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	ExecutingQueryContext executingQueryContext;
 	@NonNull
-	TableQuery tableQuery;
+	TableQueryV2 tableQuery;
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures() {
 		return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
@@ -70,8 +68,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	public IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream) {
 		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures();
 
-		TableAggregatesMetadata tableAggregatesMetadata =
-				TableAggregatesMetadata.from(executingQueryContext, tableQuery.getAggregators());
+		// TableAggregatesMetadata tableAggregatesMetadata =
+		// TableAggregatesMetadata.from(executingQueryContext, tableQuery.getAggregators());
 
 		TabularRecordLogger aggregatedRecordLogger =
 				TabularRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
@@ -87,7 +85,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 					// For any reason, `closeHandler` is not called automatically on a terminal operation
 					// .onClose(aggregatedRecordLogger.closeHandler())
-					.forEach(input -> forEachRow(input, peekOnCoordinate, tableAggregatesMetadata, grid));
+					.forEach(input -> forEachRow(input, peekOnCoordinate, grid));
 
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 			aggregatedRecordLogger.closeHandler();
@@ -105,7 +103,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	protected void forEachRow(ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate,
-			TableAggregatesMetadata aggregatesMetadata,
 			IMultitypeMergeableGrid<SliceAsMap> sliceToAgg) {
 		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
 
@@ -117,56 +114,46 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		SliceAsMap coordinates = optCoordinates.get();
 
-		Set<String> aggregatedMeasures = aggregatesMetadata.getMeasures();
+		for (FilteredAggregator aggregatedMeasure : tableQuery.getAggregators()) {
+			IValueReceiver valueConsumer;
 
-		for (String aggregatedMeasure : aggregatedMeasures) {
-			// TODO Compute valueConsumers once for all rows
-			List<IValueReceiver> valueConsumers = new ArrayList<>();
+			Aggregator preAggregation = aggregatedMeasure.getAggregator();
+			// We received a pre-aggregated measure
+			// DB has seemingly done the aggregation for us
+			valueConsumer = sliceToAgg.contributePre(aggregatedMeasure, coordinates);
 
-			Aggregator preAggregation = aggregatesMetadata.getAggregation(aggregatedMeasure);
-			if (preAggregation != null) {
-				// We received a pre-aggregated measure
-				// DB has seemingly done the aggregation for us
-				valueConsumers.add(sliceToAgg.contributePre(preAggregation, coordinates));
-
-				if (executingQueryContext.isDebug()) {
-					Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(aggregatedMeasure));
-					log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
-				}
+			if (executingQueryContext.isDebug()) {
+				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(aggregatedMeasure.getAlias()));
+				log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
 			}
 
-			if (valueConsumers.isEmpty()) {
-				// BEWARE When does it happen? When requesting no measure and no groupBy?
-				continue;
-			}
-
-			if (preAggregation != null && EmptyAggregation.isEmpty(preAggregation)) {
+			if (EmptyAggregation.isEmpty(preAggregation)) {
 				// TODO Introduce .onBoolean
-				valueConsumers.forEach(vc -> vc.onLong(0));
+				valueConsumer.onLong(0);
 			} else {
-				tableRow.onAggregate(aggregatedMeasure).acceptConsumer(new IValueReceiver() {
+				tableRow.onAggregate(aggregatedMeasure.getAlias()).acceptConsumer(new IValueReceiver() {
 
 					@Override
 					public void onLong(long v) {
-						valueConsumers.forEach(vc -> vc.onLong(v));
+						valueConsumer.onLong(v);
 					}
 
 					@Override
 					public void onDouble(double v) {
-						valueConsumers.forEach(vc -> vc.onDouble(v));
+						valueConsumer.onDouble(v);
 					}
 
 					@Override
 					public void onCharsequence(CharSequence v) {
 						if (v != null) {
-							valueConsumers.forEach(vc -> vc.onCharsequence(v));
+							valueConsumer.onCharsequence(v);
 						}
 					}
 
 					@Override
 					public void onObject(Object v) {
 						if (v != null) {
-							valueConsumers.forEach(vc -> vc.onObject(v));
+							valueConsumer.onObject(v);
 						}
 					}
 				});

@@ -24,16 +24,20 @@ package eu.solven.adhoc.query.table;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -65,8 +69,9 @@ import lombok.Value;
  * @see eu.solven.adhoc.table.transcoder.ITableTranscoder
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Deprecated(since = "Not-Ready")
+// https://blog.jooq.org/how-to-calculate-multiple-aggregate-functions-in-a-single-query/
 public class TableQueryV2
 		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
@@ -117,22 +122,41 @@ public class TableQueryV2
 		Multimap<TableQuery, FilteredAggregator> groupByToFilteredAggregators =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
+		AtomicLongMap<List<?>> filteredAggregatorAliasIndex = AtomicLongMap.create();
+
 		tableQueries.forEach(tableQuery -> {
-			tableQuery.getAggregators().forEach(aggregator -> {
-				// use as groupBy the tableQuery without aggregators and filters
-				// it enables keeping other options like customMarkers, which behave like groupBy in this phase
+			if (tableQuery.getAggregators().isEmpty()) {
 				TableQuery groupBy = TableQuery.edit(tableQuery)
 						.clearAggregators()
 						// remove the filter from the `WHERE`
 						.filter(IAdhocFilter.MATCH_ALL)
 						.build();
 				FilteredAggregator filteredAggregator = FilteredAggregator.builder()
-						.aggregator(aggregator)
 						// transfer the whole filter as `FILTER`
 						.filter(tableQuery.getFilter())
+						.aggregator(Aggregator.empty())
 						.build();
 				groupByToFilteredAggregators.put(groupBy, filteredAggregator);
-			});
+			} else {
+				tableQuery.getAggregators().forEach(aggregator -> {
+					// use as groupBy the tableQuery without aggregators and filters
+					// it enables keeping other options like customMarkers, which behave like groupBy in this phase
+					TableQuery groupBy = TableQuery.edit(tableQuery)
+							.clearAggregators()
+							// remove the filter from the `WHERE`
+							.filter(IAdhocFilter.MATCH_ALL)
+							.build();
+					FilteredAggregator filteredAggregator = FilteredAggregator.builder()
+							.aggregator(aggregator)
+							// transfer the whole filter as `FILTER`
+							.filter(tableQuery.getFilter())
+							// The index should be unique per groupBy+aggregator, but it is simpler and totally fine to
+							// increment more often
+							.index(filteredAggregatorAliasIndex.getAndIncrement(List.of(groupBy, aggregator.getName())))
+							.build();
+					groupByToFilteredAggregators.put(groupBy, filteredAggregator);
+				});
+			}
 		});
 
 		Set<TableQueryV2> queriesV2 = new LinkedHashSet<>();
@@ -155,6 +179,10 @@ public class TableQueryV2
 		});
 
 		return queriesV2;
+	}
+
+	public static TableQueryV2 fromV1(TableQuery tableQuery) {
+		return Iterables.getOnlyElement(fromV1(Set.of(tableQuery)));
 	}
 
 	/**

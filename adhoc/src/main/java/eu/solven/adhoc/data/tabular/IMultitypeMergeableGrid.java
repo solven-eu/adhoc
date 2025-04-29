@@ -24,9 +24,9 @@ package eu.solven.adhoc.data.tabular;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
+import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**
  * A tabular grid where cells can be aggregated.
@@ -46,11 +46,11 @@ public interface IMultitypeMergeableGrid<T> {
 	 * @param v
 	 */
 	@Deprecated(since = "Prefer `IValueConsumer contributePre(Aggregator aggregator, T key)`")
-	default void contributePre(Aggregator aggregator, T key, Object v) {
+	default void contributePre(IAliasedAggregator aggregator, T key, Object v) {
 		contributePre(aggregator, key).onObject(v);
 	}
 
-	IValueReceiver contributePre(Aggregator aggregator, T key);
+	IValueReceiver contributePre(IAliasedAggregator aggregator, T key);
 
 	/**
 	 * Will typically handle {@link IAggregationCarrier}.
@@ -58,6 +58,6 @@ public interface IMultitypeMergeableGrid<T> {
 	 * @param aggregator
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
-	IMultitypeColumnFastGet<T> closeColumn(Aggregator aggregator);
+	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator);
 
 }

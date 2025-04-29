@@ -20,43 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.composite;
+package eu.solven.adhoc.query.table;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.measure.model.Aggregator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+/**
+ * Wraps an {@link Aggregator} with an alias. This is useful when a given {@link Aggregator} is referenced multiple
+ * times in a {@link TableQueryV2}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IAliasedAggregator {
+	@JsonIgnore
+	String getAlias();
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-public class TestSubMeasureAsAggregator {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(SubMeasureAsAggregator.class).verify();
-	}
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		SubMeasureAsAggregator subMeasure = SubMeasureAsAggregator.builder()
-				.name("someName")
-				.subMeasure("subMeasureName")
-				.underlyings(Arrays.asList("u1", "u2"))
-				.build();
-
-		String asString = TestMapBasedTabularView.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".SubMeasureAsAggregator",
-				  "name" : "someName",
-				  "subMeasure" : "subMeasureName",
-				  "tags" : [ ],
-				  "aggregationKey" : "SUM",
-				  "aggregationOptions" : { },
-				  "underlyings" : [ "u1", "u2" ]
-				}""");
-	}
+	@JsonIgnore
+	Aggregator getAggregator();
 }

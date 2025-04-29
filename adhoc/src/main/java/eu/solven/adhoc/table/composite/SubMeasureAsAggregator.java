@@ -49,9 +49,13 @@ import lombok.extern.jackson.Jacksonized;
 @Builder(toBuilder = true)
 @Jacksonized
 public class SubMeasureAsAggregator implements ITableMeasure, IHasAggregationKey {
-	// The name/identifier of the measure
+	// The name/identifier of the measure in the composite cube
 	@NonNull
 	String name;
+
+	// The name/identifier of the measure in the sub cube
+	@NonNull
+	String subMeasure;
 
 	@Singular
 	ImmutableSet<String> tags;
@@ -71,6 +75,7 @@ public class SubMeasureAsAggregator implements ITableMeasure, IHasAggregationKey
 	public Aggregator toAggregator() {
 		return Aggregator.builder()
 				.name(name)
+				.columnName(subMeasure)
 				.aggregationKey(aggregationKey)
 				.aggregationOptions(aggregationOptions)
 				.build();

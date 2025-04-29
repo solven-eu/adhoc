@@ -24,6 +24,7 @@ package eu.solven.adhoc.table.composite;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,11 +57,12 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
@@ -73,10 +75,12 @@ import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -144,7 +148,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery compositeQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 compositeQuery) {
 		if (executingQueryContext.getTable() != this) {
 			throw new IllegalStateException(
 					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
@@ -155,10 +159,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, IAdhocQuery> cubeToQuery = new LinkedHashMap<>();
 
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
-			Set<String> subColumns = subCube.getColumnTypes().keySet();
-
-			IAdhocQuery subQuery =
-					makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube, subColumns);
+			IAdhocQuery subQuery = makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube);
 
 			var previous = cubeToQuery.put(subCube.getName(), subQuery);
 			if (previous != null) {
@@ -229,7 +230,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return subCube.execute(query);
 	}
 
-	protected boolean isEligible(ICubeWrapper subCube, TableQuery compositeQuery) {
+	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
 		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
 			// Requesting for slices: to be propagated to each underlying cube
 			return true;
@@ -242,27 +243,27 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	protected IAdhocQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
-			TableQuery compositeQuery,
+			TableQueryV2 compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
-			ICubeWrapper cube,
-			Set<String> cubeColumns) {
-		IAdhocFilter compositeFilter = compositeQuery.getFilter();
+			ICubeWrapper subCube) {
+		Set<String> subColumns = subCube.getColumnTypes().keySet();
 
 		// groupBy only by relevant columns. Other columns are ignored
-		NavigableMap<String, IAdhocColumn> underlyingGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
-		underlyingGroupBy.keySet().retainAll(cubeColumns);
+		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
+		subGroupBy.keySet().retainAll(subColumns);
 
-		IAdhocFilter underlyingFilter = filterForColumns(compositeFilter, cubeColumns);
+		IAdhocFilter compositeFilter = compositeQuery.getFilter();
+		IAdhocFilter subFilter = filterForColumns(compositeFilter, subColumns);
 
-		CompatibleMeasures compatible = computeSubMeasures(compositeQuery, cube, cubeColumns);
+		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subColumns);
 
 		IAdhocQuery query = AdhocQuery.edit(compositeQuery)
-				.filter(underlyingFilter)
-				.groupBy(GroupByColumns.of(underlyingGroupBy.values()))
+				.filter(subFilter)
+				.groupBy(GroupByColumns.of(subGroupBy.values()))
 				// Reference the measures already known by the subCube
-				.measureNames(compatible.getUnderlyingQueryMeasures())
+				.measures(subMeasures.getUnderlyingQueryMeasures())
 				// Add some measure given their definitions
-				.measures(compatible.getMissingButAddableMeasures())
+				.measures(subMeasures.getMissingButAddableMeasures())
 
 				// Some of the queried measures may be unknown to some cubes
 				// (Is this relevant given we queried only the relevant measures?)
@@ -276,28 +277,51 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return AdhocSubQuery.builder().subQuery(query).parentQueryId(executingQueryContext.getQueryId()).build();
 	}
 
-	protected CompatibleMeasures computeSubMeasures(TableQuery compositeQuery,
-			ICubeWrapper cube,
-			Set<String> cubeColumns) {
-		Set<String> cubeMeasures = cube.getNameToMeasure().keySet();
+	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
+			ICubeWrapper subCube,
+			Set<String> subColumns) {
+		if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter()))) {
+			throw new NotYetImplementedException(
+					"FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
+		}
 
-		Set<String> compositeQueryMeasures =
-				compositeQuery.getAggregators().stream().map(Aggregator::getName).collect(Collectors.toSet());
+		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
-		Set<String> underlyingQueryMeasures = Sets.intersection(compositeQueryMeasures, cubeMeasures);
-
-		// TODO Could we also add some transformators?
-		Set<Aggregator> missingButAddableMeasures = compositeQuery.getAggregators()
+		// Measures which are known by the subCube
+		Set<FilteredAggregator> compositeQueryMeasures = compositeQuery.getAggregators()
 				.stream()
-				.filter(a -> !cubeMeasures.contains(a.getName()))
-				.filter(a -> cubeColumns.contains(a.getColumnName()))
-				.collect(Collectors.toSet());
+				// The subCube measure is in the Aggregator columnName
+				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
+				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+
+		// We also propagate to the subCube some measures which definition can be computed on the fly
+		Set<FilteredAggregator> missingButAddableMeasures = compositeQuery.getAggregators()
+				.stream()
+				// subCube does not know about `k1.SUM`
+				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
+				// But the subCube has a `k1` column and we want to aggregate over `k1`
+				// So we propagate the provided definition to the subCube
+				// TODO Could we also add some transformators?
+				.filter(a -> isColumnAvailable(subColumns, a.getAggregator().getColumnName()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		CompatibleMeasures compatible = CompatibleMeasures.builder()
-				.underlyingQueryMeasures(underlyingQueryMeasures)
-				.missingButAddableMeasures(missingButAddableMeasures)
+				// Do not rely on ReferenceMeasures as the FilteredAggregator may have a custom alias
+				// (e.g.)
+				.underlyingQueryMeasures(compositeQueryMeasures.stream()
+						.map(fa -> FilteredAggregator.toAggregator(fa))
+						.collect(Collectors.toCollection(LinkedHashSet::new)))
+				.missingButAddableMeasures(missingButAddableMeasures.stream()
+						.map(fa -> FilteredAggregator.toAggregator(fa))
+						.collect(Collectors.toCollection(LinkedHashSet::new)))
 				.build();
 		return compatible;
+	}
+
+	protected boolean isColumnAvailable(Set<String> subColumns, String subColumn) {
+		// `*` is relevant if we're requesting `COUNT(*)`
+		return ICountMeasuresConstants.ASTERISK.equals(subColumn) || subColumns.contains(subColumn);
 	}
 
 	/**
@@ -370,43 +394,43 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	/**
-	 * This will register all measure of underlying cubes into this measure bag. It will enable querying underlying cube
-	 * measures from the composite cube.
+	 * This will register all measure of underlying cubes into this {@link IMeasureForest}. It will enable querying
+	 * subCube measures from the composite cube.
 	 * 
-	 * @param measureBag
-	 *            the measureBag to be applied on top of this composite cube
+	 * @param compositeForest
+	 *            the forest with composite cube own measures.
 	 */
-	public IMeasureForest injectUnderlyingMeasures(IMeasureForest measureBag) {
-		Set<String> compositeMeasures = new HashSet<>(measureBag.getNameToMeasure().keySet());
+	public IMeasureForest injectUnderlyingMeasures(IMeasureForest compositeForest) {
+		Set<String> compositeMeasures = new HashSet<>(compositeForest.getNameToMeasure().keySet());
 
 		SetMultimap<String, String> measureToCubes = HashMultimap.create();
 
 		Set<IMeasure> measuresToAdd = new HashSet<>();
 
-		cubes.forEach(cube -> {
-			cube.getMeasures().stream().forEach(underlyingMeasure -> {
-				String measureName = underlyingMeasure.getName();
+		cubes.forEach(subCube -> {
+			subCube.getMeasures().stream().forEach(subMeasure -> {
+				String subMeasureName = subMeasure.getName();
 
 				String compositeMeasureName;
 
-				String cubeName = cube.getName();
-				if (compositeMeasures.contains(measureName)) {
-					log.debug("{} is a measureName both in composite and in {}", measureName, cubeName);
-					compositeMeasureName = conflictingSubMeasureName(measureName, cubeName);
+				String cubeName = subCube.getName();
+				if (compositeMeasures.contains(subMeasureName)) {
+					log.debug("{} is a measureName both in composite and in {}", subMeasureName, cubeName);
+					compositeMeasureName = conflictingSubMeasureName(subMeasureName, cubeName);
 
 					if (compositeMeasures.contains(compositeMeasureName)) {
 						// TODO Loop until we find an available measureName
 						throw new IllegalArgumentException(
 								"%s is a measure in both composite and %s, and %s is a composite measure"
-										.formatted(measureName, cubeName, compositeMeasureName));
+										.formatted(subMeasureName, cubeName, compositeMeasureName));
 					}
 				} else {
-					compositeMeasureName = measureName;
+					compositeMeasureName = subMeasureName;
 				}
 
 				measureToCubes.put(compositeMeasureName, cubeName);
 
-				IMeasure compositeMeasure = wrapAsCompositeMeasure(cube, underlyingMeasure, compositeMeasureName);
+				IMeasure compositeMeasure = wrapAsCompositeMeasure(subCube, subMeasure, compositeMeasureName);
 				measuresToAdd.add(compositeMeasure);
 			});
 		});
@@ -417,23 +441,36 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				.filter(e -> e.getValue().size() >= 2)
 				.forEach(e -> log.debug("measure={} is provided by cubes: {}", e.getKey(), e.getValue()));
 
-		MeasureForest.MeasureForestBuilder builder = MeasureForest.edit(measureBag);
+		MeasureForest.MeasureForestBuilder builder = MeasureForest.edit(compositeForest);
 
 		measuresToAdd.forEach(builder::measure);
 
 		return builder.build();
 	}
 
-	protected IMeasure wrapAsCompositeMeasure(ICubeWrapper cube,
-			IMeasure underlyingMeasure,
-			String compositeMeasureName) {
-		SubMeasureAsAggregatorBuilder measureBuilder = SubMeasureAsAggregator.builder().name(compositeMeasureName);
+	/**
+	 * 
+	 * @param subCube
+	 * @param subMeasure
+	 *            the measure as defined in the cub cube
+	 * @param compositeMeasureName
+	 *            the name for given measure in the composite cube
+	 * @return
+	 */
+	protected IMeasure wrapAsCompositeMeasure(ICubeWrapper subCube, IMeasure subMeasure, String compositeMeasureName) {
+		SubMeasureAsAggregatorBuilder measureBuilder = SubMeasureAsAggregator.builder()
+				// this may or may not match the underlyingCube name
+				.name(compositeMeasureName)
+				.subMeasure(subMeasure.getName());
 
 		// If some measure is returned by different cubes, we SUM the returned values
 		// TODO The aggregationKey should be evaluated given the Set of providing Cubes
-		measureBuilder.aggregationKey(aggregationKeyForSubMeasure(cube, underlyingMeasure));
+		measureBuilder.aggregationKey(aggregationKeyForSubMeasure(subCube, subMeasure))
+				.aggregationOptions(aggregationOptionsForSubMeasure(subCube, subMeasure));
 
-		if (underlyingMeasure instanceof IHasUnderlyingMeasures hasUndelryingMeasures) {
+		if (subMeasure instanceof IHasUnderlyingMeasures hasUndelryingMeasures) {
+			// The underlying measure of subCube measure are useful for information purposes
+			// e.g. enabling easy underlying measure selection in Pivotable
 			measureBuilder.underlyings(hasUndelryingMeasures.getUnderlyingNames());
 		}
 
@@ -444,7 +481,20 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return measureName + "." + cubeName;
 	}
 
-	protected String aggregationKeyForSubMeasure(ICubeWrapper cube, IMeasure underlyingMeasure) {
-		return SumAggregation.KEY;
+	protected String aggregationKeyForSubMeasure(ICubeWrapper cube, IMeasure subMeasure) {
+		if (subMeasure instanceof IHasAggregationKey hasAggregationKey) {
+			return hasAggregationKey.getAggregationKey();
+		} else {
+			return SumAggregation.KEY;
+		}
 	}
+
+	protected Map<String, ?> aggregationOptionsForSubMeasure(ICubeWrapper subCube, IMeasure subMeasure) {
+		if (subMeasure instanceof IHasAggregationKey hasAggregationKey) {
+			return hasAggregationKey.getAggregationOptions();
+		} else {
+			return Map.of();
+		}
+	}
+
 }

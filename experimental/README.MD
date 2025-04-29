@@ -20,6 +20,12 @@ then set-up your credentials:
 gcloud auth application-default login
 ```
 
+Other useful commands:
+
+```
+gcloud auth list
+```
+
 # Upload your data
 
 TODO

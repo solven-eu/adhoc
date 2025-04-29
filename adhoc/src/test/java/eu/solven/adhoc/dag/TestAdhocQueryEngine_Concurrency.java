@@ -54,12 +54,44 @@ public class TestAdhocQueryEngine_Concurrency extends ARawDagTest implements IAd
 	@Test
 	public void testConcurrentTableQueries() {
 		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+		forest.addMeasure(sum_MaxK1K2ByA);
+
+		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
+
+		// We expect 2 queries: one for grandTotal, and one groupedBy:A
+		phasedTable.getPhasers().bulkRegister(2);
+
+		ITabularView view = cube.execute(
+				AdhocQuery.builder().measure(k1Sum, sum_MaxK1K2ByA).option(StandardQueryOptions.CONCURRENT).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 1, sum_MaxK1K2ByA.getName(), 0L + 1))
+				.hasSize(1);
+
+		Phaser opening = phasedTable.getPhasers().getOpening();
+		Assertions.assertThat(opening.getPhase()).isEqualTo(1);
+		Assertions.assertThat(opening.getArrivedParties()).isEqualTo(0);
+
+		Phaser streaming = phasedTable.getPhasers().getStreaming();
+		Assertions.assertThat(streaming.getPhase()).isEqualTo(1);
+		Assertions.assertThat(streaming.getArrivedParties()).isEqualTo(0);
+
+		Phaser closing = phasedTable.getPhasers().getClosing();
+		Assertions.assertThat(closing.getPhase()).isEqualTo(1);
+		Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
+	}
+
+	@Test
+	public void testConcurrentTableQueries_differByFilter() {
+		forest.addMeasure(k1Sum);
 		forest.addMeasure(filterK1onA1);
 
 		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
 
-		// We expect 2 queries: one for grandTotal, and one filtered on A1
-		phasedTable.getPhasers().bulkRegister(2);
+		// We expect 1 query: one for grandTotal, and one filtered on A1, both in same SQL given FILTER
+		phasedTable.getPhasers().bulkRegister(1);
 
 		ITabularView view = cube.execute(
 				AdhocQuery.builder().measure(k1Sum, filterK1onA1).option(StandardQueryOptions.CONCURRENT).build());

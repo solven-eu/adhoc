@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
@@ -90,6 +91,12 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	}
 
 	private CubeWrapper makeAndFeedCompositeCube() {
+		return makeAndFeedCompositeCube(forest -> {
+			// Stick to default behavior
+		});
+	}
+
+	private CubeWrapper makeAndFeedCompositeCube(Consumer<UnsafeMeasureForestBag> onForestWithoutSubs) {
 		CubeWrapper cube1;
 		{
 			dsl.createTableIfNotExists(tableName1)
@@ -128,15 +135,14 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag measureBagWithoutUnderlyings =
-				UnsafeMeasureForestBag.builder().name("composite").build();
-		measureBagWithoutUnderlyings.addMeasure(k1PlusK2AsExpr);
+		UnsafeMeasureForestBag forestWithoutSubs = UnsafeMeasureForestBag.builder().name("composite").build();
+		forestWithoutSubs.addMeasure(k1PlusK2AsExpr);
+		onForestWithoutSubs.accept(forestWithoutSubs);
 
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		IMeasureForest measureBagWithUnderlyings =
-				compositeCubesTable.injectUnderlyingMeasures(measureBagWithoutUnderlyings);
+		IMeasureForest measureBagWithUnderlyings = compositeCubesTable.injectUnderlyingMeasures(forestWithoutSubs);
 
 		CubeWrapper cube3 = CubeWrapper.builder()
 				.engine(engine)
@@ -312,13 +318,13 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 						"""
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
-								    |\\- #2 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
-								    \\-- #3 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+								    |\\- #2 m=k1(SUM) filter=b=b1 groupBy=grandTotal
+								    \\-- #3 m=k2(SUM) filter=b=b1 groupBy=grandTotal
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|\\- #1 m=k1(Aggregator) filter=b=b1 groupBy=grandTotal
-								\\-- #2 m=k2(Aggregator) filter=b=b1 groupBy=grandTotal
+								|\\- #1 m=k1(SUM) filter=b=b1 groupBy=grandTotal
+								\\-- #2 m=k2(SUM) filter=b=b1 groupBy=grandTotal
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
-								\\-- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal"""
+								\\-- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal"""
 								.trim());
 		Assertions.assertThat(messages).hasSize(9);
 	}
@@ -477,6 +483,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		cube3.execute(AdhocQuery.builder()
 				.measure("k1", "k2", "k3")
 				.customMarker(Optional.of("JPY"))
+				// TODO `letter` is pointless in this class as it is unknown by all cubes
 				.groupByAlso("letter")
 				.andFilter("color", "red")
 				.explain(true)
@@ -487,28 +494,82 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 						"""
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
-								|\\- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								|   \\  size=1 duration=492ms
-								\\-- #2 m=k2(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								\\-- #2 m=k2(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								    \\  size=1 duration=492ms
-								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
-								|\\- #1 m=k1(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								|   \\  size=1 duration=738ms
-								\\-- #2 m=k3(Aggregator) filter=matchAll groupBy=grandTotal customMarker=JPY
+								\\-- #2 m=k3(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								    \\  size=1 duration=738ms
-								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								|  No cost info
-								|\\- #1 m=k1(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								|\\- #1 m=k1(SUM) filter=color=red groupBy=(letter) customMarker=JPY
 								|   \\  size=2 duration=246ms
-								|\\- #2 m=k2(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								|\\- #2 m=k2(SUM) filter=color=red groupBy=(letter) customMarker=JPY
 								|   \\  size=1 duration=246ms
-								\\-- #3 m=k3(Aggregator) filter=color=red groupBy=(letter) customMarker=JPY
+								\\-- #3 m=k3(SUM) filter=color=red groupBy=(letter) customMarker=JPY
 								    \\  size=1 duration=246ms
 								Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(13);
+	}
+
+	@Test
+	public void testLogPerfs_conflictingSubMeasure() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		CubeWrapper cube3 = makeAndFeedCompositeCube(forest -> {
+			// Register k1Max in composite with same name as underlying k1Sum
+			forest.addMeasure(k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build());
+		});
+
+		String mComposite = k1Sum.getName();
+		String mSub = k1Sum.getName() + "." + ("someTableName1" + ".cube");
+		ITabularView view = cube3.execute(AdhocQuery.builder()
+				// Request both the composite conflicting and the sub conflicting measures
+				.measure(mComposite, mSub)
+				.customMarker(Optional.of("JPY"))
+				.groupByAlso("a")
+				.andFilter("color", "red")
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of("a", "a1"), Map.of(mComposite, 0L + Math.max(1234D, 123D), mSub, 0L + 1234 + 123))
+				// TODO `mSub` should be meaningless for cube2
+				.containsEntry(Map.of("a", "a2"), Map.of(mComposite, 0L + 345D, mSub, 0L + 345));
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualToNormalizingNewlines(
+						"""
+								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|  No cost info
+								|\\- #1 m=k1(MAX) filter=matchAll groupBy=(a) customMarker=JPY
+								|   \\  size=2 duration=492ms
+								\\-- #2 m=k1.someTableName1.cube(SUM) filter=matchAll groupBy=(a) customMarker=JPY
+								    \\  size=2 duration=492ms
+								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
+								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								|  No cost info
+								|\\- #1 m=k1(MAX) filter=matchAll groupBy=(a) customMarker=JPY
+								|   \\  size=1 duration=738ms
+								\\-- #2 m=k1.someTableName1.cube(SUM) filter=matchAll groupBy=(a) customMarker=JPY
+								    \\  size=1 duration=738ms
+								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
+								#0 s=composite id=00000000-0000-0000-0000-000000000000
+								|  No cost info
+								|\\- #1 m=k1(MAX) filter=color=red groupBy=(a) customMarker=JPY
+								|   \\  size=2 duration=246ms
+								\\-- #2 m=k1.someTableName1.cube(SUM) filter=color=red groupBy=(a) customMarker=JPY
+								    \\  size=2 duration=246ms
+								Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=color=red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""");
+
+		Assertions.assertThat(messages).hasSize(12);
 	}
 }

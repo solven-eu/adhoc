@@ -49,7 +49,8 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
@@ -98,7 +99,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	@Override
-	public ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQuery query) {
+	public ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQueryV2 query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -116,7 +117,7 @@ public class ColumnsManager implements IColumnsManager {
 				}
 			});
 		}
-		TableQuery transcodedQuery = TableQuery.edit(query)
+		TableQueryV2 transcodedQuery = query.toBuilder()
 				.filter(transcodedFilter)
 				.groupBy(transcodeGroupBy(transcodingContext, query.getGroupBy()))
 				.clearAggregators()
@@ -300,11 +301,18 @@ public class ColumnsManager implements IColumnsManager {
 		return recording.getUsedColumn().stream().map(c -> ReferencedColumn.ref(c)).toList();
 	}
 
-	protected Collection<? extends Aggregator> transcodeAggregators(TranscodingContext transcodingContext,
-			Set<Aggregator> aggregators) {
-		return aggregators.stream()
-				.map(a -> Aggregator.edit(a).columnName(transcodingContext.underlying(a.getColumnName())).build())
-				.collect(Collectors.toSet());
+	protected Collection<? extends FilteredAggregator> transcodeAggregators(TranscodingContext transcodingContext,
+			Set<FilteredAggregator> aggregators) {
+		return aggregators.stream().map(filteredAggregator -> {
+			Aggregator aggregator = filteredAggregator.getAggregator();
+			Aggregator transcodedAggregator = Aggregator.edit(aggregator)
+					.columnName(transcodingContext.underlying(aggregator.getColumnName()))
+					.build();
+			return filteredAggregator.toBuilder()
+					.aggregator(transcodedAggregator)
+					.filter(transcodeFilter(transcodingContext, filteredAggregator.getFilter()))
+					.build();
+		}).collect(Collectors.toSet());
 	}
 
 	@Override

@@ -213,7 +213,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
 				\\-- #1 m=k1.CCY(Bucketor) filter=matchAll groupBy=grandTotal customMarker=JPY
-				    \\-- #2 m=k1(Aggregator) filter=matchAll groupBy=(ccyFrom) customMarker=JPY""");
+				    \\-- #2 m=k1(SUM) filter=matchAll groupBy=(ccyFrom) customMarker=JPY""");
 
 		Assertions.assertThat(messages).hasSize(3);
 	}
@@ -236,7 +236,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
 				\\-- #1 m=k1.CCY(Bucketor) filter=color=red groupBy=(letter) customMarker=JPY
-				    \\-- #2 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY""");
+				    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY""");
 
 		Assertions.assertThat(messages).hasSize(3);
 	}
@@ -268,7 +268,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 								|  No cost info
 								\\-- #1 m=k1.CCY(Bucketor) filter=color=red groupBy=(letter) customMarker=JPY
 								    |  size=2 duration=123ms
-								    \\-- #2 m=k1(Aggregator) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
+								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
 								        \\  size=2 duration=123ms
 								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 

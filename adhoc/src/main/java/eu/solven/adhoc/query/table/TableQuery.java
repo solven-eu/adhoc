@@ -55,7 +55,7 @@ import lombok.Value;
  * @see eu.solven.adhoc.table.transcoder.ITableTranscoder
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class TableQuery
 		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
@@ -113,13 +113,13 @@ public class TableQuery
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery, IAdhocFilter leftover) {
-		List<String> aggregatorNames = new ArrayList<>();
-		tableQuery.getAggregators()
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, IAdhocFilter leftover) {
+		List<String> aggregatorNames = tableQuery.getAggregators()
 				.stream()
 				.distinct()
-				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
-				.forEach(a -> aggregatorNames.add(a.getName()));
+				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
+				.map(a -> a.getAlias())
+				.toList();
 
 		List<String> columns = new ArrayList<>();
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {

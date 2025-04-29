@@ -78,7 +78,9 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
@@ -130,7 +132,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	@Override
-	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
+	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
 		ConditionWithFilter conditionAndLeftover = toConditions(tableQuery);
 		AggregatedRecordFields fields = makeSelectedColumns(tableQuery, conditionAndLeftover.getPostFilter());
 
@@ -170,13 +172,14 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.build();
 	}
 
-	protected ConditionWithFilter toConditions(TableQuery tableQuery) {
+	protected ConditionWithFilter toConditions(TableQueryV2 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
 		Collection<IAdhocFilter> leftoverFilters = new ArrayList<>();
 
 		// Conditions from measures
 		{
-			conditions.add(oneMeasureIsNotNull(tableQuery.getAggregators()));
+			conditions.add(oneMeasureIsNotNull(
+					tableQuery.getAggregators().stream().map(fa -> fa.getAggregator()).collect(Collectors.toSet())));
 		}
 
 		// Conditions from filters
@@ -192,7 +195,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return and(conditions, leftoverFilters);
 	}
 
-	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQuery tableQuery, AggregatedRecordFields fields) {
+	protected List<SelectFieldOrAsterisk> makeSelectedFields(TableQueryV2 tableQuery, AggregatedRecordFields fields) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		tableQuery.getAggregators().stream().distinct().map(a -> {
 			try {
@@ -225,7 +228,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	// @Override
-	protected AggregatedRecordFields makeSelectedColumns(TableQuery tableQuery, IAdhocFilter leftover) {
+	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, IAdhocFilter leftover) {
 		return TableQuery.makeSelectedColumns(tableQuery, leftover);
 	}
 
@@ -273,15 +276,15 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	/**
 	 *
-	 * @param dbQuery
+	 * @param tableQuery
 	 * @param leftoverFilter
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQuery dbQuery, IAdhocFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, IAdhocFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
 
-		dbQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
 			Field<Object> field = columnAsField(column);
 			groupedFields.add(field);
 		});
@@ -294,8 +297,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return groupedFields;
 	}
 
-	private List<? extends OrderField<?>> getOptionalOrders(TableQuery dbQuery) {
-		AdhocTopClause topClause = dbQuery.getTopClause();
+	private List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
+		AdhocTopClause topClause = tableQuery.getTopClause();
 		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
 
@@ -312,60 +315,88 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return columns;
 	}
 
-	protected SelectFieldOrAsterisk toSqlAggregatedColumn(Aggregator a) {
-		String aggregationKey = a.getAggregationKey();
-		String columnName = a.getColumnName();
+	protected SelectFieldOrAsterisk toSqlAggregatedColumn(FilteredAggregator filteredAggregator) {
+		Aggregator a = filteredAggregator.getAggregator();
 
-		if (ExpressionAggregation.isExpression(aggregationKey)) {
-			// Do not call `name` to make sure it is not qualified
-			return DSL.field(DSL.sql(columnName)).as(a.getName());
-		} else if (EmptyAggregation.isEmpty(aggregationKey)) {
+		String aggregationKey = a.getAggregationKey();
+		if (EmptyAggregation.isEmpty(aggregationKey)) {
 			// There is no aggregation for empty: we just want to fetch groupBys
 			return null;
 		} else {
-			Name namedColumn = name(columnName);
+			String columnName = a.getColumnName();
 
-			AggregateFunction<?> sqlAggFunction;
-			if (SumAggregation.KEY.equals(aggregationKey)) {
-				// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
-				// dialect `DEFAULT`
-				Field<Double> field =
-						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+			Field<?> unaliasedField;
+			if (ExpressionAggregation.isExpression(aggregationKey)) {
+				// Do not call `name` to make sure it is not qualified
+				unaliasedField = DSL.field(DSL.sql(columnName));
 
-				sqlAggFunction = DSL.sum(field);
-			} else if (MaxAggregation.KEY.equals(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.max(field);
-			} else if (MinAggregation.KEY.equals(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.min(field);
-			} else if (AvgAggregation.isAvg(aggregationKey)) {
-				Field<Double> field =
-						DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
-				sqlAggFunction = DSL.avg(field);
-			} else if (CountAggregation.isCount(aggregationKey)) {
-				Field<?> field = DSL.field(namedColumn);
-				sqlAggFunction = DSL.count(field);
-			} else if (RankAggregation.isRank(aggregationKey)) {
-				RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
+				if (!filteredAggregator.getFilter().isMatchAll()) {
+					// BEWARE It is unclear how this could be managed: how to help TableQueryV2 producing valid FILTERs?
+					throw new NotYetImplementedException(
+							"FILTER with `ExpressionAggregation` is not managed. filteredAggregator="
+									+ filteredAggregator);
+				}
+			} else {
+				Name namedColumn = name(columnName);
 
-				Field<?> field = DSL.field(namedColumn);
-				String duckDbFunction;
+				AggregateFunction<?> sqlAggFunction;
+				if (SumAggregation.KEY.equals(aggregationKey)) {
+					// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
+					// dialect `DEFAULT`
+					Field<Double> field =
+							DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
 
-				if (agg.isAscElseDesc()) {
-					duckDbFunction = "arg_min";
+					sqlAggFunction = DSL.sum(field);
+				} else if (MaxAggregation.KEY.equals(aggregationKey)) {
+					Field<?> field = DSL.field(namedColumn);
+					sqlAggFunction = DSL.max(field);
+				} else if (MinAggregation.KEY.equals(aggregationKey)) {
+					Field<?> field = DSL.field(namedColumn);
+					sqlAggFunction = DSL.min(field);
+				} else if (AvgAggregation.isAvg(aggregationKey)) {
+					Field<Double> field =
+							DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+					sqlAggFunction = DSL.avg(field);
+				} else if (CountAggregation.isCount(aggregationKey)) {
+					Field<?> field = DSL.field(namedColumn);
+					sqlAggFunction = DSL.count(field);
+				} else if (RankAggregation.isRank(aggregationKey)) {
+					RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
+
+					Field<?> field = DSL.field(namedColumn);
+					String duckDbFunction;
+
+					if (agg.isAscElseDesc()) {
+						duckDbFunction = "arg_min";
+					} else {
+						duckDbFunction = "arg_max";
+					}
+
+					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
+					sqlAggFunction = DSL
+							.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
 				} else {
-					duckDbFunction = "arg_max";
+					throw new UnsupportedOperationException(
+							"SQL does not support aggregationKey=%s".formatted(aggregationKey));
 				}
 
-				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-				sqlAggFunction =
-						DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
-			} else {
-				throw new UnsupportedOperationException(
-						"SQL does not support aggregationKey=%s".formatted(aggregationKey));
+				if (filteredAggregator.getFilter().isMatchAll()) {
+					unaliasedField = sqlAggFunction;
+				} else {
+					ConditionWithFilter condition = toCondition(filteredAggregator.getFilter());
+
+					if (!condition.getPostFilter().isMatchAll()) {
+						throw new NotYetImplementedException("FILTER with a postFilter. filter="
+								+ PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
+					}
+
+					unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
+				}
+
+				unaliasedField = sqlAggFunction;
 			}
-			return sqlAggFunction.as(a.getName());
+
+			return unaliasedField.as(filteredAggregator.getAlias());
 		}
 	}
 
@@ -540,6 +571,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		return Optional.ofNullable(condition);
+	}
+
+	@Deprecated(since = "TODO Migrate unitTests")
+	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
+		return prepareQuery(TableQueryV2.fromV1(tableQuery));
 	}
 
 }

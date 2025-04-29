@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.dag.observability.AdhocQueryMonitor;
@@ -219,6 +220,19 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 
 		// Add explicitly requested steps
 		Set<IMeasure> queriedMeasures = getRootMeasures(executingQueryContext);
+
+		long nbQueriedMeasures = queriedMeasures.stream().map(m -> m.getName()).distinct().count();
+		if (nbQueriedMeasures < queriedMeasures.size()) {
+			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
+			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
+			// Remove not conflicting
+			nameToCount.asMap().keySet().forEach(m -> nameToCount.decrementAndGet(m));
+			nameToCount.removeAllZeros();
+			nameToCount.asMap().keySet().forEach(m -> nameToCount.incrementAndGet(m));
+
+			throw new IllegalArgumentException(
+					"Can not query multiple measures with same name: %s".formatted(nameToCount));
+		}
 
 		queryStepsDagBuilder.registerRootWithUnderlyings(executingQueryContext::resolveIfRef, queriedMeasures);
 

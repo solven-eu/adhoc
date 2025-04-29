@@ -103,7 +103,7 @@ public class TestDagExplainerForPerfs {
 				    |   |  No cost info
 				    |   |\\- #3 m=underlying11(Combinator) filter=matchAll groupBy=grandTotal
 				    |   |   |  No cost info
-				    |   |   \\-- #4 m=a(Aggregator) filter=matchAll groupBy=grandTotal
+				    |   |   \\-- #4 m=a(SUM) filter=matchAll groupBy=grandTotal
 				    |   |       \\  No cost info
 				    |   \\-- #5 m=underlying12(Combinator) filter=matchAll groupBy=grandTotal
 				    |       |  No cost info

@@ -20,43 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.composite;
-
-import java.util.Arrays;
+package eu.solven.adhoc.dag;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.AdhocQuery;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-public class TestSubMeasureAsAggregator {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(SubMeasureAsAggregator.class).verify();
+public class TestAdhocQueryEngine extends ADagTest implements IAdhocTestConstants {
+	@Override
+	public void feedTable() {
+		// No need to feed
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		SubMeasureAsAggregator subMeasure = SubMeasureAsAggregator.builder()
-				.name("someName")
-				.subMeasure("subMeasureName")
-				.underlyings(Arrays.asList("u1", "u2"))
-				.build();
+	public void testConflictingNames() {
+		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
 
-		String asString = TestMapBasedTabularView.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".SubMeasureAsAggregator",
-				  "name" : "someName",
-				  "subMeasure" : "subMeasureName",
-				  "tags" : [ ],
-				  "aggregationKey" : "SUM",
-				  "aggregationOptions" : { },
-				  "underlyings" : [ "u1", "u2" ]
-				}""");
+		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure(k1Sum, k1Max).build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
 	}
+
 }

@@ -46,6 +46,7 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Deprecated(since = "Introduced when we felt relevant to manage ITableWrapper not doing aggregations")
 public class TableAggregatesMetadata {
 	// a mapping from measureName to aggregator when the aggregates are evaluated by the table
 	// even simpler table could apply Aggregator to simple values (see InMemoryTable)

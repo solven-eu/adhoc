@@ -38,6 +38,7 @@ import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -210,7 +211,7 @@ public class DagExplainer implements IDagExplainer {
 		sb.append("m=")
 				.append(step.getMeasure().getName())
 				.append("(")
-				.append(step.getMeasure().getClass().getSimpleName())
+				.append(toString(step))
 				.append(')')
 
 				.append(" filter=")
@@ -224,6 +225,16 @@ public class DagExplainer implements IDagExplainer {
 		optCustomMarker.ifPresent(customMarker -> sb.append(" customMarker=").append(customMarker));
 
 		return sb.toString();
+	}
+
+	protected String toString(AdhocQueryStep step) {
+		if (step.getMeasure() instanceof Aggregator aggregator) {
+			// In the DAG EXPLAIN, the Aggregator state is implicit by being a leaf: showing the aggregationKey is much
+			// more helpful
+			return aggregator.getAggregationKey();
+		} else {
+			return step.getMeasure().getClass().getSimpleName();
+		}
 	}
 
 }

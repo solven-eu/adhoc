@@ -53,7 +53,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.pepper.spring.PepperResourceHelper;
 
@@ -123,7 +123,7 @@ public class TestCalciteAdhocAdapter {
 		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"rows\"")
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
-						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQuery.builder().build())
+						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQueryV2.builder().build())
 								.records()
 								.count()))
 				.explainContains("""

@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -43,7 +44,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryV2 {
 	Aggregator sumK1 = Aggregator.sum("k1");
-	TableQuery grandTotal = TableQuery.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK1).build();
+	TableQuery groupByA = TableQuery.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK1).build();
 	TableQuery filterA1 = TableQuery.builder()
 			.groupBy(GroupByColumns.named("a"))
 			.aggregator(sumK1)
@@ -73,6 +74,9 @@ public class TestTableQueryV2 {
 					AndMatcher.and(LikeMatcher.matching("a%"), NotMatcher.not(EqualsMatcher.isEqualTo("azerty"))))))
 			.build();
 
+	Aggregator sumK2 = Aggregator.sum("k2");
+	TableQuery groupByA_K2 = TableQuery.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK2).build();
+
 	@Test
 	public void testSplitAnd() {
 		Assertions.assertThat(TableQueryV2.splitAnd(IAdhocFilter.MATCH_ALL)).containsExactly(IAdhocFilter.MATCH_ALL);
@@ -87,7 +91,7 @@ public class TestTableQueryV2 {
 
 	@Test
 	public void testGrandTotalAndFilterA1() {
-		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet.of(grandTotal, filterA1));
+		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet.of(groupByA, filterA1));
 		Assertions.assertThat(v2)
 				.hasSize(1)
 				.contains(TableQueryV2.builder()
@@ -97,8 +101,8 @@ public class TestTableQueryV2 {
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(sumK1)
 								.filter(AndFilter.and(Map.of("a", "a1")))
+								.index(1)
 								.build())
-						// .filter(AndFilter.and(Map.of("a", "a1")))
 						.build());
 	}
 
@@ -114,6 +118,7 @@ public class TestTableQueryV2 {
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(sumK1)
 								.filter(AndFilter.and(Map.of("b", "b1")))
+								.index(1)
 								.build())
 						.filter(AndFilter.and(Map.of("a", "a1")))
 						.build());
@@ -134,6 +139,7 @@ public class TestTableQueryV2 {
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(sumK1)
 								.filter(AndFilter.and(Map.of("a", Set.of("a1", "a2"))))
+								.index(1)
 								.build())
 						// .filter(AndFilter.and(Map.of("a", "a1")))
 						.build());
@@ -151,8 +157,40 @@ public class TestTableQueryV2 {
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(sumK1)
 								.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.isEqualTo("azerty")))))
+								.index(1)
 								.build())
 						.filter(AndFilter.and(Map.of("a", LikeMatcher.matching("a%"))))
 						.build());
 	}
+
+	@Test
+	public void testDifferentAggregators() {
+		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet.of(groupByA, groupByA_K2));
+		Assertions.assertThat(v2)
+				.hasSize(1)
+				.contains(TableQueryV2.builder()
+						.groupBy(GroupByColumns.named("a"))
+						.aggregator(
+								FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
+						.aggregator(
+								FilteredAggregator.builder().aggregator(sumK2).filter(AndFilter.and(Map.of())).build())
+						.build());
+	}
+
+	@Test
+	public void testNoMeasure() {
+		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet
+				.of(TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build()));
+		Assertions.assertThat(v2)
+				.hasSize(1)
+				.contains(TableQueryV2.builder()
+						.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+						.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
+						.aggregator(FilteredAggregator.builder()
+								.aggregator(Aggregator.empty())
+								.filter(IAdhocFilter.MATCH_ALL)
+								.build())
+						.build());
+	}
+
 }

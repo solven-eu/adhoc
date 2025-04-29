@@ -20,43 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.composite;
-
-import java.util.Arrays;
+package eu.solven.adhoc.query.table;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class TestSubMeasureAsAggregator {
+public class TestFilteredAggregator {
+	final Aggregator a = Aggregator.countAsterisk();
+
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(SubMeasureAsAggregator.class).verify();
+		EqualsVerifier.forClass(FilteredAggregator.class).verify();
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		SubMeasureAsAggregator subMeasure = SubMeasureAsAggregator.builder()
-				.name("someName")
-				.subMeasure("subMeasureName")
-				.underlyings(Arrays.asList("u1", "u2"))
-				.build();
+	public void testAliasIndexDefault() {
+		FilteredAggregator aggregator =
+				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).build();
 
-		String asString = TestMapBasedTabularView.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
+		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName());
+	}
 
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".SubMeasureAsAggregator",
-				  "name" : "someName",
-				  "subMeasure" : "subMeasureName",
-				  "tags" : [ ],
-				  "aggregationKey" : "SUM",
-				  "aggregationOptions" : { },
-				  "underlyings" : [ "u1", "u2" ]
-				}""");
+	@Test
+	public void testAliasIndex0() {
+		FilteredAggregator aggregator =
+				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).index(0).build();
+
+		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName());
+	}
+
+	@Test
+	public void testAliasIndex1() {
+		FilteredAggregator aggregator =
+				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).index(1).build();
+
+		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName() + "_1");
 	}
 }

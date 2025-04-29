@@ -72,7 +72,6 @@ public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest impl
 								.measure(k1Sum.getName())
 								.groupBy(GroupByColumns
 										.of(ExpressionColumn.builder().name("first_letter").sql("word[1]").build()))
-								.debug(true)
 								.build(),
 						forest,
 						table);

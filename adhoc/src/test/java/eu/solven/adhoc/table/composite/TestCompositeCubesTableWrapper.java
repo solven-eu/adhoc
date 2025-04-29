@@ -50,6 +50,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
+import smile.math.MathEx;
 
 public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 
@@ -116,26 +117,27 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 						// k1 is both a compositeMeasure and a cube1 measure
 						// We aliased the underlyingMeasure
 						.name(k1Sum.getName() + "." + tableName1 + ".cube")
+						.subMeasure(k1Sum.getName())
 						.aggregationKey(SumAggregation.KEY)
 						.build())
 				.contains(SubMeasureAsAggregator.builder()
 						// k2 is only a cube1 measure
 						// Not aliased
 						.name(k2Sum.getName())
+						.subMeasure(k2Sum.getName())
 						.aggregationKey(SumAggregation.KEY)
 						.build())
 
 				// Cube2 measures, available through composite
 				.contains(SubMeasureAsAggregator.builder()
 						.name(k1Sum.getName() + "." + tableName2 + ".cube")
+						.subMeasure(k1Sum.getName())
 						.aggregationKey(SumAggregation.KEY)
 						.build())
 				.contains(SubMeasureAsAggregator.builder()
 						.name(k3Max.getName())
-						// k3 is a MAX, but it is fed by a single cube: SUM is KO
-						// BEWARE: if k3.MAX was provided by multiple cubes, we should probably prefer MAX in composite
-						// aggregator
-						.aggregationKey(SumAggregation.KEY)
+						.subMeasure(k3Max.getName())
+						.aggregationKey(MaxAggregation.KEY)
 						.build());
 
 		// Test an actual query result
@@ -149,11 +151,11 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			CubeWrapper compositeCube =
 					CubeWrapper.builder().name("composite").table(compositeCubesTable).forest(withUnderlyings).build();
 
-			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max.getName()).build());
+			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of(), Map.of(k1Max.getName(), 0L + Math.max(123 + 234, 345 + 456)))
+					.containsEntry(Map.of(), Map.of(k1Max.getName(), 0L + MathEx.max(123, 234, 345, 456)))
 					.hasSize(1);
 		}
 	}

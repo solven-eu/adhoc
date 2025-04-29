@@ -611,7 +611,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 								// This will filter `a2=234`
 								.operand(400)
 								.build())
-				.build())).hasStackTraceContaining("Binder Error: WHERE clause cannot contain aggregates!");
+				// `WHERE clause cannot contain aggregates!` msg is not easy to get given we actually referred to
+				// aggregator by alias, so condition of aggregator name leads to an unknwonName error
+				.build())).hasStackTraceContaining("Binder Error: ");
 	}
 
 	@Test

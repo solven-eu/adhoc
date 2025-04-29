@@ -49,12 +49,11 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -94,7 +93,7 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
 		if (executingQueryContext.getTable() != this) {
 			throw new IllegalStateException(
 					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
@@ -103,6 +102,7 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());
 		if (tableQuery.getAggregators()
 				.stream()
+				.map(fa -> fa.getAggregator())
 				// if the aggregator name is also a column name, then the filtering is valid (as we'll filter on the
 				// column)
 				.filter(a -> !a.getName().equals(a.getColumnName()))
@@ -112,11 +112,13 @@ public class InMemoryTable implements ITableWrapper {
 			throw new IllegalArgumentException("InMemoryTable can not filter a measure");
 		}
 
-		Set<String> aggregateColumns =
-				tableQuery.getAggregators().stream().map(Aggregator::getColumnName).collect(Collectors.toSet());
+		Set<String> aggregateColumns = tableQuery.getAggregators()
+				.stream()
+				.map(a -> a.getAggregator().getColumnName())
+				.collect(Collectors.toSet());
 
-		boolean isEmptyAggregation = tableQuery.getAggregators().isEmpty()
-				|| tableQuery.getAggregators().stream().allMatch(a -> EmptyAggregation.isEmpty(a.getAggregationKey()));
+		boolean isEmptyAggregation =
+				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
 
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 
@@ -168,38 +170,51 @@ public class InMemoryTable implements ITableWrapper {
 		});
 	}
 
-	protected ITabularRecord toRecord(TableQuery tableQuery,
+	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
 			Set<String> aggregateColumns,
 			Set<String> groupByColumns,
 			int nbKeys,
 			Map<String, ?> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>(nbKeys);
 
-		// Transcode from columnName to aggregatorName, supposing all aggregation functions does not change a
-		// not aggregated single value
 		aggregateColumns.forEach(aggregatedColumn -> {
 			Object aggregatorUnderlyingValue = row.get(aggregatedColumn);
-			tableQuery.getAggregators().stream().filter(a -> a.getColumnName().equals(aggregatedColumn)).forEach(a -> {
+			tableQuery.getAggregators()
+					.stream()
+					.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
+					.forEach(a -> {
+						if (!AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), a.getFilter(), row)) {
+							// This aggregate is rejected by the `FILTER` clause
+							return;
+						}
 
-				if (CountAggregation.isCount(a.getAggregationKey())) {
-					boolean doCountOne = false;
+						Object aggregate = null;
+						if (CountAggregation.isCount(a.getAggregator().getAggregationKey())) {
+							boolean doCountOne = false;
 
-					if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
-						// `COUNT(*)` counts even if there is no value
-						doCountOne = true;
-					} else if (aggregatorUnderlyingValue != null) {
-						// COUNT 1 only if the COUNTed column is not null
-						doCountOne = true;
-					}
+							if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
+								// `COUNT(*)` counts even if there is no value
+								doCountOne = true;
+							} else if (aggregatorUnderlyingValue != null) {
+								// COUNT 1 only if the COUNTed column is not null
+								doCountOne = true;
+							}
 
-					if (doCountOne) {
-						aggregates.put(a.getName(), 1L);
-					}
-				} else if (aggregatorUnderlyingValue != null) {
-					// SUM, MIN, MAX, AVG, RANK, etc
-					aggregates.put(a.getName(), aggregatorUnderlyingValue);
-				}
-			});
+							if (doCountOne) {
+								aggregate = 1L;
+							}
+						} else if (aggregatorUnderlyingValue != null) {
+							// SUM, MIN, MAX, AVG, RANK, etc
+
+							// Transcode from columnName to aggregatorName, supposing all aggregation functions does not
+							// change a
+							// not aggregated single value
+							aggregate = aggregatorUnderlyingValue;
+						}
+						if (null != aggregate) {
+							aggregates.put(a.getAlias(), aggregate);
+						}
+					});
 		});
 
 		ImmutableMap.Builder<Object, Object> groupByBuilder =

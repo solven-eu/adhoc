@@ -33,7 +33,7 @@ import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -103,7 +103,7 @@ public class PhasedTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQuery tableQuery) {
+	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
 		phasers.opening.arriveAndAwaitAdvance();
 		log.info("opening advance {}", name);
@@ -123,7 +123,7 @@ public class PhasedTableWrapper implements ITableWrapper {
 						.collect(Collectors.toMap(e -> e, e -> name));
 
 				Map<String, Object> aggregates =
-						tableQuery.getAggregators().stream().collect(Collectors.toMap(a -> a.getName(), a -> 1L));
+						tableQuery.getAggregators().stream().collect(Collectors.toMap(a -> a.getAlias(), a -> 1L));
 
 				return Stream
 						.<ITabularRecord>of(TabularRecordOverMaps.builder().slice(slice).aggregates(aggregates).build())
