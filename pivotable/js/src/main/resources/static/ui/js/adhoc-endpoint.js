@@ -64,6 +64,7 @@ export default {
 
 		// https://getbootstrap.com/docs/5.3/components/tooltips/
 		// https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
+		// NOSONAR
 		new Tooltip(document.body, { selector: "[data-bs-toggle='tooltip']" });
 
 		return { nbCubes };

@@ -57,6 +57,7 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	ImmutableSet<String> tags;
 
 	// The name of the underlying aggregated column
+	@NonNull
 	String columnName;
 
 	@NonNull
@@ -66,12 +67,18 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	@Singular
 	Map<String, Object> aggregationOptions;
 
-	public String getColumnName() {
-		if (columnName != null) {
-			return columnName;
-		} else {
-			// The default columnName is the aggregator name
-			return name;
+	public static class AggregatorBuilder {
+		String name;
+
+		public AggregatorBuilder name(String name) {
+			this.name = name;
+
+			// columnName is set by default to the name
+			if (columnName == null) {
+				return columnName(name);
+			} else {
+				return this;
+			}
 		}
 	}
 

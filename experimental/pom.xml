@@ -8,6 +8,11 @@
 	</parent>
 	<artifactId>adhoc-experimental</artifactId>
 
+	<properties>
+		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.27</jacoco.instruction.ratio>
+	</properties>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>

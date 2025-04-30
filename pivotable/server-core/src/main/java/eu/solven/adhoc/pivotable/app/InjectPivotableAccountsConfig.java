@@ -43,6 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class InjectPivotableAccountsConfig {
 
+	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
+	@SuppressWarnings("java:S6831")
 	@Profile(IPivotableSpringProfiles.P_FAKEUSER)
 	@Qualifier(IPivotableSpringProfiles.P_FAKEUSER)
 	@Bean
@@ -52,6 +54,7 @@ public class InjectPivotableAccountsConfig {
 		return usersRegistry.registerOrUpdate(FakeUser.pre());
 	}
 
+	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Qualifier("random")
 	@Bean
 	public PivotableUser initRandomUser(PivotableUsersRegistry usersRegistry) {

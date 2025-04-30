@@ -56,8 +56,10 @@ public interface IMultitypeMergeableGrid<T> {
 	 * Will typically handle {@link IAggregationCarrier}.
 	 * 
 	 * @param aggregator
+	 * @param purgeCarriers
+	 *            should {@link IAggregationCarrier} be purged?
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
-	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator);
+	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers);
 
 }

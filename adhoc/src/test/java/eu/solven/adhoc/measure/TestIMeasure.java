@@ -22,32 +22,34 @@
  */
 package eu.solven.adhoc.measure;
 
-import java.util.Arrays;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.sum.SumCombination;
 
-public class TestAdhocMeasureBag {
-
-	Aggregator inital = Aggregator.builder().name("someName").columnName("someColumn").build();
-	Aggregator later = Aggregator.builder().name("someName").columnName("otherColumn").build();
-
+public class TestIMeasure {
 	@Test
-	public void testReplaceMeasure() {
-		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testReplaceMeasure").build();
-		measureBag.addMeasure(inital);
-		measureBag.addMeasure(later);
-
-		Assertions.assertThat(measureBag.getNameToMeasure()).hasSize(1).containsEntry("someName", later);
+	public void testSum() {
+		Assertions.assertThat(IMeasure.sum("sum", "a")).isEqualTo(IMeasure.alias("sum", "a"));
+		Assertions.assertThat(IMeasure.sum("sum", "a", "b")).isInstanceOfSatisfying(Combinator.class, m -> {
+			Assertions.assertThat(m.getName()).isEqualTo("sum");
+			Assertions.assertThat(m.getCombinationKey()).isEqualTo(SumCombination.KEY);
+			Assertions.assertThat(m.getUnderlyingNames()).containsExactly("a", "b");
+		});
 	}
 
 	@Test
-	public void testFromList() {
-		Assertions
-				.assertThatThrownBy(
-						() -> MeasureForest.fromMeasures("testReplaceMeasure", Arrays.asList(inital, later)))
-				.isInstanceOf(IllegalArgumentException.class);
+	public void testAlias() {
+		Assertions.assertThat(IMeasure.alias("someMeasure", "someMeasure"))
+				.isEqualTo(ReferencedMeasure.ref("someMeasure"));
+		Assertions.assertThat(IMeasure.alias("someMeasure", "otherMeasure"))
+				.isInstanceOfSatisfying(Combinator.class, m -> {
+					Assertions.assertThat(m.getName()).isEqualTo("someMeasure");
+					Assertions.assertThat(m.getCombinationKey()).isEqualTo(FindFirstCombination.KEY);
+					Assertions.assertThat(m.getUnderlyingNames()).containsExactly("otherMeasure");
+				});
 	}
 }

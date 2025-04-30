@@ -24,7 +24,7 @@ package eu.solven.adhoc.table.duckdb;
 
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 
 public abstract class ADuckDbJooqTest {
 
@@ -36,5 +36,5 @@ public abstract class ADuckDbJooqTest {
 	}
 
 	protected AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-	protected UnsafeMeasureForestBag forest = UnsafeMeasureForestBag.builder().name("duckdb").build();
+	protected UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("duckdb").build();
 }

@@ -118,7 +118,6 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 123L));
 	}
 
-
 	@Test
 	public void testReferenceByIndex() {
 		forest.addMeasure(Combinator.builder()
@@ -129,7 +128,8 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 				// We may process ternary into IF
 				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
 				.combinationOptions(ImmutableMap.<String, Object>builder()
-						.put("expression", "IF(underlyings[0] == null, 0, underlyings[0]) + IF(underlyings[1] == null, 0, underlyings[1])")
+						.put("expression",
+								"IF(underlyings[0] == null, 0, underlyings[0]) + IF(underlyings[1] == null, 0, underlyings[1])")
 						.build())
 				.build());
 
@@ -137,9 +137,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
-		ITabularView output = cube.execute(AdhocQuery.builder()
-				.measure("sumK1K2")
-				.build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)

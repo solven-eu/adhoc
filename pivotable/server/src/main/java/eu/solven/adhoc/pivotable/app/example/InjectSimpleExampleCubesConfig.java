@@ -65,6 +65,7 @@ import net.datafaker.providers.base.Country;
 @Slf4j
 public class InjectSimpleExampleCubesConfig {
 
+	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
 	public Void initSimpleCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {

@@ -76,6 +76,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class InjectPixarExampleCubesConfig {
 
+	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
 	public Void initPixarCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {

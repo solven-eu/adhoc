@@ -23,6 +23,7 @@
 package eu.solven.adhoc.filter.value;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,6 +38,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 
 public class TestAndMatcher {
+	@Disabled("TODO Implement this optimization")
 	@Test
 	public void testAndInEq() {
 		AndMatcher a_and_aandb =
@@ -44,7 +46,7 @@ public class TestAndMatcher {
 
 		// TODO Improve this when relevant
 		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
-		Assertions.assertThat(a_and_aandb).isEqualTo(a_and_aandb);
+		Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
 	}
 
 	@Test

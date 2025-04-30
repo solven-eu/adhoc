@@ -40,7 +40,7 @@ import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
@@ -83,7 +83,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			}
 
 			{
-				UnsafeMeasureForestBag forest = UnsafeMeasureForestBag.builder().name("jooq").build();
+				UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("jooq").build();
 				forest.addMeasure(k1Sum);
 				CubeWrapper aqw = CubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
 

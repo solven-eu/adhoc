@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @Builder
-public class UnsafeMeasureForestBag implements IMeasureForest {
+public class UnsafeMeasureForest implements IMeasureForest {
 	@Getter
 	@NonNull
 	final String name;
@@ -69,7 +69,7 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 	 * @param measure
 	 * @return this
 	 */
-	public UnsafeMeasureForestBag addMeasure(IMeasure measure) {
+	public UnsafeMeasureForest addMeasure(IMeasure measure) {
 		String measureName = measure.getName();
 
 		if (measureName == null) {
@@ -83,7 +83,7 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 
 	@Override
 	public IMeasure resolveIfRef(IMeasure measure) {
-		if (measure instanceof ReferencedMeasure ref) {
+		if (measure instanceof IReferencedMeasure ref) {
 			String refName = ref.getRef();
 			IMeasure resolved = getNameToMeasure().get(refName);
 
@@ -101,7 +101,7 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 
 	@Override
 	public Optional<IMeasure> resolveIfRefOpt(IMeasure measure) {
-		if (measure instanceof ReferencedMeasure ref) {
+		if (measure instanceof IReferencedMeasure ref) {
 			String refName = ref.getRef();
 			IMeasure resolved = getNameToMeasure().get(refName);
 
@@ -110,8 +110,8 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 		return Optional.of(measure);
 	}
 
-	public static UnsafeMeasureForestBag fromMeasures(String name, List<IMeasure> measures) {
-		UnsafeMeasureForestBag ams = UnsafeMeasureForestBag.builder().name(name).build();
+	public static UnsafeMeasureForest fromMeasures(String name, List<IMeasure> measures) {
+		UnsafeMeasureForest ams = UnsafeMeasureForest.builder().name(name).build();
 
 		measures.forEach(measure -> {
 			String measureName = measure.getName();
@@ -128,7 +128,7 @@ public class UnsafeMeasureForestBag implements IMeasureForest {
 	}
 
 	/**
-	 * In {@link UnsafeMeasureForestBag}, a visitor both mutate current {@link IMeasureForest} and return the
+	 * In {@link UnsafeMeasureForest}, a visitor both mutate current {@link IMeasureForest} and return the
 	 * immutable+edited bag.
 	 */
 	public IMeasureForest acceptVisitor(IMeasureBagVisitor asCombinator) {

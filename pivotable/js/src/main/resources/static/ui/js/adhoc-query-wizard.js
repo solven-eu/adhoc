@@ -128,7 +128,7 @@ export default {
 				}
 
 				if (matchAllTags && matchText) {
-					if (typeof inputsAsObjectOrArray === Array) {
+					if (Array.isArray(inputsAsObjectOrArray)) {
 						filtereditems.push(inputElement);
 					} else {
 						// inputElement may be an Object or a primitive or a String

@@ -43,7 +43,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
@@ -57,7 +57,6 @@ import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.util.IStopwatch;
-import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAdhocTestConstants {
 
@@ -96,22 +95,28 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		});
 	}
 
-	private CubeWrapper makeAndFeedCompositeCube(Consumer<UnsafeMeasureForestBag> onForestWithoutSubs) {
+	private CubeWrapper makeAndFeedCompositeCube(Consumer<UnsafeMeasureForest> onForestWithoutSubs) {
 		CubeWrapper cube1;
 		{
 			dsl.createTableIfNotExists(tableName1)
+					// k1 is in both cubes
 					.column("k1", SQLDataType.DOUBLE)
+					// k2 is only in cube1
 					.column("k2", SQLDataType.DOUBLE)
+					// k4 is in both cubes, but there is no measure with the column name
+					.column("k4", SQLDataType.DOUBLE)
 					.column("a", SQLDataType.VARCHAR)
 					.column("b", SQLDataType.VARCHAR)
 					.execute();
-			dsl.insertInto(DSL.table(tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("a"), DSL.field("b"))
-					.values(123, 234, "a1", "b1")
+			dsl.insertInto(DSL.table(
+					tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("k4"), DSL.field("a"), DSL.field("b"))
+					.values(123, 234, 567, "a1", "b1")
 					.execute();
-			dsl.insertInto(DSL.table(tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("a"), DSL.field("b"))
-					.values(345, 456, "a2", "b2")
+			dsl.insertInto(DSL.table(
+					tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("k4"), DSL.field("a"), DSL.field("b"))
+					.values(345, 456, 678, "a2", "b2")
 					.execute();
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			measureBag.addMeasure(Aggregator.countAsterisk());
@@ -122,20 +127,23 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 			dsl.createTableIfNotExists(tableName2)
 					.column("k1", SQLDataType.DOUBLE)
 					.column("k3", SQLDataType.DOUBLE)
+					// k4 is in both cubes, but there is no measure with the column name
+					.column("k4", SQLDataType.DOUBLE)
 					.column("a", SQLDataType.VARCHAR)
 					.column("c", SQLDataType.VARCHAR)
 					.execute();
-			dsl.insertInto(DSL.table(tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("a"), DSL.field("c"))
-					.values(1234, 2345, "a1", "c1")
+			dsl.insertInto(DSL.table(
+					tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("k4"), DSL.field("a"), DSL.field("c"))
+					.values(1234, 2345, 3456, "a1", "c1")
 					.execute();
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Sum);
 			measureBag.addMeasure(Aggregator.countAsterisk());
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag forestWithoutSubs = UnsafeMeasureForestBag.builder().name("composite").build();
+		UnsafeMeasureForest forestWithoutSubs = UnsafeMeasureForest.builder().name("composite").build();
 		forestWithoutSubs.addMeasure(k1PlusK2AsExpr);
 		onForestWithoutSubs.accept(forestWithoutSubs);
 
@@ -163,13 +171,14 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.containsEntry(k1Sum.getColumnName(), Double.class)
 				.containsEntry(k2Sum.getColumnName(), Double.class)
 				.containsEntry(k3Sum.getColumnName(), Double.class)
+				.containsEntry("k4", Double.class)
 				.containsEntry("cubeSlicer", Object.class)
-				.hasSize(7);
+				.hasSize(8);
 
 		Assertions.assertThat(cube3.getColumns()).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("cubeSlicer");
 			Assertions.assertThat(c.getTags()).contains("adhoc");
-		}).hasSize(7);
+		}).hasSize(8);
 
 		Assertions.assertThat(cube3.getNameToMeasure().keySet())
 				.contains(k1Sum.getColumnName())
@@ -343,7 +352,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 	// Make sure Composite can not only do Linear SUMs
 	@Test
-	public void testQuery_Max() {
+	public void testQuery_MinMax() {
 		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
 		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
@@ -351,6 +360,10 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.forest(MeasureForest.edit(initialCube3.getForest())
 						.measure(Aggregator.builder()
 								.name("k1Min")
+								// This refer to `k1` as a compositeColumn
+								// BEWARE It is ambiguous as `k1` is either `measure=composite.k1`, hence doing the
+								// min of the measure `k1` per cube (`cube1.k1` being maybe a max).
+								// Or to `column=table1.k1|table2.k1`, hence doing the min of the cube.
 								.columnName("k1")
 								.aggregationKey(MinAggregation.KEY)
 								.build())
@@ -366,7 +379,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of("k1Min", 123D, "k1Max", 1234D))
+				.containsEntry(Map.of(), Map.of("k1Min", 0L + 123 + 345, "k1Max", 0L + 1234))
 				.hasSize(1);
 	}
 
@@ -397,45 +410,95 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 								.aggregationKey(RankAggregation.KEY)
 								.aggregationOption(RankAggregation.P_RANK, 3)
 								.build())
+						.measure(Aggregator.builder()
+								.name("k4Rank3")
+								.columnName("k4")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 1)
+								.build())
 						.build())
 				.build();
 
-		Assertions
-				.assertThatThrownBy(
-						() -> cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build()))
-				.hasRootCauseInstanceOf(NotYetImplementedException.class);
-		// ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
-		// MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-		//
-		// Assertions.assertThat(mapBased.getCoordinatesToValues())
-		// .containsEntry(Map.of(), Map.of("k1Rank1", 1234D, "k1Rank2", 234D, "k1Rank3", 123D))
-		// .hasSize(1);
+		// Assertions
+		// .assertThatThrownBy(
+		// () -> cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build()))
+		// .hasRootCauseInstanceOf(NotYetImplementedException.class);
+		ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of("k1Rank1", 0L + 1234, "k1Rank2", 0L + 123 + 345))
+				.hasSize(1);
 	}
 
 	@Test
 	public void testQuery_Avg() {
 		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
-		// We add k1Min and k1Max in the composite cube: these measures are not known from the underlying cubes.
-		CubeWrapper cube3 = initialCube3.toBuilder()
-				.forest(MeasureForest.edit(initialCube3.getForest())
-						.measure(Aggregator.builder()
-								.name("k1.avg")
-								.columnName("k1")
-								.aggregationKey(AvgAggregation.KEY)
-								.build())
-						.build())
-				.build();
+		// `k1` is a measure of both cubes: Doing the AVG will compute `k1` per cube and the the avg
+		{
+			CubeWrapper cube3 = initialCube3.toBuilder()
+					.forest(MeasureForest.edit(initialCube3.getForest())
+							.measure(Aggregator.builder()
+									.name("avg")
+									.columnName("k1")
+									.aggregationKey(AvgAggregation.KEY)
+									.build())
+							.build())
+					.build();
 
-		Assertions.assertThatThrownBy(() -> cube3.execute(AdhocQuery.builder().measure("k1.avg").build()))
-				.hasRootCauseInstanceOf(NotYetImplementedException.class);
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		// ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1.avg").build());
-		// MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-		//
-		// Assertions.assertThat(mapBased.getCoordinatesToValues())
-		// .containsEntry(Map.of(), Map.of("k1.avg", 1234D))
-		// .hasSize(1);
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					// Divide by 2 cubes
+					.containsEntry(Map.of(), Map.of("avg", (0L + 123 + 345 + 1234) / 2))
+					.hasSize(1);
+		}
+
+		// `k2` is a measure of only cube1: Doing the AVG will compute `k2` per cube and the the avg
+		{
+			CubeWrapper cube3 = initialCube3.toBuilder()
+					.forest(MeasureForest.edit(initialCube3.getForest())
+							.measure(Aggregator.builder()
+									.name("avg")
+									.columnName("k2")
+									.aggregationKey(AvgAggregation.KEY)
+									.build())
+							.build())
+					.build();
+
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					// Only a single cube provides given measure, and the other does not have a k2 column
+					.containsEntry(Map.of(), Map.of("avg", (0L + 234 + 456) / 1))
+					.hasSize(1);
+		}
+
+		// `k4` is a column of only cube1: Doing the AVG will propagate the AVG definition of `k4` in cube1
+		{
+			CubeWrapper cube3 = initialCube3.toBuilder()
+					.forest(MeasureForest.edit(initialCube3.getForest())
+							.measure(Aggregator.builder()
+									.name("avg")
+									.columnName("k4")
+									.aggregationKey(AvgAggregation.KEY)
+									.build())
+							.build())
+					.build();
+
+			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					// BEWARE THIS IS A WRONG RESULT
+					// `k4.avg` is evaluated by DuckDB, and it is NOT re-wrapped in a Carrier, which is improper
+					// behavior.
+					.containsEntry(Map.of(), Map.of("avg", (0D + (0D + 567 + 678) / 2 + 3456) / 2))
+					.hasSize(1);
+		}
 	}
 
 	@Test
@@ -498,14 +561,14 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 								|   \\  size=1 duration=492ms
 								\\-- #2 m=k2(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								    \\  size=1 duration=492ms
-								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								|   \\  size=1 duration=738ms
 								\\-- #2 m=k3(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
 								    \\  size=1 duration=738ms
-								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
+								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=321c99e0, cube=composite))
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=color=red groupBy=(letter) customMarker=JPY
@@ -541,27 +604,29 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of(mComposite, 0L + Math.max(1234D, 123D), mSub, 0L + 1234 + 123))
+				.containsEntry(Map.of("a", "a1"), Map.of(mComposite, 0L + Math.max(1234, 123), mSub, 0L + 1234 + 123))
 				// TODO `mSub` should be meaningless for cube2
-				.containsEntry(Map.of("a", "a2"), Map.of(mComposite, 0L + 345D, mSub, 0L + 345));
+				.containsEntry(Map.of("a", "a2"), Map.of(mComposite, 0L + 345, mSub, 0L + 345));
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
-								|\\- #1 m=k1(MAX) filter=matchAll groupBy=(a) customMarker=JPY
+								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
 								|   \\  size=2 duration=492ms
-								\\-- #2 m=k1.someTableName1.cube(SUM) filter=matchAll groupBy=(a) customMarker=JPY
-								    \\  size=2 duration=492ms
-								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
+								\\-- #2 m=k1.someTableName1.cube(Combinator) filter=matchAll groupBy=(a) customMarker=JPY
+								    |  size=2 duration=615ms
+								    \\-- !1
+								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
-								|\\- #1 m=k1(MAX) filter=matchAll groupBy=(a) customMarker=JPY
-								|   \\  size=1 duration=738ms
-								\\-- #2 m=k1.someTableName1.cube(SUM) filter=matchAll groupBy=(a) customMarker=JPY
-								    \\  size=1 duration=738ms
-								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
+								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
+								|   \\  size=1 duration=861ms
+								\\-- #2 m=k1.someTableName1.cube(Combinator) filter=matchAll groupBy=(a) customMarker=JPY
+								    |  size=1 duration=984ms
+								    \\-- !1
+								Executed status=OK duration=PT0.738S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								|\\- #1 m=k1(MAX) filter=color=red groupBy=(a) customMarker=JPY
@@ -570,6 +635,6 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 								    \\  size=2 duration=246ms
 								Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=color=red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""");
 
-		Assertions.assertThat(messages).hasSize(12);
+		Assertions.assertThat(messages).hasSize(14);
 	}
 }

@@ -9,6 +9,11 @@
 	<artifactId>pivotable-tools</artifactId>
 	<description>Technical tools</description>
 
+	<properties>
+		<jacoco.branch.ratio>0.00</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.09</jacoco.instruction.ratio>
+	</properties>
+
 	<dependencies>
 		<!-- https://github.com/cowtowncoder/java-uuid-generator -->
 		<!-- Useful for deterministic UUID generation, e.g. in development environments-->

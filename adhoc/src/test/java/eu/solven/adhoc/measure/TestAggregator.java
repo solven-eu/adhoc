@@ -61,4 +61,25 @@ public class TestAggregator {
 
 		Assertions.assertThat(copy).isEqualTo(aggregator);
 	}
+
+	@Test
+	public void testColumnName_Edit() {
+		Aggregator aggregator = Aggregator.builder().name("someName").build();
+
+		// with `.edit`
+		{
+			Aggregator copy = Aggregator.edit(aggregator).name("otherName").build();
+
+			// The columnName has to be fixed when building the initial aggregator
+			Assertions.assertThat(copy.getColumnName()).isEqualTo(aggregator.getName());
+		}
+
+		// with `.toBuilder`
+		{
+			Aggregator copy = aggregator.toBuilder().name("otherName").build();
+
+			// The columnName has to be fixed when building the initial aggregator
+			Assertions.assertThat(copy.getColumnName()).isEqualTo(aggregator.getName());
+		}
+	}
 }

@@ -216,6 +216,9 @@ public class PivotableSocialWebFluxSecurity {
 				.build();
 	}
 
+	// `java:S6437` is about the hardcoded `no_password`, which is safe as this activates only with the
+	// `IPivotableSpringProfiles.P_FAKEUSER` profile
+	@SuppressWarnings("java:S6437")
 	private void configureBasicForFakeUser(HttpBasicSpec basic) {
 		Map<String, UserDetails> userDetails = new ConcurrentHashMap<>();
 

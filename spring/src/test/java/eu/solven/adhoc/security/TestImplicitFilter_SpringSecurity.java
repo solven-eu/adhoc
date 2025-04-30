@@ -40,7 +40,7 @@ import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.context.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -54,7 +54,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public class TestImplicitFilter_SpringSecurity {
 
 	InMemoryTable rows = InMemoryTable.builder().build();
-	UnsafeMeasureForestBag amb = UnsafeMeasureForestBag.builder().name(this.getClass().getSimpleName()).build();
+	UnsafeMeasureForest amb = UnsafeMeasureForest.builder().name(this.getClass().getSimpleName()).build();
 	CubeWrapper aqw;
 
 	{

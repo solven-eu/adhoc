@@ -106,7 +106,8 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 			} else if ("DESC".equalsIgnoreCase(rawOrderString)) {
 				ascElseDesc = false;
 			} else {
-				throw new IllegalArgumentException("%s=%s in invalid. Expected 'ASC' or 'DECS'".formatted(P_ORDER));
+				throw new IllegalArgumentException(
+						"%s=%s in invalid. Expected 'ASC' or 'DECS'".formatted(P_ORDER, rawOrderString));
 			}
 		} else {
 			throw new IllegalArgumentException("%s (['ASC', 'DECS']) is mandatory".formatted(P_ORDER));

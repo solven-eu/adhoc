@@ -82,7 +82,7 @@ public class PivotableResourceServerConfiguration {
 			}
 			// Ensure we generate a signingKey only once, so that the key in IJwtDecoder and the token in Bearer token
 			// are based on the same signingKey
-			synchronized (secretKeySpec) {
+			synchronized (PivotableResourceServerConfiguration.class) {
 				if (GENERATED_SIGNINGKEY.get() == null) {
 					log.warn("We generate a random signingKey");
 					secretKeySpec = PivotableTokenService.generateSignatureSecret(uuidGenerator).toJSONString();

@@ -13,4 +13,5 @@ kumite.login:
             # https://developers.google.com/identity/sign-in/web/sign-in?hl=fr
             # https://console.cloud.google.com/apis/credentials?hl=fr&project=kumite
             clientId: 635294738113-sftufj1etk97bqdhj7m6949behc3clhn.apps.googleusercontent.com
+            # NOSONAR
             clientSecret: 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

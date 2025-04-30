@@ -30,26 +30,25 @@ import java.util.Set;
 import java.util.concurrent.Phaser;
 import java.util.stream.Collectors;
 
-import com.google.common.eventbus.EventBus;
-import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.ARawDagTest;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.util.IStopwatch;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -57,10 +56,13 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
-import smile.math.MathEx;
+import eu.solven.adhoc.util.IStopwatch;
 
 public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdhocTestConstants {
 
@@ -71,12 +73,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	}
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, ITableWrapper table) {
-		return CubeWrapper.builder()
-				.name(table.getName() + ".cube")
-				.engine(engine)
-				.forest(forest)
-				.table(table)
-				.build();
+		return CubeWrapper.builder().name(table.getName() + ".cube").engine(engine).forest(forest).table(table).build();
 	}
 
 	private CubeWrapper makeComposite(CompositeCubesTableWrapper compositeTable, IMeasureForest forest) {
@@ -96,20 +93,20 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k2Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(k3Max);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
 
 		// In the composite cube, we want `k1` to be the maximum through cubes
 		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
@@ -165,14 +162,13 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			table2.add(Map.of("k1", 345));
 			table2.add(Map.of("k1", 456));
 
-			CubeWrapper compositeCube =
-					makeComposite(compositeCubesTable, withUnderlyings);
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
 
 			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
-					.containsEntry(Map.of(), Map.of(k1Max.getName(), 0L + MathEx.max(123, 234, 345, 456)))
+					.containsEntry(Map.of(), Map.of(k1Max.getName(), 0L + Math.max(123 + 234, 345 + 456)))
 					.hasSize(1);
 		}
 	}
@@ -196,6 +192,32 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
 	}
 
+	@Test
+	public void testSubQuery_SameUnderlying() {
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
+
+		// The subCube has a measure named `k1`
+		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
+
+		// Request the min and the max of the same measure cross cubes
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(k1Sum.toBuilder().name("min").aggregationKey(MinAggregation.KEY).build())
+						.build())
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(k1Sum.toBuilder().name("max").aggregationKey(MaxAggregation.KEY).build())
+						.build())
+				.build();
+
+		CompatibleMeasures compatibleMeasures = composite.computeSubMeasures(compositeQuery, subCube, Set.of());
+		Assertions.assertThat(compatibleMeasures.getPredefined())
+				.contains(IMeasure.alias("min", k1Sum.getName()))
+				.contains(IMeasure.alias("max", k1Sum.getName()))
+				.hasSize(2);
+		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
+	}
+
 	// This test will ensure 2 underlying tables are queried concurrently
 	@Test
 	public void testConcurrency() {
@@ -209,13 +231,13 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(countAsterisk);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(countAsterisk);
 			cube2 = wrapInCube(measureBag, table2);
 		}
@@ -259,18 +281,18 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
 		withoutUnderlyings.addMeasure(k1Sum);
 
 		CompositeCubesTableWrapper compositeCubesTable =
@@ -340,13 +362,13 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			cube2 = wrapInCube(measureBag, table2);
 		}
@@ -367,18 +389,18 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
 		withoutUnderlyings.addMeasure(k1Sum);
 
 		CompositeCubesTableWrapper compositeCubesTable = CompositeCubesTableWrapper.builder()
@@ -433,7 +455,6 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		return () -> Duration.ofMillis(123);
 	}
 
-
 	/**
 	 * In this test, we want to test having a Composite Combinator, relying on SubCube Combinators
 	 */
@@ -447,44 +468,50 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 		CubeWrapper cube1;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(Combinator.builder()
 					.name("table1_k_minus2")
 					.underlying(k1Sum.getName())
 					.combinationKey(ExpressionCombination.KEY)
-					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] - 2)")).build());
+					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+							"IF(underlyings[0] == null, null, underlyings[0] - 2)"))
+					.build());
 			cube1 = wrapInCube(measureBag, table1);
 		}
 		CubeWrapper cube2;
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
 			measureBag.addMeasure(k1Sum);
 			measureBag.addMeasure(Combinator.builder()
 					.name("table2_k_minus3")
 					.underlying(k1Sum.getName())
 					.combinationKey(ExpressionCombination.KEY)
-					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] - 3)")).build());
+					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+							"IF(underlyings[0] == null, null, underlyings[0] - 3)"))
+					.build());
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
-		withoutUnderlyings.addMeasure(Combinator.sum("compositeSum", "composite_power2", "composite_power3"));
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(IMeasure.sum("compositeSum", "composite_power2", "composite_power3"));
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power2")
 				.underlying("table1_k_minus2")
 				.combinationKey(ExpressionCombination.KEY)
-				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] * underlyings[0])")).build());
+				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0])"))
+				.build());
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power3")
 				.underlying("table2_k_minus3")
 				.combinationKey(ExpressionCombination.KEY)
-				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] * underlyings[0] * underlyings[0])")).build());
+				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0] * underlyings[0])"))
+				.build());
 
-		CompositeCubesTableWrapper compositeCubesTable = CompositeCubesTableWrapper.builder()
-				.cube(cube1)
-				.cube(cube2)
-				.build();
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
 		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(withoutUnderlyings);
 
@@ -497,51 +524,50 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			table2.add(Map.of("k1", 345));
 			table2.add(Map.of("k1", 456));
 
-			CubeWrapper compositeCube = makeComposite(compositeCubesTable,withUnderlyings);
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
 
 			// groupBy:cubeSlicer
 			String m = "compositeSum";
 			{
-				ITabularView view =
-						compositeCube.execute(AdhocQuery.builder().measure(m).explain(true).build());
+				ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(m).explain(true).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-			Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
-					.isEqualToNormalizingNewlines(
-							"""
-                                    #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-                                    |  No cost info
-                                    \\-- #1 m=table1_k_minus2(Combinator) filter=matchAll groupBy=grandTotal
-                                        |  size=1 duration=123ms
-                                        \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-                                            \\  size=1 duration=123ms
-                                    Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
-                                    #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
-                                    |  No cost info
-                                    \\-- #1 m=table2_k_minus3(Combinator) filter=matchAll groupBy=grandTotal
-                                        |  size=1 duration=123ms
-                                        \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-                                            \\  size=1 duration=123ms
-                                    Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
-                                    #0 s=composite id=00000000-0000-0000-0000-000000000000
-                                    |  No cost info
-                                    \\-- #1 m=compositeSum(Combinator) filter=matchAll groupBy=grandTotal
-                                        |  size=1 duration=123ms
-                                        |\\- #2 m=composite_power2(Combinator) filter=matchAll groupBy=grandTotal
-                                        |   |  size=1 duration=123ms
-                                        |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
-                                        |       \\  size=1 duration=123ms
-                                        \\-- #4 m=composite_power3(Combinator) filter=matchAll groupBy=grandTotal
-                                            |  size=1 duration=123ms
-                                            \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
-                                                \\  size=1 duration=123ms
-                                    Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
+				Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+						.isEqualToNormalizingNewlines(
+								"""
+										#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+										|  No cost info
+										\\-- #1 m=table1_k_minus2(Combinator) filter=matchAll groupBy=grandTotal
+										    |  size=1 duration=123ms
+										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+										        \\  size=1 duration=123ms
+										Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+										#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+										|  No cost info
+										\\-- #1 m=table2_k_minus3(Combinator) filter=matchAll groupBy=grandTotal
+										    |  size=1 duration=123ms
+										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+										        \\  size=1 duration=123ms
+										Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+										#0 s=composite id=00000000-0000-0000-0000-000000000000
+										|  No cost info
+										\\-- #1 m=compositeSum(Combinator) filter=matchAll groupBy=grandTotal
+										    |  size=1 duration=123ms
+										    |\\- #2 m=composite_power2(Combinator) filter=matchAll groupBy=grandTotal
+										    |   |  size=1 duration=123ms
+										    |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
+										    |       \\  size=1 duration=123ms
+										    \\-- #4 m=composite_power3(Combinator) filter=matchAll groupBy=grandTotal
+										        |  size=1 duration=123ms
+										        \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
+										            \\  size=1 duration=123ms
+										Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
 
-			Assertions.assertThat(messages).hasSize(15);
-
+				Assertions.assertThat(messages).hasSize(15);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of(), Map.of(m, 0L + (long) Math.pow(123 + 234 - 2, 2) +(long) Math.pow(345 + 456 - 3, 3)))
+						.containsEntry(Map.of(),
+								Map.of(m, 0L + (long) Math.pow(123 + 234 - 2, 2) + (long) Math.pow(345 + 456 - 3, 3)))
 						.hasSize(1);
 			}
 		}

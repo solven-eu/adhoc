@@ -1,0 +1,50 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Adhoc Java CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+    - name: Package skipping tests
+      # This is useful not to clutter the package command with download logs
+      # `mvn dependency` has issues with multi-modules
+      # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
+      run: mvn package -DskipTests --file pom.xml --batch-mode
+    - name: Build with Maven
+      run: mvn package --file pom.xml --batch-mode
+
+    # https://stackoverflow.com/questions/57498605/github-actions-share-workspace-artifacts-between-jobs
+    #- uses: actions/upload-artifact@v4
+    #  with:
+    #    name: kumite-server
+    #    path: server/target/*-exec.jar
+	
+	- name: Upload coverage reports to Codecov
+	    uses: codecov/codecov-action@v5
+	    with:
+	      token: ${{ secrets.CODECOV_TOKEN }}
+
+    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
+    - name: Update dependency graph
+      uses: advanced-security/maven-dependency-submission-action@49866fead7de0b0083b89f5f653f9620548ccddf

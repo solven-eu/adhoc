@@ -52,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class InjectAdvancedCubesConfig {
 
+	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_ADVANCED_DATASETS)
 	@Bean
 	public Void initAdvancedCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {

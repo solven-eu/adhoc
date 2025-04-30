@@ -1,5 +1,7 @@
 # AdHoc - InMemory Transformation Pipeline
 
+[![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
+
 ## Motivation
 
 Make it easy to define/code/review a complex pipeline of transformation rules.

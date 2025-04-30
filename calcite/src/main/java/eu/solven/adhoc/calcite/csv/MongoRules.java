@@ -95,11 +95,11 @@ public class MongoRules {
 				if (name.startsWith("$")) {
 					// org.apache.calcite.rex.RexUtil.createStructType(RelDataTypeFactory, List<? extends RexNode>,
 					// List<? extends String>, Suggester)
-					if (name.startsWith("$f")) {
-
-					} else {
-
-					}
+					// if (name.startsWith("$f")) {
+					//
+					// } else {
+					//
+					// }
 					return "_" + name.substring(2);
 				} else {
 					return name;

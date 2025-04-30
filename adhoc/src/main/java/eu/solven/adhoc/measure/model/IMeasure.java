@@ -22,12 +22,15 @@
  */
 package eu.solven.adhoc.measure.model;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.util.IHasName;
 
 /**
@@ -42,7 +45,7 @@ import eu.solven.adhoc.util.IHasName;
 // `@JsonTypeInfo` is ambiguous given MeasureSetFromResources. But it is useful for SchemaMetadata
 // https://github.com/FasterXML/jackson-annotations/issues/279
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, property = "type", defaultImpl = ReferencedMeasure.class)
-@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
+@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedMeasure.class, name = "ref"), })
 public interface IMeasure extends IHasName, IHasTags {
 
 	/**
@@ -51,4 +54,38 @@ public interface IMeasure extends IHasName, IHasTags {
 	 */
 	String getName();
 
+	/**
+	 * 
+	 * @param name
+	 * @param underlying
+	 * @param moreUnderlyings
+	 * @return an IMeasure doing the SUM of underlyings.
+	 */
+	static IMeasure sum(String name, String underlying, String... moreUnderlyings) {
+		if (moreUnderlyings.length == 0) {
+			return alias(name, underlying);
+		} else {
+			return Combinator.builder().name(name).underlyings(Lists.asList(underlying, moreUnderlyings)).build();
+		}
+	}
+
+	/**
+	 * 
+	 * @param alias
+	 *            the name of the name, i.e. the name with which one can refer to this alias.
+	 * @param aliased
+	 *            the name of the aliased measure, i.e. the name of the underlying/actually defined measure
+	 * @return
+	 */
+	static IMeasure alias(String alias, String aliased) {
+		if (Objects.equals(alias, aliased)) {
+			return ReferencedMeasure.ref(alias);
+		} else {
+			return Combinator.builder()
+					.name(alias)
+					.combinationKey(FindFirstCombination.KEY)
+					.underlying(aliased)
+					.build();
+		}
+	}
 }

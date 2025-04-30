@@ -43,7 +43,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -269,7 +269,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testUnfiltrator() throws IOException {
-		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testUnfiltrator").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testUnfiltrator").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.unfilterOnA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -299,7 +299,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testShiftor() throws IOException {
-		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testShiftor").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testShiftor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.shiftorAisA1);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -333,7 +333,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testBucketor() throws IOException {
-		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testBucketor").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testBucketor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -370,7 +370,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testDispatchor() throws IOException {
-		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testDispatchor").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testDispatchor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.dispatchFrom0To100);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
@@ -406,7 +406,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testCustomMeasure() throws IOException {
-		UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name("testCustomMeasure").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testCustomMeasure").build();
 
 		measureBag.addMeasure(
 				CustomMeasureForResource.builder().name("someCustomName").customProperty("customValue").build());
@@ -434,8 +434,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testAggregator_countAsterisk() throws IOException {
-		UnsafeMeasureForestBag measureBag =
-				UnsafeMeasureForestBag.builder().name("testAggregator_countAsterisk").build();
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testAggregator_countAsterisk").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.countAsterisk);
 
@@ -500,7 +499,7 @@ public class TestMeasureForestFromResource {
 				.containsEntry("columnName", "legacyColumnName");
 
 		{
-			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder()
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder()
 					.name("testRemoveUselessProperties_Aggregator_differentColumnName")
 					.build();
 

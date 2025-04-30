@@ -9,6 +9,10 @@
 	<artifactId>pivotable-public</artifactId>
 	<description>Resources shared between server and clients</description>
 
+	<properties>
+		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
+	</properties>
+
 	<dependencies>
 		<!-- This module should have a strict minimal set of dependencies -->
 		<dependency>

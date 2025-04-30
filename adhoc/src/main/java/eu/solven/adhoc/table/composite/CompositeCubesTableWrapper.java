@@ -55,9 +55,9 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -198,6 +198,99 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return nameToCube;
 	}
 
+	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
+			IHasMeasures subCube,
+			Set<String> subColumns) {
+		if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter()))) {
+			// TODO Could this be managed with a Filtrator? Leaving the `FILTER` management to the subCube?
+			throw new NotYetImplementedException(
+					"FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
+		}
+
+		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
+
+		// Measures which are known by the subCube
+		Set<IMeasure> predefinedMeasures = compositeQuery.getAggregators()
+				.stream()
+				// The subCube measure is in the Aggregator columnName
+				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
+				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
+				.map(fa -> IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+
+		// We also propagate to the subCube some measures which definition can be computed on the fly
+		Set<FilteredAggregator> defined = compositeQuery.getAggregators()
+				.stream()
+				// subCube does not know about `measure=k1`
+				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
+				// But the subCube has a `column=k1` and we want to aggregate over `k1`
+				// So we propagate the provided definition to the subCube
+				// TODO Could we also add some transformators?
+				.filter(a -> isColumnAvailable(subColumns, a.getAggregator().getColumnName()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+
+		CompatibleMeasures compatible = CompatibleMeasures.builder()
+				.predefined(predefinedMeasures)
+				.defined(defined.stream()
+						.map(fa -> FilteredAggregator.toAggregator(fa))
+						.collect(Collectors.toCollection(LinkedHashSet::new)))
+				.build();
+		return compatible;
+	}
+
+	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
+		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
+			// Requesting for slices: to be propagated to each underlying cube
+			return true;
+		} else {
+			Set<String> subColumns = subCube.getColumnTypes().keySet();
+			CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, subColumns);
+
+			// The cube is eligible if it has at least one relevant measure amongst the queried ones
+			return !compatible.isEmpty();
+		}
+	}
+
+	protected IAdhocQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
+			TableQueryV2 compositeQuery,
+			IAdhocGroupBy compositeGroupBy,
+			ICubeWrapper subCube) {
+		Set<String> subColumns = subCube.getColumnTypes().keySet();
+
+		// groupBy only by relevant columns. Other columns are ignored
+		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
+		subGroupBy.keySet().retainAll(subColumns);
+
+		IAdhocFilter compositeFilter = compositeQuery.getFilter();
+		IAdhocFilter subFilter = filterForColumns(compositeFilter, subColumns);
+
+		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subColumns);
+
+		IAdhocQuery query = AdhocQuery.edit(compositeQuery)
+				.filter(subFilter)
+				.groupBy(GroupByColumns.of(subGroupBy.values()))
+				// Reference the measures already known by the subCube
+				.measures(subMeasures.getPredefined())
+				// Add some measure given their definitions
+				.measures(subMeasures.getDefined())
+
+				// Some of the queried measures may be unknown to some cubes
+				// (Is this relevant given we queried only the relevant measures?)
+				.option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
+				// We want carriers from the underlying cubes, to aggregate them properly
+				// (e.g. a Top2 cross-cubes needs each cube to return its Top2)
+				.option(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
+
+				.build();
+
+		return AdhocSubQuery.builder().subQuery(query).parentQueryId(executingQueryContext.getQueryId()).build();
+	}
+
+	protected boolean isColumnAvailable(Set<String> subColumns, String subColumn) {
+		// `*` is relevant if we're requesting `COUNT(*)`
+		return ICountMeasuresConstants.ASTERISK.equals(subColumn) || subColumns.contains(subColumn);
+	}
+
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
 			Map<String, IAdhocQuery> cubeToQuery) {
@@ -229,105 +322,6 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	protected ITabularView executeSubQuery(ICubeWrapper subCube, IAdhocQuery query) {
 		return subCube.execute(query);
-	}
-
-	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
-		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
-			// Requesting for slices: to be propagated to each underlying cube
-			return true;
-		} else {
-			Set<String> subColumns = subCube.getColumnTypes().keySet();
-			CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, subColumns);
-
-			return !compatible.isEmpty();
-		}
-	}
-
-	protected IAdhocQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
-			TableQueryV2 compositeQuery,
-			IAdhocGroupBy compositeGroupBy,
-			ICubeWrapper subCube) {
-		Set<String> subColumns = subCube.getColumnTypes().keySet();
-
-		// groupBy only by relevant columns. Other columns are ignored
-		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
-		subGroupBy.keySet().retainAll(subColumns);
-
-		IAdhocFilter compositeFilter = compositeQuery.getFilter();
-		IAdhocFilter subFilter = filterForColumns(compositeFilter, subColumns);
-
-		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subColumns);
-
-		IAdhocQuery query = AdhocQuery.edit(compositeQuery)
-				.filter(subFilter)
-				.groupBy(GroupByColumns.of(subGroupBy.values()))
-				// Reference the measures already known by the subCube
-				.measures(subMeasures.getUnderlyingQueryMeasures())
-				// Add some measure given their definitions
-				.measures(subMeasures.getMissingButAddableMeasures())
-
-				// Some of the queried measures may be unknown to some cubes
-				// (Is this relevant given we queried only the relevant measures?)
-				.option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
-				// We want carriers from the underlying cubes, to aggregate them properly
-				// (e.g. a Top2 cross-cubes needs each cube to return its Top2)
-				.option(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
-
-				.build();
-
-		return AdhocSubQuery.builder().subQuery(query).parentQueryId(executingQueryContext.getQueryId()).build();
-	}
-
-	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
-			ICubeWrapper subCube,
-			Set<String> subColumns) {
-		if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter()))) {
-			throw new NotYetImplementedException(
-					"FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
-		}
-
-		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
-
-		// Measures which are known by the subCube
-		Set<ReferencedMeasure> compositeQueryMeasures = compositeQuery.getAggregators()
-				.stream()
-				// The subCube measure is in the Aggregator columnName
-				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
-				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
-				.peek(fa -> {
-					if (!fa.getAlias().equals(fa.getAggregator().getColumnName())) {
-						// TODO ReferencedMeasure would need to enable having a name different from the referenced measure
-						throw new NotYetImplementedException("Aliased measures are not handled in CompositeCube: %s".formatted(fa));
-					}
-				})
-				.map(a -> ReferencedMeasure.ref(a.getAggregator().getColumnName()))
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-
-		// We also propagate to the subCube some measures which definition can be computed on the fly
-		Set<FilteredAggregator> missingButAddableMeasures = compositeQuery.getAggregators()
-				.stream()
-				// subCube does not know about `k1.SUM`
-				.filter(a -> !cubeMeasures.contains(a.getAggregator().getColumnName()))
-				// But the subCube has a `k1` column and we want to aggregate over `k1`
-				// So we propagate the provided definition to the subCube
-				// TODO Could we also add some transformators?
-				.filter(a -> isColumnAvailable(subColumns, a.getAggregator().getColumnName()))
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-
-		CompatibleMeasures compatible = CompatibleMeasures.builder()
-				// Do not rely on ReferenceMeasures as the FilteredAggregator may have a custom alias
-				// (e.g.)
-				.underlyingQueryMeasures(compositeQueryMeasures)
-				.missingButAddableMeasures(missingButAddableMeasures.stream()
-						.map(fa -> FilteredAggregator.toAggregator(fa))
-						.collect(Collectors.toCollection(LinkedHashSet::new)))
-				.build();
-		return compatible;
-	}
-
-	protected boolean isColumnAvailable(Set<String> subColumns, String subColumn) {
-		// `*` is relevant if we're requesting `COUNT(*)`
-		return ICountMeasuresConstants.ASTERISK.equals(subColumn) || subColumns.contains(subColumn);
 	}
 
 	/**

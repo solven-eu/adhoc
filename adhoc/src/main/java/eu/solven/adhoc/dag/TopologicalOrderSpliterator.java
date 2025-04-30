@@ -156,7 +156,8 @@ public class TopologicalOrderSpliterator implements Spliterator<AdhocQueryStep> 
 
 	@Override
 	public long estimateSize() {
-		return fromAggregatesToQueried.vertexSet().size() - processed.size();
+		long problemSize = fromAggregatesToQueried.vertexSet().size();
+		return problemSize - processed.size();
 	}
 
 	@Override

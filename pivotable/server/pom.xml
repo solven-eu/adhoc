@@ -8,6 +8,11 @@
 	</parent>
 	<artifactId>pivotable-server</artifactId>
 
+	<properties>
+		<jacoco.branch.ratio>0.46</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>

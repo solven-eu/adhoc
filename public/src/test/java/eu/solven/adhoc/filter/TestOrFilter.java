@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 
 public class TestOrFilter {
 	// A short toString not to prevail is composition .toString
@@ -127,13 +129,16 @@ public class TestOrFilter {
 		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
 	}
 
+	@Disabled("TODO Implement this optimization")
 	@Test
 	public void testMultipleSameColumn_InAndIn() {
 		IAdhocFilter filterA1andInA12 =
 				OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
 
-		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a2")`
-		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
+		Assertions.assertThat(filterA1andInA12).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
+			Assertions.assertThat(cf.getColumn()).isEqualTo("a");
+			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(InMatcher.isIn("a1", "a2", "s3"));
+		});
 	}
 
 	@Test

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.UnsafeMeasureForestBag;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.AdhocQuery;
@@ -42,7 +42,7 @@ import eu.solven.adhoc.table.InMemoryTable;
 public class TestQueryStepsDag implements IAdhocTestConstants {
 	AdhocQueryEngine engine = AdhocQueryEngine.builder().build();
 
-	UnsafeMeasureForestBag measures = UnsafeMeasureForestBag.fromMeasures(this.getClass().getName(),
+	UnsafeMeasureForest measures = UnsafeMeasureForest.fromMeasures(this.getClass().getName(),
 			Arrays.asList(k1Sum, k1SumSquared, filterK1onA1, filterK1onB1, shiftorAisA1));
 
 	@Test

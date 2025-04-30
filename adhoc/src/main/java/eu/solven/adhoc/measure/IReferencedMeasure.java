@@ -20,49 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.measure;
 
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
-
-/**
- * Couple an {@link Aggregator} with an {@link IAdhocFilter}, planning for a `FILTER` sql.
- * 
- * https://modern-sql.com/feature/filter
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder(toBuilder = true)
-public class FilteredAggregator implements IAliasedAggregator {
-	private static final long DEFAULT_INDEX = 0;
-
-	@NonNull
-	Aggregator aggregator;
-
-	@NonNull
-	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-
-	@Default
-	long index = DEFAULT_INDEX;
-
-	// An alias to differentiate between same Aggregator with different filter in the same query
-	@Override
-	public String getAlias() {
-		if (index == DEFAULT_INDEX) {
-			return aggregator.getName();
-		} else {
-			return aggregator.getName() + "_" + index;
-		}
-	}
-
-	public static Aggregator toAggregator(FilteredAggregator fa) {
-		return Aggregator.edit(fa.aggregator).name(fa.getAlias()).build();
-	}
-
+public interface IReferencedMeasure {
+	/**
+	 * 
+	 * @return the name of the underlying/referenced object.
+	 */
+	String getRef();
 }

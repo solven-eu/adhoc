@@ -84,8 +84,6 @@ public class ColumnarMetadata {
 				builder.columnToType(name, DOUBLE);
 			} else if (java.util.Date.class.isAssignableFrom(clazz)) {
 				builder.columnToType(name, DATE);
-			} else if (LocalDate.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, LOCALDATE);
 			} else if (OffsetDateTime.class.isAssignableFrom(clazz)) {
 				builder.columnToType(name, OFFSETDATETIME);
 			} else {

@@ -23,7 +23,7 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,7 +57,7 @@ public class MapBasedTabularView implements ITabularView {
 
 	public static MapBasedTabularView load(ITabularView from) {
 		int capacity = Ints.checkedCast(from.size());
-		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new HashMap<>(capacity);
+		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new LinkedHashMap<>(capacity);
 		MapBasedTabularView newView = MapBasedTabularView.builder().coordinatesToValues(coordinatesToValues).build();
 
 		return load(from, newView);

@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
@@ -54,10 +55,11 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	// Need to aggregate partitioned results, like from CompositeCube providing aggregates for same slice
 	@NonNull
 	@Default
-	Map<IAliasedAggregator, IMultitypeMergeableColumn<T>> aggregatorToPreAggregated = new LinkedHashMap<>();
+	Map<IAliasedAggregator, IMultitypeMergeableColumn<T>> aggregatorToAggregates = new LinkedHashMap<>();
 
 	@NonNull
-	IOperatorsFactory operatorsFactory;
+	@Default
+	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
@@ -73,7 +75,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	public IValueReceiver contributePre(IAliasedAggregator aggregator, T key) {
 		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
 
-		IMultitypeColumn<T> column = aggregatorToPreAggregated.computeIfAbsent(aggregator, k -> makePreColumn(agg));
+		IMultitypeColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 
 		if (agg instanceof IHasCarriers hasCarriers) {
 			return v -> {
@@ -91,7 +93,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	public long size(Aggregator aggregator) {
 		long size = 0L;
 
-		IMultitypeColumn<T> preColumn = aggregatorToPreAggregated.get(aggregator);
+		IMultitypeColumn<T> preColumn = aggregatorToAggregates.get(aggregator);
 		if (preColumn != null) {
 			size += preColumn.size();
 		}
@@ -100,8 +102,8 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<T> preColumn = aggregatorToPreAggregated.get(aggregator);
+	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers) {
+		IMultitypeColumnFastGet<T> preColumn = aggregatorToAggregates.get(aggregator);
 
 		IMultitypeColumnFastGet<T> column = null;
 		if (preColumn != null) {
@@ -112,7 +114,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 			// Typically happens when a filter reject completely one of the underlying
 			// measure
 			column = MultitypeHashColumn.empty();
-		} else {
+		} else if (purgeCarriers) {
 			// Typically converts a CountHolder into the count as a `long`
 			column.purgeAggregationCarriers();
 		}

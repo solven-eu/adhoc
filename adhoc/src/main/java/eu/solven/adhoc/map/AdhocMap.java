@@ -248,9 +248,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 				String thisKey = thisNext.getKey();
 				String otherKey = otherNext.getKey();
-				// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
-				// internalized, and keySet are identical in most cases
-				int compareKey = thisKey == otherKey ? 0 : thisKey.compareTo(otherKey);
+				int compareKey = compareKey(thisKey, otherKey);
 
 				if (compareKey != 0) {
 					return compareKey;
@@ -264,6 +262,18 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 					}
 				}
 			}
+		}
+	}
+
+	// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
+	// internalized, and keySet are identical in most cases
+	// `java:S4973` is about the reference comparison, which is done on purpose to potentially skip the `.compareTo`
+	@SuppressWarnings("java:S4973")
+	private int compareKey(String thisKey, String otherKey) {
+		if (thisKey == otherKey) {
+			return 0;
+		} else {
+			return thisKey.compareTo(otherKey);
 		}
 	}
 

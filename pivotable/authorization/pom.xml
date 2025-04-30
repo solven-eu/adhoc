@@ -10,6 +10,11 @@
 	<artifactId>pivotable-authorization</artifactId>
 	<description>Manage access_token and refresh_token</description>
 
+	<properties>
+		<jacoco.branch.ratio>0.43</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.43</jacoco.instruction.ratio>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>

@@ -125,7 +125,10 @@ public class SimpleAdhocBigQueryApp {
 				String viewCount = row.get("view_count").getStringValue();
 				System.out.printf("%s : %s views\n", url, viewCount);
 			}
-		} catch (BigQueryException | InterruptedException e) {
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(e);
+		} catch (BigQueryException e) {
 			throw new IllegalStateException(e);
 		}
 	}

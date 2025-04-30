@@ -32,6 +32,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.value.IHasWrapped;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -46,9 +47,10 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
-public class ReferencedMeasure implements IMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
+public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	// @JsonValue
+	@NonNull
 	String ref;
 
 	/**

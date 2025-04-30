@@ -81,7 +81,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -379,16 +378,25 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 					.measure(aggregator)
 					.build();
 
-			if (executingQueryContext.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
-					&& operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
-				throw new NotYetImplementedException(
-						"Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
+			boolean doPurgeCarriers;
+			if (operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
+				if (executingQueryContext.getOptions()
+						.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
+					doPurgeCarriers = false;
+					// throw new NotYetImplementedException(
+					// "Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
+				} else {
+					doPurgeCarriers = true;
+				}
+			} else {
+				doPurgeCarriers = false;
 			}
 
 			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
 			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
 			// underlyings
-			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(filteredAggregator);
+			IMultitypeColumnFastGet<SliceAsMap> column =
+					coordinatesToAggregates.closeColumn(filteredAggregator, doPurgeCarriers);
 
 			// eventBus.post(QueryStepIsCompleted.builder()
 			// .querystep(queryStep)

@@ -80,25 +80,9 @@ public class MeasureForest implements IMeasureForest {
 		return nameToMeasure;
 	}
 
-	/**
-	 * @param measure
-	 * @return this
-	 */
-	// public AdhocMeasureBag addMeasure(IMeasure measure) {
-	// String measureName = measure.getName();
-	//
-	// if (measureName == null) {
-	// throw new IllegalArgumentException("m=%s has a null name".formatted(measure));
-	// }
-	//
-	// nameToMeasure.put(measureName, measure);
-	//
-	// return this;
-	// }
-
 	@Override
 	public IMeasure resolveIfRef(IMeasure measure) {
-		if (measure instanceof ReferencedMeasure ref) {
+		if (measure instanceof IReferencedMeasure ref) {
 			String refName = ref.getRef();
 			IMeasure resolved = getNameToMeasure().get(refName);
 
@@ -116,7 +100,7 @@ public class MeasureForest implements IMeasureForest {
 
 	@Override
 	public Optional<IMeasure> resolveIfRefOpt(IMeasure measure) {
-		if (measure instanceof ReferencedMeasure ref) {
+		if (measure instanceof IReferencedMeasure ref) {
 			String refName = ref.getRef();
 			IMeasure resolved = getNameToMeasure().get(refName);
 

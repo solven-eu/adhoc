@@ -23,8 +23,8 @@
 package eu.solven.adhoc.dag;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -468,7 +468,7 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
 				// Force a HashMap not to rely on default TreeMap
-				.coordinatesToValues(new HashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
+				.coordinatesToValues(new LinkedHashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
 				.build();
 
 		stepsToReturn.forEachRemaining(step -> {
@@ -479,10 +479,10 @@ public class AdhocQueryEngine implements IAdhocQueryEngine, IHasOperatorsFactory
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
 
-				boolean hasCarrierMeasure = executingQueryContext.getOptions()
-						.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)
-						&& step.getMeasure() instanceof Aggregator agg
-						&& operatorsFactory.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers;
+				boolean hasCarrierMeasure = step.getMeasure() instanceof Aggregator agg
+						&& operatorsFactory.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
+						&& !executingQueryContext.getOptions()
+								.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
 				IColumnScanner<SliceAsMap> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);

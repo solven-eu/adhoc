@@ -24,8 +24,8 @@ package eu.solven.adhoc.table.composite;
 
 import java.util.Set;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import lombok.Builder;
 import lombok.Value;
 
@@ -35,13 +35,13 @@ public class CompositeCubeHelper {
 	public static class CompatibleMeasures {
 
 		// Measures which are known by the subCube, which we refer to
-		Set<ReferencedMeasure> underlyingQueryMeasures;
+		Set<IMeasure> predefined;
 
 		// Measures which are not known by the subCube, but for which we provide a definition
-		Set<Aggregator> missingButAddableMeasures;
+		Set<Aggregator> defined;
 
 		public boolean isEmpty() {
-			return underlyingQueryMeasures.isEmpty() && missingButAddableMeasures.isEmpty();
+			return predefined.isEmpty() && defined.isEmpty();
 		}
 	}
 }
