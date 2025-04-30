@@ -70,7 +70,6 @@ import lombok.Value;
  */
 @Value
 @Builder(toBuilder = true)
-@Deprecated(since = "Not-Ready")
 // https://blog.jooq.org/how-to-calculate-multiple-aggregate-functions-in-a-single-query/
 public class TableQueryV2
 		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {

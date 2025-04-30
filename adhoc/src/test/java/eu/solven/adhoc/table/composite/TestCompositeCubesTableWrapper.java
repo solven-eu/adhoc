@@ -22,11 +22,21 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Phaser;
+import java.util.stream.Collectors;
 
+import com.google.common.eventbus.EventBus;
+import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.ARawDagTest;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.util.IStopwatch;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -52,18 +62,25 @@ import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
 import smile.math.MathEx;
 
-public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
+public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdhocTestConstants {
+
+	// Not used
+	@Override
+	public ITableWrapper makeTable() {
+		return InMemoryTable.builder().build();
+	}
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, ITableWrapper table) {
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
 		return CubeWrapper.builder()
 				.name(table.getName() + ".cube")
-				.engine(aqe)
+				.engine(engine)
 				.forest(forest)
 				.table(table)
-				.engine(aqe)
 				.build();
+	}
+
+	private CubeWrapper makeComposite(CompositeCubesTableWrapper compositeTable, IMeasureForest forest) {
+		return CubeWrapper.builder().name("composite").table(compositeTable).forest(forest).engine(engine).build();
 	}
 
 	// `k1` is both an underdlyingCube measure, and an explicit cube measure.
@@ -149,7 +166,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			table2.add(Map.of("k1", 456));
 
 			CubeWrapper compositeCube =
-					CubeWrapper.builder().name("composite").table(compositeCubesTable).forest(withUnderlyings).build();
+					makeComposite(compositeCubesTable, withUnderlyings);
 
 			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
@@ -203,12 +220,10 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			cube2 = wrapInCube(measureBag, table2);
 		}
 
-		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
-
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		CubeWrapper cube = CubeWrapper.builder().table(compositeCubesTable).forest(withoutUnderlyings).build();
+		CubeWrapper cube = makeComposite(compositeCubesTable, forest);
 		ITabularView view = cube.execute(AdhocQuery.builder()
 				.measure(Aggregator.countAsterisk())
 				.option(StandardQueryOptions.CONCURRENT)
@@ -272,11 +287,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			Assertions.assertThat(table1.getColumnTypes()).containsKey("a");
 			Assertions.assertThat(table2.getColumnTypes()).doesNotContainKey("a");
 
-			CubeWrapper compositeCube = CubeWrapper.builder()
-					.name("composite")
-					.table(compositeCubesTable)
-					.forest(withoutUnderlyings)
-					.build();
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withoutUnderlyings);
 
 			// groupBy:a
 			String missingColumnCoordinate = tableName2 + ".cube";
@@ -386,11 +397,7 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 			// Consider a column in one table but not the other
 			Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
 
-			CubeWrapper compositeCube = CubeWrapper.builder()
-					.name("composite")
-					.table(compositeCubesTable)
-					.forest(withoutUnderlyings)
-					.build();
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withoutUnderlyings);
 
 			// groupBy:cubeSlicer
 			String m = k1Sum.getName();
@@ -417,6 +424,125 @@ public class TestCompositeCubesTableWrapper implements IAdhocTestConstants {
 						.containsEntry(Map.of("a", tableName2 + ".cube", "cubeSlicer", tableName2 + ".cube"),
 								Map.of(m, 0L + 345 + 456))
 						.hasSize(3);
+			}
+		}
+	}
+
+	@Override
+	public IStopwatch makeStopwatch() {
+		return () -> Duration.ofMillis(123);
+	}
+
+
+	/**
+	 * In this test, we want to test having a Composite Combinator, relying on SubCube Combinators
+	 */
+	@Test
+	public void testWithCombinators() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(Combinator.builder()
+					.name("table1_k_minus2")
+					.underlying(k1Sum.getName())
+					.combinationKey(ExpressionCombination.KEY)
+					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] - 2)")).build());
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForestBag measureBag = UnsafeMeasureForestBag.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(Combinator.builder()
+					.name("table2_k_minus3")
+					.underlying(k1Sum.getName())
+					.combinationKey(ExpressionCombination.KEY)
+					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] - 3)")).build());
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForestBag withoutUnderlyings = UnsafeMeasureForestBag.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(Combinator.sum("compositeSum", "composite_power2", "composite_power3"));
+		withoutUnderlyings.addMeasure(Combinator.builder()
+				.name("composite_power2")
+				.underlying("table1_k_minus2")
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] * underlyings[0])")).build());
+		withoutUnderlyings.addMeasure(Combinator.builder()
+				.name("composite_power3")
+				.underlying("table2_k_minus3")
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION, "IF(underlyings[0] == null, null, underlyings[0] * underlyings[0] * underlyings[0])")).build());
+
+		CompositeCubesTableWrapper compositeCubesTable = CompositeCubesTableWrapper.builder()
+				.cube(cube1)
+				.cube(cube2)
+				.build();
+
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(withoutUnderlyings);
+
+		{
+			List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			table2.add(Map.of("k1", 345));
+			table2.add(Map.of("k1", 456));
+
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable,withUnderlyings);
+
+			// groupBy:cubeSlicer
+			String m = "compositeSum";
+			{
+				ITabularView view =
+						compositeCube.execute(AdhocQuery.builder().measure(m).explain(true).build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+			Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+					.isEqualToNormalizingNewlines(
+							"""
+                                    #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+                                    |  No cost info
+                                    \\-- #1 m=table1_k_minus2(Combinator) filter=matchAll groupBy=grandTotal
+                                        |  size=1 duration=123ms
+                                        \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+                                            \\  size=1 duration=123ms
+                                    Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+                                    #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+                                    |  No cost info
+                                    \\-- #1 m=table2_k_minus3(Combinator) filter=matchAll groupBy=grandTotal
+                                        |  size=1 duration=123ms
+                                        \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+                                            \\  size=1 duration=123ms
+                                    Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+                                    #0 s=composite id=00000000-0000-0000-0000-000000000000
+                                    |  No cost info
+                                    \\-- #1 m=compositeSum(Combinator) filter=matchAll groupBy=grandTotal
+                                        |  size=1 duration=123ms
+                                        |\\- #2 m=composite_power2(Combinator) filter=matchAll groupBy=grandTotal
+                                        |   |  size=1 duration=123ms
+                                        |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
+                                        |       \\  size=1 duration=123ms
+                                        \\-- #4 m=composite_power3(Combinator) filter=matchAll groupBy=grandTotal
+                                            |  size=1 duration=123ms
+                                            \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
+                                                \\  size=1 duration=123ms
+                                    Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
+
+			Assertions.assertThat(messages).hasSize(15);
+
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues())
+						.containsEntry(Map.of(), Map.of(m, 0L + (long) Math.pow(123 + 234 - 2, 2) +(long) Math.pow(345 + 456 - 3, 3)))
+						.hasSize(1);
 			}
 		}
 	}

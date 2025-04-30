@@ -23,6 +23,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `Pivotable` search now highlights/marks matching elements.
 - `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
 - Prepare querySharing for aggregators with same groupBy but different filters, with `FILTER` sql keyword. See `QueryTableV2`
+- `ExpressionCombination` can refer to underlyings by their index with the syntax `underlyings[index]`
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`

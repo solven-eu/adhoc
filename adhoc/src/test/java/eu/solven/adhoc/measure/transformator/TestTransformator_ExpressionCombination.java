@@ -65,9 +65,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 
 		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
 
-		MapBasedTabularView view = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(view.getCoordinatesToValues())
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
@@ -87,9 +85,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		// Reject rows where k2 is not null
 		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("k2", null).build());
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", "123.0null"));
 	}
@@ -117,10 +113,36 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build());
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 123L));
+	}
+
+
+	@Test
+	public void testReferenceByIndex() {
+		forest.addMeasure(Combinator.builder()
+				.name("sumK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.combinationKey(ExpressionCombination.KEY)
+				// https://github.com/ezylang/EvalEx/issues/204
+				// We may process ternary into IF
+				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put("expression", "IF(underlyings[0] == null, 0, underlyings[0]) + IF(underlyings[1] == null, 0, underlyings[1])")
+						.build())
+				.build());
+
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+
+		// Reject rows where k2 is not null
+		ITabularView output = cube.execute(AdhocQuery.builder()
+				.measure("sumK1K2")
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("sumK1K2", 0L + 123 + 234 + 345 + 456));
 	}
 }

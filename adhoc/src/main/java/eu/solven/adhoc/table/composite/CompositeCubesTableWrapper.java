@@ -57,6 +57,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -211,7 +212,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 					stream = stream.parallel();
 				}
 
-				return stream.collect(Collectors.toMap(e -> e.getKey(), e -> {
+				return stream.collect(Collectors.toMap(Entry::getKey, e -> {
 					ICubeWrapper subCube = nameToCube.get(e.getKey());
 					IAdhocQuery query = e.getValue();
 					return executeSubQuery(subCube, query);
@@ -288,11 +289,18 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
 		// Measures which are known by the subCube
-		Set<FilteredAggregator> compositeQueryMeasures = compositeQuery.getAggregators()
+		Set<ReferencedMeasure> compositeQueryMeasures = compositeQuery.getAggregators()
 				.stream()
 				// The subCube measure is in the Aggregator columnName
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
 				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
+				.peek(fa -> {
+					if (!fa.getAlias().equals(fa.getAggregator().getColumnName())) {
+						// TODO ReferencedMeasure would need to enable having a name different from the referenced measure
+						throw new NotYetImplementedException("Aliased measures are not handled in CompositeCube: %s".formatted(fa));
+					}
+				})
+				.map(a -> ReferencedMeasure.ref(a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		// We also propagate to the subCube some measures which definition can be computed on the fly
@@ -309,9 +317,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		CompatibleMeasures compatible = CompatibleMeasures.builder()
 				// Do not rely on ReferenceMeasures as the FilteredAggregator may have a custom alias
 				// (e.g.)
-				.underlyingQueryMeasures(compositeQueryMeasures.stream()
-						.map(fa -> FilteredAggregator.toAggregator(fa))
-						.collect(Collectors.toCollection(LinkedHashSet::new)))
+				.underlyingQueryMeasures(compositeQueryMeasures)
 				.missingButAddableMeasures(missingButAddableMeasures.stream()
 						.map(fa -> FilteredAggregator.toAggregator(fa))
 						.collect(Collectors.toCollection(LinkedHashSet::new)))

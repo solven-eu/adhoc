@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.combination;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,9 +42,9 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Enable expression-based {@link ICombination}
- * 
+ *
  * @author Benoit Lacelle
- * @see https://github.com/ezylang/EvalEx
+ * @see <a href="https://github.com/ezylang/EvalEx">EvalEx</a>
  */
 @RequiredArgsConstructor
 public class ExpressionCombination implements ICombination {
@@ -62,7 +63,11 @@ public class ExpressionCombination implements ICombination {
 
 		EvaluationValue result;
 		try {
-			Map<String, Object> nameToValue = new HashMap<>();
+			Map<String, Object> nameToValue = new LinkedHashMap<>();
+
+			// Enable referring to underlyings by their index
+			// BEWARE This may be overriden if an underlying measure is named `underlyings`
+			nameToValue.put("underlyings", underlyingValues);
 
 			for (int i = 0; i < Math.min(underlyingNames.size(), underlyingValues.size()); i++) {
 				nameToValue.put(underlyingNames.get(i), underlyingValues.get(i));

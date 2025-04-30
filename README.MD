@@ -311,6 +311,10 @@ Most databases handles aggregations over primitive types (e.g. SUM over doubles)
 [m2-central](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
 
+## Limitations
+
+Known limitations would generally trigger a [`NotYetImplementedException`](https://github.com/search?q=repo%3Asolven-eu%2Fadhoc%20NotYetImplementedException&type=code): please open a ticket to report your actual use-case for given scenario.
+
 ## Feature Candidates
 
 - [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
