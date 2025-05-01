@@ -9,7 +9,7 @@
 	<artifactId>adhoc</artifactId>
 
 	<properties>
-		<cucumber.version>7.14.0</cucumber.version>
+		<cucumber.version>7.22.1</cucumber.version>
 		<jooq.version>3.20.3</jooq.version>
 
 		<jacoco.branch.ratio>0.99</jacoco.branch.ratio>
