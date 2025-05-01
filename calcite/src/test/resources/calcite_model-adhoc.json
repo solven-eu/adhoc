@@ -8,7 +8,8 @@
             "factory": "eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory",
             "operand": {
                 "tableWrapperFactoryClass": "eu.solven.adhoc.table.InMemoryTable",
-                "DEBUG": true
+                "EXPLAIN": true,
+                "DEBUG": false
             },
             "tables": [
                 {

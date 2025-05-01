@@ -67,7 +67,7 @@ public class TestPivotableLoginController {
 			new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);
 
 	@Test
-	public void testLoginProviders_default() {
+	void testLoginProviders_default() {
 		Assertions.assertThat(controller.loginProviders()).containsKeys("list", "map");
 		Assertions.assertThat(controller.loginProviders().get("list"))
 				.asInstanceOf(InstanceOfAssertFactories.COLLECTION)
@@ -78,7 +78,7 @@ public class TestPivotableLoginController {
 	}
 
 	@Test
-	public void testLoginProviders() {
+	void testLoginProviders() {
 		env.addActiveProfile(IPivotableSpringProfiles.P_FAKEUSER);
 
 		Assertions.assertThat(controller.loginProviders()).containsKeys("list", "map");
