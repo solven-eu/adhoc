@@ -53,18 +53,20 @@ public class TestPivotableLoginController {
 	final InMemoryUserRepository userRepository = new InMemoryUserRepository(uuidGenerator);
 
 	final PivotableUsersRegistry usersRegistry = new PivotableUsersRegistry(userRepository, userRepository);
-	final MockEnvironment env = new MockEnvironment() {
-		{
-			setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
-			setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
-					PivotableTokenService.generateSignatureSecret(JdkUuidGenerator.INSTANCE).toJSONString());
-		}
-	};
+	final MockEnvironment env = new MockEnvironment();;
 
-	final PivotableTokenService kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
+	final PivotableTokenService kumiteTokenService;
 
-	final PivotableLoginController controller =
-			new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);
+	final PivotableLoginController controller;
+
+	{
+		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
+		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
+				PivotableTokenService.generateSignatureSecret(JdkUuidGenerator.INSTANCE).toJSONString());
+
+		kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
+		controller = new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);
+	}
 
 	@Test
 	void testLoginProviders_default() {

@@ -97,11 +97,9 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(3)
-				.containsEntry(Map.of("country", "US"),
-						Map.of("d_country=current_ratio", (0D + 123 + 234) / (0D + 123 + 234)))
-				.containsEntry(Map.of("country", "FR"), Map.of("d_country=current_ratio", (0D + 345) / (0D + 345)))
-				.containsEntry(Map.of("country", "DE"),
-						Map.of("d_country=current_ratio", (0D + 456 + 567) / (0D + 456 + 567)));
+				.containsEntry(Map.of("country", "US"), Map.of("d_country=current_ratio", 0D + 1))
+				.containsEntry(Map.of("country", "FR"), Map.of("d_country=current_ratio", 0D + 1))
+				.containsEntry(Map.of("country", "DE"), Map.of("d_country=current_ratio", 0D + 1));
 	}
 
 	@Test
