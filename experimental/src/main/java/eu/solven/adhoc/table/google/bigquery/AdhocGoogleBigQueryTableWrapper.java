@@ -56,12 +56,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 
-	final AdhocBigQueryTableWrapperParameters dbParameters;
+	final AdhocBigQueryTableWrapperParameters bigQueryParameters;
 
-	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters dbParameters) {
-		super("Google", dbParameters.getBase());
+	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters bigQueryParameters) {
+		super("Google", bigQueryParameters.getBase());
 
-		this.dbParameters = dbParameters;
+		this.bigQueryParameters = bigQueryParameters;
 	}
 
 	@Override
@@ -74,9 +74,9 @@ public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
 				.setUseLegacySql(false)
 				.build();
 
-		BigQuery bigquery = dbParameters.getBigQueryOptions().getService();
+		BigQuery bigquery = bigQueryParameters.getBigQueryOptions().getService();
 
-		JobId jobId = JobId.newBuilder().setProject(dbParameters.getBigQueryOptions().getProjectId()).build();
+		JobId jobId = JobId.newBuilder().setProject(bigQueryParameters.getBigQueryOptions().getProjectId()).build();
 		Job queryJob = bigquery.create(JobInfo.newBuilder(queryConfig).setJobId(jobId).build());
 
 		// Wait for the query to complete.

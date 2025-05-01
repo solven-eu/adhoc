@@ -209,8 +209,8 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).debug(true).build());
+		ITabularView result =
+				wrapInCube(forest).execute(AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);

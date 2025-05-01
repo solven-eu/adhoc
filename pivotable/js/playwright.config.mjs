@@ -33,16 +33,14 @@ const config = defineConfig({
 
         /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
         trace: "on-first-retry",
+
+		// https://github.com/microsoft/playwright/issues/14854
+	    screenshot: "only-on-failure",
     },
 
     // https://playwright.dev/docs/test-timeouts
     timeout: 3000,
     expect: { timeout: 2000 },
-
-    // https://github.com/microsoft/playwright/issues/14854
-    use: {
-        screenshot: "only-on-failure",
-    },
 
     /* Configure projects for major browsers */
     projects: [

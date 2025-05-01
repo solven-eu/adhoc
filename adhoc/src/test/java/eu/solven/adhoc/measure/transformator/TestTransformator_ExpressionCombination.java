@@ -63,7 +63,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
