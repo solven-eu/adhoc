@@ -32,11 +32,10 @@ jobs:
       # This is useful not to clutter the package command with download logs
       # `mvn dependency` has issues with multi-modules
       # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
-      run: mvn package -DskipTests --file pom.xml --batch-mode
-    - name: Build with Maven
+      run: mvn package -DskipTests -Dspotless.skip --file pom.xml --batch-mode
+    - name: Java unit-tests
+      # Stick to `package` phase for consistency, and checking packaging is fine
       run: mvn package --file pom.xml --batch-mode
-    - name: UnitTests with Maven
-      run: mvn test --file pom.xml --batch-mode
 
     # https://stackoverflow.com/questions/57498605/github-actions-share-workspace-artifacts-between-jobs
     #- uses: actions/upload-artifact@v4
