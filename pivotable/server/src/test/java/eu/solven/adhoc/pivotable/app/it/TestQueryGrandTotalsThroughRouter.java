@@ -119,16 +119,16 @@ public class TestQueryGrandTotalsThroughRouter {
 				})
 
 				.doOnError(t -> {
-					log.error("Something went wrong", t);
+					throw new IllegalStateException(t);
 				})
 				// .then()
 				.blockLast();
 
 		Assertions.assertThat(nbViews.get()).isGreaterThan(0);
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(lastView);
-
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).containsEntry(Map.of(), Map.of());
+		Assertions.assertThat(MapBasedTabularView.load(lastView).getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of());
 	}
 
 	@Test
@@ -179,7 +179,7 @@ public class TestQueryGrandTotalsThroughRouter {
 				})
 
 				.doOnError(t -> {
-					log.error("Something went wrong", t);
+					throw new IllegalStateException(t);
 				})
 				// .then()
 				.blockLast();

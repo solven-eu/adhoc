@@ -12,6 +12,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DuckDB` is upgraded to 1.2.2.0
 - In `Pivotbale`, `customMarkers` are written on a per-value basis, with the `path` as key.
 - `QueryTableV2` introduced querySharing for `TableQuery` with same groupBy, by relying on SQL `FILTER` keyword.
+- Drops `CharSequence` as a priveledged type (e.g. in aggregations, in `IMultiTypeXXX`)
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube

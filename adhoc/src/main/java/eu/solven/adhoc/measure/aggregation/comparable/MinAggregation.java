@@ -37,19 +37,6 @@ public class MinAggregation extends MaxAggregation {
 	}
 
 	@Override
-	public CharSequence aggregateStrings(CharSequence left, CharSequence right) {
-		if (left == null) {
-			return right;
-		} else if (right == null) {
-			return left;
-		} else if (CharSequence.compare(left, right) <= 0) {
-			return left;
-		} else {
-			return right;
-		}
-	}
-
-	@Override
 	public double aggregateDoubles(double left, double right) {
 		return Double.min(left, right);
 	}

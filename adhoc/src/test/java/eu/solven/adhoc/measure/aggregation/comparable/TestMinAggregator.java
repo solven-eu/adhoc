@@ -34,9 +34,8 @@ public class TestMinAggregator {
 		Assertions.assertThat(a.aggregate(null, 123)).isEqualTo(123);
 		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
 
-		Assertions.assertThat(a.aggregateStrings(null, null)).isNull();
-		Assertions.assertThat(a.aggregateStrings(null, "someS")).isEqualTo("someS");
-		Assertions.assertThat(a.aggregateStrings("someS", null)).isEqualTo("someS");
+		Assertions.assertThat(a.aggregate(null, "someS")).isEqualTo("someS");
+		Assertions.assertThat(a.aggregate("someS", null)).isEqualTo("someS");
 	}
 
 	@Test

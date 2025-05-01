@@ -22,32 +22,15 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-
 /**
  * Like {@link SumAggregation}, but ignores {@link Double#NaN}
  * 
  * @author Benoit Lacelle
  *
  */
-public class SumNotNaNAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
+public class SumNotNaNAggregation extends SumAggregation {
 
-	public static final String KEY = "SUM";
-
-	@Override
-	public Object aggregate(Object l, Object r) {
-		if (l == null) {
-			return r;
-		} else if (r == null) {
-			return l;
-		} else if (isLongLike(l) && isLongLike(r)) {
-			return aggregateLongs(((Number) l).longValue(), ((Number) r).longValue());
-		} else {
-			return aggregateDoubles(((Number) l).doubleValue(), ((Number) r).doubleValue());
-		}
-	}
+	public static final String KEY = "SUM_NOT_NAN";
 
 	@Override
 	public double aggregateDoubles(double l, double r) {
@@ -64,17 +47,4 @@ public class SumNotNaNAggregation implements IAggregation, IDoubleAggregation, I
 		}
 	}
 
-	@Override
-	public long aggregateLongs(long l, long r) {
-		return l + r;
-	}
-
-	public static boolean isLongLike(Object o) {
-		return Integer.class.isInstance(o) || Long.class.isInstance(o);
-	}
-
-	@Override
-	public long neutralLong() {
-		return 0L;
-	}
 }

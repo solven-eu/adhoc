@@ -35,6 +35,8 @@ public class TestSumNotNaNAggregation {
 		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(0L + 123 + 234);
 	}
 
 	@Test
@@ -42,5 +44,18 @@ public class TestSumNotNaNAggregation {
 		Assertions.assertThat(a.aggregateDoubles(Double.NaN, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregateDoubles(1.2D, Double.NaN)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregateDoubles(Double.NaN, Double.NaN)).isEqualTo(0D);
+
+		Assertions.assertThat(a.aggregateDoubles(1.2D, 2.3D)).isEqualTo(1.2D + 2.3D);
+	}
+
+	@Test
+	public void testSum_long() {
+		Assertions.assertThat(a.aggregateLongs(123, 234)).isEqualTo(0L + 123 + 234);
+	}
+
+	// TODO This is probably not satisfactory to overflow
+	@Test
+	public void testSum_long_overflow() {
+		Assertions.assertThat(a.aggregateLongs(Long.MAX_VALUE, 234)).isEqualTo(0L + Long.MAX_VALUE + 234);
 	}
 }

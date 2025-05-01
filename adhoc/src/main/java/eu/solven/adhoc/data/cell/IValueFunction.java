@@ -51,15 +51,6 @@ public interface IValueFunction<T> {
 		return onObject(value);
 	}
 
-	/**
-	 * If this holds a {@link CharSequence}, override this optional method to receive the {@link CharSequence}
-	 * 
-	 * @param value
-	 */
-	default T onCharsequence(CharSequence value) {
-		return onObject(value);
-	}
-
 	T onObject(Object object);
 
 }
