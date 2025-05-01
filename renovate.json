@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+    "labels": [
+        "renovate"
+    ],
+    "packageRules": [
+        {
+            "automerge": true,
+            "matchUpdateTypes": [
+                "patch",
+                "pin",
+                "digest"
+            ]
+        },
+        {
+            "automerge": true,
+            "matchDepTypes": [
+                "devDependencies"
+            ]
+        }
+    ]
+}

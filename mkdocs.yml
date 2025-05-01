@@ -1,0 +1,11 @@
+site_name: Adhoc
+site_url: https://solven-eu.github.io/adhoc/
+# https://squidfunk.github.io/mkdocs-material/setup/adding-a-git-repository/
+repo_url: https://github.com/solven-eu/adhoc
+
+theme:
+    name: material
+    favicon: favicon.ico
+    logo: favicon.ico
+    icon:
+        repo: fontawesome/brands/github
