@@ -22,13 +22,15 @@
  */
 package eu.solven.adhoc.pivotable.webflux.api;
 
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
+import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
@@ -51,9 +53,9 @@ public class TestPivotableLoginController {
 	final InMemoryUserRepository userRepository = new InMemoryUserRepository(uuidGenerator);
 
 	final PivotableUsersRegistry usersRegistry = new PivotableUsersRegistry(userRepository, userRepository);
-	final Environment env = new MockEnvironment() {
+	final MockEnvironment env = new MockEnvironment() {
 		{
-			setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.kumite");
+			setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
 			setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
 					PivotableTokenService.generateSignatureSecret(JdkUuidGenerator.INSTANCE).toJSONString());
 		}
@@ -65,9 +67,31 @@ public class TestPivotableLoginController {
 			new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);
 
 	@Test
-	public void testPlayer_invalid() {
-		// Assertions.assertThatThrownBy(() -> controller.checkValidPlayerId(FakeUser.user(),
-		// uuidGenerator.randomUUID()))
-		// .isInstanceOf(IllegalArgumentException.class);
+	public void testLoginProviders_default() {
+		Assertions.assertThat(controller.loginProviders()).containsKeys("list", "map");
+		Assertions.assertThat(controller.loginProviders().get("list"))
+				.asInstanceOf(InstanceOfAssertFactories.COLLECTION)
+				.isEmpty();
+		Assertions.assertThat(controller.loginProviders().get("map"))
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.isEmpty();
+	}
+
+	@Test
+	public void testLoginProviders() {
+		env.addActiveProfile(IPivotableSpringProfiles.P_FAKEUSER);
+
+		Assertions.assertThat(controller.loginProviders()).containsKeys("list", "map");
+		Assertions.assertThat(controller.loginProviders().get("list"))
+				.asInstanceOf(InstanceOfAssertFactories.COLLECTION)
+				.anySatisfy(lp -> {
+					Assertions.assertThat(lp)
+							.asInstanceOf(InstanceOfAssertFactories.MAP)
+							.containsEntry("type", "basic");
+				})
+				.hasSize(1);
+		Assertions.assertThat(controller.loginProviders().get("map"))
+				.asInstanceOf(InstanceOfAssertFactories.MAP)
+				.hasSize(1);
 	}
 }

@@ -52,8 +52,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// This is mandatory for fast `.get`
 	// This is sorted
 	final Object2IntArrayMap<String> keyToIndex;
-	// final List<String> keys;
-	final List<Object> values;
+	final List<Object> valuesAsList;
 
 	/** Cache the hash code for the string */
 	// Like String
@@ -71,17 +70,17 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		assert Ordering.natural().isOrdered(keyToIndex.keySet());
 
 		this.keyToIndex = keyToIndex;
-		this.values = values;
+		this.valuesAsList = values;
 	}
 
 	@Override
 	public int size() {
-		return values.size();
+		return valuesAsList.size();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return values.isEmpty();
+		return valuesAsList.isEmpty();
 	}
 
 	@Override
@@ -92,7 +91,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	@Override
 	public boolean containsValue(Object value) {
 		// This is a slow operation
-		return values.contains(value);
+		return valuesAsList.contains(value);
 	}
 
 	@Override
@@ -100,7 +99,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		if (key instanceof String keyAsString) {
 			int index = keyToIndex.getInt(keyAsString);
 			if (index >= 0) {
-				return values.get(index);
+				return valuesAsList.get(index);
 			} else {
 				return null;
 			}
@@ -136,14 +135,14 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	@Override
 	public Collection<Object> values() {
-		return Collections.unmodifiableCollection(values);
+		return Collections.unmodifiableCollection(valuesAsList);
 	}
 
 	@Override
 	public Set<Map.Entry<String, Object>> entrySet() {
 		// Does this needs to be cached?
 		return Streams.mapWithIndex(keySet().stream(), (key, index) -> {
-			Object value = values.get(Ints.checkedCast(index));
+			Object value = valuesAsList.get(Ints.checkedCast(index));
 			return Map.entry(key, value);
 		}).collect(Collectors.toSet());
 	}
@@ -165,7 +164,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 				String key = entry.getKey();
 				int index = entry.getIntValue();
 				// see `Map.Entry#hashCode`
-				hashcodeHolder[0] += key.hashCode() ^ values.get(index).hashCode();
+				hashcodeHolder[0] += key.hashCode() ^ valuesAsList.get(index).hashCode();
 			});
 
 			h = hashcodeHolder[0];
@@ -193,7 +192,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			// If not equals, it is most probably spot by value than by keys
 			// In other words: there is high probability of same keys and different values than different keys but
 			// same values. `Objects.equals` will do a reference check
-			if (!Objects.equals(values, objAsMap.values)) {
+			if (!Objects.equals(valuesAsList, objAsMap.valuesAsList)) {
 				return false;
 			} else if (keyToIndex == objAsMap.keyToIndex) {
 				// Same key ref
@@ -253,8 +252,8 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 				if (compareKey != 0) {
 					return compareKey;
 				} else {
-					Object thisCoordinate = this.values.get(thisNext.getIntValue());
-					Object otherCoordinate = o.values.get(otherNext.getIntValue());
+					Object thisCoordinate = this.valuesAsList.get(thisNext.getIntValue());
+					Object otherCoordinate = o.valuesAsList.get(otherNext.getIntValue());
 					int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
 
 					if (valueCompare != 0) {
