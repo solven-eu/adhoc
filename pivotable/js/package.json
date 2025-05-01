@@ -1,17 +1,17 @@
 {
     "dependencies": {
-        "vue": "^3.4.37"
+        "vue": "3.4.37"
     },
     "devDependencies": {
-        "@playwright/test": "^1.47.1",
-        "@types/node": "^22.5.5",
-        "@vitejs/plugin-vue": "^5.2.1",
-        "eslint": "^9.10.0",
-        "eslint-config-prettier": "^10.0.0",
-        "eslint-plugin-prettier": "^5.2.1",
-        "eslint-plugin-vue": "^9.28.0",
+        "@playwright/test": "1.47.1",
+        "@types/node": "22.5.5",
+        "@vitejs/plugin-vue": "5.2.1",
+        "eslint": "9.25.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.2.1",
+        "eslint-plugin-vue": "9.28.0",
         "prettier": "3.4.2",
-        "vite": "^6.1.1"
+        "vite": "6.3.4"
     },
     "name": "pivotable",
     "private": true,
