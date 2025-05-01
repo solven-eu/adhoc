@@ -9,7 +9,7 @@
 	<artifactId>calcite</artifactId>
 
 	<properties>
-		<calcite.version>1.38.0</calcite.version>
+		<calcite.version>1.39.0</calcite.version>
 
 		<jacoco.branch.ratio>0.25</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.40</jacoco.instruction.ratio>
