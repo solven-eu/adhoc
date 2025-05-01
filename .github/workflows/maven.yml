@@ -26,6 +26,8 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+    - name: Download dependencies
+      run mvn dependency:resolve --file pom.xml --batch-mode
     - name: Package skipping tests
       # This is useful not to clutter the package command with download logs
       # `mvn dependency` has issues with multi-modules

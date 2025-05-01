@@ -205,11 +205,8 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
-				.measure(mName, mNameEUR, mNameUSD)
-				.customMarker(Optional.of("JPY"))
-				.debug(true)
-				.build());
+		ITabularView output = aqw.execute(
+				AdhocQuery.builder().measure(mName, mNameEUR, mNameUSD).customMarker(Optional.of("JPY")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

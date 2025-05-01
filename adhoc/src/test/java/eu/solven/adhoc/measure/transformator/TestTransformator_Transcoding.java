@@ -67,7 +67,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").debug(true).build());
+		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -101,8 +101,8 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testFilterGroupBy() {
-		ITabularView output = aqw.execute(
-				AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").debug(true).build());
+		ITabularView output =
+				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

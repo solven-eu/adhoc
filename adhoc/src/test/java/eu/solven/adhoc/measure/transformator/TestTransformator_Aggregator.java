@@ -103,7 +103,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasure() {
-		ITabularView output = cube.execute(AdhocQuery.builder().debug(true).build());
+		ITabularView output = cube.execute(AdhocQuery.builder().build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
