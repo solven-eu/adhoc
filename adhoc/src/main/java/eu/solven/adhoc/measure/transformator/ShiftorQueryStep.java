@@ -80,9 +80,9 @@ public class ShiftorQueryStep implements ITransformator {
 
 		// Read values from the shifted underlyingStep
 		AdhocQueryStep whereToReadShifted =
-				AdhocQueryStep.edit(step).filter(shiftedFilter).measureNamed(underlyingMeasure).build();
+				AdhocQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
 		// Read slices from the natural undelryingStep, as the natural slices to write
-		AdhocQueryStep whereToReadForWrite = AdhocQueryStep.edit(step).measureNamed(underlyingMeasure).build();
+		AdhocQueryStep whereToReadForWrite = AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
 		return Arrays.asList(whereToReadShifted, whereToReadForWrite);

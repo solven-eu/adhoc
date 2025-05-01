@@ -97,23 +97,23 @@ public class TestDagExplainerForPerfs {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=someCube id=00000000-0000-0000-0000-000000000000
 				|  No cost info
-				\\-- #1 m=root(Combinator) filter=matchAll groupBy=grandTotal
+				\\-- #1 m=root(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |  No cost info
-				    |\\- #2 m=underlying1(Combinator) filter=matchAll groupBy=grandTotal
+				    |\\- #2 m=underlying1(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |   |  No cost info
-				    |   |\\- #3 m=underlying11(Combinator) filter=matchAll groupBy=grandTotal
+				    |   |\\- #3 m=underlying11(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |   |   |  No cost info
 				    |   |   \\-- #4 m=a(SUM) filter=matchAll groupBy=grandTotal
 				    |   |       \\  No cost info
-				    |   \\-- #5 m=underlying12(Combinator) filter=matchAll groupBy=grandTotal
+				    |   \\-- #5 m=underlying12(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |       |  No cost info
 				    |       \\-- !4
-				    \\-- #6 m=underlying2(Combinator) filter=matchAll groupBy=grandTotal
+				    \\-- #6 m=underlying2(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				        |  No cost info
-				        |\\- #7 m=underlying21(Combinator) filter=matchAll groupBy=grandTotal
+				        |\\- #7 m=underlying21(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				        |   |  No cost info
 				        |   \\-- !4
-				        \\-- #8 m=underlying22(Combinator) filter=matchAll groupBy=grandTotal
+				        \\-- #8 m=underlying22(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				            |  No cost info
 				            \\-- !4""");
 	}

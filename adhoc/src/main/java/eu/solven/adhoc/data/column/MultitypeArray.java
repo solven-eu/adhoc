@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import eu.solven.adhoc.data.cell.IValueFunction;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
@@ -71,12 +72,14 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
+	@Override
 	public IValueReceiver add() {
 		int insertionIndex = size();
 
 		return add(insertionIndex);
 	}
 
+	@Override
 	public IValueReceiver add(int insertionIndex) {
 		return new IValueReceiver() {
 			@Override
@@ -138,6 +141,7 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
+	@Override
 	public IValueReceiver set(int index) {
 		return new IValueReceiver() {
 			@Override
@@ -160,18 +164,28 @@ public class MultitypeArray implements IMultitypeArray {
 		};
 	}
 
-	public void read(int rowIndex, IValueReceiver valueConsumer) {
+	@Override
+	public IValueProvider read(int rowIndex) {
 		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 			throw new IndexOutOfBoundsException(rowIndex);
-		} else if (valuesType == IMultitypeConstants.MASK_LONG) {
-			valueConsumer.onLong(valuesL.getLong(rowIndex));
-		} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
-			valueConsumer.onDouble(valuesD.getDouble(rowIndex));
-		} else {
-			valueConsumer.onObject(valuesO.get(rowIndex));
 		}
+
+		return new IValueProvider() {
+
+			@Override
+			public void acceptConsumer(IValueReceiver valueReceiver) {
+				if (valuesType == IMultitypeConstants.MASK_LONG) {
+					valueReceiver.onLong(valuesL.getLong(rowIndex));
+				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+					valueReceiver.onDouble(valuesD.getDouble(rowIndex));
+				} else {
+					valueReceiver.onObject(valuesO.get(rowIndex));
+				}
+			}
+		};
 	}
 
+	@Override
 	public <U> U apply(int rowIndex, IValueFunction<U> valueFunction) {
 		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 			throw new IndexOutOfBoundsException(rowIndex);
@@ -188,6 +202,7 @@ public class MultitypeArray implements IMultitypeArray {
 		return MultitypeArray.builder().valuesD(DoubleList.of()).valuesL(LongList.of()).valuesO(List.of()).build();
 	}
 
+	@Override
 	public void replaceAllObjects(Function<Object, Object> function) {
 		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 			// nothing

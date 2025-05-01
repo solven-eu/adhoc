@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -171,8 +173,9 @@ public class TestMultitypeNavigableColumn {
 		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c", "d"));
 
 		// Not seeded as we want the test to check various configurations through time
-		Random r = new Random();
+		Random r = new SecureRandom();
 		long seed = r.nextLong();
+		// Print the (random) seed for reproduction if necessary
 		log.info("Seed={}", seed);
 		r = new Random(seed);
 
@@ -201,5 +204,78 @@ public class TestMultitypeNavigableColumn {
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).isEmpty();
+	}
+
+	@Test
+	public void testMerge() {
+		MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+
+		Assertions.assertThatThrownBy(() -> column.merge(-1)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
+		Assertions.assertThatThrownBy(() -> column.merge(0)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
+		Assertions.assertThatThrownBy(() -> column.merge(1)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
+
+		column.append("foo").onLong(123);
+
+		Assertions.assertThatThrownBy(() -> column.merge(-1)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
+		Assertions.assertThatThrownBy(() -> column.merge(0)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> column.merge(1)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
+	}
+
+	@Test
+	public void testWriteFailed() {
+		MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+
+		// Append the key, but not the value
+		column.append("foo");
+		// Failure is triggered on following appender provisioning
+		Assertions.assertThatThrownBy(() -> column.append("bar"))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Missing push into IValueReceiver for key=foo");
+	}
+
+	@Test
+	public void testMultipleWrites() {
+		MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+
+		IValueReceiver fooAppender = column.append("foo");
+
+		fooAppender.onLong(123);
+
+		// BEWARE The issue is detected on next key provisioning, while we may want it to be reported earlier (on second
+		// push).
+		fooAppender.onLong(234);
+		Assertions.assertThatThrownBy(() -> column.append("bar"))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Multiple pushes into IValueReceiver for key=foo");
+	}
+
+	@Test
+	public void testWriteOnLocked() {
+		MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+
+		column.append("foo").onLong(123);
+
+		column.doLock();
+
+		Assertions.assertThatThrownBy(() -> column.append("bar"))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("This is locked. Can not append key=bar");
+	}
+
+	@Test
+	public void testToString() {
+		MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+
+		LocalDate today = LocalDate.now();
+
+		column.append("foo").onLong(123);
+		column.append("bar").onObject(today);
+
+		// This structure is sorted
+		Assertions.assertThat(column.keyStream().toList()).containsExactly("bar", "foo");
+
+		Assertions.assertThat(column.toString())
+				.isEqualTo("MultitypeNavigableColumn{#0=bar->%s(java.time.LocalDate), #1=foo->123(java.lang.Long)}"
+						.formatted(today));
 	}
 }

@@ -61,13 +61,16 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Builder(toBuilder = true)
 @Slf4j
 public class ColumnsManager implements IColumnsManager {

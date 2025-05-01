@@ -364,16 +364,16 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
 
 		if (!measureToAggregateD.isEmpty()) {
-			toStringHelper.add("measureToAggregateD.size()", measureToAggregateD.size());
+			toStringHelper.add("#doubles", measureToAggregateD.size());
 		}
 		if (!measureToAggregateL.isEmpty()) {
-			toStringHelper.add("measureToAggregateL.size()", measureToAggregateL.size());
+			toStringHelper.add("#longs", measureToAggregateL.size());
 		}
 		if (!measureToAggregateS.isEmpty()) {
-			toStringHelper.add("measureToAggregateS.size()", measureToAggregateS.size());
+			toStringHelper.add("#charsequences", measureToAggregateS.size());
 		}
 		if (!measureToAggregateO.isEmpty()) {
-			toStringHelper.add("measureToAggregateO.size()", measureToAggregateO.size());
+			toStringHelper.add("#objects", measureToAggregateO.size());
 		}
 
 		AtomicInteger index = new AtomicInteger();

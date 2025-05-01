@@ -50,7 +50,7 @@ public class AdhocUnsafe {
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
 		// Customize with `-Dadhoc.failfast=false`
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
-		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
+		// Customize with `-Dadhoc.parallelism=16`
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
 	}
 

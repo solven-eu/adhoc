@@ -4,6 +4,8 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
+[![codecov](https://codecov.io/gh/solven-eu/adhoc/graph/badge.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc)
+[![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
 
 ## Motivation
 
@@ -17,19 +19,24 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `AdhocQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.
 
-#### Concurrent
+#### Concurrency
 
 As of `0.0.5`, concurrency is not enabled by default, but it can be enabled through `StandardQueryOptions.CONCURRENT`.
 
+Adhoc will execute queries in its own `Executors.newWorkStealingPool`. It can be customized through `AdhocUnsafe.adhocCommonPool`.
+
 Concurrent sections are:
 
-- subQueries in a `CompositeCubesTableWrapper`: each underlying cube can be queried concurrently.
-- tableQueries in a `AdhocQuery`: if the DAG leads to multiple tableQueries, these can be queried concurrently.
-- `AdhocQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these can be executed concurrently.
+- subQueries in a `CompositeCubesTableWrapper`: each subCube may be queried concurrently.
+- tableQueries in a `AdhocQuery`: if the DAG leads to multiple tableQueries, these may be executed concurrently.
+- `AdhocQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these may be executed concurrently.
 
 For now, we do not try to make Adhoc fully parallelized. It enables a simpler implementation, fast-enough is many cases.
 
 If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
+
+`parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
+
 
 ## Related Projects
 
@@ -326,7 +333,6 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN ` from a composite-cube to its subQueries.
-- [DuckDB] Detect multiple tableQueries having very similar filters, and do a single query with multiple `FILTER` aggregates. (May happen when many queries are filtrator). 
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
 - [Resiliency] Work on query cancellations/queryTimeouts

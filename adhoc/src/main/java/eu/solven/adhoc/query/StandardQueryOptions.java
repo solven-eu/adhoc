@@ -71,7 +71,6 @@ public enum StandardQueryOptions implements IQueryOption {
 	/**
 	 * Keep {@link IAggregationCarrier} wrapped. Especially useful for {@link CompositeCubesTableWrapper}.
 	 */
-	@Deprecated(since = "Not ready yet. Should always be used only for internal purposes")
 	AGGREGATION_CARRIERS_STAY_WRAPPED,
 
 	;

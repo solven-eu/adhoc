@@ -54,7 +54,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 				AdhocQueryStep.edit(step).customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
 
 		return getUnderlyingNames().stream().map(underlyingName -> {
-			return stepBuilder.measureNamed(underlyingName).build();
+			return stepBuilder.measure(underlyingName).build();
 		}).toList();
 	}
 

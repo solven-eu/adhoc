@@ -27,33 +27,68 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 public class TestAdhocEventsFromGuavaEventBusToSfl4j {
+	AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
+	List<String> receivedRows = new ArrayList<>();
+
+	BiConsumer<String, Object[]> logPrinter = (msg, values) -> {
+		// We receive SLF4J templates
+		Assertions.assertThat(msg).contains("{}").doesNotContain("%s");
+
+		String wholeMsg = msg.replaceAll("\\{\\}", "%s").formatted(values);
+		receivedRows.add(wholeMsg);
+	};
+
+	// https://stackoverflow.com/questions/29076981/how-to-intercept-slf4j-with-logback-logging-via-a-junit-test
+	private ListAppender<ILoggingEvent> logWatcher;
+
+	@BeforeEach
+	void setup() {
+		logWatcher = new ListAppender<>();
+		logWatcher.start();
+		((Logger) LoggerFactory.getLogger(AdhocEventsFromGuavaEventBusToSfl4j.class)).addAppender(logWatcher);
+	}
+
 	@Test
 	public void testExplainPerfAreSplitByEOL() {
-		AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
-
 		AdhocLogEvent event = AdhocLogEvent.builder()
 				.explain(true)
 				.message("someMessage\r\nsomeSubMessage")
 				.source("someSource")
 				.build();
 
-		List<String> receivedRows = new ArrayList<>();
-		BiConsumer<String, Object[]> logPrinter = (msg, values) -> {
-			// We receive SLF4J templates
-			Assertions.assertThat(msg).contains("{}").doesNotContain("%s");
-
-			String wholeMsg = msg.replaceAll("\\{\\}", "%s").formatted(values);
-			receivedRows.add(wholeMsg);
-		};
 		toSlf4j.printLogEvent(event, logPrinter);
 
 		Assertions.assertThat(receivedRows).hasSize(2).satisfiesOnlyOnce(wholeMsg -> {
 			Assertions.assertThat(wholeMsg).contains("someMessage").doesNotContain("someSubMessage");
 		}).satisfiesOnlyOnce(wholeMsg -> {
 			Assertions.assertThat(wholeMsg).doesNotContain("someMessage").contains("someSubMessage");
+		});
+
+		Assertions.assertThat(logWatcher.list).isEmpty();
+	}
+
+	@Test
+	public void testCustomEvent() {
+		// Some custom event
+		IAdhocEvent customEvent = new IAdhocEvent() {
+		};
+
+		toSlf4j.onAdhocEvent(customEvent);
+
+		Assertions.assertThat(receivedRows).isEmpty();
+
+		Assertions.assertThat(logWatcher.list).hasSize(1).anySatisfy(le -> {
+			Assertions.assertThat(le.getLevel()).isEqualTo(Level.WARN);
 		});
 	}
 }

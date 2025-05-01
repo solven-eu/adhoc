@@ -326,7 +326,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.isEqualTo(
 						"""
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
-								\\-- #1 m=k1PlusK2AsExpr(Combinator) filter=b=b1 groupBy=grandTotal
+								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=b=b1 groupBy=grandTotal
 								    |\\- #2 m=k1(SUM) filter=b=b1 groupBy=grandTotal
 								    \\-- #3 m=k2(SUM) filter=b=b1 groupBy=grandTotal
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
@@ -615,7 +615,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
 								|   \\  size=2 duration=492ms
-								\\-- #2 m=k1.someTableName1.cube(Combinator) filter=matchAll groupBy=(a) customMarker=JPY
+								\\-- #2 m=k1.someTableName1.cube(Combinator[FIND_FIRST]) filter=matchAll groupBy=(a) customMarker=JPY
 								    |  size=2 duration=615ms
 								    \\-- !1
 								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))
@@ -623,7 +623,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
 								|   \\  size=1 duration=861ms
-								\\-- #2 m=k1.someTableName1.cube(Combinator) filter=matchAll groupBy=(a) customMarker=JPY
+								\\-- #2 m=k1.someTableName1.cube(Combinator[FIND_FIRST]) filter=matchAll groupBy=(a) customMarker=JPY
 								    |  size=1 duration=984ms
 								    \\-- !1
 								Executed status=OK duration=PT0.738S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ca1caaf9, cube=composite))

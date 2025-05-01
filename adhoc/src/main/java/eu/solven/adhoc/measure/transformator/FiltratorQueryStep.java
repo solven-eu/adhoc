@@ -63,7 +63,7 @@ public class FiltratorQueryStep extends ATransformator {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
 				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measureNamed(filtrator.getUnderlying())
+				.measure(filtrator.getUnderlying())
 				.build();
 		return Collections.singletonList(underlyingStep);
 	}

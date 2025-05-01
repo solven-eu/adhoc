@@ -194,7 +194,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=FRoverUS(Combinator) filter=matchAll groupBy=grandTotal
+				\\-- #1 m=FRoverUS(Combinator[DIVIDE]) filter=matchAll groupBy=grandTotal
 				    |\\- #2 m=onFR(Filtrator) filter=matchAll groupBy=grandTotal
 				    |   \\-- #3 m=d(SUM) filter=country=FR groupBy=grandTotal
 				    \\-- #4 m=onUS(Filtrator) filter=matchAll groupBy=grandTotal

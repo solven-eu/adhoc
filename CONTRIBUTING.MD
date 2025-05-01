@@ -31,3 +31,7 @@ The style is ensured with Spotless, and various sub-plugins. Just run `mvn spotl
         mvn reset --hard HEAD~~
         git tag -d vXXX
         git push --delete origin vXXX
+
+# Coverage
+
+[![Codecov](https://codecov.io/gh/solven-eu/adhoc/graphs/tree.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc/)

@@ -58,10 +58,6 @@ import lombok.Value;
 @Value
 @Builder
 @EqualsAndHashCode(exclude = {
-		// being debug or not should not prevent 2 querySteps to be considered equals in some hashStructure
-		// This could lead to unexpected debug/notDebug. This is relevant if some measure is debugged but not the whole
-		// tree.
-		// "debug",
 		// cache is typically used for performance improvements: it should not impact any hashStructure
 		"cache" })
 @ToString(exclude = {
@@ -74,9 +70,11 @@ public class AdhocQueryStep
 	@NonNull
 	IMeasure measure;
 	@NonNull
-	IAdhocFilter filter;
+	@Default
+	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 	@NonNull
-	IAdhocGroupBy groupBy;
+	@Default
+	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
 
 	// This property is transported down to the DatabaseQuery
 	@Default
@@ -90,8 +88,15 @@ public class AdhocQueryStep
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
 
 	public static class AdhocQueryStepBuilder {
-		public AdhocQueryStepBuilder measureNamed(String measureName) {
-			return this.measure(ReferencedMeasure.ref(measureName));
+		IMeasure measure;
+
+		public AdhocQueryStepBuilder measure(IMeasure measure) {
+			this.measure = measure;
+			return this;
+		}
+
+		public AdhocQueryStepBuilder measure(String measureName) {
+			return measure(ReferencedMeasure.ref(measureName));
 		}
 	}
 

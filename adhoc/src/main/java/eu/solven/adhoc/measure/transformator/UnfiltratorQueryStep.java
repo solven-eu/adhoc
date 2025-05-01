@@ -65,7 +65,7 @@ public class UnfiltratorQueryStep implements ITransformator {
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
 				.filter(unfilter(step.getFilter()))
-				.measureNamed(unfiltrator.getUnderlying())
+				.measure(unfiltrator.getUnderlying())
 				.build();
 		return Collections.singletonList(underlyingStep);
 	}

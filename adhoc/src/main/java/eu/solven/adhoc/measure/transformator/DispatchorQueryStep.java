@@ -76,7 +76,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		String underlyingMeasure = dispatchor.getUnderlying();
 		return measurelessSteps.stream()
-				.map(subStep -> AdhocQueryStep.edit(subStep).measureNamed(underlyingMeasure).build())
+				.map(subStep -> AdhocQueryStep.edit(subStep).measure(underlyingMeasure).build())
 				.collect(Collectors.toList());
 
 	}

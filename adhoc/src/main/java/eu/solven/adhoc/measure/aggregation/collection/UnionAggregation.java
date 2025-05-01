@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.Map;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
@@ -38,12 +40,24 @@ public class UnionAggregation implements IAggregation {
 
 	@Override
 	public Object aggregate(Object l, Object r) {
-		if (mapAggregator.acceptAggregate(l) && mapAggregator.acceptAggregate(r)) {
+		if (l == null) {
+			return wrapOne(r);
+		} else if (r == null) {
+			return wrapOne(l);
+		} else if (mapAggregator.acceptAggregate(l) && mapAggregator.acceptAggregate(r)) {
 			return mapAggregator.aggregate(l, r);
-		} else if (setAggregator.acceptAggregate(l) && setAggregator.acceptAggregate(r)) {
-			return setAggregator.aggregate(l, r);
 		} else {
-			throw new IllegalArgumentException("No strategy in %s to merge %s and %s".formatted(KEY, l, r));
+			return setAggregator.aggregate(l, r);
+		}
+	}
+
+	protected Object wrapOne(Object input) {
+		if (input == null) {
+			return null;
+		} else if (input instanceof Map<?, ?> map) {
+			return map;
+		} else {
+			return setAggregator.aggregate(null, input);
 		}
 	}
 

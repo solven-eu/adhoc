@@ -72,7 +72,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	public List<AdhocQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
 			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy());
-			return AdhocQueryStep.edit(step).groupBy(groupBy).measureNamed(underlying).build();
+			return AdhocQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
 		}).collect(Collectors.toList());
 	}
 

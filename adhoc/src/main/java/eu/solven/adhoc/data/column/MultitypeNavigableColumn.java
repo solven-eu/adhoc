@@ -126,13 +126,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 			if (size > valuesSize) {
 				// BEWARE Should we prefer trimming the unwritten keys?
-				throw new IllegalStateException("Forget to push into IValueReceiver for key=%s".formatted(errorKey));
+				throw new IllegalStateException("Missing push into IValueReceiver for key=%s".formatted(errorKey));
 			} else if (size < valuesSize) {
 				throw new IllegalStateException("Multiple pushes into IValueReceiver for key=%s".formatted(errorKey));
 			}
 		}
 
-		checkLock(key);
+		checkNotLocked(key);
 
 		IValueReceiver valueConsumer;
 
@@ -172,9 +172,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		}
 	}
 
-	protected void checkLock(T key) {
+	protected void checkNotLocked(T key) {
 		if (locked) {
-			throw new IllegalStateException("This is locked. Can not append %s".formatted(key));
+			throw new IllegalStateException("This is locked. Can not append key=%s".formatted(key));
 		}
 	}
 
@@ -188,7 +188,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		int size = keys.size();
 		for (int i = 0; i < size; i++) {
-			values.read(i, rowScanner.onKey(keys.get(i)));
+			values.read(i).acceptConsumer(rowScanner.onKey(keys.get(i)));
 		}
 	}
 
@@ -207,7 +207,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueProvider(vc -> values.read(i, vc))
+						.valueProvider(vc -> values.read(i).acceptConsumer(vc))
 						.build());
 	}
 
@@ -285,7 +285,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	protected void onValue(int index, IValueReceiver valueConsumer) {
-		values.read(index, valueConsumer);
+		values.read(index).acceptConsumer(valueConsumer);
 	}
 
 	protected IValueReceiver set(int index) {

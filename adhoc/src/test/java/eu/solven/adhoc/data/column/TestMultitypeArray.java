@@ -22,52 +22,37 @@
  */
 package eu.solven.adhoc.data.column;
 
-import java.util.function.Function;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 
-/**
- * A Data-structure similar to an array, enable multitype.
- * 
- * @author Benoit Lacelle
- */
-public interface IMultitypeArray {
+public class TestMultitypeArray {
+	MultitypeArray array = MultitypeArray.builder().build();
 
-	int size();
+	@Test
+	public void testCrossTypes_longThenDouble() {
+		array.add().onLong(123L);
+		array.add().onDouble(23.45);
 
-	/**
-	 * Append a value at the end of this array.
-	 * 
-	 * @return
-	 */
-	default IValueReceiver add() {
-		return add(size());
+		Assertions.assertThat(array.size()).isEqualTo(2);
+		Assertions.assertThat(IValueProvider.getValue(array.read(0))).isEqualTo(123L);
+		Assertions.assertThat(IValueProvider.getValue(array.read(1))).isEqualTo(23.45D);
+
+		// TODO Should we rather migrate everything to double?
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
 	}
 
-	/**
-	 * 
-	 * @param insertionIndex
-	 *            must be between `0` and `size()` included.
-	 * @return a {@link IValueReceiver} to push the value to write
-	 */
-	IValueReceiver add(int insertionIndex);
+	@Test
+	public void testCrossTypes_doubleThenLong() {
+		array.add().onDouble(23.45);
+		array.add().onLong(123L);
 
-	/**
-	 * 
-	 * @param rowIndex
-	 *            the rowIndex at which the value has to be changed. Must be between `0` and `size()` excluded.
-	 * @return
-	 */
-	IValueReceiver set(int rowIndex);
+		Assertions.assertThat(array.size()).isEqualTo(2);
+		Assertions.assertThat(IValueProvider.getValue(array.read(0))).isEqualTo(23.45D);
+		Assertions.assertThat(IValueProvider.getValue(array.read(1))).isEqualTo(123L);
 
-	IValueProvider read(int rowIndex);
-
-	<U> U apply(int rowIndex, IValueFunction<U> valueFunction);
-
-	// BEWARE Should rely on IValueConsumer
-	// Relates with IAggregationCarrier
-	void replaceAllObjects(Function<Object, Object> function);
-
+		// TODO Should we rather migrate everything to double?
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
+	}
 }

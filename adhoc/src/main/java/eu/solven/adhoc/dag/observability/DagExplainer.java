@@ -39,6 +39,8 @@ import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
+import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IAdhocQuery;
@@ -233,7 +235,15 @@ public class DagExplainer implements IDagExplainer {
 			// more helpful
 			return aggregator.getAggregationKey();
 		} else {
-			return step.getMeasure().getClass().getSimpleName();
+			String string = step.getMeasure().getClass().getSimpleName();
+			if (step.getMeasure() instanceof IHasCombinationKey hasCombination) {
+				string += "[%s]".formatted(hasCombination.getCombinationKey());
+			}
+
+			if (step.getMeasure() instanceof IHasAggregationKey hasAggregationKey) {
+				string += "[%s]".formatted(hasAggregationKey.getAggregationKey());
+			}
+			return string;
 		}
 	}
 

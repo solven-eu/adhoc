@@ -383,8 +383,6 @@ public class AdhocTableQueryEngine implements IAdhocTableQueryEngine {
 				if (executingQueryContext.getOptions()
 						.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
 					doPurgeCarriers = false;
-					// throw new NotYetImplementedException(
-					// "Composite+HasCarrier is not yet functional. queryStep=%s".formatted(queryStep));
 				} else {
 					doPurgeCarriers = true;
 				}

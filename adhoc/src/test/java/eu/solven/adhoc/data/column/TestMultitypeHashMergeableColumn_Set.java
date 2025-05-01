@@ -22,86 +22,114 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.collection.UnionAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 
-public class TestMultitypeHashColumn {
-	IAggregation sum = new SumAggregation();
+public class TestMultitypeHashMergeableColumn_Set {
+	IAggregation sum = new UnionAggregation();
 
-	MultitypeHashMergeableColumn<String> storage =
+	MultitypeHashMergeableColumn<String> column =
 			MultitypeHashMergeableColumn.<String>builder().aggregation(sum).build();
 
 	@Test
 	public void testIntAndInt() {
-		storage.merge("k1", 123);
-		storage.merge("k1", 234);
+		column.merge("k1", 123);
+		column.merge("k1", 234);
 
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(357L);
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of(123, 234));
 		});
 	}
 
 	@Test
 	public void testIntAndLong() {
-		storage.merge("k1", 123);
-		storage.merge("k1", 234L);
+		column.merge("k1", 123);
+		column.merge("k1", 234L);
 
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(357L);
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of(123, 234L));
 		});
 	}
 
 	@Test
 	public void testIntAndDouble() {
-		storage.merge("k1", 123);
-		storage.merge("k1", 234.567D);
+		column.merge("k1", 123);
+		column.merge("k1", 234.567D);
 
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(357.567D);
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of(123, 234.567D));
 		});
 	}
 
 	@Test
 	public void testIntAndString() {
-		storage.merge("k1", 123);
-		storage.merge("k1", "234");
-		storage.merge("k1", 345);
+		column.merge("k1", 123);
+		column.merge("k1", "234");
+		column.merge("k1", 345);
 
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of(123, "234", 345));
+		});
+	}
+
+	@Test
+	public void testIntAndNull() {
+		column.merge("k1", 123);
+		column.merge("k1", null);
+		column.merge("k1", 345);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of(123, 345));
+		});
+	}
+
+	@Test
+	public void testStringAndLocalDate() {
+		LocalDate today = LocalDate.now();
+
+		column.merge("k1", "foo");
+		column.merge("k1", today);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of("foo", today));
 		});
 	}
 
 	@Test
 	public void testStringAndString() {
-		storage.merge("k1", "123");
-		storage.merge("k1", "234");
+		column.merge("k1", "123");
+		column.merge("k1", "234");
 
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo("123234");
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(Set.of("123", "234"));
 		});
 	}
 
 	@Test
 	public void testClearKey() {
-		storage.merge("k1", 123);
-		storage.clearKey("k1");
+		column.merge("k1", 123);
+		column.clearKey("k1");
 
-		Assertions.assertThat(storage.size()).isEqualTo(0);
+		Assertions.assertThat(column.size()).isEqualTo(0);
 	}
 
 	@Test
 	public void testPutNull() {
-		storage.merge("k1", 123);
-		storage.append("k1", null);
+		column.merge("k1", 123);
+		column.append("k1", null);
 
-		Assertions.assertThat(storage.size()).isEqualTo(1);
+		Assertions.assertThat(column.size()).isEqualTo(1);
 	}
 
 	@Test
@@ -165,5 +193,37 @@ public class TestMultitypeHashColumn {
 		storage.onValue("k" + size, o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
+	}
+
+	@Test
+	public void testToString() {
+		LocalDate today = LocalDate.now();
+
+		column.append("bar").onObject(today);
+		column.append("foo").onLong(123);
+
+		// The order of types is fixed, but order within each type is not guaranteed
+		// This structure is not sorted
+		Assertions.assertThat(column.keyStream().toList()).containsExactly("foo", "bar");
+
+		Assertions.assertThat(column.toString())
+				.isEqualTo(
+						"MultitypeHashMergeableColumn{#longs=1, #objects=1, #0=123(java.lang.Long), #1=%s(java.time.LocalDate)}"
+								.formatted(today));
+	}
+
+	@Test
+	public void testStream() {
+		LocalDate today = LocalDate.now();
+
+		column.append("bar").onObject(today);
+		column.append("foo").onLong(123);
+
+		List<Entry<String, Object>> listOfEntry = column.stream(slice -> v -> Map.entry(slice, v)).toList();
+
+		Assertions.assertThat(listOfEntry)
+				.hasSize(2)
+				.contains(Map.entry("foo", 123L))
+				.contains(Map.entry("bar", today));
 	}
 }

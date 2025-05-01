@@ -60,13 +60,13 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 
 		AdhocQueryStep numerator = AdhocQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
-				.measureNamed(underlying)
+				.measure(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getNumeratorFilter()))
 				.build();
 
 		AdhocQueryStep denominator = AdhocQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
-				.measureNamed(underlying)
+				.measure(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getDenominatorFilter()))
 				.build();
 

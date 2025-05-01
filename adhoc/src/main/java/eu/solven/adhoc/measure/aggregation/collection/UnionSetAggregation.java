@@ -45,15 +45,17 @@ public class UnionSetAggregation implements IAggregation {
 	}
 
 	protected Set<?> wrapAsSet(Object l) {
-		Set<?> lAsSet;
+		Set<?> asSet;
 		if (l == null) {
-			lAsSet = null;
-		} else if (l instanceof Set<?> lAsSetT) {
-			lAsSet = lAsSetT;
+			asSet = null;
+		} else if (l instanceof Set<?> lAsSet) {
+			asSet = lAsSet;
+		} else if (l instanceof Iterable<?> lAsIterable) {
+			asSet = ImmutableSet.copyOf(lAsIterable);
 		} else {
-			lAsSet = Set.of(l);
+			asSet = Set.of(l);
 		}
-		return lAsSet;
+		return asSet;
 	}
 
 	protected Set<?> aggregateSets(Set<?> l, Set<?> r) {

@@ -54,7 +54,7 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 
 	@Override
 	protected IValueReceiver merge(int index) {
-		checkLock(keys.get(index));
+		checkNotLocked(keys.get(index));
 
 		return new IValueReceiver() {
 			@Override

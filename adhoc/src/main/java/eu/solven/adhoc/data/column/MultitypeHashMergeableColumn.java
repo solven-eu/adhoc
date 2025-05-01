@@ -76,7 +76,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 					}
 
 					// @Override
-					public void onNull() {
+					protected void onNull() {
 						if (aggregation instanceof ILongAggregation longAggregation) {
 							long newAggregate = longAggregation.aggregateLongs(longAggregation.neutralLong(), v);
 

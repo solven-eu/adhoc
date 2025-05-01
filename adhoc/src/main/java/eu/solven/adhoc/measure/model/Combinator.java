@@ -60,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-public class Combinator implements ICombinator, IMayHaveColumnGenerator {
+public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColumnGenerator {
 	@NonNull
 	String name;
 

@@ -22,17 +22,39 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.Builder;
+import lombok.Value;
 
 /**
  * Count the number of received entries. Typically used for `COUNT(*)` row count.
  */
-public class CountAggregation implements IAggregation, ILongAggregation {
+public class CountAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
 
 	public static final String KEY = "COUNT";
+
+	private static final CountAggregationCarrier COUNT_1 = CountAggregationCarrier.builder().count(1).build();
+
+	@Value
+	public static class CountAggregationCarrier implements IAggregationCarrier {
+		long count;
+
+		@Builder
+		public CountAggregationCarrier(long count) {
+			if (count <= 0) {
+				throw new IllegalArgumentException("COUNT has to be strictly positive");
+			}
+
+			this.count = count;
+		}
+
+		@Override
+		public void acceptValueReceiver(IValueReceiver valueReceiver) {
+			valueReceiver.onLong(count);
+		}
+	}
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -41,38 +63,48 @@ public class CountAggregation implements IAggregation, ILongAggregation {
 		} else if (r == null) {
 			return aggregateOne(l);
 		} else {
-			if (!AdhocPrimitiveHelpers.isLongLike(l)) {
-				throw new IllegalArgumentException(
-						"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(l)));
-			} else if (!AdhocPrimitiveHelpers.isLongLike(r)) {
-				throw new IllegalArgumentException(
-						"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(r)));
+			long count = 0;
+
+			if (l instanceof CountAggregationCarrier carrier) {
+				count += carrier.getCount();
+			} else {
+				count += 1;
+			}
+			if (r instanceof CountAggregationCarrier carrier) {
+				count += carrier.getCount();
+			} else {
+				count += 1;
 			}
 
-			return AdhocPrimitiveHelpers.asLong(l) + AdhocPrimitiveHelpers.asLong(r);
+			return CountAggregationCarrier.builder().count(count).build();
 		}
 	}
 
 	protected Object aggregateOne(Object one) {
-		if (AdhocPrimitiveHelpers.isLongLike(one)) {
-			return AdhocPrimitiveHelpers.asLong(one);
+		if (one == null) {
+			return null;
+		} else if (one instanceof CountAggregationCarrier carrier) {
+			return carrier;
 		} else {
-			throw new IllegalArgumentException(
-					"Can not aggregate in count: %s".formatted(PepperLogHelper.getObjectAndClass(one)));
+			return COUNT_1;
 		}
-	}
-
-	@Override
-	public long aggregateLongs(long left, long right) {
-		return left + right;
-	}
-
-	@Override
-	public long neutralLong() {
-		return 0;
 	}
 
 	public static boolean isCount(String aggregationKey) {
 		return KEY.equals(aggregationKey) || CountAggregation.class.getName().equals(aggregationKey);
+	}
+
+	@Override
+	public IAggregationCarrier wrap(Object rawCount) {
+		if (rawCount instanceof Integer count) {
+			return CountAggregationCarrier.builder().count(count).build();
+		} else if (rawCount instanceof Long count) {
+			return CountAggregationCarrier.builder().count(count).build();
+		} else if (rawCount instanceof CountAggregationCarrier count) {
+			return count;
+		} else {
+			throw new IllegalArgumentException(
+					"Unexpected raw count: %s".formatted(PepperLogHelper.getObjectAndClass(rawCount)));
+		}
 	}
 }

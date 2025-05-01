@@ -64,12 +64,10 @@ public class CombinatorQueryStep extends ATransformator {
 
 	@Override
 	public List<AdhocQueryStep> getUnderlyingSteps() {
-		return getUnderlyingNames().stream().map(underlyingName -> {
-			return AdhocQueryStep.edit(step)
-					// Change the requested measureName to the underlying measureName
-					.measureNamed(underlyingName)
-					.build();
-		}).toList();
+		return getUnderlyingNames().stream()
+				// Change the requested measureName to the underlying measureName
+				.map(underlyingName -> AdhocQueryStep.edit(step).measure(underlyingName).build())
+				.toList();
 	}
 
 	@Override
