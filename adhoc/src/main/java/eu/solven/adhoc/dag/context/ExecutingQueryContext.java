@@ -82,10 +82,6 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 	@Default
 	IColumnsManager columnsManager = ColumnsManager.builder().build();
 
-	// @NonNull
-	// @Default
-	// ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-
 	// Using a ForkJoinPool is much more complex than using an ExecutorService
 	// But it enable smooth usage of Stream API.
 	// Given part of the query is actually waiting for an external database (i.e. ITableQuery), it may be preferably not
