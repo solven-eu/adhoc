@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHasQueryOptions, ICanResolveMeasure {
+public class ExecutingQueryContext implements IHasQueryOptions, ICanResolveMeasure {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -112,16 +112,6 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 		} else {
 			return this.forest.resolveIfRef(measure);
 		}
-	}
-
-	@Override
-	public boolean isExplain() {
-		return getQuery().isExplain();
-	}
-
-	@Override
-	public boolean isDebug() {
-		return getQuery().isDebug();
 	}
 
 	@Override
@@ -184,16 +174,11 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();
 			}
-			// if (executorService == null) {
-			// executorService = MoreExecutors.newDirectExecutorService();
-			// }
 			if (fjp == null) {
 				fjp = ForkJoinPool.commonPool();
 			}
 
-			return new ExecutingQueryContext(query, queryId, forest, table, columnsManager
-			// , executorService
-					, fjp);
+			return new ExecutingQueryContext(query, queryId, forest, table, columnsManager, fjp);
 		}
 	}
 

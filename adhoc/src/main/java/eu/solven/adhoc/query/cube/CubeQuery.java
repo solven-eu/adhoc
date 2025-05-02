@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -83,18 +82,6 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	@NonNull
 	@Singular
 	ImmutableSet<IQueryOption> options;
-
-	@Override
-	@JsonIgnore
-	public boolean isDebug() {
-		return options.contains(StandardQueryOptions.DEBUG);
-	}
-
-	@Override
-	@JsonIgnore
-	public boolean isExplain() {
-		return options.contains(StandardQueryOptions.EXPLAIN);
-	}
 
 	@Override
 	public Optional<?> optCustomMarker() {
@@ -253,17 +240,18 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		if (query instanceof IHasMeasures hasMeasures) {
 			builder.measures(hasMeasures.getMeasures());
 		}
-		if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-			builder.option(StandardQueryOptions.EXPLAIN);
-		}
-		if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-			builder.option(StandardQueryOptions.DEBUG);
-		}
 		if (query instanceof IHasCustomMarker hasCustomMarker) {
 			builder.customMarker(hasCustomMarker.getCustomMarker());
 		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
+		} else {
+			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+				builder.option(StandardQueryOptions.EXPLAIN);
+			}
+			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+				builder.option(StandardQueryOptions.DEBUG);
+			}
 		}
 
 		return builder;

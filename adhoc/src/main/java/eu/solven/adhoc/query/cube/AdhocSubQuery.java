@@ -66,16 +66,6 @@ public final class AdhocSubQuery implements ICubeQuery, IHasParentQueryId {
 	}
 
 	@Override
-	public boolean isExplain() {
-		return subQuery.isExplain();
-	}
-
-	@Override
-	public boolean isDebug() {
-		return subQuery.isDebug();
-	}
-
-	@Override
 	public Set<IQueryOption> getOptions() {
 		return subQuery.getOptions();
 	}

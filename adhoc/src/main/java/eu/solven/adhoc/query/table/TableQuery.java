@@ -56,8 +56,7 @@ import lombok.Value;
  */
 @Value
 @Builder(toBuilder = true)
-public class TableQuery
-		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
+public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@Default
 	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
@@ -91,14 +90,15 @@ public class TableQuery
 		if (query instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}
-		if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-			builder.option(StandardQueryOptions.EXPLAIN);
-		}
-		if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-			builder.option(StandardQueryOptions.DEBUG);
-		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
+		} else {
+			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+				builder.option(StandardQueryOptions.EXPLAIN);
+			}
+			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+				builder.option(StandardQueryOptions.DEBUG);
+			}
 		}
 
 		return builder;
@@ -139,17 +139,5 @@ public class TableQuery
 				.columns(columns)
 				.lateColumns(lateColumns)
 				.build();
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isDebug() {
-		return options.contains(StandardQueryOptions.DEBUG);
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isExplain() {
-		return options.contains(StandardQueryOptions.EXPLAIN);
 	}
 }

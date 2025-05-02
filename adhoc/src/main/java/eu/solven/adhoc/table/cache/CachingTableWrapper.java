@@ -7,15 +7,17 @@ import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
 
 /**
- * A decorating {@link ITableWrapper}
+ * A decorating {@link ITableWrapper} which adds a cache layer.
  * 
  * @author Benoit Lacelle
  */
+@Builder
 public class CachingTableWrapper implements ITableWrapper {
-	
-	ITableWrapper decorated;
+
+	final ITableWrapper decorated;
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
@@ -30,7 +32,7 @@ public class CachingTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
-		return null;
+		return decorated.streamSlices(executingQueryContext, tableQuery);
 	}
 
 }
