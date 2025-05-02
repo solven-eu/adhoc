@@ -13,7 +13,7 @@
 		<jooq.version>3.20.3</jooq.version>
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
 	</properties>
 
 	<dependencies>

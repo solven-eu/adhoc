@@ -12,6 +12,9 @@
 	<properties>
 		<activepivot.server.version>5.11.16</activepivot.server.version>
 		<apex.version>9.1</apex.version>
+
+		<jacoco.branch.ratio>0.60</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.60</jacoco.instruction.ratio>
 	</properties>
 
 	<dependencies>
