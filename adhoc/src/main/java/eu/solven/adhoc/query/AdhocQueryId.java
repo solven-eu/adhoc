@@ -24,7 +24,7 @@ package eu.solven.adhoc.query;
 
 import java.util.UUID;
 
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasParentQueryId;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
@@ -68,7 +68,7 @@ public class AdhocQueryId {
 	 * @param query
 	 * @return
 	 */
-	public static AdhocQueryId from(String cubeOrTable, IAdhocQuery query) {
+	public static AdhocQueryId from(String cubeOrTable, ICubeQuery query) {
 		AdhocQueryIdBuilder builder =
 				AdhocQueryId.builder().queryHash(Integer.toHexString(query.toString().hashCode())).cube(cubeOrTable);
 

@@ -35,7 +35,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -59,7 +59,7 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdh
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
+				cube.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

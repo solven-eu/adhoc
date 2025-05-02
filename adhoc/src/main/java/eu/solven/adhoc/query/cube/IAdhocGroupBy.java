@@ -33,7 +33,7 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}.
+ * A {@link List} of columns. Typically used by {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
  *

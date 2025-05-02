@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {
@@ -80,7 +80,7 @@ public class TestAdhocSchema {
 		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date", LocalDate.class);
 
 		ITabularView view = schema.execute("simple",
-				AdhocQuery.builder()
+				CubeQuery.builder()
 						.measure(Aggregator.countAsterisk().getName())
 						.andFilter("date", today.toString())
 						.build());

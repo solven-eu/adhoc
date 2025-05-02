@@ -28,14 +28,14 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * A cube can execute {@link IAdhocQuery}, returning an {@link ITabularView}.
+ * A cube can execute {@link ICubeQuery}, returning an {@link ITabularView}.
  * 
  * It is generally wrapping an {@link IAdhocQueryEngine} over an {@link ITableWrapper}.
  * 
@@ -48,7 +48,7 @@ public interface ICubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 	 * @param query
 	 * @return
 	 */
-	ITabularView execute(IAdhocQuery query);
+	ITabularView execute(ICubeQuery query);
 
 	/**
 	 * 

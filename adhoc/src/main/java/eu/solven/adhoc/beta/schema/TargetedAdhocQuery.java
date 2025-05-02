@@ -27,7 +27,7 @@ import java.util.UUID;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -35,7 +35,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Wraps an {@link AdhocQuery} with additional information like the targeted cubeId, and the optional
+ * Wraps an {@link CubeQuery} with additional information like the targeted cubeId, and the optional
  * {@link IQueryOption}.
  * 
  * @author Benoit Lacelle
@@ -51,7 +51,7 @@ public class TargetedAdhocQuery {
 	String cube;
 
 	@NonNull
-	AdhocQuery query;
+	CubeQuery query;
 
 	@Singular
 	@NonNull

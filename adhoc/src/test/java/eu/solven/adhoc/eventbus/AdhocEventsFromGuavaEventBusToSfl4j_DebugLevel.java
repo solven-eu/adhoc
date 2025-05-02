@@ -27,7 +27,7 @@ import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This logs main steps of the query-engine. It is typically activated by calling `#AdhocQueryBuilder.debug()`.
+ * This logs main steps of the query-engine. It is typically activated by calling `#CubeQueryBuilder.debug()`.
  *
  * @author Benoit Lacelle
  *
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel {
 	/**
-	 * An {@link eu.solven.adhoc.query.cube.AdhocQuery} is resolved through a DAG of
+	 * An {@link eu.solven.adhoc.query.cube.CubeQuery} is resolved through a DAG of
 	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}. This will log when an
 	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep} is completed.
 	 * 

@@ -192,7 +192,7 @@ public class AdhocCalciteAggregate extends Aggregate implements AdhocCalciteRel 
 			}
 		}
 
-		implementor.adhocQueryBuilder
+		implementor.cubeQueryBuilder
 				// Some measures are referred by their name
 				.measureNames(measures)
 				// Some measures are built on the fly

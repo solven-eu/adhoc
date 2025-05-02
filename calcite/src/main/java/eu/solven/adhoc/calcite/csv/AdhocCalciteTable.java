@@ -54,8 +54,8 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -170,13 +170,13 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 	 *            One or more JSON strings
 	 * @return Enumerator of results
 	 */
-	private Enumerable<Object> aggregate(final List<Map.Entry<String, Class<?>>> fields, final IAdhocQuery adhocQuery) {
+	private Enumerable<Object> aggregate(final List<Map.Entry<String, Class<?>>> fields, final ICubeQuery adhocQuery) {
 		return new AbstractEnumerable<Object>() {
 			@Override
 			public Enumerator<Object> enumerator() {
 				final Iterator<? extends ITabularRecord> resultIterator;
 				try {
-					ITabularView result = cube.execute(AdhocQuery.edit(adhocQuery).options(queryOptions).build());
+					ITabularView result = cube.execute(CubeQuery.edit(adhocQuery).options(queryOptions).build());
 
 					resultIterator = result.stream(slice -> {
 						return v -> TabularRecordOverMaps.builder()
@@ -233,9 +233,9 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 		public Enumerable<Object> aggregate(List<Map.Entry<String, Class<?>>> fields, List adhocQuery) {
 			Object rawQuery = adhocQuery.get(0);
 
-			IAdhocQuery q;
+			ICubeQuery q;
 			try {
-				q = new ObjectMapper().readValue(rawQuery.toString(), AdhocQuery.class);
+				q = new ObjectMapper().readValue(rawQuery.toString(), CubeQuery.class);
 			} catch (JsonProcessingException e) {
 				throw new UncheckedIOException(e);
 			}

@@ -32,7 +32,7 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestInMemoryTable {
 	@Test
@@ -61,7 +61,7 @@ public class TestInMemoryTable {
 
 		Assertions
 				.assertThatThrownBy(
-						() -> cube.execute(AdhocQuery.builder().andFilter("unknownColumn", "anyValue").build()))
+						() -> cube.execute(CubeQuery.builder().andFilter("unknownColumn", "anyValue").build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
@@ -75,7 +75,7 @@ public class TestInMemoryTable {
 		IMeasureForest forest = MeasureForest.builder().name("count").measure(Aggregator.countAsterisk()).build();
 		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
 
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().groupByAlso("unknownColumn").build()))
+		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().groupByAlso("unknownColumn").build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}

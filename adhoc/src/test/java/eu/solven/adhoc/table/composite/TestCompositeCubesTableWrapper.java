@@ -52,7 +52,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -165,7 +165,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
 
-			ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(k1Max).build());
+			ITabularView view = compositeCube.execute(CubeQuery.builder().measure(k1Max).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -247,7 +247,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
 		CubeWrapper cube = makeComposite(compositeCubesTable, forest);
-		ITabularView view = cube.execute(AdhocQuery.builder()
+		ITabularView view = cube.execute(CubeQuery.builder()
 				.measure(Aggregator.countAsterisk())
 				.option(StandardQueryOptions.CONCURRENT)
 				.build());
@@ -316,7 +316,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			String missingColumnCoordinate = tableName2 + ".cube";
 			{
 				ITabularView view =
-						compositeCube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("a").build());
+						compositeCube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("a").build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -329,7 +329,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			// filter unknownCoordinate grandTotal
 			{
 				ITabularView view = compositeCube.execute(
-						AdhocQuery.builder().measure(k1Sum.getName()).andFilter("a", missingColumnCoordinate).build());
+						CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", missingColumnCoordinate).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -339,7 +339,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 			// filter unknownCoordinate groupBy:a
 			{
-				ITabularView view = compositeCube.execute(AdhocQuery.builder()
+				ITabularView view = compositeCube.execute(CubeQuery.builder()
 						.measure(k1Sum.getName())
 						.andFilter("a", missingColumnCoordinate)
 						.groupByAlso("a")
@@ -426,7 +426,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			String m = k1Sum.getName();
 			{
 				ITabularView view =
-						compositeCube.execute(AdhocQuery.builder().measure(m).groupByAlso("cubeSlicer").build());
+						compositeCube.execute(CubeQuery.builder().measure(m).groupByAlso("cubeSlicer").build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -438,7 +438,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			// groupBy:cubeSlicer&a
 			{
 				ITabularView view =
-						compositeCube.execute(AdhocQuery.builder().measure(m).groupByAlso("cubeSlicer", "a").build());
+						compositeCube.execute(CubeQuery.builder().measure(m).groupByAlso("cubeSlicer", "a").build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -530,7 +530,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			// groupBy:cubeSlicer
 			String m = "compositeSum";
 			{
-				ITabularView view = compositeCube.execute(AdhocQuery.builder().measure(m).explain(true).build());
+				ITabularView view = compositeCube.execute(CubeQuery.builder().measure(m).explain(true).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 				Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
@@ -614,11 +614,11 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
 
-			Assertions.assertThatThrownBy(() -> compositeCube.execute(AdhocQuery.builder().measure("k1").build()))
+			Assertions.assertThatThrownBy(() -> compositeCube.execute(CubeQuery.builder().measure("k1").build()))
 					.isInstanceOf(IllegalStateException.class)
 					.hasRootCauseMessage("Simulating some exception");
 
-			ITabularView view = compositeCube.execute(AdhocQuery.builder()
+			ITabularView view = compositeCube.execute(CubeQuery.builder()
 					.measure("k1")
 					.option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)
 					.build());

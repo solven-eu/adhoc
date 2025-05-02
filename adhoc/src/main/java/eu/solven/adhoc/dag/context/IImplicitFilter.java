@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.dag.context;
 
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
@@ -37,5 +37,5 @@ public interface IImplicitFilter {
 	 *            on customMarker.
 	 * @return the filter to be later combined with the query own filter.
 	 */
-	IAdhocFilter getImplicitFilter(IAdhocQuery query);
+	IAdhocFilter getImplicitFilter(ICubeQuery query);
 }

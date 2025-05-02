@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 
 public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestConstants {
@@ -76,7 +76,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("k1", "filterK1onA1").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("k1", "filterK1onA1").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
@@ -116,7 +116,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("Ratio_k1_k1witha1").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("Ratio_k1_k1witha1").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =

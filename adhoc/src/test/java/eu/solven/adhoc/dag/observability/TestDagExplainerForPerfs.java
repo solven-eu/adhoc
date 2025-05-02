@@ -43,7 +43,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagExplainerForPerfs {
 	EventBus eventBus = new EventBus();
@@ -54,7 +54,7 @@ public class TestDagExplainerForPerfs {
 		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
 		QueryStepsDagBuilder queryStepsDagBuilder =
-				new QueryStepsDagBuilder(new StandardOperatorsFactory(), "someCube", AdhocQuery.builder().build());
+				new QueryStepsDagBuilder(new StandardOperatorsFactory(), "someCube", CubeQuery.builder().build());
 
 		Map<String, IMeasure> refToMeasure = new HashMap<>();
 
@@ -92,7 +92,7 @@ public class TestDagExplainerForPerfs {
 
 		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
 
-		dagExplainer.explain(AdhocQueryId.from("someCube", AdhocQuery.builder().build()), dag);
+		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().build()), dag);
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
 				#0 s=someCube id=00000000-0000-0000-0000-000000000000

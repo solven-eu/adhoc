@@ -38,7 +38,7 @@ import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -100,7 +100,7 @@ public class PivotableQueryHandler {
 		String cubeName = AdhocHandlerHelper.string(serverRequest, "cube_name");
 		queryOnSchemaBuilder.cube(cubeName);
 
-		AdhocQuery.AdhocQueryBuilder queryBuilder = AdhocQuery.builder();
+		CubeQuery.CubeQueryBuilder queryBuilder = CubeQuery.builder();
 
 		// https://stackoverflow.com/questions/24059773/correct-way-to-pass-multiple-values-for-same-parameter-name-in-get-request
 		// `tag=a&tag=b` means we are looking for `a AND b`

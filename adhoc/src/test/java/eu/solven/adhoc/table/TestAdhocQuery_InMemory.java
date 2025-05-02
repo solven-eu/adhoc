@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 public class TestAdhocQuery_InMemory extends ADagTest implements IAdhocTestConstants {
@@ -56,7 +56,7 @@ public class TestAdhocQuery_InMemory extends ADagTest implements IAdhocTestConst
 	// TODO This is a case for SQL `USING`
 	@Test
 	public void testFilterOnAggregates_measureNameIsNotColumnName() {
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder()
+		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder()
 				.measure("k1.sum")
 				.andFilter("k1.sum",
 						ComparingMatcher.builder()
@@ -70,7 +70,7 @@ public class TestAdhocQuery_InMemory extends ADagTest implements IAdhocTestConst
 
 	@Test
 	public void testFilterOnAggregates_measureNameIsColumnName() {
-		ITabularView view = cube.execute(AdhocQuery.builder()
+		ITabularView view = cube.execute(CubeQuery.builder()
 				.measure("k1")
 				.andFilter("k1",
 						ComparingMatcher.builder()

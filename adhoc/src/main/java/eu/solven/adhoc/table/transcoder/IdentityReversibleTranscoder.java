@@ -28,7 +28,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.AdhocQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
+ * {@link eu.solven.adhoc.query.cube.CubeQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
  * the identity.
  *
  * This always returns the input column, hence it is reversible.

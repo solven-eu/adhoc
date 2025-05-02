@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -49,7 +49,7 @@ import lombok.ToString;
 import lombok.Value;
 
 /**
- * Given an {@link IAdhocQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
+ * Given an {@link ICubeQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
  * {@link IWhereGroupByQuery}.
  * 
  * @author Benoit Lacelle

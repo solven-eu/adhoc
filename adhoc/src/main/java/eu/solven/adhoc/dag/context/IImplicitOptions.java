@@ -25,7 +25,7 @@ package eu.solven.adhoc.dag.context;
 import java.util.Set;
 
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**
  * Enables adding automatically some options (e.g. `EXPLAIN` or `CONCURRENT`).
@@ -36,5 +36,5 @@ public interface IImplicitOptions {
 	 *            the query requested by a user. It may be ignored (e.g. if `EXPLAIN` is always activated).
 	 * @return the options to automatically kick-in.
 	 */
-	Set<IQueryOption> getOptions(IAdhocQuery query);
+	Set<IQueryOption> getOptions(ICubeQuery query);
 }

@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestConstants {
@@ -66,7 +66,7 @@ public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestCo
 				DefaultQueryPreparator.builder().implicitOptions(q -> Set.of(StandardQueryOptions.CONCURRENT)).build())
 				.build();
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure(countAsterisk.getName()).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

@@ -38,7 +38,7 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -147,7 +147,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result = wrapInCube(forest).execute(
-				AdhocQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).measure(k1Sum).build());
+				CubeQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -167,7 +167,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		// this is a customValue matcher: it is typically not resolvable by the table
 		IValueMatcher customValueMatcher =
 				FilterHelpers.wrapWithToString(letter -> letter instanceof Letter l && l.isMagic(), () -> "isMagic");
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
 				.filter(ColumnFilter.builder().column("letter").valueMatcher(customValueMatcher).build())
 				.measure(k1Sum)
 				.build());
@@ -187,7 +187,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("letter").measure(k1Sum).build());
+				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("letter").measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

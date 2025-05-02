@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -88,14 +88,14 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123));
 		}
 
 		{
-			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
+			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123, k2Sum.getName(), 0L + 123));
@@ -120,7 +120,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			forest.addMeasure(kSum);
 
 			// We request both k1 and k, which are the same in DB
-			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
+			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123, kSum.getName(), 0L + 123));
@@ -151,14 +151,14 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.execute();
 
 		{
-			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 234));
 		}
 
 		{
-			ITabularView view = cube.execute(AdhocQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
+			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName(), k2Sum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 234, k2Sum.getName(), 0L + 345));
@@ -169,7 +169,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			Aggregator k4Sum = Aggregator.builder().name("k4").aggregationKey(SumAggregation.KEY).build();
 			forest.addMeasure(k3Sum).addMeasure(k4Sum);
 
-			ITabularView view = cube.execute(AdhocQuery.builder()
+			ITabularView view = cube.execute(CubeQuery.builder()
 					.measure(k1Sum.getName(), k2Sum.getName(), k3Sum.getName(), k4Sum.getName())
 					.build());
 
@@ -216,7 +216,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			forest.addMeasure(k5Sum);
 
 			ITabularView view = cube
-					.execute(AdhocQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
+					.execute(CubeQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of("k1", 234D, "k2", 345D, "k3", 456D, "k4", 123D),
@@ -236,7 +236,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).build();
+			CubeQuery query = CubeQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).build();
 
 			forest.addMeasure(k1Sum);
 
@@ -272,8 +272,8 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.execute();
 
 		{
-			AdhocQuery query =
-					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k2").build();
+			CubeQuery query =
+					CubeQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k2").build();
 
 			forest.addMeasure(k1Sum);
 
@@ -299,8 +299,8 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
-			AdhocQuery query =
-					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k1").build();
+			CubeQuery query =
+					CubeQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k1").build();
 
 			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -337,7 +337,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		forest.addMeasure(vRedSum);
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure("v_RED").build();
+			CubeQuery query = CubeQuery.builder().measure("v_RED").build();
 
 			ITabularView result = cube.execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);

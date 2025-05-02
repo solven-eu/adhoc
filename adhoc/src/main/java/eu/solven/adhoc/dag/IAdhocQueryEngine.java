@@ -29,18 +29,18 @@ import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.dag.context.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * Holds the logic to execute a query, which means turning a {@link IAdhocQuery} into a {@link ITabularView}.
+ * Holds the logic to execute a query, which means turning a {@link ICubeQuery} into a {@link ITabularView}.
  *
  * @author Benoit Lacelle
  */
 public interface IAdhocQueryEngine {
 
 	/**
-	 * Execute an {@link IAdhocQuery}.
+	 * Execute an {@link ICubeQuery}.
 	 *
 	 * @param executingQueryContext
 	 * @return
@@ -48,12 +48,12 @@ public interface IAdhocQueryEngine {
 	ITabularView execute(ExecutingQueryContext executingQueryContext);
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query, IMeasureForest measures, ITableWrapper table) {
+	default ITabularView executeUnsafe(ICubeQuery query, IMeasureForest measures, ITableWrapper table) {
 		return executeUnsafe(query, measures, table, ColumnsManager.builder().build());
 	}
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
-	default ITabularView executeUnsafe(IAdhocQuery query,
+	default ITabularView executeUnsafe(ICubeQuery query,
 			IMeasureForest measures,
 			ITableWrapper table,
 			IColumnsManager columnsManager) {

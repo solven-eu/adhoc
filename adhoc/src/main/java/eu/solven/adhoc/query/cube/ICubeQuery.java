@@ -34,14 +34,14 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
  * 
  * - a filtering condition as an {@link IAdhocFilter}
  * 
- * - columns along which the result is sliced
+ * - columns along which the result is sliced as an {@link IAdhocGroupBy}
  * 
  * - measures may be {@link Aggregator} or {@link ITransformator}
  * 
  * @author Benoit Lacelle
  *
  */
-public interface IAdhocQuery
+public interface ICubeQuery
 		extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
 
 }

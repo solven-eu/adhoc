@@ -40,7 +40,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
@@ -92,7 +92,7 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 				.build();
 		forest.addMeasure(k1Rank2);
 
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(k1Rank2).build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -118,7 +118,7 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 		forest.addMeasure(k1Rank2);
 
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").measure(k1Rank2).build());
+				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

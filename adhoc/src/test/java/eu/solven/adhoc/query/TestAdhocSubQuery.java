@@ -26,9 +26,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestAdhocSubQuery {
@@ -40,7 +40,7 @@ public class TestAdhocSubQuery {
 	// IHasMeasure may lead to StackOverFlow due to very lax default methods
 	@Test
 	public void testGetMeasures() {
-		IAdhocQuery query = AdhocQuery.builder().measure("m").build();
+		ICubeQuery query = CubeQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =
 				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from("someCube", query)).build();
 

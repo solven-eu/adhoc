@@ -43,7 +43,7 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -144,7 +144,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result = cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+			ITabularView result = cube.execute(CubeQuery.builder().measure(k1Sum.getName()).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -161,7 +161,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -180,7 +180,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -199,7 +199,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -218,7 +218,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -237,7 +237,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -256,7 +256,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result =
-					cube.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build());
+					cube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -275,7 +275,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result = cube
-					.execute(AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").build());
+					.execute(CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -294,7 +294,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 		{
 			ITabularView result = cube.execute(
-					AdhocQuery.builder().measure(countAsterisk.getName()).groupByAlso("c.countryName").build());
+					CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("c.countryName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

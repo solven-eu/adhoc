@@ -44,7 +44,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.map.MapTestHelpers;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -153,7 +153,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).build(), forest, table);
+		ITabularView result = aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -174,7 +174,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), forest, table);
+				aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -196,7 +196,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.executeUnsafe(AdhocQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
+				aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
 						forest,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -220,7 +220,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(AdhocQuery.builder()
+		ITabularView result = aqe.executeUnsafe(CubeQuery.builder()
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")

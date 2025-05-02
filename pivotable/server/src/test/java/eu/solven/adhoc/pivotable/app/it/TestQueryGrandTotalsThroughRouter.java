@@ -50,7 +50,7 @@ import eu.solven.adhoc.pivotable.client.PivotableWebclientServerProperties;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
@@ -101,7 +101,7 @@ public class TestQueryGrandTotalsThroughRouter {
 						log.info("Considering endpoint={} cubes={}", endpoint, cubes);
 
 						return Flux.fromIterable(cubes).flatMap(cubeName -> {
-							AdhocQuery query = AdhocQuery.builder().build();
+							CubeQuery query = CubeQuery.builder().build();
 							TargetedAdhocQuery targetedQuery = TargetedAdhocQuery.builder()
 									.endpointId(schema.getEndpoint().getId())
 									.query(query)

@@ -35,7 +35,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -55,7 +55,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("0or100").build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -77,7 +77,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("0or100").build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +102,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(AdhocQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
+				cube.execute(CubeQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

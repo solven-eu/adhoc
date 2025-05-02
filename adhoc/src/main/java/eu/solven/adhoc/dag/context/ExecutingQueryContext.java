@@ -43,8 +43,8 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -65,7 +65,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHasQueryOptions, ICanResolveMeasure {
 	// The query requested to the queryEngine
 	@NonNull
-	IAdhocQuery query;
+	ICubeQuery query;
 
 	@NonNull
 	AdhocQueryId queryId;
@@ -150,14 +150,14 @@ public class ExecutingQueryContext implements IIsExplainable, IIsDebugable, IHas
 	public static ExecutingQueryContext forTable(ITableWrapper table) {
 		return ExecutingQueryContext.builder()
 				.table(table)
-				.query(AdhocQuery.builder().build())
+				.query(CubeQuery.builder().build())
 				.forest(MeasureForest.empty())
 				.queryId(AdhocQueryId.builder().cube(table.getName()).build())
 				.build();
 	}
 
 	public static class ExecutingQueryContextBuilder {
-		IAdhocQuery query;
+		ICubeQuery query;
 		AdhocQueryId queryId;
 		IMeasureForest forest;
 		ITableWrapper table;

@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -63,7 +63,7 @@ public class TestAdhocQueryEngine_Concurrency extends ARawDagTest implements IAd
 		phasedTable.getPhasers().bulkRegister(2);
 
 		ITabularView view = cube.execute(
-				AdhocQuery.builder().measure(k1Sum, sum_MaxK1K2ByA).option(StandardQueryOptions.CONCURRENT).build());
+				CubeQuery.builder().measure(k1Sum, sum_MaxK1K2ByA).option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -94,7 +94,7 @@ public class TestAdhocQueryEngine_Concurrency extends ARawDagTest implements IAd
 		phasedTable.getPhasers().bulkRegister(1);
 
 		ITabularView view = cube.execute(
-				AdhocQuery.builder().measure(k1Sum, filterK1onA1).option(StandardQueryOptions.CONCURRENT).build());
+				CubeQuery.builder().measure(k1Sum, filterK1onA1).option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -161,7 +161,7 @@ public class TestAdhocQueryEngine_Concurrency extends ARawDagTest implements IAd
 		phasedTable.getPhasers().bulkRegister(1);
 
 		ITabularView view = cube
-				.execute(AdhocQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
+				.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

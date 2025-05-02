@@ -51,7 +51,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -195,7 +195,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		// `k2` does not exists in cube2
 		{
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure(k2Sum.getName()).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -205,7 +205,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		// `k2` does not exists in cube2 and `a` is in both cubes
 		{
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).groupByAlso("a").build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure(k2Sum.getName()).groupByAlso("a").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -216,7 +216,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		// `k2` does not exists in cube2 and `b` does not exists in cube2
 		{
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k2Sum.getName()).groupByAlso("b").build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure(k2Sum.getName()).groupByAlso("b").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -232,7 +232,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		// grandTotal
 		{
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -243,7 +243,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		// `a` is in both cubes
 		{
 			ITabularView result =
-					cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
+					cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -255,7 +255,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		// `b` does not exists in cube2
 		{
 			ITabularView result =
-					cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
+					cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -271,7 +271,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
-				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
+				cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("a").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -285,7 +285,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
-				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
+				cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).groupByAlso("b").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -300,7 +300,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result =
-				cube3.execute(AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("a", "a1").build());
+				cube3.execute(CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("a", "a1").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -315,7 +315,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
 		ITabularView result = cube3.execute(
-				AdhocQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("b", "b1").explain(true).build());
+				CubeQuery.builder().measure(k1PlusK2AsExpr.getName()).andFilter("b", "b1").explain(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -342,7 +342,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testQuery_Count() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure(Aggregator.countAsterisk()).build());
+		ITabularView result = cube3.execute(CubeQuery.builder().measure(Aggregator.countAsterisk()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -375,7 +375,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 						.build())
 				.build();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Min", "k1Max").build());
+		ITabularView result = cube3.execute(CubeQuery.builder().measure("k1Min", "k1Max").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -423,7 +423,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		// .assertThatThrownBy(
 		// () -> cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build()))
 		// .hasRootCauseInstanceOf(NotYetImplementedException.class);
-		ITabularView result = cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
+		ITabularView result = cube3.execute(CubeQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -447,7 +447,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 							.build())
 					.build();
 
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure("avg").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -468,7 +468,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 							.build())
 					.build();
 
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure("avg").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -489,7 +489,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 							.build())
 					.build();
 
-			ITabularView result = cube3.execute(AdhocQuery.builder().measure("avg").build());
+			ITabularView result = cube3.execute(CubeQuery.builder().measure("avg").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -505,7 +505,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testQueryNoMeasures_common() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("a").build());
+		ITabularView result = cube3.execute(CubeQuery.builder().groupByAlso("a").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -518,7 +518,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	public void testQueryNoMeasures_onlyOne() {
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		ITabularView result = cube3.execute(AdhocQuery.builder().groupByAlso("b", "c").build());
+		ITabularView result = cube3.execute(CubeQuery.builder().groupByAlso("b", "c").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -543,7 +543,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
-		cube3.execute(AdhocQuery.builder()
+		cube3.execute(CubeQuery.builder()
 				.measure("k1", "k2", "k3")
 				.customMarker(Optional.of("JPY"))
 				// TODO `letter` is pointless in this class as it is unknown by all cubes
@@ -593,7 +593,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 
 		String mComposite = k1Sum.getName();
 		String mSub = k1Sum.getName() + "." + ("someTableName1" + ".cube");
-		ITabularView view = cube3.execute(AdhocQuery.builder()
+		ITabularView view = cube3.execute(CubeQuery.builder()
 				// Request both the composite conflicting and the sub conflicting measures
 				.measure(mComposite, mSub)
 				.customMarker(Optional.of("JPY"))

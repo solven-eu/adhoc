@@ -27,13 +27,13 @@ import java.util.concurrent.TimeUnit;
 import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps understanding a queryPlan for an {@link IAdhocQuery}.
+ * Helps understanding a queryPlan for an {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
  */

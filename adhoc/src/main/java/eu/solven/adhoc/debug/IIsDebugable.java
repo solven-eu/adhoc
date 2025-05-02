@@ -30,5 +30,7 @@ package eu.solven.adhoc.debug;
  */
 @Deprecated(since = "Rely on .getOptions(StandardQueryOptions.DEBUG)")
 public interface IIsDebugable {
+
+	@Deprecated(since = "Use .getOptions()")
 	boolean isDebug();
 }

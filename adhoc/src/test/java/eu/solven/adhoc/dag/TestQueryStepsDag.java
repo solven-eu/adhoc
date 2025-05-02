@@ -33,7 +33,7 @@ import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -48,7 +48,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 	@Test
 	public void testQuerySameMultipleTimes_Aggregator() {
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(k1Sum, k1Sum).build())
+				.query(CubeQuery.builder().measure(k1Sum, k1Sum).build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());
@@ -69,7 +69,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 	public void testQuerySameMultipleTimes_Combinator() {
 
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(k1SumSquared, k1SumSquared).build())
+				.query(CubeQuery.builder().measure(k1SumSquared, k1SumSquared).build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());
@@ -108,7 +108,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		}
 
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(timesN).build())
+				.query(CubeQuery.builder().measure(timesN).build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());
@@ -134,7 +134,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 	@Test
 	public void testQueryParentAndChildren() {
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(k1Sum, k1SumSquared).build())
+				.query(CubeQuery.builder().measure(k1Sum, k1SumSquared).build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());
@@ -154,7 +154,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 	@Test
 	public void testQueryHasCommonChildren() {
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder()
+				.query(CubeQuery.builder()
 						.measure(filterK1onA1, filterK1onB1)
 						.andFilter("a", "a1")
 						.andFilter("b", "b1")
@@ -172,7 +172,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 	@Test
 	public void testMeasureHasTwiceSameUnderlying() {
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(shiftorAisA1).andFilter("a", "a1").build())
+				.query(CubeQuery.builder().measure(shiftorAisA1).andFilter("a", "a1").build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());
@@ -202,7 +202,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		measures.addMeasure(measure);
 
 		QueryStepsDag dag = engine.makeQueryStepsDag(ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(mName).build())
+				.query(CubeQuery.builder().measure(mName).build())
 				.forest(measures)
 				.table(InMemoryTable.builder().build())
 				.build());

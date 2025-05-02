@@ -33,7 +33,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -60,7 +60,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure(k1Sum).build())
+				.query(CubeQuery.builder().measure(k1Sum).build())
 				.forest(forest)
 				.table(table)
 				.build();
@@ -87,7 +87,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure("sumK1K2").build())
+				.query(CubeQuery.builder().measure("sumK1K2").build())
 				.forest(forest)
 				.table(table)
 				.build();
@@ -114,7 +114,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k2Sum);
 
 		ExecutingQueryContext executingQueryContext = ExecutingQueryContext.builder()
-				.query(AdhocQuery.builder().measure("sumK1K2").build())
+				.query(CubeQuery.builder().measure("sumK1K2").build())
 				.forest(forest)
 				.table(table)
 				.build();

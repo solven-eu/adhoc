@@ -41,7 +41,7 @@ import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
@@ -87,7 +87,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 				forest.addMeasure(k1Sum);
 				CubeWrapper aqw = CubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
 
-				ITabularView result = aqw.execute(AdhocQuery.builder().measure(k1Sum.getName()).build());
+				ITabularView result = aqw.execute(CubeQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())

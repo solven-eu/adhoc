@@ -45,7 +45,7 @@ import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -91,7 +91,7 @@ public class TestAdvancedDataset {
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
 			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
-			AdhocQuery query = AdhocQuery.builder().build();
+			CubeQuery query = CubeQuery.builder().build();
 			ITabularView view = schema.execute("ban", query);
 
 			nbViews.incrementAndGet();
