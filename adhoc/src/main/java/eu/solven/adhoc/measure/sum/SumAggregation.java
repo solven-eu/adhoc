@@ -27,19 +27,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
+ * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Object (by their `.toString`) depending on the
+ * inputs.
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
+public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "SUM";
 
@@ -117,19 +116,6 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 
 	protected double asDouble(Object o) {
 		return AdhocPrimitiveHelpers.asDouble(o);
-	}
-
-	@Override
-	public CharSequence aggregateStrings(CharSequence l, CharSequence r) {
-		Object aggregate = aggregate(l, r);
-
-		if (aggregate == null) {
-			return null;
-		} else if (aggregate instanceof CharSequence aggregateCS) {
-			return aggregateCS;
-		} else {
-			throw new IllegalArgumentException("Not a charSequence: " + PepperLogHelper.getObjectAndClass(aggregate));
-		}
 	}
 
 	@Override

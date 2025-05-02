@@ -4,7 +4,7 @@ Atoti/ActivePivot is a very performant in-memory database.
 
 https://www.atoti.io/
 
-## Commercial Considerations
+## Activeviam Intellectual Property Considerations
 
 Atoti/ActivePivot is a commercial software, with strict intellectual property (IP) considerations. All the code here is
 suggested from Open-Sourced repositories distributed by ActiveViam.

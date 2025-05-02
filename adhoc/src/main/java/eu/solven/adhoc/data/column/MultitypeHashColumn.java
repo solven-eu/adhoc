@@ -74,9 +74,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
 	@Default
 	@NonNull
-	final Object2ObjectMap<T, String> measureToAggregateS = new Object2ObjectOpenHashMap<>();
-	@Default
-	@NonNull
 	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>();
 
 	/**
@@ -103,7 +100,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		// clearKey(key);
 
 		if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
-				|| measureToAggregateS.containsKey(key)
 				|| measureToAggregateO.containsKey(key)) {
 			return merge(key);
 		}
@@ -142,7 +138,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 				if (safe) {
 					// measureToAggregateL.removeLong(key);
 					measureToAggregateD.removeDouble(key);
-					measureToAggregateS.remove(key);
 					measureToAggregateO.remove(key);
 				}
 			}
@@ -154,23 +149,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 				if (safe) {
 					measureToAggregateL.removeLong(key);
-					// measureToAggregateD.removeDouble(key);
-					measureToAggregateS.remove(key);
-					measureToAggregateO.remove(key);
-				}
-			}
-
-			@Override
-			public void onCharsequence(CharSequence v) {
-				checkSizeBeforeAdd();
-
-				String vAsString = v.toString();
-				measureToAggregateS.put(key, vAsString);
-
-				if (safe) {
-					measureToAggregateL.removeLong(key);
-					measureToAggregateD.removeDouble(key);
-					// measureToAggregateS.remove(key);
 					measureToAggregateO.remove(key);
 				}
 			}
@@ -183,18 +161,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 				} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
 					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
 					onDouble(vAsPrimitive);
-				} else if (v instanceof CharSequence) {
-					checkSizeBeforeAdd();
-
-					String vAsString = v.toString();
-					measureToAggregateS.put(key, vAsString);
-
-					if (safe) {
-						measureToAggregateL.removeLong(key);
-						measureToAggregateD.removeDouble(key);
-						// measureToAggregateS.remove(key);
-						measureToAggregateO.remove(key);
-					}
 				} else if (v != null) {
 					checkSizeBeforeAdd();
 					measureToAggregateO.put(key, v);
@@ -202,8 +168,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					if (safe) {
 						measureToAggregateL.removeLong(key);
 						measureToAggregateD.removeDouble(key);
-						measureToAggregateS.remove(key);
-						// measureToAggregateO.remove(key);
 					}
 				}
 			}
@@ -217,7 +181,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	protected void clearKey(T key) {
 		measureToAggregateL.removeLong(key);
 		measureToAggregateD.removeDouble(key);
-		measureToAggregateS.remove(key);
 		measureToAggregateO.remove(key);
 	}
 
@@ -227,8 +190,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			consumer.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
 			consumer.onDouble(measureToAggregateD.getDouble(key));
-		} else if (measureToAggregateS.containsKey(key)) {
-			consumer.onCharsequence(measureToAggregateS.get(key));
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
 			Object value = measureToAggregateO.get(key);
@@ -246,8 +207,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			return vc -> vc.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
 			return vc -> vc.onDouble(measureToAggregateD.getDouble(key));
-		} else if (measureToAggregateS.containsKey(key)) {
-			return vc -> vc.onCharsequence(measureToAggregateS.get(key));
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
 			return vc -> vc.onObject(measureToAggregateO.get(key));
@@ -266,9 +225,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		Object2DoubleMaps.fastForEach(measureToAggregateD, entry -> {
 			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
 		});
-		Object2ObjectMaps.fastForEach(measureToAggregateS, entry -> {
-			rowScanner.onKey(entry.getKey()).onCharsequence(entry.getValue());
-		});
 		Object2ObjectMaps.fastForEach(measureToAggregateO, entry -> {
 			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
 		});
@@ -280,13 +236,10 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 				.map(entry -> converter.prepare(entry.getKey()).onLong(entry.getLongValue()));
 		Stream<U> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
 				.map(entry -> converter.prepare(entry.getKey()).onDouble(entry.getDoubleValue()));
-		Stream<U> streamFromCharsequence = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
-				.map(entry -> converter.prepare(entry.getKey()).onCharsequence(entry.getValue()));
 		Stream<U> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
 				.map(entry -> converter.prepare(entry.getKey()).onObject(entry.getValue()));
 
-		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)
-				.flatMap(Functions.identity());
+		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
 	}
 
 	@Override
@@ -302,12 +255,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 								.slice(entry.getKey())
 								.valueProvider(vc -> vc.onDouble(entry.getDoubleValue()))
 								.build());
-		Stream<SliceAndMeasure<T>> streamFromCharsequence =
-				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateS))
-						.map(entry -> SliceAndMeasure.<T>builder()
-								.slice(entry.getKey())
-								.valueProvider(vc -> vc.onCharsequence(entry.getValue()))
-								.build());
 		Stream<SliceAndMeasure<T>> streamFromObject =
 				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
 						.map(entry -> SliceAndMeasure.<T>builder()
@@ -315,8 +262,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 								.valueProvider(vc -> vc.onObject(entry.getValue()))
 								.build());
 
-		return Stream.of(streamFromLong, streamFromDouble, streamFromCharsequence, streamFromObject)
-				.flatMap(Functions.identity());
+		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
 	}
 
 	@Override
@@ -326,7 +272,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		// Can sum sizes as a key can not appear in multiple columns
 		size += measureToAggregateL.size();
 		size += measureToAggregateD.size();
-		size += measureToAggregateS.size();
 		size += measureToAggregateO.size();
 
 		return size;
@@ -338,8 +283,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			return false;
 		} else if (!measureToAggregateL.isEmpty()) {
 			return false;
-		} else if (!measureToAggregateS.isEmpty()) {
-			return false;
 		} else if (!measureToAggregateO.isEmpty()) {
 			return false;
 		} else {
@@ -349,11 +292,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public Stream<T> keyStream() {
-		return Stream
-				.of(measureToAggregateD.keySet(),
-						measureToAggregateL.keySet(),
-						measureToAggregateS.keySet(),
-						measureToAggregateO.keySet())
+		return Stream.of(measureToAggregateD.keySet(), measureToAggregateL.keySet(), measureToAggregateO.keySet())
 				// No need for .distinct as each key is guaranteed to appear in a single column
 				.flatMap(Collection::stream);
 
@@ -368,9 +307,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		}
 		if (!measureToAggregateL.isEmpty()) {
 			toStringHelper.add("#longs", measureToAggregateL.size());
-		}
-		if (!measureToAggregateS.isEmpty()) {
-			toStringHelper.add("#charsequences", measureToAggregateS.size());
 		}
 		if (!measureToAggregateO.isEmpty()) {
 			toStringHelper.add("#objects", measureToAggregateO.size());
@@ -394,7 +330,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		return MultitypeHashColumn.<T>builder()
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
-				.measureToAggregateS(Object2ObjectMaps.emptyMap())
 				.measureToAggregateO(Object2ObjectMaps.emptyMap())
 				.build();
 	}
@@ -413,11 +348,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					@Override
 					public void onDouble(double value) {
 						measureToAggregateD.put(key, value);
-					}
-
-					@Override
-					public void onCharsequence(CharSequence value) {
-						measureToAggregateS.put(key, value.toString());
 					}
 
 					@Override

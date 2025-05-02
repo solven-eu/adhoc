@@ -23,7 +23,7 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -48,17 +48,17 @@ import lombok.extern.jackson.Jacksonized;
 public class EndpointSchemaMetadata {
 
 	@Singular
-	Map<String, ColumnarMetadata> tables;
+	NavigableMap<String, ColumnarMetadata> tables;
 
 	@Singular
-	Map<String, List<IMeasure>> measureBags;
+	NavigableMap<String, List<IMeasure>> measureBags;
 
 	@Singular
-	Map<String, CubeSchemaMetadata> cubes;
+	NavigableMap<String, CubeSchemaMetadata> cubes;
 
 	@Singular
-	Map<String, AdhocQuery> queries;
+	NavigableMap<String, AdhocQuery> queries;
 
 	@Singular
-	Map<String, CustomMarkerMetadata> customMarkers;
+	NavigableMap<String, CustomMarkerMetadata> customMarkers;
 }

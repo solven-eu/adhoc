@@ -26,7 +26,6 @@ import java.util.Comparator;
 
 import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.ICharSequenceAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -36,7 +35,7 @@ import lombok.experimental.SuperBuilder;
  * Keep the highest value amongst encountered values
  */
 @SuperBuilder
-public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAggregation, ICharSequenceAggregation {
+public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "MAX";
 
@@ -76,19 +75,6 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 
 	protected int compare(Object l, Object r) {
 		return comparator.compare(l, r);
-	}
-
-	@Override
-	public CharSequence aggregateStrings(CharSequence left, CharSequence right) {
-		if (left == null) {
-			return right;
-		} else if (right == null) {
-			return left;
-		} else if (CharSequence.compare(left, right) >= 0) {
-			return left;
-		} else {
-			return right;
-		}
 	}
 
 	@Override

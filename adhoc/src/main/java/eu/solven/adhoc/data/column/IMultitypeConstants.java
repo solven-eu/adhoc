@@ -31,6 +31,7 @@ public interface IMultitypeConstants {
 	// 2
 	byte MASK_DOUBLE = 1 << 1;
 	// 4
+	@Deprecated(since = "Kept for potential future usage")
 	byte MASK_VARCHAR = 1 << 2;
 	// 8
 	byte MASK_OBJECT = 1 << 3;

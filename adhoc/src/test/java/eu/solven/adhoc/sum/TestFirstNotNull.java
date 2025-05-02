@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.sum;
 
-/**
- * Relates with {@link IAggregation} when it is meaningful to have a dedicated aggregations for primitive doubles.
- * 
- * @author Benoit Lacelle
- */
-public interface ICharSequenceAggregation {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	// default
-	CharSequence aggregateStrings(CharSequence left, CharSequence right);
-	// {
-	// Object aggregated = aggregate(left, right);
-	//
-	// if (aggregated == null) {
-	// return null;
-	// }
-	//
-	// if (aggregated instanceof CharSequence aggregatedCharSequence) {
-	// return aggregatedCharSequence;
-	// } else {
-	// return aggregated.toString();
-	// }
-	// }
+import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
+
+public class TestFirstNotNull {
+	FirstNotNullAggregation a = new FirstNotNullAggregation();
+
+	@Test
+	public void testSimple() {
+		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
+		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
+		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+
+		Assertions.assertThat(a.aggregate(123, 123)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
+
+		Assertions.assertThatThrownBy(() -> a.aggregate(123, 234)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> a.aggregate("foo", 234)).isInstanceOf(IllegalArgumentException.class);
+	}
 }

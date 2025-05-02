@@ -348,4 +348,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
 - [Pivotable] Handle customMarkers with deep path
-- [Pivotable] Clarify pivottable when latest execution failed. May offer to go back to previous OK query
+- [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
