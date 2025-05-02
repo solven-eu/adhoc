@@ -37,8 +37,14 @@ If you encounter a case which performance would be much improved by multi-thread
 
 `parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
 
+## Products
 
-## Related Projects
+This repository includes 2 products
+
+- Adhoc, which is the core project as it holds the query-engine. It is a plain Java library (e.g. no API, no web-server).
+- Pivotable, which is a referential web-application around Adhoc. It enables APIs (over [Spring WebFlux](https://docs.spring.io/spring-framework/reference/web/webflux.html)) and a Single-Page-Application (with [VueJS](https://vuejs.org/)).
+
+## Alternative Projects
 
 - SQLServer. We rely on many concepts from SQLServer to define our own abstractions.
 - Apache Beam. Though [Beam](https://beam.apache.org/) seems less flexible to access intermediate results as intermediate measures.
