@@ -44,8 +44,8 @@ import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -59,7 +59,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and {@link IAdhocQuery}.
+ * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and {@link ICubeQuery}.
  * It is typically used for use through an API/Catalog.
  *
  * @author Benoit Lacelle
@@ -190,14 +190,14 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	@Override
-	public ITabularView execute(String cube, IAdhocQuery query) {
+	public ITabularView execute(String cube, ICubeQuery query) {
 		ICubeWrapper cubeWrapper = nameToCube.get(cube);
 
 		if (cubeWrapper == null) {
 			throw new IllegalArgumentException("No cube named %s".formatted(cube));
 		}
 
-		IAdhocQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
+		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
 		return cubeWrapper.execute(transcodedQuery);
 	}
 
@@ -209,8 +209,8 @@ public class AdhocSchema implements IAdhocSchema {
 	 *            on some filters.
 	 * @return
 	 */
-	protected IAdhocQuery transcodeQuery(ICubeWrapper cubeWrapper, IAdhocQuery query) {
-		return AdhocQuery.edit(query).filter(transcodeFilter(cubeWrapper, query.getFilter())).build();
+	protected ICubeQuery transcodeQuery(ICubeWrapper cubeWrapper, ICubeQuery query) {
+		return CubeQuery.edit(query).filter(transcodeFilter(cubeWrapper, query.getFilter())).build();
 	}
 
 	protected IAdhocFilter transcodeFilter(ICubeWrapper cubeWrapper, IAdhocFilter filter) {

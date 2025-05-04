@@ -31,8 +31,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.AdhocQuery.AdhocQueryBuilder;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 /**
  * Relational expression that uses Mongo calling convention.
@@ -48,7 +47,7 @@ public interface AdhocCalciteRel extends RelNode {
 	 * query.
 	 */
 	class AdhocCalciteRelImplementor {
-		final AdhocQueryBuilder adhocQueryBuilder = AdhocQuery.builder();
+		final CubeQuery.CubeQueryBuilder cubeQueryBuilder = CubeQuery.builder();
 
 		final Map<String, String> projects = new LinkedHashMap<>();
 

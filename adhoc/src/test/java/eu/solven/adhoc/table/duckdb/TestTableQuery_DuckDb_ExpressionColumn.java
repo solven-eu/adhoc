@@ -35,7 +35,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ExpressionColumn;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -68,7 +68,7 @@ public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest impl
 
 		ITabularView result =
 				aqe.executeUnsafe(
-						AdhocQuery.builder()
+						CubeQuery.builder()
 								.measure(k1Sum.getName())
 								.groupBy(GroupByColumns
 										.of(ExpressionColumn.builder().name("first_letter").sql("word[1]").build()))

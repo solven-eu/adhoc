@@ -24,7 +24,12 @@ package eu.solven.adhoc.query.cube;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import eu.solven.adhoc.debug.IIsDebugable;
+import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 
 /**
  * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
@@ -35,6 +40,16 @@ import eu.solven.adhoc.query.IQueryOption;
  * @author Benoit Lacelle
  *
  */
-public interface IHasQueryOptions {
+public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
 	Set<IQueryOption> getOptions();
+
+	@JsonIgnore
+	default boolean isExplain() {
+		return getOptions().contains(StandardQueryOptions.EXPLAIN);
+	}
+
+	@JsonIgnore
+	default boolean isDebug() {
+		return getOptions().contains(StandardQueryOptions.DEBUG);
+	}
 }

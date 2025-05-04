@@ -35,11 +35,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -71,8 +68,7 @@ import lombok.Value;
 @Value
 @Builder(toBuilder = true)
 // https://blog.jooq.org/how-to-calculate-multiple-aggregate-functions-in-a-single-query/
-public class TableQueryV2
-		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
+public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	// a filter shared through all aggregators
 	@Default
@@ -96,18 +92,6 @@ public class TableQueryV2
 	@NonNull
 	@Singular
 	ImmutableSet<IQueryOption> options;
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isDebug() {
-		return options.contains(StandardQueryOptions.DEBUG);
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isExplain() {
-		return options.contains(StandardQueryOptions.EXPLAIN);
-	}
 
 	public static TableQueryV2.TableQueryV2Builder edit(TableQuery tableQuery) {
 		return TableQueryV2.builder()

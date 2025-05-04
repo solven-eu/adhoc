@@ -51,7 +51,7 @@ public interface IAdhocEventsListener {
 	void onQueryStepIsEvaluating(QueryStepIsEvaluating event);
 
 	/**
-	 * An {@link eu.solven.adhoc.query.cube.AdhocQuery} is resolved through a DAG of
+	 * An {@link eu.solven.adhoc.query.cube.CubeQuery} is resolved through a DAG of
 	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}. This will log when an
 	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep} is completed.
 	 * 

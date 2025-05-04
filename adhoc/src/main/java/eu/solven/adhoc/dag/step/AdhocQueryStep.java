@@ -31,11 +31,12 @@ import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.IHasTags;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -49,7 +50,7 @@ import lombok.ToString;
 import lombok.Value;
 
 /**
- * Given an {@link IAdhocQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
+ * Given an {@link ICubeQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
  * {@link IWhereGroupByQuery}.
  * 
  * @author Benoit Lacelle
@@ -65,8 +66,7 @@ import lombok.Value;
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
-public class AdhocQueryStep
-		implements IWhereGroupByQuery, IIsExplainable, IIsDebugable, IHasCustomMarker, IHasQueryOptions {
+public class AdhocQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 	@NonNull
 	IMeasure measure;
 	@NonNull
@@ -107,30 +107,26 @@ public class AdhocQueryStep
 	public static AdhocQueryStepBuilder edit(IWhereGroupByQuery step) {
 		AdhocQueryStepBuilder builder = AdhocQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
-		if (step instanceof IIsExplainable explainable && explainable.isExplain()) {
-			builder.option(StandardQueryOptions.EXPLAIN);
-		}
-		if (step instanceof IIsDebugable debuggable && debuggable.isDebug()) {
-			builder.option(StandardQueryOptions.DEBUG);
-		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
 		}
 		if (step instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
+		} else {
+			if (step instanceof IIsExplainable explainable && explainable.isExplain()) {
+				builder.option(StandardQueryOptions.EXPLAIN);
+			}
+			if (step instanceof IIsDebugable debuggable && debuggable.isDebug()) {
+				builder.option(StandardQueryOptions.DEBUG);
+			}
 		}
 
 		return builder;
 	}
 
 	@Override
-	public boolean isExplain() {
-		return getOptions().contains(StandardQueryOptions.EXPLAIN);
-	}
-
-	@Override
 	public boolean isDebug() {
-		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains("debug");
+		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains(IHasTags.TAG_DEBUG);
 	}
 
 }

@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.examples.RatioOverSpecificColumnValueCompositor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -71,7 +71,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=FR_ratio").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -84,7 +84,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testFR() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("country", "FR").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=FR_ratio").andFilter("country", "FR").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -96,7 +96,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testParis() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("city", "Paris").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=FR_ratio").andFilter("city", "Paris").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -108,8 +108,8 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testUS() {
-		AdhocQuery adhocQuery =
-				AdhocQuery.builder().measure("d", "d_country=FR_ratio").andFilter("country", "US").build();
+		CubeQuery adhocQuery =
+				CubeQuery.builder().measure("d", "d_country=FR_ratio").andFilter("country", "US").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -124,8 +124,8 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
-			AdhocQuery adhocQuery =
-					AdhocQuery.builder().measure("d_country=FR_ratio").andFilter("color", "blue").explain(true).build();
+			CubeQuery adhocQuery =
+					CubeQuery.builder().measure("d_country=FR_ratio").andFilter("color", "blue").explain(true).build();
 			cube.execute(adhocQuery);
 		}
 

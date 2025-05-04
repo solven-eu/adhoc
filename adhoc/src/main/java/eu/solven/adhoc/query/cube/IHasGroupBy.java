@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 
 /**
- * A {@link List} of columns. Typically used by {@link IAdhocQuery}, or {@link IHolyCube}.
+ * A {@link List} of columns. Typically used by {@link ICubeQuery}, or {@link IHolyCube}.
  * 
  * @author Benoit Lacelle
  *

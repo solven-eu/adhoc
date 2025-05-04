@@ -47,7 +47,7 @@ import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
@@ -240,7 +240,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(k1SumSquared.getName()).build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(k1SumSquared.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -274,7 +274,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		CubeWrapper cube = wrapInCube(forest);
 
 		{
-			ITabularView result = cube.execute(AdhocQuery.builder()
+			ITabularView result = cube.execute(CubeQuery.builder()
 					.measure(k1Sum.getName())
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
@@ -288,7 +288,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		}
 
 		{
-			ITabularView result = cube.execute(AdhocQuery.builder()
+			ITabularView result = cube.execute(CubeQuery.builder()
 					.measure(k1SumSquared.getName())
 					.andFilter("a@a@a", "a1")
 					.groupByAlso("b@b@b")
@@ -313,7 +313,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 
 		Assertions.assertThatThrownBy(() -> wrapInCube(forest).execute(
-				AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "unknownValue").build()))
+				CubeQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "unknownValue").build()))
 				.isInstanceOf(RuntimeException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!")
 				.hasRootCauseInstanceOf(SQLException.class);
@@ -331,7 +331,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Assertions
 				.assertThatThrownBy(() -> wrapInCube(forest)
-						.execute(AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
+						.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
 				.isInstanceOf(RuntimeException.class)
 				.hasStackTraceContaining("source=TableQuery")
 				.hasStackTraceContaining("unknownColumn");
@@ -351,7 +351,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		forest.addMeasure(kSumOverk1);
 
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().measure(kSumOverk1.getName()).build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(kSumOverk1.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -370,7 +370,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		forest.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
 				.measure(k1Sum.getName())
 				.andFilter("a", LikeMatcher.builder().like("a1%").build())
 				.build());
@@ -393,7 +393,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 
 		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().measure(k1Sum.getName()).filter(IAdhocFilter.MATCH_NONE).build());
+				.execute(CubeQuery.builder().measure(k1Sum.getName()).filter(IAdhocFilter.MATCH_NONE).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
@@ -411,7 +411,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		Assertions.assertThatThrownBy(() -> {
 			wrapInCube(forest).execute(
-					AdhocQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
+					CubeQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
 				.isInstanceOf(RuntimeException.class)
 				.hasStackTraceContaining("source=TableQuery")
@@ -430,7 +430,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(k1Sum.getName()).groupByAlso("k1").build();
+			CubeQuery query = CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("k1").build();
 
 			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -453,7 +453,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(countAsterisk);
 
 		{
-			AdhocQuery query = AdhocQuery.builder().measure(countAsterisk).build();
+			CubeQuery query = CubeQuery.builder().measure(countAsterisk).build();
 
 			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -477,7 +477,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -501,7 +501,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.empty()).build());
+				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").measure(Aggregator.empty()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -525,7 +525,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().groupByAlso("a").measure(Aggregator.countAsterisk()).build());
+				.execute(CubeQuery.builder().groupByAlso("a").measure(Aggregator.countAsterisk()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -567,7 +567,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		forest.addMeasure(k1Sum);
 
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
 				.groupByAlso("a")
 				.measure(k1Sum)
 				.andFilter(k1Sum.getName(),
@@ -600,7 +600,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
 		forest.addMeasure(k1Sum);
 
-		Assertions.assertThatThrownBy(() -> wrapInCube(forest).execute(AdhocQuery.builder()
+		Assertions.assertThatThrownBy(() -> wrapInCube(forest).execute(CubeQuery.builder()
 				.groupByAlso("a")
 				.measure(k1Sum)
 				.andFilter(k1Sum.getName(),
@@ -632,7 +632,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 
 		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().andFilter("a", StringMatcher.hasToString(today)).measure(k1Sum).build());
+				.execute(CubeQuery.builder().andFilter("a", StringMatcher.hasToString(today)).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

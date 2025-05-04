@@ -25,13 +25,13 @@ package eu.solven.adhoc.query;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAdhocQueryId {
 	@Test
 	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryId.from("someCube", AdhocQuery.builder().build());
+		AdhocQueryId queryId = AdhocQueryId.from("someCube", CubeQuery.builder().build());
 
 		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
 		Assertions.assertThat(queryId.getParentQueryId()).isNull();
@@ -40,10 +40,10 @@ public class TestAdhocQueryId {
 
 	@Test
 	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryId.from("parentCube", AdhocQuery.builder().build());
+		AdhocQueryId queryId = AdhocQueryId.from("parentCube", CubeQuery.builder().build());
 
 		AdhocQueryId subQueryId = AdhocQueryId.from("subCube",
-				AdhocSubQuery.builder().subQuery(AdhocQuery.builder().build()).parentQueryId(queryId).build());
+				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
 
 		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
 		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());

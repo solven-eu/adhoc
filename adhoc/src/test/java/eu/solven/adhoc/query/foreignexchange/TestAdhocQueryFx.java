@@ -48,7 +48,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.IStopwatch;
 import lombok.NonNull;
@@ -109,7 +109,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure(mName).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -129,7 +129,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		table.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure(mName).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -148,8 +148,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				cube.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -170,8 +169,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = cube
-				.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		ITabularView output =
+				cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -195,7 +194,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.setMaxStackTraceElementsDisplayed(128);
 
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure(mName).build()))
+		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("ccyFrom is not a sliced column");
@@ -208,7 +207,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(AdhocQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
@@ -227,7 +226,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(AdhocQuery.builder()
+		cube.execute(CubeQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")
@@ -257,7 +256,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(AdhocQuery.builder()
+		cube.execute(CubeQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")
@@ -274,7 +273,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 								    |  size=2 duration=123ms
 								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
 								        \\  size=2 duration=123ms
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
+								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(4);
 	}

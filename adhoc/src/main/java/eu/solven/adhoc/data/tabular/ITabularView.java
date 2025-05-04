@@ -30,11 +30,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**
  * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link IAdhocQuery} on an {@link eu.solven.adhoc.dag.IAdhocQueryEngine}.
+ * {@link ICubeQuery} on an {@link eu.solven.adhoc.dag.IAdhocQueryEngine}.
  * 
  * {@link ITabularView} implementations are generally immutable.
  *

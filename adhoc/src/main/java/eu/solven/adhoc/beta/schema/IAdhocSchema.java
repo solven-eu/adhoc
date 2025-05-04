@@ -27,7 +27,7 @@ import java.util.Optional;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -75,6 +75,6 @@ public interface IAdhocSchema {
 	 * @param query
 	 * @return an {@link ITabularView} as computed for given query.
 	 */
-	ITabularView execute(String cube, IAdhocQuery query);
+	ITabularView execute(String cube, ICubeQuery query);
 
 }

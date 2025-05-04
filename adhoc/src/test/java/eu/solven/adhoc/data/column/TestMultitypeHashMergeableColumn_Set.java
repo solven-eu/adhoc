@@ -23,14 +23,18 @@
 package eu.solven.adhoc.data.column;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.Collections2;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.collection.UnionAggregation;
@@ -91,6 +95,27 @@ public class TestMultitypeHashMergeableColumn_Set {
 
 		column.onValue("k1", o -> {
 			Assertions.assertThat(o).isEqualTo(Set.of(123, 345));
+		});
+	}
+
+	@Test
+	public void testLongDoubleNull_Fuzzy() {
+		Set<Consumer<MultitypeHashMergeableColumn<String>>> appenders = new LinkedHashSet<>();
+
+		appenders.add(column -> column.merge("k1").onLong(123));
+		appenders.add(column -> column.merge("k1").onLong(234));
+		appenders.add(column -> column.merge("k1").onDouble(12.34D));
+		appenders.add(column -> column.merge("k1").onDouble(23.45D));
+		appenders.add(column -> column.merge("k1").onObject(null));
+
+		Collections2.permutations(appenders).forEach(combination -> {
+			column.clearKey("k1");
+
+			combination.forEach(consumer -> consumer.accept(column));
+
+			column.onValue("k1", o -> {
+				Assertions.assertThat(o).isEqualTo(Set.of(123L, 234L, 12.34D, 23.45D));
+			});
 		});
 	}
 

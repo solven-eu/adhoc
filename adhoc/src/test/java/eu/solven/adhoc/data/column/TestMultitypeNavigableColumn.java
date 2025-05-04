@@ -170,7 +170,7 @@ public class TestMultitypeNavigableColumn {
 	public void testCopyFromNotSorted() {
 		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
 
-		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c", "d"));
+		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c"));
 
 		// Not seeded as we want the test to check various configurations through time
 		Random r = new SecureRandom();
@@ -181,13 +181,12 @@ public class TestMultitypeNavigableColumn {
 
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(123);
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(23.45);
-		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onCharsequence("someString");
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onObject(LocalDate.now());
 
 		IMultitypeColumnFastGet<String> sortedCopy = MultitypeNavigableColumn.copy(notSorted);
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
-		Assertions.assertThat(slices).hasSize(4).containsExactly("a", "b", "c", "d");
+		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
 	}
 
 	@Test

@@ -39,7 +39,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
@@ -67,7 +67,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -78,7 +78,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testFilter() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
+		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -89,7 +89,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testGroupBy() {
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure("sumK1K2").groupByAlso("c").build());
+		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("c").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +102,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 	@Test
 	public void testFilterGroupBy() {
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").build());
+				aqw.execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

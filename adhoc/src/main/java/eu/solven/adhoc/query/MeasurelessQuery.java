@@ -43,8 +43,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class MeasurelessQuery
-		implements IWhereGroupByQuery, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
+public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@NonNull
 	IAdhocFilter filter;
@@ -54,16 +53,6 @@ public class MeasurelessQuery
 
 	Object customMarker;
 
-	// This is part of hashcodeEquals
-	// It means we may have a different queryPlan when a subset of querySteps are debuggable
-	// @Builder.Default
-	// boolean explain = false;
-
-	// This is part of hashcodeEquals
-	// It means we may have a different queryPlan when a subset of querySteps are debuggable
-	// @Builder.Default
-	// boolean debug = false;
-
 	@NonNull
 	@Singular
 	ImmutableSet<IQueryOption> options;
@@ -72,31 +61,20 @@ public class MeasurelessQuery
 		MeasurelessQueryBuilder builder =
 				MeasurelessQuery.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 
-		if (step instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-			builder.option(StandardQueryOptions.EXPLAIN);
-		}
-		if (step instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-			builder.option(StandardQueryOptions.DEBUG);
-		}
 		if (step instanceof IHasCustomMarker hasCustomMarker) {
 			builder.customMarker(hasCustomMarker.getCustomMarker());
 		}
 		if (step instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
+		} else {
+			if (step instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+				builder.option(StandardQueryOptions.EXPLAIN);
+			}
+			if (step instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+				builder.option(StandardQueryOptions.DEBUG);
+			}
 		}
 
 		return builder;
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isDebug() {
-		return options.contains(StandardQueryOptions.DEBUG);
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	public boolean isExplain() {
-		return options.contains(StandardQueryOptions.EXPLAIN);
 	}
 }

@@ -43,7 +43,7 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.NonNull;
@@ -53,7 +53,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps understanding a queryPlan for an {@link IAdhocQuery}.
+ * Helps understanding a queryPlan for an {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
  */

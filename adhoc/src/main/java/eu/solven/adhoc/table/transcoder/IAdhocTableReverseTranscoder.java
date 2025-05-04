@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.Map;
 import java.util.Set;
 
 /**

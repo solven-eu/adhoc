@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.data.row;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import java.util.Map;
 
-/**
- * A aggregation query. It is configured by:
- * 
- * - a filtering condition as an {@link IAdhocFilter}
- * 
- * - columns along which the result is sliced
- * 
- * - measures may be {@link Aggregator} or {@link ITransformator}
- * 
- * @author Benoit Lacelle
- *
- */
-public interface IAdhocQuery
-		extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.table.transcoder.IdentityReversibleTranscoder;
+
+public class TestHideAggregatorsTabularRecord {
+	@Test
+	public void testNominalCase() {
+		TabularRecordOverMaps underlying = TabularRecordOverMaps.builder()
+				.slice(Map.of("c", "c1"))
+				.aggregate("k1", 123)
+				.aggregate("k2", 234)
+				.build();
+		HideAggregatorsTabularRecord record =
+				HideAggregatorsTabularRecord.builder().decorated(underlying).keptAggregate("k1").build();
+
+		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
+
+		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123).hasSize(2);
+
+		// The trailing `, ` is a minor bug
+		Assertions.assertThat(transcoded.toString()).isEqualTo("slice:{c=c1, } aggregates:{k1=123, }");
+	}
 }

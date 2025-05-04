@@ -32,15 +32,15 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.resource.AdhocJackson;
 
-public class TestAdhocQueryBuilder {
+public class TestCubeQueryBuilder {
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery q = AdhocQuery.builder().build();
+		CubeQuery q = CubeQuery.builder().build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
@@ -52,7 +52,7 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testGrandTotal_filterAndEmpty() {
-		AdhocQuery q = AdhocQuery.builder().andFilter(AndFilter.and(Map.of())).build();
+		CubeQuery q = CubeQuery.builder().andFilter(AndFilter.and(Map.of())).build();
 
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
@@ -61,41 +61,41 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testEquals() {
-		AdhocQuery q1 = AdhocQuery.builder().build();
-		AdhocQuery q2 = AdhocQuery.builder().build();
+		CubeQuery q1 = CubeQuery.builder().build();
+		CubeQuery q2 = CubeQuery.builder().build();
 
 		Assertions.assertThat(q1).isEqualTo(q2);
 	}
 
 	@Test
 	public void testAddGroupBy() {
-		AdhocQuery q1 = AdhocQuery.builder().groupByAlso("a", "b").groupByAlso("c", "d").build();
+		CubeQuery q1 = CubeQuery.builder().groupByAlso("a", "b").groupByAlso("c", "d").build();
 
 		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("a", "b", "c", "d");
 	}
 
 	@Test
 	public void testResetGroupBy() {
-		AdhocQuery q1 = AdhocQuery.builder().groupByAlso("a", "b").groupBy(GroupByColumns.named("c", "d")).build();
+		CubeQuery q1 = CubeQuery.builder().groupByAlso("a", "b").groupBy(GroupByColumns.named("c", "d")).build();
 
 		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("c", "d");
 	}
 
 	@Test
 	public void testCustomMarker() {
-		Assertions.assertThat(AdhocQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
-		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
+		Assertions.assertThat(CubeQuery.builder().customMarker(null).build().getCustomMarker()).isNull();
+		Assertions.assertThat(CubeQuery.builder().customMarker(Optional.empty()).build().getCustomMarker()).isNull();
 
-		Assertions.assertThat(AdhocQuery.builder().customMarker("someCustom").build().getCustomMarker())
+		Assertions.assertThat(CubeQuery.builder().customMarker("someCustom").build().getCustomMarker())
 				.isEqualTo("someCustom");
-		Assertions.assertThat(AdhocQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
+		Assertions.assertThat(CubeQuery.builder().customMarker(Optional.of("someCustom")).build().getCustomMarker())
 				.isEqualTo("someCustom");
 	}
 
 	@Test
 	public void testUnionOptions() {
-		AdhocQuery query = AdhocQuery.builder().option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build();
-		AdhocQuery edited = AdhocQuery.edit(query)
+		CubeQuery query = CubeQuery.builder().option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build();
+		CubeQuery edited = CubeQuery.edit(query)
 				// this test checks that `@Builder` `@Singular` does `.addAll` and not some `.clear`
 				.options(Set.of(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY))
 				.build();
@@ -108,14 +108,14 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testEdit() {
-		AdhocQuery query = fullyCustomized();
-		AdhocQuery edited = AdhocQuery.edit(query).build();
+		CubeQuery query = fullyCustomized();
+		CubeQuery edited = CubeQuery.edit(query).build();
 
 		Assertions.assertThat(edited).isEqualTo(query);
 	}
 
-	private AdhocQuery fullyCustomized() {
-		return AdhocQuery.builder()
+	private CubeQuery fullyCustomized() {
+		return CubeQuery.builder()
 				.measure("k1.SUM")
 				.groupByAlso("c1")
 				.andFilter("c2", "v2")
@@ -127,33 +127,33 @@ public class TestAdhocQueryBuilder {
 
 	@Test
 	public void testJackson_empty() throws JsonProcessingException {
-		AdhocQuery q1 = AdhocQuery.builder().build();
+		CubeQuery q1 = CubeQuery.builder().build();
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		String asString = objectMapper.writeValueAsString(q1);
-		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
+		CubeQuery fromString = objectMapper.readValue(asString, CubeQuery.class);
 
 		Assertions.assertThat(fromString).isEqualTo(q1);
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		AdhocQuery q1 = AdhocQuery.builder().measure("k1").andFilter("c1", "v1").groupByAlso("a").build();
+		CubeQuery q1 = CubeQuery.builder().measure("k1").andFilter("c1", "v1").groupByAlso("a").build();
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		String asString = objectMapper.writeValueAsString(q1);
-		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
+		CubeQuery fromString = objectMapper.readValue(asString, CubeQuery.class);
 
 		Assertions.assertThat(fromString).isEqualTo(q1);
 	}
 
 	@Test
 	public void testJackson_complex() throws JsonProcessingException {
-		AdhocQuery query = fullyCustomized();
+		CubeQuery query = fullyCustomized();
 
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		String asString = objectMapper.writeValueAsString(query);
-		AdhocQuery fromString = objectMapper.readValue(asString, AdhocQuery.class);
+		CubeQuery fromString = objectMapper.readValue(asString, CubeQuery.class);
 
 		Assertions.assertThat(fromString).isEqualTo(query);
 

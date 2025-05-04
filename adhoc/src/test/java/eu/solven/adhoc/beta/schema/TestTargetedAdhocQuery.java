@@ -32,7 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestTargetedAdhocQuery {
@@ -47,7 +47,7 @@ public class TestTargetedAdhocQuery {
 				.cube("someCube")
 				.endpointId(UUID.fromString("12345678-1234-1234-1234-12345678abcd"))
 				.option(StandardQueryOptions.EXPLAIN)
-				.query(AdhocQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
+				.query(CubeQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
 				.build();
 
 		String asString = TestMapBasedTabularView.verifyJackson(TargetedAdhocQuery.class, query);

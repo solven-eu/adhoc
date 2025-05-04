@@ -39,7 +39,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestTransformator_Combinator_Double extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -61,7 +61,7 @@ public class TestTransformator_Combinator_Double extends ADagTest implements IAd
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -83,7 +83,7 @@ public class TestTransformator_Combinator_Double extends ADagTest implements IAd
 		forest.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
 		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -105,7 +105,7 @@ public class TestTransformator_Combinator_Double extends ADagTest implements IAd
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

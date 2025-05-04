@@ -65,10 +65,10 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
@@ -145,7 +145,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		@NonNull
 		ICubeWrapper cube;
 		@NonNull
-		IAdhocQuery query;
+		ICubeQuery query;
 	}
 
 	@Override
@@ -157,10 +157,10 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
-		Map<String, IAdhocQuery> cubeToQuery = new LinkedHashMap<>();
+		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
 
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
-			IAdhocQuery subQuery = makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube);
+			ICubeQuery subQuery = makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube);
 
 			var previous = cubeToQuery.put(subCube.getName(), subQuery);
 			if (previous != null) {
@@ -251,7 +251,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		}
 	}
 
-	protected IAdhocQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
+	protected ICubeQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
 			TableQueryV2 compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
@@ -266,7 +266,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subColumns);
 
-		IAdhocQuery query = AdhocQuery.edit(compositeQuery)
+		ICubeQuery query = CubeQuery.edit(compositeQuery)
 				.filter(subFilter)
 				.groupBy(GroupByColumns.of(subGroupBy.values()))
 				// Reference the measures already known by the subCube
@@ -293,13 +293,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
-			Map<String, IAdhocQuery> cubeToQuery) {
+			Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		try {
 			// https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
 			return executingQueryContext.getFjp().submit(() -> {
-				Stream<Entry<String, IAdhocQuery>> stream = cubeToQuery.entrySet().stream();
+				Stream<Entry<String, ICubeQuery>> stream = cubeToQuery.entrySet().stream();
 
 				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					stream = stream.parallel();
@@ -307,7 +307,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 				return stream.collect(Collectors.toMap(Entry::getKey, e -> {
 					ICubeWrapper subCube = nameToCube.get(e.getKey());
-					IAdhocQuery query = e.getValue();
+					ICubeQuery query = e.getValue();
 					return executeSubQuery(subCube, query);
 				}));
 
@@ -320,7 +320,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		}
 	}
 
-	protected ITabularView executeSubQuery(ICubeWrapper subCube, IAdhocQuery query) {
+	protected ITabularView executeSubQuery(ICubeWrapper subCube, ICubeQuery query) {
 		return subCube.execute(query);
 	}
 
@@ -360,7 +360,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	/**
 	 *
 	 * @param filter
-	 *            a {@link IAdhocQuery} filter
+	 *            a {@link ICubeQuery} filter
 	 * @param columns
 	 *            the {@link IAdhocColumn} available in a {@link ICubeWrapper}
 	 * @return the equivalent {@link IAdhocFilter} given the subset of columns

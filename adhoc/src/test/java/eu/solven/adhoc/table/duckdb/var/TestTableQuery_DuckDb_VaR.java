@@ -55,7 +55,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -210,7 +210,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testGrandTotal() {
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).build());
+				wrapInCube(forest).execute(CubeQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -241,7 +241,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testGroupByColor() {
 		ITabularView result = wrapInCube(forest).execute(
-				AdhocQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).groupByAlso("color").build());
+				CubeQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).groupByAlso("color").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Set<String> colors = Set.of("blue", "red");
@@ -275,7 +275,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testGroupByScenarioIndex_mArray() {
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().measure(mArray).groupByAlso(C_SCENARIOINDEX).build());
+				wrapInCube(forest).execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -295,7 +295,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testGroupByScenarioName_mArray() {
 		ITabularView result =
-				wrapInCube(forest).execute(AdhocQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
+				wrapInCube(forest).execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -317,7 +317,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testFilterScenarioIndex_mArrayVaR() {
 		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().measure(mArray, mVaR).andFilter(C_SCENARIOINDEX, 0).build());
+				.execute(CubeQuery.builder().measure(mArray, mVaR).andFilter(C_SCENARIOINDEX, 0).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -335,7 +335,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// filter scenarioName
 	@Test
 	public void testFilterScenarioName_mArrayVaR() {
-		ITabularView result = wrapInCube(forest).execute(AdhocQuery.builder()
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
 				.measure(mArray, mVaR)
 				.andFilter(C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(0))
 				.build());
@@ -357,7 +357,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testFilterScenarioIndex_countAsterisk_standardCube() {
 		ITabularView result = wrapInCube(forest)
-				.execute(AdhocQuery.builder().measure(countAsterisk).andFilter(C_SCENARIOINDEX, 0).build());
+				.execute(CubeQuery.builder().measure(countAsterisk).andFilter(C_SCENARIOINDEX, 0).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -373,7 +373,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	@Test
 	public void testGroupByScenarioIndex_countAsterisk() {
 		ITabularView view = wrapInCube(forest)
-				.execute(AdhocQuery.builder().measure(countAsterisk).groupByAlso(C_SCENARIOINDEX).build());
+				.execute(CubeQuery.builder().measure(countAsterisk).groupByAlso(C_SCENARIOINDEX).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 

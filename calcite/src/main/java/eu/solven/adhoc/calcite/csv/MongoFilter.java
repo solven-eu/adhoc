@@ -81,7 +81,7 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 		Translator translator = new Translator(implementor.rexBuilder, MongoRules.mongoFieldNames(getRowType()));
 		IAdhocFilter match = translator.translateMatch(condition);
 		// implementor.add(null, match);
-		implementor.adhocQueryBuilder.andFilter(match);
+		implementor.cubeQueryBuilder.andFilter(match);
 	}
 
 	/** Translates {@link RexNode} expressions into MongoDB expression strings. */

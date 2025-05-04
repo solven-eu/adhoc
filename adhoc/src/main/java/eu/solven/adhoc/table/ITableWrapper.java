@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -36,7 +36,10 @@ import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
 /**
- * Wraps a database (actually storing data for {@link IAdhocQuery}) to be queried by {@link IAdhocQuery}.
+ * Wraps a database (actually storing data for {@link ICubeQuery}) to be queried by {@link ICubeQuery}.
+ * 
+ * Any system able to answer a query similar to `SELECT x, SUM(x') GROUP BY y WHERE z` can be easily wrapped as a
+ * ITableWrapper. A fraction of such systems may be also able to return granular rows, enabling drill-through queries.
  * 
  * @author Benoit Lacelle
  *

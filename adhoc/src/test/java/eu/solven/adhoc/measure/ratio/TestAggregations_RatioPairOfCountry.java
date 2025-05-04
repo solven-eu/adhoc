@@ -40,7 +40,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -88,7 +88,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -100,7 +100,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testFR() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("country", "FR").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("country", "FR").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
@@ -117,7 +117,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testWildcardCountry() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").groupByAlso("country").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").groupByAlso("country").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
@@ -137,7 +137,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testParis() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").andFilter("city", "Paris").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -149,7 +149,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testWildcardCountry_Paris() {
-		AdhocQuery adhocQuery = AdhocQuery.builder()
+		CubeQuery adhocQuery = CubeQuery.builder()
 				.measure("FRoverUS")
 				.groupByAlso("country")
 				.andFilter("city", "Paris")
@@ -170,7 +170,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testUS() {
-		AdhocQuery adhocQuery = AdhocQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").build();
 		ITabularView output = cube.execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -188,7 +188,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 		{
-			AdhocQuery adhocQuery = AdhocQuery.builder().measure("FRoverUS").explain(true).build();
+			CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").explain(true).build();
 			cube.execute(adhocQuery);
 		}
 

@@ -28,8 +28,8 @@ import java.util.NavigableMap;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Singular;
@@ -38,7 +38,7 @@ import lombok.extern.jackson.Jacksonized;
 
 /**
  * A schema describing metadata for a set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and
- * {@link IAdhocQuery}.
+ * {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
  */
@@ -57,7 +57,7 @@ public class EndpointSchemaMetadata {
 	NavigableMap<String, CubeSchemaMetadata> cubes;
 
 	@Singular
-	NavigableMap<String, AdhocQuery> queries;
+	NavigableMap<String, CubeQuery> queries;
 
 	@Singular
 	NavigableMap<String, CustomMarkerMetadata> customMarkers;

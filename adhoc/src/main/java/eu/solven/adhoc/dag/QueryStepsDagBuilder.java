@@ -39,7 +39,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,7 +53,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	final IOperatorsFactory operatorsFactory;
 	final String table;
-	final IAdhocQuery query;
+	final ICubeQuery query;
 
 	final Set<AdhocQueryStep> roots = new HashSet<>();
 
@@ -69,7 +69,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	// Holds the querySteps which underlying steps are processed
 	final Set<AdhocQueryStep> processed = new HashSet<>();
 
-	public QueryStepsDagBuilder(IOperatorsFactory operatorsFactory, String cube, IAdhocQuery query) {
+	public QueryStepsDagBuilder(IOperatorsFactory operatorsFactory, String cube, ICubeQuery query) {
 		this.operatorsFactory = operatorsFactory;
 		this.table = cube;
 		this.query = query;

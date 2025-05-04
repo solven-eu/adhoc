@@ -53,7 +53,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 /**
  * Relational expression representing a scan of a table in a Mongo data source.
@@ -107,7 +107,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 		final Expression table =
 				list.append("table", adhocImplementor.table.getExpression(AdhocCalciteTable.MongoQueryable.class));
 		// List<String> opList = mongoImplementor.list.rightList();
-		AdhocQuery adhocQuery = adhocImplementor.adhocQueryBuilder.build();
+		CubeQuery adhocQuery = adhocImplementor.cubeQueryBuilder.build();
 		String queryAsString;
 		try {
 			queryAsString = new ObjectMapper().writeValueAsString(adhocQuery);

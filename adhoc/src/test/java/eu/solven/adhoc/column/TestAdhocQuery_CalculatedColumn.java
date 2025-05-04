@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAdhocQuery_CalculatedColumn extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -54,7 +54,7 @@ public class TestAdhocQuery_CalculatedColumn extends ADagTest implements IAdhocT
 
 	@Test
 	public void test_groupBy() {
-		ITabularView view = cube.execute(AdhocQuery.builder()
+		ITabularView view = cube.execute(CubeQuery.builder()
 				.measure("k1")
 				.groupByAlso(CalculatedColumn.builder()
 						.name("custom")

@@ -29,7 +29,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAdhocQueryEngine extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -41,7 +41,7 @@ public class TestAdhocQueryEngine extends ADagTest implements IAdhocTestConstant
 	public void testConflictingNames() {
 		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
 
-		Assertions.assertThatThrownBy(() -> cube.execute(AdhocQuery.builder().measure(k1Sum, k1Max).build()))
+		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
 	}

@@ -31,8 +31,8 @@ import org.assertj.core.api.Assertions;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
-import eu.solven.adhoc.query.cube.AdhocQuery.AdhocQueryBuilder;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.CubeQuery.CubeQueryBuilder;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;
@@ -82,13 +82,13 @@ public class AdhocQueryStepDefs {
 
 	@When("Query measure={word} debug={word}")
 	public void aUserPublishANewKata(String measure, String debug) {
-		AdhocQueryBuilder queryBuilder = AdhocQuery.builder().measure(measure);
+		CubeQuery.CubeQueryBuilder queryBuilder = CubeQuery.builder().measure(measure);
 
 		if (Boolean.valueOf(debug)) {
 			queryBuilder.debug(true);
 		}
 
-		AdhocQuery query = queryBuilder.build();
+		CubeQuery query = queryBuilder.build();
 
 		try {
 			tabularView = aDagTest.engine.executeUnsafe(query, aDagTest.forest, aDagTest.table);

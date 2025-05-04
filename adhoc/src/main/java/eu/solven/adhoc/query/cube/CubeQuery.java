@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -57,14 +56,14 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * Simple {@link IAdhocQuery}, where the filter is an AND condition.
+ * Simple {@link ICubeQuery}, where the filter is an AND condition.
  *
  * @author Benoit Lacelle
  */
 @Value
 @Builder
 @Jacksonized
-public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptions {
+public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@NonNull
 	@Default
@@ -80,30 +79,9 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 	@Default
 	Object customMarker = null;
 
-	// // If true, will print a log of debug information
-	// @Default
-	// boolean debug = false;
-	// // If true, will print details about the query plan
-	// @Default
-	// boolean explain = false;
-
 	@NonNull
 	@Singular
 	ImmutableSet<IQueryOption> options;
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	@JsonIgnore
-	public boolean isDebug() {
-		return options.contains(StandardQueryOptions.DEBUG);
-	}
-
-	@Deprecated(since = "Use .getOptions()")
-	@Override
-	@JsonIgnore
-	public boolean isExplain() {
-		return options.contains(StandardQueryOptions.EXPLAIN);
-	}
 
 	@Override
 	public Optional<?> optCustomMarker() {
@@ -115,12 +93,12 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		return measures;
 	}
 
-	public static class AdhocQueryBuilder {
+	public static class CubeQueryBuilder {
 		// @Singular
 		ImmutableSet<IMeasure> measures = ImmutableSet.of();
 
 		// https://github.com/projectlombok/lombok/pull/3193
-		public AdhocQueryBuilder measure(String firstName, String... moreNames) {
+		public CubeQueryBuilder measure(String firstName, String... moreNames) {
 			Lists.asList(firstName, moreNames).forEach(measureName -> {
 				this.measure(ReferencedMeasure.ref(measureName));
 			});
@@ -136,7 +114,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		 *            referencing measures in the {@link IMeasureForest}
 		 * @return
 		 */
-		public AdhocQueryBuilder measureNames(Collection<String> measureNames) {
+		public CubeQueryBuilder measureNames(Collection<String> measureNames) {
 			measureNames.stream().map(ReferencedMeasure::ref).forEach(this::measure);
 
 			return this;
@@ -152,7 +130,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		 * @param more
 		 * @return
 		 */
-		public AdhocQueryBuilder measure(IMeasure first, IMeasure... more) {
+		public CubeQueryBuilder measure(IMeasure first, IMeasure... more) {
 			return measures(Lists.asList(first, more));
 		}
 
@@ -165,7 +143,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		 * @param measures
 		 * @return
 		 */
-		public AdhocQueryBuilder measures(Collection<? extends IMeasure> measures) {
+		public CubeQueryBuilder measures(Collection<? extends IMeasure> measures) {
 			this.measures =
 					Stream.concat(this.measures.stream(), measures.stream()).collect(ImmutableSet.toImmutableSet());
 
@@ -178,7 +156,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		 * @param filter
 		 * @return the builder
 		 */
-		public AdhocQueryBuilder andFilter(IAdhocFilter filter) {
+		public CubeQueryBuilder andFilter(IAdhocFilter filter) {
 			filter(AndFilter.and(build().getFilter(), filter));
 
 			return this;
@@ -191,11 +169,11 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 		 * @param value
 		 * @return the builder
 		 */
-		public AdhocQueryBuilder andFilter(String column, Object value) {
+		public CubeQueryBuilder andFilter(String column, Object value) {
 			return andFilter(ColumnFilter.builder().column(column).matching(value).build());
 		}
 
-		public AdhocQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
+		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
 			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
 
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
@@ -207,17 +185,17 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 			return this;
 		}
 
-		public AdhocQueryBuilder groupByAlso(IAdhocColumn firstGroupBy, IAdhocColumn... moreGroupBys) {
+		public CubeQueryBuilder groupByAlso(IAdhocColumn firstGroupBy, IAdhocColumn... moreGroupBys) {
 			return groupByAlso(Lists.asList(firstGroupBy, moreGroupBys));
 		}
 
-		public AdhocQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
+		public CubeQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
 			groupByAlso(Lists.asList(firstGroupBy, moreGroupBys).stream().map(ReferencedColumn::ref).toList());
 
 			return this;
 		}
 
-		public AdhocQueryBuilder customMarker(Object custom) {
+		public CubeQueryBuilder customMarker(Object custom) {
 			if (custom instanceof Optional<?> optional) {
 				// Custom variable is either a not-Optional or a null
 				// `optCustomMarker` would wrap in an Optional
@@ -230,7 +208,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 			return this;
 		}
 
-		public AdhocQueryBuilder debug(boolean isDebug) {
+		public CubeQueryBuilder debug(boolean isDebug) {
 			if (isDebug) {
 				return this.option(StandardQueryOptions.DEBUG);
 			} else {
@@ -239,7 +217,7 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 			}
 		}
 
-		public AdhocQueryBuilder explain(boolean isExplain) {
+		public CubeQueryBuilder explain(boolean isExplain) {
 			if (isExplain) {
 				return this.option(StandardQueryOptions.EXPLAIN);
 			} else {
@@ -250,29 +228,30 @@ public class AdhocQuery implements IAdhocQuery, IHasCustomMarker, IHasQueryOptio
 	}
 
 	/**
-	 * BEWARE This may lose additional information not fitting into an {@link AdhocQuery}, like the {@link AdhocQueryId}
+	 * BEWARE This may lose additional information not fitting into an {@link CubeQuery}, like the {@link AdhocQueryId}
 	 * of a {@link AdhocSubQuery}.
 	 * 
 	 * @param query
 	 * @return
 	 */
-	public static AdhocQueryBuilder edit(IWhereGroupByQuery query) {
-		AdhocQueryBuilder builder = AdhocQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
+	public static CubeQueryBuilder edit(IWhereGroupByQuery query) {
+		CubeQueryBuilder builder = CubeQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
 
 		if (query instanceof IHasMeasures hasMeasures) {
 			builder.measures(hasMeasures.getMeasures());
-		}
-		if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-			builder.option(StandardQueryOptions.EXPLAIN);
-		}
-		if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-			builder.option(StandardQueryOptions.DEBUG);
 		}
 		if (query instanceof IHasCustomMarker hasCustomMarker) {
 			builder.customMarker(hasCustomMarker.getCustomMarker());
 		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
+		} else {
+			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
+				builder.option(StandardQueryOptions.EXPLAIN);
+			}
+			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
+				builder.option(StandardQueryOptions.DEBUG);
+			}
 		}
 
 		return builder;

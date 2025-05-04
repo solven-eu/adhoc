@@ -33,15 +33,15 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Wraps an {@link IAdhocQuery} which is derived from a parent query.
+ * Wraps an {@link ICubeQuery} which is derived from a parent query.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
-public final class AdhocSubQuery implements IAdhocQuery, IHasParentQueryId {
+public final class AdhocSubQuery implements ICubeQuery, IHasParentQueryId {
 	@NonNull
-	final IAdhocQuery subQuery;
+	final ICubeQuery subQuery;
 	@NonNull
 	final AdhocQueryId parentQueryId;
 
@@ -63,16 +63,6 @@ public final class AdhocSubQuery implements IAdhocQuery, IHasParentQueryId {
 	@Override
 	public Object getCustomMarker() {
 		return subQuery.getCustomMarker();
-	}
-
-	@Override
-	public boolean isExplain() {
-		return subQuery.isExplain();
-	}
-
-	@Override
-	public boolean isDebug() {
-		return subQuery.isDebug();
 	}
 
 	@Override

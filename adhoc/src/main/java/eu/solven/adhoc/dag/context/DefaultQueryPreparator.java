@@ -30,9 +30,9 @@ import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -56,8 +56,8 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 	public ExecutingQueryContext prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
 			IColumnsManager columnsManager,
-			IAdhocQuery rawQuery) {
-		IAdhocQuery preparedQuery = combineWithImplicit(rawQuery);
+			ICubeQuery rawQuery) {
+		ICubeQuery preparedQuery = combineWithImplicit(rawQuery);
 		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
 
 		return ExecutingQueryContext.builder()
@@ -69,12 +69,12 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.build();
 	}
 
-	protected IAdhocQuery combineWithImplicit(IAdhocQuery rawQuery) {
+	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {
 		IAdhocFilter preprocessedFilter =
 				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
 
 		Set<IQueryOption> addedOptions = implicitOptions.getOptions(rawQuery);
-		AdhocQuery query = AdhocQuery.edit(rawQuery).filter(preprocessedFilter).options(addedOptions).build();
+		CubeQuery query = CubeQuery.edit(rawQuery).filter(preprocessedFilter).options(addedOptions).build();
 
 		if (rawQuery instanceof AdhocSubQuery subQuery) {
 			return subQuery.toBuilder().subQuery(query).build();

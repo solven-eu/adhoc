@@ -31,9 +31,9 @@ import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
 import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.cube.AdhocQuery;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -51,7 +51,7 @@ public class TestDefaultQueryPreparator {
 		DefaultQueryPreparator queryPreparator =
 				DefaultQueryPreparator.builder().implicitFilter(f -> ColumnFilter.isEqualTo("c", "v")).build();
 
-		IAdhocQuery query = AdhocQuery.builder().measure("m").build();
+		ICubeQuery query = CubeQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =
 				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from("someCube", query)).build();
 

@@ -31,7 +31,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import eu.solven.adhoc.dag.context.IImplicitFilter;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -46,7 +46,7 @@ public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 	public static final String ROLE_EUR = "EUR";
 
 	@Override
-	public IAdhocFilter getImplicitFilter(IAdhocQuery query) {
+	public IAdhocFilter getImplicitFilter(ICubeQuery query) {
 		final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		return filterGivenAuth(authentication);
 	}

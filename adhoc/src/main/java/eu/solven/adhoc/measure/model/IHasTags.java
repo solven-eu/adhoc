@@ -30,6 +30,7 @@ import java.util.Set;
  * @author Benoit Lacelle
  */
 public interface IHasTags {
+	String TAG_DEBUG = "debug";
 
 	/**
 	 * Tags are useful for various operations, like documentation (e.g. coloring some graphviz by tag).

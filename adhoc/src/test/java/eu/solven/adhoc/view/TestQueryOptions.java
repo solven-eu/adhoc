@@ -34,7 +34,7 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
@@ -49,14 +49,14 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	public void testUnknownMeasuresAreEmpty_direct() {
 		forest.addMeasure(k1Sum);
 
-		AdhocQuery query = AdhocQuery.builder().measure("k2").build();
+		CubeQuery query = CubeQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
 		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		ITabularView output = engine.executeUnsafe(
-				AdhocQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
+				CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
 				forest,
 				table,
 				ColumnsManager.builder().build());
@@ -69,14 +69,14 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1PlusK2AsExpr);
 
-		AdhocQuery query = AdhocQuery.builder().measure(k1PlusK2AsExpr).build();
+		CubeQuery query = CubeQuery.builder().measure(k1PlusK2AsExpr).build();
 
 		// By default, an exception is thrown
 		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		ITabularView output = engine.executeUnsafe(
-				AdhocQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
+				CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
 				forest,
 				table,
 				ColumnsManager.builder().build());

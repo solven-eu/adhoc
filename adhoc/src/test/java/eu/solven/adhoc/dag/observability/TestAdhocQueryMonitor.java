@@ -42,7 +42,7 @@ import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAdhocQueryMonitor extends ADagTest {
 	public static class AdhocQueryMonitorGuava extends AdhocQueryMonitor {
@@ -110,7 +110,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 
 		Assertions.assertThat(hasCheckWhileRunning).isFalse();
 
-		ITabularView view = cube.execute(AdhocQuery.builder().measure("latch").build());
+		ITabularView view = cube.execute(CubeQuery.builder().measure("latch").build());
 		Assertions.assertThat(view.isEmpty()).isTrue();
 
 		Assertions.assertThat(hasCheckWhileRunning).isTrue();
@@ -140,7 +140,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 		Assertions.assertThat(queryMonitor.slowestQueried).isEmpty();
 
 		// fast
-		ITabularView viewFast = cube.execute(AdhocQuery.builder().measure("latch").build());
+		ITabularView viewFast = cube.execute(CubeQuery.builder().measure("latch").build());
 		Assertions.assertThat(viewFast.isEmpty()).isTrue();
 
 		Assertions.assertThat(queryMonitor.queryToStart).isEmpty();
@@ -149,7 +149,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 				.hasSize(0);
 
 		// slow
-		ITabularView viewSlow = cube.execute(AdhocQuery.builder().measure("latch").groupByAlso("color").build());
+		ITabularView viewSlow = cube.execute(CubeQuery.builder().measure("latch").groupByAlso("color").build());
 		Assertions.assertThat(viewSlow.isEmpty()).isTrue();
 
 		Assertions.assertThat(queryMonitor.queryToStart).isEmpty();

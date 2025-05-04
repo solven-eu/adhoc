@@ -204,15 +204,10 @@ public class MultitypeArray implements IMultitypeArray {
 
 	@Override
 	public void replaceAllObjects(Function<Object, Object> function) {
-		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
-			// nothing
-		} else if (valuesType == IMultitypeConstants.MASK_LONG) {
-			// nothing
-		} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
-			// nothing
-		} else {
+		if (valuesType == IMultitypeConstants.MASK_OBJECT) {
 			valuesO.replaceAll(function::apply);
 		}
+		// else no object
 	}
 
 }

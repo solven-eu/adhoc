@@ -51,15 +51,6 @@ public interface IValueReceiver {
 		onObject(v);
 	}
 
-	/**
-	 * If this holds a {@link CharSequence}, override this optional method to receive the {@link CharSequence}
-	 * 
-	 * @param v
-	 */
-	default void onCharsequence(CharSequence v) {
-		onObject(v);
-	}
-
 	void onObject(Object v);
 
 }

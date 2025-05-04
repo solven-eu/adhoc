@@ -40,7 +40,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -88,7 +88,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 		// SUM(0..N) = N * (N-1) / 2
 		long sum = LongMath.checkedMultiply(maxCardinality, maxCardinality - 1) / 2;
 
-		ITabularView output = cube.execute(AdhocQuery.builder().measure(timesN).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(timesN).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +102,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
 		ITabularView output =
-				cube.execute(AdhocQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
+				cube.execute(CubeQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

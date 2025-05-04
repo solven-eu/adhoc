@@ -34,10 +34,8 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
-import lombok.ToString;
 
 @Builder
-@ToString
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	final Map<String, ?> slice;
@@ -68,8 +66,6 @@ public class TabularRecordOverMaps implements ITabularRecord {
 			return valueConsumer -> valueConsumer.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(aggregate)) {
 			return valueConsumer -> valueConsumer.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
-		} else if (aggregate instanceof CharSequence charsequence) {
-			return valueConsumer -> valueConsumer.onCharsequence(charsequence);
 		} else {
 			return valueConsumer -> valueConsumer.onObject(aggregate);
 		}
@@ -123,4 +119,24 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(transcodedGroupBys).build();
 	}
 
+	@Override
+	public String toString() {
+		return TabularRecordOverMaps.toString(this);
+	}
+
+	public static String toString(ITabularRecord tabularRecord) {
+		StringBuilder string = new StringBuilder();
+
+		string.append("slice:{");
+		tabularRecord.groupByKeySet().forEach(column -> {
+			string.append(column).append("=").append(tabularRecord.getGroupBy(column)).append(", ");
+		});
+		string.append("} aggregates:{");
+		tabularRecord.aggregateKeySet().forEach(aggregateName -> {
+			string.append(aggregateName).append("=").append(tabularRecord.getAggregate(aggregateName)).append(", ");
+		});
+		string.append("}");
+
+		return string.toString();
+	}
 }

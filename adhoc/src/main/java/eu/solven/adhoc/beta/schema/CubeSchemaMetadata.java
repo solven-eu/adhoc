@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IAdhocQuery;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -34,7 +34,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A schema describing metadata for a {@link ICubeWrapper} and {@link IAdhocQuery}.
+ * A schema describing metadata for a {@link ICubeWrapper} and {@link ICubeQuery}.
  * 
  * @author Benoit Lacelle
  */
@@ -51,7 +51,7 @@ public class CubeSchemaMetadata {
 
 	@Singular
 	@NonNull
-	ImmutableMap<String, IAdhocQuery> queries;
+	ImmutableMap<String, ICubeQuery> queries;
 
 	@Singular
 	@NonNull

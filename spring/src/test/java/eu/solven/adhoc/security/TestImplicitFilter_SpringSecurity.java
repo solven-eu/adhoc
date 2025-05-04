@@ -42,7 +42,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**
@@ -88,7 +88,7 @@ public class TestImplicitFilter_SpringSecurity {
 	@Test
 	@WithMockUser(roles = { SpringSecurityAdhocImplicitFilter.ROLE_ADMIN })
 	public void testAdmin() {
-		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(AdhocQuery.builder().measure("k1").build()));
+		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(CubeQuery.builder().measure("k1").build()));
 
 		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)
@@ -98,7 +98,7 @@ public class TestImplicitFilter_SpringSecurity {
 	@Test
 	@WithMockUser(roles = { SpringSecurityAdhocImplicitFilter.ROLE_EUR })
 	public void testEUR() {
-		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(AdhocQuery.builder().measure("k1").build()));
+		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(CubeQuery.builder().measure("k1").build()));
 
 		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)
@@ -108,7 +108,7 @@ public class TestImplicitFilter_SpringSecurity {
 	@Test
 	@WithMockUser(roles = { "color=red" })
 	public void testColorRed() {
-		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(AdhocQuery.builder().measure("k1").build()));
+		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(CubeQuery.builder().measure("k1").build()));
 
 		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)
@@ -118,7 +118,7 @@ public class TestImplicitFilter_SpringSecurity {
 	@Test
 	@WithMockUser(roles = { "color=red", "color=blue" })
 	public void testColorRedBlue() {
-		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(AdhocQuery.builder().measure("k1").build()));
+		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(CubeQuery.builder().measure("k1").build()));
 
 		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)
@@ -128,7 +128,7 @@ public class TestImplicitFilter_SpringSecurity {
 	@Test
 	@WithMockUser(roles = { SpringSecurityAdhocImplicitFilter.ROLE_EUR, "color=red", "color=blue" })
 	public void testEURColorRedBlue() {
-		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(AdhocQuery.builder().measure("k1").build()));
+		MapBasedTabularView view = MapBasedTabularView.load(aqw.execute(CubeQuery.builder().measure("k1").build()));
 
 		Assertions.assertThat(view.getCoordinatesToValues())
 				.hasSize(1)

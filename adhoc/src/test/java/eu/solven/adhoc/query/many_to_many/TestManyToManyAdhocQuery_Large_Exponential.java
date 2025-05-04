@@ -50,7 +50,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.query.cube.AdhocQuery;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.NonNull;
@@ -220,7 +220,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).build());
+		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -237,7 +237,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallElement).build());
+				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallElement).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -252,7 +252,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).build());
+				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -265,7 +265,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void test_GroupByElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, smallGroup)
@@ -283,7 +283,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void test_GroupByElement_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of(smallGroup, largeGroup))
@@ -304,7 +304,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 	public void test_GroupByGroup_FilterOneElement() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(AdhocQuery.builder()
+		ITabularView output = aqw.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallElement)
@@ -325,7 +325,7 @@ public class TestManyToManyAdhocQuery_Large_Exponential extends ADagTest impleme
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(AdhocQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).build());
+				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
