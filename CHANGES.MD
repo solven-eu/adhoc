@@ -2,6 +2,12 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.7]
+### Added
+- `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`
+
+### Changed
+- `AdhocQuery` is renamed `CubeQuery`
 
 ## [0.0.6]
 ### Fixed

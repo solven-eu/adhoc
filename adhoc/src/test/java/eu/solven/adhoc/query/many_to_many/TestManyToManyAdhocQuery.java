@@ -326,8 +326,8 @@ public class TestManyToManyAdhocQuery extends ADagTest implements IAdhocTestCons
 	public void test_NoGroupBy_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
-				CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, Set.of("G8", "G20")).build());
+		ITabularView output = aqw
+				.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, Set.of("G8", "G20")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

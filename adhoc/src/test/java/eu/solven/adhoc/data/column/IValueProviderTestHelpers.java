@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.data.column;
 
-/**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
- * 
- * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
- * 
- * @author Benoit Lacelle
- * @see IValueProvider
- */
-@FunctionalInterface
-public interface IValueReceiver {
+import java.util.concurrent.atomic.AtomicLong;
 
-	/**
-	 * If this holds a long, override this optional method to receive the primitive long
-	 * 
-	 * @param v
-	 */
-	default void onLong(long v) {
-		onObject(v);
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+
+public interface IValueProviderTestHelpers {
+	static long getLong(IValueProvider valueProvider) {
+		AtomicLong longRef = new AtomicLong(Long.MAX_VALUE);
+
+		valueProvider.acceptConsumer(new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				if (v == Long.MAX_VALUE) {
+					throw new IllegalArgumentException("requireOnLong does not handle Long.MAX_VALUE");
+				}
+
+				longRef.set(v);
+			}
+
+			@Override
+			public void onObject(Object v) {
+				throw new IllegalArgumentException("requireOnLong requires onLong and not onObject");
+			}
+		});
+
+		return longRef.get();
 	}
-
-	/**
-	 * If this holds a double, override this optional method to receive the primitive double
-	 * 
-	 * @param v
-	 */
-	default void onDouble(double v) {
-		onObject(v);
-	}
-
-	void onObject(Object v);
-
 }

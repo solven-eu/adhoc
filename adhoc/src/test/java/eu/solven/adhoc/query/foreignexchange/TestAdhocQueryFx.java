@@ -148,8 +148,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -170,8 +169,8 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = cube
-				.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		ITabularView output =
+				cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -274,7 +273,7 @@ public class TestAdhocQueryFx extends ADagTest implements IAdhocTestConstants {
 								    |  size=2 duration=123ms
 								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
 								        \\  size=2 duration=123ms
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=AdhocQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
+								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(4);
 	}

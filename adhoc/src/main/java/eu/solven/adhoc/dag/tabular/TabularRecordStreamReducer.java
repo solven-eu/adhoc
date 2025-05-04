@@ -144,13 +144,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					}
 
 					@Override
-					public void onCharsequence(CharSequence v) {
-						if (v != null) {
-							valueConsumer.onCharsequence(v);
-						}
-					}
-
-					@Override
 					public void onObject(Object v) {
 						if (v != null) {
 							valueConsumer.onObject(v);

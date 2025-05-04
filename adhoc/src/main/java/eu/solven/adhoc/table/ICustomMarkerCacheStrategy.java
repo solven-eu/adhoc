@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.table;
+
+import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.table.cache.CachingTableWrapper;
 
 /**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
+ * Helps managing how a customMarker would impact the cache.
  * 
- * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
+ * Typical usage is in {@link ITableWrapper} and {@link CachingTableWrapper}: a typical cache key is
+ * {@link TableQueryV2}, but the received cutomerMarker is generally without impact.
  * 
  * @author Benoit Lacelle
- * @see IValueProvider
  */
-@FunctionalInterface
-public interface IValueReceiver {
-
+public interface ICustomMarkerCacheStrategy {
 	/**
-	 * If this holds a long, override this optional method to receive the primitive long
 	 * 
-	 * @param v
+	 * @param customMarker
+	 *            some customMarker, typically provided by the user
+	 * @return a potentially simpler customMarker, used in the key of related cache.
 	 */
-	default void onLong(long v) {
-		onObject(v);
-	}
-
-	/**
-	 * If this holds a double, override this optional method to receive the primitive double
-	 * 
-	 * @param v
-	 */
-	default void onDouble(double v) {
-		onObject(v);
-	}
-
-	void onObject(Object v);
-
+	Object restrictToCacheImpact(Object customMarker);
 }

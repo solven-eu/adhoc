@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.data.row;
 
-/**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
- * 
- * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
- * 
- * @author Benoit Lacelle
- * @see IValueProvider
- */
-@FunctionalInterface
-public interface IValueReceiver {
+import java.util.Map;
 
-	/**
-	 * If this holds a long, override this optional method to receive the primitive long
-	 * 
-	 * @param v
-	 */
-	default void onLong(long v) {
-		onObject(v);
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.table.transcoder.IdentityReversibleTranscoder;
+
+public class TestHideAggregatorsTabularRecord {
+	@Test
+	public void testNominalCase() {
+		TabularRecordOverMaps underlying = TabularRecordOverMaps.builder()
+				.slice(Map.of("c", "c1"))
+				.aggregate("k1", 123)
+				.aggregate("k2", 234)
+				.build();
+		HideAggregatorsTabularRecord record =
+				HideAggregatorsTabularRecord.builder().decorated(underlying).keptAggregate("k1").build();
+
+		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
+
+		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123).hasSize(2);
+
+		// The trailing `, ` is a minor bug
+		Assertions.assertThat(transcoded.toString()).isEqualTo("slice:{c=c1, } aggregates:{k1=123, }");
 	}
-
-	/**
-	 * If this holds a double, override this optional method to receive the primitive double
-	 * 
-	 * @param v
-	 */
-	default void onDouble(double v) {
-		onObject(v);
-	}
-
-	void onObject(Object v);
-
 }

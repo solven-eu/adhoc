@@ -33,6 +33,9 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -40,7 +43,9 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 
 public class TestJooqTableQueryFactory {
 	static {
@@ -210,6 +215,49 @@ public class TestJooqTableQueryFactory {
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") "k", "c", "d" from "someTableName" where "k" is not null group by "c", "d"
+				""".trim());
+	}
+
+	@Test
+	public void testFilteredAggregator() {
+		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" where "k" is not null group by ()
+				""".trim());
+	}
+
+	@Test
+	public void testMinMax() {
+		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())
+				.aggregator(Aggregator.builder().name("kMax").aggregationKey(MaxAggregation.KEY).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" where ("kMax" is not null or "kMin" is not null) group by ()
+								"""
+								.trim());
+	}
+
+	@Test
+	public void testRank() {
+		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder()
+						.name("kRank")
+						.aggregationKey(RankAggregation.KEY)
+						.aggregationOption(RankAggregation.P_RANK, 3)
+						.aggregationOption(RankAggregation.P_ORDER, "ASC")
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select arg_min("kRank", "kRank", 3) "kRank" from "someTableName" where "kRank" is not null group by ()
 				""".trim());
 	}
 

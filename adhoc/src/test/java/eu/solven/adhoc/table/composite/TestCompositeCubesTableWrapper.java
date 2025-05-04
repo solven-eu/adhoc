@@ -542,14 +542,14 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										    |  size=1 duration=123ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 										        \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+										Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
 										#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 										|  No cost info
 										\\-- #1 m=table2_k_minus3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
 										    |  size=1 duration=123ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 										        \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=ab34d2f9, cube=composite))
+										Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
 										#0 s=composite id=00000000-0000-0000-0000-000000000000
 										|  No cost info
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal
@@ -562,7 +562,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										        |  size=1 duration=123ms
 										        \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
 										            \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=composite measures=composite query=AdhocQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
+										Executed status=OK duration=PT0.123S on table=composite measures=composite query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
 
 				Assertions.assertThat(messages).hasSize(15);
 
@@ -618,10 +618,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 					.isInstanceOf(IllegalStateException.class)
 					.hasRootCauseMessage("Simulating some exception");
 
-			ITabularView view = compositeCube.execute(CubeQuery.builder()
-					.measure("k1")
-					.option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)
-					.build());
+			ITabularView view = compositeCube.execute(
+					CubeQuery.builder().measure("k1").option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

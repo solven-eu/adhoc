@@ -33,8 +33,6 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.dag.ICanResolveMeasure;
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -88,7 +86,7 @@ public class ExecutingQueryContext implements IHasQueryOptions, ICanResolveMeasu
 	// to rely on the commonPool.
 	@NonNull
 	@Default
-	ExecutorService fjp = AdhocUnsafe.adhocCommonPool; // ForkJoinPool.commonPool();
+	ExecutorService fjp = AdhocUnsafe.adhocCommonPool;
 
 	/**
 	 * Once turned to nut-null, can not be nulled again.

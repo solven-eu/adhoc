@@ -290,11 +290,8 @@ public class TestManyToManyNDAdhocQuery extends ADagTest implements IAdhocTestCo
 	public void test_GroupByGroup_FilterGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
-				.measure(dispatchedMeasure)
-				.groupByAlso(cGroup)
-				.andFilter(cGroup, "yellow")
-				.build());
+		ITabularView output = aqw.execute(
+				CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).andFilter(cGroup, "yellow").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

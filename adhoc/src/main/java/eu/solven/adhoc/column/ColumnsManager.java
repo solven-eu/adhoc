@@ -29,11 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -143,20 +141,16 @@ public class ColumnsManager implements IColumnsManager {
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
 			ITabularRecordStream aggregatedRecordsStream) {
-		// Use a Supplier to open the stream lazily
-		Supplier<Stream<ITabularRecord>> memoized = Suppliers.memoize(aggregatedRecordsStream::records);
-
 		return new ITabularRecordStream() {
 
 			@Override
 			public void close() {
-				// TODO This would open even if it was not closed yet
-				memoized.get().close();
+				aggregatedRecordsStream.close();
 			}
 
 			@Override
 			public Stream<ITabularRecord> records() {
-				return memoized.get()
+				return aggregatedRecordsStream.records()
 						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
 						.map(row -> transcodeTypes(row))
 						.map(row -> transcodeCalculated(transcodingContext, row));

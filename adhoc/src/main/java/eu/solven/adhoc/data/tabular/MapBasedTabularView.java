@@ -42,6 +42,7 @@ import eu.solven.adhoc.measure.aggregation.collection.MapAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 /**
@@ -50,6 +51,7 @@ import lombok.Getter;
  * This is NOT serializable with Jackson. {@link ListBasedTabularView} is a serializable alternative.
  */
 @Builder
+@EqualsAndHashCode
 public class MapBasedTabularView implements ITabularView {
 	@Default
 	@Getter

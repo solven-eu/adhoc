@@ -35,7 +35,8 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 public interface ITabularRecordStream extends AutoCloseable {
 	/**
-	 *
+	 * Only the first call is guaranteed (by interface contract) to succeed.
+	 * 
 	 * @return a {@link Stream} of {@link ITabularRecord}
 	 */
 	Stream<ITabularRecord> records();

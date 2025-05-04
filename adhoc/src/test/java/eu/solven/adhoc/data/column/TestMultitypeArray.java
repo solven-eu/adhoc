@@ -55,4 +55,38 @@ public class TestMultitypeArray {
 		// TODO Should we rather migrate everything to double?
 		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
 	}
+
+	@Test
+	public void testSet_fromNull() {
+		array.add().onObject(null);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
+
+		array.set(0).onLong(123);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
+	}
+
+	@Test
+	public void testSet_long_fromLong() {
+		array.add().onLong(123);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_LONG);
+
+		array.set(0).onLong(123);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_LONG);
+		array.set(0).onLong(234);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_LONG);
+
+		array.add().onLong(345);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_LONG);
+
+		array.add(1).onLong(456);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_LONG);
+
+		// TODO Check `onLong` is called, and not `onObject`
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(array.read(0))).isEqualTo(234L);
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(array.read(1))).isEqualTo(456L);
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(array.read(2))).isEqualTo(345L);
+
+		array.add().onDouble(12.34D);
+		Assertions.assertThat(array.valuesType).isEqualByComparingTo(IMultitypeConstants.MASK_OBJECT);
+	}
 }

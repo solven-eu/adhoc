@@ -160,8 +160,8 @@ public class TestAdhocQueryEngine_Concurrency extends ARawDagTest implements IAd
 		// We expect 1 queries: k1Sum grandTotal
 		phasedTable.getPhasers().bulkRegister(1);
 
-		ITabularView view = cube
-				.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
+		ITabularView view =
+				cube.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

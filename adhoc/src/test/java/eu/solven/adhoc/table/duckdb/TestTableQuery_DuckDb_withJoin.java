@@ -274,8 +274,8 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		forest.addMeasure(countAsterisk);
 
 		{
-			ITabularView result = cube
-					.execute(CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").build());
+			ITabularView result =
+					cube.execute(CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("productId").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -293,8 +293,8 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 		forest.addMeasure(countAsterisk);
 
 		{
-			ITabularView result = cube.execute(
-					CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("c.countryName").build());
+			ITabularView result = cube
+					.execute(CubeQuery.builder().measure(countAsterisk.getName()).groupByAlso("c.countryName").build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

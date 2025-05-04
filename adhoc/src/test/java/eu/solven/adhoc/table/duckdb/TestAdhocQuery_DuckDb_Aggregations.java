@@ -117,8 +117,7 @@ public class TestAdhocQuery_DuckDb_Aggregations extends ADagTest implements IAdh
 				.build();
 		forest.addMeasure(k1Rank2);
 
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").measure(k1Rank2).build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
