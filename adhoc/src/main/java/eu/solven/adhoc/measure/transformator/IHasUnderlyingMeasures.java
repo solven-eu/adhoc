@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.List;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 
 /**
  * For {@link IMeasure} which has underlying measures.

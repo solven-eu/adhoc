@@ -26,8 +26,8 @@ import org.jooq.Name;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

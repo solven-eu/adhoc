@@ -25,10 +25,10 @@ package eu.solven.adhoc.measure.aggregation;
 import java.util.Map;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

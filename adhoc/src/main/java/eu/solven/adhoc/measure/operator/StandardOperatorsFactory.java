@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.measure.operator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

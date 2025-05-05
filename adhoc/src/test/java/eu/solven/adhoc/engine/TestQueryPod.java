@@ -20,29 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.engine.CubeQueryEngine;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * For classes holding an {@link IOperatorsFactory}
- * 
- * @author Benoit Lacelle
- */
-public interface IHasOperatorsFactory {
-	IOperatorsFactory getOperatorsFactory();
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.table.InMemoryTable;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-	/**
-	 * 
-	 * @param o
-	 *            typically a {@link CubeQueryEngine}
-	 * @return an {@link IOperatorsFactory}, a default one if the input does not implement {@link IHasOperatorsFactory}.
-	 */
-	static IOperatorsFactory getOperatorsFactory(Object o) {
-		if (o instanceof IHasOperatorsFactory hasOperatorsFactory) {
-			return hasOperatorsFactory.getOperatorsFactory();
-		} else {
-			return new StandardOperatorsFactory();
-		}
+public class TestQueryPod {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(QueryPod.class).verify();
+	}
+
+	@Test
+	public void testForTable() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		QueryPod queryContext = QueryPod.forTable(table);
+
+		Assertions.assertThat(queryContext.getTable()).isSameAs(table);
 	}
 }

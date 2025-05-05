@@ -23,8 +23,8 @@
 package eu.solven.adhoc.measure.aggregation;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**

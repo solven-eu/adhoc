@@ -29,8 +29,8 @@ import org.springframework.context.annotation.Bean;
 
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatchFactory;
 

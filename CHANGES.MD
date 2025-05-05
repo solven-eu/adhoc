@@ -10,6 +10,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `AdhocQuery` is renamed `CubeQuery`
 - `AdhocQueryEngine` is renamed `CubeQueryEngine`
 - `dag` sub-package is renamed `engine`
+- `ExecutingQueryContext ` is renamed `QueryPod`
 - Improved `JooqSnowflakeSchemaBuilder` to better handle edge cases like fields with a `.` in their name.
 
 ## [0.0.6]

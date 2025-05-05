@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator.column_generator;
 
 import java.util.Optional;
 
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 
 /**
  * Anything which may provide a {@link IColumnGenerator}

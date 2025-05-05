@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.operator;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+public interface IStandardOperators {
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.table.InMemoryTable;
+	/**
+	 * Sum inputs with standard addition. If a NaN is encountered, the aggregate is NaN.
+	 */
+	String SUM = "SUM";
+	/**
+	 * Sum inputs with standard addition. If a NaN is encountered, it is excluded from the aggregation.
+	 */
+	String SAFE_SUM = "SAFE_SUM";
+	/**
+	 * Count the number of considered input records (similarly to SQL)
+	 */
+	String COUNT = "COUNT";
+	/**
+	 * Count the number of cells considered in the query. It helps understanding the granularity of the considered data,
+	 * or the presence/lack of intermediate cubes.
+	 */
+	String CELLCOUNT = "CELLCOUNT";
 
-public class TestExecutingQueryContext {
-	@Test
-	public void testForTable() {
-		InMemoryTable table = InMemoryTable.builder().build();
-		QueryPod queryContext = QueryPod.forTable(table);
+	@Deprecated(since = "avg should be computed as the ratio of SUM / COUNT")
+	String AVG = "AVG";
 
-		Assertions.assertThat(queryContext.getTable()).isSameAs(table);
-	}
 }

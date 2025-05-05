@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.measure.operator;
 
-public interface IStandardOperators {
+import eu.solven.adhoc.engine.CubeQueryEngine;
+
+/**
+ * For classes holding an {@link IOperatorsFactory}
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IHasOperatorsFactory {
+	IOperatorsFactory getOperatorsFactory();
 
 	/**
-	 * Sum inputs with standard addition. If a NaN is encountered, the aggregate is NaN.
+	 * 
+	 * @param o
+	 *            typically a {@link CubeQueryEngine}
+	 * @return an {@link IOperatorsFactory}, a default one if the input does not implement {@link IHasOperatorsFactory}.
 	 */
-	String SUM = "SUM";
-	/**
-	 * Sum inputs with standard addition. If a NaN is encountered, it is excluded from the aggregation.
-	 */
-	String SAFE_SUM = "SAFE_SUM";
-	/**
-	 * Count the number of considered input records (similarly to SQL)
-	 */
-	String COUNT = "COUNT";
-	/**
-	 * Count the number of cells considered in the query. It helps understanding the granularity of the considered data,
-	 * or the presence/lack of intermediate cubes.
-	 */
-	String CELLCOUNT = "CELLCOUNT";
-
-	@Deprecated(since = "avg should be computed as the ratio of SUM / COUNT")
-	String AVG = "AVG";
-
+	static IOperatorsFactory getOperatorsFactory(Object o) {
+		if (o instanceof IHasOperatorsFactory hasOperatorsFactory) {
+			return hasOperatorsFactory.getOperatorsFactory();
+		} else {
+			return new StandardOperatorsFactory();
+		}
+	}
 }
