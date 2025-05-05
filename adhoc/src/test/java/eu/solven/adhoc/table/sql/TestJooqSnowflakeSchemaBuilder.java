@@ -55,12 +55,12 @@ public class TestJooqSnowflakeSchemaBuilder {
 								""".trim());
 
 		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
-				.hasSize(1)
-				.containsEntry("baseA", "\"base\".\"baseA\"");
+				.containsEntry("baseA", "\"base\".\"baseA\"")
+				.hasSize(1);
 	}
 
 	@Test
-	public void testSnowflake_fieldWithDot() {
+	public void testSnowflake_explicitForeignKeyWithDot() {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
@@ -79,9 +79,57 @@ public class TestJooqSnowflakeSchemaBuilder {
 								                """.trim());
 
 		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
-				.hasSize(2)
 				.containsEntry("baseA", "\"base\".\"baseA\"")
-				// TODO This second entry is faulty
-				.containsEntry("joined1.baseA", "\"base\".\"joined1.baseA\"");
+				.hasSize(1);
+	}
+
+	@Test
+	public void testSnowflake_fieldWithWithDot() {
+		JooqSnowflakeSchemaBuilder snowflakeBuilder =
+				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+
+		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")));
+		snowflakeBuilder
+				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry("\"ill_name.baseA\"", "joined2A")));
+
+		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
+
+		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
+				baseTable "base"
+				  left outer join joinedTable1 "joined1"
+				    on "base"."baseA" = "joined1"."joined1A"
+				  left outer join joinedTable2 "joined2"
+				    on "base"."ill_name.baseA" = "joined2"."joined2A"
+								                """.trim());
+
+		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+				.containsEntry("baseA", "\"base\".\"baseA\"")
+				.containsEntry("ill_name.baseA", "\"base\".\"ill_name.baseA\"")
+				.hasSize(2);
+	}
+
+	// Weird pathes can be prefixed with `;`
+	@Test
+	public void testSnowflake_weirdPath() {
+		JooqSnowflakeSchemaBuilder snowflakeBuilder =
+				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+
+		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")));
+		snowflakeBuilder
+				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry(";ill_name.baseA''", "joined2A")));
+
+		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
+
+		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
+				baseTable "base"
+				  left outer join joinedTable1 "joined1"
+				    on "base"."baseA" = "joined1"."joined1A"
+				  left outer join joinedTable2 "joined2"
+				    on ill_name.baseA'' = "joined2"."joined2A"
+								                """.trim());
+
+		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+				.containsEntry("baseA", "\"base\".\"baseA\"")
+				.hasSize(1);
 	}
 }

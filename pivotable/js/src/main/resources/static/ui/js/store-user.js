@@ -212,7 +212,7 @@ export const useUserStore = defineStore("user", {
 		 * Contrary to `loadUser`, this will not trigger the loading of login state and userInfo on each call. It is especially userful not to have a spike of `loadUser` at startup.
 		 */
 		async initializeUser() {
-			if (!!this.initializeUserPromise) {
+			if (this.initializeUserPromise) {
 				console.log(`Skip initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);
 			} else {
 				console.log(`Doing initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);

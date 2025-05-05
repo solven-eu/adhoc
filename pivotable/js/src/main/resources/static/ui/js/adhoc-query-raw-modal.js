@@ -80,15 +80,15 @@ export default {
 		const copyToClipboard = function () {
 			const jsonValue = isEditing.value ? editedJson.value : JSON.stringify(props.queryJson);
 			console.log("Writing to clipboard");
-			copyToClipboardStatus.valure = "doing";
+			copyToClipboardStatus.value.valure = "doing";
 			navigator.clipboard
 				.writeText(jsonValue)
 				.then(() => {
-					copyToClipboardStatus.valure = "done";
+					copyToClipboardStatus.value.valure = "done";
 				})
 				.catch((error) => {
 					console.error("Failed to copy to clipboard:", error);
-					copyToClipboardStatus.valure = "error";
+					copyToClipboardStatus.value.valure = "error";
 				});
 		};
 

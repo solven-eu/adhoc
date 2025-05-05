@@ -41,6 +41,7 @@ import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -118,6 +119,10 @@ public class CachingTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+		if (executingQueryContext.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
+			return decorated.streamSlices(executingQueryContext, tableQuery);
+		}
+
 		Map<FilteredAggregator, ImmutableList<ITabularRecord>> cached = new LinkedHashMap<>();
 		List<FilteredAggregator> notCached = new ArrayList<>();
 

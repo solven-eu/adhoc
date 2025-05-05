@@ -64,11 +64,15 @@ export default {
 			// May defaulted to `EUR`
 			measureCcy: "",
 			// After this number of digits, numbers are simplified with `0`s.
-			maximumSignificantDigits: 9,
+			// TODO This is disabled as it leads to unexpected formatting even with `roundingPriority=morePrecision`
+			// e.g. `12.3` is formatted `12.3` instead of `12.30`
+			// maximumSignificantDigits: 9,
 			// Minumum number of decimals
 			minimumFractionDigits: 2,
 			// Maximum number of decimals
 			maximumFractionDigits: 2,
+			// Default is 'auto'
+			// roundingPriority: 'morePrecision',
 		});
 
 		let gridColumns = [];

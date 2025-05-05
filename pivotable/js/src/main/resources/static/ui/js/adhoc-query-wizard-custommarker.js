@@ -15,7 +15,8 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="mb-3">{{customMarker.path}}
+        <div class="mb-3">
+            {{customMarker.path}}
             <label :for="'customMarker_' + customMarker.name" class="form-label">{{customMarker.name}}</label>
 
             <span :id="'customMarker_' + customMarker.name">

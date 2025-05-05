@@ -24,11 +24,15 @@ package eu.solven.adhoc.table.sql;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.jooq.Condition;
 import org.jooq.Name;
+import org.jooq.Parser;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 
@@ -61,6 +65,10 @@ public class JooqSnowflakeSchemaBuilder {
 	@Getter
 	Table<Record> snowflakeTable;
 
+	// @NonNull
+	// @Default
+	Supplier<Parser> parserSupplier = DSL.using(SQLDialect.DUCKDB)::parser;
+
 	// https://stackoverflow.com/questions/30717640/how-to-exclude-property-from-lombok-builder
 	// `snowflakeTable` is not built by the builder
 	@Builder
@@ -89,6 +97,22 @@ public class JooqSnowflakeSchemaBuilder {
 		return leftJoin(baseTableAlias, joinedTable, joinName, on);
 	}
 
+	// TODO Should this rely on `AdhocJooqHelper.name(name, dslContext::parser);`?
+	// Coding it manually looks bad. But this syntax may not depends on the parser (e.g. DuckDB vs another syntax)
+	protected Name parseOnName(String leftTableAlias, String rawName) {
+		if (rawName.startsWith(";")) {
+			return DSL.unquotedName(rawName.substring(1));
+		} else {
+			Name name = AdhocJooqHelper.name(rawName, parserSupplier);
+
+			if (name.parts().length == 1) {
+				name = DSL.name(DSL.name(leftTableAlias), name);
+			}
+
+			return name;
+		}
+	}
+
 	/**
 	 * @param leftTableAlias
 	 *            the name of the LEFT/base table. May not be the root/base table given we manage snowflake schema.
@@ -105,21 +129,13 @@ public class JooqSnowflakeSchemaBuilder {
 			String joinName,
 			List<Map.Entry<String, String>> on) {
 		List<Condition> onConditions = on.stream().map(e -> {
-			Name leftName;
-			if (e.getKey().contains(".")) {
-				// We assume we received a qualified path in its String form
-				// This would fail if the field was actually a field with a `.` in it
-				leftName = DSL.quotedName(e.getKey().split("\\."));
-			} else {
-				leftName = DSL.quotedName(leftTableAlias, e.getKey());
-			}
-			return DSL.field(leftName).eq(DSL.field(DSL.quotedName(joinName, e.getValue())));
-		}).toList();
+			Name leftName = parseOnName(leftTableAlias, e.getKey());
+			Name rightName = parseOnName(joinName, e.getValue());
 
-		// Register in the transcoder
-		on.forEach(fromTo -> {
-			registerInTranscoder(leftTableAlias, joinName, fromTo);
-		});
+			registerInTranscoder(leftName, rightName);
+
+			return DSL.field(leftName).eq(DSL.field(rightName));
+		}).toList();
 
 		return leftJoinConditions(joinedTable.as(joinName), onConditions);
 	}
@@ -131,10 +147,15 @@ public class JooqSnowflakeSchemaBuilder {
 		return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f, f)).toList());
 	}
 
-	protected void registerInTranscoder(String leftTableAlias, String joinTable, Map.Entry<String, String> fromTo) {
+	protected void registerInTranscoder(Name leftName, Name rightName) {
 		// `putIfAbsent`: priority to the first occurrence of the field
 		// `leftTableAlias`; priority to the LEFT/base table than the RIGHT/joined table
-		queriedToUnderlying.putIfAbsent(fromTo.getKey(), DSL.quotedName(leftTableAlias, fromTo.getKey()).toString());
+		String queryName = leftName.last();
+		String tableName = leftName.toString();
+
+		if (!Objects.equals(queryName, tableName)) {
+			queriedToUnderlying.putIfAbsent(queryName, tableName);
+		}
 	}
 
 	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {

@@ -27,6 +27,12 @@ const formatters = function (formatOptions) {
 	numberFormatOptions.maximumSignificantDigits = formatOptions.maximumSignificantDigits;
 	numberFormatOptions.minimumFractionDigits = formatOptions.minimumFractionDigits;
 	numberFormatOptions.maximumFractionDigits = formatOptions.maximumFractionDigits;
+
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/NumberFormat
+	// has a specific section about `Specifying significant and fractional digits at the same time`
+	// `roundingPriority` seems necessary, else `auto` may produce unexpected formatted numbers
+	numberFormatOptions.roundingPriority = formatOptions.roundingPriority;
+
 	if (formatOptions.measureCcy) {
 		numberFormatOptions.style = "currency";
 		numberFormatOptions.currency = formatOptions.measureCcy;

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -53,6 +54,42 @@ public class TestListBasedTabularView {
 
 		Assertions.assertThat(view.toString()).isEqualTo("""
 				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
+	}
+
+	@Test
+	public void testEmpty() throws JsonProcessingException {
+		Assertions.assertThat(ListBasedTabularView.empty().isEmpty()).isTrue();
+	}
+
+	@Test
+	public void testLoad() {
+		MapBasedTabularView mapBased =
+				MapBasedTabularView.builder().coordinatesToValues(Map.of(Map.of("c", "c1"), Map.of("m", 123))).build();
+
+		ListBasedTabularView loadedAsList = ListBasedTabularView.load(mapBased);
+		ListBasedTabularView loadedAsList2 =
+				ListBasedTabularView.load(mapBased, ListBasedTabularView.builder().build());
+
+		Assertions.assertThat(loadedAsList).isEqualTo(loadedAsList2);
+
+		Assertions.assertThat(loadedAsList.slices().toList()).hasSize(1).anySatisfy(slice -> {
+			Assertions.assertThat(slice.getAdhocSliceAsMap().getCoordinates()).containsEntry("c", "c1").hasSize(1);
+		});
+
+		// Should not fail on a valid set of slices
+		loadedAsList.checkIsDistinct();
+
+	}
+
+	@Test
+	public void testDuplicateSlices() {
+		ListBasedTabularView view =
+				ListBasedTabularView.builder().coordinates(List.of(Map.of("c", "c1"), Map.of("c", "c1"))).build();
+
+		Assertions.assertThatThrownBy(() -> view.checkIsDistinct())
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("Multiple slices")
+				.hasMessageContaining("c=c1");
 	}
 
 }

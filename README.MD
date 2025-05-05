@@ -37,6 +37,12 @@ If you encounter a case which performance would be much improved by multi-thread
 
 `parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
 
+#### Caching
+
+Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
+
+Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`.
+
 ## Products
 
 This repository includes 2 products
