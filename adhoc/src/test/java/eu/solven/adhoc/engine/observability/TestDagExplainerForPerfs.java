@@ -36,7 +36,6 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
-import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;

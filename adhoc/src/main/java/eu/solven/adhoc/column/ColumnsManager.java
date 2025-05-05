@@ -100,7 +100,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	@Override
-	public ITabularRecordStream openTableStream(QueryPod executingQueryContext, TableQueryV2 query) {
+	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
 		IAdhocFilter transcodedFilter;
@@ -125,7 +125,7 @@ public class ColumnsManager implements IColumnsManager {
 				.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()))
 				.build();
 
-		if (executingQueryContext.isDebug()) {
+		if (queryPod.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.debug(true)
 					.message("Transcoded query is `%s` given `%s`".formatted(transcodedQuery, query))
@@ -133,8 +133,8 @@ public class ColumnsManager implements IColumnsManager {
 					.build());
 		}
 
-		ITableWrapper table = executingQueryContext.getTable();
-		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(executingQueryContext, transcodedQuery);
+		ITableWrapper table = queryPod.getTable();
+		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(queryPod, transcodedQuery);
 
 		return transcodeRows(transcodingContext, aggregatedRecordsStream);
 	}

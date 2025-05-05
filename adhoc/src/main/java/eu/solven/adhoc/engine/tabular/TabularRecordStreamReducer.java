@@ -56,7 +56,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	IOperatorsFactory operatorsFactory;
 
 	@NonNull
-	QueryPod executingQueryContext;
+	QueryPod queryPod;
 	@NonNull
 	TableQueryV2 tableQuery;
 
@@ -69,10 +69,10 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures();
 
 		// TableAggregatesMetadata tableAggregatesMetadata =
-		// TableAggregatesMetadata.from(executingQueryContext, tableQuery.getAggregators());
+		// TableAggregatesMetadata.from(queryPod, tableQuery.getAggregators());
 
 		TabularRecordLogger aggregatedRecordLogger =
-				TabularRecordLogger.builder().table(executingQueryContext.getTable().getName()).build();
+				TabularRecordLogger.builder().table(queryPod.getTable().getName()).build();
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed
@@ -104,7 +104,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	protected void forEachRow(ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate,
 			IMultitypeMergeableGrid<SliceAsMap> sliceToAgg) {
-		Optional<SliceAsMap> optCoordinates = makeCoordinate(executingQueryContext, tableQuery, tableRow);
+		Optional<SliceAsMap> optCoordinates = makeCoordinate(queryPod, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
 
@@ -122,7 +122,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// DB has seemingly done the aggregation for us
 			valueConsumer = sliceToAgg.contributePre(aggregatedMeasure, coordinates);
 
-			if (executingQueryContext.isDebug()) {
+			if (queryPod.isDebug()) {
 				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(aggregatedMeasure.getAlias()));
 				log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
 			}
@@ -159,9 +159,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<SliceAsMap> makeCoordinate(QueryPod executingQueryContext,
-			IHasGroupBy tableQuery,
-			ITabularRecord tableRow) {
+	protected Optional<SliceAsMap> makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
 			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));
@@ -178,7 +176,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(executingQueryContext, groupedByColumn);
+					value = valueOnNull(queryPod, groupedByColumn);
 
 					assert value != null : "`null` is not a legal column value";
 				} else {
@@ -201,7 +199,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	 * @param column
 	 *            the column over which a null is encountered. You may customize `null` behavior on a per-column basis.
 	 */
-	protected Object valueOnNull(QueryPod executingQueryContext, String column) {
-		return executingQueryContext.getColumnsManager().onMissingColumn(column);
+	protected Object valueOnNull(QueryPod queryPod, String column) {
+		return queryPod.getColumnsManager().onMissingColumn(column);
 	}
 }

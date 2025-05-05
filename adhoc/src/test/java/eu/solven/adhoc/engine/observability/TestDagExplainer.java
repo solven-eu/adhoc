@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;

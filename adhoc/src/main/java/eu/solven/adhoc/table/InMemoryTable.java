@@ -93,10 +93,9 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
-		if (executingQueryContext.getTable() != this) {
-			throw new IllegalStateException(
-					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+		if (queryPod.getTable() != this) {
+			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());

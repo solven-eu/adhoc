@@ -40,7 +40,7 @@ import eu.solven.adhoc.util.IHasColumnTypes;
  */
 public interface IColumnsManager extends IHasColumnTypes {
 
-	ITabularRecordStream openTableStream(QueryPod executingQueryContext, TableQueryV2 tableQuery);
+	ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 tableQuery);
 
 	Object onMissingColumn(ICubeWrapper cube, String column);
 

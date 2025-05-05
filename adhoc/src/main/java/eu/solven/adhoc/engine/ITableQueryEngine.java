@@ -36,7 +36,6 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 public interface ITableQueryEngine {
 
-	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod executingQueryContext,
-			QueryStepsDag queryStepsDag);
+	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
 
 }

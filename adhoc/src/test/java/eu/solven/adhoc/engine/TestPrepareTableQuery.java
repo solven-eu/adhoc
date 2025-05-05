@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.engine.TableQueryEngine;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
@@ -60,13 +59,12 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		QueryPod executingQueryContext = QueryPod.builder()
+		QueryPod queryPod = QueryPod.builder()
 				.query(CubeQuery.builder().measure(k1Sum).build())
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
-				engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine.makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -87,13 +85,12 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		QueryPod executingQueryContext = QueryPod.builder()
+		QueryPod queryPod = QueryPod.builder()
 				.query(CubeQuery.builder().measure("sumK1K2").build())
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
-				engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine.makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -114,13 +111,12 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		QueryPod executingQueryContext = QueryPod.builder()
+		QueryPod queryPod = QueryPod.builder()
 				.query(CubeQuery.builder().measure("sumK1K2").build())
 				.forest(forest)
 				.table(table)
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(executingQueryContext,
-				engine.makeQueryStepsDag(executingQueryContext));
+		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine.makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

@@ -144,7 +144,7 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				.build();
 	}
 
-	public static class ExecutingQueryContextBuilder {
+	public static class QueryPodBuilder {
 		ICubeQuery query;
 		AdhocQueryId queryId;
 		IMeasureForest forest;
@@ -159,7 +159,7 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		ExecutorService executorService;
 		ForkJoinPool fjp;
 
-		public ExecutingQueryContextBuilder columnsManager(IColumnsManager columnsManager) {
+		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
 			return this;

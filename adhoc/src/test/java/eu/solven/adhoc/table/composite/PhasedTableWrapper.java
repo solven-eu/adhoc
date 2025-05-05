@@ -103,7 +103,7 @@ public class PhasedTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
 		phasers.opening.arriveAndAwaitAdvance();
 		log.info("opening advance {}", name);

@@ -273,7 +273,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 								    |  size=2 duration=123ms
 								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
 								        \\  size=2 duration=123ms
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAdhocQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
+								Executed status=OK duration=PT0.123S on table=inMemory measures=TestCubeQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(4);
 	}

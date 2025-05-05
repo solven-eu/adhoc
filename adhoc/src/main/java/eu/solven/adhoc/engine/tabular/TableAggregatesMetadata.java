@@ -78,8 +78,7 @@ public class TableAggregatesMetadata {
 	 * @param columnToAggregators
 	 * @return hints about which aggregates can be executed by the table or not
 	 */
-	public static TableAggregatesMetadata from(QueryPod executingQueryContext,
-			Set<Aggregator> aggregators) {
+	public static TableAggregatesMetadata from(QueryPod queryPod, Set<Aggregator> aggregators) {
 		// We consider all other tables can do all aggregations
 		// BEWARE What if a table would not be able to do only a subset of aggregations?
 		Map<String, Aggregator> nameToPre = new LinkedHashMap<>();

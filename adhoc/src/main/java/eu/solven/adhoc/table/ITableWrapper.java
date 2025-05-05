@@ -48,11 +48,11 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	/**
 	 *
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery);
+	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery);
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {

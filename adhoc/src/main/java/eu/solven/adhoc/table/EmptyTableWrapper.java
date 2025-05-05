@@ -48,7 +48,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return new SuppliedTabularRecordStream("empty", Stream::empty);
 	}
 

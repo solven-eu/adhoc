@@ -48,8 +48,5 @@ public interface IQueryPreparator {
 	 * @param query
 	 * @return an {@link QueryPod} which wraps together everything necessary to execute a query.
 	 */
-	QueryPod prepareQuery(ITableWrapper table,
-			IMeasureForest forest,
-			IColumnsManager columnsManager,
-			ICubeQuery query);
+	QueryPod prepareQuery(ITableWrapper table, IMeasureForest forest, IColumnsManager columnsManager, ICubeQuery query);
 }

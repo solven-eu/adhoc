@@ -110,23 +110,22 @@ public class TableQueryEngine implements ITableQueryEngine {
 	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 
 	@Override
-	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod executingQueryContext,
-			QueryStepsDag queryStepsDag) {
-		Set<TableQuery> tableQueries = prepareForTable(executingQueryContext, queryStepsDag);
+	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		Set<TableQuery> tableQueries = prepareForTable(queryPod, queryStepsDag);
 
 		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(tableQueries);
 
 		Map<CubeQueryStep, ISliceToValue> queryStepToValuesOuter =
-				executeTableQueries(executingQueryContext, queryStepsDag, tableQueriesV2);
+				executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
 
-		reportAfterTableQueries(executingQueryContext, queryStepToValuesOuter);
+		reportAfterTableQueries(queryPod, queryStepToValuesOuter);
 
 		return queryStepToValuesOuter;
 	}
 
-	protected void reportAfterTableQueries(QueryPod executingQueryContext,
+	protected void reportAfterTableQueries(QueryPod queryPod,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValuesOuter) {
-		if (executingQueryContext.isDebug()) {
+		if (queryPod.isDebug()) {
 			queryStepToValuesOuter.forEach((queryStep, values) -> {
 				values.forEachSlice(row -> {
 					return rowValue -> {
@@ -143,20 +142,20 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod executingQueryContext,
+	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod,
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Set<TableQueryV2> tableQueries) {
 		try {
-			return executingQueryContext.getFjp().submit(() -> {
+			return queryPod.getFjp().submit(() -> {
 				Stream<TableQueryV2> tableQueriesStream = tableQueries.stream();
 
-				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					tableQueriesStream = tableQueriesStream.parallel();
 				}
 				Map<CubeQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
 					Map<CubeQueryStep, ISliceToValue> queryStepToValues =
-							processOneTableQuery(executingQueryContext, sinkExecutionFeedback, tableQuery);
+							processOneTableQuery(queryPod, sinkExecutionFeedback, tableQuery);
 
 					queryStepToValuesInner.putAll(queryStepToValues);
 				});
@@ -175,10 +174,10 @@ public class TableQueryEngine implements ITableQueryEngine {
 		}
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> processOneTableQuery(QueryPod executingQueryContext,
+	protected Map<CubeQueryStep, ISliceToValue> processOneTableQuery(QueryPod queryPod,
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			TableQueryV2 dagQuery) {
-		TableQueryV2 suppressedQuery = suppressGeneratedColumns(executingQueryContext, dagQuery);
+		TableQueryV2 suppressedQuery = suppressGeneratedColumns(queryPod, dagQuery);
 
 		// TODO We may be querying multiple times the same suppressedTableQuery
 		// e.g. if 2 tableQueries differs only by a suppressedColumn
@@ -189,8 +188,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Map<CubeQueryStep, ISliceToValue> oneQueryStepToValues;
 		// Open the stream: the table may or may not return after the actual execution
-		try (ITabularRecordStream rowsStream = openTableStream(executingQueryContext, suppressedQuery)) {
-			oneQueryStepToValues = aggregateStreamToAggregates(executingQueryContext, toSuppressed, rowsStream);
+		try (ITabularRecordStream rowsStream = openTableStream(queryPod, suppressedQuery)) {
+			oneQueryStepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
 		Duration elapsed = stopWatch.elapsed();
@@ -217,19 +216,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	/**
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @param dagHolder2
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	protected Set<TableQuery> prepareForTable(QueryPod executingQueryContext,
-			QueryStepsDag queryStepsDag) {
+	protected Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
 		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
-			IMeasure leafMeasure = executingQueryContext.resolveIfRef(step.getMeasure());
+			IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
 
 			if (leafMeasure instanceof Aggregator leafAggregator) {
 				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
@@ -261,19 +259,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * It typically happens when a column is introduced by some {@link Dispatchor} measure, but the actually requested
 	 * measure is unrelated (which itself happens when selecting multiple measures, like `many2many+count(*)`).
 	 * 
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * 
 	 * @param tableQuery
 	 * @return {@link TableQuery} where calculated columns has been suppressed.
 	 */
-	protected TableQueryV2 suppressGeneratedColumns(QueryPod executingQueryContext,
-			TableQueryV2 tableQuery) {
+	protected TableQueryV2 suppressGeneratedColumns(QueryPod queryPod, TableQueryV2 tableQuery) {
 		// We list the generatedColumns instead of listing the table columns as many tables has lax resolution of
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
 		Set<String> generatedColumns = IColumnGenerator.getColumnGenerators(operatorsFactory,
 				// TODO Restrict to the DAG measures
-				executingQueryContext.getForest().getMeasures(),
+				queryPod.getForest().getMeasures(),
 				IValueMatcher.MATCH_ALL)
 				.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
@@ -311,37 +308,34 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return edited.build();
 	}
 
-	protected ITabularRecordStream openTableStream(QueryPod executingQueryContext,
-			TableQueryV2 tableQuery) {
-		return executingQueryContext.getColumnsManager().openTableStream(executingQueryContext, tableQuery);
+	protected ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 tableQuery) {
+		return queryPod.getColumnsManager().openTableStream(queryPod, tableQuery);
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> aggregateStreamToAggregates(
-			QueryPod executingQueryContext,
+	protected Map<CubeQueryStep, ISliceToValue> aggregateStreamToAggregates(QueryPod queryPod,
 			TableQueryToActualTableQuery query,
 			ITabularRecordStream stream) {
 
 		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(executingQueryContext, query.getSuppressedQuery(), stream);
+				sinkToAggregates(queryPod, query.getSuppressedQuery(), stream);
 
-		return toImmutableChunks(executingQueryContext, query, coordinatesToAggregates);
+		return toImmutableChunks(queryPod, query, coordinatesToAggregates);
 	}
 
-	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(QueryPod executingQueryContext,
+	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(QueryPod queryPod,
 			TableQueryV2 tableQuery,
 			ITabularRecordStream stream) {
 
-		ITabularRecordStreamReducer streamReducer =
-				makeAggregatedRecordStreamReducer(executingQueryContext, tableQuery);
+		ITabularRecordStreamReducer streamReducer = makeAggregatedRecordStreamReducer(queryPod, tableQuery);
 
 		return streamReducer.reduce(stream);
 	}
 
-	protected ITabularRecordStreamReducer makeAggregatedRecordStreamReducer(QueryPod executingQueryContext,
+	protected ITabularRecordStreamReducer makeAggregatedRecordStreamReducer(QueryPod queryPod,
 			TableQueryV2 tableQuery) {
 		return TabularRecordStreamReducer.builder()
 				.operatorsFactory(operatorsFactory)
-				.executingQueryContext(executingQueryContext)
+				.queryPod(queryPod)
 				.tableQuery(tableQuery)
 				.build();
 	}
@@ -357,12 +351,12 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	/**
 	 * 
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @param query
 	 * @param coordinatesToAggregates
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
-	protected Map<CubeQueryStep, ISliceToValue> toImmutableChunks(QueryPod executingQueryContext,
+	protected Map<CubeQueryStep, ISliceToValue> toImmutableChunks(QueryPod queryPod,
 			TableQueryToActualTableQuery query,
 			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
 		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
@@ -380,8 +374,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 			boolean doPurgeCarriers;
 			if (operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
-				if (executingQueryContext.getOptions()
-						.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
+				if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
 					doPurgeCarriers = false;
 				} else {
 					doPurgeCarriers = true;

@@ -37,7 +37,6 @@ import com.google.common.eventbus.Subscribe;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.measure.combination.ICombination;

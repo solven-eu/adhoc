@@ -123,9 +123,7 @@ public class TestCalciteAdhocAdapter {
 		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"rows\"")
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
-						rows.streamSlices(QueryPod.forTable(rows), TableQueryV2.builder().build())
-								.records()
-								.count()))
+						rows.streamSlices(QueryPod.forTable(rows), TableQueryV2.builder().build()).records().count()))
 				.explainContains("""
 						PLAN=MongoToEnumerableConverter
 						  AdhocCalciteAggregate(group=[{}], EXPR$0=[COUNT()])

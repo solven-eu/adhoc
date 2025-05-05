@@ -111,34 +111,33 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	}
 
 	@Override
-	public ITabularView execute(QueryPod executingQueryContext) {
+	public ITabularView execute(QueryPod queryPod) {
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 		boolean postedAboutDone = false;
 		try {
-			postAboutQueryStart(executingQueryContext);
+			postAboutQueryStart(queryPod);
 
-			QueryStepsDag queryStepsDag = makeQueryStepsDag(executingQueryContext);
+			QueryStepsDag queryStepsDag = makeQueryStepsDag(queryPod);
 
-			if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
-				explainDagSteps(executingQueryContext, queryStepsDag);
+			if (queryPod.isExplain() || queryPod.isDebug()) {
+				explainDagSteps(queryPod, queryStepsDag);
 			}
 
-			ITabularView tabularView = executeDag(executingQueryContext, queryStepsDag);
+			ITabularView tabularView = executeDag(queryPod, queryStepsDag);
 
-			if (executingQueryContext.isExplain() || executingQueryContext.isDebug()) {
-				explainDagPerfs(executingQueryContext, queryStepsDag);
+			if (queryPod.isExplain() || queryPod.isDebug()) {
+				explainDagPerfs(queryPod, queryStepsDag);
 			}
 
-			postAboutQueryDone(executingQueryContext, "OK", stopWatch);
+			postAboutQueryDone(queryPod, "OK", stopWatch);
 			postedAboutDone = true;
 			return tabularView;
 		} catch (RuntimeException e) {
 			// TODO Add the Exception to the event
-			postAboutQueryDone(executingQueryContext, "KO", stopWatch);
+			postAboutQueryDone(queryPod, "KO", stopWatch);
 			postedAboutDone = true;
 
-			String eMsg = "Issue executing query=%s options=%s".formatted(executingQueryContext.getQuery(),
-					executingQueryContext.getOptions());
+			String eMsg = "Issue executing query=%s options=%s".formatted(queryPod.getQuery(), queryPod.getOptions());
 
 			if (e instanceof IllegalStateException illegalStateE) {
 				// We want to keep bubbling an IllegalStateException
@@ -156,36 +155,34 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
-				postAboutQueryDone(executingQueryContext, "KO_Uncaught", stopWatch);
+				postAboutQueryDone(queryPod, "KO_Uncaught", stopWatch);
 			}
 		}
 	}
 
-	protected void postAboutQueryStart(QueryPod executingQueryContext) {
+	protected void postAboutQueryStart(QueryPod queryPod) {
 		eventBus.post(AdhocLogEvent.builder()
-				.message("Executing on table=%s measures=%s query=%s".formatted(executingQueryContext.getTable()
-						.getName(), executingQueryContext.getForest().getName(), executingQueryContext.getQuery()))
+				.message("Executing on table=%s measures=%s query=%s"
+						.formatted(queryPod.getTable().getName(), queryPod.getForest().getName(), queryPod.getQuery()))
 				.source(this)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_START)
 				.build());
 
 		eventBus.post(QueryLifecycleEvent.builder()
-				.query(executingQueryContext)
+				.query(queryPod)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_START)
 				.build());
 	}
 
-	protected void postAboutQueryDone(QueryPod executingQueryContext,
-			String status,
-			IStopwatch stopWatch) {
+	protected void postAboutQueryDone(QueryPod queryPod, String status, IStopwatch stopWatch) {
 		eventBus.post(AdhocLogEvent.builder()
 				.message("Executed status=%s duration=%s on table=%s measures=%s query=%s".formatted(status,
 						stopWatch.elapsed(),
-						executingQueryContext.getTable().getName(),
-						executingQueryContext.getForest().getName(),
-						executingQueryContext.getQuery()))
+						queryPod.getTable().getName(),
+						queryPod.getForest().getName(),
+						queryPod.getQuery()))
 				.source(this)
 				.performance(true)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
@@ -193,18 +190,18 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 				.build());
 
 		eventBus.post(QueryLifecycleEvent.builder()
-				.query(executingQueryContext)
+				.query(queryPod)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
 				.tag(AdhocQueryMonitor.TAG_QUERY_DONE)
 				.build());
 	}
 
-	protected void explainDagSteps(QueryPod executingQueryContext, QueryStepsDag queryStepsDag) {
-		makeDagExplainer().explain(executingQueryContext.getQueryId(), queryStepsDag);
+	protected void explainDagSteps(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		makeDagExplainer().explain(queryPod.getQueryId(), queryStepsDag);
 	}
 
-	protected void explainDagPerfs(QueryPod executingQueryContext, QueryStepsDag queryStepsDag) {
-		makeDagExplainerForPerfs().explain(executingQueryContext.getQueryId(), queryStepsDag);
+	protected void explainDagPerfs(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		makeDagExplainerForPerfs().explain(queryPod.getQueryId(), queryStepsDag);
 	}
 
 	protected DagExplainer makeDagExplainer() {
@@ -215,11 +212,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
-	protected QueryStepsDag makeQueryStepsDag(QueryPod executingQueryContext) {
-		IQueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(executingQueryContext);
+	protected QueryStepsDag makeQueryStepsDag(QueryPod queryPod) {
+		IQueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryPod);
 
 		// Add explicitly requested steps
-		Set<IMeasure> queriedMeasures = getRootMeasures(executingQueryContext);
+		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
 
 		long nbQueriedMeasures = queriedMeasures.stream().map(m -> m.getName()).distinct().count();
 		if (nbQueriedMeasures < queriedMeasures.size()) {
@@ -234,7 +231,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
 		}
 
-		queryStepsDagBuilder.registerRootWithUnderlyings(executingQueryContext::resolveIfRef, queriedMeasures);
+		queryStepsDagBuilder.registerRootWithUnderlyings(queryPod::resolveIfRef, queriedMeasures);
 
 		return queryStepsDagBuilder.getQueryDag();
 	}
@@ -243,11 +240,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	 * This is especially important to manage the case where no measure is requested, and we have to add some default
 	 * measure.
 	 * 
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @return the {@link Set} of root measures
 	 */
-	protected Set<IMeasure> getRootMeasures(QueryPod executingQueryContext) {
-		Set<IMeasure> measures = executingQueryContext.getQuery().getMeasures();
+	protected Set<IMeasure> getRootMeasures(QueryPod queryPod) {
+		Set<IMeasure> measures = queryPod.getQuery().getMeasures();
 		Set<IMeasure> queriedMeasures;
 		if (measures.isEmpty()) {
 			IMeasure defaultMeasure = defaultMeasure();
@@ -271,40 +268,36 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 		return Aggregator.builder().name(emptyMeasureName).aggregationKey(EmptyAggregation.KEY).build();
 	}
 
-	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod executingQueryContext) {
-		return new QueryStepsDagBuilder(operatorsFactory,
-				executingQueryContext.getTable().getName(),
-				executingQueryContext.getQuery());
+	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
+		return new QueryStepsDagBuilder(operatorsFactory, queryPod.getTable().getName(), queryPod.getQuery());
 	}
 
-	protected ITabularView executeDag(QueryPod executingQueryContext, QueryStepsDag queryStepsDag) {
+	protected ITabularView executeDag(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// bootstrap is a fake empty phase
 		// It is relevant to have a log before the `opening` phase which may be slow
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("bootstrap").source(this).build());
 
 		// Execute the leaf aggregations, by tableWrappers
-		Map<CubeQueryStep, ISliceToValue> queryStepToValues =
-				executeTableQueries(executingQueryContext, queryStepsDag);
+		Map<CubeQueryStep, ISliceToValue> queryStepToValues = executeTableQueries(queryPod, queryStepsDag);
 
 		// We're done with the input stream: the DB can be shutdown, we can answer the
 		// rest of the query independently of external tables.
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
 
-		walkDagUpToQueriedMeasures(executingQueryContext, queryStepsDag, queryStepToValues);
+		walkDagUpToQueriedMeasures(queryPod, queryStepsDag, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
 
-		ITabularView tabularView = toTabularView(executingQueryContext, queryStepsDag, queryStepToValues);
+		ITabularView tabularView = toTabularView(queryPod, queryStepsDag, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
 
 		return tabularView;
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod executingQueryContext,
-			QueryStepsDag queryStepsDag) {
+	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		TableQueryEngine makeTableQueryEngine = makeTableQueryEngine();
-		return makeTableQueryEngine.executeTableQueries(executingQueryContext, queryStepsDag);
+		return makeTableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
 	}
 
 	protected TableQueryEngine makeTableQueryEngine() {
@@ -342,15 +335,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 				.toString();
 	}
 
-	protected void walkDagUpToQueriedMeasures(QueryPod executingQueryContext,
+	protected void walkDagUpToQueriedMeasures(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
 
 		try {
-			executingQueryContext.getFjp().submit(() -> {
+			queryPod.getFjp().submit(() -> {
 				Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
 
-				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					topologicalOrder = topologicalOrder.parallel();
 				}
 
@@ -366,7 +359,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 					eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
 
-					IMeasure measure = executingQueryContext.resolveIfRef(queryStep.getMeasure());
+					IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
 
 					List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 
@@ -449,12 +442,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 	/**
 	 * 
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @param queryStepsDag
 	 * @param queryStepToValues
 	 * @return the output {@link ITabularView}
 	 */
-	protected ITabularView toTabularView(QueryPod executingQueryContext,
+	protected ITabularView toTabularView(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
@@ -481,8 +474,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 				boolean hasCarrierMeasure = step.getMeasure() instanceof Aggregator agg
 						&& operatorsFactory.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
-						&& !executingQueryContext.getOptions()
-								.contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
+						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
 				IColumnScanner<SliceAsMap> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);

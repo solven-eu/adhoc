@@ -26,8 +26,8 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -42,10 +42,10 @@ public interface ICubeQueryEngine {
 	/**
 	 * Execute an {@link ICubeQuery}.
 	 *
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @return
 	 */
-	ITabularView execute(QueryPod executingQueryContext);
+	ITabularView execute(QueryPod queryPod);
 
 	@Deprecated(since = "This use a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(ICubeQuery query, IMeasureForest measures, ITableWrapper table) {
@@ -59,8 +59,7 @@ public interface ICubeQueryEngine {
 			IColumnsManager columnsManager) {
 		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
 
-		QueryPod executingQueryContext =
-				queryPreparator.prepareQuery(table, measures, columnsManager, query);
-		return execute(executingQueryContext);
+		QueryPod queryPod = queryPreparator.prepareQuery(table, measures, columnsManager, query);
+		return execute(queryPod);
 	}
 }
