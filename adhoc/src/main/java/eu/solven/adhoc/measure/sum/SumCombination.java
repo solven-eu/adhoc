@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 

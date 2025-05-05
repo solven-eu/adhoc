@@ -33,15 +33,15 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.measure.IOperatorsFactory;
@@ -63,7 +63,7 @@ public class ShiftorQueryStep implements ITransformator {
 	final Shiftor shiftor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	final Supplier<IFilterEditor> filterEditorSupplier = Suppliers.memoize(this::makeFilterEditor);
 
@@ -72,17 +72,17 @@ public class ShiftorQueryStep implements ITransformator {
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		// This will provide underlying values from the shifted slice
 		String underlyingMeasure = shiftor.getUnderlying();
 
 		IAdhocFilter shiftedFilter = shift(step.getFilter(), step.getCustomMarker());
 
 		// Read values from the shifted underlyingStep
-		AdhocQueryStep whereToReadShifted =
-				AdhocQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
+		CubeQueryStep whereToReadShifted =
+				CubeQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
 		// Read slices from the natural undelryingStep, as the natural slices to write
-		AdhocQueryStep whereToReadForWrite = AdhocQueryStep.edit(step).measure(underlyingMeasure).build();
+		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		// Query both querySteps, as they may not provide the same slices
 		return Arrays.asList(whereToReadShifted, whereToReadForWrite);

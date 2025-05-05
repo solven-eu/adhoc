@@ -25,9 +25,9 @@ package eu.solven.adhoc.measure.model;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
@@ -58,11 +58,11 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
 		return new ITransformator() {
 
 			@Override
-			public List<AdhocQueryStep> getUnderlyingSteps() {
+			public List<CubeQueryStep> getUnderlyingSteps() {
 				return List.of();
 			}
 

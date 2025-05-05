@@ -25,12 +25,12 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.Collections;
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -53,15 +53,15 @@ public class FiltratorQueryStep extends ATransformator {
 	final IOperatorsFactory transformationFactory;
 
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	public List<String> getUnderlyingNames() {
 		return filtrator.getUnderlyingNames();
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
-		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
+	public List<CubeQueryStep> getUnderlyingSteps() {
+		CubeQueryStep underlyingStep = CubeQueryStep.edit(step)
 				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
 				.measure(filtrator.getUnderlying())
 				.build();

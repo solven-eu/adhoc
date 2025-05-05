@@ -25,8 +25,8 @@ package eu.solven.adhoc.data.column;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -49,7 +49,7 @@ public interface IMultitypeColumn<T> {
 	boolean isEmpty();
 
 	/**
-	 * Typically called by {@link AdhocQueryEngine} once an {@link ITableWrapper} measure is fully received, to turn
+	 * Typically called by {@link CubeQueryEngine} once an {@link ITableWrapper} measure is fully received, to turn
 	 * {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
 	 * differentiated with a column holding longs).
 	 */

@@ -24,8 +24,8 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 
@@ -41,9 +41,9 @@ public interface ITransformator {
 	 * This is a {@link List} as in some edge-cases, a measure may refer multiple times the same underlyingSteps (e.g. a
 	 * Filtrator on a slice which match the filter).
 	 * 
-	 * @return the {@link List} of underlying {@link AdhocQueryStep}
+	 * @return the {@link List} of underlying {@link CubeQueryStep}
 	 */
-	List<AdhocQueryStep> getUnderlyingSteps();
+	List<CubeQueryStep> getUnderlyingSteps();
 
 	ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings);
 }

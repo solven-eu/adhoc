@@ -29,7 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 
 public class TestProductCombination {

@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 

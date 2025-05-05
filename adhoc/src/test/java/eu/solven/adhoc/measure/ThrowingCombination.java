@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 
 /**

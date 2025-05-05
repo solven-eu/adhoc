@@ -48,13 +48,13 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -149,7 +149,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 compositeQuery) {
+	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 compositeQuery) {
 		if (executingQueryContext.getTable() != this) {
 			throw new IllegalStateException(
 					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
@@ -251,7 +251,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		}
 	}
 
-	protected ICubeQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
+	protected ICubeQuery makeSubQuery(QueryPod executingQueryContext,
 			TableQueryV2 compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
@@ -292,7 +292,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
+	protected Map<String, ITabularView> executeSubQueries(QueryPod executingQueryContext,
 			Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 

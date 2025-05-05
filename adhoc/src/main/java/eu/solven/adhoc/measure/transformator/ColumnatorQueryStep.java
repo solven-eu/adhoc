@@ -26,12 +26,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
@@ -44,14 +44,14 @@ import lombok.extern.slf4j.Slf4j;
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
 
-	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		super(columnator, transformationFactory, step);
 
 		this.columnator = columnator;
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		Optional<String> optMissingColumn = columnator.getRequiredColumns().stream().filter(this::isMissing).findAny();
 
 		if (optMissingColumn.isPresent()) {

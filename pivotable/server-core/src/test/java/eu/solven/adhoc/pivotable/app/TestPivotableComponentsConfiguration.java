@@ -32,8 +32,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.pivotable.account.IAdhocUserRawRawRepository;
 import eu.solven.adhoc.pivotable.account.IAdhocUserRepository;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
@@ -59,8 +59,8 @@ public class TestPivotableComponentsConfiguration {
 	public void testSession() {
 		IAdhocEventBus springAdhocEventBus = appContest.getBean(IAdhocEventBus.class);
 
-		Assertions.assertThat(appContest.getBean(IAdhocQueryEngine.class))
-				.isInstanceOfSatisfying(AdhocQueryEngine.class, engine -> {
+		Assertions.assertThat(appContest.getBean(ICubeQueryEngine.class))
+				.isInstanceOfSatisfying(CubeQueryEngine.class, engine -> {
 					// Ensure we injected properly the custom eventBus
 					Assertions.assertThat(engine.getEventBus()).isSameAs(springAdhocEventBus);
 				});

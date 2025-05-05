@@ -29,7 +29,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -82,7 +82,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep step) {
 		return new ShiftorQueryStep(this, operatorsFactory, step);
 	}
 

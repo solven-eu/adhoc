@@ -30,7 +30,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import eu.solven.adhoc.dag.context.IImplicitFilter;
+import eu.solven.adhoc.engine.context.IImplicitFilter;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;

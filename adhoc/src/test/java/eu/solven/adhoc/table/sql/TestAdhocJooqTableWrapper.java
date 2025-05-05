@@ -36,10 +36,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocTestHelper;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
@@ -52,7 +52,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 	@Test
 	public void testTableIsFunctionCall() throws IOException, SQLException {

@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;

@@ -25,8 +25,8 @@ package eu.solven.adhoc.cube;
 import java.util.Map;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -37,7 +37,7 @@ import eu.solven.adhoc.util.IHasName;
 /**
  * A cube can execute {@link ICubeQuery}, returning an {@link ITabularView}.
  * 
- * It is generally wrapping an {@link IAdhocQueryEngine} over an {@link ITableWrapper}.
+ * It is generally wrapping an {@link ICubeQueryEngine} over an {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  *

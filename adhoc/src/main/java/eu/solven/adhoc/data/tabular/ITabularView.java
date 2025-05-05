@@ -34,7 +34,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**
  * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link ICubeQuery} on an {@link eu.solven.adhoc.dag.IAdhocQueryEngine}.
+ * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
  * 
  * {@link ITabularView} implementations are generally immutable.
  *

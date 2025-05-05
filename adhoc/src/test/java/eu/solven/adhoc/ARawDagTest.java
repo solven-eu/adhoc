@@ -31,7 +31,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
@@ -40,7 +40,7 @@ import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
- * Helps testing anything related with a {@link MeasureForest} or a {@link AdhocQueryEngine}
+ * Helps testing anything related with a {@link MeasureForest} or a {@link CubeQueryEngine}
  * 
  * @author Benoit Lacelle
  *
@@ -62,8 +62,8 @@ public abstract class ARawDagTest {
 			return makeStopwatch();
 		}
 	};
-	public final AdhocQueryEngine engine =
-			AdhocQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
+	public final CubeQueryEngine engine =
+			CubeQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 
 	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
 	public final CubeWrapper cube = CubeWrapper.builder()
@@ -83,7 +83,7 @@ public abstract class ARawDagTest {
 	/**
 	 * Typically used to edit the operatorsFactory
 	 */
-	public AdhocQueryEngine.AdhocQueryEngineBuilder editEngine() {
+	public CubeQueryEngine.CubeQueryEngineBuilder editEngine() {
 		return engine.toBuilder();
 	}
 

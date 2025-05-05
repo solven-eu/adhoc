@@ -23,7 +23,7 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 
 /**
@@ -44,7 +44,7 @@ public interface IMissingColumnManager {
 	Object onMissingColumn(ICubeWrapper cube, String column);
 
 	/**
-	 * Typically called by {@link IAdhocQueryEngine}, when received a row from table missing some column (e.g. failed
+	 * Typically called by {@link ICubeQueryEngine}, when received a row from table missing some column (e.g. failed
 	 * JOIN).
 	 * 
 	 * @param column

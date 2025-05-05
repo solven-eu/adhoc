@@ -37,10 +37,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -118,7 +118,7 @@ public class CachingTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
 		if (executingQueryContext.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
 			return decorated.streamSlices(executingQueryContext, tableQuery);
 		}
@@ -262,7 +262,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		return tableQuery.toBuilder().clearAggregators().aggregators(notCached).build();
 	}
 
-	protected CachingKey makeCacheKey(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	protected CachingKey makeCacheKey(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
 		TableQueryV2Builder queryKeyForCache = tableQuery.toBuilder();
 
 		ITableWrapper table = executingQueryContext.getTable();
@@ -278,9 +278,9 @@ public class CachingTableWrapper implements ITableWrapper {
 		return CachingKey.builder().tableQuery(queryKeyForCache.build()).build();
 	}
 
-	protected ITabularRecordStream streamDecorated(ExecutingQueryContext executingQueryContext,
+	protected ITabularRecordStream streamDecorated(QueryPod executingQueryContext,
 			TableQueryV2 tableQuery) {
-		ExecutingQueryContext decoratedContext = executingQueryContext.toBuilder().table(decorated).build();
+		QueryPod decoratedContext = executingQueryContext.toBuilder().table(decorated).build();
 		return decorated.streamSlices(decoratedContext, tableQuery);
 	}
 

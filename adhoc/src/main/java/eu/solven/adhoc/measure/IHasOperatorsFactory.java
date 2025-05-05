@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.measure;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 
 /**
  * For classes holding an {@link IOperatorsFactory}
@@ -35,7 +35,7 @@ public interface IHasOperatorsFactory {
 	/**
 	 * 
 	 * @param o
-	 *            typically a {@link AdhocQueryEngine}
+	 *            typically a {@link CubeQueryEngine}
 	 * @return an {@link IOperatorsFactory}, a default one if the input does not implement {@link IHasOperatorsFactory}.
 	 */
 	static IOperatorsFactory getOperatorsFactory(Object o) {

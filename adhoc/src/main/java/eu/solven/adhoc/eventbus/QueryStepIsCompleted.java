@@ -24,19 +24,19 @@ package eu.solven.adhoc.eventbus;
 
 import java.time.Duration;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * An {@link eu.solven.adhoc.dag.step.AdhocQueryStep} has been evaluated.
+ * An {@link eu.solven.adhoc.engine.step.CubeQueryStep} has been evaluated.
  */
 @Value
 @Builder
 public class QueryStepIsCompleted implements IAdhocEvent {
 	@NonNull
-	AdhocQueryStep querystep;
+	CubeQueryStep querystep;
 
 	long nbCells;
 

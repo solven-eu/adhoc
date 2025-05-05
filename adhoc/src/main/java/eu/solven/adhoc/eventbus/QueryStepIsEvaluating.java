@@ -22,15 +22,15 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
  * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have computed a
- * {@link SliceToValue} for current {@link AdhocQueryStep}.
+ * {@link SliceToValue} for current {@link CubeQueryStep}.
  * 
  * @author Benoit Lacelle
  *
@@ -39,7 +39,7 @@ import lombok.Value;
 @Builder
 public class QueryStepIsEvaluating implements IAdhocEvent {
 	@NonNull
-	AdhocQueryStep queryStep;
+	CubeQueryStep queryStep;
 
 	@NonNull
 	Object source;

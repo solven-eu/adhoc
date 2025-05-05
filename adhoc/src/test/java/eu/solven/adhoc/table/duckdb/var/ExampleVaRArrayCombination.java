@@ -25,10 +25,10 @@ package eu.solven.adhoc.table.duckdb.var;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;

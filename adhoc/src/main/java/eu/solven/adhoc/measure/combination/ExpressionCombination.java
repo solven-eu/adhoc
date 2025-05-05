@@ -32,7 +32,7 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.mappath.MapPathGet;

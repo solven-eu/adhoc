@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocTestHelper;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -64,7 +64,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(adhocEventBus).build();
+		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
 
 		ICustomTypeManager customTypeManager = new ICustomTypeManager() {
 			@Override

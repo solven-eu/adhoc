@@ -33,9 +33,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.UnmodifiableIterator;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
  *
@@ -43,14 +43,14 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 // Similar to Guava Iterators.MergingIterator
 public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures> {
 
-	final AdhocQueryStep queryStep;
+	final CubeQueryStep queryStep;
 
 	final List<PeekingIterator<SliceAndMeasure<SliceAsMap>>> sortedIterators;
 
 	// Used to get faster the next/minimum slice
 	final Queue<PeekingIterator<SliceAndMeasure<SliceAsMap>>> queue;
 
-	public MergedSlicesIterator(AdhocQueryStep queryStep,
+	public MergedSlicesIterator(CubeQueryStep queryStep,
 			List<? extends Iterator<SliceAndMeasure<SliceAsMap>>> iterators) {
 		this.queryStep = queryStep;
 		sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();

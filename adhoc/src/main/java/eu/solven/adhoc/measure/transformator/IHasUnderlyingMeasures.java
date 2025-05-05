@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.model.IMeasure;
 
@@ -36,5 +36,5 @@ import eu.solven.adhoc.measure.model.IMeasure;
 public interface IHasUnderlyingMeasures {
 	List<String> getUnderlyingNames();
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep adhocSubQuery);
+	ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery);
 }

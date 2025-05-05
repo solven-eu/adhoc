@@ -34,8 +34,8 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -62,7 +62,7 @@ public class ExampleVaRDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		MeasurelessQuery suppressedIndex = suppressColumn(step, IExampleVaRConstants.C_SCENARIOINDEX);
 		MeasurelessQuery suppressedName = suppressColumn(suppressedIndex, IExampleVaRConstants.C_SCENARIONAME);
 		return Collections.singletonList(suppressedName);

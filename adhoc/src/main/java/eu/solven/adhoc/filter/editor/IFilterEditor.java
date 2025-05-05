@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.filter.editor;
 
-import eu.solven.adhoc.dag.context.IImplicitFilter;
+import eu.solven.adhoc.engine.context.IImplicitFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;

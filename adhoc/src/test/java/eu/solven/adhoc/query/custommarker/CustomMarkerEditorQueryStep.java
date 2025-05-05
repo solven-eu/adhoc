@@ -24,16 +24,16 @@ package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.AdhocQueryStep.AdhocQueryStepBuilder;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,16 +42,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CustomMarkerEditorQueryStep implements ITransformator {
 	final CustomMarkerEditor customMarkerEditor;
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	public List<String> getUnderlyingNames() {
 		return customMarkerEditor.getUnderlyingNames();
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
-		AdhocQueryStepBuilder stepBuilder =
-				AdhocQueryStep.edit(step).customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
+	public List<CubeQueryStep> getUnderlyingSteps() {
+		CubeQueryStepBuilder stepBuilder =
+				CubeQueryStep.edit(step).customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
 
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return stepBuilder.measure(underlyingName).build();
@@ -61,7 +61,7 @@ public class CustomMarkerEditorQueryStep implements ITransformator {
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (underlyings.size() != 1) {
-			throw new IllegalArgumentException("underlyingNames.size() != 1");
+			throw new IllegalArgumentException("underlyingNames.size() != 1 (was %s)".formatted(underlyings.size()));
 		}
 
 		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();

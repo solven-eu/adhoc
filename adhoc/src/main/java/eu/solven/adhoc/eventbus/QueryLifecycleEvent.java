@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.engine.context.QueryPod;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -38,7 +38,7 @@ import lombok.Value;
 @Value
 @Builder
 public class QueryLifecycleEvent implements IAdhocEvent {
-	ExecutingQueryContext query;
+	QueryPod query;
 
 	// Useful for event filtering
 	@NonNull

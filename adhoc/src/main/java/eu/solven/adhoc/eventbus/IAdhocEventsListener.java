@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
  * Describe each event which may be submitted by Adhoc.
@@ -37,14 +37,14 @@ public interface IAdhocEventsListener {
 	void onQueryLifecycleEvent(QueryLifecycleEvent event);
 
 	/**
-	 * Refers to {@link IAdhocQueryEngine} main phases.
+	 * Refers to {@link ICubeQueryEngine} main phases.
 	 * 
 	 * @param event
 	 */
 	void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event);
 
 	/**
-	 * Given a tree of {@link AdhocQueryStep}, this inform each step being processed.
+	 * Given a tree of {@link CubeQueryStep}, this inform each step being processed.
 	 * 
 	 * @param event
 	 */
@@ -52,8 +52,8 @@ public interface IAdhocEventsListener {
 
 	/**
 	 * An {@link eu.solven.adhoc.query.cube.CubeQuery} is resolved through a DAG of
-	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep}. This will log when an
-	 * {@link eu.solven.adhoc.dag.step.AdhocQueryStep} is completed.
+	 * {@link eu.solven.adhoc.engine.step.CubeQueryStep}. This will log when an
+	 * {@link eu.solven.adhoc.engine.step.CubeQueryStep} is completed.
 	 * 
 	 * @param event
 	 */

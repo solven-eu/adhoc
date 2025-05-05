@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UnfiltratorQueryStep implements ITransformator {
 	@Getter
 	final Unfiltrator unfiltrator;
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	final Supplier<IFilterEditor> filterEditor = Suppliers.memoize(() -> {
 		Unfiltrator unfiltrator = getUnfiltrator();
@@ -62,8 +62,8 @@ public class UnfiltratorQueryStep implements ITransformator {
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
-		AdhocQueryStep underlyingStep = AdhocQueryStep.edit(step)
+	public List<CubeQueryStep> getUnderlyingSteps() {
+		CubeQueryStep underlyingStep = CubeQueryStep.edit(step)
 				.filter(unfilter(step.getFilter()))
 				.measure(unfiltrator.getUnderlying())
 				.build();

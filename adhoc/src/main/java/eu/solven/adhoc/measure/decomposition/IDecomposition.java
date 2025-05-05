@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.decomposition;
 import java.util.List;
 import java.util.Map;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 
@@ -51,6 +51,6 @@ public interface IDecomposition extends IColumnGenerator {
 	 * @param step
 	 * @return the columns which MAY be written by decompositions.
 	 */
-	List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step);
+	List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step);
 
 }
