@@ -287,9 +287,9 @@ Tools to investigate these issues are:
 
 ## Debug vs Explain
 
-Debug will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
+`StandardQueryOptions.DEBUG` will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
 
-Explain will provide additional information about the on-going query. It will typically log the query executed to the underlying table.
+`StandardQueryOptions.EXPLAIN` will provide additional information about the on-going query. It will typically log the query executed to the underlying table.
 
 # Tables
 
@@ -306,6 +306,8 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
         .join(DSL.table(DSL.name(countryTable)).as("c"))
         .using(DSL.field("countryId"));
 ```
+
+Such snowflake schema can be build more easily with the help of `JooqSnowflakeSchemaBuilder`.
 
 ## Handling null (e.g. from failed JOINs)
 
@@ -359,5 +361,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
-- [Pivotable] Handle customMarkers with deep path
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query

@@ -170,6 +170,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		// Actual execution is the only concurrent section
 		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
+		return new SuppliedTabularRecordStream(compositeQuery, () -> openStream(compositeGroupBy, cubeToView));
+	}
+
+	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
+			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
@@ -187,8 +192,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				};
 			});
 		});
-
-		return new SuppliedTabularRecordStream(compositeQuery, () -> streams);
+		return streams;
 	}
 
 	protected Map<String, ICubeWrapper> getNameToCube() {
