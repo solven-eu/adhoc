@@ -102,7 +102,7 @@
 			<!-- JdbcClient for inserting arrays-->
 			<groupId>org.apache.arrow.adbc</groupId>
 			<artifactId>adbc-driver-jdbc</artifactId>
-			<version>0.17.0</version>
+			<version>0.18.0</version>
 			<scope>test</scope>
 		</dependency>
 		<!--<dependency>-->
