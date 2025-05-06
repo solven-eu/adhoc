@@ -29,20 +29,20 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -58,14 +58,14 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 	final IOperatorsFactory operatorsFactory;
 
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		IDecomposition decomposition = makeDecomposition();
 
 		List<IWhereGroupByQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
@@ -76,7 +76,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 		String underlyingMeasure = dispatchor.getUnderlying();
 		return measurelessSteps.stream()
-				.map(subStep -> AdhocQueryStep.edit(subStep).measure(underlyingMeasure).build())
+				.map(subStep -> CubeQueryStep.edit(subStep).measure(underlyingMeasure).build())
 				.collect(Collectors.toList());
 
 	}

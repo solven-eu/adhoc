@@ -30,11 +30,11 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.DispatchorQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
@@ -111,7 +111,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, AdhocQueryStep adhocSubQuery) {
+	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep adhocSubQuery) {
 		return new DispatchorQueryStep(this, operatorsFactory, adhocSubQuery);
 	}
 

@@ -43,11 +43,11 @@ import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -77,7 +77,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
 		IActivePivotVersion ap = inferPivotId();
 
 		String pivotId = ap.getId();

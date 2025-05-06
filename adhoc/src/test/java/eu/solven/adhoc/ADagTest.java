@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**
- * Helps testing anything related with a {@link MeasureForest} or a {@link AdhocQueryEngine}
+ * Helps testing anything related with a {@link MeasureForest} or a {@link CubeQueryEngine}
  * 
  * @author Benoit Lacelle
  *

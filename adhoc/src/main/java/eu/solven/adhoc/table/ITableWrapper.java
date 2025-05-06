@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -48,15 +48,15 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	/**
 	 *
-	 * @param executingQueryContext
+	 * @param queryPod
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery);
+	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery);
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {
-		return streamSlices(ExecutingQueryContext.forTable(this), tableQuery);
+		return streamSlices(QueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")

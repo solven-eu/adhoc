@@ -38,10 +38,10 @@ import com.google.common.math.LongMath;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.AdhocTestHelper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocTestHelper;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
@@ -83,7 +83,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	DSLContext dsl = table.makeDsl();
 
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
 	}

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 
 /**
  * A {@link IAggregation} which is not known by {@link StandardOperatorsFactory}

@@ -27,7 +27,7 @@ import java.util.Map;
 
 import com.google.common.base.Functions;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 

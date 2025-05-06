@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -44,7 +44,7 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	}
 
 	@Override
-	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		return Collections.singletonList(step);
 	}
 

@@ -30,8 +30,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.pivotable.spring.AdhocAutoConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,8 +45,8 @@ public class TestPivotableAdhocConfigAutonomy {
 
 	@Test
 	public void testEngineEventBus() {
-		Assertions.assertThat(appContest.getBean(IAdhocQueryEngine.class))
-				.isInstanceOfSatisfying(AdhocQueryEngine.class, engine -> {
+		Assertions.assertThat(appContest.getBean(ICubeQueryEngine.class))
+				.isInstanceOfSatisfying(CubeQueryEngine.class, engine -> {
 					// TODO How to check make a Guava EventBus by default?
 					// Assertions.assertThat(engine.getEventBus().getClass().getName()).contains("aaaa");
 					Assertions.assertThat(engine.getEventBus()).isNotNull();

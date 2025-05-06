@@ -44,11 +44,11 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -93,10 +93,9 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
-		if (executingQueryContext.getTable() != this) {
-			throw new IllegalStateException(
-					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+		if (queryPod.getTable() != this) {
+			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());

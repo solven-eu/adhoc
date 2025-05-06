@@ -39,9 +39,9 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -64,13 +64,12 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-// @Value
 @Builder
 @Slf4j
 public class AdhocSchema implements IAdhocSchema {
 	@Builder.Default
 	@NonNull
-	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
+	final ICubeQueryEngine engine = CubeQueryEngine.builder().build();
 
 	final Map<String, ITableWrapper> nameToTable = new ConcurrentHashMap<>();
 

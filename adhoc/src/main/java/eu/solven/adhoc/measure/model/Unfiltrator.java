@@ -30,8 +30,8 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.UnfiltratorQueryStep;
@@ -46,7 +46,7 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link AdhocQueryStep}.
+ * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link CubeQueryStep}.
  * By removing a filter, we request underlying measures with a wider slice. It is typically useful to make ratios with a
  * parent slice.
  * 
@@ -85,7 +85,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new UnfiltratorQueryStep(this, step);
 	}
 

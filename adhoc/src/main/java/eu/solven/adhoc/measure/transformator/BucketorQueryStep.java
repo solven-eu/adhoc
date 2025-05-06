@@ -31,14 +31,14 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.column.*;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
@@ -52,7 +52,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	final Bucketor bucketor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
@@ -69,10 +69,10 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
 			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy());
-			return AdhocQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
+			return CubeQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
 		}).collect(Collectors.toList());
 	}
 

@@ -28,8 +28,8 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.FiltratorQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.ITransformator;
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link IAdhocFilter}. The
- * input {@link IAdhocFilter} will be `AND`-ed with {@link AdhocQueryStep} own {@link IAdhocFilter}.
+ * input {@link IAdhocFilter} will be `AND`-ed with {@link CubeQueryStep} own {@link IAdhocFilter}.
  * 
  * @author Benoit Lacelle
  *
@@ -72,7 +72,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new FiltratorQueryStep(this, transformationFactory, step);
 	}
 

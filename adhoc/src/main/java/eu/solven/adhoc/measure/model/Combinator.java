@@ -32,9 +32,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.CombinatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
@@ -123,7 +123,7 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep step) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 

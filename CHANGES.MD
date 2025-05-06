@@ -4,10 +4,14 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.7]
 ### Added
-- `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`
+- `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`. It can be skipped with `StandardQueryOptions.NO_CACHE`.
 
 ### Changed
 - `AdhocQuery` is renamed `CubeQuery`
+- `AdhocQueryEngine` is renamed `CubeQueryEngine`
+- `dag` sub-package is renamed `engine`
+- `ExecutingQueryContext ` is renamed `QueryPod`
+- Improved `JooqSnowflakeSchemaBuilder` to better handle edge cases like fields with a `.` in their name.
 
 ## [0.0.6]
 ### Fixed
@@ -18,7 +22,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DuckDB` is upgraded to 1.2.2.0
 - In `Pivotbale`, `customMarkers` are written on a per-value basis, with the `path` as key.
 - `QueryTableV2` introduced querySharing for `TableQuery` with same groupBy, by relying on SQL `FILTER` keyword.
-- Drops `CharSequence` as a priveledged type (e.g. in aggregations, in `IMultiTypeXXX`)
+- Drops `CharSequence` as a privileged type (e.g. in aggregations, in `IMultiTypeXXX`)
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube

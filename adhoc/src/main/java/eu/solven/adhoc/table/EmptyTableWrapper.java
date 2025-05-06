@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,7 +48,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return new SuppliedTabularRecordStream("empty", Stream::empty);
 	}
 

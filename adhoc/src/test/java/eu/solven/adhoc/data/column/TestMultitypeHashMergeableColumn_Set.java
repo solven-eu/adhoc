@@ -233,7 +233,7 @@ public class TestMultitypeHashMergeableColumn_Set {
 
 		Assertions.assertThat(column.toString())
 				.isEqualTo(
-						"MultitypeHashMergeableColumn{#longs=1, #objects=1, #0=123(java.lang.Long), #1=%s(java.time.LocalDate)}"
+						"MultitypeHashMergeableColumn{#longs=1, #objects=1, #0-foo=123(java.lang.Long), #1-bar=%s(java.time.LocalDate)}"
 								.formatted(today));
 	}
 

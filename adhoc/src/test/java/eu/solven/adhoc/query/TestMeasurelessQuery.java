@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -41,7 +41,7 @@ public class TestMeasurelessQuery {
 				.customMarker("somethingCustom")
 				.build();
 
-		AdhocQueryStep queryStep = AdhocQueryStep.edit(measureless).measure(IAdhocTestConstants.k1Sum).build();
+		CubeQueryStep queryStep = CubeQueryStep.edit(measureless).measure(IAdhocTestConstants.k1Sum).build();
 
 		MeasurelessQuery measurelessFromStep = MeasurelessQuery.edit(queryStep).build();
 

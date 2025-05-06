@@ -32,8 +32,8 @@ import org.greenrobot.eventbus.Subscribe;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
-import eu.solven.adhoc.dag.observability.AdhocQueryMonitor;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 
 /**
@@ -59,13 +59,13 @@ public class PivotableQueryMonitor extends AdhocQueryMonitor {
 	public Map<String, Duration> getActiveToDuration() {
 		Map<String, Duration> queryToStartForJmx = new LinkedHashMap<>();
 
-		Comparator<Map.Entry<ExecutingQueryContext, OffsetDateTime>> comparingByValue = Map.Entry.comparingByValue();
-		Comparator<Map.Entry<ExecutingQueryContext, OffsetDateTime>> comparingByValueR = comparingByValue.reversed();
+		Comparator<Map.Entry<QueryPod, OffsetDateTime>> comparingByValue = Map.Entry.comparingByValue();
+		Comparator<Map.Entry<QueryPod, OffsetDateTime>> comparingByValueR = comparingByValue.reversed();
 
 		OffsetDateTime now = now();
 
 		this.queryToStart.entrySet().stream().sorted(comparingByValueR).forEach(entry -> {
-			ExecutingQueryContext query = entry.getKey();
+			QueryPod query = entry.getKey();
 			OffsetDateTime start = entry.getValue();
 
 			queryToStartForJmx.put(query.getQueryId().getQueryId() + " - " + query.getQuery().toString(),

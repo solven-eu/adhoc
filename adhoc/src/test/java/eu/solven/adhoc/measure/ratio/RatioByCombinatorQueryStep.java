@@ -25,15 +25,15 @@ package eu.solven.adhoc.measure.ratio;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -48,23 +48,23 @@ public class RatioByCombinatorQueryStep extends ATransformator {
 	final IOperatorsFactory transformationFactory;
 
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	public List<String> getUnderlyingNames() {
 		return combinator.getUnderlyingNames();
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		String underlying = combinator.getUnderlying();
 
-		AdhocQueryStep numerator = AdhocQueryStep.edit(step)
+		CubeQueryStep numerator = CubeQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
 				.measure(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getNumeratorFilter()))
 				.build();
 
-		AdhocQueryStep denominator = AdhocQueryStep.edit(step)
+		CubeQueryStep denominator = CubeQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
 				.measure(underlying)
 				.filter(AndFilter.and(step.getFilter(), combinator.getDenominatorFilter()))

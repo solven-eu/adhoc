@@ -23,8 +23,8 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -40,7 +40,7 @@ import eu.solven.adhoc.util.IHasColumnTypes;
  */
 public interface IColumnsManager extends IHasColumnTypes {
 
-	ITabularRecordStream openTableStream(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery);
+	ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 tableQuery);
 
 	Object onMissingColumn(ICubeWrapper cube, String column);
 

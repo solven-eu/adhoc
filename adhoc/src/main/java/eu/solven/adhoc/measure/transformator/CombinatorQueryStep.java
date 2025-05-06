@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
@@ -36,8 +34,10 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import lombok.Getter;
@@ -50,7 +50,7 @@ public class CombinatorQueryStep extends ATransformator {
 	final ICombinator combinator;
 	final IOperatorsFactory operatorsFactory;
 	@Getter
-	final AdhocQueryStep step;
+	final CubeQueryStep step;
 
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
@@ -63,10 +63,10 @@ public class CombinatorQueryStep extends ATransformator {
 	}
 
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream()
 				// Change the requested measureName to the underlying measureName
-				.map(underlyingName -> AdhocQueryStep.edit(step).measure(underlyingName).build())
+				.map(underlyingName -> CubeQueryStep.edit(step).measure(underlyingName).build())
 				.toList();
 	}
 

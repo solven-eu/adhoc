@@ -52,15 +52,15 @@ export default {
 			const csv = toCsv();
 
 			console.log("Writing to clipboard size", formatBytes(csv.length));
-			copyToClipboardStatus.valure = "doing";
+			copyToClipboardStatus.value.valure = "doing";
 			navigator.clipboard
 				.writeText(csv)
 				.then(() => {
-					copyToClipboardStatus.valure = "done";
+					copyToClipboardStatus.value.valure = "done";
 				})
 				.catch((error) => {
 					console.error("Failed to copy to clipboard:", error);
-					copyToClipboardStatus.valure = "error";
+					copyToClipboardStatus.value.valure = "error";
 				});
 		};
 

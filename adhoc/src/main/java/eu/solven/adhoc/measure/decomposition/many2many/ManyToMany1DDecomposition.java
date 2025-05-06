@@ -36,8 +36,8 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -197,7 +197,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public List<IWhereGroupByQuery> getUnderlyingSteps(AdhocQueryStep step) {
+	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 

@@ -24,7 +24,7 @@ package eu.solven.adhoc.util;
 
 import com.google.common.base.Stopwatch;
 
-import eu.solven.adhoc.dag.observability.DagExplainerForPerfs;
+import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 
 /**
  * Factory pattern for {@link IStopwatch}. Typically used by {@link DagExplainerForPerfs}.

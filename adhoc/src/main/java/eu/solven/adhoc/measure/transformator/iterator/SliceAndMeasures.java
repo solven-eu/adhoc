@@ -24,13 +24,13 @@ package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.dag.step.ISliceWithStep;
-import eu.solven.adhoc.dag.step.SliceAsMapWithStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -57,7 +57,7 @@ public class SliceAndMeasures {
 	 *            underlyingStep index to a value provider
 	 * @return
 	 */
-	public static SliceAndMeasures from(AdhocQueryStep queryStep,
+	public static SliceAndMeasures from(CubeQueryStep queryStep,
 			SliceAsMap slice,
 			List<IValueProvider> valueProviders) {
 		return SliceAndMeasures.builder()
@@ -66,7 +66,7 @@ public class SliceAndMeasures {
 				.build();
 	}
 
-	public static SliceAndMeasures from(SliceAsMap slice, AdhocQueryStep queryStep, List<?> underlyingVs) {
+	public static SliceAndMeasures from(SliceAsMap slice, CubeQueryStep queryStep, List<?> underlyingVs) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromArray.builder().measures(underlyingVs).build())

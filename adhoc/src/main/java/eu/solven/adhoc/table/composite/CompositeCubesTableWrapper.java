@@ -48,13 +48,13 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -149,10 +149,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 compositeQuery) {
-		if (executingQueryContext.getTable() != this) {
-			throw new IllegalStateException(
-					"Inconsistent tables: %s vs %s".formatted(executingQueryContext.getTable(), this));
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
+		if (queryPod.getTable() != this) {
+			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
@@ -160,7 +159,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
 
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
-			ICubeQuery subQuery = makeSubQuery(executingQueryContext, compositeQuery, compositeGroupBy, subCube);
+			ICubeQuery subQuery = makeSubQuery(queryPod, compositeQuery, compositeGroupBy, subCube);
 
 			var previous = cubeToQuery.put(subCube.getName(), subQuery);
 			if (previous != null) {
@@ -169,8 +168,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		});
 
 		// Actual execution is the only concurrent section
-		final Map<String, ITabularView> cubeToView = executeSubQueries(executingQueryContext, cubeToQuery);
+		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
+		return new SuppliedTabularRecordStream(compositeQuery, () -> openStream(compositeGroupBy, cubeToView));
+	}
+
+	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
+			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
@@ -188,8 +192,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				};
 			});
 		});
-
-		return new SuppliedTabularRecordStream(compositeQuery, () -> streams);
+		return streams;
 	}
 
 	protected Map<String, ICubeWrapper> getNameToCube() {
@@ -251,7 +254,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		}
 	}
 
-	protected ICubeQuery makeSubQuery(ExecutingQueryContext executingQueryContext,
+	protected ICubeQuery makeSubQuery(QueryPod queryPod,
 			TableQueryV2 compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
@@ -283,7 +286,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 				.build();
 
-		return AdhocSubQuery.builder().subQuery(query).parentQueryId(executingQueryContext.getQueryId()).build();
+		return AdhocSubQuery.builder().subQuery(query).parentQueryId(queryPod.getQueryId()).build();
 	}
 
 	protected boolean isColumnAvailable(Set<String> subColumns, String subColumn) {
@@ -292,16 +295,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	protected Map<String, ITabularView> executeSubQueries(ExecutingQueryContext executingQueryContext,
-			Map<String, ICubeQuery> cubeToQuery) {
+	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		try {
 			// https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
-			return executingQueryContext.getFjp().submit(() -> {
+			return queryPod.getFjp().submit(() -> {
 				Stream<Entry<String, ICubeQuery>> stream = cubeToQuery.entrySet().stream();
 
-				if (executingQueryContext.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					stream = stream.parallel();
 				}
 

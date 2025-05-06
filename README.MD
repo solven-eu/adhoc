@@ -17,7 +17,7 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 
 ### About performance
 
-Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `AdhocQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `CubeQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.
 
 #### Concurrency
 
@@ -28,14 +28,20 @@ Adhoc will execute queries in its own `Executors.newWorkStealingPool`. It can be
 Concurrent sections are:
 
 - subQueries in a `CompositeCubesTableWrapper`: each subCube may be queried concurrently.
-- tableQueries in a `AdhocQuery`: if the DAG leads to multiple tableQueries, these may be executed concurrently.
-- `AdhocQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these may be executed concurrently.
+- tableQueries in a `CubeQuery`: if the DAG leads to multiple tableQueries, these may be executed concurrently.
+- `CubeQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these may be executed concurrently.
 
 For now, we do not try to make Adhoc fully parallelized. It enables a simpler implementation, fast-enough is many cases.
 
 If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
 
 `parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
+
+#### Caching
+
+Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
+
+Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`.
 
 ## Products
 
@@ -64,7 +70,7 @@ CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes ad
 
 1. Ensure you have JDK 21 available
 2. Add a (`maven`/`gradle`) dependency to `eu.solven.adhoc:adhoc:0.0.2` (they are deployed to m2central: https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
-3. Define an `IAdhocTableWrapper`: it defines how Adhoc can access your data
+3. Define an `ITableWrapper`: it defines how Adhoc can access your data
 
 Assuming your data is queryable with JooQ:
 
@@ -107,12 +113,12 @@ forestBuilder.addMeasure(k1PlusK2AsExpr);
 5. Defines an Adhoc Engine: it know how to execute a query given the measure relationships
 
 ```
-AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).forest(forestBuilder.build()).build();
+CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).forest(forestBuilder.build()).build();
 ```
 
 6. Define your query
 ```
-ITabularView view = aqe.execute(AdhocQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+ITabularView view = aqe.execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
 MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -125,9 +131,9 @@ Assertions.assertThat(mapBased.getCoordinatesToValues())
 
 # Concepts
 
-## AdhocQuery
+## CubeQuery
 
-An `AdhocQuery` is similar to a `SELECT ... WHERE ... GROUP BY ...` SQL statement. It is defined by:
+An `CubeQuery` is similar to a `SELECT ... WHERE ... GROUP BY ...` SQL statement. It is defined by:
 
 - a list of `groupBy` columns.
 - a set of `filter` clauses.
@@ -151,21 +157,21 @@ Typical tables are:
 - CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlTable](JooqSqlTable).
 - Any SQL table: you should rely on [JooqSqlTable](JooqSqlTable), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
-- Your own Database implementing `IAdhocTableWrapper`
+- Your own Database implementing `ITableWrapper`
 
 ### Transcoder
 
 #### Column Transcoding
 
-Given tables may hold similar data but with different column names. A `IAdhocTableWrapper` enables coding once per table such a mapping.
+Given tables may hold similar data but with different column names. A `ITableWrapper` enables coding once per table such a mapping.
 
-A default `IAdhocTableWrapper` assumes `IAdhocQuery` columns matches the `IAdhocTableWrapper` columns.
+A default `ITableWrapper` assumes `ICubeQuery` columns matches the `ITableWrapper` columns.
 
 In case of a table with `JOIN`s, one would often encounter ambiguities when querying a field. For instance when:
 - querying a field used in a JOIN definition: the same name may appear in multiple tables
 - querying joined tables with `*`, but tables have conflicting field names.
 
-In such a case, one can resolve ambiguities by resolving them in a `IAdhocTableWrapper`. For instance:
+In such a case, one can resolve ambiguities by resolving them in a `ITableWrapper`. For instance:
 ```java
 MapTableTranscoder.builder()
     .queriedToUnderlying("someColumn", "someTable.someColumn")
@@ -185,11 +191,11 @@ A measure can be:
 - an aggregated measure (a column aggregated by an aggregation function)
 - an transformed measure (one or multiple measures are mixed together, possibly with additional `filter` and/or `groupBys`).
 
-A set of measures defines a Directed-Acyclic-Graph, where leaves are pre-aggregated measures and nodes are transformed measures. The DAG is typically evaluated on a per-query basis, as the AdhocQuery `groupBy` and `filter` has to be combined with the own measures `groupBys` and `filters`.
+A set of measures defines a Directed-Acyclic-Graph, where leaves are pre-aggregated measures and nodes are transformed measures. The DAG is typically evaluated on a per-query basis, as the CubeQuery `groupBy` and `filter` has to be combined with the own measures `groupBys` and `filters`.
 
 ## Node granularity
 
-Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of its parent node. The root node have they `groupBy` and `filter` defined by the AdhocQuery.
+Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of its parent node. The root node have they `groupBy` and `filter` defined by the CubeQuery.
 
 - Combinator neither change the `groupBy` nor the `filter`.
 - Filtrator adds a `filter`, AND-ed with node own `filter`.
@@ -232,7 +238,7 @@ For instance, in a flatten `GeographicalZone` column (e.g. having flattened a hi
 
 This can be achieved in Adhoc with a `Dispatchor`.
 
-A full example is visible in `TestManyToManyAdhocQuery`. It demonstrates how a measure can:
+A full example is visible in `TestManyToManyCubeQuery`. It demonstrates how a measure can:
 
 - query underlying measures on fine grained slices (e.g. the input slices of the many-to-many)
 - project each of these slices into 0, 1 or N slices (e.g. the output slices of the many-to-many)
@@ -272,8 +278,8 @@ Typical errors with Adhoc are :
 - Unexpected data returned by underlying Table
 
 Tools to investigate these issues are:
-- Enable `debug` in your query: `AdhocQuery.builder()[...].debug(true).build()`
-- Enable `explain` in your query: `AdhocQuery.builder()[...].explain(true).build()`
+- Enable `debug` in your query: `CubeQuery.builder()[...].debug(true).build()`
+- Enable `explain` in your query: `CubeQuery.builder()[...].explain(true).build()`
 
 ## Automated documentation
 
@@ -281,9 +287,9 @@ Tools to investigate these issues are:
 
 ## Debug vs Explain
 
-Debug will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
+`StandardQueryOptions.DEBUG` will enable various additional `[DEBUG]` logs with `INFO` logLevel. It may also conduct additional operations (like executing some sanity checks), or enforcing some ordering to facilitate some investigations. It may lead to very poor performances.
 
-Explain will provide additional information about the on-going query. It will typically log the query executed to the underlying table.
+`StandardQueryOptions.EXPLAIN` will provide additional information about the on-going query. It will typically log the query executed to the underlying table.
 
 # Tables
 
@@ -300,6 +306,8 @@ Table<Record> fromClause = DSL.table(DSL.name(factTable))
         .join(DSL.table(DSL.name(countryTable)).as("c"))
         .using(DSL.field("countryId"));
 ```
+
+Such snowflake schema can be build more easily with the help of `JooqSnowflakeSchemaBuilder`.
 
 ## Handling null (e.g. from failed JOINs)
 
@@ -335,7 +343,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 
 ## Feature Candidates
 
-- [CodeGen] BDD: Automated generation of Scenario given an `IAdhocQuery`
+- [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN ` from a composite-cube to its subQueries.
@@ -343,7 +351,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
 - [Resiliency] Work on query cancellations/queryTimeouts
 - [SECURITY] Ability to hide some measures/columns from some Users
-- [Performance] Enable querying multiple `AdhocQuery` in a single call, enabling further queryStep sharing for large reports.
+- [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Pivotable] Fetch all column details in a single query
 - [Composite] `getCoordinates` should be executed once per each underlying cube
 - [Composite] Enable a failing sub-query not to break the composite query
@@ -353,5 +361,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
-- [Pivotable] Handle customMarkers with deep path
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query

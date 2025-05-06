@@ -49,8 +49,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -73,7 +73,7 @@ public class TestCalciteAdhocAdapter {
 	public final EventBus eventBus = new EventBus();
 	public final AdhocEventsFromGuavaEventBusToSfl4j toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j();
 	public final MeasureForest amb = MeasureForest.builder().name(this.getClass().getSimpleName()).build();
-	public final AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
+	public final CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(eventBus::post).build();
 
 	public final InMemoryTable rows = InMemoryTable.builder().name("rows").build();
 	public final InMemoryTable zips = InMemoryTable.builder().name("zips").build();
@@ -123,9 +123,7 @@ public class TestCalciteAdhocAdapter {
 		assertModel(MODEL).query("select count(*) from \"adhoc_schema\".\"rows\"")
 				.returns(String.format(Locale.ROOT,
 						"EXPR$0=%d\n",
-						rows.streamSlices(ExecutingQueryContext.forTable(rows), TableQueryV2.builder().build())
-								.records()
-								.count()))
+						rows.streamSlices(QueryPod.forTable(rows), TableQueryV2.builder().build()).records().count()))
 				.explainContains("""
 						PLAN=MongoToEnumerableConverter
 						  AdhocCalciteAggregate(group=[{}], EXPR$0=[COUNT()])

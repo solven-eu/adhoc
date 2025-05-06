@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 import java.util.Objects;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 
 /**
  * Return the first underlyingValue which is not null. Else null.

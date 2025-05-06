@@ -38,16 +38,16 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
-import eu.solven.adhoc.dag.context.DefaultQueryPreparator;
-import eu.solven.adhoc.dag.context.IQueryPreparator;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IHasOperatorsFactory;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.IOperatorsFactory;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.operator.IHasOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -64,7 +64,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Combines an {@link AdhocQueryEngine}, including its {@link MeasureForest} and a {@link ITableWrapper}.
+ * Combines an {@link CubeQueryEngine}, including its {@link MeasureForest} and a {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  *
@@ -81,7 +81,7 @@ public class CubeWrapper implements ICubeWrapper {
 	// Execute the query
 	@NonNull
 	@Default
-	final IAdhocQueryEngine engine = AdhocQueryEngine.builder().build();
+	final ICubeQueryEngine engine = CubeQueryEngine.builder().build();
 	// Holds the data
 	@NonNull
 	final ITableWrapper table;

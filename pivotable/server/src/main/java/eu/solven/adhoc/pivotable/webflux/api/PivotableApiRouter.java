@@ -35,7 +35,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
-import eu.solven.adhoc.beta.schema.TargetedAdhocQuery;
+import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
@@ -155,7 +155,7 @@ public class PivotableApiRouter {
 						queryHandler::executeQuery,
 						ops -> ops.operationId("executeQuery")
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
-										.implementation(TargetedAdhocQuery.class))
+										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
 

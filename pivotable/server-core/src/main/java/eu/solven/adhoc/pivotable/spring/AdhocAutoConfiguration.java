@@ -27,10 +27,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-import eu.solven.adhoc.dag.AdhocQueryEngine;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
@@ -77,11 +77,11 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = IAdhocQueryEngine.class)
-	public IAdhocQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
+	@ConditionalOnMissingBean(value = ICubeQueryEngine.class)
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
 			IOperatorsFactory operatorsFactory,
 			IStopwatchFactory stopwatchFactory) {
-		return AdhocQueryEngine.builder()
+		return CubeQueryEngine.builder()
 				.eventBus(eventBus)
 				.operatorsFactory(operatorsFactory)
 				.stopwatchFactory(stopwatchFactory)

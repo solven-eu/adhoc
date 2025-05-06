@@ -69,6 +69,11 @@ public enum StandardQueryOptions implements IQueryOption {
 	CONCURRENT,
 
 	/**
+	 * Used to skip any cache mechanisms
+	 */
+	NO_CACHE,
+
+	/**
 	 * Keep {@link IAggregationCarrier} wrapped. Especially useful for {@link CompositeCubesTableWrapper}.
 	 */
 	AGGREGATION_CARRIERS_STAY_WRAPPED,

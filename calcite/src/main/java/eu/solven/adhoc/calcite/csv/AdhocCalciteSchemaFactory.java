@@ -37,7 +37,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.IQueryOption;
@@ -67,7 +67,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 	@Override
 	public Schema create(SchemaPlus parentSchema, String name, Map<String, Object> operand) {
 		MeasureForest amb = MeasureForest.builder().name(name).measure(Aggregator.countAsterisk()).build();
-		AdhocQueryEngine aqe = AdhocQueryEngine.builder().eventBus(eventBus::post).build();
+		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(eventBus::post).build();
 
 		// IAdhocTableWrapper adw = makeTableWrapper(name, operand);
 

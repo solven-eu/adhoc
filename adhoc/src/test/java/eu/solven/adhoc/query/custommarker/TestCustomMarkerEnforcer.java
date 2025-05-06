@@ -38,13 +38,13 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.dag.AdhocQueryEngine;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IOperatorsFactory;
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
@@ -66,7 +66,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 	LocalDate today = LocalDate.now();
 
-	public final AdhocQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final CubeQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
 	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {

@@ -24,9 +24,9 @@ package eu.solven.adhoc.resource;
 
 import java.util.List;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.ITransformator;
 
 /**
@@ -34,7 +34,7 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
  */
 public class EmptyTransformator implements ITransformator {
 	@Override
-	public List<AdhocQueryStep> getUnderlyingSteps() {
+	public List<CubeQueryStep> getUnderlyingSteps() {
 		return List.of();
 	}
 

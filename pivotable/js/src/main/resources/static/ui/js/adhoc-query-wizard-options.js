@@ -32,6 +32,10 @@ export default {
             <label class="form-check-label" for="concurrentQuery">concurrent</label>
         </div>
         <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="no_cache" v-model="queryModel.options.no_cache" />
+            <label class="form-check-label" for="no_cache">no_cache</label>
+        </div>
+        <div class="form-check form-switch">
             <input
                 class="form-check-input"
                 type="checkbox"

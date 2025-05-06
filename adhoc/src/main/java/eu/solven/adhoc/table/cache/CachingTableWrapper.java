@@ -37,10 +37,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.dag.context.ExecutingQueryContext;
 import eu.solven.adhoc.data.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -117,12 +118,16 @@ public class CachingTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+		if (queryPod.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
+			return decorated.streamSlices(queryPod, tableQuery);
+		}
+
 		Map<FilteredAggregator, ImmutableList<ITabularRecord>> cached = new LinkedHashMap<>();
 		List<FilteredAggregator> notCached = new ArrayList<>();
 
 		Object customMarkerForCache;
-		ITableWrapper table = executingQueryContext.getTable();
+		ITableWrapper table = queryPod.getTable();
 		if (table instanceof ICustomMarkerCacheStrategy cacheStrategy) {
 			customMarkerForCache = cacheStrategy.restrictToCacheImpact(tableQuery.getCustomMarker());
 		} else {
@@ -167,8 +172,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		} else {
 			TableQueryV2 queryAgrgegatorsNotCached = querySubset(tableQuery, notCached);
 
-			ITabularRecordStream decoratedRecordsStream =
-					streamDecorated(executingQueryContext, queryAgrgegatorsNotCached);
+			ITabularRecordStream decoratedRecordsStream = streamDecorated(queryPod, queryAgrgegatorsNotCached);
 
 			return new ITabularRecordStream() {
 
@@ -178,9 +182,7 @@ public class CachingTableWrapper implements ITableWrapper {
 
 					decoratedRecordsStream.close();
 
-					log.info("Done receiving tabularRecords for t={} q={}",
-							executingQueryContext.getTable().getName(),
-							tableQuery);
+					log.info("Done receiving tabularRecords for t={} q={}", queryPod.getTable().getName(), tableQuery);
 
 					Map<FilteredAggregator, List<ITabularRecord>> cachedAndJustInTime = new LinkedHashMap<>();
 
@@ -257,10 +259,10 @@ public class CachingTableWrapper implements ITableWrapper {
 		return tableQuery.toBuilder().clearAggregators().aggregators(notCached).build();
 	}
 
-	protected CachingKey makeCacheKey(ExecutingQueryContext executingQueryContext, TableQueryV2 tableQuery) {
+	protected CachingKey makeCacheKey(QueryPod queryPod, TableQueryV2 tableQuery) {
 		TableQueryV2Builder queryKeyForCache = tableQuery.toBuilder();
 
-		ITableWrapper table = executingQueryContext.getTable();
+		ITableWrapper table = queryPod.getTable();
 		if (table instanceof ICustomMarkerCacheStrategy cacheStrategy) {
 			Object customMarkerForCache = cacheStrategy.restrictToCacheImpact(tableQuery.getCustomMarker());
 			queryKeyForCache.customMarker(customMarkerForCache);
@@ -273,9 +275,8 @@ public class CachingTableWrapper implements ITableWrapper {
 		return CachingKey.builder().tableQuery(queryKeyForCache.build()).build();
 	}
 
-	protected ITabularRecordStream streamDecorated(ExecutingQueryContext executingQueryContext,
-			TableQueryV2 tableQuery) {
-		ExecutingQueryContext decoratedContext = executingQueryContext.toBuilder().table(decorated).build();
+	protected ITabularRecordStream streamDecorated(QueryPod queryPod, TableQueryV2 tableQuery) {
+		QueryPod decoratedContext = queryPod.toBuilder().table(decorated).build();
 		return decorated.streamSlices(decoratedContext, tableQuery);
 	}
 

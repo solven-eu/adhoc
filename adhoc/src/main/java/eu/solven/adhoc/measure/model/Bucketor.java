@@ -29,9 +29,9 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
-import eu.solven.adhoc.measure.IOperatorsFactory;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.BucketorQueryStep;
@@ -99,7 +99,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, AdhocQueryStep queryStep) {
+	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
 		return new BucketorQueryStep(this, transformationFactory, queryStep);
 	}
 

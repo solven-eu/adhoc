@@ -316,7 +316,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
 			onValue(key, o -> {
-				toStringHelper.add("#" + index.getAndIncrement(), PepperLogHelper.getObjectAndClass(o));
+				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
 			});
 		});
 

@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 import java.util.List;
 import java.util.Objects;
 
-import eu.solven.adhoc.dag.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 

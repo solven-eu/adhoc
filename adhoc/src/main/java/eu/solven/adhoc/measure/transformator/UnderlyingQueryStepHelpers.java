@@ -33,13 +33,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import eu.solven.adhoc.dag.step.AdhocQueryStep;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.MergedSlicesIterator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
@@ -58,7 +58,7 @@ public class UnderlyingQueryStepHelpers {
 	 *            the underlyings for given queryStep.
 	 * @return the union-Set of slices
 	 */
-	public static Stream<SliceAndMeasures> distinctSlices(AdhocQueryStep queryStep,
+	public static Stream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings) {
 		boolean debug = queryStep.isDebug();
 
@@ -123,7 +123,7 @@ public class UnderlyingQueryStepHelpers {
 		}
 	}
 
-	private static Stream<SliceAndMeasures> makeSortedStream(AdhocQueryStep queryStep, List<ISliceToValue> sorted) {
+	private static Stream<SliceAndMeasures> makeSortedStream(CubeQueryStep queryStep, List<ISliceToValue> sorted) {
 		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators =
 				sorted.stream().map(s -> s.stream().iterator()).toList();
 

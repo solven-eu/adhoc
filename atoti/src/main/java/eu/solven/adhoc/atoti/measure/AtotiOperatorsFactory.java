@@ -26,8 +26,8 @@ import java.util.Map;
 
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 
-import eu.solven.adhoc.measure.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

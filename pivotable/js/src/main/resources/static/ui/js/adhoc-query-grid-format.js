@@ -23,7 +23,7 @@ export default {
                 <input class="form-control mr-sm-2" type="text" placeholder="Currency" aria-label="Currency" id="currency" v-model="formatOptions.measureCcy" />
             </div>
             <div>
-                Minimum decimals:
+                Minimum fraction digits:
                 <input
                     class="form-control mr-sm-2"
                     type="text"
@@ -34,7 +34,7 @@ export default {
                 />
             </div>
             <div>
-                Max decimals:
+                Max fraction digits:
                 <input
                     class="form-control mr-sm-2"
                     type="text"
@@ -45,7 +45,7 @@ export default {
                 />
             </div>
             <div>
-                Max significant digits:
+                Max significant digits (e.g. if '2', '1234' is shown as '1200'):
                 <input
                     class="form-control mr-sm-2"
                     type="text"
@@ -53,6 +53,17 @@ export default {
                     aria-label="Max significant digits"
                     id="maximumSignificantDigits"
                     v-model="formatOptions.maximumSignificantDigits"
+                />
+            </div>
+            <div>
+                roundingPriority
+                <input
+                    class="form-control mr-sm-2"
+                    type="text"
+                    placeholder="roundingPriority"
+                    aria-label="roundingPriority"
+                    id="roundingPriority"
+                    v-model="formatOptions.roundingPriority"
                 />
             </div>
         </form>

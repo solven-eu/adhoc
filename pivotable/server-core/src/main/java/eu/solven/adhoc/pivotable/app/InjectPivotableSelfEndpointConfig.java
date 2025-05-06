@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.dag.IAdhocQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
@@ -59,7 +59,7 @@ public class InjectPivotableSelfEndpointConfig {
 	@Profile(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
 	@Bean
-	public AdhocSchema registerSelfSchema(IAdhocQueryEngine engine, PivotableAdhocSchemaRegistry schemaRegistry) {
+	public AdhocSchema registerSelfSchema(ICubeQueryEngine engine, PivotableAdhocSchemaRegistry schemaRegistry) {
 		AdhocSchema selfSchema = AdhocSchema.builder().engine(engine).build();
 
 		PivotableAdhocEndpointMetadata self = PivotableAdhocEndpointMetadata.localhost();
