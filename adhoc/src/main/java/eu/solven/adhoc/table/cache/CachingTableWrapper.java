@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -63,6 +65,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class CachingTableWrapper implements ITableWrapper {
+	// ~1GB
+	private static final int MAX_WEIGHT = 1024 * 1024 * 1024;
 
 	@NonNull
 	final ITableWrapper decorated;
@@ -90,17 +94,31 @@ public class CachingTableWrapper implements ITableWrapper {
 		}
 	}
 
+	public static CacheBuilder<CachingKey, ImmutableList<ITabularRecord>> defaultCacheBuilder() {
+		return CacheBuilder.newBuilder()
+				.recordStats()
+				// https://github.com/google/guava/issues/3202
+				.<CachingKey, ImmutableList<ITabularRecord>>weigher((key, value) -> {
+					// TODO Adjust with the weight of the aggregate
+					return value.size() * key.getTableQuery().getGroupBy().getGroupedByColumns().size();
+				})
+				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
+				// .maximumWeight(1024 * 1024)
+				.removalListener(new RemovalListener<CachingKey, ImmutableList<ITabularRecord>>() {
+					@Override
+					public void onRemoval(RemovalNotification<CachingKey, ImmutableList<ITabularRecord>> notification) {
+						log.debug("RemovalNotification cause={} {} {}",
+								notification.getCause(),
+								notification.getKey(),
+								notification.getValue());
+					}
+				});
+	}
+
 	@NonNull
 	@Default
-	final Cache<CachingKey, ImmutableList<ITabularRecord>> cache = CacheBuilder.newBuilder()
-			.recordStats()
-			// https://github.com/google/guava/issues/3202
-			.<CachingKey, ImmutableList<ITabularRecord>>weigher((key, value) -> {
-				// TODO Adjust with the weight of the aggregate
-				return value.size() * key.getTableQuery().getGroupBy().getGroupedByColumns().size();
-			})
-			.maximumWeight(1024 * 1024)
-			.build();
+	final Cache<CachingKey, ImmutableList<ITabularRecord>> cache =
+			defaultCacheBuilder().maximumWeight(MAX_WEIGHT).build();
 
 	public void invalidateAll() {
 		cache.invalidateAll();
@@ -120,7 +138,7 @@ public class CachingTableWrapper implements ITableWrapper {
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		if (queryPod.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
-			return decorated.streamSlices(queryPod, tableQuery);
+			return streamDecorated(queryPod, tableQuery);
 		}
 
 		Map<FilteredAggregator, ImmutableList<ITabularRecord>> cached = new LinkedHashMap<>();
@@ -138,19 +156,18 @@ public class CachingTableWrapper implements ITableWrapper {
 
 		// Split the queried aggregators if available from cache or not
 		for (FilteredAggregator aggregator : tableQuery.getAggregators()) {
-			TableQueryV2 queryForCache = tableQuery.toBuilder()
-					.clearAggregators()
-					.aggregator(FilteredAggregator.builder().aggregator(aggregator.getAggregator()).build())
-					.filter(AndFilter.and(tableQuery.getFilter(), aggregator.getFilter()))
-					.customMarker(customMarkerForCache)
-					.build();
-
-			CachingKey cacheKey = CachingKey.builder().tableQuery(queryForCache).build();
+			CachingKey cacheKey = makeCacheKey(tableQuery, customMarkerForCache, aggregator);
 
 			ImmutableList<ITabularRecord> nullableCacheResult = cache.getIfPresent(cacheKey);
 			if (nullableCacheResult == null) {
+				if (queryPod.isExplain()) {
+					log.info("[EXPLAIN] cacheMiss on {}", aggregator);
+				}
 				notCached.add(aggregator);
 			} else {
+				if (queryPod.isExplain()) {
+					log.info("[EXPLAIN] cacheHit on {}", aggregator);
+				}
 				cached.put(aggregator, nullableCacheResult);
 			}
 		}
@@ -170,9 +187,9 @@ public class CachingTableWrapper implements ITableWrapper {
 				}
 			};
 		} else {
-			TableQueryV2 queryAgrgegatorsNotCached = querySubset(tableQuery, notCached);
+			TableQueryV2 queryAggregatorsNotCached = querySubset(tableQuery, notCached);
 
-			ITabularRecordStream decoratedRecordsStream = streamDecorated(queryPod, queryAgrgegatorsNotCached);
+			ITabularRecordStream decoratedRecordsStream = streamDecorated(queryPod, queryAggregatorsNotCached);
 
 			return new ITabularRecordStream() {
 
@@ -189,15 +206,8 @@ public class CachingTableWrapper implements ITableWrapper {
 					cachedAndJustInTime.putAll(cached);
 
 					// add the missing aggregates into cache
-					for (FilteredAggregator aggregator : queryAgrgegatorsNotCached.getAggregators()) {
-						TableQueryV2 queryForCache = tableQuery.toBuilder()
-								.clearAggregators()
-								.aggregator(FilteredAggregator.builder().aggregator(aggregator.getAggregator()).build())
-								.filter(AndFilter.and(tableQuery.getFilter(), aggregator.getFilter()))
-								.customMarker(customMarkerForCache)
-								.build();
-
-						CachingKey cacheKey = CachingKey.builder().tableQuery(queryForCache).build();
+					for (FilteredAggregator aggregator : queryAggregatorsNotCached.getAggregators()) {
+						CachingKey cacheKey = makeCacheKey(tableQuery, customMarkerForCache, aggregator);
 
 						ImmutableList<ITabularRecord> column = columns.stream()
 								.map(r -> enableSingleAggregate(r, aggregator.getAlias()))
@@ -227,6 +237,19 @@ public class CachingTableWrapper implements ITableWrapper {
 			};
 		}
 
+	}
+
+	private CachingKey makeCacheKey(TableQueryV2 tableQuery,
+			Object customMarkerForCache,
+			FilteredAggregator aggregator) {
+		TableQueryV2 queryForCache = tableQuery.toBuilder()
+				.clearAggregators()
+				.aggregator(FilteredAggregator.builder().aggregator(aggregator.getAggregator()).build())
+				.filter(AndFilter.and(tableQuery.getFilter(), aggregator.getFilter()))
+				.customMarker(customMarkerForCache)
+				.build();
+
+		return CachingKey.builder().tableQuery(queryForCache).build();
 	}
 
 	protected Stream<ITabularRecord> mergeAggregates(Map<FilteredAggregator, ? extends List<ITabularRecord>> cached) {

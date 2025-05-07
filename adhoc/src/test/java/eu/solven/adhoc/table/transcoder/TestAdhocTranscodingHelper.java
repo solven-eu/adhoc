@@ -278,9 +278,9 @@ public class TestAdhocTranscodingHelper {
 				return outputKeys.size();
 			}
 		};
-		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
 
-		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat((Map) transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
 		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(0);
 	}
 
@@ -302,9 +302,9 @@ public class TestAdhocTranscodingHelper {
 				return outputKeys.size() - 1;
 			}
 		};
-		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
 
-		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat((Map) transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
 		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(1);
 	}
 }

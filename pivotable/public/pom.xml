@@ -7,7 +7,6 @@
 		<version>0.0.7-SNAPSHOT</version>
 	</parent>
 	<artifactId>pivotable-public</artifactId>
-	<description>Resources shared between server and clients</description>
 
 	<properties>
 		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>

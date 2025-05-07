@@ -76,13 +76,13 @@ public class FilterHelpers {
 			if (negated.isMatchAll()) {
 				return IValueMatcher.MATCH_NONE;
 			} else if (negated.isMatchNone()) {
-				return IValueMatcher.MATCH_NONE;
+				return IValueMatcher.MATCH_ALL;
 			}
 			IValueMatcher valueMatcher = getValueMatcher(negated, column);
 
 			if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
 				// The underlying filter is unrelated to `column`: should not negate `matchAll`
-				return valueMatcher;
+				return IValueMatcher.MATCH_ALL;
 			}
 
 			// This is a not trivial valueMatcher: negate it

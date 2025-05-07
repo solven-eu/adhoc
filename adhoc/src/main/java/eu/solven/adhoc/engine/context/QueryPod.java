@@ -86,7 +86,7 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 	// to rely on the commonPool.
 	@NonNull
 	@Default
-	ExecutorService fjp = AdhocUnsafe.adhocCommonPool;
+	ExecutorService executorService = AdhocUnsafe.adhocCommonPool;
 
 	/**
 	 * Once turned to nut-null, can not be nulled again.

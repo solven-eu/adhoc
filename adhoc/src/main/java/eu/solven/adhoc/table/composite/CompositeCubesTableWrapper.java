@@ -58,6 +58,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -73,7 +74,9 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -81,7 +84,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -204,11 +206,12 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
 			IHasMeasures subCube,
 			Set<String> subColumns) {
-		if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter()))) {
-			// TODO Could this be managed with a Filtrator? Leaving the `FILTER` management to the subCube?
-			throw new NotYetImplementedException(
-					"FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
-		}
+		// if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter())))
+		// {
+		// // TODO Could this be managed with a Filtrator? Leaving the `FILTER` management to the subCube?
+		// throw new NotYetImplementedException(
+		// "FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
+		// }
 
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
@@ -218,7 +221,17 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				// The subCube measure is in the Aggregator columnName
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
 				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
-				.map(fa -> IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName()))
+				.map(fa -> {
+					if (fa.getFilter().isMatchAll()) {
+						return IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName());
+					} else {
+						return Filtrator.builder()
+								.name(fa.getAlias())
+								.underlying(fa.getAggregator().getColumnName())
+								.filter(fa.getFilter())
+								.build();
+					}
+				})
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		// We also propagate to the subCube some measures which definition can be computed on the fly
@@ -300,7 +313,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		try {
 			// https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
-			return queryPod.getFjp().submit(() -> {
+			return queryPod.getExecutorService().submit(() -> {
 				Stream<Entry<String, ICubeQuery>> stream = cubeToQuery.entrySet().stream();
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
@@ -375,6 +388,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				return columnFilter;
 			} else {
 				return IAdhocFilter.MATCH_ALL;
+			}
+		} else if (filter instanceof INotFilter notFilter) {
+			IAdhocFilter negatedForColumns = filterForColumns(notFilter.getNegated(), columns);
+			if (IAdhocFilter.MATCH_ALL.equals(negatedForColumns)) {
+				return IAdhocFilter.MATCH_ALL;
+			} else {
+				return NotFilter.not(negatedForColumns);
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
 			Set<IAdhocFilter> operands = andFilter.getOperands();

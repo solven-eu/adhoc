@@ -253,4 +253,15 @@ public class TestMultitypeHashMergeableColumn {
 				.contains(Map.entry("foo", 123L))
 				.contains(Map.entry("bar", today));
 	}
+
+	@Test
+	public void testNull() {
+		column.append("k1").onObject(null);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isNull();
+		});
+
+		Assertions.assertThat(column.toString()).isEqualTo("MultitypeHashMergeableColumn{}");
+	}
 }

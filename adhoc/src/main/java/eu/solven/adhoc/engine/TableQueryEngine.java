@@ -75,6 +75,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -146,7 +147,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Set<TableQueryV2> tableQueries) {
 		try {
-			return queryPod.getFjp().submit(() -> {
+			return queryPod.getExecutorService().submit(() -> {
 				Stream<TableQueryV2> tableQueriesStream = tableQueries.stream();
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
@@ -316,10 +317,42 @@ public class TableQueryEngine implements ITableQueryEngine {
 			TableQueryToActualTableQuery query,
 			ITabularRecordStream stream) {
 
-		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(queryPod, query.getSuppressedQuery(), stream);
+		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates;
+		{
+			IStopwatch stopWatch = stopwatchFactory.createStarted();
 
-		return toImmutableChunks(queryPod, query, coordinatesToAggregates);
+			sliceToAggregates = sinkToAggregates(queryPod, query.getSuppressedQuery(), stream);
+
+			// BEWARE This timing is dependent of the table
+			Duration elapsed = stopWatch.elapsed();
+			if (queryPod.isDebug()) {
+				long totalSize =
+						query.getDagQuery().getAggregators().stream().mapToLong(a -> sliceToAggregates.size(a)).sum();
+				log.info("[DEBUG] time={} size={} for sinkToAggregates on {}", elapsed, totalSize, query.getDagQuery());
+			} else if (queryPod.isExplain()) {
+				log.info("[EXPLAIN] time={} for sinkToAggregates on {}", elapsed, query.getDagQuery());
+			}
+		}
+
+		Map<CubeQueryStep, ISliceToValue> immutableChunks;
+		{
+			IStopwatch singToAggregatedStarted = stopwatchFactory.createStarted();
+
+			immutableChunks = toImmutableChunks(queryPod, query, sliceToAggregates);
+
+			// BEWARE This timing is independent of the table
+			Duration elapsed = singToAggregatedStarted.elapsed();
+			if (queryPod.isDebug()) {
+				long totalSize = immutableChunks.values().stream().mapToLong(c -> c.size()).sum();
+				for (FilteredAggregator aggregator : query.getDagQuery().getAggregators()) {
+					totalSize += sliceToAggregates.size(aggregator);
+				}
+				log.info("[DEBUG] time={} size={} for sinkToAggregates on {}", elapsed, totalSize, query.getDagQuery());
+			} else if (queryPod.isExplain()) {
+				log.info("[EXPLAIN] time={} for immutableChunks on {}", elapsed, query.getDagQuery());
+			}
+		}
+		return immutableChunks;
 	}
 
 	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(QueryPod queryPod,

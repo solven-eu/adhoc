@@ -23,19 +23,23 @@
 package eu.solven.adhoc.engine.context;
 
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -52,6 +56,16 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 	@Default
 	final IImplicitOptions implicitOptions = query -> ImmutableSet.of();
 
+	@NonNull
+	@Default
+	final ExecutorService concurrentExecutorService = AdhocUnsafe.adhocCommonPool;
+
+	// If not-concurrent, we want the simpler execution plan as possible
+	// it is especially important to simplify thread-jumping lowering readability of stack-traces
+	@NonNull
+	@Default
+	final ExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();
+
 	@Override
 	public QueryPod prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
@@ -66,7 +80,18 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.forest(forest)
 				.table(table)
 				.columnsManager(columnsManager)
+				.executorService(getExecutorService(preparedQuery))
 				.build();
+	}
+
+	protected ExecutorService getExecutorService(ICubeQuery preparedQuery) {
+		if (preparedQuery.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+			// Concurrent query: execute in a dedicated pool
+			return concurrentExecutorService;
+		} else {
+			// Not concurrent query: rely on current thread
+			return nonConcurrentExecutorService;
+		}
 	}
 
 	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {

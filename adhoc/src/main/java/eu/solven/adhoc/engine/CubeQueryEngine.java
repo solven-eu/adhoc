@@ -340,7 +340,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
 
 		try {
-			queryPod.getFjp().submit(() -> {
+			queryPod.getExecutorService().submit(() -> {
 				Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {

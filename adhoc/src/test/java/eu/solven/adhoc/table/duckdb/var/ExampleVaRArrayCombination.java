@@ -62,7 +62,7 @@ public class ExampleVaRArrayCombination implements ICombination {
 		for (int i = 0; i < size; i++) {
 			int finalI = i;
 
-			slicedRecord.read(i, new IValueReceiver() {
+			slicedRecord.read(i).acceptConsumer(new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {

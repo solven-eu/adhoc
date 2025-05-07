@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.transcoder;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -52,6 +53,9 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 	@Builder.Default
 	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
 
+	// Optimization performance
+	private final Map<Set<String>, Long> cacheKeysToSize = new ConcurrentHashMap<>();
+
 	@Override
 	public String underlying(String queried) {
 		String underlyingColumn = transcoder.underlyingNonNull(queried);
@@ -78,8 +82,9 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 
 	@Override
 	public int estimateSize(Set<String> underlyingKeys) {
-		long asLong = underlyingKeys.stream().mapToLong(k -> underlyingToQueried.get(k).size()).sum();
-		return Ints.checkedCast(asLong);
+		Long sizeAsLong = cacheKeysToSize.computeIfAbsent(underlyingKeys,
+				keys -> keys.stream().mapToLong(k -> underlyingToQueried.get(k).size()).sum());
+		return Ints.checkedCast(sizeAsLong);
 	}
 
 }

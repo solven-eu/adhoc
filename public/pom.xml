@@ -19,7 +19,7 @@
 			<!-- ImmutableSet -->
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>33.3.1-jre</version>
+			<version>33.4.8-jre</version>
 		</dependency>
 
 		<dependency>
@@ -27,12 +27,6 @@
 			<artifactId>pepper</artifactId>
 			<version>5.1</version>
 		</dependency>
-
-		<!--		<dependency>-->
-		<!--			<groupId>org.junit.platform</groupId>-->
-		<!--			<artifactId>junit-platform-suite</artifactId>-->
-		<!--			<scope>test</scope>-->
-		<!--		</dependency>-->
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>

@@ -71,7 +71,7 @@ public interface ITabularView {
 	Stream<IAdhocSlice> slices();
 
 	/**
-	 * Will apply the rowScanner to each sliced.
+	 * Will apply the rowScanner to each distinct slice.
 	 * 
 	 * @param rowScanner
 	 */
@@ -80,7 +80,7 @@ public interface ITabularView {
 	/**
 	 *
 	 * @param rowConverter
-	 *            convert each slice and associated values.
+	 *            convert each distinct slice and associated values.
 	 * @return
 	 * @param <U>
 	 *            the output type of the rowConvertor

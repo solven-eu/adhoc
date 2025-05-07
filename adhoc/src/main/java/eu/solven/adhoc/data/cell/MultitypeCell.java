@@ -42,6 +42,7 @@ public class MultitypeCell implements IMultitypeCell {
 	@Default
 	byte types = 0;
 
+	// TODO Should we init the default values based on the IAggregation (e.g. ILongAggregation.neutralLong())
 	// `0` is the natural default to most IAggregation
 	@Default
 	long asLong = 0;
@@ -79,8 +80,10 @@ public class MultitypeCell implements IMultitypeCell {
 
 			@Override
 			public void onObject(Object object) {
-				types |= 8;
-				MultitypeCell.this.asObject = aggregation.aggregate(asObject, object);
+				if (object != null) {
+					types |= 8;
+					MultitypeCell.this.asObject = aggregation.aggregate(asObject, object);
+				}
 			}
 		};
 	}

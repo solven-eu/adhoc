@@ -80,7 +80,7 @@ public class ExampleVaRQuickSelectCombination implements ICombination {
 
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		Object rawArray = IValueProvider.getValue(vc -> slicedRecord.read(0, vc));
+		Object rawArray = IValueProvider.getValue(slicedRecord.read(0));
 		if (rawArray instanceof int[] array) {
 			if (array.length == 0) {
 				return vc -> vc.onObject(null);

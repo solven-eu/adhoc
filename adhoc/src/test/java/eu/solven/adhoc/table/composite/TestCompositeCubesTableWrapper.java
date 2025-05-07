@@ -83,7 +83,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 	// `k1` is both an underdlyingCube measure, and an explicit cube measure.
 	@Test
-	public void testAddUnderlyingMeasures_sameMeasurenameInUnderlyingAndInComposite() {
+	public void testAddUnderlyingMeasures_sameMeasureNameInUnderlyingAndInComposite() {
 		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
 
 		String tableName1 = "someTableName1";
@@ -624,6 +624,59 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of("k1", 0L + Math.max(123 + 234, 345 + 456)))
+					.hasSize(1);
+		}
+	}
+
+	// This forces a FilteredAggregator with a not trivial aggregator to reach the CompositeTableWrapper. This is a
+	// matter as ICubeQuery has no such `FILTER` per measure. We typically build on-the-fly a Filtrator measure.
+	@Test
+	public void testQueryUnderlyingWithDifferentFilters() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(k2Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(filterK1onA1);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(withoutUnderlyings);
+
+		// Test an actual query result
+		{
+			// table1
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+			// table2
+			table2.add(Map.of("k1", 345, "a", "a1"));
+
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withUnderlyings);
+
+			ITabularView view =
+					compositeCube.execute(CubeQuery.builder().measure(k1Sum.getName(), filterK1onA1.getName()).build());
+			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of(),
+							Map.of(k1Sum.getName(), 0L + 123 + 234 + 345, filterK1onA1.getName(), 0L + 123 + 345))
 					.hasSize(1);
 		}
 	}

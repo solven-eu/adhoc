@@ -23,10 +23,11 @@
 package eu.solven.adhoc.measure.examples;
 
 import java.util.Arrays;
+import java.util.Set;
 
-import eu.solven.adhoc.measure.IMeasureBagVisitor;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
+import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.measure.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -45,28 +46,28 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
  *
  */
 public class RatioOverSpecificColumnValueCompositor {
-	public MeasureForest addTo(IMeasureForest measureBag, String column, String value, String underlying) {
+	public Set<IMeasure> addTo(String column, String value, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, value);
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, value);
 		String ratioMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, value);
 
-		return MeasureForest.edit(measureBag)
+		return ImmutableSet.<IMeasure>builder()
 				// Filter the specific country: if we were filtering color=red, this filters both color and country
-				.measure(Filtrator.builder()
+				.add(Filtrator.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
 						.filter(ColumnFilter.isEqualTo(column, value))
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this filters only country
-				.measure(Unfiltrator.builder()
+				.add(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
 						.filterOnly(column)
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this returns (red&FR/FR)
-				.measure(Combinator.builder()
+				.add(Combinator.builder()
 						.name(ratioMeasureName)
 						.underlyings(Arrays.asList(sliceMeasureName, wholeMeasureName))
 						.combinationKey(DivideCombination.KEY)
@@ -82,16 +83,16 @@ public class RatioOverSpecificColumnValueCompositor {
 	 * @param value
 	 *            the value filtered on given column
 	 * @param underlying
-	 *            an {@link IMeasureBagVisitor} adding an {@link IMeasure} computing the ratio for current slice of
+	 *            an {@link IMeasureForestVisitor} adding an {@link IMeasure} computing the ratio for current slice of
 	 *            `queryFilter&filter=column/filter=column`
 	 * @return
 	 */
-	public IMeasureBagVisitor asCombinator(String column, String value, String underlying) {
-		return new IMeasureBagVisitor() {
+	public IMeasureForestVisitor asCombinator(String column, String value, String underlying) {
+		return new IMeasureForestVisitor() {
 
 			@Override
-			public IMeasureForest addMeasures(IMeasureForest adhocMeasureBag) {
-				return RatioOverSpecificColumnValueCompositor.this.addTo(adhocMeasureBag, column, value, underlying);
+			public Set<IMeasure> addMeasures() {
+				return RatioOverSpecificColumnValueCompositor.this.addTo(column, value, underlying);
 			}
 		};
 	}

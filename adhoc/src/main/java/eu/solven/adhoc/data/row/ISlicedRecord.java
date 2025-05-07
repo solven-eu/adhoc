@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 
@@ -52,14 +51,12 @@ public interface ISlicedRecord {
 	 * 
 	 * @param index
 	 *            the index of the underlying queryStep. From 0 to `.size()` excluded.
-	 * @param valueConsumer
-	 *            some {@link IValueReceiver} to receive the data.
 	 */
-	void read(int index, IValueReceiver valueConsumer);
+	IValueProvider read(int index);
 
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {
-		return IntStream.range(0, size()).mapToObj(index -> IValueProvider.getValue(vc -> read(index, vc))).toList();
+		return IntStream.range(0, size()).mapToObj(index -> IValueProvider.getValue(read(index))).toList();
 	}
 
 	/**
@@ -72,7 +69,7 @@ public interface ISlicedRecord {
 	default void asArray(Object[] array) {
 		for (int i = 0; i < Math.min(array.length, size()); i++) {
 			int finalI = i;
-			array[i] = IValueProvider.getValue(vc -> read(finalI, vc));
+			array[i] = IValueProvider.getValue(read(finalI));
 		}
 	}
 }

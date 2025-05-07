@@ -23,10 +23,11 @@
 package eu.solven.adhoc.measure.examples;
 
 import java.util.Arrays;
+import java.util.Set;
 
-import eu.solven.adhoc.measure.IMeasureBagVisitor;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
+import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.measure.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -45,18 +46,18 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * @author Benoit Lacelle
  */
 public class RatioOverCurrentColumnValueCompositor {
-	public IMeasureForest addTo(IMeasureForest measureBag, String column, String underlying) {
+	public Set<IMeasure> addTo(String column, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, "current");
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, "current");
 		String ratioMeasureName = "%s_%s=%s_ratio_postcheck".formatted(underlying, column, "current");
 		// We ensure the filter is compatible (e.g. a multi-selection with no groupBy would not be compatible)
 		String validMeasureName = "%s_%s=%s_ratio".formatted(underlying, column, "current");
 
-		return MeasureForest.edit(measureBag)
+		return ImmutableSet.<IMeasure>builder()
 
 				// A Bucketor will make explicit what's the current value for requested column
 				// Filter the specific country: if we were filtering color=red, this filters both color and country
-				.measure(Bucketor.builder()
+				.add(Bucketor.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
 						.groupBy(GroupByColumns.named(column))
@@ -64,7 +65,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// Filter the specific country: if we were filtering `country=FR&color=red`, this filters only
 				// `country=FR`
-				.measure(Unfiltrator.builder()
+				.add(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
 						.filterOnly(column)
@@ -72,7 +73,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// Computes the actual ratio from current slice (e.g. `country=FR&color=red`) over the parent slice
 				// (e.g. `country=FR`)
-				.measure(Combinator.builder()
+				.add(Combinator.builder()
 						.name(ratioMeasureName)
 						.underlyings(Arrays.asList(sliceMeasureName, wholeMeasureName))
 						.combinationKey(DivideCombination.KEY)
@@ -80,7 +81,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// Ensure given column is expressed: if column is not expressed, we would not compute the ratio over the
 				// missing column (we may also want to always return 1).
-				.measure(Columnator.builder()
+				.add(Columnator.builder()
 						.name(validMeasureName)
 						.underlying(ratioMeasureName)
 						.requiredColumn(column)
@@ -89,12 +90,12 @@ public class RatioOverCurrentColumnValueCompositor {
 				.build();
 	}
 
-	public IMeasureBagVisitor asCombinator(String column, String underlying) {
-		return new IMeasureBagVisitor() {
+	public IMeasureForestVisitor asCombinator(String column, String underlying) {
+		return new IMeasureForestVisitor() {
 
 			@Override
-			public IMeasureForest addMeasures(IMeasureForest adhocMeasureBag) {
-				return RatioOverCurrentColumnValueCompositor.this.addTo(adhocMeasureBag, column, underlying);
+			public Set<IMeasure> addMeasures() {
+				return RatioOverCurrentColumnValueCompositor.this.addTo(column, underlying);
 			}
 		};
 	}

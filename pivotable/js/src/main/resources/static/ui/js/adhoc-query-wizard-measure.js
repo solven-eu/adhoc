@@ -35,7 +35,20 @@ export default {
 			}
 		};
 
-		return { mark, toggleTag };
+		const filteredEntry = function (measure) {
+			const filteredCopy = Object.assign({}, measure);
+
+			// Name is shown as header: no need to show it again in details
+			delete filteredCopy.name;
+			// Unclear why we receive a `key` which duplicate the `name`
+			delete filteredCopy.key;
+			// tags are shown as badges
+			delete filteredCopy.tags;
+
+			return filteredCopy;
+		};
+
+		return { mark, toggleTag, filteredEntry };
 	},
 	template: /* HTML */ `
         <span v-html="mark(measure.name)" />
@@ -46,7 +59,7 @@ export default {
         >
             {{tag}}
         </span>
-        <span v-if="showDetails" class="text-muted">
+        <div v-if="showDetails" class="text-muted">
             <span v-if="measure.type == '.Aggregator'">
                 <small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />
             </span>
@@ -59,9 +72,13 @@ export default {
             <span v-else-if="measure.type == '.Filtrator'">
                 <small v-html="'filtering ' + mark(measure.filter + '(' + measure.underlying + ')')" />
             </span>
-            <span v-else>
-                <small v-html="mark(measure)"></small>
-            </span>
-        </span>
+            <small v-else>
+				<ul>
+					<li v-for="(value, key) in filteredEntry(measure)">
+						{{key}}: <span v-html="mark(value)"></span>
+					</li>
+				</ul>
+            </small>
+        </div>
     `,
 };

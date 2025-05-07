@@ -52,6 +52,6 @@ public interface IMeasureForest extends IHasName, IHasMeasures {
 	 */
 	Optional<IMeasure> resolveIfRefOpt(IMeasure measure);
 
-	IMeasureForest acceptVisitor(IMeasureBagVisitor visitor);
+	IMeasureForest acceptVisitor(IMeasureForestVisitor visitor);
 
 }

@@ -37,6 +37,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.CubeQuery.CubeQueryBuilder;
 
@@ -55,6 +56,11 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(Aggregator.countAsterisk());
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
+	}
+
+	@Test
+	public void testChangeMaximumWeight() {
+		CachingTableWrapper.defaultCacheBuilder().maximumWeight(123).build();
 	}
 
 	@Test
@@ -98,6 +104,20 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 		Assertions.assertThat(caching.getCacheStats()).satisfies(cacheStats -> {
 			Assertions.assertThat(cacheStats.hitCount()).isEqualTo(1);
 			Assertions.assertThat(cacheStats.missCount()).isEqualTo(1);
+		});
+	}
+
+	@Test
+	public void testCache_count_sameRequest_noCache() {
+		String m = Aggregator.countAsterisk().getName();
+		ITabularView firstView =
+				cachingCube.execute(CubeQuery.builder().measure(m).option(StandardQueryOptions.NO_CACHE).build());
+		Assertions.assertThat(MapBasedTabularView.load(firstView).getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(m, 0L + 2))
+				.hasSize(1);
+		Assertions.assertThat(caching.getCacheStats()).satisfies(cacheStats -> {
+			Assertions.assertThat(cacheStats.hitCount()).isEqualTo(0);
+			Assertions.assertThat(cacheStats.missCount()).isEqualTo(0);
 		});
 	}
 

@@ -36,7 +36,6 @@ import eu.solven.adhoc.data.tabular.AggregatingColumns;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -114,42 +113,21 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		SliceAsMap coordinates = optCoordinates.get();
 
-		for (FilteredAggregator aggregatedMeasure : tableQuery.getAggregators()) {
-			IValueReceiver valueConsumer;
-
-			Aggregator preAggregation = aggregatedMeasure.getAggregator();
+		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators()) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
-			valueConsumer = sliceToAgg.contributePre(aggregatedMeasure, coordinates);
+			IValueReceiver valueConsumer = sliceToAgg.contribute(filteredAggregator, coordinates);
 
 			if (queryPod.isDebug()) {
-				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(aggregatedMeasure.getAlias()));
-				log.info("[DEBUG] Table contributes {}={} -> {}", aggregatedMeasure, aggregateValue, coordinates);
+				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
+				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, coordinates);
 			}
 
-			if (EmptyAggregation.isEmpty(preAggregation)) {
+			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
 				// TODO Introduce .onBoolean
 				valueConsumer.onLong(0);
 			} else {
-				tableRow.onAggregate(aggregatedMeasure.getAlias()).acceptConsumer(new IValueReceiver() {
-
-					@Override
-					public void onLong(long v) {
-						valueConsumer.onLong(v);
-					}
-
-					@Override
-					public void onDouble(double v) {
-						valueConsumer.onDouble(v);
-					}
-
-					@Override
-					public void onObject(Object v) {
-						if (v != null) {
-							valueConsumer.onObject(v);
-						}
-					}
-				});
+				tableRow.onAggregate(filteredAggregator.getAlias()).acceptConsumer(valueConsumer);
 			}
 		}
 	}

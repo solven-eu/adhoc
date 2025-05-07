@@ -72,15 +72,20 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IValueReceiver contributePre(IAliasedAggregator aggregator, T key) {
+	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
 		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
 
 		IMultitypeColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator, k -> makePreColumn(agg));
 
 		if (agg instanceof IHasCarriers hasCarriers) {
 			return v -> {
-				// Wrap the aggregate from table into the aggregation custom wrapper
-				Object wrapped = hasCarriers.wrap(v);
+				Object wrapped;
+				if (v == null) {
+					wrapped = null;
+				} else {
+					// Wrap the aggregate from table into the aggregation custom wrapper
+					wrapped = hasCarriers.wrap(v);
+				}
 
 				column.append(key).onObject(wrapped);
 			};
@@ -88,17 +93,6 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 		} else {
 			return column.append(key);
 		}
-	}
-
-	public long size(Aggregator aggregator) {
-		long size = 0L;
-
-		IMultitypeColumn<T> preColumn = aggregatorToAggregates.get(aggregator);
-		if (preColumn != null) {
-			size += preColumn.size();
-		}
-
-		return size;
 	}
 
 	@Override
@@ -125,5 +119,17 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 		}
 
 		return column;
+	}
+
+	@Override
+	public long size(IAliasedAggregator aggregator) {
+		long size = 0L;
+
+		IMultitypeColumn<T> preColumn = aggregatorToAggregates.get(aggregator);
+		if (preColumn != null) {
+			size += preColumn.size();
+		}
+
+		return size;
 	}
 }

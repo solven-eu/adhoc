@@ -29,7 +29,6 @@ import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import lombok.Builder;
@@ -56,14 +55,14 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 	}
 
 	@Override
-	public void read(int index, IValueReceiver valueConsumer) {
-		valueProviders.get(index).acceptConsumer(valueConsumer);
+	public IValueProvider read(int index) {
+		return valueProviders.get(index);
 	}
 
 	@Override
 	public String toString() {
 		return IntStream.range(0, size()).mapToObj(index -> {
-			Object v = IValueProvider.getValue(vc -> read(index, vc));
+			Object v = IValueProvider.getValue(read(index));
 
 			return AdhocDebug.toString(v);
 		}).collect(Collectors.joining(", ", "[", "]"));

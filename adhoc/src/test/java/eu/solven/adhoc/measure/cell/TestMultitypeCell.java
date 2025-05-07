@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
+import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestMultitypeCell {
@@ -110,6 +111,32 @@ public class TestMultitypeCell {
 	}
 
 	@Test
+	public void testPrimitive_longAndNull() {
+		MultitypeCell cell = MultitypeCell.builder().aggregation(new SumAggregation()).build();
+
+		cell.merge().onLong(123);
+		cell.merge().onObject(null);
+
+		cell.reduce().acceptConsumer(new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				Assertions.assertThat(v).isEqualTo(123);
+			}
+
+			@Override
+			public void onDouble(double v) {
+				Assertions.fail("Should call the Long aggregate");
+			}
+
+			@Override
+			public void onObject(Object v) {
+				Assertions.fail("Should call the Long aggregate");
+			}
+		});
+	}
+
+	@Test
 	public void testPrimitive_double() {
 		MultitypeCell cell = MultitypeCell.builder().aggregation(new SumAggregation()).build();
 
@@ -131,6 +158,32 @@ public class TestMultitypeCell {
 			@Override
 			public void onObject(Object v) {
 				Assertions.fail("Should call the Double aggregate");
+			}
+		});
+	}
+
+	@Test
+	public void testProduct() {
+		MultitypeCell cell =
+				MultitypeCell.builder().aggregation(new ProductAggregation()).asLong(1L).asDouble(1D).build();
+
+		cell.merge().onLong(123);
+
+		cell.reduce().acceptConsumer(new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				Assertions.assertThat(v).isEqualTo(123);
+			}
+
+			@Override
+			public void onDouble(double v) {
+				Assertions.fail("Should call the Long aggregate");
+			}
+
+			@Override
+			public void onObject(Object v) {
+				Assertions.fail("Should call the Long aggregate");
 			}
 		});
 	}

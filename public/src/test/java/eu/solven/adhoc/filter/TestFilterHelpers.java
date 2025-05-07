@@ -84,6 +84,19 @@ public class TestFilterHelpers {
 	}
 
 	@Test
+	public void testGetValueMatcher_Not_notOptimized() {
+		IAdhocFilter filterNotAll = NotFilter.builder().negated(IAdhocFilter.MATCH_ALL).build();
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c1")).isEqualTo(IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c2")).isEqualTo(IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c3")).isEqualTo(IValueMatcher.MATCH_NONE);
+
+		IAdhocFilter filterNotNone = NotFilter.builder().negated(IAdhocFilter.MATCH_NONE).build();
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c1")).isEqualTo(IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c2")).isEqualTo(IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
+	}
+
+	@Test
 	public void testGetValueMatcher_Not_inAnd() {
 		IAdhocFilter filter =
 				AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), NotFilter.not(ColumnFilter.isEqualTo("c2", "v2")));

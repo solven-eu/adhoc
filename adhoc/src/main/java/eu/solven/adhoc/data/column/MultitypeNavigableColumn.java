@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -121,6 +122,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		int size = keys.size();
 		int valuesSize = values.size();
 		if (size != valuesSize) {
+			if (keys.isEmpty()) {
+				throw new IllegalStateException("keys is empty while values.size() == %s".formatted(values.size()));
+			}
 			// This is generally the faulty key
 			T errorKey = keys.getLast();
 
@@ -242,10 +246,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		AtomicInteger index = new AtomicInteger();
 
-		stream((slice) -> v -> Map.of("k", slice, "v", v)).limit(AdhocUnsafe.limitOrdinalToString)
+		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v)).limit(AdhocUnsafe.limitOrdinalToString)
 				.forEach(sliceToValue -> {
-					Object k = sliceToValue.get("k");
-					Object o = sliceToValue.get("v");
+					T k = sliceToValue.getKey();
+					Object o = sliceToValue.getValue();
 					toStringHelper.add("#" + index.getAndIncrement(), k + "->" + PepperLogHelper.getObjectAndClass(o));
 				});
 
@@ -381,5 +385,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				.values(multitypeArrayBuilder.build())
 				.locked(true)
 				.build();
+	}
+
+	public void clearKey(T key) {
+		int index = getIndex(key);
+		if (index >= 0) {
+			keys.remove(index);
+			values.remove(index);
+		}
 	}
 }
