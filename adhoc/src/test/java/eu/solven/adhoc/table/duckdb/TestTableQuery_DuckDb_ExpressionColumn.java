@@ -67,7 +67,7 @@ public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest impl
 		forest.addMeasure(k1Sum);
 
 		ITabularView result =
-				aqe.executeUnsafe(
+				engine.executeUnsafe(
 						CubeQuery.builder()
 								.measure(k1Sum.getName())
 								.groupBy(GroupByColumns

@@ -68,22 +68,23 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	// object
 	@Default
 	@NonNull
-	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>();
+	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>(AdhocUnsafe.defaultCapacity());
 	@Default
 	@NonNull
-	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>();
+	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>(AdhocUnsafe.defaultCapacity());
 	@Default
 	@NonNull
-	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>();
+	final Object2ObjectMap<T, Object> measureToAggregateO =
+			new Object2ObjectOpenHashMap<>(AdhocUnsafe.defaultCapacity());
 
 	/**
 	 * To be called before a guaranteed `add` operation.
 	 */
 	protected void checkSizeBeforeAdd() {
 		long size = size();
-		if (size >= AdhocUnsafe.limitColumnLength) {
+		if (size >= AdhocUnsafe.limitColumnSize) {
 			throw new IllegalStateException(
-					"Can not grow as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnLength));
+					"Can not grow as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		}
 	}
 
@@ -91,8 +92,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
 	 * @param key
-	 * @param v
-	 *            if null, this behave like `.clear`
+	 *            if null, this behaves like `.clear`
 	 */
 	@Override
 	public IValueReceiver append(T key) {

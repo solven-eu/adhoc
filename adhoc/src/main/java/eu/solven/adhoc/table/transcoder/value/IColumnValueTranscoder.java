@@ -32,5 +32,11 @@ import java.time.LocalDate;
  * @author Benoit Lacelle
  */
 public interface IColumnValueTranscoder {
+	/**
+	 * 
+	 * @param column
+	 * @param value
+	 * @return the transcoded value.
+	 */
 	Object transcodeValue(String column, Object value);
 }

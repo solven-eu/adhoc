@@ -66,7 +66,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 
 		CubeWrapper cubeWrapper = CubeWrapper.builder()
-				.engine(aqe)
+				.engine(engine)
 				.table(table)
 				.forest(forest)
 				.columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
@@ -225,7 +225,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery() {
+	public void testCubeQuery() {
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
@@ -254,7 +254,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	// This is not testing the initial issue since transcoding is moved from `table` to `engine`, as `table` now have
 	// less uses of ALIASes.
 	@Test
-	public void testAdhocQuery_aliasWithNameAlreadyInTable() {
+	public void testCubeQuery_aliasWithNameAlreadyInTable() {
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
@@ -288,7 +288,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery_sumFilterGroupByk1() {
+	public void testCubeQuery_sumFilterGroupByk1() {
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
@@ -312,7 +312,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery_transcodeAggregatedToExpression() {
+	public void testCubeQuery_transcodeAggregatedToExpression() {
 		// In this useCase, we rely on a simple FILTER expression
 		// While this could be done with a Filtrator, it demonstrate useCases like: potentially more complex
 		// expressions, or Atoti ColumnCalculator

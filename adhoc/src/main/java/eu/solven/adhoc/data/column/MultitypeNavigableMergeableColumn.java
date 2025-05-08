@@ -28,6 +28,7 @@ import java.util.List;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 		implements IMultitypeMergeableColumn<T> {
 
 	@NonNull
+	@Getter
 	IAggregation aggregation;
 
 	// When writing the value, we need to ensure it is prepared by the aggregation function

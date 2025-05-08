@@ -73,11 +73,9 @@ export default {
                 <small v-html="'filtering ' + mark(measure.filter + '(' + measure.underlying + ')')" />
             </span>
             <small v-else>
-				<ul>
-					<li v-for="(value, key) in filteredEntry(measure)">
-						{{key}}: <span v-html="mark(value)"></span>
-					</li>
-				</ul>
+                <ul>
+                    <li v-for="(value, key) in filteredEntry(measure)">{{key}}: <span v-html="mark(value)"></span></li>
+                </ul>
             </small>
         </div>
     `,

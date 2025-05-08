@@ -29,11 +29,13 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 
 /**
- * A map dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a{@link IAdhocGroupBy}.
+ * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a
+ * {@link IAdhocGroupBy}.
  * 
- * It requires {@link String} keys and {@link Object} values, as columns are always String.
+ * It requires {@link String} keys and {@link Object} values, as columns are always referred by their {@link String}
+ * name.
  * 
- * It is immutable as it is used as key in {@link Map}. it may typically cache the hashCode.
+ * It is immutable as it is used as key in some {@link Map}, and it may cache the hashCode.
  * 
  * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
  * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn

@@ -124,7 +124,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), valueProvider, outputCoordinate);
 			}
 
-			valueProvider.acceptConsumer(output.putSlice(SliceAsMap.fromMap(outputCoordinate)));
+			valueProvider.acceptReceiver(output.putSlice(SliceAsMap.fromMap(outputCoordinate)));
 		} catch (RuntimeException e) {
 			List<?> underlyingVs = slice.getMeasures().asList();
 			throw new IllegalArgumentException(

@@ -35,19 +35,39 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public interface IValueProvider {
 
+	/**
+	 * Constant {@link IValueProvider} always providing `null`.
+	 */
 	IValueProvider NULL = vc -> vc.onObject(null);
 
-	void acceptConsumer(IValueReceiver valueReceiver);
+	/**
+	 * Will transmit this value into the provider {@link IValueReceiver}
+	 * 
+	 * @param valueReceiver
+	 */
+	void acceptReceiver(IValueReceiver valueReceiver);
 
+	/**
+	 * Helper method to convert a {@link IValueProvider} into a plain {@link Object}
+	 * 
+	 * @param valueProvider
+	 * @return
+	 */
 	static Object getValue(IValueProvider valueProvider) {
 		AtomicReference<Object> refV = new AtomicReference<>();
 
-		valueProvider.acceptConsumer(refV::set);
+		valueProvider.acceptReceiver(refV::set);
 
 		return refV.get();
 	}
 
+	/**
+	 * Helper method to convert a plain {@link Object} into a {@link IValueProvider}
+	 * 
+	 * @param o
+	 * @return
+	 */
 	static IValueProvider setValue(Object o) {
-		return vc -> vc.onObject(o);
+		return vr -> vr.onObject(o);
 	}
 }

@@ -28,6 +28,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> implements IMultitypeMergeableColumn<T> {
 
 	@NonNull
+	@Getter
 	IAggregation aggregation;
 
 	@Override
@@ -118,7 +120,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 						if (aggregation instanceof IDoubleAggregation doubleAggregation) {
 							double newAggregate = doubleAggregation.aggregateDoubles(existingAggregate, v);
 
-							// No need to clear as we replace a long with a long
+							// No need to clear as we replace a double with a double
 							unsafePut(key, false).onDouble(newAggregate);
 						} else {
 							Object newAggregate = aggregation.aggregate(existingAggregate, v);
@@ -147,7 +149,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 			@Override
 			public void onObject(Object v) {
 				IValueProvider existingAggregate = onValue(key);
-				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptConsumer(set(key));
+				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptReceiver(set(key));
 			}
 		};
 	}

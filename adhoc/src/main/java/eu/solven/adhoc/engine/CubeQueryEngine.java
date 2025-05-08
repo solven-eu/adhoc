@@ -51,6 +51,7 @@ import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;

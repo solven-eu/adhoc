@@ -44,13 +44,13 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 	@BeforeEach
 	public void setLimitTo2() {
-		System.setProperty("adhoc.limitColumnLength", "2");
+		System.setProperty("adhoc.limitColumnSize", "2");
 		AdhocUnsafe.reloadProperties();
 	}
 
 	@AfterEach
 	public void resetLimit() {
-		System.clearProperty("adhoc.limitColumnLength");
+		System.clearProperty("adhoc.limitColumnSize");
 		AdhocUnsafe.reloadProperties();
 	}
 

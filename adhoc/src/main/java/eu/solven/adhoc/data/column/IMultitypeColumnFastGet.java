@@ -43,7 +43,7 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 */
 	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
 	default void onValue(T slice, IValueReceiver valueReceiver) {
-		onValue(slice).acceptConsumer(valueReceiver);
+		onValue(slice).acceptReceiver(valueReceiver);
 	}
 
 	IValueProvider onValue(T key);

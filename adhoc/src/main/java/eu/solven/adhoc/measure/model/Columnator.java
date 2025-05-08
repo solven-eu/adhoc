@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
+// BEWARE This is a poorly named class. It shall be renamed at some point.
 public class Columnator implements ICombinator {
 	@NonNull
 	String name;

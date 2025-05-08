@@ -173,7 +173,7 @@ public class MultitypeArray implements IMultitypeArray {
 		return new IValueProvider() {
 
 			@Override
-			public void acceptConsumer(IValueReceiver valueReceiver) {
+			public void acceptReceiver(IValueReceiver valueReceiver) {
 				if (valuesType == IMultitypeConstants.MASK_LONG) {
 					valueReceiver.onLong(valuesL.getLong(rowIndex));
 				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
@@ -245,4 +245,5 @@ public class MultitypeArray implements IMultitypeArray {
 		valuesD.clear();
 		valuesO.clear();
 	}
+
 }

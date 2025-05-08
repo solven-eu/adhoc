@@ -1,4 +1,4 @@
-# AdHoc - InMemory Transformation Pipeline
+# AdHoc - InMemory Indicators Pipeline
 
 [![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)

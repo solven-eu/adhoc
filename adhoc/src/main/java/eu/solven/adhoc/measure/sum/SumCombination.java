@@ -44,7 +44,7 @@ public class SumCombination implements ICombination {
 
 		IValueReceiver cellValueConsumer = refMultitype.merge();
 		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptConsumer(cellValueConsumer);
+			slicedRecord.read(i).acceptReceiver(cellValueConsumer);
 		}
 
 		return refMultitype.reduce();

@@ -44,14 +44,16 @@ public class AdhocUnsafe {
 	public static void reloadProperties() {
 		// Customize with `-Dadhoc.limitOrdinalToString=15`
 		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.limitColumnLength=15`
-		limitColumnLength = safeLoadIntegerProperty("adhoc.limitColumnLength", 1_000_000);
+		// Customize with `-Dadhoc.limitColumnSize=15`
+		limitColumnSize = safeLoadIntegerProperty("adhoc.limitColumnSize", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
 		// Customize with `-Dadhoc.failfast=false`
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
 		// Customize with `-Dadhoc.parallelism=16`
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
+		// Customize with `-Dadhoc.defaultColumnCapacity=100_000`
+		defaultColumnCapacity = safeLoadIntegerProperty("adhoc.defaultColumnCapacity", limitColumnSize);
 	}
 
 	static int safeLoadIntegerProperty(String key, int defaultValue) {
@@ -65,15 +67,18 @@ public class AdhocUnsafe {
 
 	static boolean safeLoadBooleanProperty(String key, boolean defaultValue) {
 		// Duplicate `Boolean.getBoolean` but enabling a `true` defaultValue
+		String property = System.getProperty(key);
 		try {
 			boolean result = defaultValue;
 			try {
-				result = Boolean.parseBoolean(System.getProperty(key));
+				if (property != null) {
+					result = Boolean.parseBoolean(property);
+				}
 			} catch (IllegalArgumentException | NullPointerException e) {
 			}
 			return result;
 		} catch (RuntimeException e) {
-			log.warn("Issue loading -D{}={}", key, System.getProperty(key));
+			log.warn("Issue loading -D{}={}", key, property);
 		}
 		return defaultValue;
 	}
@@ -90,18 +95,22 @@ public class AdhocUnsafe {
 	public static int limitCoordinates;
 
 	/**
+	 * This will limit data-structures to go over this size.
+	 * 
 	 * Used to prevent one query consuming too much memory. This applied to both pre-aggregated columns, and
 	 * transformator columns.
 	 */
-	public static int limitColumnLength;
+	public static int limitColumnSize;
 
 	/**
 	 * On multiple occasions, we encounter exceptions which are not fatal. Should we be resilient, or fail-fast?
 	 */
 	// By default, failFast. This is a simple flag for projects preferring resiliency.
-	public static boolean failFast = true;
+	public static boolean failFast;
 
-	private static int parallelism = defaultParallelism();
+	private static int parallelism;
+
+	private static int defaultColumnCapacity;
 
 	/**
 	 * Used for unitTests
@@ -147,4 +156,21 @@ public class AdhocUnsafe {
 
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
 	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(AdhocUnsafe.parallelism());
+
+	/**
+	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is
+	 * guaranteed never to need being grown/re-hashed.
+	 * 
+	 * @return the default capacity for structured.
+	 */
+	public static int defaultCapacity() {
+		if (defaultColumnCapacity >= 0) {
+			// the default capacity is capped by the limit over columnLength
+			return Math.min(limitColumnSize, defaultColumnCapacity);
+		}
+
+		// There is no default capacity: fallback on limitColumnSize. This way, data-structures would never grow nor
+		// re-hash.
+		return limitColumnSize;
+	}
 }

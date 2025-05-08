@@ -117,15 +117,27 @@ public class UnderlyingQueryStepHelpers {
 				}
 			}
 
-			Stream<SliceAndMeasures> sortedSlices = makeSortedStream(queryStep, sorted);
+			Stream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, sorted);
 
 			return sortedSlices;
 		}
 	}
 
-	private static Stream<SliceAndMeasures> makeSortedStream(CubeQueryStep queryStep, List<ISliceToValue> sorted) {
-		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators =
-				sorted.stream().map(s -> s.stream().iterator()).toList();
+	/**
+	 * 
+	 * @param queryStep
+	 * @param sorted
+	 *            {@link ISliceToValue} required to be sorted.
+	 * @return a merged {@link Stream}, based on the input sorted ISliceToValue
+	 */
+	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
+			List<ISliceToValue> sorted) {
+		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators = sorted.stream().peek(s -> {
+			if (!s.isSorted()) {
+				throw new IllegalArgumentException(
+						"This requires input Stream to be sorted. queryStep=%s".formatted(queryStep));
+			}
+		}).map(s -> s.stream().iterator()).toList();
 
 		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIterator(queryStep, sortedIterators);
 

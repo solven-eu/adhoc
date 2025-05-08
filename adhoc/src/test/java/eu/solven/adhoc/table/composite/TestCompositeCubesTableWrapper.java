@@ -536,35 +536,41 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 						.isEqualToNormalizingNewlines(
 								"""
+										[EXPLAIN] time=PT0.005S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+										[EXPLAIN] time=PT0.006S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 										#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 										|  No cost info
 										\\-- #1 m=table1_k_minus2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=123ms
+										    |  size=1 duration=7ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-										        \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										        \\  size=1 duration=15ms
+										Executed status=OK duration=PT0.025S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										[EXPLAIN] time=PT0.01S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+										[EXPLAIN] time=PT0.011S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 										#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 										|  No cost info
 										\\-- #1 m=table2_k_minus3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=123ms
+										    |  size=1 duration=12ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-										        \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										        \\  size=1 duration=30ms
+										Executed status=OK duration=PT0.05S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										[EXPLAIN] time=PT0.013S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=table1_k_minus2, tags=[], columnName=table1_k_minus2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=table2_k_minus3, tags=[], columnName=table2_k_minus3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN])
+										[EXPLAIN] time=PT0.014S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=table1_k_minus2, tags=[], columnName=table1_k_minus2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=table2_k_minus3, tags=[], columnName=table2_k_minus3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN])
 										#0 s=composite id=00000000-0000-0000-0000-000000000000
 										|  No cost info
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=123ms
+										    |  size=1 duration=17ms
 										    |\\- #2 m=composite_power2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |   |  size=1 duration=123ms
+										    |   |  size=1 duration=31ms
 										    |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
-										    |       \\  size=1 duration=123ms
+										    |       \\  size=1 duration=104ms
 										    \\-- #4 m=composite_power3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										        |  size=1 duration=123ms
+										        |  size=1 duration=16ms
 										        \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
-										            \\  size=1 duration=123ms
-										Executed status=OK duration=PT0.123S on table=composite measures=composite query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
+										            \\  size=1 duration=104ms
+										Executed status=OK duration=PT0.153S on table=composite measures=composite query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
 
-				Assertions.assertThat(messages).hasSize(15);
+				Assertions.assertThat(messages).hasSize(21);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
 						.containsEntry(Map.of(),

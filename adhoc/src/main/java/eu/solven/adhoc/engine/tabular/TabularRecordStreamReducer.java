@@ -32,7 +32,7 @@ import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.data.tabular.AggregatingColumns;
+import eu.solven.adhoc.data.tabular.AggregatingColumnsV2;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.AdhocMap;
@@ -60,7 +60,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	TableQueryV2 tableQuery;
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures() {
-		return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+		return AggregatingColumnsV2.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators()) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
-			IValueReceiver valueConsumer = sliceToAgg.contribute(filteredAggregator, coordinates);
+			IValueReceiver valueReceiver = sliceToAgg.contribute(filteredAggregator, coordinates);
 
 			if (queryPod.isDebug()) {
 				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
@@ -125,9 +125,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
 				// TODO Introduce .onBoolean
-				valueConsumer.onLong(0);
+				valueReceiver.onLong(0);
 			} else {
-				tableRow.onAggregate(filteredAggregator.getAlias()).acceptConsumer(valueConsumer);
+				tableRow.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
 			}
 		}
 	}

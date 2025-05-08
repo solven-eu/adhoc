@@ -87,7 +87,7 @@ public class ProductCombination implements ICombination {
 
 		int size = slicedRecord.size();
 		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptConsumer(proxyValueReceiver);
+			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
 		}
 
 		if (nullOperandIsNull && hasNull.get()) {

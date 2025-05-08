@@ -50,12 +50,13 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Deprecated(since = "Replaced by AggregatingColumnsV2")
 public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMergeableGrid<T> {
 	// The table can do aggregations, so Adhoc does not need to do the aggregation
 	// Need to aggregate partitioned results, like from CompositeCube providing aggregates for same slice
 	@NonNull
 	@Default
-	Map<IAliasedAggregator, IMultitypeMergeableColumn<T>> aggregatorToAggregates = new LinkedHashMap<>();
+	Map<String, IMultitypeMergeableColumn<T>> aggregatorToAggregates = new LinkedHashMap<>();
 
 	@NonNull
 	@Default
@@ -68,16 +69,19 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeMergeableColumn<T> makePreColumn(IAggregation agg) {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
+		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
 		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).build();
 	}
 
 	@Override
 	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
-		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
 
-		IMultitypeColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator, k -> makePreColumn(agg));
+		IMultitypeMergeableColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
+			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+			return makePreColumn(agg);
+		});
 
-		if (agg instanceof IHasCarriers hasCarriers) {
+		if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
 			return v -> {
 				Object wrapped;
 				if (v == null) {
@@ -97,7 +101,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers) {
-		IMultitypeColumnFastGet<T> preColumn = aggregatorToAggregates.get(aggregator);
+		IMultitypeColumnFastGet<T> preColumn = aggregatorToAggregates.get(aggregator.getAlias());
 
 		IMultitypeColumnFastGet<T> column = null;
 		if (preColumn != null) {
@@ -110,11 +114,15 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 			column = MultitypeHashColumn.empty();
 		} else if (purgeCarriers) {
 			// Typically converts a CountHolder into the count as a `long`
+			// May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
 			column.purgeAggregationCarriers();
 		}
 
 		if (!(column instanceof MultitypeNavigableColumn<?>)) {
 			// TODO Should we have some sort of strategy to decide when to switch to the sorting strategy?
+
+			// BEWARE The point of this sorting is to improve performance of later
+			// UnderlyingQueryStepHelpers.distinctSlices
 			column = MultitypeNavigableColumn.copy(column);
 		}
 
@@ -125,7 +133,7 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	public long size(IAliasedAggregator aggregator) {
 		long size = 0L;
 
-		IMultitypeColumn<T> preColumn = aggregatorToAggregates.get(aggregator);
+		IMultitypeColumn<T> preColumn = aggregatorToAggregates.get(aggregator.getAlias());
 		if (preColumn != null) {
 			size += preColumn.size();
 		}

@@ -40,7 +40,7 @@ import lombok.Singular;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 public class HideAggregatorsTabularRecord implements ITabularRecord {
 	@NonNull
 	final ITabularRecord decorated;
@@ -64,9 +64,16 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 
 	@Override
 	public Map<String, ?> aggregatesAsMap() {
-		Map<String, ?> copy = new LinkedHashMap<>(decorated.aggregatesAsMap());
+		Map<String, Object> copy = new LinkedHashMap<>(keptAggregates.size());
 
-		copy.keySet().retainAll(keptAggregates);
+		keptAggregates.forEach(keptAggregate -> {
+			decorated.onAggregate(keptAggregate).acceptReceiver(o -> {
+				// May be null when hiding an unknown aggregateName
+				if (o != null) {
+					copy.put(keptAggregate, o);
+				}
+			});
+		});
 
 		return copy;
 	}
@@ -104,18 +111,12 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 
 	@Override
 	public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
-		return HideAggregatorsTabularRecord.builder()
-				.decorated(decorated.transcode(transcodingContext))
-				.keptAggregates(keptAggregates)
-				.build();
+		return toBuilder().decorated(decorated.transcode(transcodingContext)).build();
 	}
 
 	@Override
 	public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
-		return HideAggregatorsTabularRecord.builder()
-				.decorated(decorated.transcode(customTypeManager))
-				.keptAggregates(keptAggregates)
-				.build();
+		return toBuilder().decorated(decorated.transcode(customTypeManager)).build();
 	}
 
 	@Override

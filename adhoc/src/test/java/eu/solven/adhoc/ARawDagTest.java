@@ -36,6 +36,7 @@ import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.composite.StopWatchTestFactory;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
@@ -52,16 +53,16 @@ public abstract class ARawDagTest {
 			UnsafeMeasureForest.builder().name(this.getClass().getSimpleName()).build();
 
 	public IStopwatch makeStopwatch() {
-		return IStopwatchFactory.guavaStopwatchFactory().createStarted();
+		// return IStopwatchFactory.guavaStopwatchFactory().createStarted();
+		return stopwatchFactory.createStarted();
 	}
 
-	public final IStopwatchFactory stopwatchFactory = new IStopwatchFactory() {
+	public IStopwatchFactory makeStopwatchFactory() {
+		return new StopWatchTestFactory();
+		// return IStopwatchFactory.guavaStopwatchFactory().createStarted();
+	}
 
-		@Override
-		public IStopwatch createStarted() {
-			return makeStopwatch();
-		}
-	};
+	public final IStopwatchFactory stopwatchFactory = makeStopwatchFactory();
 	public final CubeQueryEngine engine =
 			CubeQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 

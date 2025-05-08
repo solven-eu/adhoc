@@ -22,11 +22,9 @@
  */
 package eu.solven.adhoc.table.composite;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -56,7 +54,6 @@ import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.util.IStopwatch;
 
 public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAdhocTestConstants {
 
@@ -528,15 +525,6 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.hasSize(3);
 	}
 
-	AtomicInteger stopWatchCount = new AtomicInteger();
-
-	@Override
-	public IStopwatch makeStopwatch() {
-		int stopWatchIndex = stopWatchCount.incrementAndGet();
-
-		return () -> Duration.ofMillis(123 * stopWatchIndex);
-	}
-
 	@Test
 	public void testLogPerfs() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
@@ -555,31 +543,37 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
+								[EXPLAIN] time=PT0.005S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+								[EXPLAIN] time=PT0.006S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
-								|   \\  size=1 duration=492ms
+								|   \\  size=1 duration=15ms
 								\\-- #2 m=k2(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
-								    \\  size=1 duration=492ms
-								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=425b461c, cube=composite))
+								    \\  size=1 duration=15ms
+								Executed status=OK duration=PT0.018S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=425b461c, cube=composite))
+								[EXPLAIN] time=PT0.009S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+								[EXPLAIN] time=PT0.01S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
-								|   \\  size=1 duration=738ms
+								|   \\  size=1 duration=27ms
 								\\-- #2 m=k3(SUM) filter=matchAll groupBy=grandTotal customMarker=JPY
-								    \\  size=1 duration=738ms
-								Executed status=OK duration=PT0.615S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=425b461c, cube=composite))
+								    \\  size=1 duration=27ms
+								Executed status=OK duration=PT0.034S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=425b461c, cube=composite))
+								[EXPLAIN] time=PT0.011S for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								[EXPLAIN] time=PT0.012S for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=color=red groupBy=(letter) customMarker=JPY
-								|   \\  size=2 duration=246ms
+								|   \\  size=2 duration=77ms
 								|\\- #2 m=k2(SUM) filter=color=red groupBy=(letter) customMarker=JPY
-								|   \\  size=1 duration=246ms
+								|   \\  size=1 duration=77ms
 								\\-- #3 m=k3(SUM) filter=color=red groupBy=(letter) customMarker=JPY
-								    \\  size=1 duration=246ms
-								Executed status=OK duration=PT0.123S on table=composite measures=composite query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""");
+								    \\  size=1 duration=77ms
+								Executed status=OK duration=PT0.078S on table=composite measures=composite query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""");
 
-		Assertions.assertThat(messages).hasSize(13);
+		Assertions.assertThat(messages).hasSize(19);
 	}
 
 	@Test
@@ -611,30 +605,36 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
+								[EXPLAIN] time=PT0.005S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+								[EXPLAIN] time=PT0.006S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
-								|   \\  size=2 duration=492ms
+								|   \\  size=2 duration=15ms
 								\\-- #2 m=k1.someTableName1.cube(Combinator[FIND_FIRST]) filter=matchAll groupBy=(a) customMarker=JPY
-								    |  size=2 duration=615ms
+								    |  size=2 duration=7ms
 								    \\-- !1
-								Executed status=OK duration=PT0.369S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=4baed135, cube=composite))
+								Executed status=OK duration=PT0.025S on table=someTableName1 measures=someTableName1 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=4baed135, cube=composite))
+								[EXPLAIN] time=PT0.01S for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
+								[EXPLAIN] time=PT0.011S for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
 								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|  No cost info
 								|\\- #1 m=k1(SUM) filter=matchAll groupBy=(a) customMarker=JPY
-								|   \\  size=1 duration=861ms
+								|   \\  size=1 duration=30ms
 								\\-- #2 m=k1.someTableName1.cube(Combinator[FIND_FIRST]) filter=matchAll groupBy=(a) customMarker=JPY
-								    |  size=1 duration=984ms
+								    |  size=1 duration=12ms
 								    \\-- !1
-								Executed status=OK duration=PT0.738S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=4baed135, cube=composite))
+								Executed status=OK duration=PT0.05S on table=someTableName2 measures=someTableName2 query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=FIND_FIRST, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=4baed135, cube=composite))
+								[EXPLAIN] time=PT0.013S for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								[EXPLAIN] time=PT0.014S for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								#0 s=composite id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								|\\- #1 m=k1(MAX) filter=color=red groupBy=(a) customMarker=JPY
-								|   \\  size=2 duration=246ms
+								|   \\  size=2 duration=104ms
 								\\-- #2 m=k1.someTableName1.cube(SUM) filter=color=red groupBy=(a) customMarker=JPY
-								    \\  size=2 duration=246ms
-								Executed status=OK duration=PT0.123S on table=composite measures=composite query=CubeQuery(filter=color=red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""");
+								    \\  size=2 duration=104ms
+								Executed status=OK duration=PT0.105S on table=composite measures=composite query=CubeQuery(filter=color=red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""");
 
-		Assertions.assertThat(messages).hasSize(14);
+		Assertions.assertThat(messages).hasSize(20);
 	}
 }

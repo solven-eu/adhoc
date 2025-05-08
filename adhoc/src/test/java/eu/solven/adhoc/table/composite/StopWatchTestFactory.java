@@ -20,22 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.table.composite;
 
-import java.util.Map;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.IStopwatchFactory;
 
-/**
- * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
- * 
- * @author Benoit Lacelle
- */
-public interface ITableQueryEngine {
+public class StopWatchTestFactory implements IStopwatchFactory {
 
-	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
+	AtomicInteger nextTicks = new AtomicInteger();
+	AtomicInteger stopWatchTicks = new AtomicInteger();
 
+	@Override
+	public IStopwatch createStarted() {
+		// Increased the tick on each operation, in order to differentiate the different timings
+		int startTicks = stopWatchTicks.getAndAdd(nextTicks.incrementAndGet());
+
+		return () -> Duration.ofMillis(stopWatchTicks.get() - startTicks);
+	}
 }

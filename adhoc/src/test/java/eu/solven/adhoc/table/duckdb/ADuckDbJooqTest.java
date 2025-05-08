@@ -35,6 +35,6 @@ public abstract class ADuckDbJooqTest {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	protected CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	protected CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 	protected UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("duckdb").build();
 }

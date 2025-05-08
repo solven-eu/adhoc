@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.column;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Bucketor;
 
 /**
@@ -34,6 +35,7 @@ import eu.solven.adhoc.measure.model.Bucketor;
  * @author Benoit Lacelle
  */
 public interface IMultitypeMergeableColumn<T> extends IMultitypeColumnFastGet<T> {
+	IAggregation getAggregation();
 
 	@Deprecated(since = "Should rely on `IValueConsumer merge(T slice)`")
 	default void merge(T slice, Object v) {

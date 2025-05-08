@@ -20,34 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.engine.tabular;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Map;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.query.table.TableQuery;
 
-public interface IValueProviderTestHelpers {
-	static long getLong(IValueProvider valueProvider) {
-		AtomicLong longRef = new AtomicLong(Long.MAX_VALUE);
+/**
+ * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface ITableQueryEngine {
 
-		valueProvider.acceptReceiver(new IValueReceiver() {
+	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
 
-			@Override
-			public void onLong(long v) {
-				if (v == Long.MAX_VALUE) {
-					throw new IllegalArgumentException("requireOnLong does not handle Long.MAX_VALUE");
-				}
-
-				longRef.set(v);
-			}
-
-			@Override
-			public void onObject(Object v) {
-				throw new IllegalArgumentException("requireOnLong requires onLong and not onObject");
-			}
-		});
-
-		return longRef.get();
-	}
 }

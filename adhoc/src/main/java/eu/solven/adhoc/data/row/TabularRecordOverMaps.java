@@ -25,6 +25,9 @@ package eu.solven.adhoc.data.row;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -35,13 +38,14 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 
-@Builder
+@Builder(toBuilder = true)
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	final Map<String, ?> slice;
+	// BEWAERE: ImmutableMap will forbid null value
 	@NonNull
 	@Singular
-	final Map<String, ?> aggregates;
+	final ImmutableMap<String, ?> aggregates;
 
 	@Override
 	public Set<String> aggregateKeySet() {
@@ -109,14 +113,14 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
 		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice);
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(transcodedGroupBys).build();
+		return toBuilder().slice(transcodedGroupBys).build();
 	}
 
 	@Override
 	public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
 		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeValues(customTypeManager::fromTable, slice);
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(transcodedGroupBys).build();
+		return toBuilder().slice(transcodedGroupBys).build();
 	}
 
 	@Override
@@ -128,13 +132,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		StringBuilder string = new StringBuilder();
 
 		string.append("slice:{");
-		tabularRecord.groupByKeySet().forEach(column -> {
-			string.append(column).append("=").append(tabularRecord.getGroupBy(column)).append(", ");
-		});
+		string.append(tabularRecord.groupByKeySet()
+				.stream()
+				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
+				.collect(Collectors.joining(", ")));
 		string.append("} aggregates:{");
-		tabularRecord.aggregateKeySet().forEach(aggregateName -> {
-			string.append(aggregateName).append("=").append(tabularRecord.getAggregate(aggregateName)).append(", ");
-		});
+
+		string.append(tabularRecord.aggregateKeySet()
+				.stream()
+				.filter(aggregateName -> null != tabularRecord.getAggregate(aggregateName))
+				.map(aggregateName -> aggregateName + "=" + tabularRecord.getAggregate(aggregateName))
+				.collect(Collectors.joining(", ")));
 		string.append("}");
 
 		return string.toString();

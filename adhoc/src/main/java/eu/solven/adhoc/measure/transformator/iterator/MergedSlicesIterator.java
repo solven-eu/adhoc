@@ -38,9 +38,10 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- *
+ * A merging {@link Iterator}, given a {@link List} of sorted {@link Iterator}s.
+ * 
+ * Similar to Guava {@link Iterators#mergeSorted(Iterable, Comparator)} but preventing duplicates.
  */
-// Similar to Guava Iterators.MergingIterator
 public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures> {
 
 	final CubeQueryStep queryStep;

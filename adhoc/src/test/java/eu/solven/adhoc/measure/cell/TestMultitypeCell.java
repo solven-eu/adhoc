@@ -39,7 +39,7 @@ public class TestMultitypeCell {
 		cell.merge().onDouble(23.45);
 		cell.merge().onObject("Arg");
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -65,7 +65,7 @@ public class TestMultitypeCell {
 		cell.merge().onLong(123);
 		cell.merge().onDouble(23.45);
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -91,7 +91,7 @@ public class TestMultitypeCell {
 		cell.merge().onLong(123);
 		cell.merge().onLong(234);
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -117,7 +117,7 @@ public class TestMultitypeCell {
 		cell.merge().onLong(123);
 		cell.merge().onObject(null);
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -143,7 +143,7 @@ public class TestMultitypeCell {
 		cell.merge().onDouble(12.34);
 		cell.merge().onDouble(23.45);
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
@@ -169,7 +169,7 @@ public class TestMultitypeCell {
 
 		cell.merge().onLong(123);
 
-		cell.reduce().acceptConsumer(new IValueReceiver() {
+		cell.reduce().acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
