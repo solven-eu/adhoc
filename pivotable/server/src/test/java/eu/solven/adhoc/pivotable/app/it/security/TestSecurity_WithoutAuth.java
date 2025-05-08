@@ -96,7 +96,7 @@ public class TestSecurity_WithoutAuth {
 				.expectStatus()
 				.isOk()
 				.expectBody(byte[].class)
-				.value(byteArray -> assertThat(byteArray).hasSize(15_406));
+				.value(byteArray -> assertThat(byteArray).hasSize(21_764));
 	}
 
 	@Test
