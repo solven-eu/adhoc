@@ -33,7 +33,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link ITableWrapper}.
  *
  * @see TranscodingContext
- * @see IAdhocTableReverseTranscoder
+ * @see ITableReverseTranscoder
  *
  */
 public interface ITableTranscoder {

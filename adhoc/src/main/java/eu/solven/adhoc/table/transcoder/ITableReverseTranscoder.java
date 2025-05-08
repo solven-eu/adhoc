@@ -28,7 +28,7 @@ import java.util.Set;
  * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
  * effectively queried.
  */
-public interface IAdhocTableReverseTranscoder {
+public interface ITableReverseTranscoder {
 
 	/**
 	 * @param underlying
@@ -44,5 +44,5 @@ public interface IAdhocTableReverseTranscoder {
 	 * @param underlyingKeys
 	 * @return the number of queriedKeys through all underlyings
 	 */
-	int estimateSize(Set<String> underlyingKeys);
+	int estimateQueriedSize(Set<String> underlyingKeys);
 }

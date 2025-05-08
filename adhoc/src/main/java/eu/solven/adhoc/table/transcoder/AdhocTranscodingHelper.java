@@ -55,9 +55,9 @@ public class AdhocTranscodingHelper {
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
 	// TODO Should return original Map is there is no actual transcoding
-	public static Map<String, ?> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
+	public static Map<String, ?> transcodeColumns(ITableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
-		int initialCapacity = reverseTranscoder.estimateSize(underlyingMap.keySet());
+		int initialCapacity = reverseTranscoder.estimateQueriedSize(underlyingMap.keySet());
 		Map<String, Object> transcoded = new HashMap<>(initialCapacity);
 
 		underlyingMap.forEach((underlyingKey, v) -> {
@@ -121,20 +121,6 @@ public class AdhocTranscodingHelper {
 				columnToTranscodedValue.get().add(new AbstractMap.SimpleImmutableEntry<>(column, transcodedValue));
 			}
 		});
-
-		// This `stream` implementation is quite slow, as it is called once per slice
-		// List<Map.Entry<String, Object>> columnToTranscodedValue = notTranscoded.entrySet().stream().flatMap(e -> {
-		// Object rawValue = e.getValue();
-		// String column = e.getKey();
-		// Object transcodedValue = transcoder.transcodeValue(column, rawValue);
-		//
-		// if (rawValue == transcodedValue) {
-		// // Register only not trivial mappings
-		// return Stream.empty();
-		// } else {
-		// return Stream.of(Map.entry(column, transcodedValue));
-		// }
-		// }).toList();
 
 		if (columnToTranscodedValue.get() == null) {
 			// Not a single transcoding: return original Map

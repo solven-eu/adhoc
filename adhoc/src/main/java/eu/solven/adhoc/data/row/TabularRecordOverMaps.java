@@ -32,17 +32,24 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.With;
 
-@Builder(toBuilder = true)
+/**
+ * A simple {@link ITabularRecord} based on {@link Map}.
+ * 
+ * @author Benoit Lacelle
+ */
+@Builder
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
+	@With
 	final Map<String, ?> slice;
-	// BEWAERE: ImmutableMap will forbid null value
+	// BEWARE: ImmutableMap will forbid null value
 	@NonNull
 	@Singular
 	final ImmutableMap<String, ?> aggregates;
@@ -110,17 +117,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
-		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice);
+	public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
+		Map<String, ?> transcodedSlice = AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice);
 
-		return toBuilder().slice(transcodedGroupBys).build();
+		return withSlice(transcodedSlice);
 	}
 
 	@Override
-	public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
-		Map<String, ?> transcodedGroupBys = AdhocTranscodingHelper.transcodeValues(customTypeManager::fromTable, slice);
+	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
+		Map<String, ?> transcodedSlice = AdhocTranscodingHelper.transcodeValues(customValueTranscoder, slice);
 
-		return toBuilder().slice(transcodedGroupBys).build();
+		return withSlice(transcodedSlice);
 	}
 
 	@Override

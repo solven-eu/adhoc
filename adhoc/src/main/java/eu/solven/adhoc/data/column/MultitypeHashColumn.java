@@ -84,7 +84,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		long size = size();
 		if (size >= AdhocUnsafe.limitColumnSize) {
 			throw new IllegalStateException(
-					"Can not grow as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		}
 	}
 

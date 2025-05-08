@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -134,9 +135,11 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	}
 
 	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, ISliceWithStep slice) {
-		Map<String, Object> queryCoordinates = new HashMap<>();
+		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
+		Map<String, Object> queryCoordinates = new HashMap<>(groupedByColumns.size());
+
+		groupedByColumns.forEach(groupBy -> {
 			Object value = slice.getRawSliced(groupBy);
 
 			if (value == null) {

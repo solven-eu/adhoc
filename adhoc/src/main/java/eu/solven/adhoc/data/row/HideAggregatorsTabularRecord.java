@@ -29,19 +29,21 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.With;
 
 /**
  * Decorate a {@link ITabularRecord}, and shows only given Set of aggregates.
  * 
  * @author Benoit Lacelle
  */
-@Builder(toBuilder = true)
+@Builder
 public class HideAggregatorsTabularRecord implements ITabularRecord {
+	@With
 	@NonNull
 	final ITabularRecord decorated;
 	@Singular
@@ -110,13 +112,13 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
-		return toBuilder().decorated(decorated.transcode(transcodingContext)).build();
+	public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
+		return withDecorated(decorated.transcode(transcodingContext));
 	}
 
 	@Override
-	public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
-		return toBuilder().decorated(decorated.transcode(customTypeManager)).build();
+	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
+		return withDecorated(decorated.transcode(customValueTranscoder));
 	}
 
 	@Override

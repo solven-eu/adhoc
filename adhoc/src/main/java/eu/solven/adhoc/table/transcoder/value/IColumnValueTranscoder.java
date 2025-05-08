@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.transcoder.value;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 /**
  * Enable transcoding from a raw column coordinate to a proper column coordinate.
@@ -32,6 +33,16 @@ import java.time.LocalDate;
  * @author Benoit Lacelle
  */
 public interface IColumnValueTranscoder {
+
+	/**
+	 * A sub-Set of columns which are eligible for transcoding.
+	 * 
+	 * @param columns
+	 *            the columns of current records
+	 * @return candidate for transcoding. Should be a sub-set of input columns
+	 */
+	Set<String> mayTranscode(Set<String> columns);
+
 	/**
 	 * 
 	 * @param column

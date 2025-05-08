@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,6 +60,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -164,11 +166,15 @@ public class AggregatingColumnsV2<T extends Comparable<T>> implements IMultitype
 
 			if (refSorted.get() == null) {
 				// Do not rely on a TreeMap, else the sorting is done one element at a time
-				List<Map.Entry<T, Integer>> sortedEntries = new ArrayList<>(sliceToIndex.size());
+				// ObjectArrayList enables calling `Arrays.parallelSort`
+				// `.wrap` else will rely on a `Object[]`, which will later fail on `Arrays.parallelSort`
+				ObjectArrayList<Map.Entry<T, Integer>> sortedEntries =
+						ObjectArrayList.wrap(new Map.Entry[sliceToIndex.size()], 0);
 
 				sliceToIndex.forEach((slice, rowIndex) -> sortedEntries
 						.add(new AbstractObject2IntMap.BasicEntry<>(slice, rowIndex)));
-				sortedEntries.sort(Map.Entry.comparingByKey());
+
+				Arrays.parallelSort(sortedEntries.elements(), Map.Entry.comparingByKey());
 
 				refSorted.set(sortedEntries);
 			}

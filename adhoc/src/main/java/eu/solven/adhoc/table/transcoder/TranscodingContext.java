@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
@@ -44,7 +48,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseTranscoder {
+public class TranscodingContext implements ITableTranscoder, ITableReverseTranscoder {
+	// Most column would be managed through identity transcoding
+	final Set<String> identity = new HashSet<String>();
+	// Some columns would be managed through not-trivial transcoding
 	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
 
 	@Getter
@@ -60,7 +67,9 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 	public String underlying(String queried) {
 		String underlyingColumn = transcoder.underlyingNonNull(queried);
 
-		if (underlyingToQueried.put(underlyingColumn, queried)) {
+		if (Objects.equals(underlyingColumn, queried)) {
+			identity.add(underlyingColumn);
+		} else if (underlyingToQueried.put(underlyingColumn, queried)) {
 			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
 		}
 
@@ -69,11 +78,29 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 
 	@Override
 	public Set<String> queried(String underlying) {
-		return underlyingToQueried.get(underlying);
+		if (underlyingToQueried.containsKey(underlying)) {
+			if (identity.contains(underlying)) {
+				return ImmutableSet.<String>builder()
+						.addAll(underlyingToQueried.get(underlying))
+						.add(underlying)
+						.build();
+			} else {
+				return underlyingToQueried.get(underlying);
+			}
+		} else if (identity.contains(underlying)) {
+			return Set.of(underlying);
+		} else {
+			return Set.of();
+		}
 	}
 
 	public Set<String> underlyings() {
-		return underlyingToQueried.keySet();
+		if (underlyingToQueried.isEmpty()) {
+			return identity;
+		} else {
+			// Merge the keys which are transcoded and those which are not transcoded
+			return ImmutableSet.<String>builder().addAll(underlyingToQueried.keySet()).addAll(identity).build();
+		}
 	}
 
 	public void addCalculatedColumn(CalculatedColumn calculatedColumn) {
@@ -81,10 +108,14 @@ public class TranscodingContext implements ITableTranscoder, IAdhocTableReverseT
 	}
 
 	@Override
-	public int estimateSize(Set<String> underlyingKeys) {
+	public int estimateQueriedSize(Set<String> underlyingKeys) {
 		Long sizeAsLong = cacheKeysToSize.computeIfAbsent(underlyingKeys,
-				keys -> keys.stream().mapToLong(k -> underlyingToQueried.get(k).size()).sum());
+				keys -> keys.stream().mapToLong(k -> queried(k).size()).sum());
 		return Ints.checkedCast(sizeAsLong);
 	}
 
+	@Override
+	public String toString() {
+		return underlyings().stream().map(u -> u + "->" + queried(u)).collect(Collectors.joining(", "));
+	}
 }

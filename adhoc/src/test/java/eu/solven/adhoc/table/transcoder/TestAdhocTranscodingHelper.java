@@ -267,14 +267,14 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;
 			}
 
 			@Override
-			public int estimateSize(Set<String> underlyingKeys) {
+			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				return outputKeys.size();
 			}
 		};
@@ -290,14 +290,14 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;
 			}
 
 			@Override
-			public int estimateSize(Set<String> underlyingKeys) {
+			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				// `-1`: we are underestimating the actual number of entries to write
 				return outputKeys.size() - 1;
 			}
