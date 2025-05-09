@@ -176,7 +176,7 @@ public class DispatchorQueryStep extends ATransformator implements ITransformato
 
 				if (isDebug()) {
 					aggregatingView.onValue(coordinateAsSlice)
-							.acceptConsumer(o -> log.info("[DEBUG] slice={} has been merged into agg={}",
+							.acceptReceiver(o -> log.info("[DEBUG] slice={} has been merged into agg={}",
 									fragmentCoordinate,
 									AdhocDebug.toString(o)));
 				}

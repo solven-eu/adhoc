@@ -42,9 +42,30 @@ public class TestHideAggregatorsTabularRecord {
 
 		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
 
-		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123).hasSize(2);
+		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123L).hasSize(2);
 
 		// The trailing `, ` is a minor bug
-		Assertions.assertThat(transcoded.toString()).isEqualTo("slice:{c=c1, } aggregates:{k1=123, }");
+		Assertions.assertThat(transcoded.toString()).isEqualTo("slice:{c=c1} aggregates:{k1=123}");
+	}
+
+	@Test
+	public void testKeepNotPresent() {
+		TabularRecordOverMaps underlying = TabularRecordOverMaps.builder()
+				.slice(Map.of("c", "c1"))
+				.aggregate("k1", 123)
+				.aggregate("k2", 234)
+				.build();
+		HideAggregatorsTabularRecord record = HideAggregatorsTabularRecord.builder()
+				.decorated(underlying)
+				.keptAggregate("k1")
+				.keptAggregate("k3")
+				.build();
+
+		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
+
+		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123L).hasSize(2);
+
+		// The trailing `, ` is a minor bug
+		Assertions.assertThat(transcoded.toString()).isEqualTo("slice:{c=c1} aggregates:{k1=123}");
 	}
 }

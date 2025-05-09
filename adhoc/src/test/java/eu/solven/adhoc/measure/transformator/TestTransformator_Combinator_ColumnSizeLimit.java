@@ -44,13 +44,13 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 	@BeforeEach
 	public void setLimitTo2() {
-		System.setProperty("adhoc.limitColumnLength", "2");
+		System.setProperty("adhoc.limitColumnSize", "2");
 		AdhocUnsafe.reloadProperties();
 	}
 
 	@AfterEach
 	public void resetLimit() {
-		System.clearProperty("adhoc.limitColumnLength");
+		System.clearProperty("adhoc.limitColumnSize");
 		AdhocUnsafe.reloadProperties();
 	}
 
@@ -89,7 +89,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.assertThatThrownBy(
 				() -> cube.execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
 				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
+				.hasRootCauseMessage("Can not add as size=2 and limit=2");
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().groupByAlso("k").build()))
 				.isInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
+				.hasRootCauseMessage("Can not add as size=2 and limit=2");
 	}
 
 	@Test
@@ -108,7 +108,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure("byK").build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalStateException.class)
-				.hasRootCauseMessage("Can not grow as size=2 and limit=2");
+				.hasRootCauseMessage("Can not add as size=2 and limit=2");
 	}
 
 }

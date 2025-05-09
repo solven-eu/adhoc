@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.foreignexchange;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +49,6 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.util.IStopwatch;
 import lombok.NonNull;
 
 /**
@@ -244,11 +242,6 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages).hasSize(3);
 	}
 
-	@Override
-	public IStopwatch makeStopwatch() {
-		return () -> Duration.ofMillis(123);
-	}
-
 	@Test
 	public void testLogPerfs() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
@@ -267,15 +260,17 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
+								[EXPLAIN] time=PT0.003S for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								[EXPLAIN] time=PT0.004S for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								\\-- #1 m=k1.CCY(Bucketor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color=red groupBy=(letter) customMarker=JPY
-								    |  size=2 duration=123ms
+								    |  size=2 duration=5ms
 								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
-								        \\  size=2 duration=123ms
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestCubeQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
+								        \\  size=2 duration=9ms
+								Executed status=OK duration=PT0.015S on table=inMemory measures=TestCubeQueryFx query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
-		Assertions.assertThat(messages).hasSize(4);
+		Assertions.assertThat(messages).hasSize(6);
 	}
 
 }

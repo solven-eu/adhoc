@@ -27,8 +27,8 @@ import java.util.Set;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 
 /**
  * Used to separate aggregates from groupBy from {@link ITableWrapper}
@@ -63,8 +63,8 @@ public interface ITabularRecord {
 
 	Map<String, ?> getGroupBys();
 
-	ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext);
+	ITabularRecord transcode(ITableReverseTranscoder transcodingContext);
 
-	ITabularRecord transcode(ICustomTypeManager customTypeManager);
+	ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder);
 
 }

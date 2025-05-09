@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +40,6 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.util.IStopwatch;
 
 public class TestAggregations_Filter extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -134,11 +132,6 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
 	}
 
-	@Override
-	public IStopwatch makeStopwatch() {
-		return () -> Duration.ofMillis(123);
-	}
-
 	@Test
 	public void testLogs() {
 		List<String> messages = AdhocExplainerTestHelper.listenForLogs(eventBus);
@@ -152,9 +145,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 				.isEqualTo(
 						"""
 								Executing on table=inMemory measures=TestAggregations_Filter query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
-								Executed status=OK duration=PT0.123S on table=inMemory measures=TestAggregations_Filter query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
-																"""
-								.trim());
+								Executed status=OK duration=PT0.01S on table=inMemory measures=TestAggregations_Filter query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""");
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

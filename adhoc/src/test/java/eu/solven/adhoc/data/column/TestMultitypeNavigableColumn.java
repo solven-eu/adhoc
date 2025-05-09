@@ -28,143 +28,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestMultitypeNavigableColumn {
-	IAggregation sum = new SumAggregation();
-
-	MultitypeHashMergeableColumn<String> storage =
-			MultitypeHashMergeableColumn.<String>builder().aggregation(sum).build();
-
-	@Test
-	public void testIntAndLong() {
-		storage.merge("k1", 123);
-		storage.merge("k1", 234L);
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(357L);
-		});
-	}
-
-	@Test
-	public void testIntAndDouble() {
-		storage.merge("k1", 123);
-		storage.merge("k1", 234.567D);
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(357.567D);
-		});
-	}
-
-	@Test
-	public void testIntAndString() {
-		storage.merge("k1", 123);
-		storage.merge("k1", "234");
-		storage.merge("k1", 345);
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
-		});
-	}
-
-	@Test
-	public void testStringAndString() {
-		storage.merge("k1", "123");
-		storage.merge("k1", "234");
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo("123234");
-		});
-	}
-
-	@Test
-	public void testClearKey() {
-		storage.merge("k1", 123);
-		storage.clearKey("k1");
-
-		Assertions.assertThat(storage.size()).isEqualTo(0);
-	}
-
-	@Test
-	public void testPutNull() {
-		storage.merge("k1", 123);
-		storage.append("k1", null);
-
-		Assertions.assertThat(storage.size()).isEqualTo(1);
-	}
-
-	@Test
-	public void testPurgeAggregationCarriers() {
-		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
-
-		storage.merge("k1", 3);
-		storage.merge("k1", 5);
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
-		});
-
-		storage.purgeAggregationCarriers();
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(3);
-		});
-	}
-
-	@Test
-	public void testPurgeAggregationCarriers_singleEntry() {
-		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
-
-		storage.merge("k1", 3);
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.SingletonRankCarrier.class);
-		});
-
-		storage.purgeAggregationCarriers();
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isNull();
-		});
-	}
-
-	// For consider a large problem, to pop issues around hashMap and non-linearities due to buckets
-	@Test
-	public void testPurgeAggregationCarriers_large() {
-		MultitypeHashMergeableColumn<String> storage =
-				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
-
-		int size = 16 * 1024;
-
-		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, i));
-		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, 2 * i));
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
-		});
-
-		storage.purgeAggregationCarriers();
-
-		storage.onValue("k1", o -> {
-			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(1);
-		});
-
-		storage.onValue("k" + size, o -> {
-			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
-		});
-	}
+	MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
 
 	@Test
 	public void testCopyFromNotSorted() {
@@ -277,4 +151,16 @@ public class TestMultitypeNavigableColumn {
 				.isEqualTo("MultitypeNavigableColumn{#0=bar->%s(java.time.LocalDate), #1=foo->123(java.lang.Long)}"
 						.formatted(today));
 	}
+
+	@Test
+	public void testNull() {
+		column.append("k1").onObject(null);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isNull();
+		});
+
+		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{#0=k1->null(null)}");
+	}
+
 }

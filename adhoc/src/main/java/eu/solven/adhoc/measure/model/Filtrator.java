@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
 public class Filtrator implements IMeasure, IHasUnderlyingMeasures {

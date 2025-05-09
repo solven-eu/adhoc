@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.cell.IValueProvider;
@@ -50,11 +51,12 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.IAdhocTableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -150,15 +152,35 @@ public class ColumnsManager implements IColumnsManager {
 
 			@Override
 			public Stream<ITabularRecord> records() {
+				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
+				ITableReverseTranscoder columnTranscoder = prepareColumnTranscoder(transcodingContext);
+
 				return aggregatedRecordsStream.records()
-						.map(notTranscoded -> notTranscoded.transcode(transcodingContext))
-						.map(row -> transcodeTypes(row))
+						// TODO Should we transcode type before or after columnNames?
+						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
+						.map(row -> transcodeTypes(valueTranscoder, row))
 						.map(row -> transcodeCalculated(transcodingContext, row));
 			}
 
 			@Override
 			public String toString() {
 				return "Transcoding: " + aggregatedRecordsStream;
+			}
+		};
+	}
+
+	protected ITableReverseTranscoder prepareColumnTranscoder(TranscodingContext transcodingContext) {
+		int estimatedSize = transcodingContext.estimateQueriedSize(transcodingContext.underlyings());
+		return new ITableReverseTranscoder() {
+
+			@Override
+			public Set<String> queried(String underlying) {
+				return transcodingContext.queried(underlying);
+			}
+
+			@Override
+			public int estimateQueriedSize(Set<String> underlyingKeys) {
+				return estimatedSize;
 			}
 		};
 	}
@@ -180,8 +202,29 @@ public class ColumnsManager implements IColumnsManager {
 		return TabularRecordOverMaps.builder().aggregates(row.aggregatesAsMap()).slice(enrichedGroupBy).build();
 	}
 
-	protected ITabularRecord transcodeTypes(ITabularRecord row) {
-		return row.transcode(customTypeManager);
+	protected IColumnValueTranscoder prepareTypeTranscoder(TranscodingContext transcodingContext) {
+		Set<String> mayBeTypeTranscoded = transcodingContext.underlyings()
+				.stream()
+				.filter(customTypeManager::mayTranscode)
+				.collect(Collectors.toSet());
+
+		IColumnValueTranscoder valueTranscoder = new IColumnValueTranscoder() {
+
+			@Override
+			public Set<String> mayTranscode(Set<String> recordColumns) {
+				return Sets.intersection(mayBeTypeTranscoded, recordColumns);
+			}
+
+			@Override
+			public Object transcodeValue(String column, Object value) {
+				return customTypeManager.fromTable(column, value);
+			}
+		};
+		return valueTranscoder;
+	}
+
+	protected ITabularRecord transcodeTypes(IColumnValueTranscoder valueTranscoder, ITabularRecord row) {
+		return row.transcode(valueTranscoder);
 	}
 
 	protected TranscodingContext openTranscodingContext() {
@@ -280,12 +323,12 @@ public class ColumnsManager implements IColumnsManager {
 		}
 
 		@Override
-		public ITabularRecord transcode(IAdhocTableReverseTranscoder transcodingContext) {
+		public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 
 		@Override
-		public ITabularRecord transcode(ICustomTypeManager customTypeManager) {
+		public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 

@@ -173,7 +173,7 @@ public class MultitypeArray implements IMultitypeArray {
 		return new IValueProvider() {
 
 			@Override
-			public void acceptConsumer(IValueReceiver valueReceiver) {
+			public void acceptReceiver(IValueReceiver valueReceiver) {
 				if (valuesType == IMultitypeConstants.MASK_LONG) {
 					valueReceiver.onLong(valuesL.getLong(rowIndex));
 				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
@@ -208,6 +208,42 @@ public class MultitypeArray implements IMultitypeArray {
 			valuesO.replaceAll(function::apply);
 		}
 		// else no object
+	}
+
+	@Override
+	public void remove(int index) {
+		if (valuesType == IMultitypeConstants.MASK_LONG) {
+			valuesL.removeLong(index);
+		} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+			valuesD.removeDouble(index);
+		} else if (valuesType == IMultitypeConstants.MASK_OBJECT) {
+			valuesO.remove(index);
+		}
+		// else already empty
+	}
+
+	@Override
+	public String toString() {
+		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+			return "empty";
+		} else if (valuesType == IMultitypeConstants.MASK_LONG) {
+			// TODO limit to first elements
+			return "type=long values=" + valuesL;
+		} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+			// TODO limit to first elements
+			return "type=double values=" + valuesD;
+		} else {
+			// TODO limit to first elements
+			return "type=object values=" + valuesO;
+		}
+	}
+
+	public void clear() {
+		valuesType = IMultitypeConstants.MASK_EMPTY;
+
+		valuesL.clear();
+		valuesD.clear();
+		valuesO.clear();
 	}
 
 }

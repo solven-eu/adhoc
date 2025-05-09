@@ -85,7 +85,7 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 		Class<?> c1 = l.getClass();
 		Class<?> c2 = r.getClass();
 
-		// Class object are singleton: they can be compared by ref
+		// Class objects are singleton: they can be compared by ref
 		if (c1 != c2) {
 			// Objects have different classes: we compare by className
 			// This prevents classes being able to be compared with compare (e.g. `Child extends Parent implements
@@ -97,7 +97,7 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 			// Objects has same class and are Comparable: the unchecked cast should be fine
 			return ((Comparable) l).compareTo(r);
 		} else {
-			// BEWRE Should we warn on this?
+			// BEWARE Should we warn on this?
 			return l.toString().compareTo(r.toString());
 		}
 	}

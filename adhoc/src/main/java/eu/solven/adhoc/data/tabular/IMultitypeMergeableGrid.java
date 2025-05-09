@@ -25,7 +25,6 @@ package eu.solven.adhoc.data.tabular;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**
@@ -37,20 +36,12 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 public interface IMultitypeMergeableGrid<T> {
 
 	/**
-	 * Useful when the DB has done the aggregation
-	 * 
-	 * Especially important for {@link IHasCarriers}
 	 * 
 	 * @param aggregator
 	 * @param key
-	 * @param v
+	 * @return a {@link IValueReceiver} into which an aggregate ha to be written for given aggregator and given key
 	 */
-	@Deprecated(since = "Prefer `IValueConsumer contributePre(Aggregator aggregator, T key)`")
-	default void contributePre(IAliasedAggregator aggregator, T key, Object v) {
-		contributePre(aggregator, key).onObject(v);
-	}
-
-	IValueReceiver contributePre(IAliasedAggregator aggregator, T key);
+	IValueReceiver contribute(IAliasedAggregator aggregator, T key);
 
 	/**
 	 * Will typically handle {@link IAggregationCarrier}.
@@ -61,5 +52,7 @@ public interface IMultitypeMergeableGrid<T> {
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
 	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers);
+
+	long size(IAliasedAggregator aggregator);
 
 }

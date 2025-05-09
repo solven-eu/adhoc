@@ -35,6 +35,15 @@ public class TestSumAggregation {
 	SumAggregation aggregator = new SumAggregation();
 
 	@Test
+	public void testIsSum() {
+		Assertions.assertThat(SumAggregation.isSum("SUM")).isTrue();
+		Assertions.assertThat(SumAggregation.isSum("+")).isTrue();
+		Assertions.assertThat(SumAggregation.isSum(SumAggregation.class.getName())).isTrue();
+
+		Assertions.assertThat(SumAggregation.isSum("foo")).isFalse();
+	}
+
+	@Test
 	public void testStrings() {
 		Assertions.assertThat(aggregator.aggregate("someLongString_0", "someLongString_1"))
 				.isEqualTo("someLongString_0someLongString_1");

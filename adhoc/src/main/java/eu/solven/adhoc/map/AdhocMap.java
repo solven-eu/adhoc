@@ -33,9 +33,11 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.Ints;
@@ -45,7 +47,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 // `extends AbstractMap` enables not duplicating `.toString`
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
@@ -155,7 +156,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	 */
 	@Override
 	public int hashCode() {
-		// hashCode caching Like String.hashCode
+		// hashCode caching like String.hashCode
 		int h = hash;
 		if (h == 0 && !hashIsZero) {
 			int[] hashcodeHolder = new int[1];
@@ -194,12 +195,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			// same values. `Objects.equals` will do a reference check
 			if (!Objects.equals(valuesAsList, objAsMap.valuesAsList)) {
 				return false;
-			} else if (keyToIndex == objAsMap.keyToIndex) {
-				// Same key ref
-				return true;
-			} else
-			// No need to check for indexed
-			if (!Objects.equals(keyToIndex.keySet(), objAsMap.keyToIndex.keySet())) {
+			} else if (!equalsKeyToIndex(keyToIndex, objAsMap.keyToIndex)) {
 				return false;
 			} else {
 				return true;
@@ -212,56 +208,74 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 	}
 
+	protected boolean equalsKeyToIndex(Object2IntArrayMap<String> keyToIndex, Object2IntArrayMap<String> keyToIndex2) {
+		if (keyToIndex == keyToIndex2) {
+			// Same key ref
+			return true;
+		}
+
+		// No need to check for values, as they are build from keys
+		// Also, as keys are sorted, we can skip the Set equality for a simpler Iterable equality
+		return Iterables.elementsEqual(keyToIndex.keySet(), keyToIndex2.keySet());
+	}
+
 	// Looks a lot like NavigableMapComparator. Duplication?
 	@Override
-	public int compareTo(AdhocMap o) {
+	public int compareTo(AdhocMap other) {
 		// throw new NotYetImplementedException("%s.compareTo".formatted(getClass()));
-		if (this == o) {
+		if (this == other) {
 			// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to provide
 			// same sliceAsMap
 			return 0;
 		}
 
-		ObjectIterator<Object2IntMap.Entry<String>> thisIterator = keyToIndex.object2IntEntrySet().fastIterator();
-		ObjectIterator<Object2IntMap.Entry<String>> otherIterator = o.keyToIndex.object2IntEntrySet().fastIterator();
+		// compare keys
+		if (this.keyToIndex != other.keyToIndex) {
+			var thisKeysIterator = this.keyToIndex.keySet().iterator();
+			var otherKeysIterator = other.keyToIndex.keySet().iterator();
 
-		// Loop until the iterator has values.
-		while (true) {
-			boolean thisHashNext = thisIterator.hasNext();
-			boolean otherhashnext = otherIterator.hasNext();
+			// Loop until the iterator has values.
+			while (true) {
+				boolean thisHasNext = thisKeysIterator.hasNext();
+				boolean otherHasNext = otherKeysIterator.hasNext();
 
-			if (!thisHashNext) {
-				if (!otherhashnext) {
-					// Equals
-					return 0;
+				if (!thisHasNext) {
+					if (!otherHasNext) {
+						// Same keys
+						break;
+					} else {
+						// other has more entries: this is smaller
+						return -1;
+					}
+				} else if (!otherHasNext) {
+					// this has more entries: this is bigger
+					return 1;
 				} else {
-					// other has more entries: this is smaller
-					return -1;
-				}
-			} else if (!otherhashnext) {
-				// this has more entries: this is bigger
-				return 1;
-			} else {
-				Object2IntMap.Entry<String> thisNext = thisIterator.next();
-				Object2IntMap.Entry<String> otherNext = otherIterator.next();
+					String thisKey = thisKeysIterator.next();
+					String otherKey = otherKeysIterator.next();
+					int compareKey = compareKey(thisKey, otherKey);
 
-				String thisKey = thisNext.getKey();
-				String otherKey = otherNext.getKey();
-				int compareKey = compareKey(thisKey, otherKey);
-
-				if (compareKey != 0) {
-					return compareKey;
-				} else {
-					Object thisCoordinate = this.valuesAsList.get(thisNext.getIntValue());
-					Object otherCoordinate = o.valuesAsList.get(otherNext.getIntValue());
-					int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
-
-					if (valueCompare != 0) {
-						return valueCompare;
+					if (compareKey != 0) {
+						return compareKey;
 					}
 				}
 			}
 		}
+
+		// Compare values
+		int size = this.valuesAsList.size();
+		assert size == other.valuesAsList.size();
+		for (int i = 0; i < size; i++) {
+			Object thisCoordinate = this.valuesAsList.get(i);
+			Object otherCoordinate = other.valuesAsList.get(i);
+			int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
+
+			if (valueCompare != 0) {
+				return valueCompare;
+			}
+		}
+
+		return 0;
 	}
 
 	// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
@@ -277,6 +291,10 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	public static class AdhocMapBuilder {
+		// Cache keyToIndex as it enables faster comparisons
+		private static final Map<NavigableSet<String>, Object2IntArrayMap<String>> keysToIndexedKeys =
+				new ConcurrentHashMap<>();
+
 		final NavigableSet<String> keys;
 		// From key original index to sortedIndex
 		final int[] reordering;
@@ -323,12 +341,16 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 		public AdhocMap build() {
 			// Object2IntArrayMap enables keeping the order
-			Object2IntArrayMap<String> keyToIndex = new Object2IntArrayMap<>(keys.size());
+			Object2IntArrayMap<String> keyToIndex = keysToIndexedKeys.computeIfAbsent(keys, k -> {
+				Object2IntArrayMap<String> keyToIndexL = new Object2IntArrayMap<>(k.size());
 
-			// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)
-			keyToIndex.defaultReturnValue(-1);
+				// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)
+				keyToIndexL.defaultReturnValue(-1);
 
-			keys.forEach(key -> keyToIndex.put(key, keyToIndex.size()));
+				keys.forEach(key -> keyToIndexL.put(key, keyToIndexL.size()));
+
+				return keyToIndexL;
+			});
 
 			return new AdhocMap(keyToIndex, values);
 		}

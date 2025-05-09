@@ -229,9 +229,12 @@ public class JooqTableWrapper implements ITableWrapper {
 			for (int i = 0; i < size; i++) {
 				String columnName = aggregateFields.get(i);
 
-				Object previousValue = aggregates.put(columnName, r.get(columnShift + i));
-				if (previousValue != null) {
-					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+				Object value = r.get(columnShift + i);
+				if (value != null) {
+					Object previousValue = aggregates.put(columnName, value);
+					if (previousValue != null) {
+						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+					}
 				}
 			}
 		}

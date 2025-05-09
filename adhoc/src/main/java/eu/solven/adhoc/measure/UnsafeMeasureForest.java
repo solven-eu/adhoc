@@ -22,9 +22,11 @@
  */
 package eu.solven.adhoc.measure;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -33,7 +35,7 @@ import eu.solven.adhoc.resource.MeasureForestFromResource;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,7 +47,6 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  *
  */
-@RequiredArgsConstructor
 @Slf4j
 @Builder
 public class UnsafeMeasureForest implements IMeasureForest {
@@ -54,15 +55,22 @@ public class UnsafeMeasureForest implements IMeasureForest {
 	final String name;
 
 	@NonNull
-	final Map<String, IMeasure> nameToMeasure = new ConcurrentHashMap<>();
+	@Singular
+	final Map<String, IMeasure> namedMeasures;
+
+	// https://github.com/projectlombok/lombok/issues/1460#issuecomment-864253097
+	private UnsafeMeasureForest(String name, Map<String, IMeasure> namedMeasures) {
+		this.name = name;
+		this.namedMeasures = new ConcurrentHashMap<>(namedMeasures);
+	}
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
-		return nameToMeasure;
+		return namedMeasures;
 	}
 
 	public void clear() {
-		nameToMeasure.clear();
+		namedMeasures.clear();
 	}
 
 	/**
@@ -76,7 +84,7 @@ public class UnsafeMeasureForest implements IMeasureForest {
 			throw new IllegalArgumentException("m=%s has a null name".formatted(measure));
 		}
 
-		nameToMeasure.put(measureName, measure);
+		namedMeasures.put(measureName, measure);
 
 		return this;
 	}
@@ -91,7 +99,7 @@ public class UnsafeMeasureForest implements IMeasureForest {
 				String minimizing = MeasureForestFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
-						"bag=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
+						"forest=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
 			}
 
 			return resolved;
@@ -117,7 +125,7 @@ public class UnsafeMeasureForest implements IMeasureForest {
 			String measureName = measure.getName();
 			if (ams.getNameToMeasure().containsKey(measureName)) {
 				throw new IllegalArgumentException(
-						"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
+						"forest=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
 								measureName));
 			}
 
@@ -129,28 +137,35 @@ public class UnsafeMeasureForest implements IMeasureForest {
 
 	/**
 	 * In {@link UnsafeMeasureForest}, a visitor both mutate current {@link IMeasureForest} and return the
-	 * immutable+edited bag.
+	 * immutable+edited forest.
 	 */
-	public IMeasureForest acceptVisitor(IMeasureBagVisitor asCombinator) {
-		IMeasureForest newState = asCombinator.addMeasures(this);
+	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
+		Set<IMeasure> measures = new LinkedHashSet<>();
 
-		this.nameToMeasure.clear();
-		this.nameToMeasure.putAll(newState.getNameToMeasure());
+		measures.addAll(visitor.addMeasures());
+		getMeasures().forEach(m -> measures.addAll(visitor.mapMeasure(m)));
 
-		return newState;
+		this.namedMeasures.clear();
+		measures.forEach(m -> this.namedMeasures.put(m.getName(), m));
+
+		return this;
 	}
 
-	// public static AdhocMeasureBagBuilder edit(IAdhocMeasureBag measures) {
-	// return UnsafeAdhocMeasureBag.builder().name(measures.getName()).measures(measures.getNameToMeasure().values());
-	// }
+	/**
+	 * 
+	 * @return a safe/immutable IMeasureForest based on current state of this {@link UnsafeMeasureForest}
+	 */
+	public IMeasureForest build() {
+		return MeasureForest.fromMeasures(getName(), getMeasures());
+	}
 
 	// TODO Why doesn't this compile?
-	// public static class AdhocMeasuresSetBuilder {
-	// public AdhocMeasuresSetBuilder measure(IMeasure measure) {
-	// this.nameToMeasure.put(measure.getName(), measure);
-	//
-	// return this;
-	// }
-	// }
+	public static class UnsafeMeasureForestBuilder {
+		public UnsafeMeasureForestBuilder measure(IMeasure measure) {
+			this.namedMeasure(measure.getName(), measure);
+
+			return this;
+		}
+	}
 
 }

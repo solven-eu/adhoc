@@ -123,6 +123,9 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 			return false;
 		} else if (getClass() != obj.getClass()) {
 			return false;
+		} else if (this.hashCode() != obj.hashCode()) {
+			// This is not checked by `Objects.hashCode` while AdhocMap keep it in Cache
+			return false;
 		}
 		SliceAsMap other = (SliceAsMap) obj;
 		return Objects.equals(asMap, other.asMap);

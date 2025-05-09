@@ -22,20 +22,22 @@
  */
 package eu.solven.adhoc.engine;
 
-import java.util.Map;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.engine.context.QueryPod;
+import org.assertj.core.api.Assertions;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.junit.jupiter.api.Test;
+
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQuery;
 
-/**
- * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
- * 
- * @author Benoit Lacelle
- */
-public interface ITableQueryEngine {
+public class TestTopologicalOrderSpliterator {
+	@Test
+	public void testTopologicalOrderSpliterator_empty() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag =
+				DirectedAcyclicGraph.<CubeQueryStep, DefaultEdge>createBuilder(DefaultEdge.class).build();
+		Stream<CubeQueryStep> spliterator = TopologicalOrderSpliterator.fromDAG(dag);
 
-	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
-
+		Assertions.assertThat(spliterator.isParallel()).isFalse();
+	}
 }

@@ -98,7 +98,7 @@ public class CombinatorQueryStep extends ATransformator {
 		try {
 			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
 
-			valueProvider.acceptConsumer(output.putSlice(slice.getSlice().getAdhocSliceAsMap()));
+			valueProvider.acceptReceiver(output.putSlice(slice.getSlice().getAdhocSliceAsMap()));
 		} catch (RuntimeException e) {
 			if (step.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 				output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(e);

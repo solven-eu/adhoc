@@ -90,7 +90,6 @@ public class TestSecurity_WithoutAuth {
 
 				.get()
 				.uri("/favicon.ico")
-				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
 
 				.expectStatus()

@@ -22,12 +22,15 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -51,9 +54,10 @@ public class AdhocTranscodingHelper {
 
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
-	public static Map<String, Object> transcodeColumns(IAdhocTableReverseTranscoder reverseTranscoder,
+	// TODO Should return original Map is there is no actual transcoding
+	public static Map<String, ?> transcodeColumns(ITableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
-		int initialCapacity = reverseTranscoder.estimateSize(underlyingMap.keySet());
+		int initialCapacity = reverseTranscoder.estimateQueriedSize(underlyingMap.keySet());
 		Map<String, Object> transcoded = new HashMap<>(initialCapacity);
 
 		underlyingMap.forEach((underlyingKey, v) -> {
@@ -102,29 +106,32 @@ public class AdhocTranscodingHelper {
 	 * @return a {@link Map} where each value is replaced by the transcoded value.
 	 */
 	public static Map<String, ?> transcodeValues(IColumnValueTranscoder transcoder, Map<String, ?> notTranscoded) {
-		List<Map.Entry<String, Object>> columnToTranscodedValue = notTranscoded.entrySet().stream().flatMap(e -> {
-			Object rawValue = e.getValue();
-			String column = e.getKey();
+		// Store in a transient List, which keeps order while skipping any HashMap cost
+		AtomicReference<List<Map.Entry<String, Object>>> columnToTranscodedValue = new AtomicReference<>();
+
+		notTranscoded.forEach((column, rawValue) -> {
 			Object transcodedValue = transcoder.transcodeValue(column, rawValue);
 
-			if (rawValue == transcodedValue) {
-				// Register only not trivial mappings
-				return Stream.empty();
-			} else {
-				return Stream.of(Map.entry(column, transcodedValue));
-			}
-		}).toList();
+			// Register only not trivial mappings
+			if (rawValue != transcodedValue) {
+				if (columnToTranscodedValue.get() == null) {
+					columnToTranscodedValue.set(new ArrayList<>());
+				}
 
-		if (columnToTranscodedValue.isEmpty()) {
+				columnToTranscodedValue.get().add(new AbstractMap.SimpleImmutableEntry<>(column, transcodedValue));
+			}
+		});
+
+		if (columnToTranscodedValue.get() == null) {
 			// Not a single transcoding: return original Map
 			return notTranscoded;
 		}
 
 		// Initialize with notTranscoded values
-		Map<String, Object> transcoded = new HashMap<>(notTranscoded);
+		Map<String, Object> transcoded = new LinkedHashMap<>(notTranscoded);
 
 		// Replace transcoded values
-		columnToTranscodedValue.forEach(e -> transcoded.put(e.getKey(), e.getValue()));
+		columnToTranscodedValue.get().forEach(e -> transcoded.put(e.getKey(), e.getValue()));
 
 		return transcoded;
 	}

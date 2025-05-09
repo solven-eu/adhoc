@@ -45,6 +45,7 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -95,14 +96,17 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case SumCombination.KEY: {
 			yield new SumCombination();
 		}
+		case DivideCombination.KEY: {
+			yield new DivideCombination(options);
+		}
+		case ProductCombination.KEY: {
+			yield new ProductCombination(options);
+		}
 		case MaxCombination.KEY: {
 			yield new MaxCombination();
 		}
 		case MinCombination.KEY: {
 			yield new MaxCombination();
-		}
-		case DivideCombination.KEY: {
-			yield new DivideCombination(options);
 		}
 		case ExpressionCombination.KEY: {
 			try {

@@ -25,13 +25,18 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.NavigableSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.column.*;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.MultitypeNavigableMergeableColumn;
+import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -102,48 +107,39 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 			SliceAndMeasures slice,
 			ICombination combinator,
 			ISliceAndValueConsumer output) {
-		List<?> underlyingVs = slice.getMeasures().asList();
-
-		Object value;
 		try {
-			value = combinator.combine(slice.getSlice(), underlyingVs);
+			IValueProvider valueProvider = combinator.combine(slice.getSlice(), slice.getMeasures());
+
+			if (isDebug()) {
+				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
+						bucketor.getName(),
+						bucketor.getCombinationKey(),
+						slice.getMeasures(),
+						IValueProvider.getValue(valueProvider),
+						slice);
+			}
+
+			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice());
+
+			if (isDebug()) {
+				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), valueProvider, outputCoordinate);
+			}
+
+			valueProvider.acceptReceiver(output.putSlice(SliceAsMap.fromMap(outputCoordinate)));
 		} catch (RuntimeException e) {
+			List<?> underlyingVs = slice.getMeasures().asList();
 			throw new IllegalArgumentException(
 					"Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
 					e);
 		}
-
-		if (isDebug()) {
-			List<String> underlyingNames = getUnderlyingNames();
-			Map<String, Object> underylingVsAsMap = new TreeMap<>();
-
-			for (int i = 0; i < underlyingNames.size(); i++) {
-				underylingVsAsMap.put(underlyingNames.get(i), underlyingVs.get(i));
-			}
-
-			log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
-					bucketor.getName(),
-					bucketor.getCombinationKey(),
-					underylingVsAsMap,
-					value,
-					slice);
-		}
-
-		if (value != null) {
-			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice());
-
-			if (isDebug()) {
-				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), value, outputCoordinate);
-			}
-
-			output.putSlice(SliceAsMap.fromMap(outputCoordinate)).onObject(value);
-		}
 	}
 
 	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, ISliceWithStep slice) {
-		Map<String, Object> queryCoordinates = new HashMap<>();
+		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
+		Map<String, Object> queryCoordinates = new HashMap<>(groupedByColumns.size());
+
+		groupedByColumns.forEach(groupBy -> {
 			Object value = slice.getRawSliced(groupBy);
 
 			if (value == null) {

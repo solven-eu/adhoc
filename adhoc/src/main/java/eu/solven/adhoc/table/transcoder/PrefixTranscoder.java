@@ -35,7 +35,7 @@ import lombok.NonNull;
  *
  */
 @Builder
-public class PrefixTranscoder implements ITableTranscoder, IAdhocTableReverseTranscoder {
+public class PrefixTranscoder implements ITableTranscoder, ITableReverseTranscoder {
 	// If empty, it is like the IdentityTranscoder
 	@NonNull
 	@Default
@@ -58,7 +58,7 @@ public class PrefixTranscoder implements ITableTranscoder, IAdhocTableReverseTra
 	}
 
 	@Override
-	public int estimateSize(Set<String> underlyingKeys) {
+	public int estimateQueriedSize(Set<String> underlyingKeys) {
 		return underlyingKeys.size();
 	}
 }

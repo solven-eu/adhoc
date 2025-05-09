@@ -70,4 +70,7 @@ public interface IMultitypeArray {
 	// Relates with IAggregationCarrier
 	void replaceAllObjects(Function<Object, Object> function);
 
+	@Deprecated(since = "Generally slow. Use for uniTests or specific cases")
+	void remove(int index);
+
 }

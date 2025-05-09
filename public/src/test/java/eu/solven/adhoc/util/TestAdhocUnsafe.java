@@ -23,15 +23,24 @@
 package eu.solven.adhoc.util;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TestAdhocUnsafe {
+	@BeforeEach
+	public void resetProperties() {
+		System.clearProperty("adhoc.limitColumnSize");
+
+		AdhocUnsafe.reloadProperties();
+	}
+
 	@Test
 	public void testDefaults() {
-		Assertions.assertThat(AdhocUnsafe.limitColumnLength).isEqualTo(1_000_000);
+		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(1_000_000);
 		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(5);
 		Assertions.assertThat(AdhocUnsafe.limitCoordinates).isEqualTo(100);
 		Assertions.assertThat(AdhocUnsafe.failFast).isEqualTo(true);
+		Assertions.assertThat(AdhocUnsafe.defaultCapacity()).isEqualTo(1_000_000);
 	}
 
 	@Test
@@ -44,5 +53,16 @@ public class TestAdhocUnsafe {
 
 		System.setProperty(someKey, "10000000");
 		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(10_000_000);
+	}
+
+	@Test
+	public void testLimitColumnSize() {
+		String someKey = "adhoc.limitColumnSize";
+
+		System.setProperty(someKey, "123");
+		AdhocUnsafe.reloadProperties();
+
+		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(123);
+		Assertions.assertThat(AdhocUnsafe.defaultCapacity()).isEqualTo(123);
 	}
 }

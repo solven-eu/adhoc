@@ -26,8 +26,9 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
@@ -45,7 +46,6 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -86,7 +86,7 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 	// to rely on the commonPool.
 	@NonNull
 	@Default
-	ExecutorService fjp = AdhocUnsafe.adhocCommonPool;
+	ExecutorService executorService = MoreExecutors.newDirectExecutorService();
 
 	/**
 	 * Once turned to nut-null, can not be nulled again.
@@ -156,27 +156,38 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		IColumnsManager columnsManager;
 		// boolean columnsManager$set;
 
-		ExecutorService executorService;
-		ForkJoinPool fjp;
-
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
 			return this;
 		}
 
+		// executorService is problematic as it has @Default
+		ExecutorService executorService;
+
+		public QueryPodBuilder executorService(ExecutorService executorService) {
+			this.executorService = executorService;
+
+			return this;
+		}
+
 		public QueryPod build() {
+			if (table == null) {
+				throw new IllegalStateException("table must not be null");
+			} else if (query == null) {
+				throw new IllegalStateException("table must not be null");
+			}
 			if (queryId == null) {
 				queryId = AdhocQueryId.from(table.getName(), query);
 			}
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();
 			}
-			if (fjp == null) {
-				fjp = ForkJoinPool.commonPool();
+			if (executorService == null) {
+				executorService = MoreExecutors.newDirectExecutorService();
 			}
 
-			return new QueryPod(query, queryId, forest, table, columnsManager, fjp);
+			return new QueryPod(query, queryId, forest, table, columnsManager, executorService);
 		}
 	}
 

@@ -22,8 +22,29 @@
  */
 package eu.solven.adhoc.measure;
 
-public interface IMeasureBagVisitor {
+import java.util.Set;
 
-	IMeasureForest addMeasures(IMeasureForest adhocMeasureBag);
+import eu.solven.adhoc.measure.model.IMeasure;
+
+/**
+ * Used to interact with a measure forest. Can be used for both read and write operations.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IMeasureForestVisitor {
+
+	default Set<IMeasure> addMeasures() {
+		return Set.of();
+	}
+
+	/**
+	 * 
+	 * @param measure
+	 * @return the Set of {@link IMeasure} which has to replace the input {@link IMeasure}. Can be a {@link Set} of 0, 1
+	 *         or more IMeasure.
+	 */
+	default Set<IMeasure> mapMeasure(IMeasure measure) {
+		return Set.of(measure);
+	}
 
 }

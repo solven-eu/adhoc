@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.table.transcoder;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Set;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
+/**
+ * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
+ * effectively queried.
+ */
+public interface ITableReverseTranscoder {
 
-public interface IValueProviderTestHelpers {
-	static long getLong(IValueProvider valueProvider) {
-		AtomicLong longRef = new AtomicLong(Long.MAX_VALUE);
+	/**
+	 * @param underlying
+	 *            a column name typically used by the database.
+	 * @return the queried columns which were mapping to given underlying.
+	 */
+	Set<String> queried(String underlying);
 
-		valueProvider.acceptReceiver(new IValueReceiver() {
-
-			@Override
-			public void onLong(long v) {
-				if (v == Long.MAX_VALUE) {
-					throw new IllegalArgumentException("requireOnLong does not handle Long.MAX_VALUE");
-				}
-
-				longRef.set(v);
-			}
-
-			@Override
-			public void onObject(Object v) {
-				throw new IllegalArgumentException("requireOnLong requires onLong and not onObject");
-			}
-		});
-
-		return longRef.get();
-	}
+	/**
+	 *
+	 * Typically used for provisioning the reversed {@link java.util.Map}.
+	 * 
+	 * @param underlyingKeys
+	 * @return the number of queriedKeys through all underlyings
+	 */
+	int estimateQueriedSize(Set<String> underlyingKeys);
 }

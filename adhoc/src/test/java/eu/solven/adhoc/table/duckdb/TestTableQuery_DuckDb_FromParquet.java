@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -119,7 +118,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
-		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
+		Assertions.assertThat(dbStream).contains(Map.of()).hasSize(1);
 	}
 
 	@Test
@@ -141,7 +140,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery_GrandTotal() {
+	public void testCubeQuery_GrandTotal() {
 		dsl.execute("""
 				CREATE TABLE someTableName AS
 					SELECT 'a1' AS a, 123 AS k1 UNION ALL
@@ -153,7 +152,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).build(), forest, table);
+		ITabularView result = engine.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -161,7 +160,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery_ByA() {
+	public void testCubeQuery_ByA() {
 		dsl.execute("""
 				CREATE TABLE someTableName AS
 					SELECT 'a1' AS a, 123 AS k1 UNION ALL
@@ -174,7 +173,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), forest, table);
+				engine.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).groupByAlso("a").build(), forest, table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -183,7 +182,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 	}
 
 	@Test
-	public void testAdhocQuery_FilterA1() {
+	public void testCubeQuery_FilterA1() {
 		dsl.execute("""
 				CREATE TABLE someTableName AS
 					SELECT 'a1' AS a, 123 AS k1 UNION ALL
@@ -196,7 +195,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1SumSquared);
 
 		ITabularView result =
-				aqe.executeUnsafe(CubeQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
+				engine.executeUnsafe(CubeQuery.builder().measure(k1SumSquared.getName()).andFilter("a", "a1").build(),
 						forest,
 						table);
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -207,7 +206,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 
 	// https://stackoverflow.com/questions/361747/what-does-the-symbol-do-in-sql
 	@Test
-	public void testAdhocQuery_FilterA1_groupByB_columnWithAtSymbol() {
+	public void testCubeQuery_FilterA1_groupByB_columnWithAtSymbol() {
 		dsl.execute("""
 				CREATE TABLE someTableName AS
 					SELECT 'a1' AS "a@a@a", 'b1' AS "b@b@b", 123 AS k1 UNION ALL
@@ -220,7 +219,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = aqe.executeUnsafe(CubeQuery.builder()
+		ITabularView result = engine.executeUnsafe(CubeQuery.builder()
 				.measure(k1SumSquared.getName())
 				.andFilter("a@a@a", "a1")
 				.groupByAlso("b@b@b")

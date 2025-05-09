@@ -25,6 +25,7 @@ package eu.solven.adhoc.data.column;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Percentage;
@@ -33,17 +34,18 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.Collections2;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
 public class TestMultitypeNavigableMergeableColumn {
 	IAggregation sum = new SumAggregation();
 
-	MultitypeHashMergeableColumn<String> column =
-			MultitypeHashMergeableColumn.<String>builder().aggregation(sum).build();
+	MultitypeNavigableMergeableColumn<String> column =
+			MultitypeNavigableMergeableColumn.<String>builder().aggregation(sum).build();
 
 	@Test
 	public void testLongDoubleNull_Fuzzy() {
-		Set<Consumer<MultitypeHashMergeableColumn<String>>> appenders = new LinkedHashSet<>();
+		Set<Consumer<IMultitypeMergeableColumn<String>>> appenders = new LinkedHashSet<>();
 
 		appenders.add(column -> column.merge("k1").onLong(123));
 		appenders.add(column -> column.merge("k1").onLong(234));
@@ -60,6 +62,126 @@ public class TestMultitypeNavigableMergeableColumn {
 				Assertions.assertThat((Double) o)
 						.isCloseTo(123 + 234 + 12.34D + 23.45D, Percentage.withPercentage(0.001));
 			});
+		});
+	}
+
+	@Test
+	public void testIntAndLong() {
+		column.merge("k1", 123);
+		column.merge("k1", 234L);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(357L);
+		});
+	}
+
+	@Test
+	public void testIntAndDouble() {
+		column.merge("k1", 123);
+		column.merge("k1", 234.567D);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(357.567D);
+		});
+	}
+
+	@Test
+	public void testIntAndString() {
+		column.merge("k1", 123);
+		column.merge("k1", "234");
+		column.merge("k1", 345);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
+		});
+	}
+
+	@Test
+	public void testStringAndString() {
+		column.merge("k1", "123");
+		column.merge("k1", "234");
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo("123234");
+		});
+	}
+
+	@Test
+	public void testClearKey() {
+		column.merge("k1", 123);
+		column.clearKey("k1");
+
+		Assertions.assertThat(column.size()).isEqualTo(0);
+	}
+
+	@Test
+	public void testPutNull() {
+		column.merge("k1", 123);
+		column.append("k1", null);
+
+		Assertions.assertThat(column.size()).isEqualTo(1);
+	}
+
+	@Test
+	public void testPurgeAggregationCarriers() {
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
+
+		storage.merge("k1", 3);
+		storage.merge("k1", 5);
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+		});
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(3);
+		});
+	}
+
+	@Test
+	public void testPurgeAggregationCarriers_singleEntry() {
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
+
+		storage.merge("k1", 3);
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.SingletonRankCarrier.class);
+		});
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isNull();
+		});
+	}
+
+	// For consider a large problem, to pop issues around hashMap and non-linearities due to buckets
+	@Test
+	public void testPurgeAggregationCarriers_large() {
+		MultitypeHashMergeableColumn<String> storage =
+				MultitypeHashMergeableColumn.<String>builder().aggregation(RankAggregation.fromMax(2)).build();
+
+		int size = 16 * 1024;
+
+		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, i));
+		IntStream.iterate(size, i -> i - 1).limit(size).forEach(i -> storage.merge("k" + i, 2 * i));
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+		});
+
+		storage.purgeAggregationCarriers();
+
+		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(1);
+		});
+
+		storage.onValue("k" + size, o -> {
+			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
 	}
 

@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.measure;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
@@ -90,7 +92,7 @@ public class MeasureForest implements IMeasureForest {
 				String minimizing = MeasureForestFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
-						"bag=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
+						"forest=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
 			}
 
 			return resolved;
@@ -109,14 +111,14 @@ public class MeasureForest implements IMeasureForest {
 		return Optional.of(measure);
 	}
 
-	public static MeasureForest fromMeasures(String name, List<IMeasure> measures) {
+	public static MeasureForest fromMeasures(String name, Collection<? extends IMeasure> measures) {
 		Map<String, IMeasure> nameToMeasure = new HashMap<>();
 
 		measures.forEach(measure -> {
 			String measureName = measure.getName();
 			if (nameToMeasure.containsKey(measureName)) {
 				throw new IllegalArgumentException(
-						"bag=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
+						"forest=%s Can not replace a measure in `.addMeasure`, Conflicting name is %s".formatted(name,
 								measureName));
 			}
 
@@ -131,8 +133,13 @@ public class MeasureForest implements IMeasureForest {
 	}
 
 	@Override
-	public IMeasureForest acceptVisitor(IMeasureBagVisitor asCombinator) {
-		return asCombinator.addMeasures(this);
+	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
+		Set<IMeasure> measures = new LinkedHashSet<>();
+
+		measures.addAll(visitor.addMeasures());
+		getMeasures().forEach(m -> measures.addAll(visitor.mapMeasure(m)));
+
+		return MeasureForest.builder().name(getName()).measures(measures).build();
 	}
 
 	public static MeasureForestBuilder edit(IMeasureForest measures) {
@@ -142,14 +149,5 @@ public class MeasureForest implements IMeasureForest {
 	public static IMeasureForest empty() {
 		return MeasureForest.builder().name("empty").build();
 	}
-
-	// TODO Why doesn't this compile?
-	// public static class AdhocMeasuresSetBuilder {
-	// public AdhocMeasuresSetBuilder measure(IMeasure measure) {
-	// this.nameToMeasure.put(measure.getName(), measure);
-	//
-	// return this;
-	// }
-	// }
 
 }

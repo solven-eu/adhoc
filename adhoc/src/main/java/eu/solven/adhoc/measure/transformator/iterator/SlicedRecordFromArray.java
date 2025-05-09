@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.transformator.iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import lombok.Builder;
@@ -54,8 +54,8 @@ public class SlicedRecordFromArray implements ISlicedRecord {
 	}
 
 	@Override
-	public void read(int index, IValueReceiver valueConsumer) {
-		valueConsumer.onObject(measures.get(index));
+	public IValueProvider read(int index) {
+		return vc -> vc.onObject(measures.get(index));
 	}
 
 	@Override

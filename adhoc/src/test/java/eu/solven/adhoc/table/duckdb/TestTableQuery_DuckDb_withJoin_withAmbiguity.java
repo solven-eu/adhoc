@@ -40,7 +40,6 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -123,7 +122,8 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		List<Map<String, ?>> dbStream = table.streamSlices(qK1).toList();
 
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
-		Assertions.assertThat(dbStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
+		// Given `null` is filtered by TabularRecordOverMaps
+		Assertions.assertThat(dbStream).contains(Map.of()).hasSize(1);
 
 		Assertions.assertThat(table.getColumnTypes())
 				.containsEntry("countryId", String.class)
@@ -163,7 +163,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 		{
 			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).build(), forest, table);
+					engine.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).build(), forest, table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -180,7 +180,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 		{
 			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
+					engine.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
 							forest,
 							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -200,10 +200,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build(),
-							forest,
-							table);
+			ITabularView result = engine.executeUnsafe(
+					CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productName").build(),
+					forest,
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -221,10 +221,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build(),
-							forest,
-							table);
+			ITabularView result = engine.executeUnsafe(
+					CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("f.productId").build(),
+					forest,
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -242,10 +242,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build(),
-							forest,
-							table);
+			ITabularView result = engine.executeUnsafe(
+					CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("p.productId").build(),
+					forest,
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -264,7 +264,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 		{
 			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
+					engine.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("productId").build(),
 							forest,
 							table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -284,10 +284,10 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		forest.addMeasure(k1Sum);
 
 		{
-			ITabularView result =
-					aqe.executeUnsafe(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build(),
-							forest,
-							table);
+			ITabularView result = engine.executeUnsafe(
+					CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("c.countryName").build(),
+					forest,
+					table);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

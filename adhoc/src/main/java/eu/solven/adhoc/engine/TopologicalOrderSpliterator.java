@@ -174,6 +174,11 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 
 		Spliterator<CubeQueryStep> spliterator = new TopologicalOrderSpliterator(fromAggregatesToQueried);
 
-		return StreamSupport.stream(spliterator, true);
+		// By default, the engine is mono-threaded.
+		// `TopologicalOrderSpliterator` can be turned into an effective parallel Stream, but we do not want to fork
+		// into some ForkJoinPool by default.
+		boolean isParallel = false;
+
+		return StreamSupport.stream(spliterator, isParallel);
 	}
 }

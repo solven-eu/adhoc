@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -121,6 +123,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		int size = keys.size();
 		int valuesSize = values.size();
 		if (size != valuesSize) {
+			if (keys.isEmpty()) {
+				throw new IllegalStateException("keys is empty while values.size() == %s".formatted(values.size()));
+			}
 			// This is generally the faulty key
 			T errorKey = keys.getLast();
 
@@ -188,7 +193,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		int size = keys.size();
 		for (int i = 0; i < size; i++) {
-			values.read(i).acceptConsumer(rowScanner.onKey(keys.get(i)));
+			values.read(i).acceptReceiver(rowScanner.onKey(keys.get(i)));
 		}
 	}
 
@@ -207,7 +212,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueProvider(vc -> values.read(i).acceptConsumer(vc))
+						.valueProvider(vc -> values.read(i).acceptReceiver(vc))
 						.build());
 	}
 
@@ -242,10 +247,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		AtomicInteger index = new AtomicInteger();
 
-		stream((slice) -> v -> Map.of("k", slice, "v", v)).limit(AdhocUnsafe.limitOrdinalToString)
+		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v)).limit(AdhocUnsafe.limitOrdinalToString)
 				.forEach(sliceToValue -> {
-					Object k = sliceToValue.get("k");
-					Object o = sliceToValue.get("v");
+					T k = sliceToValue.getKey();
+					Object o = sliceToValue.getValue();
 					toStringHelper.add("#" + index.getAndIncrement(), k + "->" + PepperLogHelper.getObjectAndClass(o));
 				});
 
@@ -285,7 +290,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	protected void onValue(int index, IValueReceiver valueConsumer) {
-		values.read(index).acceptConsumer(valueConsumer);
+		values.read(index).acceptReceiver(valueConsumer);
 	}
 
 	protected IValueReceiver set(int index) {
@@ -305,21 +310,23 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			return empty();
 		}
 
-		ObjectList<Object2LongMap.Entry<T>> keyToLong = new ObjectArrayList<>(size);
-		ObjectList<Object2DoubleMap.Entry<T>> keyToDouble = new ObjectArrayList<>(size);
+		AtomicLong nbLong = new AtomicLong();
+		AtomicLong nbDouble = new AtomicLong();
 		ObjectList<Map.Entry<T, ?>> keyToObject = new ObjectArrayList<>(size);
 
 		input.stream().forEach(sm -> {
-			sm.getValueProvider().acceptConsumer(new IValueReceiver() {
+			sm.getValueProvider().acceptReceiver(new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {
-					keyToLong.add(new AbstractObject2LongMap.BasicEntry<T>(sm.getSlice(), v));
+					nbLong.incrementAndGet();
+					keyToObject.add(new AbstractObject2LongMap.BasicEntry<T>(sm.getSlice(), v));
 				}
 
 				@Override
 				public void onDouble(double v) {
-					keyToDouble.add(new AbstractObject2DoubleMap.BasicEntry<T>(sm.getSlice(), v));
+					nbDouble.incrementAndGet();
+					keyToObject.add(new AbstractObject2DoubleMap.BasicEntry<T>(sm.getSlice(), v));
 				}
 
 				@Override
@@ -335,37 +342,29 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		// https://stackoverflow.com/questions/17328077/difference-between-arrays-sort-and-arrays-parallelsort
 		// This section typically takes from 100ms to 1s for 100k slices
-		if (keyToLong.size() == size) {
-			keyToLong.sort(Map.Entry.comparingByKey());
+		keyToObject.sort((Comparator) Map.Entry.<T, Object>comparingByKey());
 
+		if (nbLong.get() == size) {
 			final LongArrayList values = new LongArrayList(size);
 
-			keyToLong.forEach(e -> {
+			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
-				values.add(e.getLongValue());
+				values.add(((Object2LongMap.Entry<?>) e).getLongValue());
 			});
 
 			multitypeArrayBuilder.valuesL(LongImmutableList.of(values.elements()))
 					.valuesType(IMultitypeConstants.MASK_LONG);
-		} else if (keyToDouble.size() == size) {
-			keyToDouble.sort(Map.Entry.comparingByKey());
-
+		} else if (nbDouble.get() == size) {
 			final DoubleArrayList values = new DoubleArrayList(size);
 
-			keyToDouble.forEach(e -> {
+			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
-				values.add(e.getDoubleValue());
+				values.add(((Object2DoubleMap.Entry<?>) e).getDoubleValue());
 			});
 
 			multitypeArrayBuilder.valuesD(DoubleImmutableList.of(values.elements()))
 					.valuesType(IMultitypeConstants.MASK_DOUBLE);
 		} else {
-			// Transfer notObject entries to object case as MultitypeNavigableColumn is mono-type
-			keyToObject.addAll(keyToLong);
-			keyToObject.addAll(keyToDouble);
-
-			keyToObject.sort((Comparator) Map.Entry.<T, Object>comparingByKey());
-
 			final ImmutableList.Builder<Object> values = ImmutableList.builderWithExpectedSize(size);
 
 			keyToObject.forEach(e -> {
@@ -381,5 +380,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				.values(multitypeArrayBuilder.build())
 				.locked(true)
 				.build();
+	}
+
+	public void clearKey(T key) {
+		int index = getIndex(key);
+		if (index >= 0) {
+			keys.remove(index);
+			values.remove(index);
+		}
 	}
 }

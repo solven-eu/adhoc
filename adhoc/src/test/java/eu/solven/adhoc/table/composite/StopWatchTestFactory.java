@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.table.composite;
 
-import java.util.Set;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
- * effectively queried.
- */
-public interface IAdhocTableReverseTranscoder {
+import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.IStopwatchFactory;
 
-	/**
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the queried columns which were mapping to given underlying.
-	 */
-	Set<String> queried(String underlying);
+public class StopWatchTestFactory implements IStopwatchFactory {
 
-	/**
-	 *
-	 * Typically used for provisioning the reversed {@link java.util.Map}.
-	 * 
-	 * @param underlyingKeys
-	 * @return the number of queriedKeys through all underlyings
-	 */
-	int estimateSize(Set<String> underlyingKeys);
+	AtomicInteger nextTicks = new AtomicInteger();
+	AtomicInteger stopWatchTicks = new AtomicInteger();
+
+	@Override
+	public IStopwatch createStarted() {
+		// Increased the tick on each operation, in order to differentiate the different timings
+		int startTicks = stopWatchTicks.getAndAdd(nextTicks.incrementAndGet());
+
+		return () -> Duration.ofMillis(stopWatchTicks.get() - startTicks);
+	}
 }

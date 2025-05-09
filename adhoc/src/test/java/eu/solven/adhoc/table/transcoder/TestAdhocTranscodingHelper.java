@@ -267,20 +267,20 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;
 			}
 
 			@Override
-			public int estimateSize(Set<String> underlyingKeys) {
+			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				return outputKeys.size();
 			}
 		};
-		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
 
-		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat((Map) transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
 		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(0);
 	}
 
@@ -290,21 +290,21 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		IAdhocTableReverseTranscoder transcoder = new IAdhocTableReverseTranscoder() {
+		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;
 			}
 
 			@Override
-			public int estimateSize(Set<String> underlyingKeys) {
+			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				// `-1`: we are underestimating the actual number of entries to write
 				return outputKeys.size() - 1;
 			}
 		};
-		Map<String, Object> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
+		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
 
-		Assertions.assertThat(transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
+		Assertions.assertThat((Map) transcoded).containsEntry("k1", "v").containsEntry("k2", "v").hasSize(2);
 		Assertions.assertThat(AdhocTranscodingHelper.COUNT_SUBOPTIMAL).hasValue(1);
 	}
 }

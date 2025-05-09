@@ -24,9 +24,14 @@ package eu.solven.adhoc.engine;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestQueryPod {
@@ -41,5 +46,39 @@ public class TestQueryPod {
 		QueryPod queryContext = QueryPod.forTable(table);
 
 		Assertions.assertThat(queryContext.getTable()).isSameAs(table);
+	}
+
+	@Test
+	public void testColumnManager() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		IColumnsManager columnManager = Mockito.mock(IColumnsManager.class);
+
+		QueryPod queryContext = QueryPod.builder()
+				.table(table)
+				.forest(MeasureForest.empty())
+				.query(CubeQuery.builder().build())
+				.columnsManager(columnManager)
+				.build();
+
+		Assertions.assertThat(queryContext.getColumnsManager()).isSameAs(columnManager);
+	}
+
+	@Test
+	public void testDefaultExecutorService() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		QueryPod queryContext = QueryPod.forTable(table);
+
+		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
+				.isEqualTo("com.google.common.util.concurrent.DirectExecutorService");
+	}
+
+	@Test
+	public void testCustomExecutorService() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		QueryPod queryContext =
+				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocCommonPool).build();
+
+		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
+				.isEqualTo("java.util.concurrent.ForkJoinPool");
 	}
 }

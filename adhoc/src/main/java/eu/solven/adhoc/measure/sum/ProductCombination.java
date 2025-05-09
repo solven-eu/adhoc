@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.base.Functions;
-
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.MultitypeCell;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -41,7 +43,7 @@ public class ProductCombination implements ICombination {
 
 	public static final String KEY = "PRODUCT";
 
-	// If true, a null underlying leads to a null output
+	// If true, any null underlying leads to a null output
 	// If false, null underlyings are ignored
 	final boolean nullOperandIsNull;
 
@@ -49,20 +51,50 @@ public class ProductCombination implements ICombination {
 		nullOperandIsNull = true;
 	}
 
-	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		if (nullOperandIsNull && underlyingValues.contains(null)) {
-			return null;
-		}
-
-		return underlyingValues.stream()
-				.<Object>map(Functions.identity())
-				.reduce(new ProductAggregation()::aggregate)
-				.orElse(null);
-	}
-
 	public ProductCombination(Map<String, ?> options) {
 		nullOperandIsNull = MapPathGet.<Boolean>getOptionalAs(options, "nullOperandIsNull").orElse(true);
+	}
+
+	@Override
+	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		MultitypeCell refMultitype =
+				MultitypeCell.builder().aggregation(new ProductAggregation()).asLong(1L).asDouble(1D).build();
+
+		IValueReceiver cellValueConsumer = refMultitype.merge();
+		AtomicBoolean hasNull = new AtomicBoolean();
+
+		IValueReceiver proxyValueReceiver = new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				cellValueConsumer.onLong(v);
+			}
+
+			@Override
+			public void onDouble(double v) {
+				cellValueConsumer.onDouble(v);
+			}
+
+			@Override
+			public void onObject(Object v) {
+				if (v == null) {
+					hasNull.set(true);
+				} else {
+					cellValueConsumer.onObject(v);
+				}
+			}
+		};
+
+		int size = slicedRecord.size();
+		for (int i = 0; i < size; i++) {
+			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
+		}
+
+		if (nullOperandIsNull && hasNull.get()) {
+			return IValueProvider.NULL;
+		}
+
+		return refMultitype.reduce();
 	}
 
 }

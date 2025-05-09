@@ -20,30 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iteratotr;
+package eu.solven.adhoc.measure;
+
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
 
-public class TestSlicedRecordFromArray {
+public class TestUnsafeMeasureForest implements IAdhocTestConstants {
 	@Test
-	public void testToString() {
-		SlicedRecordFromArray sliced =
-				SlicedRecordFromArray.builder().measure("a").measure(12.34).measure(new int[] { 0, 1, 23 }).build();
+	public void testAddTag() {
+		IMeasureForest baseForest = UnsafeMeasureForest.builder()
+				.name("base")
+				.measure(Aggregator.countAsterisk())
+				.measure(filterK1onA1)
+				.build();
 
-		Assertions.assertThat(sliced.toString()).isEqualTo("[a, 12.34, [0, 1, 23]]");
-	}
+		IMeasureForest updatedForest = baseForest.acceptVisitor(new IMeasureForestVisitor() {
+			@Override
+			public Set<IMeasure> mapMeasure(IMeasure measure) {
+				if (measure.getName().equals(filterK1onA1.getName())) {
+					return Set.of(((Filtrator) measure).toBuilder().tag("someTag").build());
+				} else {
+					return Set.of(measure);
+				}
+			}
+		});
 
-	@Test
-	public void testNull() {
-		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().measure("a").measure(null).build();
+		Assertions.assertThat(updatedForest).isSameAs(baseForest);
 
-		Assertions.assertThat(sliced.toString()).isEqualTo("[a, null]");
-
-		Assertions.assertThat(IValueProvider.getValue(sliced.read(0))).isEqualTo("a");
-		Assertions.assertThat(IValueProvider.getValue(sliced.read(1))).isNull();
+		// Check the updated forest has been mutated
+		Assertions.assertThat(updatedForest.getMeasures()).hasSize(2).anySatisfy(m -> {
+			Assertions.assertThat(m.getName()).isEqualTo(filterK1onA1.getName());
+			Assertions.assertThat(m.getTags()).containsExactly("someTag");
+		});
 	}
 }

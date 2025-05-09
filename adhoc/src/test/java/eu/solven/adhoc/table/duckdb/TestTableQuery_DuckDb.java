@@ -43,7 +43,6 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.map.MapTestHelpers;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -102,7 +101,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		List<Map<String, ?>> tableStream = table.streamSlices(qK1).toList();
 
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
-		Assertions.assertThat(tableStream).contains(MapTestHelpers.mapWithNull("k1")).hasSize(1);
+		Assertions.assertThat(tableStream).contains(Map.of()).hasSize(1);
 	}
 
 	@Test
@@ -249,7 +248,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 	// https://stackoverflow.com/questions/361747/what-does-the-symbol-do-in-sql
 	@Test
-	public void testAdhocQuery_FilterA1_groupByB_columnWithAtSymbol() {
+	public void testCubeQuery_FilterA1_groupByB_columnWithAtSymbol() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a@a@a", SQLDataType.VARCHAR)
 				.column("b@b@b", SQLDataType.VARCHAR)
@@ -420,7 +419,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	}
 
 	@Test
-	public void testAdhocQuery_sumFilterGroupByk1() {
+	public void testCubeQuery_sumFilterGroupByk1() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
@@ -442,7 +441,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	}
 
 	@Test
-	public void testAdhocQuery_countAsterisk() {
+	public void testCubeQuery_countAsterisk() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)

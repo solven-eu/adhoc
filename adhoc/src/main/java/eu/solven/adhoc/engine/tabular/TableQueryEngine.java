@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.tabular;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -48,12 +48,11 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.engine.ISinkExecutionFeedback;
+import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.ITabularRecordStreamReducer;
-import eu.solven.adhoc.engine.tabular.TableQueryToActualTableQuery;
-import eu.solven.adhoc.engine.tabular.TabularRecordStreamReducer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
@@ -146,7 +145,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Set<TableQueryV2> tableQueries) {
 		try {
-			return queryPod.getFjp().submit(() -> {
+			return queryPod.getExecutorService().submit(() -> {
 				Stream<TableQueryV2> tableQueriesStream = tableQueries.stream();
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
@@ -220,7 +219,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @param dagHolder2
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	protected Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	public Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
 
@@ -316,23 +315,75 @@ public class TableQueryEngine implements ITableQueryEngine {
 			TableQueryToActualTableQuery query,
 			ITabularRecordStream stream) {
 
-		IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates =
-				sinkToAggregates(queryPod, query.getSuppressedQuery(), stream);
+		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates;
+		{
+			IStopwatch stopWatch = stopwatchFactory.createStarted();
 
-		return toImmutableChunks(queryPod, query, coordinatesToAggregates);
+			sliceToAggregates = mergeTableAggregates(queryPod, query.getSuppressedQuery(), stream);
+
+			// BEWARE This timing is dependent of the table
+			Duration elapsed = stopWatch.elapsed();
+			if (queryPod.isDebug()) {
+				long totalSize =
+						query.getDagQuery().getAggregators().stream().mapToLong(a -> sliceToAggregates.size(a)).sum();
+
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(true)
+						.performance(true)
+						.message("[DEBUG] time=%s size=%s for mergeTableAggregates on %s"
+								.formatted(elapsed, totalSize, query.getDagQuery()))
+						.source(this)
+						.build());
+			} else if (queryPod.isExplain()) {
+				eventBus.post(AdhocLogEvent.builder()
+						.explain(true)
+						.performance(true)
+						.message("[EXPLAIN] time=%s for mergeTableAggregates on %s".formatted(elapsed,
+								query.getDagQuery()))
+						.source(this)
+						.build());
+			}
+		}
+
+		Map<CubeQueryStep, ISliceToValue> immutableChunks;
+		{
+			IStopwatch singToAggregatedStarted = stopwatchFactory.createStarted();
+
+			immutableChunks = toSortedColumns(queryPod, query, sliceToAggregates);
+
+			// BEWARE This timing is independent of the table
+			Duration elapsed = singToAggregatedStarted.elapsed();
+			if (queryPod.isDebug()) {
+				long totalSize = immutableChunks.values().stream().mapToLong(c -> c.size()).sum();
+
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(true)
+						.performance(true)
+						.message("[DEBUG] time=%s size=%s for toSortedColumns on %s"
+								.formatted(elapsed, totalSize, query.getDagQuery()))
+						.source(this)
+						.build());
+			} else if (queryPod.isExplain()) {
+				eventBus.post(AdhocLogEvent.builder()
+						.explain(true)
+						.performance(true)
+						.message("[EXPLAIN] time=%s for toSortedColumns on %s".formatted(elapsed, query.getDagQuery()))
+						.source(this)
+						.build());
+			}
+		}
+		return immutableChunks;
 	}
 
-	protected IMultitypeMergeableGrid<SliceAsMap> sinkToAggregates(QueryPod queryPod,
+	protected IMultitypeMergeableGrid<SliceAsMap> mergeTableAggregates(QueryPod queryPod,
 			TableQueryV2 tableQuery,
 			ITabularRecordStream stream) {
-
-		ITabularRecordStreamReducer streamReducer = makeAggregatedRecordStreamReducer(queryPod, tableQuery);
+		ITabularRecordStreamReducer streamReducer = makeTabularRecordStreamReducer(queryPod, tableQuery);
 
 		return streamReducer.reduce(stream);
 	}
 
-	protected ITabularRecordStreamReducer makeAggregatedRecordStreamReducer(QueryPod queryPod,
-			TableQueryV2 tableQuery) {
+	protected ITabularRecordStreamReducer makeTabularRecordStreamReducer(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return TabularRecordStreamReducer.builder()
 				.operatorsFactory(operatorsFactory)
 				.queryPod(queryPod)
@@ -356,7 +407,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @param coordinatesToAggregates
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
-	protected Map<CubeQueryStep, ISliceToValue> toImmutableChunks(QueryPod queryPod,
+	protected Map<CubeQueryStep, ISliceToValue> toSortedColumns(QueryPod queryPod,
 			TableQueryToActualTableQuery query,
 			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
 		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();

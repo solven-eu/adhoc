@@ -44,12 +44,12 @@ public interface IAggregation {
 		return new IValueProvider() {
 
 			@Override
-			public void acceptConsumer(IValueReceiver valueReceiver) {
-				l.acceptConsumer(new IValueReceiver() {
+			public void acceptReceiver(IValueReceiver valueReceiver) {
+				l.acceptReceiver(new IValueReceiver() {
 
 					@Override
 					public void onLong(long vL) {
-						r.acceptConsumer(new IValueReceiver() {
+						r.acceptReceiver(new IValueReceiver() {
 
 							@Override
 							public void onLong(long vR) {
@@ -69,7 +69,7 @@ public interface IAggregation {
 
 					@Override
 					public void onDouble(double vL) {
-						r.acceptConsumer(new IValueReceiver() {
+						r.acceptReceiver(new IValueReceiver() {
 
 							@Override
 							public void onDouble(double vR) {
@@ -89,7 +89,7 @@ public interface IAggregation {
 
 					@Override
 					public void onObject(Object vL) {
-						r.acceptConsumer(new IValueReceiver() {
+						r.acceptReceiver(new IValueReceiver() {
 
 							@Override
 							public void onObject(Object vR) {

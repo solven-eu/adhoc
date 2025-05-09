@@ -24,8 +24,6 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
 
-import javax.annotation.Nonnull;
-
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
@@ -39,7 +37,6 @@ public interface IColumnFilter extends IAdhocFilter {
 	/**
 	 * @return the name of the filtered column.
 	 */
-	@Nonnull
 	String getColumn();
 
 	/**
