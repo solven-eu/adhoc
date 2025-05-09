@@ -16,6 +16,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `QueryPod` now relies on `MoreExecutors.newDirectExecutorService()` by default, which is used by not `StandardQueryOptions.CONCURRENT` queries.
 - Rename `-Dadhoc.limitColumnLength=1024` into `-Dadhoc.limitColumnSize=1024`
 
+### Fixed
+- `TopologicalOrderSpliterator` is not `parallel` by default, as it should be triggered by `StandardQueryOptions.CONCURRENT`.
+
 ## [0.0.6]
 ### Fixed
 - `SliceAsMap` did not handle a column with different `Comparable`, typically happening on `LocalDate` column with a `NULL` String on failed JOIN.

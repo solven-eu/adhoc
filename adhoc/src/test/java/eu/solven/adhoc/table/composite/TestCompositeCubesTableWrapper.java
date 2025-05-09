@@ -554,7 +554,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 										    |  size=1 duration=17ms
 										    |\\- #2 m=composite_power2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |   |  size=1 duration=31ms
+										    |   |  size=1 duration=15ms
 										    |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
 										    |       \\  size=1 duration=104ms
 										    \\-- #4 m=composite_power3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
