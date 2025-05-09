@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.composite;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +62,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
-import eu.solven.adhoc.util.IStopwatch;
 
 public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdhocTestConstants {
 
@@ -449,11 +447,6 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 						.hasSize(3);
 			}
 		}
-	}
-
-	@Override
-	public IStopwatch makeStopwatch() {
-		return () -> Duration.ofMillis(123);
 	}
 
 	/**
