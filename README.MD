@@ -317,7 +317,7 @@ See `eu.solven.adhoc.column.IMissingColumnManager.onMissingColumn(String)`
 
 Right-management is typically implemented by an `AND` operation combining the user `filter` and a filter based on user-rights.
 
-This can be achieved through `IAdhocImplicitFilter`. A Spring-Security example is demonstrated in `TestImplicitFilter_SpringSecurity`.
+This can be achieved through `IImplicitFilter`. A Spring-Security example is demonstrated in `TestImplicitFilter_SpringSecurity`.
 
 ## Common Questions
 
