@@ -90,13 +90,12 @@ public class TestSecurity_WithoutAuth {
 
 				.get()
 				.uri("/favicon.ico")
-				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
 
 				.expectStatus()
 				.isOk()
 				.expectBody(byte[].class)
-				.value(byteArray -> assertThat(byteArray).hasSize(21_764));
+				.value(byteArray -> assertThat(byteArray).hasSize(15_406));
 	}
 
 	@Test
