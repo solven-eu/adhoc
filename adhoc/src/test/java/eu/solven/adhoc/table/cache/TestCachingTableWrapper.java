@@ -316,7 +316,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 							builder.measure(k2Sum.getAlias());
 						}
 
-						queries.add(builder.debug(true).build());
+						queries.add(builder.build());
 					}
 				}
 			}

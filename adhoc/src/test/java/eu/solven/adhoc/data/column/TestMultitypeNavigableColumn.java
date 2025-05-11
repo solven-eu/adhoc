@@ -148,8 +148,9 @@ public class TestMultitypeNavigableColumn {
 		Assertions.assertThat(column.keyStream().toList()).containsExactly("bar", "foo");
 
 		Assertions.assertThat(column.toString())
-				.isEqualTo("MultitypeNavigableColumn{#0=bar->%s(java.time.LocalDate), #1=foo->123(java.lang.Long)}"
-						.formatted(today));
+				.isEqualTo(
+						"MultitypeNavigableColumn{size=2, #0=bar->2025-05-11(java.time.LocalDate), #1=foo->123(java.lang.Long)}"
+								.formatted(today));
 	}
 
 	@Test
@@ -160,7 +161,7 @@ public class TestMultitypeNavigableColumn {
 			Assertions.assertThat(o).isNull();
 		});
 
-		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{#0=k1->null(null)}");
+		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{size=1, #0=k1->null(null)}");
 	}
 
 }

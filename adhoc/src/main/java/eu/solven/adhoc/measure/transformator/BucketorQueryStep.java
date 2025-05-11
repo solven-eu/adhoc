@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -40,6 +39,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
@@ -137,7 +137,7 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, ISliceWithStep slice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		Map<String, Object> queryCoordinates = new HashMap<>(groupedByColumns.size());
+		AdhocMap.AdhocMapBuilder mapBuilder = AdhocMap.builder(groupedByColumns);
 
 		groupedByColumns.forEach(groupBy -> {
 			Object value = slice.getRawSliced(groupBy);
@@ -147,9 +147,9 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 				throw new IllegalStateException("A coordinate-value can not be null");
 			}
 
-			queryCoordinates.put(groupBy, value);
+			mapBuilder.append(value);
 		});
 
-		return queryCoordinates;
+		return mapBuilder.build();
 	}
 }

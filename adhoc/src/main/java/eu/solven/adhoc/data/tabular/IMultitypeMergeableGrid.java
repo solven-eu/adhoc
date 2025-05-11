@@ -51,6 +51,8 @@ public interface IMultitypeMergeableGrid<T> {
 	 *            should {@link IAggregationCarrier} be purged?
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
+	// BEWARE Design-Issue this calls for per-Aggregator logic, which pushes for not keeping the multi-measure
+	// consistency, which leads to later alignement of slices per-aggregate, which is a performance bottleneck.
 	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers);
 
 	long size(IAliasedAggregator aggregator);

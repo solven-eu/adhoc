@@ -84,6 +84,9 @@ public class InMemoryTable implements ITableWrapper {
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
 
+	@Default
+	boolean distinctSlices = false;
+
 	public void add(Map<String, ?> row) {
 		rows.add(row);
 	}
@@ -137,7 +140,7 @@ public class InMemoryTable implements ITableWrapper {
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
 
-		return new SuppliedTabularRecordStream(tableQuery, () -> {
+		return new SuppliedTabularRecordStream(tableQuery, false, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
 				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 			});
@@ -163,8 +166,21 @@ public class InMemoryTable implements ITableWrapper {
 								.build());
 				return distinctStream;
 			} else {
-				// This may publish multiple record with the same groupBy
-				return stream;
+				if (distinctSlices) {
+					List<ITabularRecord> asList = stream.toList();
+
+					long nbSlices = asList.stream().map(r -> r.getGroupBys()).count();
+					if (nbSlices != asList.size()) {
+						// TODO We may implement the aggregations, but it may be unnecessary for unitTests
+						throw new IllegalStateException("Rows does not enable distinct groupBys");
+					}
+
+					return asList.stream();
+				} else {
+					// This may publish multiple record with the same groupBy
+					return stream;
+				}
+
 			}
 		});
 	}

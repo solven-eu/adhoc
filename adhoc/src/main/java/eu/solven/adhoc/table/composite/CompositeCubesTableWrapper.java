@@ -172,7 +172,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		// Actual execution is the only concurrent section
 		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
-		return new SuppliedTabularRecordStream(compositeQuery, () -> openStream(compositeGroupBy, cubeToView));
+		// not distinct slices as different subCubes may refer to the same slices
+		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeGroupBy, cubeToView));
 	}
 
 	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,

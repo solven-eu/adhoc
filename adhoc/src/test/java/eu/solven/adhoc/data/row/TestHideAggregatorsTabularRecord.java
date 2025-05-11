@@ -27,6 +27,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.table.transcoder.IdentityReversibleTranscoder;
 
 public class TestHideAggregatorsTabularRecord {
@@ -37,8 +39,10 @@ public class TestHideAggregatorsTabularRecord {
 				.aggregate("k1", 123)
 				.aggregate("k2", 234)
 				.build();
-		HideAggregatorsTabularRecord record =
-				HideAggregatorsTabularRecord.builder().decorated(underlying).keptAggregate("k1").build();
+		HideAggregatorsTabularRecord record = HideAggregatorsTabularRecord.builder()
+				.decorated(underlying)
+				.keptAggregates(ImmutableSet.of("k1"))
+				.build();
 
 		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
 
@@ -57,8 +61,7 @@ public class TestHideAggregatorsTabularRecord {
 				.build();
 		HideAggregatorsTabularRecord record = HideAggregatorsTabularRecord.builder()
 				.decorated(underlying)
-				.keptAggregate("k1")
-				.keptAggregate("k3")
+				.keptAggregates(ImmutableSet.of("k1", "k3"))
 				.build();
 
 		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());

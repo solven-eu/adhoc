@@ -114,12 +114,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(tableQueries);
 
-		Map<CubeQueryStep, ISliceToValue> queryStepToValuesOuter =
-				executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
+		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
 
-		reportAfterTableQueries(queryPod, queryStepToValuesOuter);
+		reportAfterTableQueries(queryPod, stepToValues);
 
-		return queryStepToValuesOuter;
+		return stepToValues;
 	}
 
 	protected void reportAfterTableQueries(QueryPod queryPod,
@@ -185,16 +184,16 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 
-		Map<CubeQueryStep, ISliceToValue> oneQueryStepToValues;
+		Map<CubeQueryStep, ISliceToValue> stepToValues;
 		// Open the stream: the table may or may not return after the actual execution
 		try (ITabularRecordStream rowsStream = openTableStream(queryPod, suppressedQuery)) {
-			oneQueryStepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
+			stepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
 		Duration elapsed = stopWatch.elapsed();
-		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, oneQueryStepToValues);
+		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, stepToValues);
 
-		return oneQueryStepToValues;
+		return stepToValues;
 	}
 
 	protected void reportAboutDoneAggregators(ISinkExecutionFeedback sinkExecutionFeedback,
@@ -439,16 +438,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 			// underlyings
 			IMultitypeColumnFastGet<SliceAsMap> column =
 					coordinatesToAggregates.closeColumn(filteredAggregator, doPurgeCarriers);
-
-			// eventBus.post(QueryStepIsCompleted.builder()
-			// .querystep(queryStep)
-			// .nbCells(column.size())
-			// // TODO How to collect this duration? Especially as the tableQuery computes multiple aggregators at
-			// // the same time
-			// .duration(Duration.ZERO)
-			// .source(this)
-			// .build());
-			// log.debug("tableQuery={} generated a column with size={}", tableQuery, column.size());
 
 			IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed;
 			if (suppressedGroupBys.isEmpty()) {

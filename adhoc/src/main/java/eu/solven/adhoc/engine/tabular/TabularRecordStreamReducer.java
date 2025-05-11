@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsV2;
+import eu.solven.adhoc.data.tabular.AggregatingColumnsV2_Distinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.AdhocMap;
@@ -59,16 +60,17 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV2 tableQuery;
 
-	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures() {
-		return AggregatingColumnsV2.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures(ITabularRecordStream stream) {
+		if (stream.isDistinctSlices()) {
+			return AggregatingColumnsV2_Distinct.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+		} else {
+			return AggregatingColumnsV2.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+		}
 	}
 
 	@Override
 	public IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures();
-
-		// TableAggregatesMetadata tableAggregatesMetadata =
-		// TableAggregatesMetadata.from(queryPod, tableQuery.getAggregators());
+		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures(stream);
 
 		TabularRecordLogger aggregatedRecordLogger =
 				TabularRecordLogger.builder().table(queryPod.getTable().getName()).build();

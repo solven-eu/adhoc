@@ -51,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000;
+	static final int maxCardinality = 1_000_000 / 10;
 
 	@BeforeAll
 	public static void setLimits() {

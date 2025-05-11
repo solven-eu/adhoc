@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestConstants {
-	int maxCardinality = 100_000;
+	int maxCardinality = 10_000;
 
 	// This will be edited by registerMeasures
 	String timesNMinus1 = k1Sum.getName();

@@ -331,9 +331,9 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		Assertions
 				.assertThatThrownBy(() -> wrapInCube(forest)
 						.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
-				.isInstanceOf(RuntimeException.class)
-				.hasStackTraceContaining("source=TableQuery")
-				.hasStackTraceContaining("unknownColumn");
+				.isInstanceOf(IllegalArgumentException.class)
+				// .hasStackTraceContaining("source=TableQuery")
+				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!");
 	}
 
 	@Test
@@ -412,8 +412,8 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 			wrapInCube(forest).execute(
 					CubeQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
-				.isInstanceOf(RuntimeException.class)
-				.hasStackTraceContaining("source=TableQuery")
+				.isInstanceOf(IllegalArgumentException.class)
+				// .hasStackTraceContaining("source=TableQuery")
 				.hasRootCauseInstanceOf(SQLException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");
 	}

@@ -30,7 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Spliterator;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -51,6 +53,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
@@ -163,7 +166,6 @@ public class JooqTableWrapper implements ITableWrapper {
 					getName(),
 					resultQuery.getQuery().getSQL(ParamType.INLINED),
 					resultQuery.getLeftover());
-			// resultQuery.fields()
 		}
 		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);
@@ -171,7 +173,25 @@ public class JooqTableWrapper implements ITableWrapper {
 
 		Stream<ITabularRecord> tableStream = toMapStream(resultQuery);
 
-		return new SuppliedTabularRecordStream(tableQuery, () -> tableStream);
+		Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
+		// Given the groupBy, we are guaranteed to receive distinct records
+		int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
+		Stream<ITabularRecord> modifiedStream =
+				StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, false);
+
+		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
+
+		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
+	}
+
+	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
+		if (resultQuery.getLeftover().isMatchAll()) {
+			return true;
+		} else {
+			// We may have queried columns which are not part of the groupBy
+			// TODO We may return true if we know the lateFiltered columns are also in the groupBy
+			return false;
+		}
 	}
 
 	protected IJooqTableQueryFactory makeQueryFactory() {

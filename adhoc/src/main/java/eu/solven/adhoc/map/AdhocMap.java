@@ -292,6 +292,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	public static class AdhocMapBuilder {
 		// Cache keyToIndex as it enables faster comparisons
+		// Expected to remain low in memory given the groupBy cardinality is limited
 		private static final Map<NavigableSet<String>, Object2IntArrayMap<String>> keysToIndexedKeys =
 				new ConcurrentHashMap<>();
 

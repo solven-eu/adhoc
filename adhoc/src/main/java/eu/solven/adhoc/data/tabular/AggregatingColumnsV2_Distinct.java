@@ -22,30 +22,24 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,18 +53,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingColumnsV2<T, Integer> {
+public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAggregatingColumnsV2<T, Integer> {
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
 	// aggregators).
 	@NonNull
 	@Default
-	Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(AdhocUnsafe.defaultCapacity());
+	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.defaultCapacity());
 
 	@NonNull
 	@Default
-	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+	Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
 
 	// Compute only was the sorted version of slicesToIndex. This is re-used by each column
 	private final AtomicReference<List<Object2IntMap.Entry<T>>> refSortedSliceToIndex = new AtomicReference<>();
@@ -80,28 +74,29 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
-	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
+	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
 		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
-		return MultitypeHashMergeableColumn.<Integer>builder().aggregation(agg).build();
+		return MultitypeHashColumn.<Integer>builder().build();
 	}
 
 	@Override
-	protected IMultitypeMergeableColumn<Integer> getColumn(IAliasedAggregator aggregator) {
+	protected IMultitypeColumnFastGet<Integer> getColumn(IAliasedAggregator aggregator) {
 		return aggregatorToAggregates.get(aggregator.getAlias());
 	}
 
 	@Override
 	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
-
-		IMultitypeMergeableColumn<Integer> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
-			return makePreColumn(agg);
+		IMultitypeColumnFastGet<Integer> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
+			return makePreColumn();
 		});
 
 		int keyIndex = dictionarize(key);
 
-		if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
+		// TODO Could be skipped for not-object aggregate?
+		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+
+		if (agg instanceof IHasCarriers hasCarriers) {
 			return v -> {
 				Object wrapped;
 				if (v == null) {
@@ -121,11 +116,10 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 
 	@Override
 	protected int dictionarize(T key) {
-		// Dictionarize the slice to some index.
-		// BEWARE This happens even if the aggregates is null and then should be skipped,
-		// which is sub-optimal (but IValueReceiver API leads to this). It is acceptable as we expect at least one
-		// aggregate to have a value for given slice.
-		return sliceToIndex.computeIfAbsent(key, k -> sliceToIndex.size());
+		indexToSlice.add(key);
+
+		// e.g. On first item, we return 0
+		return indexToSlice.size() - 1;
 	}
 
 	@Override
@@ -145,97 +139,28 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
 		if (column instanceof MultitypeNavigableColumn<?>) {
-			Map<Integer, T> indexToSlice = new HashMap<>(sliceToIndex.size());
-			sliceToIndex.forEach((slice, rowIndex) -> indexToSlice.put(rowIndex, slice));
-
-			// Turn the columnByIndex to a columnBySlice
-			return wrapNavigableColumnGivenIndexes(column, indexToSlice);
+			throw new NotYetImplementedException("TODO");
 		} else {
 			// TODO Should we have some sort of strategy to decide when to switch to the sorting strategy?
 
 			// BEWARE The point of this sorting is to improve performance of later
 			// UnderlyingQueryStepHelpers.distinctSlices
-
 			if (refSortedSliceToIndex.get() == null) {
 				ObjectArrayList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
-					sliceToIndex.forEach((slice, index) -> consumer.acceptObject2Int(slice, index));
-				}, sliceToIndex.size());
+					for (int rowIndex = 0; rowIndex < indexToSlice.size(); rowIndex++) {
+						consumer.acceptObject2Int(indexToSlice.get(rowIndex), rowIndex);
+					}
+				}, indexToSlice.size());
 
 				refSortedSliceToIndex.set(sortedEntries);
 			}
 
 			return copyToNavigable(column, sliceToIndex -> {
 				refSortedSliceToIndex.get().forEach(e -> {
-					T slice = e.getKey();
-					int rowIndex = e.getValue();
-
-					sliceToIndex.acceptObject2Int(slice, rowIndex);
+					sliceToIndex.acceptObject2Int(e.getKey(), e.getIntValue());
 				});
 			});
 		}
 	}
 
-	protected IMultitypeColumnFastGet<T> wrapNavigableColumnGivenIndexes(IMultitypeColumnFastGet<Integer> column,
-			Map<Integer, T> indexToSlice) {
-		return new IMultitypeColumnFastGet<T>() {
-
-			@Override
-			public long size() {
-				return column.size();
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return column.isEmpty();
-			}
-
-			@Override
-			public void purgeAggregationCarriers() {
-				column.purgeAggregationCarriers();
-			}
-
-			@Override
-			public IValueReceiver append(T slice) {
-				throw new UnsupportedOperationException("Read-Only");
-			}
-
-			@Override
-			public void scan(IColumnScanner<T> rowScanner) {
-				column.scan(rowIndex -> {
-					return rowScanner.onKey(indexToSlice.get(rowIndex));
-				});
-			}
-
-			@Override
-			public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-				return column.stream(rowIndex -> {
-					return converter.prepare(indexToSlice.get(rowIndex));
-				});
-			}
-
-			@Override
-			public Stream<SliceAndMeasure<T>> stream() {
-				return column.stream()
-						.map(sliceAndMeasure -> SliceAndMeasure.<T>builder()
-								.slice(indexToSlice.get(sliceAndMeasure.getSlice()))
-								.valueProvider(sliceAndMeasure.getValueProvider())
-								.build());
-			}
-
-			@Override
-			public Stream<T> keyStream() {
-				return column.keyStream().map(rowIndex -> indexToSlice.get(rowIndex));
-			}
-
-			@Override
-			public IValueProvider onValue(T key) {
-				return column.onValue(sliceToIndex.get(key));
-			}
-
-			@Override
-			public IValueReceiver set(T key) {
-				throw new UnsupportedOperationException("Read-Only");
-			}
-		};
-	}
 }

@@ -35,6 +35,14 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 public interface ITabularRecordStream extends AutoCloseable {
 	/**
+	 * BEWARE We do not rely on Stream caracteristics as a {@link Stream} may be distinct (with `.distinct()`) due to
+	 * Aggregates but having equals slices.
+	 * 
+	 * @return true if the output {@link ITabularRecord} is guaranteed to refer to distinct slices.
+	 */
+	boolean isDistinctSlices();
+
+	/**
 	 * Only the first call is guaranteed (by interface contract) to succeed.
 	 * 
 	 * @return a {@link Stream} of {@link ITabularRecord}

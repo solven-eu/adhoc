@@ -20,47 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.data.tabular.primitives;
 
-import java.util.function.Supplier;
-import java.util.stream.Stream;
+@FunctionalInterface
+public interface Object2DoubleBiConsumer<T> {
+	void acceptObject2Double(T o, double d);
 
-import com.google.common.base.Suppliers;
-
-/**
- * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
- */
-public class SuppliedTabularRecordStream implements ITabularRecordStream {
-	final Object source;
-	final boolean isDistinct;
-	final Supplier<Stream<ITabularRecord>> streamSupplier;
-
-	public SuppliedTabularRecordStream(Object source,
-			boolean isDistinct,
-			Supplier<Stream<ITabularRecord>> streamSupplier) {
-		this.source = source;
-		this.isDistinct = isDistinct;
-		// Memoize the stream to make sure it is open only once
-		this.streamSupplier = Suppliers.memoize(streamSupplier::get);
-	}
-
-	@Override
-	public Stream<ITabularRecord> records() {
-		return streamSupplier.get();
-	}
-
-	@Override
-	public void close() {
-		streamSupplier.get().close();
-	}
-
-	@Override
-	public String toString() {
-		return "source=%s".formatted(source);
-	}
-
-	@Override
-	public boolean isDistinctSlices() {
-		return isDistinct;
-	}
 }
