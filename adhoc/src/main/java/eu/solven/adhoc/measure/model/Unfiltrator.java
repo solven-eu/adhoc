@@ -43,6 +43,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -65,6 +66,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 
 	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	@NonNull

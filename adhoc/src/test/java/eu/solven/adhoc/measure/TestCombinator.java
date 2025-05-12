@@ -28,6 +28,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -52,5 +54,19 @@ public class TestCombinator {
 		// This checks there is no StackOverFlow on .toString, which is possible as we may set `measure==this` in
 		// `.makeAllOptions`
 		Assertions.assertThat(measure.toString()).contains("measure");
+	}
+
+	@Test
+	public void testWithTags() {
+		Combinator measure = Combinator.builder()
+				.name("measureName")
+				.combinationOptions(Map.of("k", "v"))
+				.combinationKey("someKey")
+				.tag("tag1")
+				.build();
+
+		Assertions.assertThat(measure.withTags(ImmutableSet.of("tag2"))).satisfies(edited -> {
+			Assertions.assertThat(edited.getTags()).containsExactly("tag2");
+		});
 	}
 }

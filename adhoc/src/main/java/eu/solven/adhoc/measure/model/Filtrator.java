@@ -38,6 +38,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,7 +57,9 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	@NonNull

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -39,6 +40,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Used to check the behavior of {@link MeasureForestFromResource} on a project custom {@link IMeasure}
@@ -46,6 +48,7 @@ import lombok.extern.jackson.Jacksonized;
 @JsonIgnoreProperties({ "underlyingNames" })
 @Builder
 @Jacksonized
+@Slf4j
 public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasures {
 
 	// This is a standard measure field
@@ -68,6 +71,12 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 	@Override
 	public List<String> getUnderlyingNames() {
 		return List.of();
+	}
+
+	@Override
+	public IMeasure withTags(ImmutableSet<String> tags) {
+		log.warn("Can not edit tags of {}", this);
+		return this;
 	}
 
 	@Override

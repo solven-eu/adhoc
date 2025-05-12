@@ -24,11 +24,15 @@ package eu.solven.adhoc.atoti;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.measure.model.IMeasure;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This demonstrates how one can add custom elements to the {@link eu.solven.adhoc.dag.AdhocQueryStep}.
  */
+@Slf4j
 public class ContextValueAdhocMeasure implements IMeasure {
 	@Override
 	public String getName() {
@@ -38,5 +42,11 @@ public class ContextValueAdhocMeasure implements IMeasure {
 	@Override
 	public Set<String> getTags() {
 		return Set.of();
+	}
+
+	@Override
+	public IMeasure withTags(ImmutableSet<String> tags) {
+		log.warn("Can not edit tags of {}", this);
+		return this;
 	}
 }

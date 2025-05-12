@@ -23,9 +23,11 @@
 package eu.solven.adhoc.measure.model;
 
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.measure.MeasureForest;
@@ -53,7 +55,15 @@ public interface IMeasure extends IHasName, IHasTags {
 	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link MeasureForest}.
 	 */
 	String getName();
-	
+
+	/**
+	 * 
+	 * @param tags
+	 * @return a copy of the measure with given {@link Set} of tags. Old tag are removed if not present in the provided
+	 *         set.
+	 */
+	IMeasure withTags(ImmutableSet<String> tags);
+
 	/**
 	 * 
 	 * @param name

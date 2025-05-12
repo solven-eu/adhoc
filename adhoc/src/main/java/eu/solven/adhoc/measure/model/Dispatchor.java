@@ -47,6 +47,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,7 +69,9 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	// Developer note: if you wish having multiple underlings: either you add a Combinator an underlying to this

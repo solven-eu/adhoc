@@ -39,6 +39,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 
 /**
  * Demonstrate how to do a complex ratio through a single Combinator. This will consider the underlying measure, and do
@@ -54,6 +55,7 @@ public class RatioByCombinator implements ICombinator {
 
 	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	@NonNull
