@@ -140,7 +140,7 @@ public class InMemoryTable implements ITableWrapper {
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
 
-		return new SuppliedTabularRecordStream(tableQuery, false, () -> {
+		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
 				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
 			});
@@ -222,8 +222,7 @@ public class InMemoryTable implements ITableWrapper {
 							// SUM, MIN, MAX, AVG, RANK, etc
 
 							// Transcode from columnName to aggregatorName, supposing all aggregation functions does not
-							// change a
-							// not aggregated single value
+							// change a not aggregated single value
 							aggregate = aggregatorUnderlyingValue;
 						}
 						if (null != aggregate) {

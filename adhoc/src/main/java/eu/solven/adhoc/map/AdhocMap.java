@@ -50,6 +50,8 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 // `extends AbstractMap` enables not duplicating `.toString`
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
+	private static final int[] PRE_ORDERED = new int[0];
+
 	// This is mandatory for fast `.get`
 	// This is sorted
 	final Object2IntArrayMap<String> keyToIndex;
@@ -308,7 +310,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			if (keys instanceof NavigableSet<String> navigableKeys) {
 				this.keys = navigableKeys;
 				// identity reordering
-				reordering = new int[0];
+				reordering = PRE_ORDERED;
 			} else {
 				ObjectArrayList<Object2IntMap.Entry<String>> keyToIndex = new ObjectArrayList<>();
 

@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.column;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.google.common.base.Functions;
@@ -38,12 +39,12 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongLists;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongMaps;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -61,7 +62,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
+@Deprecated(since = "Not-Ready")
+public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T> {
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
@@ -69,7 +71,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	// with a multiType object
 	@Default
 	@NonNull
-	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>(0);
+	final LongList measureToAggregateL = new LongArrayList(0);
 	@Default
 	@NonNull
 	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>(0);
@@ -87,7 +89,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		} else if (size == 0) {
 			if (type == IMultitypeConstants.MASK_LONG) {
-				if (measureToAggregateL instanceof Object2LongOpenHashMap openHashMap) {
+				if (measureToAggregateL instanceof LongArrayList openHashMap) {
 					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 				}
 			} else if (type == IMultitypeConstants.MASK_DOUBLE) {
@@ -110,7 +112,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
+		if (measureToAggregateL.contains(key) || measureToAggregateD.containsKey(key)
 				|| measureToAggregateO.containsKey(key)) {
 			return merge(key);
 		}
@@ -139,7 +141,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			@Override
 			public void onLong(long v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
-				measureToAggregateL.put(key, v);
+				measureToAggregateL.set(key.intValue(), v);
 
 				if (safe) {
 					// measureToAggregateL.removeLong(key);
@@ -192,7 +194,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public void onValue(T key, IValueReceiver consumer) {
-		if (measureToAggregateL.containsKey(key)) {
+		if (measureToAggregateL.contains(key.intValue())) {
 			consumer.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
 			consumer.onDouble(measureToAggregateD.getDouble(key));
@@ -209,7 +211,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public IValueProvider onValue(T key) {
-		if (measureToAggregateL.containsKey(key)) {
+		if (measureToAggregateL.contains(key.intValue())) {
 			return vc -> vc.onLong(measureToAggregateL.getLong(key));
 		} else if (measureToAggregateD.containsKey(key)) {
 			return vc -> vc.onDouble(measureToAggregateD.getDouble(key));
@@ -225,9 +227,9 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		// it would require searching the column providing given type
 
 		// https://github.com/vigna/fastutil/issues/279
-		Object2LongMaps.fastForEach(measureToAggregateL, entry -> {
-			rowScanner.onKey(entry.getKey()).onLong(entry.getLongValue());
-		});
+		for (int i = 0; i < measureToAggregateL.size(); i++) {
+			rowScanner.onKey((T) Integer.valueOf(i)).onLong(measureToAggregateL.getLong(i));
+		}
 		Object2DoubleMaps.fastForEach(measureToAggregateD, entry -> {
 			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
 		});
@@ -238,8 +240,8 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-		Stream<U> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
-				.map(entry -> converter.prepare(entry.getKey()).onLong(entry.getLongValue()));
+		Stream<U> streamFromLong = IntStream.range(0, measureToAggregateL.size())
+				.mapToObj(i -> converter.prepare((T) Integer.valueOf(i)).onLong(measureToAggregateL.getLong(i)));
 		Stream<U> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
 				.map(entry -> converter.prepare(entry.getKey()).onDouble(entry.getDoubleValue()));
 		Stream<U> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
@@ -250,10 +252,10 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public Stream<SliceAndMeasure<T>> stream() {
-		Stream<SliceAndMeasure<T>> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(measureToAggregateL))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onLong(entry.getLongValue()))
+		Stream<SliceAndMeasure<T>> streamFromLong = IntStream.range(0, measureToAggregateL.size())
+				.mapToObj(i -> SliceAndMeasure.<T>builder()
+						.slice((T) Integer.valueOf(i))
+						.valueProvider(vc -> vc.onLong(measureToAggregateL.getLong(i)))
 						.build());
 		Stream<SliceAndMeasure<T>> streamFromDouble =
 				Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
@@ -298,9 +300,10 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public Stream<T> keyStream() {
-		return Stream.of(measureToAggregateD.keySet(), measureToAggregateL.keySet(), measureToAggregateO.keySet())
-				// No need for .distinct as each key is guaranteed to appear in a single column
-				.flatMap(Collection::stream);
+		return Stream.concat(IntStream.range(0, measureToAggregateL.size()).mapToObj(i -> (T) Integer.valueOf(i)),
+				Stream.of(measureToAggregateD.keySet(), measureToAggregateO.keySet())
+						// No need for .distinct as each key is guaranteed to appear in a single column
+						.flatMap(Collection::stream));
 
 	}
 
@@ -332,9 +335,9 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	/**
 	 * @return an empty and immutable MultiTypeStorage
 	 */
-	public static <T> MultitypeHashColumn<T> empty() {
-		return MultitypeHashColumn.<T>builder()
-				.measureToAggregateL(Object2LongMaps.emptyMap())
+	public static <T extends Integer> MultitypeArrayColumn<T> empty() {
+		return MultitypeArrayColumn.<T>builder()
+				.measureToAggregateL(LongLists.emptyList())
 				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateO(Object2ObjectMaps.emptyMap())
 				.build();
@@ -348,7 +351,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 					@Override
 					public void onLong(long value) {
-						measureToAggregateL.put(key, value);
+						measureToAggregateL.set(key.intValue(), value);
 						// Removal will happen in a later pass
 					}
 

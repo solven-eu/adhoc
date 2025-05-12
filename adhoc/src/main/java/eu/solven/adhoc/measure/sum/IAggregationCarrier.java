@@ -48,7 +48,29 @@ public interface IAggregationCarrier {
 		 *            `RankAggregation`, we want to wrap all input values, not a pre-ranked value.
 		 * @return an {@link IAggregationCarrier}
 		 */
+		@Deprecated(since = "Prefer `IValueReceiver wrap(IValueReceiver sink)`")
 		IAggregationCarrier wrap(Object v);
+
+		/**
+		 * Used to intercept raw value from {@link ITableWrapper}, to wrap them.
+		 * 
+		 * @param sink
+		 *            the actual receiver
+		 * @return the {@link IValueReceiver} to receive the value from {@link ITableWrapper}
+		 */
+		default IValueReceiver wrap(IValueReceiver sink) {
+			return v -> {
+				Object wrapped;
+				if (v == null) {
+					wrapped = null;
+				} else {
+					// Wrap the aggregate from table into the aggregation custom wrapper
+					wrapped = wrap(v);
+				}
+
+				sink.onObject(wrapped);
+			};
+		}
 
 	}
 

@@ -44,6 +44,7 @@ import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
@@ -51,11 +52,16 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000 / 10;
+	static final int maxCardinality = 1_000_000 / 1;
 
 	@BeforeAll
 	public static void setLimits() {
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
+	}
+
+	@Override
+	public InMemoryTable makeTable() {
+		return InMemoryTable.builder().distinctSlices(true).build();
 	}
 
 	@BeforeEach

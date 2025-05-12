@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
  * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed.
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
 // BEWARE This is a poorly named class. It shall be renamed at some point.

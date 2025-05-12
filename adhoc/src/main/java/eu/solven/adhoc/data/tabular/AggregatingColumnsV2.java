@@ -64,6 +64,7 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
 	// aggregators).
+	// https://questdb.com/blog/building-faster-hash-table-high-performance-sql-joins/
 	@NonNull
 	@Default
 	Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(AdhocUnsafe.defaultCapacity());
@@ -102,17 +103,7 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 		int keyIndex = dictionarize(key);
 
 		if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
-			return v -> {
-				Object wrapped;
-				if (v == null) {
-					wrapped = null;
-				} else {
-					// Wrap the aggregate from table into the aggregation custom wrapper
-					wrapped = hasCarriers.wrap(v);
-				}
-
-				column.append(keyIndex).onObject(wrapped);
-			};
+			return hasCarriers.wrap(column.append(keyIndex));
 
 		} else {
 			return column.append(keyIndex);

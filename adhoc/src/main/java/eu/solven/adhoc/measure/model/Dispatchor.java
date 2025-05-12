@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 @Jacksonized
 public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey, IMayHaveColumnGenerator {
@@ -69,7 +69,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	String name;
 
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	// Developer note: if you wish having multiple underlings: either you add a Combinator an underlying to this
 	// Dispatcher. Or make a new Dispatchor implementation. But do not try (for now, until you know it will work) making

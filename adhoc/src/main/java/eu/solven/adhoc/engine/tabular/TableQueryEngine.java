@@ -329,7 +329,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("[DEBUG] time=%s size=%s for mergeTableAggregates on %s"
+						.message("time=%s size=%s for mergeTableAggregates on %s"
 								.formatted(elapsed, totalSize, query.getDagQuery()))
 						.source(this)
 						.build());
@@ -337,8 +337,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("[EXPLAIN] time=%s for mergeTableAggregates on %s".formatted(elapsed,
-								query.getDagQuery()))
+						.message("time=%s for mergeTableAggregates on %s".formatted(elapsed, query.getDagQuery()))
 						.source(this)
 						.build());
 			}
@@ -358,7 +357,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("[DEBUG] time=%s size=%s for toSortedColumns on %s"
+						.message("time=%s size=%s for toSortedColumns on %s"
 								.formatted(elapsed, totalSize, query.getDagQuery()))
 						.source(this)
 						.build());
@@ -366,7 +365,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("[EXPLAIN] time=%s for toSortedColumns on %s".formatted(elapsed, query.getDagQuery()))
+						.message("time=%s for toSortedColumns on %s".formatted(elapsed, query.getDagQuery()))
 						.source(this)
 						.build());
 			}

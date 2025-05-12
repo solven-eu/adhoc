@@ -72,9 +72,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@Deprecated(since = "May need time to stabilize")
 public class CachingTableWrapper implements ITableWrapper {
 	// ~1GB
-	private static final int MAX_WEIGHT = 1024 * 1024 * 1024;
+	private static final int DEFAULT_MAX_WEIGHT = 1024 * 1024 * 1024;
 
 	@NonNull
 	final ITableWrapper decorated;
@@ -153,7 +154,7 @@ public class CachingTableWrapper implements ITableWrapper {
 
 	@NonNull
 	@Default
-	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(MAX_WEIGHT).build();
+	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(DEFAULT_MAX_WEIGHT).build();
 
 	public void invalidateAll() {
 		cache.invalidateAll();

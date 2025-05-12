@@ -97,20 +97,9 @@ public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAgg
 		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
 
 		if (agg instanceof IHasCarriers hasCarriers) {
-			return v -> {
-				Object wrapped;
-				if (v == null) {
-					wrapped = null;
-				} else {
-					// Wrap the aggregate from table into the aggregation custom wrapper
-					wrapped = hasCarriers.wrap(v);
-				}
-
-				column.append(keyIndex).onObject(wrapped);
-			};
-
+			return hasCarriers.wrap(column.append(keyIndex));
 		} else {
-			return column.append(keyIndex);
+			return column.set(keyIndex);
 		}
 	}
 

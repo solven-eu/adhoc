@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -57,7 +57,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	String name;
 
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	@NonNull
 	String underlying;
