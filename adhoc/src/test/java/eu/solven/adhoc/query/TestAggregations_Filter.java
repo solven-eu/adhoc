@@ -62,7 +62,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a1").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -83,7 +83,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build());
+				cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a1").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -104,7 +104,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build());
+				cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "a2").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -125,7 +125,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "none").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("a", "none").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -139,7 +139,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		cube.execute(CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
+		cube().execute(CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(

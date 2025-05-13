@@ -20,23 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iteratotr;
+package eu.solven.adhoc.data.column.array;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.stream.IntStream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
+/**
+ * Adds `nullability` to an array-like structure. By `array-like`, we refer to a structure we can grow but not shrink, a
+ * `set` can be called on any index, `remove` is a set-to-null.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface INullableArray {
 
-public class TestSlicedRecordFromMap {
-	@Test
-	public void testToString() {
-		SlicedRecordFromSlices sliced = SlicedRecordFromSlices.builder()
-				.valueProvider(IValueProvider.setValue("a"))
-				.valueProvider(IValueProvider.setValue(12.34))
-				.valueProvider(IValueProvider.setValue(new int[] { 0, 1, 23 }))
-				.build();
+	boolean isNull(int index);
 
-		Assertions.assertThat(sliced.toString()).isEqualTo("[a, 12.34, [0, 1, 23]]");
-	}
+	/**
+	 * 
+	 * @return the number of nun-null elements
+	 */
+	int sizeNotNull();
+
+	/**
+	 * 
+	 * @param index
+	 * @return true if there is a non-null value at given index.
+	 */
+	boolean containsIndex(int index);
+
+	/**
+	 * 
+	 * @return an {@link IntStream} of the indexes associated to a nun-null value
+	 */
+	IntStream indexStream();
+
 }

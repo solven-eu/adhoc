@@ -67,7 +67,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -78,7 +78,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testFR() {
 		CubeQuery adhocQuery =
 				CubeQuery.builder().measure("d_country=current_ratio").andFilter("country", "FR").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -91,7 +91,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Test
 	public void testWildcardCountry() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").groupByAlso("country").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -106,7 +106,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testParis() {
 		CubeQuery adhocQuery =
 				CubeQuery.builder().measure("d_country=current_ratio").andFilter("city", "Paris").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -121,7 +121,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 				.andFilter("city", "Paris")
 				.explain(true)
 				.build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -137,7 +137,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	public void testUS() {
 		CubeQuery adhocQuery =
 				CubeQuery.builder().measure("d", "d_country=current_ratio").andFilter("country", "US").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -157,7 +157,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 					.andFilter("country", "US")
 					.explain(true)
 					.build();
-			cube.execute(adhocQuery);
+			cube().execute(adhocQuery);
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""

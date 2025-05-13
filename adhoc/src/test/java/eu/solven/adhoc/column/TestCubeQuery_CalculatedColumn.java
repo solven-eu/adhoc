@@ -54,7 +54,7 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 
 	@Test
 	public void test_groupBy() {
-		ITabularView view = cube.execute(CubeQuery.builder()
+		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure("k1")
 				.groupByAlso(CalculatedColumn.builder()
 						.name("custom")

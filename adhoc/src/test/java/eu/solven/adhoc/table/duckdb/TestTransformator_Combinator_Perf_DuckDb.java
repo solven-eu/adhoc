@@ -35,26 +35,29 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.math.LongMath;
 
-import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Similar to {@link TestTransformator_Combinator_Perf}, but based on DuckDb.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
-public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Combinator_Perf_DuckDb extends ARawDagTest implements IAdhocTestConstants {
 	int maxCardinality = 10_000;
 
 	// This will be edited by registerMeasures
@@ -82,15 +85,8 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
 	DSLContext dsl = table.makeDsl();
 
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
-	}
-
-	@BeforeEach
 	@Override
-	public void feedTable() {
+	public ITableWrapper makeTable() {
 		dsl.execute("""
 				CREATE OR REPLACE TABLE %s (l VARCHAR, row_index INTEGER, k1 INTEGER);
 				INSERT INTO %s (
@@ -101,6 +97,8 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 				    FROM range(%s) AS t(i)
 				);
 								""".formatted(tableName, tableName, maxCardinality));
+
+		return table;
 	}
 
 	@BeforeEach
@@ -128,7 +126,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 		// SUM(0..N) = N * (N-1) / 2
 		long sum = LongMath.checkedMultiply(maxCardinality, maxCardinality - 1) / 2;
 
-		ITabularView output = wrapInCube(forest).execute(CubeQuery.builder().measure(timesN).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(timesN).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -141,8 +139,8 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	public void testChainOfSums() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = wrapInCube(forest)
-				.execute(CubeQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
+		ITabularView output =
+				cube().execute(CubeQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -161,8 +159,7 @@ public class TestTableQuery_DuckDb_Perf extends ADagTest implements IAdhocTestCo
 	public void testNoMeasures() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output =
-				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("row_index").explain(true).build());
+		ITabularView output = cube().execute(CubeQuery.builder().groupByAlso("row_index").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

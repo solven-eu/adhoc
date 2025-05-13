@@ -65,7 +65,7 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	@Subscribe
 	@Override
 	public void onQueryStepIsCompleted(QueryStepIsCompleted event) {
-		log.info("size={} for queryStep={} on completed (source={})",
+		log.debug("size={} for queryStep={} on completed (source={})",
 				event.getNbCells(),
 				event.getQuerystep(),
 				event.getSource());
@@ -74,19 +74,20 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	@Subscribe
 	@Override
 	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
-		log.info("query phase={} is completed (source={})", event.getPhase(), event.getSource());
+		log.debug("query phase={} is completed (source={})", event.getPhase(), event.getSource());
 	}
 
 	@Subscribe
 	@Override
 	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
-		log.info("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
+		log.debug("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
 	}
 
 	@Subscribe
 	@Override
 	public void onQueryLifecycleEvent(QueryLifecycleEvent event) {
-		log.info("queryLifecycleEvent queryId={} tags={}", event.getQuery().getQueryId(), event.getTags());
+		// Log first the tags, as the queryId is very redundant
+		log.debug("queryLifecycleEvent tags={} queryId={}", event.getTags(), event.getQuery().getQueryId());
 	}
 
 	@Subscribe

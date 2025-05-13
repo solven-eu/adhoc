@@ -93,21 +93,22 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 	}
 
 	@Override
-	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
-
-		IMultitypeMergeableColumn<Integer> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
-			return makePreColumn(agg);
-		});
-
+	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
+		return aggregator -> {
+			IMultitypeMergeableColumn<Integer> column =
+					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
+						IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+						return makePreColumn(agg);
+					});
 
-		if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
-			return hasCarriers.wrap(column.append(keyIndex));
+			if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
+				return hasCarriers.wrap(column.append(keyIndex));
 
-		} else {
-			return column.append(keyIndex);
-		}
+			} else {
+				return column.append(keyIndex);
+			}
+		};
 	}
 
 	@Override

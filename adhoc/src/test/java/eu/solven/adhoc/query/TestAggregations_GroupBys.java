@@ -63,7 +63,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -87,7 +87,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -112,7 +112,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("b").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("b").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -137,7 +137,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
 		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -162,7 +162,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").groupByAlso("a").build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());

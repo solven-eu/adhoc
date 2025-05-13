@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.array.MultitypeArrayColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
@@ -77,7 +77,7 @@ public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAgg
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
 		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
-		return MultitypeHashColumn.<Integer>builder().build();
+		return MultitypeArrayColumn.builder().build();
 	}
 
 	@Override
@@ -86,21 +86,24 @@ public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAgg
 	}
 
 	@Override
-	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
-		IMultitypeColumnFastGet<Integer> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-			return makePreColumn();
-		});
-
+	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
 
-		// TODO Could be skipped for not-object aggregate?
-		IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+		return aggregator -> {
+			IMultitypeColumnFastGet<Integer> column =
+					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
+						return makePreColumn();
+					});
 
-		if (agg instanceof IHasCarriers hasCarriers) {
-			return hasCarriers.wrap(column.append(keyIndex));
-		} else {
-			return column.set(keyIndex);
-		}
+			// TODO Could be skipped for not-object aggregate?
+			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+
+			if (agg instanceof IHasCarriers hasCarriers) {
+				return hasCarriers.wrap(column.append(keyIndex));
+			} else {
+				return column.set(keyIndex);
+			}
+		};
 	}
 
 	@Override

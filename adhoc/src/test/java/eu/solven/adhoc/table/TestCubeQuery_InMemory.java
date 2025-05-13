@@ -56,7 +56,7 @@ public class TestCubeQuery_InMemory extends ADagTest implements IAdhocTestConsta
 	// TODO This is a case for SQL `USING`
 	@Test
 	public void testFilterOnAggregates_measureNameIsNotColumnName() {
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder()
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
 				.measure("k1.sum")
 				.andFilter("k1.sum",
 						ComparingMatcher.builder()
@@ -70,7 +70,7 @@ public class TestCubeQuery_InMemory extends ADagTest implements IAdhocTestConsta
 
 	@Test
 	public void testFilterOnAggregates_measureNameIsColumnName() {
-		ITabularView view = cube.execute(CubeQuery.builder()
+		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure("k1")
 				.andFilter("k1",
 						ComparingMatcher.builder()

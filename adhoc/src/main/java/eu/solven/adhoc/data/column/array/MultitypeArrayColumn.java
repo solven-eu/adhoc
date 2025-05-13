@@ -20,9 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.array;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -30,24 +29,21 @@ import java.util.stream.Stream;
 import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.longs.LongLists;
-import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
-import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
-import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -64,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Deprecated(since = "Not-Ready")
 public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T> {
+
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
@@ -71,13 +68,14 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	// with a multiType object
 	@Default
 	@NonNull
-	final LongList measureToAggregateL = new LongArrayList(0);
+	final INullableLongArray measureToAggregateL = NullableLongArray.builder().list(new LongArrayList(0)).build();
 	@Default
 	@NonNull
-	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>(0);
+	final INullableDoubleArray measureToAggregateD = NullableDoubleArray.builder().list(new DoubleArrayList(0)).build();
 	@Default
 	@NonNull
-	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>(0);
+	final INullableObjectDictionary<Object> measureToAggregateO =
+			NullableObjectList.builder().list(new ObjectArrayList<>(0)).build();
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -93,11 +91,11 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 				}
 			} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-				if (measureToAggregateD instanceof Object2DoubleOpenHashMap openHashMap) {
+				if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
 					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 				}
 			} else if (type == IMultitypeConstants.MASK_OBJECT) {
-				if (measureToAggregateO instanceof Object2ObjectOpenHashMap openHashMap) {
+				if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
 					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 				}
 			}
@@ -112,8 +110,9 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		if (measureToAggregateL.contains(key) || measureToAggregateD.containsKey(key)
-				|| measureToAggregateO.containsKey(key)) {
+		int keyAsInt = key.intValue();
+		if (measureToAggregateL.containsIndex(keyAsInt) || measureToAggregateD.containsIndex(keyAsInt)
+				|| measureToAggregateO.containsIndex(keyAsInt)) {
 			return merge(key);
 		}
 
@@ -122,7 +121,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 	@Override
 	public IValueReceiver set(T key) {
-		return unsafePut(key, true);
+		return unsafePut(key.intValue(), true);
 	}
 
 	/**
@@ -136,12 +135,13 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	 *            a long).
 	 * @return
 	 */
-	protected IValueReceiver unsafePut(T key, boolean safe) {
+	protected IValueReceiver unsafePut(int key, boolean safe) {
 		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
-				measureToAggregateL.set(key.intValue(), v);
+
+				measureToAggregateL.set(key, v);
 
 				if (safe) {
 					// measureToAggregateL.removeLong(key);
@@ -153,7 +153,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 			@Override
 			public void onDouble(double v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_DOUBLE);
-				measureToAggregateD.put(key, v);
+				measureToAggregateD.set(key, v);
 
 				if (safe) {
 					measureToAggregateL.removeLong(key);
@@ -171,7 +171,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 					onDouble(vAsPrimitive);
 				} else if (v != null) {
 					checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
-					measureToAggregateO.put(key, v);
+					measureToAggregateO.set(key, v);
 
 					if (safe) {
 						measureToAggregateL.removeLong(key);
@@ -194,30 +194,28 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 	@Override
 	public void onValue(T key, IValueReceiver consumer) {
-		if (measureToAggregateL.contains(key.intValue())) {
-			consumer.onLong(measureToAggregateL.getLong(key));
-		} else if (measureToAggregateD.containsKey(key)) {
-			consumer.onDouble(measureToAggregateD.getDouble(key));
+		int keyAsInt = key.intValue();
+		if (measureToAggregateL.containsIndex(keyAsInt)) {
+			consumer.onLong(measureToAggregateL.getLong(keyAsInt));
+		} else if (measureToAggregateD.containsIndex(keyAsInt)) {
+			consumer.onDouble(measureToAggregateD.getDouble(keyAsInt));
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
-			Object value = measureToAggregateO.get(key);
-			// if (value == null) {
-			// consumer.onNull();
-			// } else {
+			Object value = measureToAggregateO.get(keyAsInt);
 			consumer.onObject(value);
-			// }
 		}
 	}
 
 	@Override
 	public IValueProvider onValue(T key) {
-		if (measureToAggregateL.contains(key.intValue())) {
-			return vc -> vc.onLong(measureToAggregateL.getLong(key));
-		} else if (measureToAggregateD.containsKey(key)) {
-			return vc -> vc.onDouble(measureToAggregateD.getDouble(key));
+		int keyAsInt = key.intValue();
+		if (measureToAggregateL.containsIndex(keyAsInt)) {
+			return vc -> vc.onLong(measureToAggregateL.getLong(keyAsInt));
+		} else if (measureToAggregateD.containsIndex(key)) {
+			return vc -> vc.onDouble(measureToAggregateD.getDouble(keyAsInt));
 		} else {
 			// BEWARE if the key is unknown, the call is done with null
-			return vc -> vc.onObject(measureToAggregateO.get(key));
+			return vc -> vc.onObject(measureToAggregateO.get(keyAsInt));
 		}
 	}
 
@@ -228,47 +226,54 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 		// https://github.com/vigna/fastutil/issues/279
 		for (int i = 0; i < measureToAggregateL.size(); i++) {
-			rowScanner.onKey((T) Integer.valueOf(i)).onLong(measureToAggregateL.getLong(i));
+			rowScanner.onKey(toBoxedKey(i)).onLong(measureToAggregateL.getLong(i));
 		}
-		Object2DoubleMaps.fastForEach(measureToAggregateD, entry -> {
-			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
-		});
-		Object2ObjectMaps.fastForEach(measureToAggregateO, entry -> {
-			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
-		});
+		for (int i = 0; i < measureToAggregateD.size(); i++) {
+			rowScanner.onKey(toBoxedKey(i)).onDouble(measureToAggregateD.getDouble(i));
+		}
+		for (int i = 0; i < measureToAggregateO.size(); i++) {
+			rowScanner.onKey(toBoxedKey(i)).onObject(measureToAggregateO.get(i));
+		}
+	}
+
+	protected T toBoxedKey(int i) {
+		return (T) Integer.valueOf(i);
 	}
 
 	@Override
 	public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-		Stream<U> streamFromLong = IntStream.range(0, measureToAggregateL.size())
-				.mapToObj(i -> converter.prepare((T) Integer.valueOf(i)).onLong(measureToAggregateL.getLong(i)));
-		Stream<U> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
-				.map(entry -> converter.prepare(entry.getKey()).onDouble(entry.getDoubleValue()));
-		Stream<U> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
-				.map(entry -> converter.prepare(entry.getKey()).onObject(entry.getValue()));
+		Stream<U> streamFromLong = measureToAggregateL.indexStream()
+				.mapToObj(i -> converter.prepare(toBoxedKey(i)).onLong(measureToAggregateL.getLong(i)));
+		Stream<U> streamFromDouble = measureToAggregateD.indexStream()
+				.mapToObj(i -> converter.prepare(toBoxedKey(i)).onDouble(measureToAggregateD.getDouble(i)));
+		Stream<U> streamFromObject = objectIndexStream()
+				.mapToObj(i -> converter.prepare(toBoxedKey(i)).onObject(measureToAggregateO.get(i)));
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	}
+
+	private IntStream objectIndexStream() {
+		return IntStream.range(0, measureToAggregateO.size()).filter(i -> measureToAggregateO.get(i) != null);
 	}
 
 	@Override
 	public Stream<SliceAndMeasure<T>> stream() {
 		Stream<SliceAndMeasure<T>> streamFromLong = IntStream.range(0, measureToAggregateL.size())
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
-						.slice((T) Integer.valueOf(i))
+						.slice(toBoxedKey(i))
 						.valueProvider(vc -> vc.onLong(measureToAggregateL.getLong(i)))
 						.build());
-		Stream<SliceAndMeasure<T>> streamFromDouble =
-				Streams.stream(Object2DoubleMaps.fastIterable(measureToAggregateD))
-						.map(entry -> SliceAndMeasure.<T>builder()
-								.slice(entry.getKey())
-								.valueProvider(vc -> vc.onDouble(entry.getDoubleValue()))
-								.build());
-		Stream<SliceAndMeasure<T>> streamFromObject =
-				Streams.stream(Object2ObjectMaps.fastIterable(measureToAggregateO))
-						.map(entry -> SliceAndMeasure.<T>builder()
-								.slice(entry.getKey())
-								.valueProvider(vc -> vc.onObject(entry.getValue()))
-								.build());
+
+		Stream<SliceAndMeasure<T>> streamFromDouble = IntStream.range(0, measureToAggregateD.size())
+				.mapToObj(i -> SliceAndMeasure.<T>builder()
+						.slice(toBoxedKey(i))
+						.valueProvider(vc -> vc.onDouble(measureToAggregateD.getDouble(i)))
+						.build());
+
+		Stream<SliceAndMeasure<T>> streamFromObject = objectIndexStream().mapToObj(i -> SliceAndMeasure.<T>builder()
+				.slice(toBoxedKey(i))
+				.valueProvider(vc -> vc.onObject(measureToAggregateO.get(i)))
+				.build());
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
 	}
@@ -278,9 +283,9 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		long size = 0;
 
 		// Can sum sizes as a key can not appear in multiple columns
-		size += measureToAggregateL.size();
-		size += measureToAggregateD.size();
-		size += measureToAggregateO.size();
+		size += measureToAggregateL.sizeNotNull();
+		size += measureToAggregateD.sizeNotNull();
+		size += measureToAggregateO.sizeNotNull();
 
 		return size;
 	}
@@ -300,10 +305,12 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 	@Override
 	public Stream<T> keyStream() {
-		return Stream.concat(IntStream.range(0, measureToAggregateL.size()).mapToObj(i -> (T) Integer.valueOf(i)),
-				Stream.of(measureToAggregateD.keySet(), measureToAggregateO.keySet())
-						// No need for .distinct as each key is guaranteed to appear in a single column
-						.flatMap(Collection::stream));
+		return Stream.of(measureToAggregateL.indexStream(), measureToAggregateD.indexStream(), objectIndexStream())
+				.flatMapToInt(is -> is)
+				.mapToObj(i -> toBoxedKey(i))
+		// No need for .distinct as each key is guaranteed to appear in a single column
+		// .distinct()
+		;
 
 	}
 
@@ -312,13 +319,13 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
 
 		if (!measureToAggregateD.isEmpty()) {
-			toStringHelper.add("#doubles", measureToAggregateD.size());
+			toStringHelper.add("#doubles", measureToAggregateD.sizeNotNull());
 		}
 		if (!measureToAggregateL.isEmpty()) {
-			toStringHelper.add("#longs", measureToAggregateL.size());
+			toStringHelper.add("#longs", measureToAggregateL.sizeNotNull());
 		}
 		if (!measureToAggregateO.isEmpty()) {
-			toStringHelper.add("#objects", measureToAggregateO.size());
+			toStringHelper.add("#objects", measureToAggregateO.sizeNotNull());
 		}
 
 		AtomicInteger index = new AtomicInteger();
@@ -337,28 +344,31 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	 */
 	public static <T extends Integer> MultitypeArrayColumn<T> empty() {
 		return MultitypeArrayColumn.<T>builder()
-				.measureToAggregateL(LongLists.emptyList())
-				.measureToAggregateD(Object2DoubleMaps.emptyMap())
-				.measureToAggregateO(Object2ObjectMaps.emptyMap())
+				.measureToAggregateL(NullableLongArray.empty())
+				.measureToAggregateD(NullableDoubleArray.empty())
+				.measureToAggregateO(NullableObjectList.empty())
 				.build();
 	}
 
 	@Override
 	public void purgeAggregationCarriers() {
-		measureToAggregateO.forEach((key, value) -> {
+		for (int keyNotFinal = 0; keyNotFinal < measureToAggregateO.size(); keyNotFinal++) {
+			int key = keyNotFinal;
+			Object value = measureToAggregateO.get(key);
+
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				aggregationCarrier.acceptValueReceiver(new IValueReceiver() {
 
 					@Override
 					public void onLong(long value) {
-						measureToAggregateL.set(key.intValue(), value);
-						// Removal will happen in a later pass
+						measureToAggregateL.set(key, value);
+						measureToAggregateO.set(key, null);
 					}
 
 					@Override
 					public void onDouble(double value) {
-						measureToAggregateD.put(key, value);
-						// Removal will happen in a later pass
+						measureToAggregateD.set(key, value);
+						measureToAggregateO.set(key, null);
 					}
 
 					@Override
@@ -370,17 +380,14 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 							// `object` may be null while carrier was not null
 							// (e.g. `Rank2` while we received only one value)
 							log.trace("Skipping `null` from carrier for key={}", key);
-							// Removal will happen in a later pass
+							measureToAggregateO.set(key, null);
 						} else {
 							// Replace current value: removal pass will skip this entry as it is not a carrier
-							measureToAggregateO.put(key, object);
+							measureToAggregateO.set(key, object);
 						}
 					}
 				});
 			}
-		});
-
-		// Remove in a later pass, as it is generally unsafe to remove while iterating
-		measureToAggregateO.values().removeIf(e -> e instanceof IAggregationCarrier);
+		}
 	}
 }

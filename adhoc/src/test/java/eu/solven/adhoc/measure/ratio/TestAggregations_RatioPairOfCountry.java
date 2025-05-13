@@ -89,7 +89,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testGrandTotal() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -101,7 +101,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testFR() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("country", "FR").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -118,7 +118,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testWildcardCountry() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").groupByAlso("country").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -138,7 +138,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testParis() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -155,7 +155,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 				.andFilter("city", "Paris")
 
 				.build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -171,7 +171,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	@Test
 	public void testUS() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("d", "FRoverUS").andFilter("country", "US").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -189,7 +189,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		{
 			CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").explain(true).build();
-			cube.execute(adhocQuery);
+			cube().execute(adhocQuery);
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""

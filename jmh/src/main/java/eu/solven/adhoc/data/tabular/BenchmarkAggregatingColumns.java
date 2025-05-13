@@ -86,7 +86,7 @@ public class BenchmarkAggregatingColumns {
 	@Benchmark
 	public AggregatingColumnsV2<String> contribute() {
 		for (int i = 0; i < size; i++) {
-			columns.contribute(countAsterisk, Integer.toString(i));
+			columns.contribute(Integer.toString(i), countAsterisk);
 		}
 
 		return columns;

@@ -97,6 +97,7 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 			// Objects has same class and are Comparable: the unchecked cast should be fine
 			return ((Comparable) l).compareTo(r);
 		} else {
+			// Same class but not comparable
 			// BEWARE Should we warn on this?
 			return l.toString().compareTo(r.toString());
 		}

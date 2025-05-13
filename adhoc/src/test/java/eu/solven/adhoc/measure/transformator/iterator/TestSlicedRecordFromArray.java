@@ -20,13 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iteratotr;
+package eu.solven.adhoc.measure.transformator.iterator;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
 
 public class TestSlicedRecordFromArray {
 	@Test

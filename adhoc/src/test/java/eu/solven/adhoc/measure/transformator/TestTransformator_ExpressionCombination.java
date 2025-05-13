@@ -63,7 +63,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
@@ -83,7 +83,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").andFilter("k2", null).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("k2", null).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
@@ -108,7 +108,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure("sumK1K2")
 				.andFilter(ColumnFilter.builder().column("k2").matchNull().build())
 				.build());
@@ -137,7 +137,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(k2Sum);
 
 		// Reject rows where k2 is not null
-		ITabularView output = cube.execute(CubeQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)

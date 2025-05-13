@@ -66,7 +66,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testK1MinMax() {
-		ITabularView output = cube.execute(CubeQuery.builder().measure("k1", "k1.min", "k1.max").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("k1", "k1.min", "k1.max").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -78,7 +78,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testK1_SUM_COUNT() {
-		ITabularView output = cube.execute(CubeQuery.builder().measure("k1", "k1.count").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("k1", "k1.count").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -92,7 +92,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 		Aggregator m = Aggregator.countAsterisk();
 		forest.addMeasure(m);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(m).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(m).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -103,7 +103,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasure() {
-		ITabularView output = cube.execute(CubeQuery.builder().build());
+		ITabularView output = cube().execute(CubeQuery.builder().build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -114,7 +114,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 
 	@Test
 	public void testNoMeasureGroupBy() {
-		ITabularView output = cube.execute(CubeQuery.builder().groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -129,7 +129,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 		Aggregator m = Aggregator.builder().name("niceName").columnName("k1").build();
 		forest.addMeasure(m);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("niceName").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("niceName").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -148,7 +148,7 @@ public class TestTransformator_Aggregator extends ADagTest implements IAdhocTest
 				.build();
 		forest.addMeasure(m);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("rank2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rank2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

@@ -69,6 +69,11 @@ public class BenchmarkComparableElseClassComparatorV2 {
 	}
 
 	@Benchmark
+	public int compare_strings_raw() {
+		return c1.compareTo(c2);
+	}
+
+	@Benchmark
 	public int compare_ints() {
 		return comparator.compare(i1, i2);
 	}

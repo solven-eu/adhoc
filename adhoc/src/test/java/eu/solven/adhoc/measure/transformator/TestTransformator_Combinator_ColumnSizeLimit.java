@@ -73,7 +73,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = cube.execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -87,7 +87,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
 		Assertions.assertThatThrownBy(
-				() -> cube.execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
+				() -> cube().execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage("Can not add as size=2 and limit=2");
 	}
@@ -96,7 +96,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 	public void testGroupByK_noAggregator() {
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().groupByAlso("k").build()))
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().groupByAlso("k").build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage("Can not add as size=2 and limit=2");
 	}
@@ -105,7 +105,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 	public void testBucketorByK() {
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure("byK").build()))
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure("byK").build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage("Can not add as size=2 and limit=2");

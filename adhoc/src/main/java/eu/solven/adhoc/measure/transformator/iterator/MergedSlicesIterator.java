@@ -112,7 +112,7 @@ public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures>
 		for (int i = 0; i < nbMatchingSlice; i++) {
 			// The first removal is guaranteed as the queue head led to this iteration
 			PeekingIterator<SliceAndMeasure<SliceAsMap>> removed = queue.remove();
-			// Do the iteration (we just peeked up to now)
+			// Do the iteration (we only peeked up to now)
 			removed.next();
 
 			if (removed.hasNext()) {

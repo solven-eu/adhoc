@@ -85,7 +85,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -99,7 +99,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	public void testGroupByCcy() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -120,7 +120,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "USD").groupByAlso("ccy").build());
+				cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "USD").groupByAlso("ccy").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -135,7 +135,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "EUR").groupByAlso("ccy").build());
+				cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "EUR").groupByAlso("ccy").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -149,7 +149,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	public void testUnknownCcy() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -160,7 +160,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	public void testUnknownCcy_groupByColor() {
 		prepareMeasures();
 
-		ITabularView output = cube
+		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").groupByAlso("color").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -172,7 +172,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	public void testGroupByColor() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).groupByAlso("color").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("color").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

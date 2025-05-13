@@ -53,6 +53,7 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
@@ -104,7 +105,7 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(tableQuery.getFilter());
 		if (tableQuery.getAggregators()
 				.stream()
-				.map(fa -> fa.getAggregator())
+				.map(FilteredAggregator::getAggregator)
 				// if the aggregator name is also a column name, then the filtering is valid (as we'll filter on the
 				// column)
 				.filter(a -> !a.getName().equals(a.getColumnName()))

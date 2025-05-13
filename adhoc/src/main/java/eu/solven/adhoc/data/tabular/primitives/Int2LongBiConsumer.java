@@ -20,30 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.data.tabular.primitives;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.CubeQuery;
-
-public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants {
-	@Override
-	public void feedTable() {
-		// No need to feed
-	}
-
-	@Test
-	public void testConflictingNames() {
-		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
-
-		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
-	}
-
+public interface Int2LongBiConsumer {
+	void acceptInt2Long(int i, long l);
 }

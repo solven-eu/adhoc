@@ -55,7 +55,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("0or100").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -77,7 +77,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("0or100").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("0or100").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +102,7 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
+				cube().execute(CubeQuery.builder().measure("0or100").groupByAlso("0_or_100").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

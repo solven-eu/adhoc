@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsV2;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsV2_Distinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -115,10 +116,12 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		SliceAsMap coordinates = optCoordinates.get();
 
+		IOpenedSlice openedSlice = sliceToAgg.openSlice(coordinates);
+
 		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators()) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
-			IValueReceiver valueReceiver = sliceToAgg.contribute(filteredAggregator, coordinates);
+			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
 
 			if (queryPod.isDebug()) {
 				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));

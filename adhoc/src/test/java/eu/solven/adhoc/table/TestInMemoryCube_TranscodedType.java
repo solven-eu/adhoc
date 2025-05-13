@@ -59,8 +59,8 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 
 	@Test
 	public void testColumns_withTranscoding() {
-		ColumnsManager originalColumnsManager = (ColumnsManager) cube.getColumnsManager();
-		CubeWrapper cubeWithTranscoding = cube.toBuilder()
+		ColumnsManager originalColumnsManager = (ColumnsManager) ((CubeWrapper) cube()).getColumnsManager();
+		CubeWrapper cubeWithTranscoding = editCube()
 				.columnsManager(originalColumnsManager.toBuilder().customTypeManager(new DefaultCustomTypeManager() {
 					@Override
 					public Object fromTable(String column, Object coordinate) {
@@ -75,7 +75,7 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 				}).build())
 				.build();
 
-		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date_as_string", String.class);
+		Assertions.assertThat(cube().getColumnTypes()).containsEntry("date_as_string", String.class);
 		// TODO This should be reported as a LocalDate
 		// Though, how can we infer the type given no data?
 		Assertions.assertThat(cubeWithTranscoding.getColumnTypes()).containsEntry("date_as_string", String.class);
@@ -83,25 +83,20 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 
 	@Test
 	public void testColumns_withCalculatedColumn() {
-		ColumnsManager originalColumnsManager = (ColumnsManager) cube.getColumnsManager();
-		CubeWrapper cubeWithCalculated = cube.toBuilder()
-				.columnsManager(originalColumnsManager.toBuilder()
-						.calculatedColumn(CalculatedColumn.builder()
-								.name("date")
-								.type(LocalDate.class)
-								.recordToCoordinate(record -> {
-									Object dateAsString = record.getGroupBy("date_as_string");
-									if (dateAsString == null) {
-										return null;
-									} else {
-										return LocalDate.parse(dateAsString.toString());
-									}
-								})
-								.build())
-						.build())
-				.build();
+		ColumnsManager originalColumnsManager = (ColumnsManager) ((CubeWrapper) cube()).getColumnsManager();
+		CubeWrapper cubeWithCalculated = editCube().columnsManager(originalColumnsManager.toBuilder()
+				.calculatedColumn(
+						CalculatedColumn.builder().name("date").type(LocalDate.class).recordToCoordinate(record -> {
+							Object dateAsString = record.getGroupBy("date_as_string");
+							if (dateAsString == null) {
+								return null;
+							} else {
+								return LocalDate.parse(dateAsString.toString());
+							}
+						}).build())
+				.build()).build();
 
-		Assertions.assertThat(cube.getColumnTypes()).containsEntry("date_as_string", String.class);
+		Assertions.assertThat(cube().getColumnTypes()).containsEntry("date_as_string", String.class);
 		Assertions.assertThat(cubeWithCalculated.getColumnTypes())
 				.containsEntry("date_as_string", String.class)
 				.containsEntry("date", LocalDate.class);
