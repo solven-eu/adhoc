@@ -27,6 +27,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.value.IHasWrapped;
@@ -35,6 +36,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This is useful to refer to an existing {@link IMeasure} in the {@link MeasureForest}, hence preventing to need to
@@ -47,6 +49,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
+@Slf4j
 public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	// @JsonValue
@@ -71,6 +74,12 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	@JsonIgnore
 	public Set<String> getTags() {
 		return Set.of("reference");
+	}
+
+	@Override
+	public IMeasure withTags(ImmutableSet<String> tags) {
+		log.warn("Can not edit tags of {}", this);
+		return this;
 	}
 
 	@Override

@@ -25,9 +25,10 @@ package eu.solven.adhoc.measure.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -45,6 +46,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,19 +60,21 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 @Jacksonized
 public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
-	Set<String> tags;
+	@With
+	ImmutableSet<String> tags;
 
 	@NonNull
 	@Singular
-	List<String> underlyings;
+	ImmutableList<String> underlyings;
 
 	@NonNull
 	@Default

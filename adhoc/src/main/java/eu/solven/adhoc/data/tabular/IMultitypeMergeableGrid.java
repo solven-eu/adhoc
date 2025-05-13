@@ -36,12 +36,30 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 public interface IMultitypeMergeableGrid<T> {
 
 	/**
+	 * Typically used to prepare the slice only once, before contributing multiple aggregates.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	interface IOpenedSlice {
+		IValueReceiver contribute(IAliasedAggregator aggregator);
+	}
+
+	/**
+	 * 
+	 * @param key
+	 * @return an {@link IOpenedSlice} into which multiple aggregators can be written
+	 */
+	IOpenedSlice openSlice(T key);
+
+	/**
 	 * 
 	 * @param aggregator
 	 * @param key
 	 * @return a {@link IValueReceiver} into which an aggregate ha to be written for given aggregator and given key
 	 */
-	IValueReceiver contribute(IAliasedAggregator aggregator, T key);
+	default IValueReceiver contribute(T key, IAliasedAggregator aggregator) {
+		return openSlice(key).contribute(aggregator);
+	}
 
 	/**
 	 * Will typically handle {@link IAggregationCarrier}.
@@ -51,6 +69,8 @@ public interface IMultitypeMergeableGrid<T> {
 	 *            should {@link IAggregationCarrier} be purged?
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
+	// BEWARE Design-Issue this calls for per-Aggregator logic, which pushes for not keeping the multi-measure
+	// consistency, which leads to later alignement of slices per-aggregate, which is a performance bottleneck.
 	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers);
 
 	long size(IAliasedAggregator aggregator);

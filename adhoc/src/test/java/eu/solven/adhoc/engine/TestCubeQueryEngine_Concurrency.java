@@ -62,7 +62,7 @@ public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdh
 		// We expect 2 queries: one for grandTotal, and one groupedBy:A
 		phasedTable.getPhasers().bulkRegister(2);
 
-		ITabularView view = cube.execute(
+		ITabularView view = cube().execute(
 				CubeQuery.builder().measure(k1Sum, sum_MaxK1K2ByA).option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
@@ -93,7 +93,7 @@ public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdh
 		// We expect 1 query: one for grandTotal, and one filtered on A1, both in same SQL given FILTER
 		phasedTable.getPhasers().bulkRegister(1);
 
-		ITabularView view = cube.execute(
+		ITabularView view = cube().execute(
 				CubeQuery.builder().measure(k1Sum, filterK1onA1).option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
@@ -160,8 +160,8 @@ public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdh
 		// We expect 1 queries: k1Sum grandTotal
 		phasedTable.getPhasers().bulkRegister(1);
 
-		ITabularView view =
-				cube.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
+		ITabularView view = cube()
+				.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

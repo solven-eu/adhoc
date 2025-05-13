@@ -37,6 +37,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 
 /**
@@ -54,6 +55,7 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	String name;
 
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	// The name of the underlying aggregated column

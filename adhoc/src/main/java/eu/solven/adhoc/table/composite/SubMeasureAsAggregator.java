@@ -36,6 +36,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 
 /**
@@ -57,7 +58,9 @@ public class SubMeasureAsAggregator implements ITableMeasure, IHasAggregationKey
 	@NonNull
 	String subMeasure;
 
+	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	@NonNull

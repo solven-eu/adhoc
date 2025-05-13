@@ -50,6 +50,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  * A {@link Combinator} is a {@link IMeasure} which combines the underlying measures for current coordinate.
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
 public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColumnGenerator {
@@ -66,6 +67,7 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 
 	@NonNull
 	@Singular
+	@With
 	ImmutableSet<String> tags;
 
 	@NonNull

@@ -42,6 +42,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
@@ -64,7 +65,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
+		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
 
 		ICustomTypeManager customTypeManager = new ICustomTypeManager() {
 			@Override
@@ -103,10 +104,10 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		ColumnsManager columnsManager =
 				ColumnsManager.builder().eventBus(adhocEventBus).customTypeManager(customTypeManager).build();
 		return CubeWrapper.builder()
-				.engine(aqe)
+				.engine(engine)
 				.forest(forest)
 				.table(table)
-				.engine(aqe)
+				.engine(engine)
 				.columnsManager(columnsManager)
 				.build();
 	}
@@ -167,10 +168,14 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		// this is a customValue matcher: it is typically not resolvable by the table
 		IValueMatcher customValueMatcher =
 				FilterHelpers.wrapWithToString(letter -> letter instanceof Letter l && l.isMagic(), () -> "isMagic");
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
-				.filter(ColumnFilter.builder().column("letter").valueMatcher(customValueMatcher).build())
-				.measure(k1Sum)
-				.build());
+		ColumnFilter customFilter = ColumnFilter.builder().column("letter").valueMatcher(customValueMatcher).build();
+
+		// Not distinct as we query a column which is later suppressed, for the sake of lateFiltering
+		Assertions.assertThat(table.streamSlices(TableQuery.builder().filter(customFilter).build()).isDistinctSlices())
+				.isFalse();
+
+		ITabularView result =
+				wrapInCube(forest).execute(CubeQuery.builder().filter(customFilter).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

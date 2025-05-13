@@ -103,7 +103,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).customMarker("EUR").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -118,7 +118,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
+				cube().execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -138,7 +138,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGroupByCcyFilterCcy_notFiltered() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "USD")
 				.groupByAlso("ccy")
@@ -157,7 +157,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testGroupByCcyFilterCcy_filteredCcy() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "EUR")
 				.groupByAlso("ccy")
@@ -176,7 +176,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testUnknownCcy() {
 		prepareMeasures();
 
-		ITabularView output = cube
+		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -188,7 +188,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public void testUnknownCcy_groupByColor() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(mName)
 				.andFilter("ccy", "unknown")
 				.groupByAlso("color")
@@ -205,7 +205,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
+				cube().execute(CubeQuery.builder().measure(mName).groupByAlso("color").customMarker("EUR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

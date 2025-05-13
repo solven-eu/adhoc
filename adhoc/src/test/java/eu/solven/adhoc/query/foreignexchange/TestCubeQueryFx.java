@@ -260,8 +260,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
-								[EXPLAIN] time=PT0.003S for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								[EXPLAIN] time=PT0.004S for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								time=PT0.003S for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								time=PT0.004S for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								\\-- #1 m=k1.CCY(Bucketor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color=red groupBy=(letter) customMarker=JPY

@@ -111,6 +111,11 @@ public class PhasedTableWrapper implements ITableWrapper {
 		return new ITabularRecordStream() {
 
 			@Override
+			public boolean isDistinctSlices() {
+				return false;
+			}
+
+			@Override
 			public Stream<ITabularRecord> records() {
 				log.info("streaming arriveAndAwaitAdvance() {} {}", name, phasers.streaming);
 				phasers.streaming.arriveAndAwaitAdvance();

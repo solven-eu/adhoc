@@ -31,6 +31,7 @@ import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -66,15 +67,24 @@ public abstract class ARawDagTest {
 	public final CubeQueryEngine engine =
 			CubeQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
 
-	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
-	public final CubeWrapper cube = CubeWrapper.builder()
-			.table(tableSupplier.get())
-			.engine(engine)
-			.forest(forest)
-			.eventBus(eventBus::post)
-			.build();
-
 	public abstract ITableWrapper makeTable();
+
+	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
+
+	public ICubeWrapper makeCube() {
+		return CubeWrapper.builder()
+				.table(tableSupplier.get())
+				.engine(engine)
+				.forest(forest)
+				.eventBus(eventBus::post)
+				.build();
+	}
+
+	public final Supplier<ICubeWrapper> cubeSupplier = Suppliers.memoize(this::makeCube);
+
+	public ICubeWrapper cube() {
+		return cubeSupplier.get();
+	}
 
 	@BeforeEach
 	public void wireEvents() {
@@ -92,7 +102,7 @@ public abstract class ARawDagTest {
 	 * Typically used to edit the operatorsFactory
 	 */
 	public CubeWrapperBuilder editCube() {
-		return cube.toBuilder();
+		return ((CubeWrapper) cubeSupplier.get()).toBuilder();
 	}
 
 }

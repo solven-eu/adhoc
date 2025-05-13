@@ -77,7 +77,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 		forest.addMeasure(k2Sum);
 
 		CubeQuery adhocQuery = CubeQuery.builder().measure("k1", "filterK1onA1").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -117,7 +117,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 		forest.addMeasure(k2Sum);
 
 		CubeQuery adhocQuery = CubeQuery.builder().measure("Ratio_k1_k1witha1").build();
-		ITabularView output = cube.execute(adhocQuery);
+		ITabularView output = cube().execute(adhocQuery);
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());

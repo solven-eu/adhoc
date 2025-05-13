@@ -59,7 +59,7 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdh
 		forest.addMeasure(k2Sum);
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
+				cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

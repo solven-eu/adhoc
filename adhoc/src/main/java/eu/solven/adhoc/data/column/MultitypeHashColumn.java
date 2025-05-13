@@ -55,6 +55,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Enable storing data with different types, while storing primitive value into primitive arrays.
  *
+ * Each key may have different types.
+ *
  * @param <T>
  */
 @SuperBuilder
@@ -63,28 +65,40 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
-	// later/alternative
-	// implementation but with unclear benefits. It could actually be done with an additional column with a multiType
-	// object
+	// later/alternative implementation but with unclear benefits. It could actually be done with an additional column
+	// with a multiType object
 	@Default
 	@NonNull
-	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>(AdhocUnsafe.defaultCapacity());
+	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>(0);
 	@Default
 	@NonNull
-	final Object2LongMap<T> measureToAggregateL = new Object2LongOpenHashMap<>(AdhocUnsafe.defaultCapacity());
+	final Object2DoubleMap<T> measureToAggregateD = new Object2DoubleOpenHashMap<>(0);
 	@Default
 	@NonNull
-	final Object2ObjectMap<T, Object> measureToAggregateO =
-			new Object2ObjectOpenHashMap<>(AdhocUnsafe.defaultCapacity());
+	final Object2ObjectMap<T, Object> measureToAggregateO = new Object2ObjectOpenHashMap<>(0);
 
 	/**
 	 * To be called before a guaranteed `add` operation.
 	 */
-	protected void checkSizeBeforeAdd() {
+	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 		if (size >= AdhocUnsafe.limitColumnSize) {
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+		} else if (size == 0) {
+			if (type == IMultitypeConstants.MASK_LONG) {
+				if (measureToAggregateL instanceof Object2LongOpenHashMap openHashMap) {
+					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				}
+			} else if (type == IMultitypeConstants.MASK_DOUBLE) {
+				if (measureToAggregateD instanceof Object2DoubleOpenHashMap openHashMap) {
+					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				}
+			} else if (type == IMultitypeConstants.MASK_OBJECT) {
+				if (measureToAggregateO instanceof Object2ObjectOpenHashMap openHashMap) {
+					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				}
+			}
 		}
 	}
 
@@ -96,9 +110,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		// We clear all keys, to prevent storing different types for the same key
-		// clearKey(key);
-
 		if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
 				|| measureToAggregateO.containsKey(key)) {
 			return merge(key);
@@ -109,30 +120,25 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public IValueReceiver set(T key) {
-		// We clear all keys, to prevent storing different types for the same key
-		// clearKey(key);
-
-		// if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
-		// || measureToAggregateS.containsKey(key)
-		// || measureToAggregateO.containsKey(key)) {
-		// clearKey(key);
-		// }
-
 		return unsafePut(key, true);
 	}
 
 	/**
-	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type. Once must
+	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type. One must
 	 * ensure he's not leading to `key` to be present for multi column/types.
 	 *
 	 * @param key
+	 * @param safe
+	 *            if true, we request safe behavior: it will ensure given key will not be associated to multiple types.
+	 *            Can be false if you know this call is not changing the column type (e.g. reading as long, and writing
+	 *            a long).
 	 * @return
 	 */
 	protected IValueReceiver unsafePut(T key, boolean safe) {
 		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
-				checkSizeBeforeAdd();
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
 				measureToAggregateL.put(key, v);
 
 				if (safe) {
@@ -144,7 +150,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 			@Override
 			public void onDouble(double v) {
-				checkSizeBeforeAdd();
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_DOUBLE);
 				measureToAggregateD.put(key, v);
 
 				if (safe) {
@@ -162,7 +168,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
 					onDouble(vAsPrimitive);
 				} else if (v != null) {
-					checkSizeBeforeAdd();
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 					measureToAggregateO.put(key, v);
 
 					if (safe) {
@@ -328,8 +334,8 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 */
 	public static <T> MultitypeHashColumn<T> empty() {
 		return MultitypeHashColumn.<T>builder()
-				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateL(Object2LongMaps.emptyMap())
+				.measureToAggregateD(Object2DoubleMaps.emptyMap())
 				.measureToAggregateO(Object2ObjectMaps.emptyMap())
 				.build();
 	}
@@ -343,11 +349,13 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 					@Override
 					public void onLong(long value) {
 						measureToAggregateL.put(key, value);
+						// Removal will happen in a later pass
 					}
 
 					@Override
 					public void onDouble(double value) {
 						measureToAggregateD.put(key, value);
+						// Removal will happen in a later pass
 					}
 
 					@Override
@@ -359,10 +367,9 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 							// `object` may be null while carrier was not null
 							// (e.g. `Rank2` while we received only one value)
 							log.trace("Skipping `null` from carrier for key={}", key);
-							// No need to remove as we end with a `removeIf` pass
-							// measureToAggregateO.remove(key);
+							// Removal will happen in a later pass
 						} else {
-							// Replace current value
+							// Replace current value: removal pass will skip this entry as it is not a carrier
 							measureToAggregateO.put(key, object);
 						}
 					}
@@ -371,6 +378,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		});
 
 		// Remove in a later pass, as it is generally unsafe to remove while iterating
-		measureToAggregateO.object2ObjectEntrySet().removeIf(e -> e.getValue() instanceof IAggregationCarrier);
+		measureToAggregateO.values().removeIf(e -> e instanceof IAggregationCarrier);
 	}
 }

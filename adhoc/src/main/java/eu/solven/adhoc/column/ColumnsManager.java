@@ -146,6 +146,12 @@ public class ColumnsManager implements IColumnsManager {
 		return new ITabularRecordStream() {
 
 			@Override
+			public boolean isDistinctSlices() {
+				// TODO Study how this flag could be impacted by transcoding
+				return aggregatedRecordsStream.isDistinctSlices();
+			}
+
+			@Override
 			public void close() {
 				aggregatedRecordsStream.close();
 			}

@@ -316,7 +316,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 							builder.measure(k2Sum.getAlias());
 						}
 
-						queries.add(builder.debug(true).build());
+						queries.add(builder.build());
 					}
 				}
 			}
@@ -330,7 +330,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 				CubeQuery secondQuery = queries.get(j);
 
 				// Second query without cache: this is the referential result
-				MapBasedTabularView secondQueryNoCacheResult = MapBasedTabularView.load(cube.execute(secondQuery));
+				MapBasedTabularView secondQueryNoCacheResult = MapBasedTabularView.load(cube().execute(secondQuery));
 
 				// Do a first query feeding the cache
 				cachingCube.execute(firstQuery);

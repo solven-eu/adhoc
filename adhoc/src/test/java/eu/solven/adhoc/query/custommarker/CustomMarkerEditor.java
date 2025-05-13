@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -68,6 +69,12 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	@Override
 	public List<String> getUnderlyingNames() {
 		return Collections.singletonList(underlying);
+	}
+
+	@Override
+	public IMeasure withTags(ImmutableSet<String> tags) {
+		log.warn("Can not edit tags of {}", this);
+		return this;
 	}
 
 	@Override

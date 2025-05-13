@@ -49,7 +49,6 @@ public interface IMultitypeMergeableColumn<T> extends IMultitypeColumnFastGet<T>
 	 * The aggregation is defined at column instantiation.
 	 * 
 	 * @param slice
-	 * @param fragmentValue
 	 */
 	IValueReceiver merge(T slice);
 

@@ -39,6 +39,7 @@ import com.google.common.cache.CacheStats;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -63,13 +64,18 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A decorating {@link ITableWrapper} which adds a cache layer.
  * 
+ * Performance (CPU) trade-off: this caching is efficient if the table is slow to return a low number of slices. But it
+ * can be less efficient than external table in merging different columns. Given 2 different cached columns, these has
+ * to be merged (at some point in the engine) in order to associate the 2 columns aggregates to the common slices.
+ * 
  * @author Benoit Lacelle
  */
 @Builder
 @Slf4j
+@Deprecated(since = "May need time to stabilize")
 public class CachingTableWrapper implements ITableWrapper {
 	// ~1GB
-	private static final int MAX_WEIGHT = 1024 * 1024 * 1024;
+	private static final int DEFAULT_MAX_WEIGHT = 1024 * 1024 * 1024;
 
 	@NonNull
 	final ITableWrapper decorated;
@@ -148,7 +154,7 @@ public class CachingTableWrapper implements ITableWrapper {
 
 	@NonNull
 	@Default
-	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(MAX_WEIGHT).build();
+	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(DEFAULT_MAX_WEIGHT).build();
 
 	public void invalidateAll() {
 		cache.invalidateAll();
@@ -207,6 +213,12 @@ public class CachingTableWrapper implements ITableWrapper {
 			return new ITabularRecordStream() {
 
 				@Override
+				public boolean isDistinctSlices() {
+					// TODO `mergeAggregate` does not distinct slices
+					return false;
+				}
+
+				@Override
 				public Stream<ITabularRecord> records() {
 					return mergeAggregates(tableQuery, customMarkerForCache, fromCache);
 				}
@@ -222,6 +234,11 @@ public class CachingTableWrapper implements ITableWrapper {
 			ITabularRecordStream decoratedRecordsStream = streamDecorated(queryPod, queryAggregatorsNotCached);
 
 			return new ITabularRecordStream() {
+
+				@Override
+				public boolean isDistinctSlices() {
+					return false;
+				}
 
 				@Override
 				public Stream<ITabularRecord> records() {
@@ -301,6 +318,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		List<CachingKey> neededCacheKeys = new ArrayList<>(
 				cached.keySet().stream().map(fa -> makeCacheKey(tableQuery, customMarkerForCache, fa)).toList());
 
+		// each `partitions` holds a Set of columns which are already grouped in the same record
 		List<Stream<ITabularRecord>> partitions = new ArrayList<>();
 
 		while (!neededCacheKeys.isEmpty()) {
@@ -316,7 +334,6 @@ public class CachingTableWrapper implements ITableWrapper {
 				throw new IllegalStateException("Nothing matching %s".formatted(neededCacheKeys));
 			}
 
-			// FilteredAggregator key = max.get().getKey();
 			CachingValue value = max.get().getValue();
 
 			Set<String> aliasesToKeep = new LinkedHashSet<>();
@@ -334,22 +351,25 @@ public class CachingTableWrapper implements ITableWrapper {
 
 			neededCacheKeys.removeAll(toRemove);
 
+			// Guava enable fast `.copyOf`
+			ImmutableSet<String> aliasesToKeepImmutable = ImmutableSet.copyOf(aliasesToKeep);
+
 			ImmutableList<ITabularRecord> column = value.getRecords()
 					.stream()
-					.map(r -> enableSingleAggregate(r, aliasesToKeep))
+					.map(r -> enableSingleAggregate(r, aliasesToKeepImmutable))
 					.collect(ImmutableList.toImmutableList());
 			partitions.add(column.stream());
 		}
 
 		// TODO Resolve aliases
-		// A very simple (and legit) implementation is turn stream ITabularRecord, aggregate per aggregate. But it would
-		// push to some effort in AggregateColumns to groupBy slice.
-		// return cached.values().stream().flatMap(s -> s.stream());
 		return partitions.stream().flatMap(s -> s);
 	}
 
 	protected ITabularRecord enableSingleAggregate(ITabularRecord r, Set<String> aggregates) {
-		return HideAggregatorsTabularRecord.builder().decorated(r).keptAggregates(aggregates).build();
+		return HideAggregatorsTabularRecord.builder()
+				.decorated(r)
+				.keptAggregates(ImmutableSet.copyOf(aggregates))
+				.build();
 	}
 
 	protected TableQueryV2 querySubset(TableQueryV2 tableQuery, List<FilteredAggregator> notCached) {
@@ -366,7 +386,7 @@ public class CachingTableWrapper implements ITableWrapper {
 			queryKeyForCache.customMarker(customMarkerForCache);
 		} else {
 			// If the table does not implement ICustomMarkerCacheStrategy, it means customMarker are not playing any
-			// role in table query logic
+			// role in table query logic: remove the customMarker from the cacheKey
 			queryKeyForCache.customMarker(null);
 		}
 
@@ -377,10 +397,6 @@ public class CachingTableWrapper implements ITableWrapper {
 		QueryPod decoratedContext = queryPod.toBuilder().table(decorated).build();
 		return decorated.streamSlices(decoratedContext, tableQuery);
 	}
-
-	// protected Optional<List<ITabularRecord>> resultFromCache(CachingKey cacheKey) {
-	// return Optional.ofNullable(cache.getIfPresent(cacheKey));
-	// }
 
 	/**
 	 * 

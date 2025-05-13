@@ -41,7 +41,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	public void testConflictingNames() {
 		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
 
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
 	}

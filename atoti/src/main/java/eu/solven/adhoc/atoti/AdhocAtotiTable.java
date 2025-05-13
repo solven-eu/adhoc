@@ -105,7 +105,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 			return true;
 		});
 
-		return new SuppliedTabularRecordStream(tableQuery, asList::stream);
+		return new SuppliedTabularRecordStream(tableQuery, true, asList::stream);
 	}
 
 	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {

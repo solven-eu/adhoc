@@ -100,7 +100,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		} else if (index >= size()) {
 			throw new ArrayIndexOutOfBoundsException("index=%s must be lowerThan size=%s".formatted(index, size()));
 		}
-		throw new IllegalArgumentException("%s does not allow merging. key=%s".formatted(getClass(), keys.get(index)));
+		throw new IllegalArgumentException(
+				"%s does not allow merging. index=%s key=%s".formatted(getClass(), index, keys.get(index)));
 	}
 
 	@Override
@@ -184,7 +185,23 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	protected int getIndex(T key) {
-		return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+		if (keys.isEmpty()) {
+			return -1;
+		}
+		int compareWithLast = keys.getLast().compareTo(key);
+
+		if (compareWithLast == 0) {
+			// In a Bucketor, we often write into the previously written slice
+			// e.g. `a=a1&b=b1` and `a=a1&b=b2` would both write into `a=a1`
+
+			// Merge with last element
+			return keys.size() - 1;
+		} else if (compareWithLast < 0) {
+			// Append after last
+			return -keys.size();
+		} else {
+			return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+		}
 	}
 
 	@Override
@@ -244,6 +261,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	@Override
 	public String toString() {
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
+
+		toStringHelper.add("size", size());
 
 		AtomicInteger index = new AtomicInteger();
 

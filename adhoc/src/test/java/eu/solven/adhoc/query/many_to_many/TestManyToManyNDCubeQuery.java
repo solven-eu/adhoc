@@ -56,9 +56,9 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 
 	ManyToManyNDInMemoryDefinition manyToManyDefinition = new ManyToManyNDInMemoryDefinition();
 
-	public final CubeQueryEngine aqe =
+	public final CubeQueryEngine engine =
 			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final CubeWrapper aqw = ((ADagTest) this).cube.toBuilder().engine(aqe).build();
+	public final CubeWrapper cube = editCube().engine(engine).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
 
@@ -130,7 +130,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -144,7 +144,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElementGender, "male").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElementGender, "male").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -158,7 +158,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "yellow").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "yellow").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -172,7 +172,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "unknownGroup").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "unknownGroup").build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
 	}
@@ -181,7 +181,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByPartialElements_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElementGender)
 				.andFilter(cGroup, "yellow")
@@ -199,7 +199,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByAllElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElementGender, cElementAge)
 				.andFilter(cGroup, "yellow")
@@ -219,7 +219,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByPartialElement_FilterMultipleOverlappingGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElementGender)
 				.andFilter(cGroup, Set.of("yellow", "blue"))
@@ -237,7 +237,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByGroup_noFilter() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -252,7 +252,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByGroup_FilterPartialElement() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElementGender, "male")
@@ -270,7 +270,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByGroup_FilterOrDifferentElements() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.filter(OrFilter.or(ColumnFilter.isEqualTo(cElementGender, "male"),
@@ -290,7 +290,7 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 	public void test_GroupByGroup_FilterGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
+		ITabularView output = cube.execute(
 				CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).andFilter(cGroup, "yellow").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

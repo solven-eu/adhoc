@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.model;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -34,6 +36,7 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This is a technical measure, useful for edge-cases (e.g. not throwing when requesting an unknown measure).
@@ -44,6 +47,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@Slf4j
 public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	String name;
 
@@ -55,6 +59,12 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	@Override
 	public List<String> getUnderlyingNames() {
 		return List.of();
+	}
+
+	@Override
+	public IMeasure withTags(ImmutableSet<String> tags) {
+		log.warn("Can not edit tags of {}", this);
+		return this;
 	}
 
 	@Override

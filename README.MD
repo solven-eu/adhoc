@@ -15,6 +15,8 @@ Make it easy to define/code/review a complex pipeline of transformation rules.
 - The DAG should be easily readable and modifiable but a human, not necessarily a developer.
 - The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUPBY`. 
 
+Adhoc can be seen as a semantic layer, enabling complex indicators over a snowflake SQL schema, or a composite of snowflake schemas.
+
 ### About performance
 
 Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `CubeQuery` query. hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying table.

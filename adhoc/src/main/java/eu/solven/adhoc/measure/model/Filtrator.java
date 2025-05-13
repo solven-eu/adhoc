@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -38,6 +38,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,8 +57,10 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@NonNull
 	String name;
 
+	@NonNull
 	@Singular
-	Set<String> tags;
+	@With
+	ImmutableSet<String> tags;
 
 	@NonNull
 	String underlying;

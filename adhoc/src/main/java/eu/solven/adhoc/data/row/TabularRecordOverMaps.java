@@ -41,7 +41,7 @@ import lombok.With;
 
 /**
  * A simple {@link ITabularRecord} based on {@link Map}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
@@ -74,11 +74,11 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Object aggregate = getAggregate(aggregateName);
 
 		if (AdhocPrimitiveHelpers.isLongLike(aggregate)) {
-			return valueConsumer -> valueConsumer.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
+			return valueReceiver -> valueReceiver.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(aggregate)) {
-			return valueConsumer -> valueConsumer.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
+			return valueReceiver -> valueReceiver.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
 		} else {
-			return valueConsumer -> valueConsumer.onObject(aggregate);
+			return valueReceiver -> valueReceiver.onObject(aggregate);
 		}
 	}
 

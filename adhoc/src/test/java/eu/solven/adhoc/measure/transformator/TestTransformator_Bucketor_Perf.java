@@ -44,6 +44,7 @@ import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
@@ -51,11 +52,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000;
+	static final int maxCardinality = 1_000_000 / 10;
 
 	@BeforeAll
 	public static void setLimits() {
+		log.info("{} is evaluated on cardinality={}", TestTransformator_Bucketor_Perf.class.getName(), maxCardinality);
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
+	}
+
+	@Override
+	public InMemoryTable makeTable() {
+		return InMemoryTable.builder().distinctSlices(true).build();
 	}
 
 	@BeforeEach
@@ -92,7 +99,7 @@ public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocT
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(m).groupByAlso("l").explain(true).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(m).groupByAlso("l").explain(true).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)

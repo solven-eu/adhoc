@@ -74,29 +74,30 @@ public class AggregatingColumns<T extends Comparable<T>> implements IMultitypeMe
 	}
 
 	@Override
-	public IValueReceiver contribute(IAliasedAggregator aggregator, T key) {
+	public IOpenedSlice openSlice(T key) {
+		return aggregator -> {
+			IMultitypeMergeableColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
+				IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+				return makePreColumn(agg);
+			});
 
-		IMultitypeMergeableColumn<T> column = aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
-			return makePreColumn(agg);
-		});
+			IValueReceiver valueReceiver = column.append(key);
+			if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
+				return v -> {
+					Object wrapped;
+					if (v == null) {
+						wrapped = null;
+					} else {
+						// Wrap the aggregate from table into the aggregation custom wrapper
+						wrapped = hasCarriers.wrap(v);
+					}
 
-		if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
-			return v -> {
-				Object wrapped;
-				if (v == null) {
-					wrapped = null;
-				} else {
-					// Wrap the aggregate from table into the aggregation custom wrapper
-					wrapped = hasCarriers.wrap(v);
-				}
-
-				column.append(key).onObject(wrapped);
-			};
-
-		} else {
-			return column.append(key);
-		}
+					valueReceiver.onObject(wrapped);
+				};
+			} else {
+				return valueReceiver;
+			}
+		};
 	}
 
 	@Override

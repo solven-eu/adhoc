@@ -38,11 +38,12 @@
 	</developers>
 
 	<modules>
-		<module>adhoc</module>
 		<module>public</module>
+		<module>adhoc</module>
 		<module>experimental</module>
 		<module>calcite</module>
 		<module>spring</module>
+		<module>jmh</module>
 
 		<module>pivotable</module>
 	</modules>

@@ -20,23 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iteratotr;
+package eu.solven.adhoc.measure.transformator.iterator;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 
-public class TestSlicedRecordFromMap {
+public class TestSlicedRecordFromArray {
 	@Test
 	public void testToString() {
-		SlicedRecordFromSlices sliced = SlicedRecordFromSlices.builder()
-				.valueProvider(IValueProvider.setValue("a"))
-				.valueProvider(IValueProvider.setValue(12.34))
-				.valueProvider(IValueProvider.setValue(new int[] { 0, 1, 23 }))
-				.build();
+		SlicedRecordFromArray sliced =
+				SlicedRecordFromArray.builder().measure("a").measure(12.34).measure(new int[] { 0, 1, 23 }).build();
 
 		Assertions.assertThat(sliced.toString()).isEqualTo("[a, 12.34, [0, 1, 23]]");
+	}
+
+	@Test
+	public void testNull() {
+		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().measure("a").measure(null).build();
+
+		Assertions.assertThat(sliced.toString()).isEqualTo("[a, null]");
+
+		Assertions.assertThat(IValueProvider.getValue(sliced.read(0))).isEqualTo("a");
+		Assertions.assertThat(IValueProvider.getValue(sliced.read(1))).isNull();
 	}
 }

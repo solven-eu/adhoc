@@ -33,7 +33,6 @@ import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.With;
 
 /**
@@ -46,7 +45,8 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	@With
 	@NonNull
 	final ITabularRecord decorated;
-	@Singular
+	// Not Singular not to build an ImmutableSet of each instance
+	// @Singular
 	@NonNull
 	final ImmutableSet<String> keptAggregates;
 

@@ -32,10 +32,14 @@ import com.google.common.base.Suppliers;
  */
 public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	final Object source;
+	final boolean isDistinct;
 	final Supplier<Stream<ITabularRecord>> streamSupplier;
 
-	public SuppliedTabularRecordStream(Object source, Supplier<Stream<ITabularRecord>> streamSupplier) {
+	public SuppliedTabularRecordStream(Object source,
+			boolean isDistinct,
+			Supplier<Stream<ITabularRecord>> streamSupplier) {
 		this.source = source;
+		this.isDistinct = isDistinct;
 		// Memoize the stream to make sure it is open only once
 		this.streamSupplier = Suppliers.memoize(streamSupplier::get);
 	}
@@ -53,5 +57,10 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	@Override
 	public String toString() {
 		return "source=%s".formatted(source);
+	}
+
+	@Override
+	public boolean isDistinctSlices() {
+		return isDistinct;
 	}
 }

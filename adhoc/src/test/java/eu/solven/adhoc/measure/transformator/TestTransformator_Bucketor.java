@@ -62,7 +62,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -84,7 +84,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -106,7 +106,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -128,7 +128,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2ByA").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -152,7 +152,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k2Sum);
 
 		Assertions.setMaxStackTraceElementsDisplayed(300);
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure("maxK1K2").build()))
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure("maxK1K2").build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
@@ -170,7 +170,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").andFilter("a", "a1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -193,7 +193,7 @@ public class TestTransformator_Bucketor extends ADagTest implements IAdhocTestCo
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
