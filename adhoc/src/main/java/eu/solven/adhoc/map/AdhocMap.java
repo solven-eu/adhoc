@@ -224,7 +224,6 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// Looks a lot like NavigableMapComparator. Duplication?
 	@Override
 	public int compareTo(AdhocMap other) {
-		// throw new NotYetImplementedException("%s.compareTo".formatted(getClass()));
 		if (this == other) {
 			// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to provide
 			// same sliceAsMap

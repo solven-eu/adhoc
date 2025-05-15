@@ -159,7 +159,7 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 			return copyToNavigable(column, sliceToIndex -> {
 				refSortedSliceToIndex.get().forEach(e -> {
 					T slice = e.getKey();
-					int rowIndex = e.getValue();
+					int rowIndex = e.getIntValue();
 
 					sliceToIndex.acceptObject2Int(slice, rowIndex);
 				});

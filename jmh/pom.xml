@@ -9,7 +9,7 @@
 	<artifactId>adhoc-jmh</artifactId>
 
 	<properties>
-		<jmh.version>1.21</jmh.version>
+		<jmh.version>1.37</jmh.version>
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>

@@ -66,15 +66,19 @@ public class BenchmarkAdhocMap_ComparateTo {
 
 	@Setup
 	public void setup() {
+		// some Map
 		mapA = AdhocMap.builder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
 		sliceMapA = SliceAsMap.fromMap(mapA);
 
+		// equals to mapA
 		mapB = AdhocMap.builder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
 		sliceMapB = SliceAsMap.fromMap(mapB);
 
+		// Differ with last value from mapA
 		mapC = AdhocMap.builder(Set.of("a", "b", "c")).append("a1").append("b1").append(c2).build();
 		sliceMapC = SliceAsMap.fromMap(mapC);
 
+		// Differ with all/first value from mapA
 		mapD = AdhocMap.builder(Set.of("a", "b", "c")).append("a2").append("b2").append(c2).build();
 		sliceMapD = SliceAsMap.fromMap(mapD);
 	}
@@ -102,27 +106,27 @@ public class BenchmarkAdhocMap_ComparateTo {
 
 	// Useful to compare the cost of the string comparison given the map comparison
 	@Benchmark
-	public int compareLastIsNotEquals_string() {
+	public int compareLastNotEquals_string() {
 		return c1.compareTo(c2);
 	}
 
 	@Benchmark
-	public int compareLastIsNotEquals_map() {
+	public int compareLastNotEquals_map() {
 		return mapA.compareTo(mapC);
 	}
 
 	@Benchmark
-	public int compareLastIsNotEquals_slice() {
+	public int compareLastNotEquals_slice() {
 		return sliceMapA.compareTo(sliceMapC);
 	}
 
 	@Benchmark
-	public int compareAllNotEquals_map() {
+	public int compareNoneEquals_map() {
 		return mapA.compareTo(mapD);
 	}
 
 	@Benchmark
-	public int compareAllNotEquals_slice() {
+	public int compareNoneEquals_slice() {
 		return sliceMapA.compareTo(sliceMapD);
 	}
 

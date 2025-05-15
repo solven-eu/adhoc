@@ -48,10 +48,25 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-bigqueryconnection</artifactId>
+			<!-- One may need to query from Google BigQuery -->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<!-- Helps generating .dot files for Graphviz, to understand measures -->
 			<groupId>guru.nidi</groupId>
 			<artifactId>graphviz-java</artifactId>
 			<version>0.18.1</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<!-- Helps doing a CubeQuery given a plain txt syntax-->
+			<groupId>cz.jirutka.rsql</groupId>
+			<artifactId>rsql-parser</artifactId>
+			<version>2.1.0</version>
 		</dependency>
 
 		<dependency>

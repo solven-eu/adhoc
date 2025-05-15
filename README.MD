@@ -348,7 +348,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
-- [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN ` from a composite-cube to its subQueries.
+- [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
 - [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
 - [Resiliency] Work on query cancellations/queryTimeouts

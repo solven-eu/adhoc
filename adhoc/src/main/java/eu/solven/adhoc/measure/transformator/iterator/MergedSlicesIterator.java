@@ -59,7 +59,7 @@ public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures>
 		Comparator<PeekingIterator<SliceAndMeasure<SliceAsMap>>> heapComparator =
 				Comparator.comparing(o -> o.peek().getSlice());
 
-		queue = new PriorityQueue<>(2, heapComparator);
+		queue = new PriorityQueue<>(sortedIterators.size(), heapComparator);
 
 		sortedIterators.stream()
 				// We may receive iterators empty (e.g. an empty queryStep)
@@ -109,6 +109,12 @@ public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures>
 			throw new IllegalStateException("nbMatchingSlice should be >0");
 		}
 
+		// This array buffers the iterators to insert back, in order not to insert them before doing all removals
+		// It is relevant as the queue may hold 2 iterators on same value: we do not want to insert the first iterator
+		// on next value while the second iterator
+		// is still present with previous value
+		List<PeekingIterator<SliceAndMeasure<SliceAsMap>>> insertBack = new ArrayList<>(nbMatchingSlice);
+
 		for (int i = 0; i < nbMatchingSlice; i++) {
 			// The first removal is guaranteed as the queue head led to this iteration
 			PeekingIterator<SliceAndMeasure<SliceAsMap>> removed = queue.remove();
@@ -117,10 +123,11 @@ public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures>
 
 			if (removed.hasNext()) {
 				// Insert back in the priority queue
-				// (We could insert after removal, to spare a few comparisons)
-				queue.add(removed);
+				insertBack.add(removed);
 			}
 		}
+
+		queue.addAll(insertBack);
 
 		return SliceAndMeasures.from(queryStep, slice, valueProviders);
 	}

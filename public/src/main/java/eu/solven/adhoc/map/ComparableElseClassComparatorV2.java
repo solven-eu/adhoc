@@ -82,6 +82,13 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 		if (l == null || r == null) {
 			return Objects.compare(l, r, nullComparator);
 		}
+
+		// TODO It this reference check beneficial?
+		// TODO This may be beneficial if we improve reference-sharing when parsing JooQ results
+		// else if (l == r) {
+		// return 0;
+		// }
+
 		Class<?> c1 = l.getClass();
 		Class<?> c2 = r.getClass();
 

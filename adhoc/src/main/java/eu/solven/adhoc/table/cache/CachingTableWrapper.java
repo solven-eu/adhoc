@@ -233,11 +233,15 @@ public class CachingTableWrapper implements ITableWrapper {
 
 			ITabularRecordStream decoratedRecordsStream = streamDecorated(queryPod, queryAggregatorsNotCached);
 
+			// If the cache is empty, we'll return the result from underlying, which tells if distinct or not
+			// If the cache is not empty, the merging process does not distinct slices, else it may generate duplicates
+			boolean distinctSlices = fromCache.isEmpty() ? decoratedRecordsStream.isDistinctSlices() : false;
+
 			return new ITabularRecordStream() {
 
 				@Override
 				public boolean isDistinctSlices() {
-					return false;
+					return distinctSlices;
 				}
 
 				@Override

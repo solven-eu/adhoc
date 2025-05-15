@@ -207,13 +207,6 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
 			IHasMeasures subCube,
 			Set<String> subColumns) {
-		// if (compositeQuery.getAggregators().stream().anyMatch(fa -> !IAdhocFilter.MATCH_ALL.equals(fa.getFilter())))
-		// {
-		// // TODO Could this be managed with a Filtrator? Leaving the `FILTER` management to the subCube?
-		// throw new NotYetImplementedException(
-		// "FILTER in CompositeCube is not supported yet: %s".formatted(compositeQuery));
-		// }
-
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
 		// Measures which are known by the subCube
@@ -321,10 +314,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 					stream = stream.parallel();
 				}
 
-				return stream.collect(Collectors.toMap(Entry::getKey, e -> {
-					ICubeWrapper subCube = nameToCube.get(e.getKey());
-					ICubeQuery query = e.getValue();
-					return executeSubQuery(subCube, query);
+				return stream.collect(Collectors.toMap(Entry::getKey, cubeAndQuery -> {
+					String cubeName = cubeAndQuery.getKey();
+					ICubeWrapper subCube = nameToCube.get(cubeName);
+					ICubeQuery query = cubeAndQuery.getValue();
+					try {
+						return executeSubQuery(subCube, query);
+					} catch (RuntimeException e) {
+						throw new IllegalArgumentException("Issue querying %s with %s".formatted(cubeName, query), e);
+					}
 				}));
 
 			}).get();
