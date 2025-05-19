@@ -180,7 +180,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	protected void postAboutQueryDone(QueryPod queryPod, String status, IStopwatch stopWatch) {
 		eventBus.post(AdhocLogEvent.builder()
 				.message("Executed status=%s duration=%s on table=%s measures=%s query=%s".formatted(status,
-						stopWatch.elapsed(),
+						PepperLogHelper.humanDuration(stopWatch.elapsed().toMillis()),
 						queryPod.getTable().getName(),
 						queryPod.getForest().getName(),
 						queryPod.getQuery()))

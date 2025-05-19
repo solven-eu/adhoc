@@ -22,16 +22,18 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.regex.Pattern;
 
+import com.google.common.base.CharMatcher;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -47,26 +49,68 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ArithmeticFormulaCombination implements ICombination {
 	final String formula;
-	final Map<String, Integer> underlyingMeasuresToIndex = new HashMap<>();
+	// Strict ReversePolishNotation only consumes 2 operands per operator
+	// But one may feel simpler to provide things like `a,b,c,+`
+	final boolean twoOperandsPerOperator;
+	final Map<String, Integer> underlyingMeasuresToIndex = new LinkedHashMap<>();
 
 	public ArithmeticFormulaCombination(Map<String, ?> options) {
-		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
-		formula = MapPathGet.getRequiredString(options, ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+		formula = parseFormula(options);
 
-		String[] elements = formula.split(",");
+		// Default is false, to follow ActiveViam convention
+		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
-		Stream.of(elements)
-				.filter(s -> s.startsWith("aggregatedValue[") && s.endsWith("]"))
-				.map(s -> s.substring("aggregatedValue[".length(), s.length() - "]".length()))
+		Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
+				.matcher(formula)
+				.results()
+				.map(mr -> mr.group(1))
 				.forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 						underlyingMeasuresToIndex.size()));
+		// String[] elements = formula.split(",");
+		//
+		// Stream.of(elements)
+		// .filter(s -> s.startsWith("aggregatedValue[") && s.endsWith("]"))
+		// .map(s -> s.substring("aggregatedValue[".length(), s.length() - "]".length()))
+		// .forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
+		// underlyingMeasuresToIndex.size()));
+		System.out.println(underlyingMeasuresToIndex);
 	}
 
+	public List<String> getUnderlyingMeasures() {
+		return underlyingMeasuresToIndex.keySet().stream().toList();
+	}
+
+	// BEWARE This is called from the constructor
+	protected String parseFormula(Map<String, ?> options) {
+		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
+		String formula = MapPathGet.getRequiredString(options, ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+
+		if (formula.startsWith("(") && formula.endsWith(")")) {
+			// https://en.wikipedia.org/wiki/Reverse_Polish_notation
+			// Reverse Polish Notation should not accept `()`, as it does not need them. ActiveViam `Reverse Polish
+			// Notation` needs some specification.
+			if (CharMatcher.is('(').countIn(formula) == 1 && CharMatcher.is(')').countIn(formula) == 1) {
+				// Drop surrounding parenthesis
+				formula = formula.substring(1, formula.length() - 1);
+			} else {
+				throw new IllegalArgumentException(
+						"ReversePolishNotation does not accept (nor need) parenthesis. formula=`%s`"
+								.formatted(formula));
+			}
+		}
+
+		return formula;
+	}
+
+	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		List<Object> pendingOperands = new LinkedList<>();
 
-		String[] elements = formula.split(",");
+		String tokens = ",";
+		String[] elements = formula.split(tokens);
+
+		// Stack<String> pendingOperands = new Stack<>();
 
 		for (int i = 0; i < elements.length; i++) {
 			String s = elements[i];
@@ -84,12 +128,24 @@ public class ArithmeticFormulaCombination implements ICombination {
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
-			} else if ("*".equals(s) || "+".equals(s)) {
-				List<Object> operands = new LinkedList<>(pendingOperands);
-				pendingOperands.clear();
+			} else if ("*".equals(s) || "+".equals(s) || "/".equals(s)) {
+				List<Object> operands;
+
+				if (twoOperandsPerOperator || "/".equals(s)) {
+					operands = new LinkedList<>();
+					// Add at the beginning to reverse the stack
+					operands.add(0, pendingOperands.removeLast());
+					operands.add(0, pendingOperands.removeLast());
+				} else {
+					// No need to reverse the stack for these operators
+					operands = new LinkedList<>(pendingOperands);
+					pendingOperands.clear();
+				}
 
 				ICombination combination = getCombination(s);
 				operandToAppend = combination.combine(slice, operands);
+			} else if (s.matches("-?[0-9]+")) {
+				operandToAppend = Integer.parseInt(s);
 			} else {
 				log.warn("Not-managed: {}", s);
 				operandToAppend = s;
@@ -100,7 +156,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 		if (pendingOperands.size() == 1) {
 			return pendingOperands.getFirst();
 		} else {
-			log.warn("Invalid number of leftover operands: {}", pendingOperands);
+			log.warn("Invalid number of leftover operands: {} in formula=`{}`", pendingOperands, formula);
 			return null;
 		}
 	}
@@ -111,6 +167,8 @@ public class ArithmeticFormulaCombination implements ICombination {
 			return new ProductCombination();
 		} else if (SumAggregation.isSum(operator)) {
 			return new SumCombination();
+		} else if (DivideCombination.isDivide(operator)) {
+			return new DivideCombination();
 		} else {
 			throw new UnsupportedOperationException("Not-managed: " + operator);
 		}

@@ -347,14 +347,12 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 
 - [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
-- [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
-- [Perf] `MultiTypeStorage` should not rely on `hash-based` structure when Adhoc guarantee to publish distinct keys.
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
+- [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
 - [Resiliency] Work on query cancellations/queryTimeouts
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
-- [Pivotable] Fetch all column details in a single query
 - [Composite] `getCoordinates` should be executed once per each underlying cube
 - [Composite] Enable a failing sub-query not to break the composite query
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
@@ -363,4 +361,5 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
+- [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query

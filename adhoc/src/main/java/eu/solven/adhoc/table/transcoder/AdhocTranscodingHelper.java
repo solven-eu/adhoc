@@ -65,8 +65,9 @@ public class AdhocTranscodingHelper {
 
 			if (queriedKeys.isEmpty()) {
 				// This output column was not requested, but it has been received. The DB returns unexpected columns?
-				String queriedKey = underlyingKey;
-				insertTranscoded(v, queriedKey, transcoded);
+//				String queriedKey = underlyingKey;
+//				insertTranscoded(v, queriedKey, transcoded);
+				log.warn("No queried keys found for {}", underlyingKey);
 			} else {
 				queriedKeys.forEach(queriedKey -> {
 					insertTranscoded(v, queriedKey, transcoded);
@@ -185,7 +186,11 @@ public class AdhocTranscodingHelper {
 	}
 
 	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
-		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+		if (filter.isMatchAll()) {
+			return true;
+		} else if (filter.isMatchNone()) {
+			return false;
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));

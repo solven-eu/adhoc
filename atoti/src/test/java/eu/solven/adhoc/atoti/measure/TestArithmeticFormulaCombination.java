@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
+import static org.assertj.core.api.Assertions.offset;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -39,21 +41,56 @@ public class TestArithmeticFormulaCombination {
 	public void testProduct() {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[CDS Composite Spread5Y],double[10000],*"));
+						"aggregatedValue[someMeasureName],double[10000],*"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(0.123_456))).isEqualTo(1234.56);
 		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isEqualTo(null);
+
+		Assertions.assertThat(c.getUnderlyingMeasures()).containsExactly("someMeasureName");
 	}
 
 	@Test
 	public void testProduct_3operands() {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"int[123],aggregatedValue[CDS Composite Spread5Y],double[234],*"));
+						"int[123],aggregatedValue[someMeasureName],double[234],*"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(34.56))).isEqualTo(123 * 34.56 * 234);
 		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null }))).isNull();
+
+		Assertions.assertThat(c.getUnderlyingMeasures()).containsExactly("someMeasureName");
+	}
+
+	@Test
+	public void testSum3WithParenthesis() {
+		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(Map.of(
+				ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+				"(aggregatedValue[someMeasureName0],aggregatedValue[someMeasureName1],aggregatedValue[someMeasureName2],+)"));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123, 234, 345))).isEqualTo(0L + 123 + 234 + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123, null, 345))).isEqualTo(0L + 123 + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null, null, null }))).isNull();
+
+		Assertions.assertThat(c.getUnderlyingMeasures())
+				.containsExactly("someMeasureName0", "someMeasureName1", "someMeasureName2");
+	}
+
+	// https://www.geeksforgeeks.org/evaluate-the-value-of-an-arithmetic-expression-in-reverse-polish-notation-in-java/
+	@Test
+	public void testComplexCase() {
+		String[] array = new String[] { "10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+" };
+		String joined = String.join(",", array);
+		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(
+				Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, joined, "twoOperandsPerOperator", true));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat((double) c.combine(slice, Arrays.asList(34.56))).isCloseTo(21.54, offset(0.01));
+		Assertions.assertThat((double) c.combine(slice, Arrays.asList(new Object[] { null })))
+				.isCloseTo(21.54, offset(0.01));
+
+		Assertions.assertThat(c.getUnderlyingMeasures()).containsExactly();
 	}
 }

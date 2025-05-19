@@ -247,7 +247,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		List<String> aggregateFields = fields.getAggregates();
 		{
 			int size = aggregateFields.size();
-			aggregates = new LinkedHashMap<>(size);
+			aggregates = LinkedHashMap.newLinkedHashMap(size);
 
 			for (int i = 0; i < size; i++) {
 				String columnName = aggregateFields.get(i);
@@ -274,7 +274,7 @@ public class JooqTableWrapper implements ITableWrapper {
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
 
-			slice = new LinkedHashMap<>(size);
+			slice = LinkedHashMap.newLinkedHashMap(size);
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 

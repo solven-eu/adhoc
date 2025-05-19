@@ -200,7 +200,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			// Append after last
 			return -keys.size();
 		} else {
-			// slow path
+			// slow path: merge with an existing element
 			return Collections.binarySearch(keys, key, Comparator.naturalOrder());
 		}
 	}

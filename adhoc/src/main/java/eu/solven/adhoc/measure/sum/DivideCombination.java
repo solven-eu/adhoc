@@ -40,6 +40,11 @@ public class DivideCombination implements ICombination {
 
 	public static final String KEY = "DIVIDE";
 
+	public static boolean isDivide(String operator) {
+		return "/".equals(operator) || DivideCombination.KEY.equals(operator)
+				|| operator.equals(DivideCombination.class.getName());
+	}
+
 	final boolean nullNumeratorIsZero;
 
 	public DivideCombination() {
