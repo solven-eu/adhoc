@@ -180,7 +180,8 @@ public class AtotiMeasureToAdhoc {
 		log.debug("ppFactory={}", ppFactory);
 
 		Class<?> implementationClass = ppFactory.getImplementationClass();
-		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass) || ABaseDynamicAggregationPostProcessor.class.isAssignableFrom(implementationClass)) {
+		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass)
+				|| ABaseDynamicAggregationPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDynamicPostProcessor(measure);
 		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)) {
 			return onFilteringPostProcessor(measure);
@@ -188,7 +189,8 @@ public class AtotiMeasureToAdhoc {
 			return onDrillupPostProcessor(measure);
 		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onLocationShiftPosProcessor(measure);
-		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass) || ABasicPostProcessor.class.isAssignableFrom(implementationClass)) {
+		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)
+				|| ABasicPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onBasicPostProcessor(measure);
 		} else if (ArithmeticFormulaPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onArithmeticFormulaPostProcessor(measure);
@@ -205,7 +207,9 @@ public class AtotiMeasureToAdhoc {
 	 * @return
 	 */
 	protected List<IMeasure> onAdvancedPostProcessor(IPostProcessorDescription measure) {
-		log.warn("Measure={} may not be properly converted as {} is an advancedPostProcessor", measure.getName(), measure.getPluginKey());
+		log.warn("Measure={} may not be properly converted as {} is an advancedPostProcessor",
+				measure.getName(),
+				measure.getPluginKey());
 		return onBasicPostProcessor(measure);
 	}
 
@@ -374,7 +378,8 @@ public class AtotiMeasureToAdhoc {
 
 	// TODO Some formula may be more complex than a simple Combinator
 	protected List<IMeasure> onArithmeticFormulaPostProcessor(IPostProcessorDescription measure) {
-		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
+		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(
+				measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
 		return onCombinator(measure, underlyingNames);
 	}
 
