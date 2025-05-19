@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +47,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -108,9 +111,19 @@ public class ColumnsManager implements IColumnsManager {
 		IAdhocFilter transcodedFilter;
 		{
 			IAdhocFilter notTranscodedFilter = query.getFilter();
+
+			Set<String> calculatedColumns = getCalculatedColumns(query);
+			Set<String> calculatedAndFiltered =
+					Sets.intersection(calculatedColumns, FilterHelpers.getFilteredColumns(notTranscodedFilter));
+			if (!calculatedAndFiltered.isEmpty()) {
+				throw new NotYetImplementedException(
+						"Can not filter along calculated columns: %s".formatted(calculatedAndFiltered));
+			}
+
 			transcodedFilter = transcodeFilter(transcodingContext, notTranscodedFilter);
 
-			transcodingContext.underlyings().forEach(underlying -> {
+			// Sanity checks
+			FilterHelpers.getFilteredColumns(transcodedFilter).forEach(underlying -> {
 				Set<String> queried = transcodingContext.queried(underlying);
 				if (queried.size() >= 2) {
 					eventBus.post(AdhocLogEvent.builder()
@@ -136,24 +149,36 @@ public class ColumnsManager implements IColumnsManager {
 		}
 
 		ITableWrapper table = queryPod.getTable();
-		ITabularRecordStream aggregatedRecordsStream = table.streamSlices(queryPod, transcodedQuery);
+		ITabularRecordStream tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
 
-		return transcodeRows(transcodingContext, aggregatedRecordsStream);
+		return transcodeRows(transcodingContext, tabularRecordStream);
+	}
+
+	private Set<String> getCalculatedColumns(TableQueryV2 query) {
+		Set<String> calculatedColumns = new TreeSet<>();
+		this.calculatedColumns.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
+		query.getGroupBy()
+				.getNameToColumn()
+				.values()
+				.stream()
+				.filter(c -> c instanceof CalculatedColumn)
+				.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
+		return calculatedColumns;
 	}
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
-			ITabularRecordStream aggregatedRecordsStream) {
+			ITabularRecordStream tabularRecordStream) {
 		return new ITabularRecordStream() {
 
 			@Override
 			public boolean isDistinctSlices() {
 				// TODO Study how this flag could be impacted by transcoding
-				return aggregatedRecordsStream.isDistinctSlices();
+				return tabularRecordStream.isDistinctSlices();
 			}
 
 			@Override
 			public void close() {
-				aggregatedRecordsStream.close();
+				tabularRecordStream.close();
 			}
 
 			@Override
@@ -161,16 +186,19 @@ public class ColumnsManager implements IColumnsManager {
 				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
 				ITableReverseTranscoder columnTranscoder = prepareColumnTranscoder(transcodingContext);
 
-				return aggregatedRecordsStream.records()
+				return tabularRecordStream.records()
+						.map(row -> transcodeTypes(valueTranscoder, row))
 						// TODO Should we transcode type before or after columnNames?
 						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
-						.map(row -> transcodeTypes(valueTranscoder, row))
-						.map(row -> transcodeCalculated(transcodingContext, row));
+						// calculate columns after transcoding, as these expression are generally table-independant
+						.map(row -> evaluateCalculated(transcodingContext, row))
+				// TODO filter calculated
+				;
 			}
 
 			@Override
 			public String toString() {
-				return "Transcoding: " + aggregatedRecordsStream;
+				return "Transcoding: " + tabularRecordStream;
 			}
 		};
 	}
@@ -191,7 +219,7 @@ public class ColumnsManager implements IColumnsManager {
 		};
 	}
 
-	protected ITabularRecord transcodeCalculated(TranscodingContext transcodingContext, ITabularRecord row) {
+	protected ITabularRecord evaluateCalculated(TranscodingContext transcodingContext, ITabularRecord row) {
 		Map<String, CalculatedColumn> columns = transcodingContext.getNameToCalculated();
 
 		if (columns.isEmpty()) {
@@ -241,38 +269,53 @@ public class ColumnsManager implements IColumnsManager {
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
-	// protected IValueMatcher transcodeType(String column, IValueMatcher valueMatcher) {
-	// return MoreFilterHelpers.transcodeType(customTypeManager, column, valueMatcher);
-	// }
-
 	protected IAdhocGroupBy transcodeGroupBy(TranscodingContext transcodingContext, IAdhocGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
 
-		List<IAdhocColumn> transcoded = nameToColumn.values().stream().<IAdhocColumn>flatMap(c -> {
-			if (c instanceof ReferencedColumn referencedColumn) {
-				return Stream.of(ReferencedColumn.ref(transcodingContext.underlying(referencedColumn.getName())));
-			} else if (c instanceof ExpressionColumn expressionColumn) {
-				// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
-				eventBus.post(AdhocLogEvent.builder()
-						.warn(true)
-						.message("BEWARE If %s should be impacted by transcoding".formatted(expressionColumn))
-						.source(this)
-						.build());
-				return Stream.of(expressionColumn);
-			} else if (c instanceof CalculatedColumn calculatedColumn) {
-				transcodingContext.addCalculatedColumn(calculatedColumn);
+		List<IAdhocColumn> transcoded = nameToColumn.values()
+				.stream()
+				// Replace a reference column by a calculated column (if applicable)
+				.map(c -> {
+					if (c instanceof ReferencedColumn referencedColumn) {
+						String columnName = referencedColumn.getName();
+						Optional<CalculatedColumn> calculatedColumn = calculatedColumns.stream()
+								.filter(calculated -> calculated.getName().equals(columnName))
+								.findFirst();
+						if (calculatedColumn.isPresent()) {
+							return calculatedColumn.get();
+						}
+					}
+					return c;
+				})
+				// flatMap to the underlying columns
+				.flatMap(c -> {
+					if (c instanceof ReferencedColumn referencedColumn) {
+						String columnName = referencedColumn.getName();
+						return Stream.of(transcodingContext.underlying(columnName))
+								.map(column -> ReferencedColumn.ref(column));
+					} else if (c instanceof CalculatedColumn calculatedColumn) {
+						transcodingContext.addCalculatedColumn(calculatedColumn);
 
-				eventBus.post(AdhocLogEvent.builder()
-						.warn(true)
-						.message("BEWARE If %s should be impacted by transcoding".formatted(calculatedColumn))
-						.source(this)
-						.build());
-				return getUnderlyingColumns(calculatedColumn).stream();
-			} else {
-				throw new UnsupportedOperationException(
-						"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(c)));
-			}
-		}).toList();
+						Collection<ReferencedColumn> operandColumns = getUnderlyingColumns(calculatedColumn);
+						return operandColumns.stream()
+								.map(operandColumn -> transcodingContext.underlying(operandColumn.getName()))
+								.map(operandColumn -> ReferencedColumn.ref(operandColumn));
+					} else if (c instanceof ExpressionColumn expressionColumn) {
+						transcodingContext.underlying(expressionColumn.getName());
+
+						// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
+						eventBus.post(AdhocLogEvent.builder()
+								.warn(true)
+								.message("BEWARE If %s should be impacted by transcoding".formatted(expressionColumn))
+								.source(this)
+								.build());
+						return Stream.of(expressionColumn);
+					} else {
+						throw new UnsupportedOperationException(
+								"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(c)));
+					}
+				})
+				.toList();
 
 		return GroupByColumns.of(transcoded);
 	}

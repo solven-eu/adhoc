@@ -22,7 +22,12 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
@@ -35,6 +40,7 @@ import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,11 +70,11 @@ public class ArithmeticFormulaCombination implements ICombination {
 		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
 		// Default is true (no underlying -> `null`), to follow ActiveViam convention
-		nullIfNotASingleUnderlying = MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+		nullIfNotASingleUnderlying =
+				MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
 
-		parseUnderlyingMeasures(formula)
-				.forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
-						underlyingMeasuresToIndex.size()));
+		parseUnderlyingMeasures(formula).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
+				underlyingMeasuresToIndex.size()));
 	}
 
 	/**
@@ -76,17 +82,17 @@ public class ArithmeticFormulaCombination implements ICombination {
 	 * @return the {@link Set} of underlying measures, in their order of appearance.
 	 */
 	public static Collection<String> parseUnderlyingMeasures(String formula) {
-		return
-				Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
-						.matcher(formula)
-						.results()
-						.map(mr -> mr.group(1)).toList();
+		return Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
+				.matcher(formula)
+				.results()
+				.map(mr -> mr.group(1))
+				.toList();
 	}
 
 	/**
-     *
-     * @return the {@link Set} of underlying measures, in their order of appearance.
-     */
+	 *
+	 * @return the {@link Set} of underlying measures, in their order of appearance.
+	 */
 	public List<String> getUnderlyingMeasures() {
 		return underlyingMeasuresToIndex.keySet().stream().toList();
 	}
@@ -104,9 +110,9 @@ public class ArithmeticFormulaCombination implements ICombination {
 				// Drop surrounding parenthesis
 				formula = formula.substring(1, formula.length() - 1);
 			} else {
-				throw new IllegalArgumentException(
-						"ReversePolishNotation does not accept (nor need) parenthesis. formula=`%s`"
-								.formatted(formula));
+				// throw new IllegalArgumentException(
+				// "ReversePolishNotation does not accept (nor need) parenthesis. formula=`%s`"
+				// .formatted(formula));
 			}
 		}
 
@@ -116,8 +122,40 @@ public class ArithmeticFormulaCombination implements ICombination {
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		List<Object> pendingOperands = new LinkedList<>();
+		// Regex capturing `(x)` where `x` is a ReversePolishNotation
+		Pattern subFormulaRegex = Pattern.compile("\\(([^\\(\\)]+)\\)");
 
+		String replacedFormula = formula;
+
+		do {
+			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
+				String subFormula = mr.group(1);
+				Object evaluatedSubFormula = evaluateReversePolish(subFormula, slice, underlyingValues);
+				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
+				String evaluatedToString = evaluatedSubFormula.toString();
+
+				if (CharMatcher.anyOf("()").matchesAnyOf(evaluatedToString)) {
+					// TODO For now, we forbid such case which could lead to infinite loops
+					throw new NotYetImplementedException("Evaluated subFormula must not generate parenthesis");
+				}
+
+				return evaluatedToString;
+			});
+
+			if (nextFormula.equals(replacedFormula)) {
+				// no more subFormulas
+				break;
+			} else {
+				// continue replacing subFormulas
+				replacedFormula = nextFormula;
+			}
+		} while (true);
+
+		return evaluateReversePolish(replacedFormula, slice, underlyingValues);
+	}
+
+	private Object evaluateReversePolish(String formula, ISliceWithStep slice, List<?> underlyingValues) {
+		List<Object> pendingOperands = new LinkedList<>();
 		String tokens = ",";
 		String[] elements = formula.split(tokens);
 
@@ -162,7 +200,9 @@ public class ArithmeticFormulaCombination implements ICombination {
 				ICombination combination = getCombination(s);
 				operandToAppend = combination.combine(slice, operands);
 			} else if (s.matches("-?[0-9]+")) {
-				operandToAppend = Integer.parseInt(s);
+				operandToAppend = Long.parseLong(s);
+			} else if (s.matches("-?[0-9]+.[0-9]+")) {
+				operandToAppend = Double.parseDouble(s);
 			} else {
 				log.warn("Not-managed: {}", s);
 				operandToAppend = s;

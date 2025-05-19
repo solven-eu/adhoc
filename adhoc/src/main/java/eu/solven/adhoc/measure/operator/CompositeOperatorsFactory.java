@@ -22,25 +22,19 @@
  */
 package eu.solven.adhoc.measure.operator;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import java.util.Map;
+import java.util.Optional;
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 /**
  * A decorating {@link IOperatorsFactory} with a cache-policy.
@@ -65,7 +59,12 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			} catch (RuntimeException e) {
 				return Optional.<IAggregation>empty();
 			}
-		}).filter(Optional::isPresent).flatMap(Optional::stream).findFirst().orElseThrow(() -> new IllegalArgumentException("No aggregation for key={} optios={}".formatted(key, options)));
+		})
+				.filter(Optional::isPresent)
+				.flatMap(Optional::stream)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"No aggregation for key={} optios={}".formatted(key, options)));
 	}
 
 	@Override
@@ -76,7 +75,12 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			} catch (RuntimeException e) {
 				return Optional.<ICombination>empty();
 			}
-		}).filter(Optional::isPresent).flatMap(Optional::stream).findFirst().orElseThrow(() -> new IllegalArgumentException("No aggregation for key={} optios={}".formatted(key, options)));
+		})
+				.filter(Optional::isPresent)
+				.flatMap(Optional::stream)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"No aggregation for key={} optios={}".formatted(key, options)));
 	}
 
 	@Override
@@ -87,7 +91,12 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			} catch (RuntimeException e) {
 				return Optional.<IDecomposition>empty();
 			}
-		}).filter(Optional::isPresent).flatMap(Optional::stream).findFirst().orElseThrow(() -> new IllegalArgumentException("No aggregation for key={} optios={}".formatted(key, options)));
+		})
+				.filter(Optional::isPresent)
+				.flatMap(Optional::stream)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"No aggregation for key={} optios={}".formatted(key, options)));
 	}
 
 	@Override
@@ -98,7 +107,12 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			} catch (RuntimeException e) {
 				return Optional.<IFilterEditor>empty();
 			}
-		}).filter(Optional::isPresent).flatMap(Optional::stream).findFirst().orElseThrow(() -> new IllegalArgumentException("No aggregation for key={} optios={}".formatted(key, options)));
+		})
+				.filter(Optional::isPresent)
+				.flatMap(Optional::stream)
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException(
+						"No aggregation for key={} optios={}".formatted(key, options)));
 	}
 
 }

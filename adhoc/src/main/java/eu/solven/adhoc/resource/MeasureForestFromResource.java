@@ -434,8 +434,11 @@ public class MeasureForestFromResource {
 	public String asString(String format, IMeasureForest forest) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
-		List<?> asMaps =
-				forest.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).collect(Collectors.toList());
+		List<?> asMaps = forest.getNameToMeasure()
+				.values()
+				.stream()
+				.map(m -> asMap(objectMapper, m))
+				.collect(Collectors.toList());
 
 		try {
 			return objectMapper.writeValueAsString(asMaps);
@@ -446,7 +449,8 @@ public class MeasureForestFromResource {
 
 	/**
 	 *
-	 * @param format Typically json or yml. As defined by {@link AdhocJackson#makeObjectMapper(String)}.
+	 * @param format
+	 *            Typically json or yml. As defined by {@link AdhocJackson#makeObjectMapper(String)}.
 	 * @param forests
 	 * @return a String representing this {@link java.util.Set} of {@link IMeasureForest}
 	 */

@@ -51,7 +51,8 @@ public class TestAdhocTranscodingHelper {
 				.isEqualTo(Map.of("k", "v"));
 		// Receiving unknown column would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
-				.isEqualTo(Map.of("otherK", "v"));
+				// .isEqualTo(Map.of("otherK", "v"))
+				.isEmpty();
 	}
 
 	@Test
@@ -67,7 +68,8 @@ public class TestAdhocTranscodingHelper {
 				.isEqualTo(Map.of("k1", "v"));
 		// Receiving unknown column would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
-				.isEqualTo(Map.of("otherK", "v"));
+				// .isEqualTo(Map.of("otherK", "v"))
+				.isEmpty();
 	}
 
 	@Test
@@ -82,10 +84,14 @@ public class TestAdhocTranscodingHelper {
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k", "v")))
 				.isEqualTo(Map.of("k1", "v", "k", "v"));
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k1", "v")))
-				.isEqualTo(Map.of("k1", "v"));
+				// `k1` has not been requested
+				// .isEqualTo(Map.of("k1", "v"))
+				.isEmpty();
+
 		// Receiving unknown column would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
-				.isEqualTo(Map.of("otherK", "v"));
+				// .isEqualTo(Map.of("otherK", "v"))
+				.isEmpty();
 	}
 
 	@Test
@@ -105,10 +111,12 @@ public class TestAdhocTranscodingHelper {
 
 		// Receiving k1 from DB would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("k1", "v")))
-				.isEqualTo(Map.of("k1", "v"));
+				// .isEqualTo(Map.of("k1", "v"))
+				.isEmpty();
 		// Receiving unknown column would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
-				.isEqualTo(Map.of("otherK", "v"));
+				// .isEqualTo(Map.of("otherK", "v"))
+				.isEmpty();
 	}
 
 	@Test

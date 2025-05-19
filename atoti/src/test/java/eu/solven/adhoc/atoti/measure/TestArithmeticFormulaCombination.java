@@ -63,28 +63,18 @@ public class TestArithmeticFormulaCombination {
 		Assertions.assertThat(c.getUnderlyingMeasures()).containsExactly("someMeasureName");
 	}
 
-	@Test
-	public void testSum3WithParenthesis() {
-		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(Map.of(
-				ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-				"(aggregatedValue[someMeasureName0],aggregatedValue[someMeasureName1],aggregatedValue[someMeasureName2],+)"));
-		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
-
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123, 234, 345))).isEqualTo(0L + 123 + 234 + 345);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123, null, 345))).isEqualTo(0L + 123 + 345);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null, null, null }))).isNull();
-
-		Assertions.assertThat(c.getUnderlyingMeasures())
-				.containsExactly("someMeasureName0", "someMeasureName1", "someMeasureName2");
-	}
-
 	// https://www.geeksforgeeks.org/evaluate-the-value-of-an-arithmetic-expression-in-reverse-polish-notation-in-java/
 	@Test
 	public void testComplexCase() {
 		String[] array = new String[] { "10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+" };
 		String joined = String.join(",", array);
-		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(
-				Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, joined, "twoOperandsPerOperator", true));
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						joined,
+						"twoOperandsPerOperator",
+						true,
+						"nullIfNotASingleUnderlying",
+						false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat((double) c.combine(slice, Arrays.asList(34.56))).isCloseTo(21.54, offset(0.01));
@@ -96,25 +86,26 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSumWithConstant() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[someMeasureName],int[234],+"));
+		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(
+				Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, "aggregatedValue[someMeasureName],int[234],+"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123+234);
-		Assertions.assertThat(c.combine(slice, Arrays.asList((Object)null))).isNull();
-		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null ,null}))).isNull();
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123 + 234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList((Object) null))).isNull();
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null, null }))).isNull();
 	}
 
 	@Test
 	public void testSumWithConstant_NotNullIfNotASingleUnderlying() {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[someMeasureName],int[234],+", "nullIfNotASingleUnderlying", false));
+						"aggregatedValue[someMeasureName],int[234],+",
+						"nullIfNotASingleUnderlying",
+						false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123+234);
-		Assertions.assertThat(c.combine(slice, Arrays.asList((Object)null))).isEqualTo(0L + 234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123 + 234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList((Object) null))).isEqualTo(0L + 234);
 	}
 
 	@Test
@@ -124,9 +115,33 @@ public class TestArithmeticFormulaCombination {
 						"(aggregatedValue[someMeasureName],aggregatedValue[otherMeasureName],int[345],+)"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123,234L))).isEqualTo(0L + 123+234+345);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123,null))).isEqualTo(0L + 123+345);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(null, 234))).isEqualTo(0L + 234+345);
-		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null ,null}))).isEqualTo(0L + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123, 234L))).isEqualTo(0L + 123 + 234 + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123, null))).isEqualTo(0L + 123 + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(null, 234))).isEqualTo(0L + 234 + 345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null, null }))).isNull();
+	}
+
+	@Test
+	public void testSubFormulas() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"((123,234,+),(345,456,+),*)",
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0L + (123 + 234) * (345 + 456));
+	}
+
+	@Test
+	public void testDouble() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"12.34,23.45,+",
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 + 23.45);
 	}
 }

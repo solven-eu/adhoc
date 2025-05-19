@@ -22,7 +22,8 @@
  */
 package eu.solven.adhoc.measure.operator;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Map;
+
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
@@ -32,15 +33,11 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-
 /**
- * An {@link IOperatorsFactory} which always return the same dummy. Useful for early projects with a predefined {@link eu.solven.adhoc.measure.IMeasureForest}.
+ * An {@link IOperatorsFactory} which always return the same dummy. Useful for early projects with a predefined
+ * {@link eu.solven.adhoc.measure.IMeasureForest}.
  * 
  * @author Benoit Lacelle
  */

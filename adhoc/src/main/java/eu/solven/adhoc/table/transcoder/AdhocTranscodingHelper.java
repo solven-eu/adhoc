@@ -65,8 +65,8 @@ public class AdhocTranscodingHelper {
 
 			if (queriedKeys.isEmpty()) {
 				// This output column was not requested, but it has been received. The DB returns unexpected columns?
-//				String queriedKey = underlyingKey;
-//				insertTranscoded(v, queriedKey, transcoded);
+				// String queriedKey = underlyingKey;
+				// insertTranscoded(v, queriedKey, transcoded);
 				log.warn("No queried keys found for {}", underlyingKey);
 			} else {
 				queriedKeys.forEach(queriedKey -> {
