@@ -67,14 +67,14 @@ public class MeasureForest implements IMeasureForest {
 	@Singular
 	final ImmutableList<IMeasure> measures;
 
-	final Supplier<Map<String, IMeasure>> cachedNameToMeasure = Suppliers.memoize(() -> noCacheNameToMeasures());
+	final Supplier<Map<String, IMeasure>> cachedNameToMeasure = Suppliers.memoize(this::noCacheNameToMeasures);
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {
 		return cachedNameToMeasure.get();
 	}
 
-	private Map<String, IMeasure> noCacheNameToMeasures() {
+	protected Map<String, IMeasure> noCacheNameToMeasures() {
 		Map<String, IMeasure> nameToMeasure = new TreeMap<>();
 
 		measures.forEach(m -> nameToMeasure.put(m.getName(), m));

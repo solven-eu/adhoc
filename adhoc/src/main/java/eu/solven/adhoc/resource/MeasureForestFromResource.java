@@ -407,20 +407,20 @@ public class MeasureForestFromResource {
 		return AdhocJackson.makeObjectMapper(format);
 	}
 
-	public MeasureForests loadMapFromResource(String format, Resource resource) throws IOException {
+	public MeasureForests loadForestsFromResource(String format, Resource resource) throws IOException {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		try (InputStream inputStream = resource.getInputStream()) {
-			MeasureForests.MeasureForestsBuilder abmb = MeasureForests.builder();
-			List forests = objectMapper.readValue(inputStream, List.class);
+			MeasureForests.MeasureForestsBuilder forests = MeasureForests.builder();
+			List forestsAsList = objectMapper.readValue(inputStream, List.class);
 
-			forests.forEach(forest -> {
+			forestsAsList.forEach(forest -> {
 				String name = MapPathGet.getRequiredString(forest, "name");
 				List measures = MapPathGet.getRequiredAs(forest, "measures");
-				abmb.forest(makeForest(name, measures));
+				forests.forest(makeForest(name, measures));
 			});
 
-			return abmb.build();
+			return forests.build();
 		}
 	}
 
@@ -431,11 +431,11 @@ public class MeasureForestFromResource {
 		return MeasureForest.fromMeasures(name, measures);
 	}
 
-	public String asString(String format, IMeasureForest amb) {
+	public String asString(String format, IMeasureForest forest) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<?> asMaps =
-				amb.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).collect(Collectors.toList());
+				forest.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).collect(Collectors.toList());
 
 		try {
 			return objectMapper.writeValueAsString(asMaps);
@@ -444,13 +444,19 @@ public class MeasureForestFromResource {
 		}
 	}
 
-	public String asString(String format, MeasureForests abmb) {
+	/**
+	 *
+	 * @param format Typically json or yml. As defined by {@link AdhocJackson#makeObjectMapper(String)}.
+	 * @param forests
+	 * @return a String representing this {@link java.util.Set} of {@link IMeasureForest}
+	 */
+	public String asString(String format, MeasureForests forests) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
 		List<Map<String, ?>> nameToForest = new ArrayList<>();
 
-		abmb.forestNames().forEach(forestName -> {
-			IMeasureForest measures = abmb.getForest(forestName);
+		forests.forestNames().forEach(forestName -> {
+			IMeasureForest measures = forests.getForest(forestName);
 
 			List<?> asMaps = measures.getNameToMeasure()
 					.values()

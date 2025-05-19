@@ -93,4 +93,40 @@ public class TestArithmeticFormulaCombination {
 
 		Assertions.assertThat(c.getUnderlyingMeasures()).containsExactly();
 	}
+
+	@Test
+	public void testSumWithConstant() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"aggregatedValue[someMeasureName],int[234],+"));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123+234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList((Object)null))).isNull();
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null ,null}))).isNull();
+	}
+
+	@Test
+	public void testSumWithConstant_NotNullIfNotASingleUnderlying() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"aggregatedValue[someMeasureName],int[234],+", "nullIfNotASingleUnderlying", false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123+234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList((Object)null))).isEqualTo(0L + 234);
+	}
+
+	@Test
+	public void testSumParenthesis() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"(aggregatedValue[someMeasureName],aggregatedValue[otherMeasureName],int[345],+)"));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123,234L))).isEqualTo(0L + 123+234+345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123,null))).isEqualTo(0L + 123+345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(null, 234))).isEqualTo(0L + 234+345);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(new Object[] { null ,null}))).isEqualTo(0L + 345);
+	}
 }

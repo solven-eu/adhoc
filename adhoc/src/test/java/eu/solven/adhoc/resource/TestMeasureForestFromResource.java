@@ -201,7 +201,7 @@ public class TestMeasureForestFromResource {
 					    type: ".Aggregator"
 										""");
 
-			MeasureForests a = fromResource.loadMapFromResource("yaml",
+			MeasureForests a = fromResource.loadForestsFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getForest("testAnonymousUnderlyingNode").getNameToMeasure()).hasSize(4);
@@ -260,7 +260,7 @@ public class TestMeasureForestFromResource {
 					    underlying: "k1"
 					""");
 
-			MeasureForests a = fromResource.loadMapFromResource("yaml",
+			MeasureForests a = fromResource.loadForestsFromResource("yaml",
 					new ByteArrayResource(amsAsString.getBytes(StandardCharsets.UTF_8)));
 			Assertions.assertThat(a.size()).isEqualTo(1);
 			Assertions.assertThat(a.getForest("testWithFilter").getNameToMeasure()).hasSize(2);
@@ -459,7 +459,7 @@ public class TestMeasureForestFromResource {
 
 	@Test
 	public void testBasicFile() throws IOException {
-		MeasureForests obj = fromResource.loadMapFromResource("yaml", new ClassPathResource("dag_example.yml"));
+		MeasureForests obj = fromResource.loadForestsFromResource("yaml", new ClassPathResource("dag_example.yml"));
 
 		Assertions.assertThat(obj.size()).isEqualTo(1);
 

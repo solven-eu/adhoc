@@ -43,8 +43,12 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps producing `.dot` files, to generate nice graph with GraphViz. This has specific routines to print measure
+ * Helps to produce `.dot` files, to generate nice graph with GraphViz. This has specific routines to print measure
  * graphs.
+ *
+ * `.dot` files can be rendered with https://graphviz.org/download/ or at https://dreampuf.github.io/GraphvizOnline/
+ *
+ * `dot input.dot -Tsvg -o output.svg`
  *
  * @author Benoit Lacelle
  */

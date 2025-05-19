@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.atoti.table;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +52,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;
@@ -74,7 +73,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 	@NonNull
 	@Builder.Default
 	@Getter
-	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
+	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
@@ -118,7 +117,7 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(slice).build();
 	}
 
-	private Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
+	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
 		// result.getCoordinate(locationIndex, result., locationIndex)
 		ILocation l = result.getLocation(locationIndex);
 

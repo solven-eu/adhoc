@@ -20,11 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.atoti.migration;
 
 import java.util.Arrays;
 import java.util.Properties;
 
+import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -95,7 +96,7 @@ public class TestAtotiMeasureToAdhoc {
 				StartBuilding.cube().withName("someCubeName").withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(1)
@@ -124,7 +125,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -166,7 +167,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -200,7 +201,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -237,7 +238,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -277,7 +278,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -310,7 +311,7 @@ public class TestAtotiMeasureToAdhoc {
 				}).withSingleLevelDimension("someL").build();
 
 		IMeasureForest adhoc =
-				apMeasuresToAdhoc.asBag(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
 
 		Assertions.assertThat(adhoc.getNameToMeasure())
 				.hasSize(3)
@@ -322,6 +323,41 @@ public class TestAtotiMeasureToAdhoc {
 								.editorKey(ShiftPostProcessor.TYPE)
 								.editorOptions(
 										ImmutableMap.<String, Object>builder().put("customKey", "customValue").build())
+								.underlying("someAggregatedMeasure")
+								.build());
+	}
+
+
+	@Test
+	public void testMakePP_arithmeticFormula() {
+		IActivePivotInstanceDescription cubeDescription =
+				StartBuilding.cube().withName("someCubeName").withMeasures(measures -> {
+					return measures
+
+							.withAggregatedMeasure()
+							.sum("someColumnName")
+							.withName("someAggregatedMeasure")
+
+							.withPostProcessor("someFormula")
+							.withPluginKey(ArithmeticFormulaPostProcessor.PLUGIN_KEY)
+							.withProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, "aggregatedValue[someAggregatedMeasure],double[10000],*")
+							.withProperty("customKey", "customValue");
+				}).withSingleLevelDimension("someL").build();
+
+		IMeasureForest adhoc =
+				apMeasuresToAdhoc.asForest(cubeDescription.getId(), cubeDescription.getActivePivotDescription());
+
+		Assertions.assertThat(adhoc.getNameToMeasure())
+				.hasSize(3)
+				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
+
+				.containsEntry("someFormula",
+						Combinator.builder()
+								.name("someFormula")
+								.combinationKey(ArithmeticFormulaPostProcessor.PLUGIN_KEY)
+								.combinationOptions(
+										ImmutableMap.<String, Object>builder().put("customKey", "customValue")
+												.put(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, "aggregatedValue[someAggregatedMeasure],double[10000],*").build())
 								.underlying("someAggregatedMeasure")
 								.build());
 	}

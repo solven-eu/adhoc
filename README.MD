@@ -363,3 +363,6 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
 - [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
+- [Feature] Pivotable Wizard Search should highlight matching portions
+- [Feature] Add easily underlying measures given a selected measure
+- [API] Provide referential implementation to Query with [RSQL](https://github.com/jirutka/rsql-parser) and [GraphQL](https://github.com/graphql-java/graphql-java)

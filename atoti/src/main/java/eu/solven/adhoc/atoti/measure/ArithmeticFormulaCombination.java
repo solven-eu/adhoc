@@ -22,10 +22,7 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
@@ -46,43 +43,57 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Can be used as alternative to {@link com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor}
  */
+// TODO Wrap parenthesis in subFormula (ActiveViam extension of ReversePolishNotation)
+// TODO Enable reading along members
 @Slf4j
 public class ArithmeticFormulaCombination implements ICombination {
 	final String formula;
 	// Strict ReversePolishNotation only consumes 2 operands per operator
 	// But one may feel simpler to provide things like `a,b,c,+`
 	final boolean twoOperandsPerOperator;
+	// If there is no underlying, should this return null?
+	// e.g. `aggregatedValue[m]+100` could return `null` or `100` if `m` is null
+	final boolean nullIfNotASingleUnderlying;
 	final Map<String, Integer> underlyingMeasuresToIndex = new LinkedHashMap<>();
 
 	public ArithmeticFormulaCombination(Map<String, ?> options) {
+		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
 		formula = parseFormula(options);
 
-		// Default is false, to follow ActiveViam convention
+		// Default is false (sum all pending operands), to follow ActiveViam convention
 		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
-		Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
-				.matcher(formula)
-				.results()
-				.map(mr -> mr.group(1))
+		// Default is true (no underlying -> `null`), to follow ActiveViam convention
+		nullIfNotASingleUnderlying = MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+
+		parseUnderlyingMeasures(formula)
 				.forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 						underlyingMeasuresToIndex.size()));
-		// String[] elements = formula.split(",");
-		//
-		// Stream.of(elements)
-		// .filter(s -> s.startsWith("aggregatedValue[") && s.endsWith("]"))
-		// .map(s -> s.substring("aggregatedValue[".length(), s.length() - "]".length()))
-		// .forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
-		// underlyingMeasuresToIndex.size()));
-		System.out.println(underlyingMeasuresToIndex);
 	}
 
+	/**
+	 *
+	 * @return the {@link Set} of underlying measures, in their order of appearance.
+	 */
+	public static Collection<String> parseUnderlyingMeasures(String formula) {
+		return
+				Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
+						.matcher(formula)
+						.results()
+						.map(mr -> mr.group(1)).toList();
+	}
+
+	/**
+     *
+     * @return the {@link Set} of underlying measures, in their order of appearance.
+     */
 	public List<String> getUnderlyingMeasures() {
 		return underlyingMeasuresToIndex.keySet().stream().toList();
 	}
 
 	// BEWARE This is called from the constructor
 	protected String parseFormula(Map<String, ?> options) {
-		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
+		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
 		String formula = MapPathGet.getRequiredString(options, ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
 
 		if (formula.startsWith("(") && formula.endsWith(")")) {
@@ -110,16 +121,22 @@ public class ArithmeticFormulaCombination implements ICombination {
 		String tokens = ",";
 		String[] elements = formula.split(tokens);
 
-		// Stack<String> pendingOperands = new Stack<>();
+		// If the formula is constant, this will remain false
+		boolean oneUnderlyingIsNotNull = false;
 
 		for (int i = 0; i < elements.length; i++) {
 			String s = elements[i];
 
 			Object operandToAppend;
+
+			// OperandAggregatedValue.PLUGIN_TYPE
 			if (s.startsWith("aggregatedValue[") && s.endsWith("]")) {
 				String underlyingMeasure = s.substring("aggregatedValue[".length(), s.length() - "]".length());
 				int measureIndex = underlyingMeasuresToIndex.get(underlyingMeasure);
 				operandToAppend = underlyingValues.get(measureIndex);
+				if (operandToAppend != null) {
+					oneUnderlyingIsNotNull = true;
+				}
 			} else if (s.startsWith("double[") && s.endsWith("]")) {
 				String underlyingMeasure = s.substring("double[".length(), s.length() - "]".length());
 				operandToAppend = Double.parseDouble(underlyingMeasure);
@@ -128,10 +145,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
-			} else if ("*".equals(s) || "+".equals(s) || "/".equals(s)) {
+			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s) || DivideCombination.isDivide(s)) {
 				List<Object> operands;
 
-				if (twoOperandsPerOperator || "/".equals(s)) {
+				if (twoOperandsPerOperator || DivideCombination.isDivide(s)) {
 					operands = new LinkedList<>();
 					// Add at the beginning to reverse the stack
 					operands.add(0, pendingOperands.removeLast());
@@ -154,6 +171,9 @@ public class ArithmeticFormulaCombination implements ICombination {
 		}
 
 		if (pendingOperands.size() == 1) {
+			if (nullIfNotASingleUnderlying && !oneUnderlyingIsNotNull) {
+				return null;
+			}
 			return pendingOperands.getFirst();
 		} else {
 			log.warn("Invalid number of leftover operands: {} in formula=`{}`", pendingOperands, formula);
