@@ -134,6 +134,18 @@ public class TestArithmeticFormulaCombination {
 	}
 
 	@Test
+	public void testSubFormulas_null() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"((null,234,*),(null,null,*),*)",
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isNull();
+	}
+
+	@Test
 	public void testDouble() {
 		ArithmeticFormulaCombination c =
 				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
@@ -143,5 +155,19 @@ public class TestArithmeticFormulaCombination {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 + 23.45);
+	}
+
+	@Test
+	public void testMissingUnderlying() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"aggregatedValue[someMeasureName],aggregatedValue[someMeasureName2],+"));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		// Not enough underlyings: failure
+		Assertions.assertThatThrownBy(() -> c.combine(slice, Arrays.asList(123))).isInstanceOf(IllegalArgumentException.class);
+
+		// Too many underlyings: skip
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123,234L, 345D))).isEqualTo(0L + 123+234);
 	}
 }

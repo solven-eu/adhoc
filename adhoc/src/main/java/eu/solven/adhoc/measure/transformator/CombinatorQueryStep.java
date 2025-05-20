@@ -59,7 +59,13 @@ public class CombinatorQueryStep extends ATransformator {
 	}
 
 	public List<String> getUnderlyingNames() {
-		return combinator.getUnderlyingNames();
+		ICombination combination = combinationSupplier.get();
+		if (combination instanceof IHasUnderlyingNames hasUnderlyingNames) {
+			// Happens on some ICombination, like those parsing an expression
+			return hasUnderlyingNames.getUnderlyingNames();
+		} else {
+			return combinator.getUnderlyingNames();
+		}
 	}
 
 	@Override

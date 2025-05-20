@@ -42,6 +42,7 @@ import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.jgrapht.graph.GraphCycleProhibitedException;
 
 /**
  * Helps building a {@link QueryStepsDag}.
@@ -115,7 +116,13 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			log.debug("underlyingStep already registered step={}", underlyingStep);
 		}
 
-		DefaultEdge dagEdge = dag.addEdge(queriedStep, underlyingStep);
+		DefaultEdge dagEdge;
+
+		try {
+			dagEdge=dag.addEdge(queriedStep, underlyingStep);
+		} catch (GraphCycleProhibitedException e) {
+			throw new IllegalStateException("Issue adding `%s`->`%s` in cycle=`%s`".formatted(queriedStep, underlyingStep, dag), e);
+		}
 		if (dagEdge == null) {
 			log.debug("One step refers multiple times to same underlying (queried={} underlying={})",
 					queriedStep,

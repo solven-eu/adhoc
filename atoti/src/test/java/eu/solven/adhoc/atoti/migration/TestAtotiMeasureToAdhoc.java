@@ -24,7 +24,11 @@ package eu.solven.adhoc.atoti.migration;
 
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.Set;
 
+import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
+import com.quartetfs.biz.pivot.definitions.impl.PostProcessorDescription;
+import eu.solven.adhoc.measure.model.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -46,12 +50,6 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -369,5 +367,27 @@ public class TestAtotiMeasureToAdhoc {
 		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
 
 		Assertions.assertThat(converter.getApConditionToAdhoc()).isInstanceOf(CustomAtotiConditionCubeToAdhoc.class);
+	}
+
+	@Test
+	public void testOnColumnator() {
+		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
+
+		IPostProcessorDescription pp = new PostProcessorDescription();
+		pp.setName("someMeasureName");
+		pp.setUnderlyingMeasures("m1,m2");
+		pp.setPluginKey("somePluginKey");
+
+		Properties properties = new Properties();
+		pp.setProperties(properties);
+
+		Columnator columnator = (Columnator) converter.onColumnator(
+				pp,  b -> {
+			b.columns(Set.of("l1", "l2"));
+		});
+
+		Assertions.assertThat(columnator.getName()).isEqualTo("someMeasureName");
+		Assertions.assertThat(columnator.getCombinationKey()).isEqualTo("somePluginKey");
+		Assertions.assertThat(columnator.getColumns()).isEqualTo(Set.of("l1", "l2"));
 	}
 }

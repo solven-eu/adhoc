@@ -36,8 +36,10 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -52,7 +54,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		Optional<String> optMissingColumn = columnator.getRequiredColumns().stream().filter(this::isMissing).findAny();
+		Optional<String> optMissingColumn = columnator.getColumns().stream().filter(this::isRejecting).findAny();
 
 		if (optMissingColumn.isPresent()) {
 			return Collections.emptyList();
@@ -61,17 +63,31 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		return super.getUnderlyingSteps();
 	}
 
-	protected boolean isMissing(String column) {
-		return !step.getGroupBy().getGroupedByColumns().contains(column) && !(isMonoSelected(column, step.getFilter()));
-	}
+	protected boolean isRejecting(String column) {
+		boolean columnIsPresent = isColumnPresent(column);
 
-	protected boolean isMonoSelected(String column, IAdhocFilter filter) {
-		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter
-				&& columnFilter.getColumn().equals(column)) {
+		// if false, columns are checked for presence
+		// if true, columns are checked for absence
+		boolean inversed = columnator.isRequired();
+
+		if (columnIsPresent && !inversed) {
+			// column is present and required for presence
+			return false;
+		} else if (!columnIsPresent && inversed) {
+			// column is missing and required for absence
+			return false;
+		} else {
 			return true;
 		}
+	}
 
-		return false;
+	protected boolean isColumnPresent(String column) {
+		return step.getGroupBy().getGroupedByColumns().contains(column) || isMonoSelected(step.getFilter(), column);
+	}
+
+	protected boolean isMonoSelected(IAdhocFilter filter, String column) {
+		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
+		return valueMatcher instanceof EqualsMatcher;
 	}
 
 	@Override

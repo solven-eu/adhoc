@@ -64,7 +64,12 @@ public class Columnator implements ICombinator {
 
 	@NonNull
 	@Singular
-	ImmutableSet<String> requiredColumns;
+	ImmutableSet<String> columns;
+
+	// required=true: the selected columns are required in the slice.
+	// else rejected: the select columns must be missing from the slice.
+	@Default
+	boolean required = true;
 
 	@NonNull
 	@Singular

@@ -40,14 +40,7 @@ import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
-import eu.solven.adhoc.measure.sum.AvgAggregation;
-import eu.solven.adhoc.measure.sum.CountAggregation;
-import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.measure.sum.EmptyAggregation;
-import eu.solven.adhoc.measure.sum.ExpressionAggregation;
-import eu.solven.adhoc.measure.sum.ProductCombination;
-import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.sum.*;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -101,6 +94,9 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		}
 		case ProductCombination.KEY: {
 			yield new ProductCombination(options);
+		}
+		case SubstractionCombination.KEY: {
+			yield new SubstractionCombination();
 		}
 		case MaxCombination.KEY: {
 			yield new MaxCombination();

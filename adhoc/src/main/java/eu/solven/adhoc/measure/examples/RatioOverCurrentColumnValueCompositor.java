@@ -84,7 +84,7 @@ public class RatioOverCurrentColumnValueCompositor {
 				.add(Columnator.builder()
 						.name(validMeasureName)
 						.underlying(ratioMeasureName)
-						.requiredColumn(column)
+						.column(column)
 						.build())
 
 				.build();

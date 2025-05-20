@@ -126,6 +126,9 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 
 	@Override
 	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+		if (!getName().equals(step.getMeasure().getName())) {
+			throw new IllegalArgumentException("Conflict %s != %s".formatted(getName(), step.getMeasure().getName()));
+		}
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 

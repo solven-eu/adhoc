@@ -33,8 +33,7 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+public interface IHasUnderlyingMeasures extends IHasUnderlyingNames{
 
 	ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery);
 }

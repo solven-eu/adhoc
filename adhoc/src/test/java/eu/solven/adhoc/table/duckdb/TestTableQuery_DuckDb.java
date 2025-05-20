@@ -452,7 +452,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(countAsterisk);
 
 		{
-			CubeQuery query = CubeQuery.builder().measure(countAsterisk).build();
+			CubeQuery query = CubeQuery.builder().measure(countAsterisk).explain(true).build();
 
 			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);

@@ -22,11 +22,7 @@
  */
 package eu.solven.adhoc.atoti.migration;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -56,13 +52,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.model.*;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -381,6 +371,29 @@ public class AtotiMeasureToAdhoc {
 		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(
 				measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
 		return onCombinator(measure, underlyingNames);
+	}
+
+	protected IMeasure onColumnator(IPostProcessorDescription measure, Consumer<Columnator.ColumnatorBuilder> builderConsumer) {
+		Columnator.ColumnatorBuilder columnatorBuilder = Columnator.builder().name(measure.getName());
+		transferProperties(measure, columnatorBuilder::tag);
+
+		columnatorBuilder.underlyings(getUnderlyingNames(measure));
+
+		Map<String, Object> columnatorOptions = new LinkedHashMap<>();
+
+		Properties properties = measure.getProperties();
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				.forEach(key -> columnatorOptions.put(key, properties.get(key)));
+
+		columnatorBuilder.combinationKey(measure.getPluginKey());
+		columnatorBuilder.combinationOptions(columnatorOptions);
+
+		builderConsumer.accept(columnatorBuilder);
+
+		return columnatorBuilder.build();
 	}
 
 	protected List<String> getUnderlyingNames(IPostProcessorDescription measure) {

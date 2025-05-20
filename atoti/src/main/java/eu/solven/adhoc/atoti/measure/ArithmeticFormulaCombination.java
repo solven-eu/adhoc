@@ -102,19 +102,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
 		String formula = MapPathGet.getRequiredString(options, ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
 
-		if (formula.startsWith("(") && formula.endsWith(")")) {
-			// https://en.wikipedia.org/wiki/Reverse_Polish_notation
-			// Reverse Polish Notation should not accept `()`, as it does not need them. ActiveViam `Reverse Polish
-			// Notation` needs some specification.
-			if (CharMatcher.is('(').countIn(formula) == 1 && CharMatcher.is(')').countIn(formula) == 1) {
-				// Drop surrounding parenthesis
-				formula = formula.substring(1, formula.length() - 1);
-			} else {
-				// throw new IllegalArgumentException(
-				// "ReversePolishNotation does not accept (nor need) parenthesis. formula=`%s`"
-				// .formatted(formula));
-			}
-		}
+		// TODO Throw early if the formula is invalid
 
 		return formula;
 	}
@@ -132,6 +120,11 @@ public class ArithmeticFormulaCombination implements ICombination {
 				String subFormula = mr.group(1);
 				Object evaluatedSubFormula = evaluateReversePolish(subFormula, slice, underlyingValues);
 				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
+
+				if (evaluatedSubFormula == null) {
+					return "null";
+				}
+
 				String evaluatedToString = evaluatedSubFormula.toString();
 
 				if (CharMatcher.anyOf("()").matchesAnyOf(evaluatedToString)) {
@@ -161,6 +154,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 
 		// If the formula is constant, this will remain false
 		boolean oneUnderlyingIsNotNull = false;
+
+		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
+			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue".formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
+		}
 
 		for (int i = 0; i < elements.length; i++) {
 			String s = elements[i];
