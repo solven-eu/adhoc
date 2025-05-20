@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
@@ -46,38 +46,43 @@ import lombok.extern.slf4j.Slf4j;
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
 
-	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory transformationFactory, CubeQueryStep step) {
-		super(columnator, transformationFactory, step);
+	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory operatorsFactory, CubeQueryStep step) {
+		super(columnator, operatorsFactory, step);
 
 		this.columnator = columnator;
 	}
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		Optional<String> optMissingColumn = columnator.getColumns().stream().filter(this::isRejecting).findAny();
+		Optional<String> optRejectedColumn = columnator.getColumns().stream().filter(this::isRejected).findAny();
 
-		if (optMissingColumn.isPresent()) {
+		if (optRejectedColumn.isPresent()) {
 			return Collections.emptyList();
 		}
 
 		return super.getUnderlyingSteps();
 	}
 
-	protected boolean isRejecting(String column) {
+	/**
+	 * 
+	 * @param column
+	 * @return true if given column is leading to a rejection
+	 */
+	protected boolean isRejected(String column) {
 		boolean columnIsPresent = isColumnPresent(column);
 
 		// if false, columns are checked for presence
 		// if true, columns are checked for absence
-		boolean inversed = columnator.isRequired();
+		boolean required = columnator.isRequired();
 
-		if (columnIsPresent && !inversed) {
+		if (required && !columnIsPresent) {
 			// column is present and required for presence
-			return false;
-		} else if (!columnIsPresent && inversed) {
-			// column is missing and required for absence
-			return false;
-		} else {
 			return true;
+		} else if (!required && columnIsPresent) {
+			// column is missing and required for absence
+			return true;
+		} else {
+			return false;
 		}
 	}
 

@@ -66,7 +66,7 @@ import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
@@ -416,7 +416,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			}).toList();
 
 			// BEWARE It looks weird we have to call again `.wrapNode`
-			ITransformator hasUnderlyingQuerySteps = hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+			ITransformatorQueryStep hasUnderlyingQuerySteps =
+					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
 			ISliceToValue coordinatesToValues;
 			try {
 				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);

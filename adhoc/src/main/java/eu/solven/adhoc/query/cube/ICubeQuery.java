@@ -26,7 +26,7 @@ import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
@@ -36,7 +36,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
  * 
  * - columns along which the result is sliced as an {@link IAdhocGroupBy}
  * 
- * - measures may be {@link Aggregator} or {@link ITransformator}
+ * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
  * 
  * @author Benoit Lacelle
  *

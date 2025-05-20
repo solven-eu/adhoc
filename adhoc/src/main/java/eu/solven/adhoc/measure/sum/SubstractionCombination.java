@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import java.util.List;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 /**
  * A {@link ICombination} which substract one measure from another.
@@ -70,9 +70,9 @@ public class SubstractionCombination implements ICombination {
 		if (right == null) {
 			return null;
 		} else if (AdhocPrimitiveHelpers.isLongLike(right)) {
-			return - AdhocPrimitiveHelpers.asLong(right);
+			return -AdhocPrimitiveHelpers.asLong(right);
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(right)) {
-			return - AdhocPrimitiveHelpers.asDouble(right);
+			return -AdhocPrimitiveHelpers.asDouble(right);
 		}
 		// TODO Should we return NaN ? Should we rely on some operators ? Should we rely on some interface?
 		log.warn("Unclear expected behavior when negated not numbers: {}", PepperLogHelper.getObjectAndClass(right));
@@ -85,7 +85,9 @@ public class SubstractionCombination implements ICombination {
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(left) && AdhocPrimitiveHelpers.isDoubleLike(right)) {
 			return AdhocPrimitiveHelpers.asDouble(left) - AdhocPrimitiveHelpers.asDouble(right);
 		} else {
-			log.warn("Unclear expected behavior when negated not numbers: {} and {}", PepperLogHelper.getObjectAndClass(left), PepperLogHelper.getObjectAndClass(right));
+			log.warn("Unclear expected behavior when negated not numbers: {} and {}",
+					PepperLogHelper.getObjectAndClass(left),
+					PepperLogHelper.getObjectAndClass(right));
 			return right;
 		}
 	}

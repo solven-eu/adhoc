@@ -81,11 +81,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// Ensure given column is expressed: if column is not expressed, we would not compute the ratio over the
 				// missing column (we may also want to always return 1).
-				.add(Columnator.builder()
-						.name(validMeasureName)
-						.underlying(ratioMeasureName)
-						.column(column)
-						.build())
+				.add(Columnator.builder().name(validMeasureName).underlying(ratioMeasureName).column(column).build())
 
 				.build();
 	}

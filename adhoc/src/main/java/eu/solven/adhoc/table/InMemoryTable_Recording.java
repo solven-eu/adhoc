@@ -22,40 +22,14 @@
  */
 package eu.solven.adhoc.table;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.SetMultimap;
+import java.util.*;
+
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-import com.google.common.primitives.Ints;
-import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.sum.CountAggregation;
-import eu.solven.adhoc.measure.sum.EmptyAggregation;
-import eu.solven.adhoc.query.ICountMeasuresConstants;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.table.FilteredAggregator;
+
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Like {@link InMemoryTable}, but helping to generate dataset given the requested columns.

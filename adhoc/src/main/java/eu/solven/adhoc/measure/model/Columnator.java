@@ -33,9 +33,9 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.ColumnatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ColumnatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -46,7 +46,11 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed.
+ * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed. More
+ * specifically, it requires given columns to have a simple `EqualsMatcher` (i.e. to be mono-selected).
+ * 
+ * If the flag `required` is turned to `false`, this turns into a `rejected` behavior: given columns must not be
+ * filtered at all.
  */
 @Value
 @Builder(toBuilder = true)
@@ -96,7 +100,7 @@ public class Columnator implements ICombinator {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new ColumnatorQueryStep(this, transformationFactory, step);
 	}
 

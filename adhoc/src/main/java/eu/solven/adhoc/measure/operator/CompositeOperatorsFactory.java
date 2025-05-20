@@ -51,11 +51,20 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 	@Singular
 	ImmutableList<IOperatorsFactory> operatorsFactories;
 
-	protected void logOnException(String method, String key, Map<String, ?> options, IOperatorsFactory of, Throwable t) {
+	protected void logOnException(String method,
+			String key,
+			Map<String, ?> options,
+			IOperatorsFactory of,
+			Throwable t) {
 		if (log.isDebugEnabled()) {
 			log.warn("Issue with {} with key={} options={} on operatorFactory={}", method, key, options, of, t);
 		} else {
-			log.warn("Issue with {} with key={} options={} on operatorFactory={} e={}", method, key, options, of, t.getMessage());
+			log.warn("Issue with {} with key={} options={} on operatorFactory={} e={}",
+					method,
+					key,
+					options,
+					of,
+					t.getMessage());
 		}
 	}
 
@@ -65,7 +74,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			try {
 				return Optional.of(of.makeAggregation(key, options));
 			} catch (RuntimeException e) {
-				logOnException(".makeAggregation",  key, options, of, e);
+				logOnException(".makeAggregation", key, options, of, e);
 				return Optional.<IAggregation>empty();
 			}
 		})
@@ -82,7 +91,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			try {
 				return Optional.of(of.makeCombination(key, options));
 			} catch (RuntimeException e) {
-				logOnException(".makeCombination",  key, options, of, e);
+				logOnException(".makeCombination", key, options, of, e);
 				return Optional.<ICombination>empty();
 			}
 		})
@@ -99,7 +108,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			try {
 				return Optional.of(of.makeDecomposition(key, options));
 			} catch (RuntimeException e) {
-				logOnException(".makeDecomposition",  key, options, of, e);
+				logOnException(".makeDecomposition", key, options, of, e);
 				return Optional.<IDecomposition>empty();
 			}
 		})
@@ -116,7 +125,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 			try {
 				return Optional.of(of.makeEditor(key, options));
 			} catch (RuntimeException e) {
-				logOnException(".makeEditor",  key, options, of, e);
+				logOnException(".makeEditor", key, options, of, e);
 				return Optional.<IFilterEditor>empty();
 			}
 		})

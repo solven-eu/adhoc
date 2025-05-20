@@ -36,12 +36,12 @@ import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.transformator.DispatchorQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
+import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -114,7 +114,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep adhocSubQuery) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep adhocSubQuery) {
 		return new DispatchorQueryStep(this, operatorsFactory, adhocSubQuery);
 	}
 

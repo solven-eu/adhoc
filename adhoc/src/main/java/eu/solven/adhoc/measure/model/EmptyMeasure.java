@@ -32,7 +32,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -68,8 +68,8 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
-		return new ITransformator() {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
+		return new ITransformatorQueryStep() {
 
 			@Override
 			public List<CubeQueryStep> getUnderlyingSteps() {

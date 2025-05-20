@@ -22,6 +22,14 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -29,25 +37,19 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
 
 public class TestTransformator_Columnator_Rejected extends ADagTest implements IAdhocTestConstants {
-	Columnator requireC = Columnator.builder()
-			.name("requireC")
+	Columnator rejectC = Columnator.builder()
+			.name("rejectC")
 			.column("c")
 			.required(false)
 			.underlyings(Arrays.asList("k1", "k2"))
 			.combinationKey(SumCombination.KEY)
 			.build();
-	Columnator requireCandD = Columnator.builder()
-			.name("requireCandD")
-			.column("c").column("d")
+	Columnator rejectCandD = Columnator.builder()
+			.name("rejectCandD")
+			.column("c")
+			.column("d")
 			.required(false)
 			.underlyings(Arrays.asList("k1", "k2"))
 			.combinationKey(SumCombination.KEY)
@@ -56,72 +58,63 @@ public class TestTransformator_Columnator_Rejected extends ADagTest implements I
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("c", "c1","d", "d1","k1", 123D));
-		table.add(Map.of("c", "c2","d", "d1","k2", 234D));
-		table.add(Map.of("c", "c2","d", "d2","k1", 345F, "k2", 456F));
+		table.add(Map.of("c", "c1", "d", "d1", "k1", 123D));
+		table.add(Map.of("c", "c2", "d", "d1", "k2", 234D));
+		table.add(Map.of("c", "c2", "d", "d2", "k1", 345F, "k2", 456F));
 	}
+
 	@BeforeEach
 	public void feedForest() {
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		forest.addMeasure(requireC);
-		forest.addMeasure(requireCandD);
+		forest.addMeasure(rejectC);
+		forest.addMeasure(rejectCandD);
 	}
-
 
 	@Test
 	public void testGrandTotal_c() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireC").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectC").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.isEmpty();
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("rejectC", 0D + 123 + 234 + 345 + 456));
 	}
 
 	@Test
 	public void testGrandTotal_cd() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireCandD").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectCandD").build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.isEmpty();
+				.hasSize(1)
+				.containsEntry(Collections.emptyMap(), Map.of("rejectCandD", 0D + 123 + 234 + 345 + 456));
 	}
 
 	@Test
 	public void testGroupByC_c() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireC").groupByAlso("c").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectC").groupByAlso("c").build());
 
-		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("requireC", 0D + 123 + 234 + 345 + 456));
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues()).isEmpty();
 	}
+
 	@Test
 	public void testGroupByC_cd() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireCandD").groupByAlso("c").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectCandD").groupByAlso("c").build());
 
-		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.isEmpty();
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues()).isEmpty();
 	}
 
 	@Test
 	public void testGroupByCD_c() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireC").groupByAlso("c","d").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectC").groupByAlso("c", "d").build());
 
-		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("requireC", 0D + 123 + 234 + 345 + 456));
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues()).isEmpty();
 	}
+
 	@Test
 	public void testGroupByCD_cd() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("requireCandD").groupByAlso("c", "d").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("rejectCandD").groupByAlso("c", "d").build());
 
-		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
-				.hasSize(1)
-				.containsEntry(Collections.emptyMap(),
-						// "k1", 123 + 345, "k2", 234 + 456,
-						Map.of("requireCandD", 0D + 123 + 234 + 345 + 456));
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues()).isEmpty();
 	}
 }

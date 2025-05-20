@@ -36,15 +36,17 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.UnderlyingQueryStepHelpers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Holds default behaviors used by most {@link ITransformator}
+ * Holds default behaviors used by most {@link ITransformatorQueryStep}
  */
 @RequiredArgsConstructor
 @Slf4j
-public abstract class ATransformator implements ITransformator {
+public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
 
 	protected abstract CubeQueryStep getStep();
 

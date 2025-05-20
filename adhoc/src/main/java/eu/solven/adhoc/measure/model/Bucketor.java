@@ -35,10 +35,10 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.BucketorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.BucketorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
@@ -103,7 +103,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
 		return new BucketorQueryStep(this, transformationFactory, queryStep);
 	}
 

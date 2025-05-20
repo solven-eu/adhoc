@@ -50,30 +50,24 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
 		return switch (key) {
-		case SumAggregation.KEY: {
+		case SumAggregation.KEY:
 			yield new SumAggregation();
-		}
-		case MaxAggregation.KEY: {
+		case SumNotNaNAggregation.KEY:
+			yield new SumNotNaNAggregation();
+		case MaxAggregation.KEY:
 			yield MaxAggregation.builder().build();
-		}
-		case MinAggregation.KEY: {
+		case MinAggregation.KEY:
 			yield MinAggregation.builder().build();
-		}
-		case CountAggregation.KEY: {
+		case CountAggregation.KEY:
 			yield new CountAggregation();
-		}
-		case ExpressionAggregation.KEY: {
+		case ExpressionAggregation.KEY:
 			yield new ExpressionAggregation();
-		}
-		case EmptyAggregation.KEY: {
+		case EmptyAggregation.KEY:
 			yield new EmptyAggregation();
-		}
-		case RankAggregation.KEY: {
+		case RankAggregation.KEY:
 			yield RankAggregation.make(options);
-		}
-		case AvgAggregation.KEY: {
+		case AvgAggregation.KEY:
 			yield new AvgAggregation();
-		}
 		default:
 			yield defaultAggregation(key, options);
 		};
@@ -117,8 +111,10 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield new FindFirstCombination();
 		}
 		default:
+
 			yield defaultCombination(key, options);
 		};
+
 	}
 
 	protected ICombination defaultCombination(String className, Map<String, ?> options) {
@@ -163,8 +159,10 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield new LinearDecomposition(options);
 		}
 		default:
+
 			yield defaultDecomposition(key, options);
 		};
+
 	}
 
 	protected IDecomposition defaultDecomposition(String key, Map<String, ?> options) {
@@ -197,8 +195,10 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield SimpleFilterEditor.builder().columnToValues(columnToValue).build();
 		}
 		default:
+
 			yield defaultEditor(key, options);
 		};
+
 	}
 
 	protected IFilterEditor defaultEditor(String key, Map<String, ?> options) {

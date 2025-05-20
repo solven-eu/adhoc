@@ -27,12 +27,12 @@ import java.util.List;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
  * Useful for unitTests
  */
-public class EmptyTransformator implements ITransformator {
+public class EmptyTransformator implements ITransformatorQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		return List.of();
