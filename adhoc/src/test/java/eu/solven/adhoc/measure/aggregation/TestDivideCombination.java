@@ -36,6 +36,15 @@ public class TestDivideCombination {
 	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 	@Test
+	public void testKey() {
+		Assertions.assertThat(DivideCombination.isDivide("/")).isTrue();
+		Assertions.assertThat(DivideCombination.isDivide("\\")).isFalse();
+
+		Assertions.assertThat(DivideCombination.isDivide(DivideCombination.KEY)).isTrue();
+		Assertions.assertThat(DivideCombination.isDivide("foo")).isFalse();
+	}
+
+	@Test
 	public void testSimpleCases_default() {
 		DivideCombination combination = new DivideCombination();
 
@@ -49,6 +58,8 @@ public class TestDivideCombination {
 
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 234D))).isEqualTo(null);
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, null))).isEqualTo(Double.NaN);
+
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, null))).isEqualTo(null);
 
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(132, "Arg"))).isEqualTo(Double.NaN);
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isEqualTo(Double.NaN);

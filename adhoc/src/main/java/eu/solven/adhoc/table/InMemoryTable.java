@@ -58,7 +58,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
@@ -88,6 +87,9 @@ public class InMemoryTable implements ITableWrapper {
 
 	@Default
 	boolean distinctSlices = false;
+
+	@Default
+	boolean throwOnUnknownColumn = true;
 
 	public void add(Map<String, ?> row) {
 		rows.add(row);
@@ -185,12 +187,22 @@ public class InMemoryTable implements ITableWrapper {
 			Set<String> tableColumns = getColumnTypes().keySet();
 			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
 			if (!unknownFilteredColumns.isEmpty()) {
-				throw new IllegalArgumentException("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+				if (throwOnUnknownColumn) {
+					throw new IllegalArgumentException(
+							"Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+				} else {
+					log.warn("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+				}
 			}
 
 			SetView<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
 			if (!unknownGroupedByColumns.isEmpty()) {
-				throw new IllegalArgumentException("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+				if (throwOnUnknownColumn) {
+					throw new IllegalArgumentException(
+							"Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+				} else {
+					log.warn("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+				}
 			}
 		}
 		return groupByColumns;

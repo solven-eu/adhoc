@@ -27,6 +27,8 @@ import java.util.List;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,10 +87,15 @@ public class SubstractionCombination implements ICombination {
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(left) && AdhocPrimitiveHelpers.isDoubleLike(right)) {
 			return AdhocPrimitiveHelpers.asDouble(left) - AdhocPrimitiveHelpers.asDouble(right);
 		} else {
-			log.warn("Unclear expected behavior when negated not numbers: {} and {}",
-					PepperLogHelper.getObjectAndClass(left),
-					PepperLogHelper.getObjectAndClass(right));
-			return right;
+			if (AdhocUnsafe.failFast) {
+				throw new NotYetImplementedException("Unclear expected behavior when negated not numbers: %s and %s"
+						.formatted(PepperLogHelper.getObjectAndClass(left), PepperLogHelper.getObjectAndClass(right)));
+			} else {
+				log.warn("Unclear expected behavior when negated not numbers: {} and {}",
+						PepperLogHelper.getObjectAndClass(left),
+						PepperLogHelper.getObjectAndClass(right));
+				return left + " - " + right;
+			}
 		}
 	}
 }
