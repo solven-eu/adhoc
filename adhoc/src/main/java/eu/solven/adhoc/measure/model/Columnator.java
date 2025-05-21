@@ -28,6 +28,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -90,8 +91,8 @@ public class Columnator implements ICombinator {
 	 * @see eu.solven.adhoc.measure.combination.ICombination
 	 */
 	@NonNull
-	@Default
-	Map<String, ?> combinationOptions = Collections.emptyMap();
+	@Singular
+	ImmutableMap<String, ?> combinationOptions;
 
 	@JsonIgnore
 	@Override

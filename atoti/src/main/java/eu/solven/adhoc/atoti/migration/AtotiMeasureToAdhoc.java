@@ -299,7 +299,7 @@ public class AtotiMeasureToAdhoc {
 		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		List<String> parentHierarchies = getPropertyList(properties, DrillupPostProcessor.PARENT_HIERARCHIES);
-		unfiltratorBuilder.unfiltereds(parentHierarchies);
+		unfiltratorBuilder.columns(parentHierarchies);
 
 		return List.of(unfiltratorBuilder.build());
 	}

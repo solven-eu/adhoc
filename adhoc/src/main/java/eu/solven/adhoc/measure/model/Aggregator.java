@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.sum.CountAggregation;
@@ -67,7 +68,7 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	Map<String, Object> aggregationOptions;
+	ImmutableMap<String, Object> aggregationOptions;
 
 	public static class AggregatorBuilder {
 		String name;

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -104,8 +105,8 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	 * @see IDecomposition
 	 */
 	@NonNull
-	@Default
-	Map<String, ?> decompositionOptions = Collections.emptyMap();
+	@Singular
+	ImmutableMap<String, ?> decompositionOptions;
 
 	@JsonIgnore
 	@Override

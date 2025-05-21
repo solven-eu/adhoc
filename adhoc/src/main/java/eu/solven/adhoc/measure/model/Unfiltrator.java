@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +73,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 
 	@NonNull
 	@Singular
-	Set<String> unfiltereds;
+	ImmutableSet<String> columns;
 
 	// By default, the selected columns are turned to `matchAll`.
 	// If true, only selected columns are kept; others are turned into `matchAll`.
@@ -101,7 +100,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 		 * @return current builder.
 		 */
 		public UnfiltratorBuilder filterOnly(String column, String... moreColumns) {
-			this.unfiltereds(Lists.asList(column, moreColumns));
+			this.columns(Lists.asList(column, moreColumns));
 
 			this.inverse(true);
 

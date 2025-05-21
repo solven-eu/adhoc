@@ -22,18 +22,10 @@
  */
 package eu.solven.adhoc.atoti.table;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.ILocation;
-import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.biz.pivot.cellset.ICellSet;
 import com.quartetfs.biz.pivot.context.IContextValue;
 import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
@@ -41,7 +33,6 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.IQueryable;
 import com.quartetfs.fwk.query.QueryException;
-
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -53,41 +44,101 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
-public class AdhocAtotiTable extends AAdhocAtotiTable {
-	@NonNull
-	final IActivePivotManager apManager;
+@Builder
+public abstract class AAdhocAtotiTable implements ITableWrapper {
 
 	@NonNull
+	@Builder.Default
 	@Getter
-	final String pivotId;
-
-	@Builder
-	public AdhocAtotiTable(String pivotId, IActivePivotManager apManager, ITableTranscoder transcoder) {
-		super(transcoder);
-		this.pivotId = pivotId;
-		this.apManager=apManager;
-	}
+	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
 
 	@Override
-	protected IActivePivotVersion inferPivotId() {
-		IMultiVersionActivePivot mvActivePivot = MapPathGet.getRequiredAs(apManager.getActivePivots(), pivotId);
-		return mvActivePivot.getHead();
+	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
+		IQueryable ap = inferPivotId();
+
+		IQuery<ICellSet> gaq = makeCellSetQuery(ap);
+
+		ICellSet result = executeQuery(ap, gaq);
+
+		return toStream(tableQuery, result);
 	}
 
-	@Override
-	protected IQueryable inferQueryable() {
-		return inferPivotId();
+	protected SuppliedTabularRecordStream toStream(TableQueryV2 tableQuery, ICellSet result) {
+		// TODO Return as an Iterator/Stream
+		List<ITabularRecord> asList = new ArrayList<>();
+
+		result.forEachLocation(location -> {
+			asList.add(asMap(tableQuery, result, location));
+
+			return true;
+		});
+
+		return new SuppliedTabularRecordStream(tableQuery, true, asList::stream);
 	}
+
+	protected ICellSet executeQuery(IQueryable ap, IQuery<ICellSet> gaq) {
+		ICellSet result;
+		try {
+			result = ap.execute(gaq);
+		} catch (QueryException e) {
+			throw new IllegalStateException("Issue executing %s".formatted(gaq), e);
+		}
+		return result;
+	}
+
+	protected abstract String getPivotId() ;
+
+	protected IQuery<ICellSet> makeCellSetQuery(IQueryable ap) {
+		Collection<ILocation> locations = null;
+		Collection<String> measureSelections = null;
+		List<? extends IContextValue> contextValues = null;
+
+		Object[] args = { getPivotId(), locations, measureSelections, contextValues };
+
+		IQuery<ICellSet> gaq = Registry.createExtendedPluginValue(IQuery.class, IGetAggregatesQuery.PLUGIN_KEY, args);
+		return gaq;
+	}
+
+	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {
+		Map<String, Object> slice = new LinkedHashMap<>();
+
+		tableQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
+			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
+		});
+
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(slice).build();
+	}
+
+	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
+		// result.getCoordinate(locationIndex, result., locationIndex)
+		ILocation l = result.getLocation(locationIndex);
+
+		return l.getCoordinate(getHierarchyIndex(column), getLevelIndex(column));
+	}
+
+	protected int getLevelIndex(String column) {
+		return 0;
+	}
+
+	protected int getHierarchyIndex(String column) {
+		return 0;
+	}
+
+	protected abstract  IActivePivotVersion inferPivotId();
+
+	protected abstract  IQueryable inferQueryable();
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
@@ -130,6 +181,6 @@ public class AdhocAtotiTable extends AAdhocAtotiTable {
 
 	@Override
 	public String getName() {
-		return pivotId;
+		return getPivotId();
 	}
 }

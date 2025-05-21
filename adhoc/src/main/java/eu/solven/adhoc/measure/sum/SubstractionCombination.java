@@ -41,7 +41,7 @@ public class SubstractionCombination implements ICombination {
 
 	public static final String KEY = "SUBSTRACTION";
 
-	public static boolean isProduct(String operator) {
+	public static boolean isSubstraction(String operator) {
 		return "-".equals(operator) || SubstractionCombination.KEY.equals(operator)
 				|| operator.equals(SubstractionCombination.class.getName());
 	}

@@ -258,7 +258,7 @@ public class MeasureForestFromResource {
 				.underlying(underlyingName);
 
 		List<String> unfiltered = (List<String>) getListParameter(measure, "unfiltereds");
-		builder.unfiltereds(unfiltered);
+		builder.columns(unfiltered);
 
 		return builder.build();
 	}

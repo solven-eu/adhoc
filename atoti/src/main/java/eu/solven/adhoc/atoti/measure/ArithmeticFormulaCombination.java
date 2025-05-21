@@ -35,11 +35,7 @@ import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcesso
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.sum.DivideCombination;
-import eu.solven.adhoc.measure.sum.ProductAggregation;
-import eu.solven.adhoc.measure.sum.ProductCombination;
-import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.sum.*;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
@@ -180,10 +176,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
-			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s) || DivideCombination.isDivide(s)) {
+			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s) || DivideCombination.isDivide(s) || SubstractionCombination.isSubstraction(s)) {
 				List<Object> operands;
 
-				if (twoOperandsPerOperator || DivideCombination.isDivide(s)) {
+				if (twoOperandsPerOperator || DivideCombination.isDivide(s)|| SubstractionCombination.isSubstraction(s)) {
 					operands = new LinkedList<>();
 					// Add at the beginning to reverse the stack
 					operands.add(0, pendingOperands.removeLast());

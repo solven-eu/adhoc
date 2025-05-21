@@ -170,4 +170,16 @@ public class TestArithmeticFormulaCombination {
 		// Too many underlyings: skip
 		Assertions.assertThat(c.combine(slice, Arrays.asList(123,234L, 345D))).isEqualTo(0L + 123+234);
 	}
+
+	@Test
+	public void testSubstraction() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						"12.34,23.45,-",
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 + 23.45);
+	}
 }

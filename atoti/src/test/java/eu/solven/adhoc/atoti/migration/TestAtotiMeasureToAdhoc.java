@@ -286,8 +286,8 @@ public class TestAtotiMeasureToAdhoc {
 						Unfiltrator.builder()
 								.name("someDrilledUpMeasure")
 								.underlying("someAggregatedMeasure")
-								.unfiltered("level1")
-								.unfiltered("level2")
+								.column("level1")
+								.column("level2")
 								.inverse(false)
 								.build());
 	}

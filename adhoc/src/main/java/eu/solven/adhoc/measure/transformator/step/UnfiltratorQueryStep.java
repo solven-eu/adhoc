@@ -49,7 +49,7 @@ public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 	final Supplier<IFilterEditor> filterEditor = Suppliers.memoize(() -> {
 		Unfiltrator unfiltrator = getUnfiltrator();
 
-		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
+		Set<String> unfilteredColumns = unfiltrator.getColumns();
 		if (unfiltrator.isInverse()) {
 			return SimpleFilterEditor.retainsColumns(unfilteredColumns);
 		} else {

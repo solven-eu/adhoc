@@ -28,6 +28,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -81,7 +82,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	Map<String, Object> aggregationOptions;
+	ImmutableMap<String, Object> aggregationOptions;
 
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull
@@ -89,8 +90,8 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	String combinationKey = SumCombination.KEY;
 
 	@NonNull
-	@Default
-	Map<String, ?> combinationOptions = Collections.emptyMap();
+	@Singular
+	ImmutableMap<String, ?> combinationOptions;
 
 	@NonNull
 	@Default
