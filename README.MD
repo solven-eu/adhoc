@@ -1,9 +1,9 @@
 # AdHoc - InMemory Indicators Pipeline
 
 [![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=solven-eu_adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=solven-eu_adhoc)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=adhoc)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![codecov](https://codecov.io/gh/solven-eu/adhoc/graph/badge.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
 
