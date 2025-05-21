@@ -24,6 +24,7 @@ package eu.solven.adhoc.table;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 public class TestInMemoryTable {
 	@Test
@@ -48,6 +50,25 @@ public class TestInMemoryTable {
 				.containsEntry("c", String.class)
 				.containsEntry("v", Number.class)
 				.containsEntry("date", LocalDate.class);
+	}
+
+	@Test
+	public void testColumnsMetadata() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("c", "someString", "v", 123));
+		table.add(Map.of("c", "someString", "v", 12.34));
+		table.add(Map.of("c", "someString", "date", LocalDate.now()));
+
+		Assertions.assertThat(table.getCoordinates("c", IValueMatcher.MATCH_ALL, 5)).satisfies(sample -> {
+			Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1L);
+			Assertions.assertThat(sample.getCoordinates()).isEqualTo(Set.of("someString"));
+		});
+
+		Assertions.assertThat(table.getCoordinates("v", IValueMatcher.MATCH_ALL, 5)).satisfies(sample -> {
+			Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(2L);
+			Assertions.assertThat(sample.getCoordinates()).isEqualTo(Set.of(123, 12.34));
+		});
 	}
 
 	@Test
