@@ -205,7 +205,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 			} else if (s.matches("-?[0-9]+.[0-9]+")) {
 				operandToAppend = Double.parseDouble(s);
 			} else {
-				log.warn("Not-managed: {}", s);
+				log.warn("Not managed token: `{}`", s);
 				operandToAppend = s;
 			}
 			pendingOperands.addLast(operandToAppend);

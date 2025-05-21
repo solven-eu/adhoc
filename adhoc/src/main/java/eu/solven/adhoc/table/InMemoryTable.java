@@ -129,6 +129,10 @@ public class InMemoryTable implements ITableWrapper {
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
 
+		if (queryPod.isExplain()) {
+			log.info("[EXPLAIN] tableQuery: {}", tableQuery);
+		}
+
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
 				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
