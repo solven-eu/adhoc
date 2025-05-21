@@ -24,7 +24,6 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -92,7 +91,7 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	Map<String, Object> aggregationOptions;
+	ImmutableMap<String, ?> aggregationOptions;
 
 	/**
 	 * @see IDecomposition

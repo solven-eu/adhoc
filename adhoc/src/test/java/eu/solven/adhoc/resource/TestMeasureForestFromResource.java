@@ -45,6 +45,7 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -291,10 +292,9 @@ public class TestMeasureForestFromResource {
 				  "name" : "unfilterOnK1",
 				  "type" : ".Unfiltrator",
 				  "columns" : [ "a" ],
-				  "others" : false,
+				  "mode" : "Suppress",
 				  "underlying" : "k1"
-				} ]
-				""".strip());
+				} ]""");
 	}
 
 	@Test
@@ -327,8 +327,7 @@ public class TestMeasureForestFromResource {
 				}, {
 				  "name" : "k1",
 				  "type" : ".Aggregator"
-				} ]
-								                """.strip());
+				} ]""");
 	}
 
 	@Test
@@ -364,8 +363,7 @@ public class TestMeasureForestFromResource {
 				}, {
 				  "name" : "k2",
 				  "type" : ".Aggregator"
-				} ]
-				""".strip());
+				} ]""");
 	}
 
 	@Test
@@ -400,8 +398,42 @@ public class TestMeasureForestFromResource {
 				    "output" : "0_or_100"
 				  },
 				  "underlying" : "k1"
-				} ]
-				""".strip());
+				} ]""");
+	}
+
+	@Test
+	public void testColumnator() throws IOException {
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testColumnator").build();
+
+		measureBag.addMeasure(Columnator.builder()
+				.name("hideIfC")
+				.column("c")
+				.underlying(IAdhocTestConstants.k1Sum.getName())
+				.build());
+		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
+
+		String asString = fromResource.asString("json", measureBag);
+		MeasureForest fromString = fromResource.loadForestFromResource("testColumnator",
+				"json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(1);
+
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				[ {
+				  "name" : "hideIfC",
+				  "type" : ".Columnator",
+				  "combinationKey" : "SUM",
+				  "columns" : [ "c" ],
+				  "combinationOptions" : { },
+				  "mode" : "HideIfMissing",
+				  "underlyings" : [ "k1" ]
+				}, {
+				  "name" : "k1",
+				  "type" : ".Aggregator"
+				} ]""");
 	}
 
 	@Test
@@ -413,13 +445,6 @@ public class TestMeasureForestFromResource {
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadForestFromResource("testCustomMeasure",
-				"json",
-				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
-
-		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
-		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
-		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
 
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
@@ -428,8 +453,15 @@ public class TestMeasureForestFromResource {
 				}, {
 				  "name" : "someCustomName",
 				  "type" : "eu.solven.adhoc.resource.CustomMeasureForResource"
-				} ]
-				""".strip());
+				} ]""");
+
+		MeasureForest fromString = fromResource.loadForestFromResource("testCustomMeasure",
+				"json",
+				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
+
+		DirectedAcyclicGraph<IMeasure, DefaultEdge> measuresDag = MeasureBagTestHelpers.makeMeasuresDag(fromString);
+		Assertions.assertThat(measuresDag.vertexSet()).hasSize(2);
+		Assertions.assertThat(measuresDag.edgeSet()).hasSize(0);
 	}
 
 	@Test
@@ -453,8 +485,7 @@ public class TestMeasureForestFromResource {
 				  "type" : ".Aggregator",
 				  "aggregationKey" : "COUNT",
 				  "columnName" : "*"
-				} ]
-				""".strip());
+				} ]""");
 	}
 
 	@Test

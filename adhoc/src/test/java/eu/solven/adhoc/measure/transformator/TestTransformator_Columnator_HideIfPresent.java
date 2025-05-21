@@ -35,14 +35,15 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
-public class TestTransformator_Columnator_Rejected extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Columnator_HideIfPresent extends ADagTest implements IAdhocTestConstants {
 	Columnator rejectC = Columnator.builder()
 			.name("rejectC")
 			.column("c")
-			.required(false)
+			.mode(Mode.HideIfPresent)
 			.underlyings(Arrays.asList("k1", "k2"))
 			.combinationKey(SumCombination.KEY)
 			.build();
@@ -50,7 +51,7 @@ public class TestTransformator_Columnator_Rejected extends ADagTest implements I
 			.name("rejectCandD")
 			.column("c")
 			.column("d")
-			.required(false)
+			.mode(Mode.HideIfPresent)
 			.underlyings(Arrays.asList("k1", "k2"))
 			.combinationKey(SumCombination.KEY)
 			.build();

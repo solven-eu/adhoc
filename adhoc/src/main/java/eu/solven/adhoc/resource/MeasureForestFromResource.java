@@ -47,6 +47,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -534,6 +535,8 @@ public class MeasureForestFromResource {
 			// clean.put(KEY_TYPE, "unfiltrator");
 		} else if (measure instanceof Shiftor s) {
 			// clean.put(KEY_TYPE, "shiftor");
+		} else if (measure instanceof Columnator c) {
+			// clean.put(KEY_TYPE, "shiftor");
 		} else if (measure instanceof Dispatchor d) {
 			// clean.put(KEY_TYPE, "dispatchor");
 
@@ -573,6 +576,7 @@ public class MeasureForestFromResource {
 	protected void onUnknownMeasureType(IMeasure measure, Map<String, Object> asMap) {
 		log.warn("Unknown measureType: {}", measure);
 
+		// This workaround a side-effect of https://github.com/FasterXML/jackson-databind/issues/5030
 		asMap.put(KEY_TYPE, measure.getClass().getName());
 	}
 }

@@ -66,7 +66,7 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	ImmutableMap<String, Object> aggregationOptions;
+	ImmutableMap<String, ?> aggregationOptions;
 
 	public static class AggregatorBuilder {
 		String name;

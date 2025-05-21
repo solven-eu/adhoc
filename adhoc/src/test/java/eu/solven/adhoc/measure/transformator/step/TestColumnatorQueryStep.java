@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -38,7 +39,7 @@ public class TestColumnatorQueryStep {
 	public void testDefaultIsRequired() {
 		Columnator measure = Columnator.builder().name("measureName").column("c").build();
 
-		Assertions.assertThat(measure.isRequired()).isTrue();
+		Assertions.assertThat(measure.getMode()).isEqualTo(Mode.HideIfMissing);
 	}
 
 	@Test

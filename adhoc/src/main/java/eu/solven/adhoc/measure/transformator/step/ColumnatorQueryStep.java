@@ -34,12 +34,14 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -54,9 +56,9 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		Optional<String> optRejectedColumn = columnator.getColumns().stream().filter(this::isRejected).findAny();
+		Optional<String> optHiddenColumn = columnator.getColumns().stream().filter(this::isHidden).findAny();
 
-		if (optRejectedColumn.isPresent()) {
+		if (optHiddenColumn.isPresent()) {
 			return Collections.emptyList();
 		}
 
@@ -68,21 +70,18 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	 * @param column
 	 * @return true if given column is leading to a rejection
 	 */
-	protected boolean isRejected(String column) {
+	protected boolean isHidden(String column) {
 		boolean columnIsPresent = isColumnPresent(column);
 
-		// if false, columns are checked for presence
-		// if true, columns are checked for absence
-		boolean required = columnator.isRequired();
-
-		if (required && !columnIsPresent) {
-			// column is present and required for presence
-			return true;
-		} else if (!required && columnIsPresent) {
-			// column is missing and required for absence
-			return true;
+		Mode mode = columnator.getMode();
+		if (columnator.getMode() == Mode.HideIfMissing) {
+			// hideIfMissing and !present: hidden
+			return !columnIsPresent;
+		} else if (mode == Mode.HideIfPresent) {
+			// hideIfPresent and present: hidden
+			return columnIsPresent;
 		} else {
-			return false;
+			throw new NotYetImplementedException("mode=&s".formatted(mode));
 		}
 	}
 

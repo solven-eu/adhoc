@@ -60,6 +60,14 @@ import lombok.extern.slf4j.Slf4j;
 @Jacksonized
 @Slf4j
 public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveColumnGenerator {
+	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	public enum Mode {
+		// if a column is listed, its filters are neutralized into matchAll
+		Suppress,
+		// if a column is not listed, its filters are neutralized into matchAll
+		Retain,
+	}
+
 	@NonNull
 	String name;
 
@@ -78,7 +86,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 	// By default, the selected columns are turned to `matchAll`.
 	// If true, only selected columns are kept; others are turned into `matchAll`.
 	@Default
-	boolean others = false;
+	Mode mode = Mode.Suppress;
 
 	@JsonIgnore
 	@Override
@@ -100,9 +108,9 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 		 * @return current builder.
 		 */
 		public UnfiltratorBuilder unfilterOthersThan(String column, String... moreColumns) {
-			this.columns(Lists.asList(column, moreColumns));
+			this.clearColumns().columns(Lists.asList(column, moreColumns));
 
-			this.others(true);
+			this.mode(Mode.Retain);
 
 			return this;
 		}

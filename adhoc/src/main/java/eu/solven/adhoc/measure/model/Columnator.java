@@ -57,6 +57,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // BEWARE This is a poorly named class. It shall be renamed at some point.
 public class Columnator implements ICombinator {
+	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	public enum Mode {
+		// required: the selected columns are required in the slice, else null
+		HideIfMissing,
+		// rejected: the select columns must be missing from the slice, else null
+		HideIfPresent,
+	}
+
 	@NonNull
 	String name;
 
@@ -72,7 +80,7 @@ public class Columnator implements ICombinator {
 	// required=true: the selected columns are required in the slice.
 	// else rejected: the select columns must be missing from the slice.
 	@Default
-	boolean required = true;
+	Mode mode = Mode.HideIfMissing;
 
 	@NonNull
 	@Singular

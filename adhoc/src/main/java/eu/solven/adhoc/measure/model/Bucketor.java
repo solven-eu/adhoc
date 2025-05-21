@@ -80,7 +80,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	ImmutableMap<String, Object> aggregationOptions;
+	ImmutableMap<String, ?> aggregationOptions;
 
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull
