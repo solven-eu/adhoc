@@ -373,7 +373,8 @@ public class AtotiMeasureToAdhoc {
 		return onCombinator(measure, underlyingNames);
 	}
 
-	protected IMeasure onColumnator(IPostProcessorDescription measure, Consumer<Columnator.ColumnatorBuilder> builderConsumer) {
+	protected IMeasure onColumnator(IPostProcessorDescription measure,
+			Consumer<Columnator.ColumnatorBuilder> builderConsumer) {
 		Columnator.ColumnatorBuilder columnatorBuilder = Columnator.builder().name(measure.getName());
 		transferProperties(measure, columnatorBuilder::tag);
 

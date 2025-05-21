@@ -70,7 +70,6 @@ public class TestCombinator {
 		});
 	}
 
-
 	@Test
 	public void testAddOptions() {
 		Combinator measure = Combinator.builder()

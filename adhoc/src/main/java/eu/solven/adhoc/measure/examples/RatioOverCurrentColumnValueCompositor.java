@@ -68,7 +68,7 @@ public class RatioOverCurrentColumnValueCompositor {
 				.add(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
-						.filterOnly(column)
+						.unfilterOthersThan(column)
 						.build())
 
 				// Computes the actual ratio from current slice (e.g. `country=FR&color=red`) over the parent slice

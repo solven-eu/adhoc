@@ -26,9 +26,6 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.Set;
 
-import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
-import com.quartetfs.biz.pivot.definitions.impl.PostProcessorDescription;
-import eu.solven.adhoc.measure.model.*;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,12 +41,15 @@ import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.google.common.collect.ImmutableMap;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
+import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
+import com.quartetfs.biz.pivot.definitions.impl.PostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.model.*;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -288,7 +288,6 @@ public class TestAtotiMeasureToAdhoc {
 								.underlying("someAggregatedMeasure")
 								.column("level1")
 								.column("level2")
-								.inverse(false)
 								.build());
 	}
 
@@ -381,8 +380,7 @@ public class TestAtotiMeasureToAdhoc {
 		Properties properties = new Properties();
 		pp.setProperties(properties);
 
-		Columnator columnator = (Columnator) converter.onColumnator(
-				pp,  b -> {
+		Columnator columnator = (Columnator) converter.onColumnator(pp, b -> {
 			b.columns(Set.of("l1", "l2"));
 		});
 

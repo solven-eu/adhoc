@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 

@@ -78,7 +78,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 	// By default, the selected columns are turned to `matchAll`.
 	// If true, only selected columns are kept; others are turned into `matchAll`.
 	@Default
-	boolean inverse = false;
+	boolean others = false;
 
 	@JsonIgnore
 	@Override
@@ -99,10 +99,10 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 		 * @param moreColumns
 		 * @return current builder.
 		 */
-		public UnfiltratorBuilder filterOnly(String column, String... moreColumns) {
+		public UnfiltratorBuilder unfilterOthersThan(String column, String... moreColumns) {
 			this.columns(Lists.asList(column, moreColumns));
 
-			this.inverse(true);
+			this.others(true);
 
 			return this;
 		}

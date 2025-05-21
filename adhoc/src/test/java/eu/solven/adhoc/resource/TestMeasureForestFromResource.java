@@ -290,9 +290,9 @@ public class TestMeasureForestFromResource {
 				}, {
 				  "name" : "unfilterOnK1",
 				  "type" : ".Unfiltrator",
-				  "inverse" : false,
-				  "underlying" : "k1",
-				  "unfiltereds" : [ "a" ]
+				  "columns" : [ "a" ],
+				  "others" : false,
+				  "underlying" : "k1"
 				} ]
 				""".strip());
 	}

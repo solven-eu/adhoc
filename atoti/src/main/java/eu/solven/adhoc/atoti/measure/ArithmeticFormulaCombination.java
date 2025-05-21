@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
@@ -109,12 +110,15 @@ public class ArithmeticFormulaCombination implements ICombination {
 		// Regex capturing `(x)` where `x` is a ReversePolishNotation
 		Pattern subFormulaRegex = Pattern.compile("\\(([^\\(\\)]+)\\)");
 
+		// BEWARE If the formula is constant, this will remain false
+		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
 		String replacedFormula = formula;
 
 		do {
 			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
-				Object evaluatedSubFormula = evaluateReversePolish(subFormula, slice, underlyingValues);
+				Object evaluatedSubFormula =
+						evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
 
 				if (evaluatedSubFormula == null) {
@@ -140,19 +144,20 @@ public class ArithmeticFormulaCombination implements ICombination {
 			}
 		} while (true);
 
-		return evaluateReversePolish(replacedFormula, slice, underlyingValues);
+		return evaluateReversePolish(replacedFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 	}
 
-	private Object evaluateReversePolish(String formula, ISliceWithStep slice, List<?> underlyingValues) {
+	private Object evaluateReversePolish(String formula,
+			ISliceWithStep slice,
+			List<?> underlyingValues,
+			AtomicBoolean oneUnderlyingIsNotNull) {
 		List<Object> pendingOperands = new LinkedList<>();
 		String tokens = ",";
 		String[] elements = formula.split(tokens);
 
-		// If the formula is constant, this will remain false
-		boolean oneUnderlyingIsNotNull = false;
-
 		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
-			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue".formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
+			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue"
+					.formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
 		}
 
 		for (int i = 0; i < elements.length; i++) {
@@ -166,7 +171,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 				int measureIndex = underlyingMeasuresToIndex.get(underlyingMeasure);
 				operandToAppend = underlyingValues.get(measureIndex);
 				if (operandToAppend != null) {
-					oneUnderlyingIsNotNull = true;
+					oneUnderlyingIsNotNull.set(true);
 				}
 			} else if (s.startsWith("double[") && s.endsWith("]")) {
 				String underlyingMeasure = s.substring("double[".length(), s.length() - "]".length());
@@ -176,10 +181,13 @@ public class ArithmeticFormulaCombination implements ICombination {
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
-			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s) || DivideCombination.isDivide(s) || SubstractionCombination.isSubstraction(s)) {
+			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s)
+					|| DivideCombination.isDivide(s)
+					|| SubstractionCombination.isSubstraction(s)) {
 				List<Object> operands;
 
-				if (twoOperandsPerOperator || DivideCombination.isDivide(s)|| SubstractionCombination.isSubstraction(s)) {
+				if (twoOperandsPerOperator || DivideCombination.isDivide(s)
+						|| SubstractionCombination.isSubstraction(s)) {
 					operands = new LinkedList<>();
 					// Add at the beginning to reverse the stack
 					operands.add(0, pendingOperands.removeLast());
@@ -204,7 +212,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 		}
 
 		if (pendingOperands.size() == 1) {
-			if (nullIfNotASingleUnderlying && !oneUnderlyingIsNotNull) {
+			if (nullIfNotASingleUnderlying && !oneUnderlyingIsNotNull.get()) {
 				return null;
 			}
 			return pendingOperands.getFirst();
@@ -222,6 +230,8 @@ public class ArithmeticFormulaCombination implements ICombination {
 			return new SumCombination();
 		} else if (DivideCombination.isDivide(operator)) {
 			return new DivideCombination();
+		} else if (SubstractionCombination.isSubstraction(operator)) {
+			return new SubstractionCombination();
 		} else {
 			throw new UnsupportedOperationException("Not-managed: " + operator);
 		}

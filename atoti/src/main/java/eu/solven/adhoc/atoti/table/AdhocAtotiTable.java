@@ -23,46 +23,29 @@
 package eu.solven.adhoc.atoti.table;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
-import com.quartetfs.biz.pivot.ILocation;
 import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
-import com.quartetfs.biz.pivot.cellset.ICellSet;
-import com.quartetfs.biz.pivot.context.IContextValue;
-import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
-import com.quartetfs.fwk.Registry;
-import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.IQueryable;
-import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
+@SuperBuilder
 public class AdhocAtotiTable extends AAdhocAtotiTable {
 	@NonNull
 	final IActivePivotManager apManager;
@@ -70,13 +53,6 @@ public class AdhocAtotiTable extends AAdhocAtotiTable {
 	@NonNull
 	@Getter
 	final String pivotId;
-
-	@Builder
-	public AdhocAtotiTable(String pivotId, IActivePivotManager apManager, ITableTranscoder transcoder) {
-		super(transcoder);
-		this.pivotId = pivotId;
-		this.apManager=apManager;
-	}
 
 	@Override
 	protected IActivePivotVersion inferPivotId() {

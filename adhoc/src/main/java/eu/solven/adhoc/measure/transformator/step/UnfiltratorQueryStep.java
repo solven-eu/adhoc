@@ -50,7 +50,7 @@ public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 		Unfiltrator unfiltrator = getUnfiltrator();
 
 		Set<String> unfilteredColumns = unfiltrator.getColumns();
-		if (unfiltrator.isInverse()) {
+		if (unfiltrator.isOthers()) {
 			return SimpleFilterEditor.retainsColumns(unfilteredColumns);
 		} else {
 			return SimpleFilterEditor.suppressColumn(unfilteredColumns);

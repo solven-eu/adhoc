@@ -63,7 +63,7 @@ public class RatioOverSpecificColumnValueCompositor {
 				.add(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
-						.filterOnly(column)
+						.unfilterOthersThan(column)
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this returns (red&FR/FR)

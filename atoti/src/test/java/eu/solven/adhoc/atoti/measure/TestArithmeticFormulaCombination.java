@@ -165,10 +165,11 @@ public class TestArithmeticFormulaCombination {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		// Not enough underlyings: failure
-		Assertions.assertThatThrownBy(() -> c.combine(slice, Arrays.asList(123))).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> c.combine(slice, Arrays.asList(123)))
+				.isInstanceOf(IllegalArgumentException.class);
 
 		// Too many underlyings: skip
-		Assertions.assertThat(c.combine(slice, Arrays.asList(123,234L, 345D))).isEqualTo(0L + 123+234);
+		Assertions.assertThat(c.combine(slice, Arrays.asList(123, 234L, 345D))).isEqualTo(0L + 123 + 234);
 	}
 
 	@Test
@@ -180,6 +181,6 @@ public class TestArithmeticFormulaCombination {
 						false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 + 23.45);
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 - 23.45);
 	}
 }

@@ -22,6 +22,13 @@
  */
 package eu.solven.adhoc.atoti.table;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
@@ -33,6 +40,7 @@ import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
 import com.quartetfs.fwk.query.IQueryable;
 import com.quartetfs.fwk.query.QueryException;
+
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -44,29 +52,26 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
-
-import java.util.*;
-import java.util.stream.Stream;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
-@Builder
+@SuperBuilder(builderMethodName = "a")
 public abstract class AAdhocAtotiTable implements ITableWrapper {
 
 	@NonNull
-	@Builder.Default
+	// @Builder.Default
 	@Getter
 	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
-		IQueryable ap = inferPivotId();
+		IQueryable ap = inferQueryable();
 
 		IQuery<ICellSet> gaq = makeCellSetQuery(ap);
 
@@ -98,7 +103,7 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 		return result;
 	}
 
-	protected abstract String getPivotId() ;
+	protected abstract String getPivotId();
 
 	protected IQuery<ICellSet> makeCellSetQuery(IQueryable ap) {
 		Collection<ILocation> locations = null;
@@ -136,9 +141,9 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 		return 0;
 	}
 
-	protected abstract  IActivePivotVersion inferPivotId();
+	protected abstract IActivePivotVersion inferPivotId();
 
-	protected abstract  IQueryable inferQueryable();
+	protected abstract IQueryable inferQueryable();
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
