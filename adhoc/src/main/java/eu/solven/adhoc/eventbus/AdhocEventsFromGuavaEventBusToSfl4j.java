@@ -123,7 +123,6 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 				logMethod.accept("{}{} {} (source={})", arguments);
 			});
 		} else {
-
 			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
 					event.isExplain() ? "[EXPLAIN]" : "",
 					event.getMessage(),

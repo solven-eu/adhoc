@@ -22,12 +22,11 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -35,10 +34,10 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.BucketorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.BucketorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
@@ -81,7 +80,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	String aggregationKey = SumAggregation.KEY;
 
 	@Singular
-	Map<String, Object> aggregationOptions;
+	ImmutableMap<String, ?> aggregationOptions;
 
 	// Accept a combinator key, to be applied on each groupBy
 	@NonNull
@@ -89,8 +88,8 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	String combinationKey = SumCombination.KEY;
 
 	@NonNull
-	@Default
-	Map<String, ?> combinationOptions = Collections.emptyMap();
+	@Singular
+	ImmutableMap<String, ?> combinationOptions;
 
 	@NonNull
 	@Default
@@ -103,7 +102,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
 		return new BucketorQueryStep(this, transformationFactory, queryStep);
 	}
 

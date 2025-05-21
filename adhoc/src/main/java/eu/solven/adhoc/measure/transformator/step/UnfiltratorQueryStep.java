@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,14 +34,16 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.model.Unfiltrator.Mode;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class UnfiltratorQueryStep implements ITransformator {
+public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 	@Getter
 	final Unfiltrator unfiltrator;
 	final CubeQueryStep step;
@@ -49,11 +51,16 @@ public class UnfiltratorQueryStep implements ITransformator {
 	final Supplier<IFilterEditor> filterEditor = Suppliers.memoize(() -> {
 		Unfiltrator unfiltrator = getUnfiltrator();
 
-		Set<String> unfilteredColumns = unfiltrator.getUnfiltereds();
-		if (unfiltrator.isInverse()) {
-			return SimpleFilterEditor.retainsColumns(unfilteredColumns);
+		Set<String> columns = unfiltrator.getColumns();
+		Mode mode = unfiltrator.getMode();
+		if (mode == Mode.Retain) {
+			// retains listed columns, unfilter the others
+			return SimpleFilterEditor.retainsColumns(columns);
+		} else if (unfiltrator.getMode() == Mode.Suppress) {
+			// retains listed columns, unfilter the others
+			return SimpleFilterEditor.suppressColumn(columns);
 		} else {
-			return SimpleFilterEditor.suppressColumn(unfilteredColumns);
+			throw new NotYetImplementedException("mode=%s".formatted(mode));
 		}
 	});
 

@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
@@ -34,10 +33,10 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.measure.transformator.UnfiltratorQueryStep;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.UnfiltratorQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -61,6 +60,14 @@ import lombok.extern.slf4j.Slf4j;
 @Jacksonized
 @Slf4j
 public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveColumnGenerator {
+	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	public enum Mode {
+		// if a column is listed, its filters are neutralized into matchAll
+		Suppress,
+		// if a column is not listed, its filters are neutralized into matchAll
+		Retain,
+	}
+
 	@NonNull
 	String name;
 
@@ -74,12 +81,12 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 
 	@NonNull
 	@Singular
-	Set<String> unfiltereds;
+	ImmutableSet<String> columns;
 
 	// By default, the selected columns are turned to `matchAll`.
 	// If true, only selected columns are kept; others are turned into `matchAll`.
 	@Default
-	boolean inverse = false;
+	Mode mode = Mode.Suppress;
 
 	@JsonIgnore
 	@Override
@@ -88,7 +95,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new UnfiltratorQueryStep(this, step);
 	}
 
@@ -100,10 +107,10 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 		 * @param moreColumns
 		 * @return current builder.
 		 */
-		public UnfiltratorBuilder filterOnly(String column, String... moreColumns) {
-			this.unfiltereds(Lists.asList(column, moreColumns));
+		public UnfiltratorBuilder unfilterOthersThan(String column, String... moreColumns) {
+			this.clearColumns().columns(Lists.asList(column, moreColumns));
 
-			this.inverse(true);
+			this.mode(Mode.Retain);
 
 			return this;
 		}

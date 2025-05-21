@@ -71,12 +71,15 @@ public abstract class ARawDagTest {
 
 	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
 
+	// public MapTableTranscoder transcoder = MapTableTranscoder.builder().build();
+
 	public ICubeWrapper makeCube() {
 		return CubeWrapper.builder()
 				.table(tableSupplier.get())
 				.engine(engine)
 				.forest(forest)
 				.eventBus(eventBus::post)
+				// .columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
 				.build();
 	}
 

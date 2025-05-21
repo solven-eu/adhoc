@@ -72,6 +72,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ToString(of = "name")
 public class JooqTableWrapper implements ITableWrapper {
+	// TODO Investigate the benefit of String internalization
+	// May be propagated into a more general dictionarization
+	private static final boolean internStrings = false;
 
 	final String name;
 
@@ -244,13 +247,19 @@ public class JooqTableWrapper implements ITableWrapper {
 		List<String> aggregateFields = fields.getAggregates();
 		{
 			int size = aggregateFields.size();
-			aggregates = new LinkedHashMap<>(size);
+			aggregates = LinkedHashMap.newLinkedHashMap(size);
 
 			for (int i = 0; i < size; i++) {
 				String columnName = aggregateFields.get(i);
 
 				Object value = r.get(columnShift + i);
 				if (value != null) {
+					if (internStrings && value instanceof String string) {
+						// We argue that given coordinate will be generated many times by the application:
+						// We'd like to enable reference-check on it
+						value = string.intern();
+					}
+
 					Object previousValue = aggregates.put(columnName, value);
 					if (previousValue != null) {
 						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
@@ -265,7 +274,7 @@ public class JooqTableWrapper implements ITableWrapper {
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
 
-			slice = new LinkedHashMap<>(size);
+			slice = LinkedHashMap.newLinkedHashMap(size);
 			for (int i = 0; i < size; i++) {
 				String columnName = groupByFields.get(i);
 

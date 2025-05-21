@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,44 +34,64 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
 
-	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory transformationFactory, CubeQueryStep step) {
-		super(columnator, transformationFactory, step);
+	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory operatorsFactory, CubeQueryStep step) {
+		super(columnator, operatorsFactory, step);
 
 		this.columnator = columnator;
 	}
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		Optional<String> optMissingColumn = columnator.getRequiredColumns().stream().filter(this::isMissing).findAny();
+		Optional<String> optHiddenColumn = columnator.getColumns().stream().filter(this::isHidden).findAny();
 
-		if (optMissingColumn.isPresent()) {
+		if (optHiddenColumn.isPresent()) {
 			return Collections.emptyList();
 		}
 
 		return super.getUnderlyingSteps();
 	}
 
-	protected boolean isMissing(String column) {
-		return !step.getGroupBy().getGroupedByColumns().contains(column) && !(isMonoSelected(column, step.getFilter()));
+	/**
+	 * 
+	 * @param column
+	 * @return true if given column is leading to a rejection
+	 */
+	protected boolean isHidden(String column) {
+		boolean columnIsPresent = isColumnPresent(column);
+
+		Mode mode = columnator.getMode();
+		if (columnator.getMode() == Mode.HideIfMissing) {
+			// hideIfMissing and !present: hidden
+			return !columnIsPresent;
+		} else if (mode == Mode.HideIfPresent) {
+			// hideIfPresent and present: hidden
+			return columnIsPresent;
+		} else {
+			throw new NotYetImplementedException("mode=&s".formatted(mode));
+		}
 	}
 
-	protected boolean isMonoSelected(String column, IAdhocFilter filter) {
-		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter
-				&& columnFilter.getColumn().equals(column)) {
-			return true;
-		}
+	protected boolean isColumnPresent(String column) {
+		return step.getGroupBy().getGroupedByColumns().contains(column) || isMonoSelected(step.getFilter(), column);
+	}
 
-		return false;
+	protected boolean isMonoSelected(IAdhocFilter filter, String column) {
+		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
+		return valueMatcher instanceof EqualsMatcher;
 	}
 
 	@Override

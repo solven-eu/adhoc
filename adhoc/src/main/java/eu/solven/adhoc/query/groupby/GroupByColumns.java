@@ -76,7 +76,6 @@ public class GroupByColumns implements IAdhocGroupBy {
 	@Override
 	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
 		return cachedNameToColumn.get();
-		// return namedColumns(columns);
 	}
 
 	@Override

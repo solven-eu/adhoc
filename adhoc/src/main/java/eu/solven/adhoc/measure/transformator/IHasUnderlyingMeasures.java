@@ -22,19 +22,17 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
-import java.util.List;
-
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
  * For {@link IMeasure} which has underlying measures.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures {
-	List<String> getUnderlyingNames();
+public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
 
-	ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery);
+	ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery);
 }

@@ -36,9 +36,21 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AdhocUnsafe {
-
 	static {
 		reloadProperties();
+	}
+
+	public static void resetProperties() {
+		log.info("Resetting AdhocUnsafe configuration");
+
+		limitOrdinalToString = 5;
+		limitColumnSize = 1_000_000;
+		limitCoordinates = 100;
+		failFast = true;
+		parallelism = defaultParallelism();
+		defaultColumnCapacity = limitColumnSize;
+
+		// TODO Should we also reset adhocCommonPool?
 	}
 
 	public static void reloadProperties() {

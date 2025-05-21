@@ -20,10 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,6 +43,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
@@ -53,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class BucketorQueryStep extends ATransformator implements ITransformator {
+public class BucketorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
 	final Bucketor bucketor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter
@@ -104,43 +104,44 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 
 	@Override
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures slice,
+			SliceAndMeasures bucketedSlice,
 			ICombination combinator,
 			ISliceAndValueConsumer output) {
 		try {
-			IValueProvider valueProvider = combinator.combine(slice.getSlice(), slice.getMeasures());
+			IValueProvider valueProvider = combinator.combine(bucketedSlice.getSlice(), bucketedSlice.getMeasures());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
 						bucketor.getName(),
 						bucketor.getCombinationKey(),
-						slice.getMeasures(),
+						bucketedSlice.getMeasures(),
 						IValueProvider.getValue(valueProvider),
-						slice);
+						bucketedSlice);
 			}
 
-			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice());
+			SliceAsMap outputCoordinate = queriedSlice(step.getGroupBy(), bucketedSlice.getSlice());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), valueProvider, outputCoordinate);
 			}
 
-			valueProvider.acceptReceiver(output.putSlice(SliceAsMap.fromMap(outputCoordinate)));
+			valueProvider.acceptReceiver(output.putSlice(outputCoordinate));
 		} catch (RuntimeException e) {
-			List<?> underlyingVs = slice.getMeasures().asList();
+			List<?> underlyingVs = bucketedSlice.getMeasures().asList();
 			throw new IllegalArgumentException(
-					"Issue combining c=%s values=%s in slice=%s".formatted(combinator.getClass(), underlyingVs, slice),
+					"Issue combining c=%s values=%s in bucketedSlice=%s"
+							.formatted(combinator.getClass(), underlyingVs, bucketedSlice),
 					e);
 		}
 	}
 
-	protected Map<String, ?> queryGroupBy(IAdhocGroupBy queryGroupBy, ISliceWithStep slice) {
+	protected SliceAsMap queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
 		AdhocMap.AdhocMapBuilder mapBuilder = AdhocMap.builder(groupedByColumns);
 
 		groupedByColumns.forEach(groupBy -> {
-			Object value = slice.getRawSliced(groupBy);
+			Object value = bucketedSlice.getRawSliced(groupBy);
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
@@ -150,6 +151,6 @@ public class BucketorQueryStep extends ATransformator implements ITransformator 
 			mapBuilder.append(value);
 		});
 
-		return mapBuilder.build();
+		return SliceAsMap.fromMap(mapBuilder.build());
 	}
 }

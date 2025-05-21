@@ -25,10 +25,14 @@ package eu.solven.adhoc.engine;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.combination.ExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants {
@@ -44,6 +48,37 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
+	}
+
+	@Test
+	public void testCycleBetweenQuerySteps() {
+		String measureA = "m_A";
+		String measureB = "m_B";
+
+		Combinator mAIsMbTimed2 = Combinator.builder()
+				.name(measureA)
+				.underlying(measureB)
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put("expression", "IF(m_B == null, null, m_B * 2)")
+						.build())
+				.build();
+
+		Combinator mBIsMaDividedBy2 = Combinator.builder()
+				.name(measureB)
+				.underlying(measureA)
+				.combinationKey(ExpressionCombination.KEY)
+				.combinationOptions(ImmutableMap.<String, Object>builder()
+						.put("expression", "IF(m_A == null, null, m_A / 2)")
+						.build())
+				.build();
+
+		forest.addMeasure(mAIsMbTimed2);
+		forest.addMeasure(mBIsMaDividedBy2);
+
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasStackTraceContaining("in cycle=");
 	}
 
 }

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,19 +29,20 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.CombinatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
+import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
@@ -85,8 +85,8 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	 * @see eu.solven.adhoc.measure.combination.ICombination
 	 */
 	@NonNull
-	@Default
-	Map<String, ?> combinationOptions = Collections.emptyMap();
+	@Singular
+	ImmutableMap<String, ?> combinationOptions;
 
 	@JsonIgnore
 	@Override
@@ -125,7 +125,10 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+		if (!getName().equals(step.getMeasure().getName())) {
+			throw new IllegalArgumentException("Conflict %s != %s".formatted(getName(), step.getMeasure().getName()));
+		}
 		return new CombinatorQueryStep(this, transformationFactory, step);
 	}
 

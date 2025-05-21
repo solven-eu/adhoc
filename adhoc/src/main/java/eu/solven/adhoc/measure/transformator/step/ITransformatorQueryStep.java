@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 
@@ -36,7 +36,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
  * @author Benoit Lacelle
  *
  */
-public interface ITransformator {
+public interface ITransformatorQueryStep {
 	/**
 	 * This is a {@link List} as in some edge-cases, a measure may refer multiple times the same underlyingSteps (e.g. a
 	 * Filtrator on a slice which match the filter).
@@ -45,5 +45,12 @@ public interface ITransformator {
 	 */
 	List<CubeQueryStep> getUnderlyingSteps();
 
+	/**
+	 * Given the {@link ISliceToValue} computed for each {@link CubeQueryStep}, combines them into an
+	 * {@link ISliceToValue} for current step.
+	 * 
+	 * @param underlyings
+	 * @return
+	 */
 	ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings);
 }

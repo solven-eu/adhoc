@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.atoti.table;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,12 +33,12 @@ import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.ILocation;
-import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.biz.pivot.cellset.ICellSet;
 import com.quartetfs.biz.pivot.context.IContextValue;
 import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
 import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.query.IQuery;
+import com.quartetfs.fwk.query.IQueryable;
 import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -52,50 +52,35 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
-import eu.solven.pepper.mappath.MapPathGet;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
  *
  * @author Benoit Lacelle
  */
-@Builder
-public class AdhocAtotiTable implements ITableWrapper {
-	@NonNull
-	final IActivePivotManager apManager;
+@SuperBuilder(builderMethodName = "a")
+public abstract class AAdhocAtotiTable implements ITableWrapper {
 
 	@NonNull
-	final String pivotId;
-
-	@NonNull
-	@Builder.Default
+	// @Builder.Default
 	@Getter
-	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
+	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {
-		IActivePivotVersion ap = inferPivotId();
+		IQueryable ap = inferQueryable();
 
-		String pivotId = ap.getId();
-		Collection<ILocation> locations = null;
-		Collection<String> measureSelections = null;
-		List<? extends IContextValue> contextValues = null;
+		IQuery<ICellSet> gaq = makeCellSetQuery(ap);
 
-		Object[] args = { pivotId, locations, measureSelections, contextValues };
+		ICellSet result = executeQuery(ap, gaq);
 
-		IQuery<ICellSet> gaq = Registry.createExtendedPluginValue(IQuery.class, IGetAggregatesQuery.PLUGIN_KEY, args);
+		return toStream(tableQuery, result);
+	}
 
-		ICellSet result;
-		try {
-			result = ap.execute(gaq);
-		} catch (QueryException e) {
-			throw new IllegalStateException("Issue executing %s".formatted(gaq), e);
-		}
-
+	protected SuppliedTabularRecordStream toStream(TableQueryV2 tableQuery, ICellSet result) {
 		// TODO Return as an Iterator/Stream
 		List<ITabularRecord> asList = new ArrayList<>();
 
@@ -108,6 +93,29 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return new SuppliedTabularRecordStream(tableQuery, true, asList::stream);
 	}
 
+	protected ICellSet executeQuery(IQueryable ap, IQuery<ICellSet> gaq) {
+		ICellSet result;
+		try {
+			result = ap.execute(gaq);
+		} catch (QueryException e) {
+			throw new IllegalStateException("Issue executing %s".formatted(gaq), e);
+		}
+		return result;
+	}
+
+	protected abstract String getPivotId();
+
+	protected IQuery<ICellSet> makeCellSetQuery(IQueryable ap) {
+		Collection<ILocation> locations = null;
+		Collection<String> measureSelections = null;
+		List<? extends IContextValue> contextValues = null;
+
+		Object[] args = { getPivotId(), locations, measureSelections, contextValues };
+
+		IQuery<ICellSet> gaq = Registry.createExtendedPluginValue(IQuery.class, IGetAggregatesQuery.PLUGIN_KEY, args);
+		return gaq;
+	}
+
 	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {
 		Map<String, Object> slice = new LinkedHashMap<>();
 
@@ -118,25 +126,24 @@ public class AdhocAtotiTable implements ITableWrapper {
 		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(slice).build();
 	}
 
-	private Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
+	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {
 		// result.getCoordinate(locationIndex, result., locationIndex)
 		ILocation l = result.getLocation(locationIndex);
 
 		return l.getCoordinate(getHierarchyIndex(column), getLevelIndex(column));
 	}
 
-	private int getLevelIndex(String column) {
+	protected int getLevelIndex(String column) {
 		return 0;
 	}
 
-	private int getHierarchyIndex(String column) {
+	protected int getHierarchyIndex(String column) {
 		return 0;
 	}
 
-	private IActivePivotVersion inferPivotId() {
-		IMultiVersionActivePivot mvActivePivot = MapPathGet.getRequiredAs(apManager.getActivePivots(), pivotId);
-		return mvActivePivot.getHead();
-	}
+	protected abstract IActivePivotVersion inferPivotId();
+
+	protected abstract IQueryable inferQueryable();
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
@@ -179,6 +186,6 @@ public class AdhocAtotiTable implements ITableWrapper {
 
 	@Override
 	public String getName() {
-		return pivotId;
+		return getPivotId();
 	}
 }

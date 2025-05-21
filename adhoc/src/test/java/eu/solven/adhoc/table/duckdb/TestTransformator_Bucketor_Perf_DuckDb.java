@@ -30,6 +30,7 @@ import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,11 @@ public class TestTransformator_Bucketor_Perf_DuckDb extends ARawDagTest implemen
 	public static void setLimits() {
 		log.info("{} is evaluated on cardinality={}", TestTransformator_Bucketor_Perf.class.getName(), maxCardinality);
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
+	}
+
+	@AfterAll
+	public static void resetLimits() {
+		AdhocUnsafe.resetProperties();
 	}
 
 	String tableName = "someTableName";

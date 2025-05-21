@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,13 +53,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformator} for {@link Shiftor}.
+ * {@link ITransformatorQueryStep} for {@link Shiftor}.
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class ShiftorQueryStep implements ITransformator {
+public class ShiftorQueryStep implements ITransformatorQueryStep {
 	final Shiftor shiftor;
 	final IOperatorsFactory operatorsFactory;
 	@Getter

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,33 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.atoti.table;
 
-import java.util.Set;
+import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableSet;
+import com.quartetfs.biz.pivot.query.impl.QueryExtendedPlugin;
+import com.quartetfs.fwk.Registry;
+import com.quartetfs.fwk.contributions.impl.AnnotationContributionProvider;
 
-import eu.solven.adhoc.measure.model.IMeasure;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 
-/**
- * This demonstrates how one can add custom elements to the {@link eu.solven.adhoc.dag.AdhocQueryStep}.
- */
-@Slf4j
-public class ContextValueAdhocMeasure implements IMeasure {
-	@Override
-	public String getName() {
-		return "";
+public class TestLoggingAtotiTable {
+	static {
+		Registry.setContributionProvider(new AnnotationContributionProvider(QueryExtendedPlugin.class));
 	}
 
-	@Override
-	public Set<String> getTags() {
-		return Set.of();
-	}
+	// Will generate many WARNs due to improper use of javassist in TransferCompiler.compile
+	@Test
+	public void testNew() {
+		LoggingAtotiTable table = LoggingAtotiTable.builder().pivotId("someCubeName").build();
 
-	@Override
-	public IMeasure withTags(ImmutableSet<String> tags) {
-		log.warn("Can not edit tags of {}", this);
-		return this;
+		table.streamSlices(QueryPod.forTable(table),
+				TableQueryV2.builder()
+						.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("v")).build())
+						.build());
 	}
 }

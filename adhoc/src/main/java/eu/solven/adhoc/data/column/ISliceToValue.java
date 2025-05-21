@@ -29,12 +29,12 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.measure.transformator.ITransformator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
  * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
- * computed by a {@link ITransformator}.
+ * computed by a {@link ITransformatorQueryStep}.
  */
 public interface ISliceToValue {
 	/**

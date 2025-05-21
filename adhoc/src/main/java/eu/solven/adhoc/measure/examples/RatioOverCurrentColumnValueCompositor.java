@@ -68,7 +68,7 @@ public class RatioOverCurrentColumnValueCompositor {
 				.add(Unfiltrator.builder()
 						.name(wholeMeasureName)
 						.underlying(sliceMeasureName)
-						.filterOnly(column)
+						.unfilterOthersThan(column)
 						.build())
 
 				// Computes the actual ratio from current slice (e.g. `country=FR&color=red`) over the parent slice
@@ -81,11 +81,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// Ensure given column is expressed: if column is not expressed, we would not compute the ratio over the
 				// missing column (we may also want to always return 1).
-				.add(Columnator.builder()
-						.name(validMeasureName)
-						.underlying(ratioMeasureName)
-						.requiredColumn(column)
-						.build())
+				.add(Columnator.builder().name(validMeasureName).underlying(ratioMeasureName).column(column).build())
 
 				.build();
 	}

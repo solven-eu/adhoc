@@ -30,6 +30,7 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -38,7 +39,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -115,7 +116,15 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			log.debug("underlyingStep already registered step={}", underlyingStep);
 		}
 
-		DefaultEdge dagEdge = dag.addEdge(queriedStep, underlyingStep);
+		DefaultEdge dagEdge;
+
+		try {
+			dagEdge = dag.addEdge(queriedStep, underlyingStep);
+		} catch (GraphCycleProhibitedException e) {
+			throw new IllegalStateException(
+					"Issue adding `%s`->`%s` in cycle=`%s`".formatted(queriedStep, underlyingStep, dag),
+					e);
+		}
 		if (dagEdge == null) {
 			log.debug("One step refers multiple times to same underlying (queried={} underlying={})",
 					queriedStep,
@@ -180,7 +189,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformator wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
+				ITransformatorQueryStep wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
 
 				List<CubeQueryStep> underlyingSteps;
 				try {

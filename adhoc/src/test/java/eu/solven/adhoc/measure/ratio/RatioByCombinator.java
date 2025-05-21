@@ -33,7 +33,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -90,7 +90,7 @@ public class RatioByCombinator implements ICombinator {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
 		return new RatioByCombinatorQueryStep(this, transformationFactory, step);
 	}
 }

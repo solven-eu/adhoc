@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
-public class TestActivePivotTranscoder {
+public class TestAtotiTranscoder {
 	@Test
 	public void testRecursive() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on

@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,6 +55,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * These unitTests are dedicated to check ManyToMany performances in case of large problems. We can encounter millions
@@ -62,15 +64,16 @@ import lombok.NonNull;
  * Here, we consider groups with exponential growth: n-th group contains 2^n elements. It is useful to check performance
  * when we have many not very small groups
  */
+@Slf4j
 public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implements IAdhocTestConstants {
 	// This could be adjusted so that tests takes a few seconds to execute. Can be increased a lot to test bigger cases
-	int maxGroupCardinality = 18;
-	int maxElementCardinality = groupToMaxElement(maxGroupCardinality);
+	static int maxGroupCardinality = 18;
+	static int maxElementCardinality = groupToMaxElement(maxGroupCardinality);
 
 	// +1 to also write a value which is larger than the largest element of the largest group
 	int maxElementInserted = maxElementCardinality + 2;
 
-	private int groupToMaxElement(int group) {
+	private static int groupToMaxElement(int group) {
 		if (group > 29) {
 			throw new IllegalArgumentException(
 					"Given exponential growth, it is invalid to consider group=%s".formatted(group));
@@ -179,6 +182,11 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 
 	final String cElement = "integer";
 	final String cGroup = "integer_groups";
+
+	@BeforeAll
+	public static void logCardinality() {
+		log.info("cardinality groups={}, elements={}", maxGroupCardinality, maxElementCardinality);
+	}
 
 	@Override
 	@BeforeEach

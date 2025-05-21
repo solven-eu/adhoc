@@ -80,6 +80,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -185,8 +186,23 @@ public class TableQueryEngine implements ITableQueryEngine {
 		IStopwatch stopWatch = stopwatchFactory.createStarted();
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues;
+
+		IStopwatch openingStopwatch = stopwatchFactory.createStarted();
 		// Open the stream: the table may or may not return after the actual execution
 		try (ITabularRecordStream rowsStream = openTableStream(queryPod, suppressedQuery)) {
+			if (queryPod.isExplain() || queryPod.isDebug()) {
+				// JooQ may be slow to load some classes
+				// Slowness also due to fetching stream characteristics, which actually open the query
+				Duration openingElasped = openingStopwatch.elapsed();
+				eventBus.post(AdhocLogEvent.builder()
+						.explain(true)
+						.performance(true)
+						.message("time=%s for openingStream on %s"
+								.formatted(PepperLogHelper.humanDuration(openingElasped.toMillis()), dagQuery))
+						.source(this)
+						.build());
+			}
+
 			stepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
@@ -329,15 +345,16 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("time=%s size=%s for mergeTableAggregates on %s"
-								.formatted(elapsed, totalSize, query.getDagQuery()))
+						.message("time=%s size=%s for mergeTableAggregates on %s".formatted(PepperLogHelper
+								.humanDuration(elapsed.toMillis()), totalSize, query.getDagQuery()))
 						.source(this)
 						.build());
 			} else if (queryPod.isExplain()) {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("time=%s for mergeTableAggregates on %s".formatted(elapsed, query.getDagQuery()))
+						.message("time=%s for mergeTableAggregates on %s"
+								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), query.getDagQuery()))
 						.source(this)
 						.build());
 			}
@@ -357,15 +374,16 @@ public class TableQueryEngine implements ITableQueryEngine {
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("time=%s size=%s for toSortedColumns on %s"
-								.formatted(elapsed, totalSize, query.getDagQuery()))
+						.message("time=%s size=%s for toSortedColumns on %s".formatted(PepperLogHelper
+								.humanDuration(elapsed.toMillis()), totalSize, query.getDagQuery()))
 						.source(this)
 						.build());
 			} else if (queryPod.isExplain()) {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("time=%s for toSortedColumns on %s".formatted(elapsed, query.getDagQuery()))
+						.message("time=%s for toSortedColumns on %s"
+								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), query.getDagQuery()))
 						.source(this)
 						.build());
 			}

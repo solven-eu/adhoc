@@ -69,4 +69,19 @@ public class TestCombinator {
 			Assertions.assertThat(edited.getTags()).containsExactly("tag2");
 		});
 	}
+
+	@Test
+	public void testAddOptions() {
+		Combinator measure = Combinator.builder()
+				.name("measureName")
+				.combinationOptions(Map.of("k", "v"))
+				.combinationKey("someKey")
+				.tag("tag1")
+				.build();
+
+		Combinator moreOptions = measure.toBuilder().combinationOption("k2", "v2").build();
+
+		Assertions.assertThat(measure.getCombinationOptions()).isEqualTo(Map.of("k", "v"));
+		Assertions.assertThat(moreOptions.getCombinationOptions()).isEqualTo(Map.of("k", "v", "k2", "v2"));
+	}
 }

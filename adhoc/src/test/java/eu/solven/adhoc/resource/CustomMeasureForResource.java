@@ -35,7 +35,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -80,7 +80,7 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
 		return new EmptyTransformator();
 	}
 }

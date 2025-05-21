@@ -4,6 +4,11 @@ Atoti/ActivePivot is a very performant in-memory database.
 
 https://www.atoti.io/
 
+This module helps interacting between Adhoc and Atoti/ActivePivot. Main features are:
+
+- Migration from ActivePivot measures descritpions to Adhoc forests. (It migrates a tree of measures, but not the actual PostProcessor implementations).
+- Query ActivePivot from Adhoc. (e.g. to backtest a migrated PostProcessor over data stored in ActivePivot).
+
 ## Activeviam Intellectual Property Considerations
 
 Atoti/ActivePivot is a commercial software, with strict intellectual property (IP) considerations. All the code here is
@@ -76,7 +81,20 @@ Note: Adhoc does not enable multi-level hierarchies nor slicing-hierarchies. The
 
 # Migrating PostProcessors
 
-Adhoc `IMeasure` is equivalent to ActivePivot measures. One can migrate existing ActivePivot measure trees with `ActivePivotMeasuresToAdhoc`.
+Adhoc `IMeasure` is equivalent to ActivePivot measures.
+
+## Tree of measures
+
+One can migrate existing ActivePivot measure trees with `ActivePivotMeasuresToAdhoc`.
+
+It requires to be run by Adhoc, hence in a JDK21 JVM. Though, ActivePivot5.X requires a JDK11 for most of its actions. Luckily, loading an `IActivePivotDescription` does not required a JDK11.
+
+The simpler approach is to have a unit-test in your ActivePivot project, which provides one (or multiple) `IActivePivotDescription`. It can be turned into an Adhoc forest through:
+
+```
+AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().build();
+IMeasureForest forest = converter.convert("someCubeName", someActivePivotDescription);
+```
 
 ## Native measures
 
@@ -95,12 +113,16 @@ ActivePivot `AggregatedMeasure` can be migrated into Adhoc `IAggregator`.
 
 ## ABasicPostProcessor
 
-They can generally be implemented through `Combinator`
+`ABasicPostProcessor` can generally be implemented through `Combinator`.
 
 ## ADynamicAggregationPostProcessorV2
 
-They can generally be implemented through `Bucketor`
+`ADynamicAggregationPostProcessorV2` can generally be implemented through `Bucketor`
 
 ## AFilteringPostProcessorV2
 
-They can generally be implemented through `Filtrator`
+`AFilteringPostProcessorV2` can generally be implemented through `Filtrator`
+
+## AAdvancedPostProcessorV2
+
+`AAdvancedPostProcessorV2` can generally be implemented through `ITransformator`

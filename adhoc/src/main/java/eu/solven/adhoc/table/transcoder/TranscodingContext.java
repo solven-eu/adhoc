@@ -89,6 +89,8 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 			}
 		} else if (identity.contains(underlying)) {
 			return Set.of(underlying);
+		} else if (nameToCalculated.containsKey(underlying)) {
+			return Set.of(underlying);
 		} else {
 			return Set.of();
 		}

@@ -20,13 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti;
+package eu.solven.adhoc.atoti.migration;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -42,23 +38,21 @@ import com.quartetfs.biz.pivot.definitions.IMeasureMemberDescription;
 import com.quartetfs.biz.pivot.definitions.INativeMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
+import com.quartetfs.biz.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessor;
+import com.quartetfs.biz.pivot.postprocessing.impl.ABasicPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ALocationShiftPostProcessor;
+import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import com.quartetfs.fwk.Registry;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
+import eu.solven.adhoc.atoti.measure.ArithmeticFormulaCombination;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.model.*;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -85,7 +79,7 @@ public class AtotiMeasureToAdhoc {
 	@Getter
 	final AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
 
-	public IMeasureForest asBag(String pivotId, IActivePivotDescription desc) {
+	public IMeasureForest asForest(String pivotId, IActivePivotDescription desc) {
 		MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);
 
 		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
@@ -176,7 +170,8 @@ public class AtotiMeasureToAdhoc {
 		log.debug("ppFactory={}", ppFactory);
 
 		Class<?> implementationClass = ppFactory.getImplementationClass();
-		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass)) {
+		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass)
+				|| ABaseDynamicAggregationPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDynamicPostProcessor(measure);
 		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)) {
 			return onFilteringPostProcessor(measure);
@@ -184,8 +179,11 @@ public class AtotiMeasureToAdhoc {
 			return onDrillupPostProcessor(measure);
 		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onLocationShiftPosProcessor(measure);
-		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)) {
+		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)
+				|| ABasicPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onBasicPostProcessor(measure);
+		} else if (ArithmeticFormulaPostProcessor.class.isAssignableFrom(implementationClass)) {
+			return onArithmeticFormulaPostProcessor(measure);
 		} else {
 			// This happens on complex AAdvancedPostProcessorV2
 			return onAdvancedPostProcessor(measure);
@@ -193,24 +191,30 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	/**
-	 * Generally over-ridden on a per-project basis
+	 * Generally overridden on a per-project basis
 	 * 
 	 * @param measure
 	 * @return
 	 */
 	protected List<IMeasure> onAdvancedPostProcessor(IPostProcessorDescription measure) {
-		log.warn("Measure={} may not be properly converted as it is an advancedPostProcessor", measure.getName());
+		log.warn("Measure={} may not be properly converted as {} is an advancedPostProcessor",
+				measure.getName(),
+				measure.getPluginKey());
 		return onBasicPostProcessor(measure);
 	}
 
+	/**
+	 * @return the default measure when no measure is expressed.
+	 */
 	protected String getDefaultMeasure() {
 		return IMeasureHierarchy.COUNT_ID;
 	}
 
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
-		Properties properties = measure.getProperties();
-		List<String> underlyingNames = getUnderlyingNames(properties);
+		return onCombinator(measure, getUnderlyingNames(measure));
+	}
 
+	protected List<IMeasure> onCombinator(IPostProcessorDescription measure, List<String> underlyingNames) {
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
 		transferProperties(measure, combinatorBuilder::tag);
 
@@ -222,6 +226,8 @@ public class AtotiMeasureToAdhoc {
 		}
 
 		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
+
+		Properties properties = measure.getProperties();
 		properties.stringPropertyNames()
 				.stream()
 				// Reject the properties which are implicitly available in Adhoc model
@@ -236,7 +242,7 @@ public class AtotiMeasureToAdhoc {
 
 	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure) {
 		Properties properties = measure.getProperties();
-		List<String> underlyingNames = getUnderlyingNames(properties);
+		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Filtrator.FiltratorBuilder filtratorBuilder = Filtrator.builder().name(measure.getName());
 		transferProperties(measure, filtratorBuilder::tag);
@@ -252,7 +258,7 @@ public class AtotiMeasureToAdhoc {
 	// TODO ParentValuePostProcessor is not managed as it requires multi-level hierarchies
 	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure) {
 		Properties properties = measure.getProperties();
-		List<String> underlyingNames = getUnderlyingNames(properties);
+		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Shiftor.ShiftorBuilder shiftorBuilder = Shiftor.builder().name(measure.getName());
 		transferProperties(measure, shiftorBuilder::tag);
@@ -285,7 +291,7 @@ public class AtotiMeasureToAdhoc {
 
 	protected List<IMeasure> onDrillupPostProcessor(IPostProcessorDescription measure) {
 		Properties properties = measure.getProperties();
-		List<String> underlyingNames = getUnderlyingNames(properties);
+		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Unfiltrator.UnfiltratorBuilder unfiltratorBuilder = Unfiltrator.builder().name(measure.getName());
 		transferProperties(measure, unfiltratorBuilder::tag);
@@ -293,7 +299,7 @@ public class AtotiMeasureToAdhoc {
 		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		List<String> parentHierarchies = getPropertyList(properties, DrillupPostProcessor.PARENT_HIERARCHIES);
-		unfiltratorBuilder.unfiltereds(parentHierarchies);
+		unfiltratorBuilder.columns(parentHierarchies);
 
 		return List.of(unfiltratorBuilder.build());
 	}
@@ -331,7 +337,7 @@ public class AtotiMeasureToAdhoc {
 	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure) {
 		Properties properties = measure.getProperties();
 
-		List<String> underlyingNames = getUnderlyingNames(properties);
+		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		List<String> leafLevels = getPropertyList(properties, ABaseDynamicAggregationPostProcessorV2.LEAF_LEVELS);
 
@@ -360,6 +366,41 @@ public class AtotiMeasureToAdhoc {
 		return List.of(bucketorBuilder.build());
 	}
 
+	// TODO Some formula may be more complex than a simple Combinator
+	protected List<IMeasure> onArithmeticFormulaPostProcessor(IPostProcessorDescription measure) {
+		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(
+				measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
+		return onCombinator(measure, underlyingNames);
+	}
+
+	protected IMeasure onColumnator(IPostProcessorDescription measure,
+			Consumer<Columnator.ColumnatorBuilder> builderConsumer) {
+		Columnator.ColumnatorBuilder columnatorBuilder = Columnator.builder().name(measure.getName());
+		transferProperties(measure, columnatorBuilder::tag);
+
+		columnatorBuilder.underlyings(getUnderlyingNames(measure));
+
+		Map<String, Object> columnatorOptions = new LinkedHashMap<>();
+
+		Properties properties = measure.getProperties();
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				.forEach(key -> columnatorOptions.put(key, properties.get(key)));
+
+		columnatorBuilder.combinationKey(measure.getPluginKey());
+		columnatorBuilder.combinationOptions(columnatorOptions);
+
+		builderConsumer.accept(columnatorBuilder);
+
+		return columnatorBuilder.build();
+	}
+
+	protected List<String> getUnderlyingNames(IPostProcessorDescription measure) {
+		return getUnderlyingNames(measure.getProperties());
+	}
+
 	public static List<String> getUnderlyingNames(Properties properties) {
 		String key = IPostProcessor.UNDERLYING_MEASURES;
 		return getPropertyList(properties, key);
@@ -369,7 +410,7 @@ public class AtotiMeasureToAdhoc {
 		String propertyAsString = properties.getProperty(key, "").trim();
 		return Stream.of(propertyAsString.split(IPostProcessor.SEPARATOR))
 				.filter(p -> !Strings.isNullOrEmpty(p))
-				// We strip, as these are usually syntactic sugar in XML-files
+				// We strip, as these whitespaces are usually syntactic sugar in XML-files
 				.map(String::strip)
 				.toList();
 	}

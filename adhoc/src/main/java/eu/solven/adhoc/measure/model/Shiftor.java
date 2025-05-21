@@ -33,8 +33,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.ITransformator;
-import eu.solven.adhoc.measure.transformator.ShiftorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ShiftorQueryStep;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -84,7 +84,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformator wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep step) {
 		return new ShiftorQueryStep(this, operatorsFactory, step);
 	}
 

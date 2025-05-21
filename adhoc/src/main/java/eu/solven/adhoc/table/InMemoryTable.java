@@ -58,10 +58,10 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -69,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
  * groupBys, nor it handles calculated columns (over SQL expressions).
  */
 @Slf4j
-@Builder
+@SuperBuilder
 public class InMemoryTable implements ITableWrapper {
 
 	public static InMemoryTable newInstance(Map<String, ?> options) {
@@ -87,6 +87,9 @@ public class InMemoryTable implements ITableWrapper {
 
 	@Default
 	boolean distinctSlices = false;
+
+	@Default
+	boolean throwOnUnknownColumn = true;
 
 	public void add(Map<String, ?> row) {
 		rows.add(row);
@@ -123,23 +126,14 @@ public class InMemoryTable implements ITableWrapper {
 		boolean isEmptyAggregation =
 				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
 
-		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
-
-		{
-			Set<String> tableColumns = getColumnTypes().keySet();
-			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
-			if (!unknownFilteredColumns.isEmpty()) {
-				throw new IllegalArgumentException("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
-			}
-
-			SetView<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
-			if (!unknownGroupedByColumns.isEmpty()) {
-				throw new IllegalArgumentException("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
-			}
-		}
+		Set<String> groupByColumns = getGroupByColumns(tableQuery, filteredColumns);
 
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
+
+		if (queryPod.isExplain()) {
+			log.info("[EXPLAIN] tableQuery: {}", tableQuery);
+		}
 
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
@@ -184,6 +178,34 @@ public class InMemoryTable implements ITableWrapper {
 
 			}
 		});
+	}
+
+	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery, Set<String> filteredColumns) {
+		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
+
+		{
+			Set<String> tableColumns = getColumnTypes().keySet();
+			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
+			if (!unknownFilteredColumns.isEmpty()) {
+				if (throwOnUnknownColumn) {
+					throw new IllegalArgumentException(
+							"Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+				} else {
+					log.warn("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
+				}
+			}
+
+			SetView<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
+			if (!unknownGroupedByColumns.isEmpty()) {
+				if (throwOnUnknownColumn) {
+					throw new IllegalArgumentException(
+							"Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+				} else {
+					log.warn("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
+				}
+			}
+		}
+		return groupByColumns;
 	}
 
 	protected ITabularRecord toRecord(TableQueryV2 tableQuery,

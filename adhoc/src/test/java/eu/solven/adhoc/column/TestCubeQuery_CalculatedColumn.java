@@ -30,11 +30,14 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -53,12 +56,64 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	}
 
 	@Test
-	public void test_groupBy() {
+	public void test_groupBy_definitionInQuery() {
 		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure("k1")
 				.groupByAlso(CalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
+						.build())
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.containsEntry(Map.of("custom", "a1-null"), Map.of("k1", 0L + 123 + 345))
+				.containsEntry(Map.of("custom", "a2-b2"), Map.of("k1", 0L + 567))
+				.hasSize(2);
+	}
+
+	@Test
+	public void test_groupBy_definitionInCubeColumnManager() {
+		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
+				.calculatedColumn(CalculatedColumn.builder()
+						.name("custom")
+						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
+						.build())
+				.build()).build();
+
+		ITabularView view = cube.execute(CubeQuery.builder().measure("k1").groupByAlso("custom").build());
+
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.containsEntry(Map.of("custom", "a1-null"), Map.of("k1", 0L + 123 + 345))
+				.containsEntry(Map.of("custom", "a2-b2"), Map.of("k1", 0L + 567))
+				.hasSize(2);
+	}
+
+	@Test
+	public void test_groupBy_filter() {
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
+				.measure("k1")
+				.groupByAlso(CalculatedColumn.builder()
+						.name("custom")
+						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
+						.build())
+				.andFilter("custom", "a2-b2")
+				.build())).hasRootCauseInstanceOf(NotYetImplementedException.class);
+	}
+
+	@Test
+	public void test_groupBy_rename() {
+		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
+				.transcoder(MapTableTranscoder.builder()
+						.queriedToUnderlying("proxy_a", "a")
+						.queriedToUnderlying("proxy_b", "b")
+						.build())
+				.build()).build();
+
+		ITabularView view = cube.execute(CubeQuery.builder()
+				.measure("k1")
+				.groupByAlso(CalculatedColumn.builder()
+						.name("custom")
+						.recordToCoordinate(r -> r.getGroupBy("proxy_a") + "-" + r.getGroupBy("proxy_b"))
 						.build())
 				.build());
 

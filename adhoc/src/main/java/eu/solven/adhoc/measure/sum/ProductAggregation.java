@@ -26,6 +26,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -53,7 +54,8 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(l) && AdhocPrimitiveHelpers.isDoubleLike(r)) {
 			return aggregateDoubles(asDouble(l), asDouble(r));
 		} else {
-			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)".formatted(KEY, l, r));
+			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)"
+					.formatted(KEY, PepperLogHelper.getObjectAndClass(l), PepperLogHelper.getObjectAndClass(r)));
 		}
 	}
 

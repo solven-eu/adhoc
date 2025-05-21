@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.cell;
 
+import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -91,10 +92,10 @@ public class MultitypeCell implements IMultitypeCell {
 	@Override
 	public IValueProvider reduce() {
 		return vc -> {
-			if (types == 1) {
+			if (types == IMultitypeConstants.MASK_LONG) {
 				// Only longs
 				vc.onLong(asLong);
-			} else if (types == 2) {
+			} else if (types == IMultitypeConstants.MASK_DOUBLE) {
 				// Only doubles
 				vc.onDouble(asDouble);
 			} else {

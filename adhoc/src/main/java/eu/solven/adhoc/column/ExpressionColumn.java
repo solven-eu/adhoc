@@ -40,6 +40,8 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class ExpressionColumn implements IAdhocColumn, IHasSqlExpression {
 	// The name of the evaluated column
+	// BEWARE, as this is an IAdhocColumn, it is typically a queried column. Though, as it refers to the table (through
+	// SQL), it is also aware of the underlying columns
 	String name;
 
 	// The sql expression evaluating this column

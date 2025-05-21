@@ -77,7 +77,7 @@ public interface IAdhocTestConstants {
 	Filtrator filterK1onB1 =
 			Filtrator.builder().name("filterK1onB1").underlying("k1").filter(ColumnFilter.isEqualTo("b", "b1")).build();
 
-	Unfiltrator unfilterOnA = Unfiltrator.builder().name("unfilterOnK1").underlying("k1").unfiltered("a").build();
+	Unfiltrator unfilterOnA = Unfiltrator.builder().name("unfilterOnK1").underlying("k1").column("a").build();
 
 	Shiftor shiftorAisA1 = Shiftor.builder()
 			.name("shiftorAisA1")

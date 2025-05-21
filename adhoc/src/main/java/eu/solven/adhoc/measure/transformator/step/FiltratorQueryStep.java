@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +35,7 @@ import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
 import lombok.Getter;
@@ -42,13 +43,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformator} for {@link Filtrator}
+ * {@link ITransformatorQueryStep} for {@link Filtrator}
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep extends ATransformator {
+public class FiltratorQueryStep extends ATransformatorQueryStep {
 	final Filtrator filtrator;
 	final IOperatorsFactory transformationFactory;
 
