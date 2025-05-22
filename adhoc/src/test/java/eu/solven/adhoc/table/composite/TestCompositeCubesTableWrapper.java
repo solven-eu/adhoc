@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -467,8 +467,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			measureBag.addMeasure(Combinator.builder()
 					.name("table1_k_minus2")
 					.underlying(k1Sum.getName())
-					.combinationKey(ExpressionCombination.KEY)
-					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+					.combinationKey(EvaluatedExpressionCombination.KEY)
+					.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
 							"IF(underlyings[0] == null, null, underlyings[0] - 2)"))
 					.build());
 			cube1 = wrapInCube(measureBag, table1);
@@ -480,8 +480,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			measureBag.addMeasure(Combinator.builder()
 					.name("table2_k_minus3")
 					.underlying(k1Sum.getName())
-					.combinationKey(ExpressionCombination.KEY)
-					.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+					.combinationKey(EvaluatedExpressionCombination.KEY)
+					.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
 							"IF(underlyings[0] == null, null, underlyings[0] - 3)"))
 					.build());
 			cube2 = wrapInCube(measureBag, table2);
@@ -492,15 +492,15 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power2")
 				.underlying("table1_k_minus2")
-				.combinationKey(ExpressionCombination.KEY)
-				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+				.combinationKey(EvaluatedExpressionCombination.KEY)
+				.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
 						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0])"))
 				.build());
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power3")
 				.underlying("table2_k_minus3")
-				.combinationKey(ExpressionCombination.KEY)
-				.combinationOptions(Map.of(ExpressionCombination.KEY_EXPRESSION,
+				.combinationKey(EvaluatedExpressionCombination.KEY)
+				.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
 						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0] * underlyings[0])"))
 				.build());
 

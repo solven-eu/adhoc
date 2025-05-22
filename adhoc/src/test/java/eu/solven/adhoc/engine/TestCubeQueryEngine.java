@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -58,7 +58,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Combinator mAIsMbTimed2 = Combinator.builder()
 				.name(measureA)
 				.underlying(measureB)
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder()
 						.put("expression", "IF(m_B == null, null, m_B * 2)")
 						.build())
@@ -67,7 +67,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Combinator mBIsMaDividedBy2 = Combinator.builder()
 				.name(measureB)
 				.underlying(measureA)
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder()
 						.put("expression", "IF(m_A == null, null, m_A / 2)")
 						.build())

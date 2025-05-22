@@ -38,12 +38,12 @@ public class TestExpressionColumn {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(ExpressionColumn.class,
+		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
 				ExpressionColumn.builder().name("someColumn").sql("someSQL").build());
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
-				  "type" : "ExpressionColumn",
+				  "type" : ".ExpressionColumn",
 				  "name" : "someColumn",
 				  "sql" : "someSQL"
 				}""");

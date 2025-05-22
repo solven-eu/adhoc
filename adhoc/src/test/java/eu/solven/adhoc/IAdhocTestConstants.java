@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -50,7 +50,7 @@ public interface IAdhocTestConstants {
 	Combinator k1SumSquared = Combinator.builder()
 			.name("k1SumSquared")
 			.underlying(k1Sum.getName())
-			.combinationKey(ExpressionCombination.KEY)
+			.combinationKey(EvaluatedExpressionCombination.KEY)
 			// https://github.com/ezylang/EvalEx/issues/204
 			// We may process ternary into IF
 			// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
@@ -63,12 +63,12 @@ public interface IAdhocTestConstants {
 	Combinator k1PlusK2AsExpr = Combinator.builder()
 			.name("k1PlusK2AsExpr")
 			.underlyings(Arrays.asList("k1", "k2"))
-			.combinationKey(ExpressionCombination.KEY)
+			.combinationKey(EvaluatedExpressionCombination.KEY)
 			// https://github.com/ezylang/EvalEx/issues/204
 			// We may process ternary into IF
 			// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
 			.combinationOptions(ImmutableMap.<String, Object>builder()
-					.put(ExpressionCombination.KEY_EXPRESSION, "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
+					.put(EvaluatedExpressionCombination.KEY_EXPRESSION, "IF(k1 == null, 0, k1) + IF(k2 == null, 0, k2)")
 					.build())
 			.build();
 

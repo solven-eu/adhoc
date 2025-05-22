@@ -44,7 +44,7 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -103,9 +103,9 @@ public class InjectSimpleExampleCubesConfig {
 				.name("% delta / (delta+gamma)")
 				.underlying("delta")
 				.underlying("gamma")
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder()
-						.put(ExpressionCombination.KEY_EXPRESSION,
+						.put(EvaluatedExpressionCombination.KEY_EXPRESSION,
 								"IF(delta == null, 0, IF(gamma == null, 1, delta / (delta + gamma)))")
 						.build())
 				.tags(Arrays.asList("δ", "γ"))

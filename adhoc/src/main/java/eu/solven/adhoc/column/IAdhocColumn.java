@@ -34,7 +34,7 @@ import eu.solven.adhoc.util.IHasName;
  * @author Benoit Lacelle
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",
 		defaultImpl = ReferencedColumn.class)

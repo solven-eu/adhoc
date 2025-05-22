@@ -43,8 +43,7 @@ import lombok.extern.jackson.Jacksonized;
 public class TestReferencedColumn {
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString =
-				TestMapBasedTabularView.verifyJackson(ReferencedColumn.class, ReferencedColumn.ref("someColumn"));
+		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someColumn"
