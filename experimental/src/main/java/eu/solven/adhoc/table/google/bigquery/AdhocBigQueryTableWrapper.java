@@ -46,6 +46,7 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -54,12 +55,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
+public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 
 	final AdhocBigQueryTableWrapperParameters bigQueryParameters;
 
-	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters bigQueryParameters) {
-		super("Google", bigQueryParameters.getBase());
+	@Builder(builderMethodName = "bigquery")
+	public AdhocBigQueryTableWrapper(String name, AdhocBigQueryTableWrapperParameters bigQueryParameters) {
+		super(name, bigQueryParameters.getBase());
 
 		this.bigQueryParameters = bigQueryParameters;
 	}

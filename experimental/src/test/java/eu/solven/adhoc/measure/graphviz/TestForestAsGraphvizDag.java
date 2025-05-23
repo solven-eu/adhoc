@@ -44,8 +44,6 @@ public class TestForestAsGraphvizDag {
 		IMeasureForest forest = MeasureForest.empty();
 		MutableGraph graph = graphviz.asGraph(forest);
 
-		// Graphviz dot = Graphviz.fromGraph(graph);
-
 		Assertions.assertThat(graph.toString()).isEqualTo("""
 				digraph "forest=empty" {
 				graph ["rankdir"="LR","label"="forest=empty"]
@@ -64,8 +62,6 @@ public class TestForestAsGraphvizDag {
 				.measure(Aggregator.sum("simplestSum"))
 				.build();
 		MutableGraph graph = graphviz.asGraph(forest);
-
-		// Graphviz dot = Graphviz.fromGraph(graph);
 
 		Assertions.assertThat(graph.toString()).isEqualTo("""
 				digraph "forest=TestForestAsGraphvizDag" {
@@ -156,6 +152,8 @@ public class TestForestAsGraphvizDag {
 
 		IMeasureForest forest = measureForestBuilder.build()
 				.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", "d"));
+
+		// System.out.println(forest);
 
 		MutableGraph graph = graphviz.asGraph(forest);
 

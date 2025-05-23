@@ -1,24 +1,15 @@
 /**
- * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * The MIT License Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package eu.solven.adhoc.atoti.measure;
 
@@ -33,10 +24,11 @@ import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
-
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.sum.*;
+import eu.solven.adhoc.measure.combination.IHasTwoOperands;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +50,8 @@ public class ArithmeticFormulaCombination implements ICombination {
 	final boolean nullIfNotASingleUnderlying;
 	final Map<String, Integer> underlyingMeasuresToIndex = new LinkedHashMap<>();
 
+	final IOperatorsFactory operatorsFactory;
+
 	public ArithmeticFormulaCombination(Map<String, ?> options) {
 		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
 		formula = parseFormula(options);
@@ -66,11 +60,11 @@ public class ArithmeticFormulaCombination implements ICombination {
 		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
 		// Default is true (no underlying -> `null`), to follow ActiveViam convention
-		nullIfNotASingleUnderlying =
-				MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+		nullIfNotASingleUnderlying = MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
 
-		parseUnderlyingMeasures(formula).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
-				underlyingMeasuresToIndex.size()));
+		parseUnderlyingMeasures(formula).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure, underlyingMeasuresToIndex.size()));
+
+		operatorsFactory = MapPathGet.<IOperatorsFactory>getOptionalAs(options, "operatorsFactory").orElseGet(StandardOperatorsFactory::new);
 	}
 
 	/**
@@ -78,11 +72,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 	 * @return the {@link Set} of underlying measures, in their order of appearance.
 	 */
 	public static Collection<String> parseUnderlyingMeasures(String formula) {
-		return Pattern.compile("aggregatedValue\\[([^\\]]+)\\]")
-				.matcher(formula)
-				.results()
-				.map(mr -> mr.group(1))
-				.toList();
+		return Pattern.compile("aggregatedValue\\[([^\\]]+)\\]").matcher(formula).results().map(mr -> mr.group(1)).toList();
 	}
 
 	/**
@@ -116,8 +106,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 		do {
 			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
-				Object evaluatedSubFormula =
-						evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
+				Object evaluatedSubFormula = evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
 
 				if (evaluatedSubFormula == null) {
@@ -151,12 +140,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 			List<?> underlyingValues,
 			AtomicBoolean oneUnderlyingIsNotNull) {
 		List<Object> pendingOperands = new LinkedList<>();
-		String tokens = ",";
-		String[] elements = formula.split(tokens);
+		String[] elements = splitFormula(formula);
 
 		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
-			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue"
-					.formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
+			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue".formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
 		}
 
 		for (int i = 0; i < elements.length; i++) {
@@ -180,33 +167,13 @@ public class ArithmeticFormulaCombination implements ICombination {
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
-			} else if (ProductAggregation.isProduct(s) || SumAggregation.isSum(s)
-					|| DivideCombination.isDivide(s)
-					|| SubstractionCombination.isSubstraction(s)) {
-				List<Object> operands;
-
-				if (twoOperandsPerOperator || DivideCombination.isDivide(s)
-						|| SubstractionCombination.isSubstraction(s)) {
-					operands = new LinkedList<>();
-					// Add at the beginning to reverse the stack
-					operands.add(0, pendingOperands.removeLast());
-					operands.add(0, pendingOperands.removeLast());
-				} else {
-					// No need to reverse the stack for these operators
-					operands = new LinkedList<>(pendingOperands);
-					pendingOperands.clear();
-				}
-
-				ICombination combination = getCombination(s);
-				operandToAppend = combination.combine(slice, operands);
 			} else if (s.matches("-?[0-9]+")) {
 				operandToAppend = Long.parseLong(s);
 			} else if (s.matches("-?[0-9]+.[0-9]+([Ee][+-]?[0-9]+)?")) {
 				// https://stackoverflow.com/questions/10516967/regexp-for-a-double
 				operandToAppend = Double.parseDouble(s);
 			} else {
-				log.warn("Not managed token: `{}`", s);
-				operandToAppend = s;
+				operandToAppend = onOperator(slice, pendingOperands, s);
 			}
 			pendingOperands.addLast(operandToAppend);
 		}
@@ -222,18 +189,32 @@ public class ArithmeticFormulaCombination implements ICombination {
 		}
 	}
 
-	// TODO Rely on IOperatorsFactory
-	protected ICombination getCombination(String operator) {
-		if (ProductAggregation.isProduct(operator)) {
-			return new ProductCombination();
-		} else if (SumAggregation.isSum(operator)) {
-			return new SumCombination();
-		} else if (DivideCombination.isDivide(operator)) {
-			return new DivideCombination();
-		} else if (SubstractionCombination.isSubstraction(operator)) {
-			return new SubstractionCombination();
+	protected String[] splitFormula(String formula) {
+		String tokens = ",";
+		return formula.split(tokens);
+	}
+
+	protected Object onOperator(ISliceWithStep slice, List<Object> pendingOperands, String s) {
+		// TODO We may also accept any IAggregation
+		ICombination combination = getCombination(s);
+
+		List<Object> operands;
+
+		if (twoOperandsPerOperator || combination instanceof IHasTwoOperands) {
+			operands = new LinkedList<>();
+			// Add at the beginning to reverse the stack
+			operands.add(0, pendingOperands.removeLast());
+			operands.add(0, pendingOperands.removeLast());
 		} else {
-			throw new UnsupportedOperationException("Not-managed: " + operator);
+			// No need to reverse the stack for these operators
+			operands = new LinkedList<>(pendingOperands);
+			pendingOperands.clear();
 		}
+
+		return combination.combine(slice, operands);
+	}
+
+	protected ICombination getCombination(String operator) {
+		return operatorsFactory.makeCombination(operator, Map.of());
 	}
 }

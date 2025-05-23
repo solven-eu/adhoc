@@ -26,6 +26,7 @@ import java.util.List;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.combination.IHasTwoOperands;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -39,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://dax.guide/op/subtraction/
 @Slf4j
-public class SubstractionCombination implements ICombination {
+public class SubstractionCombination implements ICombination, IHasTwoOperands {
 
 	public static final String KEY = "SUBSTRACTION";
 

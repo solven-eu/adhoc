@@ -59,8 +59,7 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
-import lombok.AllArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -68,7 +67,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@AllArgsConstructor
+@Builder
+@RequiredArgsConstructor
 @Slf4j
 @ToString(of = "name")
 public class JooqTableWrapper implements ITableWrapper {
@@ -76,8 +76,10 @@ public class JooqTableWrapper implements ITableWrapper {
 	// May be propagated into a more general dictionarization
 	private static final boolean internStrings = false;
 
+	@NonNull
 	final String name;
 
+	@NonNull
 	final JooqTableWrapperParameters dbParameters;
 
 	@Override

@@ -48,6 +48,16 @@
 		</dependency>
 
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<!-- TODO Clarify the difference between redshift and redshiftdata -->
+			<!--artifactId>redshift</artifactId-->
+			<artifactId>redshiftdata</artifactId>
+			<version>2.31.47</version>
+			<!-- One may need to query from Amazon RedShift -->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<!-- Helps generating .dot files for Graphviz, to understand measures -->
 			<groupId>guru.nidi</groupId>
 			<artifactId>graphviz-java</artifactId>
