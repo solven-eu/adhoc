@@ -153,8 +153,6 @@ public class TestForestAsGraphvizDag {
 		IMeasureForest forest = measureForestBuilder.build()
 				.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", "d"));
 
-		// System.out.println(forest);
-
 		MutableGraph graph = graphviz.asGraph(forest);
 
 		Assertions.assertThat(graph.toString()).isEqualTo("""
@@ -162,12 +160,12 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"d_country=current_slice" ["shape"="star","fixedsize"="true","fillcolor"="yellow","style"="filled"]
 				"d_country=current_ratio_postcheck" ["fillcolor"="cyan","style"="filled"]
-				"d_country=current_whole" -> "d_country=current_slice"
-				"d_country=current_slice" -> "d"
+				"d_country=current_slice" ["shape"="star","fixedsize"="true","fillcolor"="yellow","style"="filled"]
 				"d_country=current_ratio_postcheck" -> "d_country=current_slice"
 				"d_country=current_ratio_postcheck" -> "d_country=current_whole"
+				"d_country=current_slice" -> "d"
+				"d_country=current_whole" -> "d_country=current_slice"
 				"d_country=current_ratio" -> "d_country=current_ratio_postcheck"
 				}""");
 	}
