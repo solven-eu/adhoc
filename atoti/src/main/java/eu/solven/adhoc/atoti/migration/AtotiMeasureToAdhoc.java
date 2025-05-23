@@ -22,7 +22,11 @@
  */
 package eu.solven.adhoc.atoti.migration;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -48,20 +52,30 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.atoti.measure.ArithmeticFormulaCombination;
+import eu.solven.adhoc.atoti.table.AtotiTranscoder;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
-import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -75,9 +89,28 @@ import lombok.extern.slf4j.Slf4j;
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
 public class AtotiMeasureToAdhoc {
+	public enum SourceMode {
+		/**
+		 * Adhoc will query data equivalent to the Datastore.
+		 */
+		Datastore,
+		/**
+		 * Adhoc will query data equivalent to the Cube.
+		 */
+		Cube,
+	}
+
 	@Builder.Default
+	@NonNull
 	@Getter
 	final AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
+
+	@Builder.Default
+	@NonNull
+	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
+
+	@NonNull
+	SourceMode sourceMode;
 
 	public IMeasureForest asForest(String pivotId, IActivePivotDescription desc) {
 		MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);
@@ -111,8 +144,11 @@ public class AtotiMeasureToAdhoc {
 		desc.getMeasuresDescription().getAggregatedMeasuresDescription().forEach(preAggregatedMeasure -> {
 			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
 					.name(preAggregatedMeasure.getName())
-					.columnName(preAggregatedMeasure.getFieldName())
 					.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
+
+			if (sourceMode == SourceMode.Datastore) {
+				aggregatorBuilder.columnName(preAggregatedMeasure.getFieldName());
+			}
 
 			transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
 

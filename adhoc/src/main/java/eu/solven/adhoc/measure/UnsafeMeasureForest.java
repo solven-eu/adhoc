@@ -33,6 +33,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.resource.MeasureForestFromResource;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
@@ -51,8 +52,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class UnsafeMeasureForest implements IMeasureForest {
 	@Getter
-	@NonNull
-	final String name;
+	@Default
+	final String name = "unsafe";
 
 	@NonNull
 	@Singular

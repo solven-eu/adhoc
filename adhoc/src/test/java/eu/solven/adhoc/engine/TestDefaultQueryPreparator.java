@@ -30,6 +30,9 @@ import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -39,9 +42,9 @@ import eu.solven.adhoc.table.ITableWrapper;
 
 public class TestDefaultQueryPreparator {
 	ITableWrapper table = Mockito.mock(ITableWrapper.class);
-	IMeasureForest forest = Mockito.mock(IMeasureForest.class);
 	IColumnsManager columnManager = Mockito.mock(IColumnsManager.class);
 
+	UnsafeMeasureForest forest = UnsafeMeasureForest.builder().build();
 	{
 		Mockito.when(table.getName()).thenReturn("someTableName");
 	}
@@ -59,5 +62,23 @@ public class TestDefaultQueryPreparator {
 
 		Assertions.assertThat(prepared.getQueryId().getParentQueryId())
 				.isEqualTo(subQuery.getParentQueryId().getQueryId());
+	}
+
+	@Test
+	public void testCutIrrelevantMeasures() {
+		DefaultQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+
+		forest.addMeasure(Aggregator.sum("c1"));
+		forest.addMeasure(Aggregator.sum("c2"));
+		forest.addMeasure(Aggregator.sum("c3"));
+		forest.addMeasure(Combinator.builder().name("c1+2").underlying("c1").underlying("c2").build());
+		forest.addMeasure(Combinator.builder().name("c2+3").underlying("c2").underlying("c3").build());
+		forest.addMeasure(Combinator.builder().name("c(1+2)+(2+3)").underlying("c1+2").underlying("c2+3").build());
+
+		ICubeQuery query = CubeQuery.builder().measure("c1").build();
+
+		QueryPod prepared = queryPreparator.prepareQuery(table, forest, columnManager, query);
+
+		Assertions.assertThat(prepared.getForest().getNameToMeasure().keySet()).containsExactly("c1");
 	}
 }
