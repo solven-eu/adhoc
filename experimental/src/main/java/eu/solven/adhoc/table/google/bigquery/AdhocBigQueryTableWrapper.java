@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 import org.jooq.conf.ParamType;
 
 import com.google.cloud.bigquery.BigQuery;
@@ -54,12 +56,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocGoogleBigQueryTableWrapper extends JooqTableWrapper {
+public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 
 	final AdhocBigQueryTableWrapperParameters bigQueryParameters;
 
-	public AdhocGoogleBigQueryTableWrapper(AdhocBigQueryTableWrapperParameters bigQueryParameters) {
-		super("Google", bigQueryParameters.getBase());
+	@Builder
+	public AdhocBigQueryTableWrapper(String name, AdhocBigQueryTableWrapperParameters bigQueryParameters) {
+		super(name, bigQueryParameters.getBase());
 
 		this.bigQueryParameters = bigQueryParameters;
 	}

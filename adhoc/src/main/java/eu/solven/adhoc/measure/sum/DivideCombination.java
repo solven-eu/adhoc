@@ -27,6 +27,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.combination.IHasTwoOperands;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**
@@ -36,7 +37,7 @@ import eu.solven.pepper.mappath.MapPathGet;
  * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/divide-function-dax
-public class DivideCombination implements ICombination {
+public class DivideCombination implements ICombination, IHasTwoOperands {
 
 	public static final String KEY = "DIVIDE";
 
