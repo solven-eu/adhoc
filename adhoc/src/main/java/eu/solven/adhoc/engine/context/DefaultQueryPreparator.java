@@ -47,11 +47,18 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@Builder
+/**
+ * Default implementation of {@link IQueryPreparator}.
+ * 
+ * @author Benoit Lacelle
+ */
+@SuperBuilder
+@RequiredArgsConstructor
 public class DefaultQueryPreparator implements IQueryPreparator {
 
 	// By default, the filters are not modified
@@ -81,7 +88,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 		ICubeQuery preparedQuery = combineWithImplicit(rawQuery);
 		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
 
-		QueryPod fullyQueryPod = QueryPod.builder()
+		QueryPod fullQueryPod = QueryPod.builder()
 				.query(preparedQuery)
 				.queryId(queryId)
 				.forest(forest)
@@ -93,16 +100,9 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 		// Filtering the forst is useful for edge-cades like:
 		// - columnGenerator: we should consider only measures in the queryPlan
 		IMeasureForest relevantForest =
-				filterForest(fullyQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();
+				filterForest(fullQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();
 
-		return QueryPod.builder()
-				.query(preparedQuery)
-				.queryId(queryId)
-				.forest(relevantForest)
-				.table(table)
-				.columnsManager(columnsManager)
-				.executorService(getExecutorService(preparedQuery))
-				.build();
+		return fullQueryPod.toBuilder().forest(relevantForest).build();
 	}
 
 	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {

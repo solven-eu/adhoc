@@ -47,6 +47,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -108,9 +109,18 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	DSLContext dsl = table.makeDsl();
 
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).build();
+		return CubeWrapper.builder()
+				.engine(engine)
+				.forest(forest)
+				.table(table)
+				.queryPreparator(customQueryPreparator())
+				.build();
+	}
+
+	private IQueryPreparator customQueryPreparator() {
+		return VaRQueryPreparator.builder().calculatedColumnsMeasure(mArray).build();
 	}
 
 	String mArray = "k1Array";
