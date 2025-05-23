@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasName;
@@ -34,7 +35,7 @@ import eu.solven.adhoc.util.IHasName;
  * 
  * @author Benoit Lacelle
  */
-public interface IMeasureForest extends IHasName, IHasMeasures {
+public interface IMeasureForest extends IHasName, IHasMeasures, ICanResolveMeasure {
 
 	/**
 	 * Translate if necessary a {@link ReferencedMeasure} into a plain {@link IMeasure}
@@ -42,6 +43,7 @@ public interface IMeasureForest extends IHasName, IHasMeasures {
 	 * @param measure
 	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
 	 */
+	@Override
 	IMeasure resolveIfRef(IMeasure measure);
 
 	/**

@@ -56,7 +56,7 @@ public class TestReferencedColumn {
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-		String asString = "{\"type\": \"ref\", \"name\": \"someColumn\"}";
+		String asString = "{\"type\": \".ReferencedColumn\", \"name\": \"someColumn\"}";
 
 		ReferencedColumn fromString = objectMapper.readValue(asString, ReferencedColumn.class);
 

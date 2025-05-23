@@ -183,4 +183,28 @@ public class TestArithmeticFormulaCombination {
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 - 23.45);
 	}
+
+	@Test
+	public void testScientificNotation_Max() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						Double.toString(Double.MAX_VALUE),
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MAX_VALUE);
+	}
+
+	@Test
+	public void testScientificNotation_MinNormal() {
+		ArithmeticFormulaCombination c =
+				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
+						Double.toString(Double.MIN_NORMAL),
+						"nullIfNotASingleUnderlying",
+						false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MIN_NORMAL);
+	}
 }

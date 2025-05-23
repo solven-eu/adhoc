@@ -48,13 +48,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.google.cloud</groupId>
-			<artifactId>google-cloud-bigqueryconnection</artifactId>
-			<!-- One may need to query from Google BigQuery -->
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
 			<!-- Helps generating .dot files for Graphviz, to understand measures -->
 			<groupId>guru.nidi</groupId>
 			<artifactId>graphviz-java</artifactId>

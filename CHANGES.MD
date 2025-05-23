@@ -2,6 +2,17 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.8]
+### Added
+- `CompositeTableTranscoder` is introduced
+
+### Removed
+- `AtotiTableTranscoder.priorityTranscoder` is removed. Use `CompositeTableTranscoder` instead.
+- `InMemoryTable_Recording` is removed. Use `InMemoryTable.throwOnUnknownColumn` instead.
+
+### Changed
+- `IAdhocColumn` now relies on `JsonTypeInfo.Id.MINIMAL_CLASS`
+
 ## [0.0.7]
 ### Added
 - `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`. It can be skipped with `StandardQueryOptions.NO_CACHE`.

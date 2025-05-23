@@ -68,17 +68,23 @@ public class SubstractionCombination implements ICombination {
 		}
 	}
 
-	protected Object negate(Object right) {
-		if (right == null) {
+	protected Object negate(Object o) {
+		if (o == null) {
 			return null;
-		} else if (AdhocPrimitiveHelpers.isLongLike(right)) {
-			return -AdhocPrimitiveHelpers.asLong(right);
-		} else if (AdhocPrimitiveHelpers.isDoubleLike(right)) {
-			return -AdhocPrimitiveHelpers.asDouble(right);
+		} else if (AdhocPrimitiveHelpers.isLongLike(o)) {
+			return -AdhocPrimitiveHelpers.asLong(o);
+		} else if (AdhocPrimitiveHelpers.isDoubleLike(o)) {
+			return -AdhocPrimitiveHelpers.asDouble(o);
 		}
-		// TODO Should we return NaN ? Should we rely on some operators ? Should we rely on some interface?
-		log.warn("Unclear expected behavior when negated not numbers: {}", PepperLogHelper.getObjectAndClass(right));
-		return right;
+
+		if (AdhocUnsafe.failFast) {
+			throw new NotYetImplementedException("Unclear expected behavior when negating not numbers: %s"
+					.formatted(PepperLogHelper.getObjectAndClass(o)));
+		} else {
+			// TODO Should we return NaN ? Should we rely on some operators ? Should we rely on some interface?
+			log.warn("Unclear expected behavior when negating not numbers: {}", PepperLogHelper.getObjectAndClass(o));
+			return o;
+		}
 	}
 
 	protected Object substract(Object left, Object right) {
@@ -88,10 +94,12 @@ public class SubstractionCombination implements ICombination {
 			return AdhocPrimitiveHelpers.asDouble(left) - AdhocPrimitiveHelpers.asDouble(right);
 		} else {
 			if (AdhocUnsafe.failFast) {
-				throw new NotYetImplementedException("Unclear expected behavior when negated not numbers: %s and %s"
-						.formatted(PepperLogHelper.getObjectAndClass(left), PepperLogHelper.getObjectAndClass(right)));
+				throw new NotYetImplementedException(
+						"Unclear expected behavior when substracting not numbers: %s and %s".formatted(
+								PepperLogHelper.getObjectAndClass(left),
+								PepperLogHelper.getObjectAndClass(right)));
 			} else {
-				log.warn("Unclear expected behavior when negated not numbers: {} and {}",
+				log.warn("Unclear expected behavior when substracting not numbers: {} and {}",
 						PepperLogHelper.getObjectAndClass(left),
 						PepperLogHelper.getObjectAndClass(right));
 				return left + " - " + right;
