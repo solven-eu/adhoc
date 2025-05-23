@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.context;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -29,7 +30,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -74,7 +81,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 		ICubeQuery preparedQuery = combineWithImplicit(rawQuery);
 		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
 
-		return QueryPod.builder()
+		QueryPod fullyQueryPod = QueryPod.builder()
 				.query(preparedQuery)
 				.queryId(queryId)
 				.forest(forest)
@@ -82,6 +89,47 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.columnsManager(columnsManager)
 				.executorService(getExecutorService(preparedQuery))
 				.build();
+
+		// Filtering the forst is useful for edge-cades like:
+		// - columnGenerator: we should consider only measures in the queryPlan
+		IMeasureForest relevantForest =
+				filterForest(fullyQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();
+
+		return QueryPod.builder()
+				.query(preparedQuery)
+				.queryId(queryId)
+				.forest(relevantForest)
+				.table(table)
+				.columnsManager(columnsManager)
+				.executorService(getExecutorService(preparedQuery))
+				.build();
+	}
+
+	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
+		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
+
+		Set<IMeasure> measuresToAdd = new LinkedHashSet<>(preparedQuery.getMeasures());
+		while (!measuresToAdd.isEmpty()) {
+			Set<String> nextMeasuresToAdd = new LinkedHashSet<>();
+
+			measuresToAdd.forEach(measureToAdd -> {
+				IMeasure resolvedMeasure = forest.resolveIfRef(measureToAdd);
+
+				if (relevantMeasures.add(resolvedMeasure)) {
+
+					// BEWARE Not `IHasUnderlyingNames` as it is informative. e.g. in Composite Cube, measure may list
+					// underlying measures in underlying cubes, while in compositeCube.queryPlan, these are irrelevant.
+					if (resolvedMeasure instanceof IHasUnderlyingMeasures hasUnderlyings) {
+						nextMeasuresToAdd.addAll(hasUnderlyings.getUnderlyingNames());
+					}
+				}
+			});
+
+			measuresToAdd.clear();
+			nextMeasuresToAdd.forEach(m -> measuresToAdd.add(forest.resolveIfRef(ReferencedMeasure.ref(m))));
+		}
+
+		return MeasureForest.builder().measures(relevantMeasures);
 	}
 
 	protected ExecutorService getExecutorService(ICubeQuery preparedQuery) {

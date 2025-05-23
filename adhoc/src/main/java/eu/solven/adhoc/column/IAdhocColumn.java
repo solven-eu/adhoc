@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.column;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -38,6 +37,5 @@ import eu.solven.adhoc.util.IHasName;
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",
 		defaultImpl = ReferencedColumn.class)
-@JsonSubTypes({ @JsonSubTypes.Type(value = ReferencedColumn.class, name = "ref"), })
 public interface IAdhocColumn extends IHasName {
 }

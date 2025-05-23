@@ -22,10 +22,8 @@
  */
 package eu.solven.adhoc.column;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.ezylang.evalex.EvaluationException;
 import com.ezylang.evalex.Expression;
@@ -33,7 +31,6 @@ import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -89,7 +86,7 @@ public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColum
 		} catch (EvaluationException | ParseException e) {
 			throw new IllegalArgumentException("Issue with expression=`%s`".formatted(expression), e);
 		}
-		
+
 		return result.getValue();
 	}
 

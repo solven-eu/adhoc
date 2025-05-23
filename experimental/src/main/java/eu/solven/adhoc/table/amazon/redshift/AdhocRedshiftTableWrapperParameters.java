@@ -37,30 +37,30 @@ public class AdhocRedshiftTableWrapperParameters {
 	@NonNull
 	RedshiftDataAsyncClient asyncDataClient;
 
-//
-//	@NonNull
-//	@Default
-//	final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
-//
-//	// TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
-//	@NonNull
-//	@Default
-//	final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
-//
-//	/**
-//	 * BEWARE This will not define underlying default dialect to MYSQL.
-//	 *
-//	 * @return
-//	 */
-//	public static AdhocBigQueryTableWrapperParametersBuilder builder() {
-//		return new AdhocBigQueryTableWrapperParametersBuilder();
-//	}
-//
-//	public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
-//		return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
-//				// Google BigQuery seems not very far from MySQL
-//				.dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
-//				.tableName(tableName)
-//				.build());
-//	}
+	//
+	// @NonNull
+	// @Default
+	// final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
+	//
+	// // TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
+	// @NonNull
+	// @Default
+	// final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
+	//
+	// /**
+	// * BEWARE This will not define underlying default dialect to MYSQL.
+	// *
+	// * @return
+	// */
+	// public static AdhocBigQueryTableWrapperParametersBuilder builder() {
+	// return new AdhocBigQueryTableWrapperParametersBuilder();
+	// }
+	//
+	// public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
+	// return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
+	// // Google BigQuery seems not very far from MySQL
+	// .dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
+	// .tableName(tableName)
+	// .build());
+	// }
 }

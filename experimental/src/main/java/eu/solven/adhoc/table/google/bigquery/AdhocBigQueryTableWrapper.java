@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import lombok.Builder;
-import lombok.experimental.SuperBuilder;
 import org.jooq.conf.ParamType;
 
 import com.google.cloud.bigquery.BigQuery;
@@ -48,6 +46,7 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -60,7 +59,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 
 	final AdhocBigQueryTableWrapperParameters bigQueryParameters;
 
-	@Builder
+	@Builder(builderMethodName = "bigquery")
 	public AdhocBigQueryTableWrapper(String name, AdhocBigQueryTableWrapperParameters bigQueryParameters) {
 		super(name, bigQueryParameters.getBase());
 

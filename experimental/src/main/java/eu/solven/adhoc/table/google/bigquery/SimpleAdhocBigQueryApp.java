@@ -63,7 +63,8 @@ public class SimpleAdhocBigQueryApp {
 						.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 						.build())
 				.build();
-		AdhocBigQueryTableWrapper bgDbWrapper = AdhocBigQueryTableWrapper.builder().name("BigQuery").bigQueryParameters(dbParameters).build();
+		AdhocBigQueryTableWrapper bgDbWrapper =
+				AdhocBigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
 
 		// bgDbWrapper.openDbStream(DatabaseQuery.builder().aggregators(null))
 

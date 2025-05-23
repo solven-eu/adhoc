@@ -38,8 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Can be used as alternative to {@link com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor}
  */
-// TODO Wrap parenthesis in subFormula (ActiveViam extension of ReversePolishNotation)
-// TODO Enable reading along members
+// TODO Enable shifting some column
 @Slf4j
 public class ArithmeticFormulaCombination implements ICombination {
 	final String formula;
@@ -136,7 +135,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 		return evaluateReversePolish(replacedFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 	}
 
-	private Object evaluateReversePolish(String formula, ISliceWithStep slice, List<?> underlyingValues, AtomicBoolean oneUnderlyingIsNotNull) {
+	protected Object evaluateReversePolish(String formula,
+			ISliceWithStep slice,
+			List<?> underlyingValues,
+			AtomicBoolean oneUnderlyingIsNotNull) {
 		List<Object> pendingOperands = new LinkedList<>();
 		String[] elements = splitFormula(formula);
 
@@ -168,6 +170,7 @@ public class ArithmeticFormulaCombination implements ICombination {
 			} else if (s.matches("-?[0-9]+")) {
 				operandToAppend = Long.parseLong(s);
 			} else if (s.matches("-?[0-9]+.[0-9]+([Ee][+-]?[0-9]+)?")) {
+				// https://stackoverflow.com/questions/10516967/regexp-for-a-double
 				operandToAppend = Double.parseDouble(s);
 			} else {
 				operandToAppend = onOperator(slice, pendingOperands, s);

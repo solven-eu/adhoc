@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
- * <p>
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * <p>
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * <p>
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,17 +28,22 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import lombok.Builder;
+import org.jooq.conf.ParamType;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.conf.ParamType;
 import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
-import software.amazon.awssdk.services.redshiftdata.model.*;
+import software.amazon.awssdk.services.redshiftdata.model.ExecuteStatementRequest;
+import software.amazon.awssdk.services.redshiftdata.model.ExecuteStatementResponse;
+import software.amazon.awssdk.services.redshiftdata.model.Field;
+import software.amazon.awssdk.services.redshiftdata.model.GetStatementResultRequest;
+import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
+import software.amazon.awssdk.services.redshiftdata.model.SqlParameter;
 
 /**
  * Enables querying Google BigQuery.
@@ -49,134 +54,135 @@ import software.amazon.awssdk.services.redshiftdata.model.*;
 @Slf4j
 public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 
-    final AdhocRedshiftTableWrapperParameters redShiftParameters;
+	final AdhocRedshiftTableWrapperParameters redShiftParameters;
 
-    @Builder
-    public AdhocRedShiftTableWrapper(String name, AdhocRedshiftTableWrapperParameters redShiftParameters) {
-        super(name, redShiftParameters.getBase());
+	@Builder(builderMethodName = "redshift")
+	public AdhocRedShiftTableWrapper(String name, AdhocRedshiftTableWrapperParameters redShiftParameters) {
+		super(name, redShiftParameters.getBase());
 
-        this.redShiftParameters = redShiftParameters;
-    }
+		this.redShiftParameters = redShiftParameters;
+	}
 
-    @Override
-    protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-        String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
+	@Override
+	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
-        String sqlStatement = "SELECT * FROM Movies WHERE year = :year";
-        SqlParameter yearParam = SqlParameter.builder()
-                .name("year")
-                .value(String.valueOf(1324))
-                .build();
+		String sqlStatement = "SELECT * FROM Movies WHERE year = :year";
+		SqlParameter yearParam = SqlParameter.builder().name("year").value(String.valueOf(1324)).build();
 
-        ExecuteStatementRequest statementRequest = ExecuteStatementRequest.builder()
-//				.clusterIdentifier(clusterId)
-                .database("dev")
-                .dbUser("admin")
-                .parameters(yearParam)
-                .sql(sqlStatement)
-                .build();
+		ExecuteStatementRequest statementRequest = ExecuteStatementRequest.builder()
+				// .clusterIdentifier(clusterId)
+				.database("dev")
+				.dbUser("admin")
+				.parameters(yearParam)
+				.sql(sqlStatement)
+				.build();
 
-        try {
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    ExecuteStatementResponse response = getAsyncDataClient().executeStatement(statementRequest).join(); // Use join() to wait for the result
-                    return response.id();
-                } catch (RedshiftDataException e) {
-                    throw new RuntimeException("Error executing statement: " + e.getMessage(), e);
-                }
-            }).exceptionally(exception -> {
-                log.info("Error: {}", exception.getMessage());
-                return "ERROR-%s".formatted(exception.getMessage());
-            }).thenApply(statementId -> {
-                GetStatementResultRequest resultRequest = GetStatementResultRequest.builder()
-                        .id(statementId)
-                        .build();
+		try {
+			CompletableFuture<Stream<ITabularRecord>> completable = CompletableFuture.supplyAsync(() -> {
+				try {
+					ExecuteStatementResponse response = getAsyncDataClient().executeStatement(statementRequest).join();
+					return response.id();
+				} catch (RedshiftDataException e) {
+					throw new RuntimeException("Error executing statement: " + e.getMessage(), e);
+				}
+			}).exceptionally(exception -> {
+				log.info("Error: {}", exception.getMessage());
+				return "ERROR-%s".formatted(exception.getMessage());
+			}).thenApply(statementId -> {
+				GetStatementResultRequest resultRequest = GetStatementResultRequest.builder().id(statementId).build();
 
-                return getAsyncDataClient().getStatementResult(resultRequest)
-                        .handle((response, exception) -> {
-                            if (exception != null) {
-                                log.info("Error getting statement result {} ", exception.getMessage());
-                                throw new RuntimeException("Error getting statement result: " + exception.getMessage(), exception);
-                            }
+				return getAsyncDataClient().getStatementResult(resultRequest)
+						.<Stream<ITabularRecord>>handle((response, exception) -> {
+							if (exception != null) {
+								log.info("Error getting statement result {} ", exception.getMessage());
+								throw new RuntimeException("Error getting statement result: " + exception.getMessage(),
+										exception);
+							}
 
-                            List<ColumnMetadata> metadata = response.columnMetadata();
+							// Extract and print the field values using streams if the response is valid.
+							return response.records().stream().map(row -> toTabularRecord(sqlQuery, row));
+						})
+						.join();
+			}).thenApply(result -> {
+				// Process the result here
+				log.info("Result: {}", result);
+				return result;
+			});
 
-                            // Extract and print the field values using streams if the response is valid.
-                            response.records().stream().map(row -> {
-                                Map<String, Object> aggregates = new LinkedHashMap<>();
+			return completable.join();
+		} catch (RuntimeException rt) {
+			Throwable cause = rt.getCause();
+			if (cause instanceof RedshiftDataException redshiftEx) {
+				log.info("Redshift Data error occurred: {} Error code: {}",
+						redshiftEx.getMessage(),
+						redshiftEx.awsErrorDetails().errorCode());
+			} else {
+				log.info("An unexpected error occurred: {}", rt.getMessage());
+			}
+			throw rt;
+		}
+	}
 
-                                {
-                                    List<String> aggregateColumns = sqlQuery.getFields().getAggregates();
+	protected TabularRecordOverMaps toTabularRecord(IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
+			List<Field> row) {
+		Map<String, Object> aggregates = new LinkedHashMap<>();
 
-                                    for (int i = 0; i < aggregateColumns.size(); i++) {
-                                        Field field = row.get(i);
+		{
+			List<String> aggregateColumns = sqlQuery.getFields().getAggregates();
 
-                                        Object value;
-                                        if (Field.Type.LONG_VALUE.equals(field.type())) {
-                                            value = field.longValue();
-                                        } else  if (Field.Type.DOUBLE_VALUE.equals(field.type())) {
-                                            value = field.doubleValue();
-                                        } else {
-                                            throw new NotYetImplementedException(String.valueOf(field.type()));
-                                        }
+			for (int i = 0; i < aggregateColumns.size(); i++) {
+				Field field = row.get(i);
 
-                                        String columnName = aggregateColumns.get(i);
-                                        aggregates.put(columnName, value);
-                                    }
-                                }
+				Object value;
+				if (Field.Type.LONG_VALUE.equals(field.type())) {
+					value = field.longValue();
+				} else if (Field.Type.DOUBLE_VALUE.equals(field.type())) {
+					value = field.doubleValue();
+				} else {
+					throw new NotYetImplementedException(String.valueOf(field.type()));
+				}
 
-                                Map<String, Object> slice = new LinkedHashMap<>();
+				String columnName = aggregateColumns.get(i);
+				aggregates.put(columnName, value);
+			}
+		}
 
-                                {
-                                    List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-                                    for (int i = 0; i < aggregateGroupBys.size(); i++) {
-                                        Field field = schema.getFields().get(aggregateGroupBys.size() + i);
+		Map<String, Object> slice = new LinkedHashMap<>();
 
-                                        Object value;
-                                        FieldValue fieldValue = row.get(aggregateGroupBys.size() + i);
-                                        if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
-                                            value = fieldValue.getLongValue();
-                                        } else {
-                                            value = fieldValue.getValue();
-                                        }
+		{
+			List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
+			for (int i = 0; i < aggregateGroupBys.size(); i++) {
+				Field field = row.get(aggregateGroupBys.size() + i);
 
-                                        String columnName = aggregateGroupBys.get(i);
-                                        aggregates.put(columnName, value);
-                                    }
-                                }
+				Object value;
+				if (Field.Type.LONG_VALUE.equals(field.type())) {
+					value = field.longValue();
+				} else if (Field.Type.DOUBLE_VALUE.equals(field.type())) {
+					value = field.doubleValue();
+				} else {
+					throw new NotYetImplementedException(String.valueOf(field.type()));
+				}
 
-                                if (!sqlQuery.getFields().getLateColumns().isEmpty()) {
-                                    throw new NotYetImplementedException("TODO");
-                                }
+				String columnName = aggregateGroupBys.get(i);
+				aggregates.put(columnName, value);
+			}
+		}
 
-                                return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
-                            });
+		if (!sqlQuery.getFields().getLateColumns().isEmpty()) {
+			throw new NotYetImplementedException("lateColumns=%s".formatted(sqlQuery.getFields().getLateColumns()));
+		}
 
-                            return response;
-                        }).join();
-            }).thenApply(result -> {
-                // Process the result here
-                log.info("Result: {}", result);
-                return result;
-            });
-        } catch (RuntimeException rt) {
-            Throwable cause = rt.getCause();
-            if (cause instanceof RedshiftDataException redshiftEx) {
-                log.info("Redshift Data error occurred: {} Error code: {}", redshiftEx.getMessage(), redshiftEx.awsErrorDetails().errorCode());
-            } else {
-                log.info("An unexpected error occurred: {}", rt.getMessage());
-            }
-            throw cause;
-        }
-    }
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+	}
 
-    protected RedshiftDataAsyncClient getAsyncDataClient() {
-        return redShiftParameters.getAsyncDataClient();
-    }
+	protected RedshiftDataAsyncClient getAsyncDataClient() {
+		return redShiftParameters.getAsyncDataClient();
+	}
 
-    @Override
-    protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
-        // Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
-        log.info("[DEBUG] TODO Amazon Redshift");
-    }
+	@Override
+	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
+		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
+		log.info("[DEBUG] TODO Amazon Redshift");
+	}
 }

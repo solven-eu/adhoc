@@ -85,7 +85,9 @@ public class PivotableComponentsConfiguration {
 
 	@Bean
 	public Void registerAdhocLog(EventBus eventBus) {
-		eventBus.register(new AdhocEventFromGreenrobotToSlf4j());
+		AdhocEventFromGreenrobotToSlf4j subscriber = new AdhocEventFromGreenrobotToSlf4j();
+		log.info("Registering {} in {}", subscriber, eventBus);
+		eventBus.register(subscriber);
 
 		return null;
 	}

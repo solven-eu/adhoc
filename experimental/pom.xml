@@ -55,13 +55,6 @@
 			<version>2.31.47</version>
 			<!-- One may need to query from Amazon RedShift -->
 			<optional>true</optional>
-		</dependency><!-- https://mvnrepository.com/artifact/software.amazon.awssdk/redshiftdata -->
-
-		<dependency>
-			<groupId>com.google.cloud</groupId>
-			<artifactId>google-cloud-bigqueryconnection</artifactId>
-			<!-- One may need to query from Google BigQuery -->
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>

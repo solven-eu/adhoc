@@ -45,8 +45,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
-import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapperParameters;
 import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapper;
+import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapperParameters;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -108,7 +108,8 @@ public class TestTableGoogleBigQuery {
 				.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
 				.bigQueryOptions(bigQueryOptions)
 				.build();
-		AdhocBigQueryTableWrapper bgDbWrapper = AdhocBigQueryTableWrapper.builder().name("BigQuery").bigQueryParameters(dbParameters).build();
+		AdhocBigQueryTableWrapper bgDbWrapper =
+				AdhocBigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
 
 		List<Map<String, ?>> rows = bgDbWrapper.streamSlices(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))

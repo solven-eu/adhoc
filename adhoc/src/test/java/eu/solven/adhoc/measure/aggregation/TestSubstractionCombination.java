@@ -62,7 +62,9 @@ public class TestSubstractionCombination {
 
 		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(123, "Arg")))
 				.isInstanceOf(NotYetImplementedException.class);
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, "Arg"))).isEqualTo("Arg");
 		Assertions.assertThat(combination.combine(slice, Arrays.asList("Arg", null))).isEqualTo("Arg");
+
+		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(null, "Arg")))
+				.isInstanceOf(NotYetImplementedException.class);
 	}
 }
