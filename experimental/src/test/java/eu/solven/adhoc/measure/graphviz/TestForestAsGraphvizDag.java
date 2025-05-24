@@ -44,8 +44,6 @@ public class TestForestAsGraphvizDag {
 		IMeasureForest forest = MeasureForest.empty();
 		MutableGraph graph = graphviz.asGraph(forest);
 
-		// Graphviz dot = Graphviz.fromGraph(graph);
-
 		Assertions.assertThat(graph.toString()).isEqualTo("""
 				digraph "forest=empty" {
 				graph ["rankdir"="LR","label"="forest=empty"]
@@ -64,8 +62,6 @@ public class TestForestAsGraphvizDag {
 				.measure(Aggregator.sum("simplestSum"))
 				.build();
 		MutableGraph graph = graphviz.asGraph(forest);
-
-		// Graphviz dot = Graphviz.fromGraph(graph);
 
 		Assertions.assertThat(graph.toString()).isEqualTo("""
 				digraph "forest=TestForestAsGraphvizDag" {
@@ -105,14 +101,14 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"count(*)_x4" ["fillcolor"="cyan","style"="filled"]
-				"count(*)_x2" ["fillcolor"="cyan","style"="filled"]
-				"count(*)_x8" ["fillcolor"="cyan","style"="filled"]
 				"count(*)"
-				"count(*)_x4" -> "count(*)_x2"
-				"count(*)_x4" -> "count(*)_x2"
+				"count(*)_x2" ["fillcolor"="cyan","style"="filled"]
+				"count(*)_x4" ["fillcolor"="cyan","style"="filled"]
+				"count(*)_x8" ["fillcolor"="cyan","style"="filled"]
 				"count(*)_x2" -> "count(*)_x1"
 				"count(*)_x2" -> "count(*)_x1"
+				"count(*)_x4" -> "count(*)_x2"
+				"count(*)_x4" -> "count(*)_x2"
 				"count(*)_x8" -> "count(*)_x4"
 				"count(*)_x8" -> "count(*)_x4"
 				}""");
@@ -136,9 +132,9 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
+				"d"
 				"d_country=FR_ratio" ["fillcolor"="cyan","style"="filled"]
 				"d_country=FR_slice" ["fillcolor"="grey","style"="filled"]
-				"d"
 				"d_country=FR_ratio" -> "d_country=FR_slice"
 				"d_country=FR_ratio" -> "d_country=FR_whole"
 				"d_country=FR_slice" -> "d"
@@ -164,13 +160,14 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"d_country=current_slice" ["shape"="star","fixedsize"="true","fillcolor"="yellow","style"="filled"]
+				"d"
 				"d_country=current_ratio_postcheck" ["fillcolor"="cyan","style"="filled"]
-				"d_country=current_whole" -> "d_country=current_slice"
-				"d_country=current_slice" -> "d"
+				"d_country=current_slice" ["shape"="star","fixedsize"="true","fillcolor"="yellow","style"="filled"]
+				"d_country=current_ratio" -> "d_country=current_ratio_postcheck"
 				"d_country=current_ratio_postcheck" -> "d_country=current_slice"
 				"d_country=current_ratio_postcheck" -> "d_country=current_whole"
-				"d_country=current_ratio" -> "d_country=current_ratio_postcheck"
+				"d_country=current_slice" -> "d"
+				"d_country=current_whole" -> "d_country=current_slice"
 				}""");
 	}
 }

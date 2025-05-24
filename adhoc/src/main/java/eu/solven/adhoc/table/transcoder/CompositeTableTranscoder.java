@@ -20,41 +20,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
+package eu.solven.adhoc.table.transcoder;
 
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableList;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Singular;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
+ * Helps combining multiple {@link ITableTranscoder}.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasMeasures {
+@Builder
+public class CompositeTableTranscoder implements ITableTranscoder {
+	public enum ChainMode {
+		/**
+		 * Should we return the first not-null underlying
+		 */
+		FirstNotNull,
 
-	/**
-	 * This recalls such objects requires not to have {@link IMeasure} with conflicting names.
-	 * 
-	 * @return a {@link Map} from measure name to the measure.
-	 */
-	@JsonIgnore
-	default Map<String, IMeasure> getNameToMeasure() {
-		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(m -> m.getName(), m -> m));
+		/**
+		 * All transcoders, as a chain of transcoders
+		 */
+		ApplyAll
 	}
 
-	/**
-	 * 
-	 * @return the {@link Set} of {@link IMeasure}
-	 */
-	default Set<IMeasure> getMeasures() {
-		return getNameToMeasure().values().stream().collect(Collectors.toCollection(LinkedHashSet::new));
+	@NonNull
+	@Singular
+	ImmutableList<ITableTranscoder> transcoders;
+
+	@Default
+	@NonNull
+	ChainMode chainMode = ChainMode.FirstNotNull;
+
+	@Override
+	public String underlying(String queried) {
+		boolean oneMatched = false;
+		String currenQueried = queried;
+
+		for (ITableTranscoder transcoder : transcoders) {
+			String underlying = transcoder.underlying(currenQueried);
+
+			if (underlying != null) {
+				oneMatched = true;
+
+				if (chainMode == ChainMode.FirstNotNull) {
+					return underlying;
+				} else {
+					currenQueried = underlying;
+				}
+			}
+		}
+
+		// null means `not transcoded`
+		if (oneMatched) {
+			return currenQueried;
+		} else {
+			return null;
+		}
 	}
 
 }

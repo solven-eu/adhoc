@@ -20,41 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure;
-
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.table.ITableWrapper;
+package eu.solven.adhoc.measure.combination;
 
 /**
- * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.
+ * Some objects may have sanity checks. These may be verified eagerly or lazily.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasMeasures {
-
+public interface IHasSanityChecks {
 	/**
-	 * This recalls such objects requires not to have {@link IMeasure} with conflicting names.
-	 * 
-	 * @return a {@link Map} from measure name to the measure.
+	 * Would throw if something is wrong. May log WARNs.
 	 */
-	@JsonIgnore
-	default Map<String, IMeasure> getNameToMeasure() {
-		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(m -> m.getName(), m -> m));
-	}
-
-	/**
-	 * 
-	 * @return the {@link Set} of {@link IMeasure}
-	 */
-	default Set<IMeasure> getMeasures() {
-		return getNameToMeasure().values().stream().collect(Collectors.toCollection(LinkedHashSet::new));
-	}
-
+	void checkSanity();
 }

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.atoti.custom;
 
 import eu.solven.adhoc.atoti.migration.AtotiMeasureToAdhoc;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import lombok.Builder;
 
 /**
@@ -30,7 +31,7 @@ import lombok.Builder;
  */
 public class CustomActivePivotMeasureToAdhoc extends AtotiMeasureToAdhoc {
 	@Builder(builderMethodName = "customBuilder")
-	public CustomActivePivotMeasureToAdhoc() {
-		super(new CustomAtotiConditionCubeToAdhoc());
+	public CustomActivePivotMeasureToAdhoc(ITableTranscoder transcoder, SourceMode sourceMode) {
+		super(new CustomAtotiConditionCubeToAdhoc(), transcoder, sourceMode);
 	}
 }

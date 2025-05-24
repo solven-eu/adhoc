@@ -26,11 +26,13 @@ import java.util.Map;
 
 import lombok.Builder;
 import lombok.Singular;
+import lombok.ToString;
 
 /**
  * An {@link ITableTranscoder} based on a (not-necessarily bijective) mapping.
  */
 @Builder
+@ToString
 public class MapTableTranscoder implements ITableTranscoder {
 	@Singular
 	final Map<String, String> queriedToUnderlyings;
@@ -39,9 +41,4 @@ public class MapTableTranscoder implements ITableTranscoder {
 	public String underlying(String queried) {
 		return queriedToUnderlyings.get(queried);
 	}
-
-	// @Override
-	// public String queried(String underlying) {
-	// return queriedToUnderlying.inverse().get(underlying);
-	// }
 }

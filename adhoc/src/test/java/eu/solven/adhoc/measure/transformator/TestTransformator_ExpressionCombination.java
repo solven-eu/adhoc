@@ -36,7 +36,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -56,7 +56,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
@@ -75,7 +75,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder().put("expression", "k1 + k2").build())
 				.build());
 
@@ -95,7 +95,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				// https://github.com/ezylang/EvalEx/issues/204
 				// We may process ternary into IF
 				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"
@@ -123,7 +123,7 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
-				.combinationKey(ExpressionCombination.KEY)
+				.combinationKey(EvaluatedExpressionCombination.KEY)
 				// https://github.com/ezylang/EvalEx/issues/204
 				// We may process ternary into IF
 				// "k1 == null ? 0 : k1 + k2 == null ? 0 : k2"

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.atoti.table;
 
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,30 +39,15 @@ import lombok.extern.slf4j.Slf4j;
 public class AtotiTranscoder implements ITableTranscoder {
 	private static final char LEVEL_SEPARATOR = '@';
 
-	@Builder.Default
-	// DO not use an IdentityTranscoder, else `priorityUnderlying != null` would always be true
-	final ITableTranscoder priorityTranscoder = MapTableTranscoder.builder().build();
-
 	@Override
 	public String underlying(String queried) {
-		String priorityUnderlying = priorityTranscoder.underlying(queried);
-
-		if (priorityUnderlying != null) {
-			return priorityUnderlying;
-		}
-		// There is a small unsupported edge case: we may want to keep `l@h@d` as underlying. It would require further
-		// implementation.
-
 		int indexOfSeparator = queried.indexOf(LEVEL_SEPARATOR);
 		if (indexOfSeparator >= 0) {
 			// queried is typically `levelName@hierarchyname@dimensionName`. And the Database column is typically the
 			// levelName.
-			String underlying = queried.substring(0, indexOfSeparator);
-
-			// Map from `levelName` to any prioritized field
-			return underlying(underlying);
+			return queried.substring(0, indexOfSeparator);
 		} else {
-			return queried;
+			return null;
 		}
 	}
 }

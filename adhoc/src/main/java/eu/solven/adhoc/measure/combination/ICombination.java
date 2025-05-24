@@ -50,7 +50,7 @@ public interface ICombination {
 	 * @param slice
 	 * @param underlyingValues
 	 *            the underlying measures values for current slice.
-	 * @return the combined result at given given coordinate.
+	 * @return the combined result at given slice.
 	 */
 	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		IValueProvider valueProvider =

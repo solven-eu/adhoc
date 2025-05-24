@@ -154,14 +154,14 @@ public class ColumnsManager implements IColumnsManager {
 		return transcodeRows(transcodingContext, tabularRecordStream);
 	}
 
-	private Set<String> getCalculatedColumns(TableQueryV2 query) {
+	protected Set<String> getCalculatedColumns(TableQueryV2 query) {
 		Set<String> calculatedColumns = new TreeSet<>();
 		this.calculatedColumns.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
 		query.getGroupBy()
 				.getNameToColumn()
 				.values()
 				.stream()
-				.filter(c -> c instanceof CalculatedColumn)
+				.filter(c -> c instanceof ICalculatedColumn)
 				.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
 		return calculatedColumns;
 	}
@@ -173,7 +173,14 @@ public class ColumnsManager implements IColumnsManager {
 			@Override
 			public boolean isDistinctSlices() {
 				// TODO Study how this flag could be impacted by transcoding
-				return tabularRecordStream.isDistinctSlices();
+				if (transcodingContext.getNameToCalculated().isEmpty()) {
+					return tabularRecordStream.isDistinctSlices();
+				} else {
+					// TODO Investigate deeper this case
+					// But a calculated column could lead to additional groupBys. Hence, we may receive multiple entries
+					// for a slice given columns of the original query
+					return false;
+				}
 			}
 
 			@Override

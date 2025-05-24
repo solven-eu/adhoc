@@ -90,7 +90,7 @@ public class ForestAsGraphvizDag {
 			asGraph(forest).addTo(g);
 		});
 
-		log.debug("graphviz for whole: {}", Graphviz.fromGraph(g));
+		// log.debug("graphviz for whole: {}", Graphviz.fromGraph(g));
 
 		return g;
 	}
@@ -104,21 +104,10 @@ public class ForestAsGraphvizDag {
 		forest.getMeasures().forEach(measure -> {
 			MutableNode node = makeNode(measure.getName());
 
-			// if (measure instanceof Aggregator aggregator) {
-			//
-			// } else
 			if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				// Properties properties = hasUnderlyingMeasures.getProperties();
-
 				List<String> underlyingMeasures = hasUnderlyingMeasures.getUnderlyingNames();
 				underlyingMeasures.stream().map(this::makeNode).forEach(node::addLink);
-
-				// log.debug("{}", ppFactory);
-
 			}
-			// else {
-			// log.warn("Not-managed measure: {}", measure);
-			// }
 
 			classToShape.stream()
 					.filter(e -> e.getKey().isAssignableFrom(measure.getClass()))

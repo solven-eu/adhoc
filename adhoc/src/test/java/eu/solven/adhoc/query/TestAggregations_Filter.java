@@ -144,8 +144,8 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								Executing on table=inMemory measures=TestAggregations_Filter query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
-								Executed status=OK duration=15ms on table=inMemory measures=TestAggregations_Filter query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""");
+								Executing on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
+								Executed status=OK duration=15ms on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a=a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""");
 
 		Assertions.assertThat(messages).hasSize(2);
 	}

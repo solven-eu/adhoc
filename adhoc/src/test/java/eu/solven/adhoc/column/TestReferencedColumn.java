@@ -43,8 +43,7 @@ import lombok.extern.jackson.Jacksonized;
 public class TestReferencedColumn {
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString =
-				TestMapBasedTabularView.verifyJackson(ReferencedColumn.class, ReferencedColumn.ref("someColumn"));
+		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someColumn"
@@ -57,7 +56,7 @@ public class TestReferencedColumn {
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-		String asString = "{\"type\": \"ref\", \"name\": \"someColumn\"}";
+		String asString = "{\"type\": \".ReferencedColumn\", \"name\": \"someColumn\"}";
 
 		ReferencedColumn fromString = objectMapper.readValue(asString, ReferencedColumn.class);
 

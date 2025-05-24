@@ -25,6 +25,9 @@ package eu.solven.adhoc.query.groupby;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -40,5 +43,16 @@ public class TestGroupByColumns {
 		IAdhocGroupBy groupByDesc = GroupByColumns.named("b", "a");
 
 		Assertions.assertThat(groupByAsc).isEqualTo(groupByDesc);
+	}
+
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		IAdhocGroupBy groupByAsc = GroupByColumns.named("a", "b");
+
+		String asString = TestMapBasedTabularView.verifyJackson(IAdhocGroupBy.class, groupByAsc);
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "columns" : [ "a", "b" ]
+				}""");
 	}
 }

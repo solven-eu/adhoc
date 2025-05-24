@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
-import eu.solven.adhoc.measure.combination.ExpressionCombination;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
@@ -98,14 +98,14 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case MinCombination.KEY: {
 			yield new MaxCombination();
 		}
-		case ExpressionCombination.KEY: {
+		case EvaluatedExpressionCombination.KEY: {
 			try {
 				Class.forName("com.ezylang.evalex.Expression");
 			} catch (ClassNotFoundException ex) {
 				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loaded."
 						+ " It is an optional maven dependency you need to activate manually");
 			}
-			yield ExpressionCombination.parse(options);
+			yield EvaluatedExpressionCombination.parse(options);
 		}
 		case FindFirstCombination.KEY: {
 			yield new FindFirstCombination();

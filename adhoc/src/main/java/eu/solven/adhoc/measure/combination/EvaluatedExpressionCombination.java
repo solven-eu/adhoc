@@ -38,15 +38,17 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Enable expression-based {@link ICombination}
+ * Enable expression-based {@link ICombination}.
  *
  * @author Benoit Lacelle
  * @see <a href="https://github.com/ezylang/EvalEx">EvalEx</a>
  */
 @RequiredArgsConstructor
-public class ExpressionCombination implements ICombination {
+@Slf4j
+public class EvaluatedExpressionCombination implements ICombination, IHasSanityChecks {
 	public static final String KEY = "EXPRESSION";
 
 	public static final String KEY_EXPRESSION = "expression";
@@ -57,8 +59,14 @@ public class ExpressionCombination implements ICombination {
 	final List<String> underlyingNames;
 
 	@Override
+	public void checkSanity() {
+		makeExpression();
+		log.debug("expression seems valid: {}", expression);
+	}
+
+	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Expression exp = new Expression(expression);
+		Expression exp = makeExpression();
 
 		EvaluationValue result;
 		try {
@@ -92,10 +100,20 @@ public class ExpressionCombination implements ICombination {
 		}
 	}
 
-	public static ExpressionCombination parse(Map<String, ?> options) {
+	/**
+	 * BEWARE This must not be cached as {@link Expression} is a stateful object
+	 * (https://github.com/ezylang/EvalEx/issues/83).
+	 * 
+	 * @return an Expression object
+	 */
+	protected Expression makeExpression() {
+		return new Expression(expression);
+	}
+
+	public static EvaluatedExpressionCombination parse(Map<String, ?> options) {
 		String expression = MapPathGet.getRequiredString(options, KEY_EXPRESSION);
 		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
-		return new ExpressionCombination(expression, underlyingIndexToName);
+		return new EvaluatedExpressionCombination(expression, underlyingIndexToName);
 	}
 
 }

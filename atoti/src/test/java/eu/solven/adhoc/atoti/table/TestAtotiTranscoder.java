@@ -25,6 +25,9 @@ package eu.solven.adhoc.atoti.table;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.table.transcoder.CompositeTableTranscoder;
+import eu.solven.adhoc.table.transcoder.CompositeTableTranscoder.ChainMode;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 public class TestAtotiTranscoder {
@@ -32,17 +35,21 @@ public class TestAtotiTranscoder {
 	public void testRecursive() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on
 		// joins)
-		AtotiTranscoder transcoder = AtotiTranscoder.builder()
-				.priorityTranscoder(MapTableTranscoder.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
+		ITableTranscoder transcoder = CompositeTableTranscoder.builder()
+				.chainMode(ChainMode.ApplyAll)
+				.transcoder(AtotiTranscoder.builder().build())
+				.transcoder(MapTableTranscoder.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
 				.build();
 
-		Assertions.assertThat(transcoder.underlying("someL")).isEqualTo("someL");
+		Assertions.assertThat(transcoder.underlying("someL")).isNull();
 		Assertions.assertThat(transcoder.underlying("someL@someH")).isEqualTo("someL");
 		Assertions.assertThat(transcoder.underlying("someL@someH@someD")).isEqualTo("someL");
 
 		Assertions.assertThat(transcoder.underlying("AsOf")).isEqualTo("f.AsOf");
 		Assertions.assertThat(transcoder.underlying("AsOf@AsOf")).isEqualTo("f.AsOf");
 		Assertions.assertThat(transcoder.underlying("AsOf@AsOf@AsOf")).isEqualTo("f.AsOf");
+
+		Assertions.assertThat(transcoder.underlying("unknown")).isNull();
 	}
 
 	@Test
@@ -51,12 +58,14 @@ public class TestAtotiTranscoder {
 		// joins)
 		AtotiTranscoder transcoder = AtotiTranscoder.builder().build();
 
-		Assertions.assertThat(transcoder.underlying("someL")).isEqualTo("someL");
+		Assertions.assertThat(transcoder.underlying("someL")).isNull();
 		Assertions.assertThat(transcoder.underlying("someL@someH")).isEqualTo("someL");
 		Assertions.assertThat(transcoder.underlying("someL@someH@someD")).isEqualTo("someL");
 
-		Assertions.assertThat(transcoder.underlying("AsOf")).isEqualTo("AsOf");
+		Assertions.assertThat(transcoder.underlying("AsOf")).isNull();
 		Assertions.assertThat(transcoder.underlying("AsOf@AsOf")).isEqualTo("AsOf");
 		Assertions.assertThat(transcoder.underlying("AsOf@AsOf@AsOf")).isEqualTo("AsOf");
+
+		Assertions.assertThat(transcoder.underlying("unknown")).isNull();
 	}
 }
