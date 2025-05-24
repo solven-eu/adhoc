@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public interface IHasMeasures {
 	 * @return the {@link Set} of {@link IMeasure}
 	 */
 	default Set<IMeasure> getMeasures() {
-		return getNameToMeasure().values().stream().collect(Collectors.toSet());
+		return getNameToMeasure().values().stream().collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 }

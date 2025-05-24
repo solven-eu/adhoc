@@ -35,6 +35,7 @@ import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.resource.MeasureForests;
 import guru.nidi.graphviz.attribute.Font;
 import guru.nidi.graphviz.attribute.Rank;
+import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Factory;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
@@ -103,21 +104,10 @@ public class ForestAsGraphvizDag {
 		forest.getMeasures().forEach(measure -> {
 			MutableNode node = makeNode(measure.getName());
 
-			// if (measure instanceof Aggregator aggregator) {
-			//
-			// } else
 			if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-				// Properties properties = hasUnderlyingMeasures.getProperties();
-
 				List<String> underlyingMeasures = hasUnderlyingMeasures.getUnderlyingNames();
 				underlyingMeasures.stream().map(this::makeNode).forEach(node::addLink);
-
-				// log.debug("{}", ppFactory);
-
 			}
-			// else {
-			// log.warn("Not-managed measure: {}", measure);
-			// }
 
 			classToShape.stream()
 					.filter(e -> e.getKey().isAssignableFrom(measure.getClass()))
@@ -135,13 +125,10 @@ public class ForestAsGraphvizDag {
 							// https://stackoverflow.com/questions/17252630/why-doesnt-fillcolor-work-with-graphviz
 							.add("style", "filled"));
 
-			// System.out.println(node);
 			g.add(node);
 		});
 
-		// log.info("graphviz for {}: {}", forestName, g.toString());
-		// log.debug("graphviz for {}: {}", forestName, Graphviz.fromGraph(g));
-		// log.debug("graphviz for {}: {}", forestName, g.toString());
+		log.debug("graphviz for {}: {}", forestName, Graphviz.fromGraph(g));
 
 		return g;
 	}
