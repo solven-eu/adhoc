@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "vue": "3.5.14"
+        "vue": "3.5.15"
     },
     "devDependencies": {
         "@playwright/test": "1.52.0",
