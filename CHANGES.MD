@@ -4,7 +4,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.8]
 ### Added
-- `CompositeTableTranscoder` is introduced
+- `CompositeTableTranscoder` is introduced.
+- `IDecompositionEntry` is introduced.
 
 ### Removed
 - `AtotiTableTranscoder.priorityTranscoder` is removed. Use `CompositeTableTranscoder` instead.

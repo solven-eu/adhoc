@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.decomposition.many2many;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -124,13 +126,13 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		Set<String> elementColumns = getInputColumns(options);
 
 		Map<String, ?> elementCoordinates = slice.optSliced(elementColumns);
 		if (elementCoordinates.size() < elementColumns.size()) {
 			// We lack some coordinates
-			return Map.of(Map.of(), value);
+			return List.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		Set<Object> groups = getGroups(slice, elementCoordinates);
@@ -140,14 +142,14 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return makeDecomposition(elementCoordinates, value, groupColumn, groups);
 	}
 
-	protected Map<Map<String, ?>, Object> makeDecomposition(Map<String, ?> element,
+	protected List<IDecompositionEntry> makeDecomposition(Map<String, ?> element,
 			Object value,
 			String groupColumn,
 			Set<Object> groups) {
-		Map<Map<String, ?>, Object> output = new HashMap<>();
+		List<IDecompositionEntry> output = new ArrayList<>(groups.size());
 
 		groups.forEach(group -> {
-			output.put(Map.of(groupColumn, group), scale(element, value));
+			output.add(IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)));
 		});
 
 		return output;

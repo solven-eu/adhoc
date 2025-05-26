@@ -338,6 +338,23 @@ This can be achieved through `IImplicitFilter`. A Spring-Security example is dem
 
 Most databases handles aggregations over primitive types (e.g. SUM over doubles). `Adhoc` can aggregate any type, given you can implement your own `IAggregation`.
 
+# Data Management
+
+This section does **not** refer to data storage in Adhoc (as, by principle, Adhoc does not store data). But it is about mechanisms used in the library to manage data, especially primitive types.
+
+The general motivation is:
+
+- Prevent boxing/unboxing as much as possible: one should be able to rely on primitive type, especially in critical section of the engine. This enable better performance, and lower GC pressure.
+- Focus on `long`, `double` and `Object`. `int` is managed as `long`. `float` is managed as `double`.
+- Easy way to rely on plain Objects, until later optimization phases enabling `long` and `double` specific management.
+
+## IValueReceiver
+
+An `IValueReceiver` is subject to receiving data. Incoming data may be a `long`, a `double` or an `Object` (possibly `null`). The `Object` is not guaranteed not to be a `long` or a `double`.
+
+## IValueProvider
+
+An `IValueProvider` is subject to provide data. Outgoing data may be a `long`, a `double` or an `Object` (possibly `null`). The `Object` is not required not to be a `long` or a `double`.
 
 # Roadmap / Limitations to lift soon
 
@@ -356,11 +373,11 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
 - [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
-- [Resiliency] Resiliency on querySteps errors: a failing measure should not break the whole query.
+- [Resiliency] On querySteps errors: a failing measure should not break the whole query.
 - [Resiliency] Work on query cancellations/queryTimeouts
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
-- [Composite] `getCoordinates` should be executed once per each underlying cube
+- [Composite] `getCoordinates` should be executed once per underlying cube
 - [Composite] Enable a failing sub-query not to break the composite query
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Enable calculated columns, computed right after the table
@@ -370,8 +387,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
 - [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
-- [Feature] Pivotable Wizard Search should highlight matching portions
-- [Feature] Add easily underlying measures given a selected measure
-- [API] Provide referential implementation to Query with [RSQL](https://github.com/jirutka/rsql-parser) and [GraphQL](https://github.com/graphql-java/graphql-java)
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
-- [Feature] Rely on `GROUP BY ALL` syntax.

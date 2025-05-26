@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.table.duckdb.var;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -33,9 +33,11 @@ import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -64,7 +66,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
 		boolean groupByScenario =
 				groupedByColumns.contains(C_SCENARIOINDEX) || groupedByColumns.contains(C_SCENARIONAME);
@@ -77,16 +79,17 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 
 			int[] array = (int[]) value;
 
-			Map<Map<String, ?>, Object> decomposition = new LinkedHashMap<>();
+			List<IDecompositionEntry> decomposition = new ArrayList<>(nbScenarios);
 
 			IntStream.range(0, nbScenarios)
 					.filter(scenario -> scenarioIndexMatcher.match(scenario)
 							&& scenarioNameMatcher.match(ExampleVaRScenarioNameCombination.indexToName(scenario)))
 					.forEach(scenario -> {
-						decomposition.put(ImmutableMap.<String, Object>builder()
+						ImmutableMap<String, Object> scenarioSlice = ImmutableMap.<String, Object>builder()
 								.put(C_SCENARIOINDEX, scenario)
 								.put(C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(scenario))
-								.build(), array[scenario]);
+								.build();
+						decomposition.add(IDecompositionEntry.of(scenarioSlice, array[scenario]));
 					});
 
 			return decomposition;
@@ -96,7 +99,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 			Set<String> filteredColumns = FilterHelpers.getFilteredColumns(slice.asFilter());
 			if (!filteredColumns.contains(C_SCENARIOINDEX) && !filteredColumns.contains(C_SCENARIONAME)) {
 				// No filter on scenarios
-				return Map.of(Map.of(), value);
+				return List.of(IDecompositionEntry.of(Map.of(), value));
 			} else {
 				int[] array = (int[]) value;
 
@@ -107,7 +110,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 						.toArray();
 
 				// Return a single slice, with the selected subset of scenarios
-				return Map.of(Map.of(), filteredValuesAsArray);
+				return List.of(IDecompositionEntry.of(Map.of(), filteredValuesAsArray));
 			}
 		}
 	}

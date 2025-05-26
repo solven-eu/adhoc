@@ -29,6 +29,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -41,6 +42,7 @@ import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
@@ -135,7 +137,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			return;
 		}
 
-		Map<? extends Map<String, ?>, ?> decomposed = decomposition.decompose(slice.getSlice(), value);
+		List<IDecompositionEntry> decomposed = decomposition.decompose(slice.getSlice(), value);
 
 		// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
 		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
@@ -143,11 +145,13 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		boolean isMultiGroupSlice;
 
 		{
-			Set<Set<String>> decompositionGroupBys =
-					decomposed.keySet().stream().map(Map::keySet).collect(Collectors.toSet());
+			Set<Set<String>> decompositionColumns = decomposed.stream()
+					.map(IDecompositionEntry::getSlice)
+					.map(s -> s.keySet())
+					.collect(Collectors.toSet());
 
 			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
-			if (decompositionGroupBys.stream().allMatch(groupByColumns::containsAll)) {
+			if (decompositionColumns.stream().allMatch(groupByColumns::containsAll)) {
 				// all group columns are expressed in groupBy
 				isMultiGroupSlice = false;
 			} else {
@@ -161,8 +165,12 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		// filter.
 		Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
 
-		decomposed.forEach((fragmentCoordinate, fragmentValue) -> {
+		decomposed.forEach(decompositionEntry -> {
+			Map<String, ?> fragmentCoordinate = decompositionEntry.getSlice();
+			IValueProvider fragmentValueProvider = decompositionEntry.getValue();
+
 			if (isDebug()) {
+				Object fragmentValue = IValueProvider.getValue(fragmentValueProvider);
 				log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 			}
 
@@ -174,7 +182,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 					// multiGroupSlice: ensure current element has not already been contributed
 					|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
 				SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
-				aggregatingView.merge(coordinateAsSlice).onObject(fragmentValue);
+				fragmentValueProvider.acceptReceiver(aggregatingView.merge(coordinateAsSlice));
 
 				if (isDebug()) {
 					aggregatingView.onValue(coordinateAsSlice)
