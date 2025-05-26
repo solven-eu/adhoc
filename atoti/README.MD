@@ -6,7 +6,7 @@ https://www.atoti.io/
 
 This module helps interacting between Adhoc and Atoti/ActivePivot. Main features are:
 
-- Migration from ActivePivot measures descritpions to Adhoc forests. (It migrates a tree of measures, but not the actual PostProcessor implementations).
+- Convertion from ActivePivot measures descritpions to Adhoc forests. (It migrates a tree of measures, but not the actual PostProcessor implementations).
 - Query ActivePivot from Adhoc. (e.g. to backtest a migrated PostProcessor over data stored in ActivePivot).
 
 ## Activeviam Intellectual Property Considerations

@@ -375,4 +375,3 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [API] Provide referential implementation to Query with [RSQL](https://github.com/jirutka/rsql-parser) and [GraphQL](https://github.com/graphql-java/graphql-java)
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
 - [Feature] Rely on `GROUP BY ALL` syntax.
-- [Feature] Requesting an `ICombination` with an `IAggregationKey` should fallback on a generic `ICombination` applying the `IAggregation`.

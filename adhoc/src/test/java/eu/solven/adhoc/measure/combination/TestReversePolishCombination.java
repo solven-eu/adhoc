@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.measure;
+package eu.solven.adhoc.measure.combination;
 
 import static org.assertj.core.api.Assertions.offset;
 
@@ -31,17 +31,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
-
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 
-public class TestArithmeticFormulaCombination {
+public class TestReversePolishCombination {
 
 	@Test
 	public void testProduct() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[someMeasureName],double[10000],*"));
+		ReversePolishCombination c = new ReversePolishCombination(
+				Map.of(ReversePolishCombination.K_NOTATION, "underlyings[someMeasureName],double[10000],*"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(0.123_456))).isEqualTo(1234.56);
@@ -52,9 +49,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testProduct_3operands() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"int[123],aggregatedValue[someMeasureName],double[234],*"));
+		ReversePolishCombination c = new ReversePolishCombination(
+				Map.of(ReversePolishCombination.K_NOTATION, "int[123],underlyings[someMeasureName],double[234],*"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(34.56))).isEqualTo(123 * 34.56 * 234);
@@ -68,13 +64,12 @@ public class TestArithmeticFormulaCombination {
 	public void testComplexCase() {
 		String[] array = new String[] { "10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+" };
 		String joined = String.join(",", array);
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						joined,
-						"twoOperandsPerOperator",
-						true,
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				joined,
+				"twoOperandsPerOperator",
+				true,
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat((double) c.combine(slice, Arrays.asList(34.56))).isCloseTo(21.54, offset(0.01));
@@ -86,8 +81,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSumWithConstant() {
-		ArithmeticFormulaCombination c = new ArithmeticFormulaCombination(
-				Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY, "aggregatedValue[someMeasureName],int[234],+"));
+		ReversePolishCombination c = new ReversePolishCombination(
+				Map.of(ReversePolishCombination.K_NOTATION, "underlyings[someMeasureName],int[234],+"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123 + 234);
@@ -97,11 +92,10 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSumWithConstant_NotNullIfNotASingleUnderlying() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[someMeasureName],int[234],+",
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				"underlyings[someMeasureName],int[234],+",
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123 + 234);
@@ -110,9 +104,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSumParenthesis() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"(aggregatedValue[someMeasureName],aggregatedValue[otherMeasureName],int[345],+)"));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				"(underlyings[someMeasureName],underlyings[otherMeasureName],int[345],+)"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(123, 234L))).isEqualTo(0L + 123 + 234 + 345);
@@ -123,11 +116,10 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSubFormulas() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"((123,234,+),(345,456,+),*)",
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				"((123,234,+),(345,456,+),*)",
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0L + (123 + 234) * (345 + 456));
@@ -135,11 +127,10 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSubFormulas_null() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"((null,234,*),(null,null,*),*)",
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				"((null,234,*),(null,null,*),*)",
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isNull();
@@ -147,11 +138,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testDouble() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"12.34,23.45,+",
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(
+				Map.of(ReversePolishCombination.K_NOTATION, "12.34,23.45,+", "nullIfNotASingleUnderlying", false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 + 23.45);
@@ -159,9 +147,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testMissingUnderlying() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"aggregatedValue[someMeasureName],aggregatedValue[someMeasureName2],+"));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				"underlyings[someMeasureName],underlyings[someMeasureName2],+"));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		// Not enough underlyings: failure
@@ -174,11 +161,8 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testSubstraction() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						"12.34,23.45,-",
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(
+				Map.of(ReversePolishCombination.K_NOTATION, "12.34,23.45,-", "nullIfNotASingleUnderlying", false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 - 23.45);
@@ -186,11 +170,10 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testScientificNotation_Max() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						Double.toString(Double.MAX_VALUE),
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				Double.toString(Double.MAX_VALUE),
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MAX_VALUE);
@@ -198,11 +181,10 @@ public class TestArithmeticFormulaCombination {
 
 	@Test
 	public void testScientificNotation_MinNormal() {
-		ArithmeticFormulaCombination c =
-				new ArithmeticFormulaCombination(Map.of(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-						Double.toString(Double.MIN_NORMAL),
-						"nullIfNotASingleUnderlying",
-						false));
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				Double.toString(Double.MIN_NORMAL),
+				"nullIfNotASingleUnderlying",
+				false));
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MIN_NORMAL);

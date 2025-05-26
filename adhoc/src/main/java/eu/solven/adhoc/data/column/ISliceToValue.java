@@ -47,7 +47,7 @@ public interface ISliceToValue {
 
 	boolean isEmpty();
 
-	Stream<SliceAsMap> keySetStream();
+	Stream<SliceAsMap> slices();
 
 	Set<SliceAsMap> slicesSet();
 

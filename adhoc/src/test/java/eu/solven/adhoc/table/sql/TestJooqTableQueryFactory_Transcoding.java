@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
@@ -52,16 +51,18 @@ public class TestJooqTableQueryFactory_Transcoding {
 
 	ITableTranscoder transcoder =
 			MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
-	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
-			DSL.table(DSL.name("someTableName")),
-			DSL.using(SQLDialect.DUCKDB));
+
+	JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+			.table(DSL.table(DSL.name("someTableName")))
+			.dslContext(DSL.using(SQLDialect.DUCKDB))
+			.build();
 
 	TranscodingContext transcodingContext = TranscodingContext.builder().transcoder(transcoder).build();
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				queryFactory.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -74,7 +75,7 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToTableQuery_transcodingLeadsToMatchNone() {
 		// BEWARE We expect a WARN. It should be turned into an Event at some point
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(
 				TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -85,6 +86,6 @@ public class TestJooqTableQueryFactory_Transcoding {
 				  "k1" = 'v1'
 				  and "k2" = 'v2'
 				)
-				group by ()""");
+				group by ALL""");
 	}
 }

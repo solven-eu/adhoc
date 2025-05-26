@@ -71,7 +71,7 @@ public class TestTransformator_Bucketor_Perf_DuckDb extends ARawDagTest implemen
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	static final int maxCardinality = 1_000_000 / 1;
+	static final int maxCardinality = 1_000_000 / 10;
 
 	@BeforeAll
 	public static void setLimits() {

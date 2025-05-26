@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.migration;
+package eu.solven.adhoc.atoti.convertion;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
@@ -38,9 +41,11 @@ import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
+import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IMeasureMemberDescription;
 import com.quartetfs.biz.pivot.definitions.INativeMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
+import com.quartetfs.biz.pivot.definitions.impl.JoinMeasureDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABasicPostProcessor;
@@ -51,12 +56,13 @@ import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
-import eu.solven.adhoc.atoti.measure.ArithmeticFormulaCombination;
 import eu.solven.adhoc.atoti.table.AtotiTranscoder;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
+import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
@@ -76,6 +82,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -85,17 +92,22 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
+@SuperBuilder
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
 public class AtotiMeasureToAdhoc {
+	/**
+	 * Hints the target table model queried by Adhoc measures as migrated from ActivePivot.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public enum SourceMode {
 		/**
-		 * Adhoc will query data equivalent to the Datastore.
+		 * Adhoc will query data equivalent to the data in Atoti Datastore.
 		 */
 		Datastore,
 		/**
-		 * Adhoc will query data equivalent to the Cube.
+		 * Adhoc will query data equivalent to the data in Atoti Cube.
 		 */
 		Cube,
 	}
@@ -142,17 +154,7 @@ public class AtotiMeasureToAdhoc {
 
 		// Add (pre-)aggregated measures.
 		desc.getMeasuresDescription().getAggregatedMeasuresDescription().forEach(preAggregatedMeasure -> {
-			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
-					.name(preAggregatedMeasure.getName())
-					.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
-
-			if (sourceMode == SourceMode.Datastore) {
-				aggregatorBuilder.columnName(preAggregatedMeasure.getFieldName());
-			}
-
-			transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
-
-			measureForest.measure(aggregatorBuilder.build());
+			measureForest.measures(onAggregatedMeasure(preAggregatedMeasure));
 		});
 
 		IExtendedPlugin<IPostProcessor<?>> extendedPluginFactory = Registry.getExtendedPlugin(IPostProcessor.class);
@@ -174,6 +176,50 @@ public class AtotiMeasureToAdhoc {
 		});
 
 		return measureForest.build();
+	}
+
+	protected List<IMeasure> onAggregatedMeasure(IAggregatedMeasureDescription preAggregatedMeasure) {
+		Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
+				.name(preAggregatedMeasure.getName())
+				.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
+
+		if (sourceMode == SourceMode.Datastore) {
+			String rawFieldName = preAggregatedMeasure.getFieldName();
+
+			String columnName;
+			if (preAggregatedMeasure instanceof JoinMeasureDescription) {
+				// BEWARE This case is probably buggy
+				columnName = rawFieldName;
+			} else {
+				columnName = quoteIfNecessary(rawFieldName);
+			}
+
+			// BEWARE We do not quote the field as we expect a measure containing a `.` (e.g. )
+			aggregatorBuilder.columnName(columnName);
+		} else if (sourceMode == SourceMode.Cube) {
+			String rawMeasureName = preAggregatedMeasure.getName();
+
+			// Typical measure name is `k1.SUM`. The `.` would be interpreted as a `JOIN` in
+			// `JooqTableQueryFactory.name(String)`.
+			String columnName = quoteIfNecessary(rawMeasureName);
+
+			// Do not query the underlying field name, as we expect to export the Cube columns
+			aggregatorBuilder.columnName(columnName);
+		}
+
+		transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
+
+		return List.of(aggregatorBuilder.build());
+	}
+
+	private String quoteIfNecessary(String rawFieldName) {
+		String columnName;
+		if (rawFieldName.contains(".")) {
+			columnName = '\"' + rawFieldName + '\"';
+		} else {
+			columnName = rawFieldName;
+		}
+		return columnName;
 	}
 
 	protected Aggregator.AggregatorBuilder convertNativeMeasure(INativeMeasureDescription nativeMeasure) {
@@ -247,10 +293,12 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
-		return onCombinator(measure, getUnderlyingNames(measure));
+		return onCombinator(measure, getUnderlyingNames(measure), Function.identity());
 	}
 
-	protected List<IMeasure> onCombinator(IPostProcessorDescription measure, List<String> underlyingNames) {
+	protected List<IMeasure> onCombinator(IPostProcessorDescription measure,
+			List<String> underlyingNames,
+			Function<Map<String, Object>, Map<String, Object>> onOptions) {
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
 		transferProperties(measure, combinatorBuilder::tag);
 
@@ -271,7 +319,7 @@ public class AtotiMeasureToAdhoc {
 				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
 
 		combinatorBuilder.combinationKey(measure.getPluginKey());
-		combinatorBuilder.combinationOptions(combinatorOptions);
+		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
 
 		return List.of(combinatorBuilder.build());
 	}
@@ -404,9 +452,19 @@ public class AtotiMeasureToAdhoc {
 
 	// TODO Some formula may be more complex than a simple Combinator
 	protected List<IMeasure> onArithmeticFormulaPostProcessor(IPostProcessorDescription measure) {
-		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(
-				measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
-		return onCombinator(measure, underlyingNames);
+		String formula = measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+		String notation = formula.replaceAll(Pattern.quote("aggregatedValue["),
+				Matcher.quoteReplacement(EvaluatedExpressionCombination.P_UNDERLYINGS + "["));
+
+		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(notation));
+
+		List<IMeasure> combinator = onCombinator(measure, underlyingNames, options -> {
+			options.remove(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+			options.put(ReversePolishCombination.K_NOTATION, notation);
+
+			return options;
+		});
+		return combinator;
 	}
 
 	protected IMeasure onColumnator(IPostProcessorDescription measure,
@@ -451,14 +509,14 @@ public class AtotiMeasureToAdhoc {
 				.toList();
 	}
 
-	protected void transferProperties(IMeasureMemberDescription apMeasure, Consumer<String> tagConsumer) {
-		if (!apMeasure.isVisible()) {
+	protected void transferProperties(IMeasureMemberDescription measure, Consumer<String> tagConsumer) {
+		if (!measure.isVisible()) {
 			tagConsumer.accept("hidden");
 		}
-		if (!Strings.isNullOrEmpty(apMeasure.getGroup())) {
-			tagConsumer.accept(apMeasure.getGroup());
+		if (!Strings.isNullOrEmpty(measure.getGroup())) {
+			tagConsumer.accept("group=" + measure.getGroup());
 		}
-		String folder = apMeasure.getFolder();
+		String folder = measure.getFolder();
 		if (!Strings.isNullOrEmpty(folder)) {
 			tagConsumer.accept("folder=" + folder);
 		}

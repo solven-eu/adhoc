@@ -23,13 +23,8 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -39,62 +34,23 @@ import eu.solven.pepper.mappath.MapPathGet;
  * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/product-function-dax
-public class ProductCombination implements ICombination {
+public class ProductCombination extends AggregationCombination {
 
 	public static final String KEY = "PRODUCT";
 
-	// If true, any null underlying leads to a null output
-	// If false, null underlyings are ignored
-	final boolean nullOperandIsNull;
-
 	public ProductCombination() {
-		nullOperandIsNull = true;
+		super(new ProductAggregation(), true);
 	}
 
 	public ProductCombination(Map<String, ?> options) {
-		nullOperandIsNull = MapPathGet.<Boolean>getOptionalAs(options, "nullOperandIsNull").orElse(true);
+		super(new ProductAggregation(),
+				MapPathGet.<Boolean>getOptionalAs(options, AggregationCombination.K_CUSTOM_IF_ANY_NULL_OPERAND)
+						.orElse(true));
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		MultitypeCell refMultitype =
-				MultitypeCell.builder().aggregation(new ProductAggregation()).asLong(1L).asDouble(1D).build();
-
-		IValueReceiver cellValueConsumer = refMultitype.merge();
-		AtomicBoolean hasNull = new AtomicBoolean();
-
-		IValueReceiver proxyValueReceiver = new IValueReceiver() {
-
-			@Override
-			public void onLong(long v) {
-				cellValueConsumer.onLong(v);
-			}
-
-			@Override
-			public void onDouble(double v) {
-				cellValueConsumer.onDouble(v);
-			}
-
-			@Override
-			public void onObject(Object v) {
-				if (v == null) {
-					hasNull.set(true);
-				} else {
-					cellValueConsumer.onObject(v);
-				}
-			}
-		};
-
-		int size = slicedRecord.size();
-		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
-		}
-
-		if (nullOperandIsNull && hasNull.get()) {
-			return IValueProvider.NULL;
-		}
-
-		return refMultitype.reduce();
+	protected MultitypeCell makeMultitypeCell() {
+		return MultitypeCell.builder().aggregation(agg).asLong(1L).asDouble(1D).build();
 	}
 
 }
