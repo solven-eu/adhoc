@@ -27,8 +27,11 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 public class TestStandardOperatorsFactory {
 	StandardOperatorsFactory factory = new StandardOperatorsFactory();
@@ -52,5 +55,21 @@ public class TestStandardOperatorsFactory {
 		Assertions.assertThatThrownBy(() -> factory.makeAggregation("someUnknownKey"))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("someUnknownKey");
+	}
+
+	@RequiredArgsConstructor
+	public static class WithOptionsCombination implements ICombination {
+		@Getter
+		final Map<String, ?> options;
+	}
+
+	@Test
+	public void testOptions() {
+		ICombination combination = factory.makeCombination(WithOptionsCombination.class.getName(), Map.of("k", "v"));
+
+		Assertions.assertThat(combination).isInstanceOfSatisfying(WithOptionsCombination.class, withOptions -> {
+			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("k", "v");
+			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("operatorsFactory", factory);
+		});
 	}
 }

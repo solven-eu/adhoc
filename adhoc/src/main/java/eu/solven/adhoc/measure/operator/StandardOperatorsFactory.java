@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.operator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
@@ -40,10 +41,26 @@ import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
-import eu.solven.adhoc.measure.sum.*;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.sum.CountAggregation;
+import eu.solven.adhoc.measure.sum.DivideCombination;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.measure.sum.ProductAggregation;
+import eu.solven.adhoc.measure.sum.ProductCombination;
+import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A default {@link IOperatorsFactory} wrapping core {@link IAggregation}, {@link ICombination}, {@link IDecomposition}
+ * and {@link IFilterEditor}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class StandardOperatorsFactory implements IOperatorsFactory {
 
@@ -79,19 +96,19 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public ICombination makeCombination(String key, Map<String, ?> options) {
+		if (SumAggregation.isSum(key)) {
+			return new SumCombination();
+		} else if (ProductAggregation.isProduct(key)) {
+			return new ProductCombination();
+		} else if (DivideCombination.isDivide(key)) {
+			return new DivideCombination();
+		} else if (SubstractionCombination.isSubstraction(key)) {
+			return new SubstractionCombination();
+		}
+
+		Map<String, ?> enrichedOptions = enrichOptions(options);
+
 		return switch (key) {
-		case SumCombination.KEY: {
-			yield new SumCombination();
-		}
-		case DivideCombination.KEY: {
-			yield new DivideCombination(options);
-		}
-		case ProductCombination.KEY: {
-			yield new ProductCombination(options);
-		}
-		case SubstractionCombination.KEY: {
-			yield new SubstractionCombination();
-		}
 		case MaxCombination.KEY: {
 			yield new MaxCombination();
 		}
@@ -103,18 +120,27 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 				Class.forName("com.ezylang.evalex.Expression");
 			} catch (ClassNotFoundException ex) {
 				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loaded."
-						+ " It is an optional maven dependency you need to activate manually");
+						+ " It is an `<optional>true</optional>` maven dependency you need to activate manually");
 			}
-			yield EvaluatedExpressionCombination.parse(options);
+			yield EvaluatedExpressionCombination.parse(enrichedOptions);
 		}
 		case FindFirstCombination.KEY: {
 			yield new FindFirstCombination();
 		}
 		default:
 
-			yield defaultCombination(key, options);
+			yield defaultCombination(key, enrichedOptions);
 		};
 
+	}
+
+	protected Map<String, Object> enrichOptions(Map<String, ?> options) {
+		Map<String, Object> enriched = new LinkedHashMap<String, Object>(options);
+
+		// Some operators needs to create more operators (e.g. ReversePolishCombination)
+		enriched.put("operatorsFactory", this);
+
+		return enriched;
 	}
 
 	protected ICombination defaultCombination(String className, Map<String, ?> options) {

@@ -54,7 +54,7 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public Stream<SliceAsMap> keySetStream() {
+	public Stream<SliceAsMap> slices() {
 		return column.keyStream();
 	}
 

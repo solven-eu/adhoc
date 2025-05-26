@@ -27,8 +27,11 @@ import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
@@ -60,5 +63,22 @@ public class TestCombinatorQueryStep {
 		Assertions.assertThat(node.getUnderlyingSteps()).singleElement().satisfies(step -> {
 			Assertions.assertThat(step.getMeasure().getName()).isEqualTo("validUnderlying");
 		});
+	}
+
+	@Test
+	public void testFindFirstSingleUnderlying() {
+		Combinator combinator = Combinator.builder()
+				.name("someName")
+				.combinationKey(FindFirstCombination.KEY)
+				.underlyings(Arrays.asList("otherName"))
+				.build();
+
+		ITransformatorQueryStep node = combinator.wrapNode(new StandardOperatorsFactory(),
+				CubeQueryStep.builder().measure("someName").build());
+
+		ISliceToValue underlying = Mockito.mock(ISliceToValue.class);
+		ISliceToValue output = node.produceOutputColumn(Arrays.asList(underlying));
+
+		Assertions.assertThat(output).isSameAs(underlying);
 	}
 }

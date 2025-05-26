@@ -74,7 +74,7 @@ public class TestDuckDbHelper {
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
-								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
+								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ALL""");
 	}
 
 	@Test
@@ -100,7 +100,7 @@ public class TestDuckDbHelper {
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
-								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ()""");
+								select approx_count_distinct("table"."column") "approx_count_distinct_7", approx_top_k("table"."column", 123) "approx_top_k_7" from someTable group by ALL""");
 	}
 
 	@Test
@@ -122,6 +122,6 @@ public class TestDuckDbHelper {
 		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
-								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ()""");
+								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ALL""");
 	}
 }

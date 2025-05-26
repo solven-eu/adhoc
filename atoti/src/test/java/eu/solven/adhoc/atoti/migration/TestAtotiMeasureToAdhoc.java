@@ -48,15 +48,24 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
+import eu.solven.adhoc.atoti.migration.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.combination.ReversePolishCombination;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestAtotiMeasureToAdhoc {
 
-	final AtotiMeasureToAdhoc apMeasuresToAdhoc = AtotiMeasureToAdhoc.builder().build();
+	final AtotiMeasureToAdhoc apMeasuresToAdhoc =
+			AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
 
 	@BeforeAll
 	public static void beforeAll() {
@@ -354,8 +363,8 @@ public class TestAtotiMeasureToAdhoc {
 								.combinationKey(ArithmeticFormulaPostProcessor.PLUGIN_KEY)
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										.put("customKey", "customValue")
-										.put(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY,
-												"aggregatedValue[someAggregatedMeasure],double[10000],*")
+										.put(ReversePolishCombination.K_NOTATION,
+												"underlyings[someAggregatedMeasure],double[10000],*")
 										.build())
 								.underlying("someAggregatedMeasure")
 								.build());
@@ -363,14 +372,16 @@ public class TestAtotiMeasureToAdhoc {
 
 	@Test
 	public void testCustomConditions() {
-		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
+		CustomActivePivotMeasureToAdhoc converter =
+				CustomActivePivotMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
 
 		Assertions.assertThat(converter.getApConditionToAdhoc()).isInstanceOf(CustomAtotiConditionCubeToAdhoc.class);
 	}
 
 	@Test
 	public void testOnColumnator() {
-		CustomActivePivotMeasureToAdhoc converter = CustomActivePivotMeasureToAdhoc.customBuilder().build();
+		CustomActivePivotMeasureToAdhoc converter =
+				CustomActivePivotMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
 
 		IPostProcessorDescription pp = new PostProcessorDescription();
 		pp.setName("someMeasureName");

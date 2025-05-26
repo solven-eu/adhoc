@@ -23,15 +23,21 @@
 package eu.solven.adhoc.atoti.custom;
 
 import eu.solven.adhoc.atoti.migration.AtotiMeasureToAdhoc;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Demonstrate how to extends {@link AtotiMeasureToAdhoc} given it has a {@link Builder}
  */
+@SuperBuilder
 public class CustomActivePivotMeasureToAdhoc extends AtotiMeasureToAdhoc {
-	@Builder(builderMethodName = "customBuilder")
-	public CustomActivePivotMeasureToAdhoc(ITableTranscoder transcoder, SourceMode sourceMode) {
-		super(new CustomAtotiConditionCubeToAdhoc(), transcoder, sourceMode);
+	// @Builder(builderMethodName = "customBuilder")
+	// public CustomActivePivotMeasureToAdhoc(ITableTranscoder transcoder, SourceMode sourceMode) {
+	// super(new CustomAtotiConditionCubeToAdhoc(), transcoder, sourceMode);
+	// }
+
+	public static CustomActivePivotMeasureToAdhoc.CustomActivePivotMeasureToAdhocBuilder<?, ?> builder() {
+		return new CustomActivePivotMeasureToAdhoc.CustomActivePivotMeasureToAdhocBuilderImpl()
+				.apConditionToAdhoc(new CustomAtotiConditionCubeToAdhoc());
 	}
 }

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.sum.AggregationCombination;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 
 public class TestProductCombination {
@@ -59,7 +60,8 @@ public class TestProductCombination {
 
 	@Test
 	public void testSimpleCases_nullOperandIsNotNull() {
-		ProductCombination combination = new ProductCombination(Map.of("nullOperandIsNull", false));
+		ProductCombination combination =
+				new ProductCombination(Map.of(AggregationCombination.K_CUSTOM_IF_ANY_NULL_OPERAND, false));
 
 		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);

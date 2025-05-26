@@ -94,7 +94,7 @@ public class UnderlyingQueryStepHelpers {
 			} else if (notSorted.size() == 1) {
 				notSortedAsSet = notSorted.iterator().next().slicesSet();
 			} else {
-				notSortedAsSet = notSorted.stream().flatMap(s -> s.keySetStream()).collect(Collectors.toSet());
+				notSortedAsSet = notSorted.stream().flatMap(s -> s.slices()).collect(Collectors.toSet());
 			}
 
 			Stream<SliceAndMeasures> notSortedSlices = notSortedAsSet.stream().map(sliceAsMap -> {

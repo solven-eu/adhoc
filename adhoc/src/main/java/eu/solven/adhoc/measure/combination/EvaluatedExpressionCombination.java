@@ -51,7 +51,8 @@ import lombok.extern.slf4j.Slf4j;
 public class EvaluatedExpressionCombination implements ICombination, IHasSanityChecks {
 	public static final String KEY = "EXPRESSION";
 
-	public static final String KEY_EXPRESSION = "expression";
+	public static final String K_EXPRESSION = "expression";
+	public static final String P_UNDERLYINGS = "underlyings";
 
 	@NonNull
 	final String expression;
@@ -74,7 +75,8 @@ public class EvaluatedExpressionCombination implements ICombination, IHasSanityC
 
 			// Enable referring to underlyings by their index
 			// BEWARE This may be overriden if an underlying measure is named `underlyings`
-			nameToValue.put("underlyings", underlyingValues);
+			// e.g. `underlyings[0] + underlyings[1]`
+			nameToValue.put(P_UNDERLYINGS, underlyingValues);
 
 			for (int i = 0; i < Math.min(underlyingNames.size(), underlyingValues.size()); i++) {
 				nameToValue.put(underlyingNames.get(i), underlyingValues.get(i));
@@ -111,7 +113,7 @@ public class EvaluatedExpressionCombination implements ICombination, IHasSanityC
 	}
 
 	public static EvaluatedExpressionCombination parse(Map<String, ?> options) {
-		String expression = MapPathGet.getRequiredString(options, KEY_EXPRESSION);
+		String expression = MapPathGet.getRequiredString(options, K_EXPRESSION);
 		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 		return new EvaluatedExpressionCombination(expression, underlyingIndexToName);
 	}

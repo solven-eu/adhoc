@@ -22,32 +22,16 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.data.cell.MultitypeCell;
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.combination.ICombination;
+@Deprecated(since = "Use `AggregationCombination`", forRemoval = true)
+public class SumCombination extends AggregationCombination {
+	public static final String KEY = SumAggregation.KEY;
 
-public class SumCombination implements ICombination {
+	public SumCombination(boolean nullOperandIsNull) {
+		super(new SumAggregation(), nullOperandIsNull);
+	}
 
-	public static final String KEY = "SUM";
-
-	final IAggregation agg = new SumAggregation();
-
-	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		int size = slicedRecord.size();
-
-		MultitypeCell refMultitype = MultitypeCell.builder().aggregation(agg).build();
-
-		IValueReceiver cellValueConsumer = refMultitype.merge();
-		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptReceiver(cellValueConsumer);
-		}
-
-		return refMultitype.reduce();
+	public SumCombination() {
+		this(AggregationCombination.DEFAULT_CUSTOM_IF_ANY_NULL);
 	}
 
 }

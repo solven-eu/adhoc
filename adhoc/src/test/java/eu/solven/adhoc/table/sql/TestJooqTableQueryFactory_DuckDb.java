@@ -36,7 +36,6 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -47,7 +46,7 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 
-public class TestJooqTableQueryFactory {
+public class TestJooqTableQueryFactory_DuckDb {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -55,13 +54,14 @@ public class TestJooqTableQueryFactory {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	JooqTableQueryFactory streamOpener = new JooqTableQueryFactory(new StandardOperatorsFactory(),
-			DSL.table(DSL.name("someTableName")),
-			DSL.using(SQLDialect.DUCKDB));
+	JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+			.table(DSL.table(DSL.name("someTableName")))
+			.dslContext(DSL.using(SQLDialect.DUCKDB))
+			.build();
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = streamOpener.toCondition(ColumnFilter.isEqualTo("k1", "v1")).get();
+		Condition condition = queryFactory.toCondition(ColumnFilter.isEqualTo("k1", "v1")).get();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'
@@ -72,7 +72,7 @@ public class TestJooqTableQueryFactory {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				streamOpener.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				queryFactory.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -85,7 +85,7 @@ public class TestJooqTableQueryFactory {
 	@Test
 	public void testToCondition_OrColumnsEquals() {
 		IAdhocFilter filter = OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2"));
-		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -99,7 +99,7 @@ public class TestJooqTableQueryFactory {
 	public void testToCondition_Not() {
 		IAdhocFilter filter =
 				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
-		JooqTableQueryFactory.ConditionWithFilter condition = streamOpener.toCondition(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -111,69 +111,69 @@ public class TestJooqTableQueryFactory {
 
 	@Test
 	public void testGrandTotal() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k" from "someTableName" where "k" is not null group by ()""");
+				select sum("k") "k" from "someTableName" group by ALL""");
 	}
 
 	@Test
 	public void testMeasureNameWithDot() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("t"."k") "k.USD" from "someTableName" where "t"."k" is not null group by ()""");
+				select sum("t"."k") "k.USD" from "someTableName" group by ALL""");
 	}
 
 	@Test
 	public void testColumnWithAt() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "a@b@c" from "someTableName" where "k" is not null group by "a@b@c"
+				select sum("k") "k", "a@b@c" from "someTableName" group by ALL
 				""".trim());
 	}
 
 	@Test
 	public void testColumnWithSpace() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "pre post" from "someTableName" where "k" is not null group by "pre post"
+				select sum("k") "k", "pre post" from "someTableName" group by ALL
 				""".trim());
 	}
 
 	@Test
 	public void testCountAsterisk() {
 		IJooqTableQueryFactory.QueryWithLeftover condition =
-				streamOpener.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
+				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(*) "count(*)" from "someTableName" group by ()
+				select count(*) "count(*)" from "someTableName" group by ALL
 				""".trim());
 	}
 
 	@Test
 	public void testEmptyAggregation() {
 		IJooqTableQueryFactory.QueryWithLeftover condition =
-				streamOpener.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
+				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select 1 from "someTableName" group by ()
+				select 1 from "someTableName" group by ALL
 				""".trim());
 	}
 
@@ -181,12 +181,12 @@ public class TestJooqTableQueryFactory {
 	public void testFilter_custom() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c" from "someTableName" where "k" is not null group by "c"
+				select sum("k") "k", "c" from "someTableName" group by ALL
 				""".trim());
 	}
 
@@ -195,12 +195,12 @@ public class TestJooqTableQueryFactory {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		IAdhocFilter orFilter = OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter);
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" where "k" is not null group by "c", "d"
+				select sum("k") "k", "c", "d" from "someTableName" group by ALL
 				""".trim());
 	}
 
@@ -209,45 +209,42 @@ public class TestJooqTableQueryFactory {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		IAdhocFilter orFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" where "k" is not null group by "c", "d"
+				select sum("k") "k", "c", "d" from "someTableName" group by ALL
 				""".trim());
 	}
 
 	@Test
 	public void testFilteredAggregator() {
 		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQueryV2.builder()
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" where "k" is not null group by ()
+				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" group by ALL
 				""".trim());
 	}
 
 	@Test
 	public void testMinMax() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())
 				.aggregator(Aggregator.builder().name("kMax").aggregationKey(MaxAggregation.KEY).build())
 				.build());
 
-		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
-				.isEqualTo(
-						"""
-								select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" where ("kMax" is not null or "kMin" is not null) group by ()
-								"""
-								.trim());
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" group by ALL
+				""".trim());
 	}
 
 	@Test
 	public void testRank() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = streamOpener.prepareQuery(TableQuery.builder()
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("kRank")
 						.aggregationKey(RankAggregation.KEY)
@@ -257,7 +254,7 @@ public class TestJooqTableQueryFactory {
 				.build());
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select arg_min("kRank", "kRank", 3) "kRank" from "someTableName" where "kRank" is not null group by ()
+				select arg_min("kRank", "kRank", 3) "kRank" from "someTableName" group by ALL
 				""".trim());
 	}
 

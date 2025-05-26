@@ -468,7 +468,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 					.name("table1_k_minus2")
 					.underlying(k1Sum.getName())
 					.combinationKey(EvaluatedExpressionCombination.KEY)
-					.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
+					.combinationOptions(Map.of(EvaluatedExpressionCombination.K_EXPRESSION,
 							"IF(underlyings[0] == null, null, underlyings[0] - 2)"))
 					.build());
 			cube1 = wrapInCube(measureBag, table1);
@@ -481,7 +481,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 					.name("table2_k_minus3")
 					.underlying(k1Sum.getName())
 					.combinationKey(EvaluatedExpressionCombination.KEY)
-					.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
+					.combinationOptions(Map.of(EvaluatedExpressionCombination.K_EXPRESSION,
 							"IF(underlyings[0] == null, null, underlyings[0] - 3)"))
 					.build());
 			cube2 = wrapInCube(measureBag, table2);
@@ -493,14 +493,14 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.name("composite_power2")
 				.underlying("table1_k_minus2")
 				.combinationKey(EvaluatedExpressionCombination.KEY)
-				.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
+				.combinationOptions(Map.of(EvaluatedExpressionCombination.K_EXPRESSION,
 						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0])"))
 				.build());
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power3")
 				.underlying("table2_k_minus3")
 				.combinationKey(EvaluatedExpressionCombination.KEY)
-				.combinationOptions(Map.of(EvaluatedExpressionCombination.KEY_EXPRESSION,
+				.combinationOptions(Map.of(EvaluatedExpressionCombination.K_EXPRESSION,
 						"IF(underlyings[0] == null, null, underlyings[0] * underlyings[0] * underlyings[0])"))
 				.build());
 

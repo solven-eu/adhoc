@@ -22,11 +22,6 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
-import java.util.Map;
-
-import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
-
-import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,16 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
+@Deprecated(since = "May be useless if not Atoti operators is specific enough")
 public class AtotiOperatorsFactory extends StandardOperatorsFactory {
 
-	@Override
-    public ICombination makeCombination(String key, Map<String, ?> options) {
-        return switch (key) {
-            case ArithmeticFormulaPostProcessor.PLUGIN_KEY: {
-                yield new ArithmeticFormulaCombination(options);
-            }
-            default:
-                yield super.makeCombination(key, options);
-        };
-    }
 }

@@ -36,6 +36,7 @@ import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
@@ -85,12 +86,17 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
+			// BEWARE This would not allow a Combinator to return slices independently of underlyings
 			return SliceToValue.empty();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
-
 		ICombination combination = combinationSupplier.get();
+		if (FindFirstCombination.isFindFirst(combination) && underlyings.size() == 1) {
+			// Shortcut given FindFirst specific semantic
+			return underlyings.getFirst();
+		}
+
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
 		forEachDistinctSlice(underlyings, combination, storage::append);
 

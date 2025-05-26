@@ -39,4 +39,13 @@ public class FindFirstCombination implements ICombination {
 		return underlyingValues.stream().filter(Objects::nonNull).findFirst().orElse(null);
 	}
 
+	/**
+	 * 
+	 * @param combination
+	 * @return true if given combination is a {@link FindFirstCombination}.
+	 */
+	public static boolean isFindFirst(ICombination combination) {
+		return combination instanceof FindFirstCombination;
+	}
+
 }

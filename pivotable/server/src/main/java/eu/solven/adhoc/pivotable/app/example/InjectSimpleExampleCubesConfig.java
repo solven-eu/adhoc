@@ -105,7 +105,7 @@ public class InjectSimpleExampleCubesConfig {
 				.underlying("gamma")
 				.combinationKey(EvaluatedExpressionCombination.KEY)
 				.combinationOptions(ImmutableMap.<String, Object>builder()
-						.put(EvaluatedExpressionCombination.KEY_EXPRESSION,
+						.put(EvaluatedExpressionCombination.K_EXPRESSION,
 								"IF(delta == null, 0, IF(gamma == null, 1, delta / (delta + gamma)))")
 						.build())
 				.tags(Arrays.asList("δ", "γ"))

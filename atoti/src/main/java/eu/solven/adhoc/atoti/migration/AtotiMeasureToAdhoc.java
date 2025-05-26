@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
@@ -51,12 +54,14 @@ import com.quartetfs.fwk.filtering.impl.TrueCondition;
 import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
-import eu.solven.adhoc.atoti.measure.ArithmeticFormulaCombination;
 import eu.solven.adhoc.atoti.table.AtotiTranscoder;
+import eu.solven.adhoc.column.EvaluatedExpressionColumn;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
+import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
+import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
@@ -76,6 +81,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -85,17 +91,22 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
+@SuperBuilder
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
 public class AtotiMeasureToAdhoc {
+	/**
+	 * Hints the target table model queried by Adhoc measures as migrated from ActivePivot.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public enum SourceMode {
 		/**
-		 * Adhoc will query data equivalent to the Datastore.
+		 * Adhoc will query data equivalent to the data in Atoti Datastore.
 		 */
 		Datastore,
 		/**
-		 * Adhoc will query data equivalent to the Cube.
+		 * Adhoc will query data equivalent to the data in Atoti Cube.
 		 */
 		Cube,
 	}
@@ -247,10 +258,12 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
-		return onCombinator(measure, getUnderlyingNames(measure));
+		return onCombinator(measure, getUnderlyingNames(measure), Function.identity());
 	}
 
-	protected List<IMeasure> onCombinator(IPostProcessorDescription measure, List<String> underlyingNames) {
+	protected List<IMeasure> onCombinator(IPostProcessorDescription measure,
+			List<String> underlyingNames,
+			Function<Map<String, Object>, Map<String, Object>> onOptions) {
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
 		transferProperties(measure, combinatorBuilder::tag);
 
@@ -271,7 +284,7 @@ public class AtotiMeasureToAdhoc {
 				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
 
 		combinatorBuilder.combinationKey(measure.getPluginKey());
-		combinatorBuilder.combinationOptions(combinatorOptions);
+		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
 
 		return List.of(combinatorBuilder.build());
 	}
@@ -404,9 +417,18 @@ public class AtotiMeasureToAdhoc {
 
 	// TODO Some formula may be more complex than a simple Combinator
 	protected List<IMeasure> onArithmeticFormulaPostProcessor(IPostProcessorDescription measure) {
-		List<String> underlyingNames = List.copyOf(ArithmeticFormulaCombination.parseUnderlyingMeasures(
-				measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY)));
-		return onCombinator(measure, underlyingNames);
+		String formula = measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(formula));
+
+		List<IMeasure> combinator = onCombinator(measure, underlyingNames, options -> {
+			options.remove(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+			options.put(ReversePolishCombination.K_NOTATION,
+					formula.replaceAll(Pattern.quote("aggregatedValue["),
+							Matcher.quoteReplacement(EvaluatedExpressionCombination.P_UNDERLYINGS + "[")));
+
+			return options;
+		});
+		return combinator;
 	}
 
 	protected IMeasure onColumnator(IPostProcessorDescription measure,

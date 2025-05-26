@@ -1,17 +1,26 @@
 /**
- * The MIT License Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.measure;
+package eu.solven.adhoc.measure.combination;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -23,10 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
-import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.combination.IHasTwoOperands;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -36,12 +43,14 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Implements Polish-notations to express formulas. See https://en.wikipedia.org/wiki/Polish_notation.
  *
- * Can be used as alternative to {@link com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor}
  */
 // TODO Enable shifting some column
 @Slf4j
-public class ArithmeticFormulaCombination implements ICombination {
-	final String formula;
+public class ReversePolishCombination implements ICombination, IHasSanityChecks {
+
+	public static final String K_NOTATION = "notation";
+
+	final String notation;
 	// Strict ReversePolishNotation only consumes 2 operands per operator
 	// But one may feel simpler to provide things like `a,b,c,+`
 	final boolean twoOperandsPerOperator;
@@ -52,19 +61,22 @@ public class ArithmeticFormulaCombination implements ICombination {
 
 	final IOperatorsFactory operatorsFactory;
 
-	public ArithmeticFormulaCombination(Map<String, ?> options) {
-		// e.g. `aggregatedValue[CDS Composite Spread5Y],double[10000],*`
-		formula = parseFormula(options);
+	public ReversePolishCombination(Map<String, ?> options) {
+		// e.g. `aggregatedValue[someMeasure],double[10000],*`
+		notation = parseNotation(options);
 
 		// Default is false (sum all pending operands), to follow ActiveViam convention
 		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
 		// Default is true (no underlying -> `null`), to follow ActiveViam convention
-		nullIfNotASingleUnderlying = MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+		nullIfNotASingleUnderlying =
+				MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
 
-		parseUnderlyingMeasures(formula).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure, underlyingMeasuresToIndex.size()));
+		parseUnderlyingMeasures(notation).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
+				underlyingMeasuresToIndex.size()));
 
-		operatorsFactory = MapPathGet.<IOperatorsFactory>getOptionalAs(options, "operatorsFactory").orElseGet(StandardOperatorsFactory::new);
+		operatorsFactory = MapPathGet.<IOperatorsFactory>getOptionalAs(options, "operatorsFactory")
+				.orElseGet(StandardOperatorsFactory::new);
 	}
 
 	/**
@@ -72,7 +84,11 @@ public class ArithmeticFormulaCombination implements ICombination {
 	 * @return the {@link Set} of underlying measures, in their order of appearance.
 	 */
 	public static Collection<String> parseUnderlyingMeasures(String formula) {
-		return Pattern.compile("aggregatedValue\\[([^\\]]+)\\]").matcher(formula).results().map(mr -> mr.group(1)).toList();
+		return Pattern.compile(EvaluatedExpressionCombination.P_UNDERLYINGS + "\\[([^\\]]+)\\]")
+				.matcher(formula)
+				.results()
+				.map(mr -> mr.group(1))
+				.toList();
 	}
 
 	/**
@@ -84,13 +100,19 @@ public class ArithmeticFormulaCombination implements ICombination {
 	}
 
 	// BEWARE This is called from the constructor
-	protected String parseFormula(Map<String, ?> options) {
+	protected String parseNotation(Map<String, ?> options) {
 		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
-		String formula = MapPathGet.getRequiredString(options, ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
+		String formula = MapPathGet.getRequiredString(options, K_NOTATION);
 
 		// TODO Throw early if the formula is invalid
 
 		return formula;
+	}
+
+	@Override
+	public void checkSanity() {
+		// TODO Auto-generated method stub
+
 	}
 
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
@@ -101,12 +123,13 @@ public class ArithmeticFormulaCombination implements ICombination {
 
 		// BEWARE If the formula is constant, this will remain false
 		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
-		String replacedFormula = formula;
+		String replacedFormula = notation;
 
 		do {
 			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
-				Object evaluatedSubFormula = evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
+				Object evaluatedSubFormula =
+						evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
 
 				if (evaluatedSubFormula == null) {
@@ -143,7 +166,8 @@ public class ArithmeticFormulaCombination implements ICombination {
 		String[] elements = splitFormula(formula);
 
 		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
-			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue".formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
+			throw new IllegalArgumentException("Received %s underlyings while formula refers to %s aggregatedValue"
+					.formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
 		}
 
 		for (int i = 0; i < elements.length; i++) {
@@ -152,8 +176,10 @@ public class ArithmeticFormulaCombination implements ICombination {
 			Object operandToAppend;
 
 			// OperandAggregatedValue.PLUGIN_TYPE
-			if (s.startsWith("aggregatedValue[") && s.endsWith("]")) {
-				String underlyingMeasure = s.substring("aggregatedValue[".length(), s.length() - "]".length());
+			if (s.startsWith(EvaluatedExpressionCombination.P_UNDERLYINGS + "[") && s.endsWith("]")) {
+				String underlyingMeasure =
+						s.substring(EvaluatedExpressionCombination.P_UNDERLYINGS.length() + "[".length(),
+								s.length() - "]".length());
 				int measureIndex = underlyingMeasuresToIndex.get(underlyingMeasure);
 				operandToAppend = underlyingValues.get(measureIndex);
 				if (operandToAppend != null) {

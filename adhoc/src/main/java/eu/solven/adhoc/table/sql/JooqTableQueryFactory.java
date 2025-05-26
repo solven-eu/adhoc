@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jooq.AggregateFunction;
 import org.jooq.Condition;
@@ -39,6 +38,7 @@ import org.jooq.Name;
 import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
+import org.jooq.SQLDialect;
 import org.jooq.SelectConnectByStep;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectHavingStep;
@@ -87,8 +87,8 @@ import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,7 +98,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@RequiredArgsConstructor
+// @RequiredArgsConstructor
 @Builder
 @Slf4j
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
@@ -111,6 +111,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@NonNull
 	DSLContext dslContext;
+
+	// Typically used for RedShift when it is queried with PostgreSQL dialect
+	@Default
+	boolean canGroupByAll = false;
 
 	/**
 	 * Holds a Set of SQL {@link Condition}s, given an {@link IAdhocFilter}. Some filters may not be convertible into
@@ -175,12 +179,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	protected ConditionWithFilter toConditions(TableQueryV2 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
 		Collection<IAdhocFilter> leftoverFilters = new ArrayList<>();
-
-		// Conditions from measures
-		{
-			conditions.add(oneMeasureIsNotNull(
-					tableQuery.getAggregators().stream().map(fa -> fa.getAggregator()).collect(Collectors.toSet())));
-		}
 
 		// Conditions from filters
 		{
@@ -283,18 +281,28 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 */
 	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, IAdhocFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
+		if (canGroupByAll()) {
+			// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
+			// https://duckdb.org/docs/stable/sql/query_syntax/groupby.html#group-by-all
+			// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
+			groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
+		} else {
+			tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+				Field<Object> field = columnAsField(column);
+				groupedFields.add(field);
+			});
 
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			Field<Object> field = columnAsField(column);
-			groupedFields.add(field);
-		});
-
-		FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
-			Field<Object> field = columnAsField(ReferencedColumn.ref(column));
-			groupedFields.add(field);
-		});
+			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
+				groupedFields.add(field);
+			});
+		}
 
 		return groupedFields;
+	}
+
+	private boolean canGroupByAll() {
+		return canGroupByAll || dslContext.dialect() == SQLDialect.DUCKDB;
 	}
 
 	private List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
@@ -398,24 +406,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			return unaliasedField.as(filteredAggregator.getAlias());
 		}
-	}
-
-	protected Condition oneMeasureIsNotNull(Set<Aggregator> aggregators) {
-		// We're interested in a row if at least one measure is not null
-		List<Condition> oneNotNullConditions = aggregators.stream()
-				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregationKey()))
-				.filter(a -> !ExpressionAggregation.isExpression(a.getAggregationKey()))
-				.map(Aggregator::getColumnName)
-				.filter(c -> !isExpression(c))
-				.map(c -> DSL.field(name(c)).isNotNull())
-				.collect(Collectors.toList());
-
-		if (oneNotNullConditions.isEmpty()) {
-			// Typically happens when the only measure is `COUNT(*)`
-			return DSL.trueCondition();
-		}
-
-		return DSL.or(oneNotNullConditions);
 	}
 
 	protected ConditionWithFilter toCondition(IAdhocFilter filter) {
