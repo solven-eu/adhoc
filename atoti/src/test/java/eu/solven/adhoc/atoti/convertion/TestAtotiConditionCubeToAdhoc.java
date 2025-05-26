@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.migration;
+package eu.solven.adhoc.atoti.convertion;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -37,6 +37,7 @@ import com.quartetfs.fwk.filtering.impl.LowerCondition;
 import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
+import eu.solven.adhoc.atoti.convertion.AtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;

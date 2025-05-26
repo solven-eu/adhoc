@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.migration;
+package eu.solven.adhoc.atoti.convertion;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,9 +41,11 @@ import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
+import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IMeasureMemberDescription;
 import com.quartetfs.biz.pivot.definitions.INativeMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
+import com.quartetfs.biz.pivot.definitions.impl.JoinMeasureDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABasicPostProcessor;
@@ -55,7 +57,6 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.atoti.table.AtotiTranscoder;
-import eu.solven.adhoc.column.EvaluatedExpressionColumn;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
@@ -153,17 +154,7 @@ public class AtotiMeasureToAdhoc {
 
 		// Add (pre-)aggregated measures.
 		desc.getMeasuresDescription().getAggregatedMeasuresDescription().forEach(preAggregatedMeasure -> {
-			Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
-					.name(preAggregatedMeasure.getName())
-					.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
-
-			if (sourceMode == SourceMode.Datastore) {
-				aggregatorBuilder.columnName(preAggregatedMeasure.getFieldName());
-			}
-
-			transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
-
-			measureForest.measure(aggregatorBuilder.build());
+			measureForest.measures(onAggregatedMeasure(preAggregatedMeasure));
 		});
 
 		IExtendedPlugin<IPostProcessor<?>> extendedPluginFactory = Registry.getExtendedPlugin(IPostProcessor.class);
@@ -185,6 +176,50 @@ public class AtotiMeasureToAdhoc {
 		});
 
 		return measureForest.build();
+	}
+
+	protected List<IMeasure> onAggregatedMeasure(IAggregatedMeasureDescription preAggregatedMeasure) {
+		Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
+				.name(preAggregatedMeasure.getName())
+				.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
+
+		if (sourceMode == SourceMode.Datastore) {
+			String rawFieldName = preAggregatedMeasure.getFieldName();
+
+			String columnName;
+			if (preAggregatedMeasure instanceof JoinMeasureDescription) {
+				// BEWARE This case is probably buggy
+				columnName = rawFieldName;
+			} else {
+				columnName = quoteIfNecessary(rawFieldName);
+			}
+
+			// BEWARE We do not quote the field as we expect a measure containing a `.` (e.g. )
+			aggregatorBuilder.columnName(columnName);
+		} else if (sourceMode == SourceMode.Cube) {
+			String rawMeasureName = preAggregatedMeasure.getName();
+
+			// Typical measure name is `k1.SUM`. The `.` would be interpreted as a `JOIN` in
+			// `JooqTableQueryFactory.name(String)`.
+			String columnName = quoteIfNecessary(rawMeasureName);
+
+			// Do not query the underlying field name, as we expect to export the Cube columns
+			aggregatorBuilder.columnName(columnName);
+		}
+
+		transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
+
+		return List.of(aggregatorBuilder.build());
+	}
+
+	private String quoteIfNecessary(String rawFieldName) {
+		String columnName;
+		if (rawFieldName.contains(".")) {
+			columnName = '\"' + rawFieldName + '\"';
+		} else {
+			columnName = rawFieldName;
+		}
+		return columnName;
 	}
 
 	protected Aggregator.AggregatorBuilder convertNativeMeasure(INativeMeasureDescription nativeMeasure) {
@@ -418,13 +453,14 @@ public class AtotiMeasureToAdhoc {
 	// TODO Some formula may be more complex than a simple Combinator
 	protected List<IMeasure> onArithmeticFormulaPostProcessor(IPostProcessorDescription measure) {
 		String formula = measure.getProperties().getProperty(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
-		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(formula));
+		String notation = formula.replaceAll(Pattern.quote("aggregatedValue["),
+				Matcher.quoteReplacement(EvaluatedExpressionCombination.P_UNDERLYINGS + "["));
+
+		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(notation));
 
 		List<IMeasure> combinator = onCombinator(measure, underlyingNames, options -> {
 			options.remove(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
-			options.put(ReversePolishCombination.K_NOTATION,
-					formula.replaceAll(Pattern.quote("aggregatedValue["),
-							Matcher.quoteReplacement(EvaluatedExpressionCombination.P_UNDERLYINGS + "[")));
+			options.put(ReversePolishCombination.K_NOTATION, notation);
 
 			return options;
 		});
@@ -473,14 +509,14 @@ public class AtotiMeasureToAdhoc {
 				.toList();
 	}
 
-	protected void transferProperties(IMeasureMemberDescription apMeasure, Consumer<String> tagConsumer) {
-		if (!apMeasure.isVisible()) {
+	protected void transferProperties(IMeasureMemberDescription measure, Consumer<String> tagConsumer) {
+		if (!measure.isVisible()) {
 			tagConsumer.accept("hidden");
 		}
-		if (!Strings.isNullOrEmpty(apMeasure.getGroup())) {
-			tagConsumer.accept(apMeasure.getGroup());
+		if (!Strings.isNullOrEmpty(measure.getGroup())) {
+			tagConsumer.accept("group=" + measure.getGroup());
 		}
-		String folder = apMeasure.getFolder();
+		String folder = measure.getFolder();
 		if (!Strings.isNullOrEmpty(folder)) {
 			tagConsumer.accept("folder=" + folder);
 		}

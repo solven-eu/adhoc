@@ -130,6 +130,17 @@ public class TestJooqTableQueryFactory_DuckDb {
 	}
 
 	@Test
+	public void testMeasureNameWithDot_quoted() {
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder().name("k.USD").columnName("\"t.k\"").build())
+				.build());
+
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("t.k") "k.USD" from "someTableName" group by ALL""");
+	}
+
+	@Test
 	public void testColumnWithAt() {
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())

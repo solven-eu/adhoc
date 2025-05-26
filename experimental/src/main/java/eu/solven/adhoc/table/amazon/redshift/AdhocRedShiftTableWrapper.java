@@ -43,7 +43,6 @@ import software.amazon.awssdk.services.redshiftdata.model.ExecuteStatementRespon
 import software.amazon.awssdk.services.redshiftdata.model.Field;
 import software.amazon.awssdk.services.redshiftdata.model.GetStatementResultRequest;
 import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
-import software.amazon.awssdk.services.redshiftdata.model.SqlParameter;
 
 /**
  * Enables querying Google BigQuery.
@@ -65,16 +64,17 @@ public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 
 	@Override
 	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
+		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
+		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
-		String sqlStatement = "SELECT * FROM Movies WHERE year = :year";
-		SqlParameter yearParam = SqlParameter.builder().name("year").value(String.valueOf(1324)).build();
+		// String sqlStatement = "SELECT * FROM Movies WHERE year = :year";
+		// SqlParameter yearParam = SqlParameter.builder().name("year").value(String.valueOf(1324)).build();
 
 		ExecuteStatementRequest statementRequest = ExecuteStatementRequest.builder()
 				// .clusterIdentifier(clusterId)
-				.database("dev")
-				.dbUser("admin")
-				.parameters(yearParam)
+				.database(redShiftParameters.getDatabase())
+				.dbUser(redShiftParameters.getDbUser())
+				// .parameters(yearParam)
 				.sql(sqlStatement)
 				.build();
 
@@ -134,14 +134,7 @@ public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 			for (int i = 0; i < aggregateColumns.size(); i++) {
 				Field field = row.get(i);
 
-				Object value;
-				if (Field.Type.LONG_VALUE.equals(field.type())) {
-					value = field.longValue();
-				} else if (Field.Type.DOUBLE_VALUE.equals(field.type())) {
-					value = field.doubleValue();
-				} else {
-					throw new NotYetImplementedException(String.valueOf(field.type()));
-				}
+				Object value = toObject(field);
 
 				String columnName = aggregateColumns.get(i);
 				aggregates.put(columnName, value);
@@ -155,14 +148,7 @@ public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 			for (int i = 0; i < aggregateGroupBys.size(); i++) {
 				Field field = row.get(aggregateGroupBys.size() + i);
 
-				Object value;
-				if (Field.Type.LONG_VALUE.equals(field.type())) {
-					value = field.longValue();
-				} else if (Field.Type.DOUBLE_VALUE.equals(field.type())) {
-					value = field.doubleValue();
-				} else {
-					throw new NotYetImplementedException(String.valueOf(field.type()));
-				}
+				Object value = toObject(field);
 
 				String columnName = aggregateGroupBys.get(i);
 				aggregates.put(columnName, value);
@@ -174,6 +160,25 @@ public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 		}
 
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+	}
+
+	protected Object toObject(Field field) {
+		return switch (field.type()) {
+		case Field.Type.LONG_VALUE:
+			yield field.longValue();
+		case Field.Type.DOUBLE_VALUE:
+			yield field.doubleValue();
+		case Field.Type.IS_NULL:
+			yield null;
+		case Field.Type.STRING_VALUE:
+			yield field.stringValue();
+		case Field.Type.BOOLEAN_VALUE:
+			yield field.booleanValue();
+		case Field.Type.BLOB_VALUE:
+			yield field.blobValue();
+		default:
+			throw new NotYetImplementedException(String.valueOf(field.type()));
+		};
 	}
 
 	protected RedshiftDataAsyncClient getAsyncDataClient() {

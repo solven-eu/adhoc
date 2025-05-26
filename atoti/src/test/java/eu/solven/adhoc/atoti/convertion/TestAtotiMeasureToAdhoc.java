@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.migration;
+package eu.solven.adhoc.atoti.convertion;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -41,14 +42,18 @@ import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.google.common.collect.ImmutableMap;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
+import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
+import com.quartetfs.biz.pivot.definitions.impl.AggregatedMeasureDescription;
+import com.quartetfs.biz.pivot.definitions.impl.JoinMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.impl.PostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
+import eu.solven.adhoc.atoti.convertion.AtotiMeasureToAdhoc;
+import eu.solven.adhoc.atoti.convertion.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
-import eu.solven.adhoc.atoti.migration.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -56,6 +61,7 @@ import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -113,6 +119,87 @@ public class TestAtotiMeasureToAdhoc {
 								.aggregationKey("COUNT")
 								.columnName("*")
 								.build());
+	}
+
+	@Test
+	public void testAggregator_SourceModeDatastore() {
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		IAggregatedMeasureDescription a = new AggregatedMeasureDescription();
+		a.setName("someMeasureName");
+		a.setFieldName("someFieldName");
+		a.setPreProcessedAggregation("someAggregationKey");
+		a.setGroup("someGroup");
+		a.setFolder("someFolder");
+
+		List<IMeasure> measures = converter.onAggregatedMeasure(a);
+		Assertions.assertThat(measures).singleElement().isInstanceOfSatisfying(Aggregator.class, aggregator -> {
+			Assertions.assertThat(aggregator.getName()).isEqualTo("someMeasureName");
+			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("someFieldName");
+			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo("someAggregationKey");
+			Assertions.assertThat(aggregator.getTags()).contains("group=someGroup", "folder=someFolder").hasSize(2);
+		});
+	}
+
+	@Test
+	public void testAggregator_SourceModeDatastore_withDot() {
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		IAggregatedMeasureDescription a = new AggregatedMeasureDescription();
+		a.setName("someMeasure.Name");
+		a.setFieldName("someField.Name");
+		a.setPreProcessedAggregation("someAggregationKey");
+		a.setGroup("someGroup");
+		a.setFolder("someFolder");
+
+		List<IMeasure> measures = converter.onAggregatedMeasure(a);
+		Assertions.assertThat(measures).singleElement().isInstanceOfSatisfying(Aggregator.class, aggregator -> {
+			Assertions.assertThat(aggregator.getName()).isEqualTo("someMeasure.Name");
+			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("\"someField.Name\"");
+			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo("someAggregationKey");
+			Assertions.assertThat(aggregator.getTags()).contains("group=someGroup", "folder=someFolder").hasSize(2);
+		});
+	}
+
+	@Test
+	public void testAggregator_SourceModeDatastore_joined() {
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		IAggregatedMeasureDescription a = new JoinMeasureDescription();
+		a.setName("someMeasure.Name");
+		a.setFieldName("someField.Name");
+		a.setPreProcessedAggregation("someAggregationKey");
+		a.setGroup("someGroup");
+		a.setFolder("someFolder");
+
+		List<IMeasure> measures = converter.onAggregatedMeasure(a);
+		Assertions.assertThat(measures).singleElement().isInstanceOfSatisfying(Aggregator.class, aggregator -> {
+			Assertions.assertThat(aggregator.getName()).isEqualTo("someMeasure.Name");
+			// Not quoted as we are converting a JoinMeasureDescription
+			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("someField.Name");
+			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo("someAggregationKey");
+			Assertions.assertThat(aggregator.getTags()).contains("group=someGroup", "folder=someFolder").hasSize(2);
+		});
+	}
+
+	@Test
+	public void testAggregator_SourceModeCube_withDot() {
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Cube).build();
+
+		IAggregatedMeasureDescription a = new AggregatedMeasureDescription();
+		a.setName("someMeasure.Name");
+		a.setFieldName("someField.Name");
+		a.setPreProcessedAggregation("someAggregationKey");
+		a.setGroup("someGroup");
+		a.setFolder("someFolder");
+
+		List<IMeasure> measures = converter.onAggregatedMeasure(a);
+		Assertions.assertThat(measures).singleElement().isInstanceOfSatisfying(Aggregator.class, aggregator -> {
+			Assertions.assertThat(aggregator.getName()).isEqualTo("someMeasure.Name");
+			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("\"someMeasure.Name\"");
+			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo("someAggregationKey");
+			Assertions.assertThat(aggregator.getTags()).contains("group=someGroup", "folder=someFolder").hasSize(2);
+		});
 	}
 
 	@Test

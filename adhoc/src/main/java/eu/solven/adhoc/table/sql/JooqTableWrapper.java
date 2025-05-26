@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,7 +60,10 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
-import lombok.*;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -89,10 +93,37 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
-		Field<?>[] select;
+		List<Field<?>> fields = getFields();
+
+		// https://duckdb.org/docs/sql/expressions/star.html
+		Map<String, ColumnMetadata> columnToType = new HashMap<>();
+
+		fields.forEach(field -> {
+			String fieldName = field.getName();
+
+			Class<?> fieldType = field.getType();
+			ColumnMetadata previousColumn =
+					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
+			if (previousColumn != null) {
+				log.debug("Multiple columns with same name. Typically happens on a JOIN");
+				if (!Objects.equals(fieldType, previousColumn.getType())) {
+					log.warn("Multiple columns with same name (table={} column={}), and different types: {} != {}",
+							getName(),
+							fieldName,
+							previousColumn,
+							fieldType);
+				}
+			}
+		});
+
+		return columnToType.values();
+	}
+
+	protected List<Field<?>> getFields() {
+		Field<?>[] fields;
 
 		try {
-			select = dbParameters.getDslSupplier()
+			fields = dbParameters.getDslSupplier()
 					.getDSLContext()
 					.select()
 					.from(dbParameters.getTable())
@@ -112,29 +143,7 @@ public class JooqTableWrapper implements ITableWrapper {
 				throw e;
 			}
 		}
-
-		// https://duckdb.org/docs/sql/expressions/star.html
-		Map<String, ColumnMetadata> columnToType = new HashMap<>();
-
-		Stream.of(select).forEach(field -> {
-			String fieldName = field.getName();
-
-			Class<?> fieldType = field.getType();
-			ColumnMetadata previousColumn =
-					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
-			if (previousColumn != null) {
-				log.debug("Multiple columns with same name. Typically happens on a JOIN");
-				if (!Objects.equals(fieldType, previousColumn.getType())) {
-					log.warn("Multiple columns with same name (table={} column={}), and different types: {} != {}",
-							getName(),
-							fieldName,
-							previousColumn,
-							fieldType);
-				}
-			}
-		});
-
-		return columnToType.values();
+		return Arrays.asList(fields);
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {

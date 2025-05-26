@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.migration;
+package eu.solven.adhoc.atoti.convertion;
 
 import java.util.regex.Pattern;
 
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.qfs.condition.impl.BaseConditions;
 
+import eu.solven.adhoc.atoti.convertion.AtotiConditionDatastoreToAdhoc;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
