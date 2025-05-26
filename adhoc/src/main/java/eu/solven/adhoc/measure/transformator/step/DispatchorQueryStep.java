@@ -135,7 +135,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			return;
 		}
 
-		Map<Map<String, ?>, Object> decomposed = decomposition.decompose(slice.getSlice(), value);
+		Map<? extends Map<String, ?>, ?> decomposed = decomposition.decompose(slice.getSlice(), value);
 
 		// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
 		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
