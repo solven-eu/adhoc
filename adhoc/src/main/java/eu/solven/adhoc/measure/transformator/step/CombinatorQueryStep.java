@@ -82,7 +82,9 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
-		if (underlyings.size() != getUnderlyingNames().size()) {
+		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
+			// The provided column is probably computed for `EmtpyAggregation`
+		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {

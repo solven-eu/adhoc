@@ -88,7 +88,7 @@ public class TestDagExplainerForPerfs {
 		refToMeasure.put("underlying22", underlying22);
 		refToMeasure.put("a", aggregator111);
 
-		queryStepsDagBuilder.registerRootWithUnderlyings(canResolve, Set.of(root));
+		queryStepsDagBuilder.registerRootWithDescendants(canResolve, Set.of(root));
 
 		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
 

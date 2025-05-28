@@ -83,6 +83,11 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 		}
 	}
 
+	/**
+	 * 
+	 * @param column
+	 * @return an Aggregator equivalent with `SUM(x)` in a SQL database.
+	 */
 	public static Aggregator sum(String column) {
 		return Aggregator.builder().aggregationKey(SumAggregation.KEY).name(column).build();
 	}
@@ -96,6 +101,10 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 				.aggregationOptions(aggregator.getAggregationOptions());
 	}
 
+	/**
+	 * 
+	 * @return an {@link Aggregator} equivalent with `COUNT(*)` in a SQL database.
+	 */
 	public static Aggregator countAsterisk() {
 		return Aggregator.builder()
 				.name("count(*)")
@@ -104,13 +113,12 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 				.build();
 	}
 
+	/**
+	 * 
+	 * @return an {@link Aggregator} which returns no aggregator. It may be used to materialize slices.
+	 */
 	public static Aggregator empty() {
-		return Aggregator.builder()
-				.name("empty")
-				// columnName is irrelevant
-				.columnName("empty")
-				.aggregationKey(EmptyAggregation.KEY)
-				.build();
+		return Aggregator.builder().name("empty").aggregationKey(EmptyAggregation.KEY).build();
 	}
 
 	@Override

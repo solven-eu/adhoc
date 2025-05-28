@@ -24,7 +24,6 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
@@ -33,8 +32,6 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
-import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.UnfiltratorQueryStep;
 import lombok.Builder;
@@ -59,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
-public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveColumnGenerator {
+public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
 	public enum Mode {
 		// if a column is listed, its filters are neutralized into matchAll
@@ -114,12 +111,6 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures, IMayHaveCo
 
 			return this;
 		}
-	}
-
-	@Override
-	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
-		// TODO Auto-generated method stub
-		return Optional.empty();
 	}
 
 }

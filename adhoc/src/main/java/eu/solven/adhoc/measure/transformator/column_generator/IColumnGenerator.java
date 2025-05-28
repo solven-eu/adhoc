@@ -23,7 +23,7 @@
 package eu.solven.adhoc.measure.transformator.column_generator;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -74,14 +74,14 @@ public interface IColumnGenerator extends IHasColumnTypes {
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {
-		Set<CoordinatesSample> samples = new HashSet<>();
+		Set<CoordinatesSample> samples = new LinkedHashSet<>();
 
 		columnGenerators.stream().forEach(m -> {
 			samples.add(m.getCoordinates(column, valueMatcher, limit));
 		});
 
 		long estimatedCardinality = 0L;
-		Set<Object> coordinates = new HashSet<>();
+		Set<Object> coordinates = new LinkedHashSet<>();
 
 		for (CoordinatesSample sample : samples) {
 			// SUM estimatedCardinality is an acceptable estimation

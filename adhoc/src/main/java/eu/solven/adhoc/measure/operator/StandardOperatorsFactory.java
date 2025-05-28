@@ -191,22 +191,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	}
 
-	protected IDecomposition defaultDecomposition(String key, Map<String, ?> options) {
-		Class<? extends IDecomposition> asClass;
-		try {
-			asClass = (Class<? extends IDecomposition>) Class.forName(key);
-
-		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		}
-
-		try {
-			return asClass.getConstructor(Map.class).newInstance(options);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
-				| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
+	protected IDecomposition defaultDecomposition(String className, Map<String, ?> options) {
+		return makeWithMapOrEmpty(IDecomposition.class, className, options);
 	}
 
 	@Override
@@ -227,21 +213,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	}
 
-	protected IFilterEditor defaultEditor(String key, Map<String, ?> options) {
-		Class<? extends IFilterEditor> asClass;
-		try {
-			asClass = (Class<? extends IFilterEditor>) Class.forName(key);
-		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		}
-
-		try {
-			return asClass.getConstructor(Map.class).newInstance(options);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
-				| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
+	protected IFilterEditor defaultEditor(String className, Map<String, ?> options) {
+		return makeWithMapOrEmpty(IFilterEditor.class, className, options);
 	}
 
 }

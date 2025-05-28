@@ -14,6 +14,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `IAdhocColumn` now relies on `JsonTypeInfo.Id.MINIMAL_CLASS`
 - Upgrade `DuckDB` to `1.3.0.0`
+- A not-Aggregator measure without underlying is automatically relying on the `empty` measure
 
 ## [0.0.7]
 ### Added

@@ -40,24 +40,16 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class VaRQueryPreparator extends DefaultQueryPreparator {
+public class GeneratedColumnsPreparator extends DefaultQueryPreparator {
 
 	@Singular
-	Set<String> calculatedColumnsMeasures;
-
-	// @Builder(builderMethodName = "VaR")
-	// public VaRQueryPreparator(IImplicitFilter implicitFilter,
-	// IImplicitOptions implicitOptions,
-	// ExecutorService concurrentExecutorService,
-	// ExecutorService nonConcurrentExecutorService) {
-	// super(implicitFilter, implicitOptions, concurrentExecutorService, nonConcurrentExecutorService);
-	// }
+	Set<String> generatedColumnsMeasures;
 
 	@Override
 	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
 		MeasureForestBuilder filteredForest = super.filterForest(forest, preparedQuery);
 
-		calculatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest
+		generatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest
 				.measure(forest.resolveIfRef(ReferencedMeasure.ref(calculatedMeasure))));
 
 		return filteredForest;

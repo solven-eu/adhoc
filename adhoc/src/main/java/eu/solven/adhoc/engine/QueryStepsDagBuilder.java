@@ -173,7 +173,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	}
 
 	@Override
-	public void registerRootWithUnderlyings(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
+	public void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
 		queriedMeasures.forEach(queriedMeasure -> {
 			queriedMeasure = resolveMeasure(canResolveMeasures, queriedMeasure);
 
@@ -205,6 +205,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 					} else {
 						throw new IllegalArgumentException(msgE, e);
 					}
+				}
+
+				if (underlyingSteps.isEmpty()) {
+					// This measure has no explicit underlyings: We add an implicit EmptyAggregator: it will materialize
+					// the slices with no aggregate
+					underlyingSteps = List.of(CubeQueryStep.edit(queryStep).measure(Aggregator.empty()).build());
 				}
 
 				registerUnderlyings(queryStep, underlyingSteps);

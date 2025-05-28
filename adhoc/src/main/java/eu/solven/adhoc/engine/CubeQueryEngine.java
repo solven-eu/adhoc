@@ -232,7 +232,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
 		}
 
-		queryStepsDagBuilder.registerRootWithUnderlyings(queryPod::resolveIfRef, queriedMeasures);
+		queryStepsDagBuilder.registerRootWithDescendants(queryPod::resolveIfRef, queriedMeasures);
 
 		return queryStepsDagBuilder.getQueryDag();
 	}
@@ -266,7 +266,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	 * @return the measure to be considered if not measure is provided to the query
 	 */
 	protected IMeasure defaultMeasure() {
-		return Aggregator.builder().name(emptyMeasureName).aggregationKey(EmptyAggregation.KEY).build();
+		return Aggregator.empty().toBuilder().name(emptyMeasureName).build();
 	}
 
 	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
@@ -349,7 +349,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 				}
 
 				topologicalOrder.forEach(queryStep -> {
-
 					if (queryStepToValues.containsKey(queryStep)) {
 						// This typically happens on aggregator measures, as they are fed in a previous
 						// step. Here, we want to process a measure once its underlying steps are completed
@@ -398,7 +397,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			List<CubeQueryStep> underlyingSteps,
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
-			// This may happen on a Columnator which is missing a required column
+			// This may happen on a IMeasure which is missing a required column
 			return Optional.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
@@ -418,6 +417,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			// BEWARE It looks weird we have to call again `.wrapNode`
 			ITransformatorQueryStep hasUnderlyingQuerySteps =
 					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+
 			ISliceToValue coordinatesToValues;
 			try {
 				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);

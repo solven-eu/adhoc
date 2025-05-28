@@ -120,7 +120,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	}
 
 	private IQueryPreparator customQueryPreparator() {
-		return VaRQueryPreparator.builder().calculatedColumnsMeasure(mArray).build();
+		return GeneratedColumnsPreparator.builder().generatedColumnsMeasure(mArray).build();
 	}
 
 	String mArray = "k1Array";

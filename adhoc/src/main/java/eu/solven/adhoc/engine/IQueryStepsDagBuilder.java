@@ -36,7 +36,7 @@ public interface IQueryStepsDagBuilder {
 	 * @param rootMeasures
 	 *            the measures requested directly by the IAdhocQuery
 	 */
-	void registerRootWithUnderlyings(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
+	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
 
 	QueryStepsDag getQueryDag();
 

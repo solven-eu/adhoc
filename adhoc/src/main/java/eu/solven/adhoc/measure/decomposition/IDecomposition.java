@@ -52,7 +52,8 @@ public interface IDecomposition extends IColumnGenerator {
 	 * @param slice
 	 *            an element/underlying slice
 	 * @param value
-	 * @return the target/pillars/groups slices
+	 * @return the target/pillars/groups slices, each associated to a value (may be the input value, or a fraction of
+	 *         it, or anything else).
 	 */
 	List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value);
 
