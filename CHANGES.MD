@@ -15,7 +15,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `IAdhocColumn` now relies on `JsonTypeInfo.Id.MINIMAL_CLASS`
 - Upgrade `DuckDB` to `1.3.0.0`
 - A not-Aggregator measure without underlying is automatically relying on the `empty` measure
-
+- `FirstNotNullAggregation` renamed into `CoalesceAggregation`. Its key changed from `FIRST` to `COALESCE`
+- `FirstNotNullCombination` renamed into `CoalesceCombination`. Its key changed from `FIND_FIRST` to `COALESCE`
+ 
 ## [0.0.7]
 ### Added
 - `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`. It can be skipped with `StandardQueryOptions.NO_CACHE`.

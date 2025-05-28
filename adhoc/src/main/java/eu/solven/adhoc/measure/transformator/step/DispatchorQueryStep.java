@@ -201,18 +201,19 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		});
 	}
 
-	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy queryGroupBy,
+	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy groupBy,
 			ISliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
-		AdhocMap.AdhocMapBuilder queryCoordinatesBuilder = AdhocMap.builder(queryGroupBy.getGroupedByColumns());
+		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
+		AdhocMap.AdhocMapBuilder queryCoordinatesBuilder = AdhocMap.builder(groupByColumns);
 
-		queryGroupBy.getGroupedByColumns().forEach(groupBy -> {
+		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
-			Object value = fragmentCoordinate.get(groupBy);
+			Object value = fragmentCoordinate.get(groupByColumn);
 
 			if (value == null) {
 				// BEWARE When would we get a groupBy from the slice rather than from the fragment coordinate?
-				value = slice.getRawSliced(groupBy);
+				value = slice.getRawSliced(groupByColumn);
 			}
 
 			if (value == null) {

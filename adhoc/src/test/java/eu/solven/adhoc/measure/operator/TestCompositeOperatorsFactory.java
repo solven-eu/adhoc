@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -50,7 +50,7 @@ public class TestCompositeOperatorsFactory {
 		Assertions.assertThat(operatorsFactory.makeCombination(DivideCombination.KEY, Map.of()))
 				.isInstanceOf(DivideCombination.class);
 		Assertions.assertThat(operatorsFactory.makeCombination("unknownKey", Map.of()))
-				.isInstanceOf(FindFirstCombination.class);
+				.isInstanceOf(CoalesceCombination.class);
 
 		Assertions.assertThat(operatorsFactory.makeDecomposition(LinearDecomposition.KEY, Map.of()))
 				.isInstanceOf(LinearDecomposition.class);

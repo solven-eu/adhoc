@@ -36,12 +36,13 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -85,6 +86,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield RankAggregation.make(options);
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
+		case CoalesceAggregation.KEY:
+			yield new CoalesceAggregation();
 		default:
 			yield defaultAggregation(key, options);
 		};
@@ -124,8 +127,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			}
 			yield EvaluatedExpressionCombination.parse(enrichedOptions);
 		}
-		case FindFirstCombination.KEY: {
-			yield new FindFirstCombination();
+		case CoalesceCombination.KEY: {
+			yield new CoalesceCombination();
 		}
 		default:
 

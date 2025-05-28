@@ -22,48 +22,50 @@
  */
 package eu.solven.adhoc.measure.dynamic_tenors;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.DoubleAdder;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * Simulate a service providing a MarketData shift (i.e. the variation (in nominal) of a MarketData between 2 given
- * instants).
+ * Sum the sensitivity of input {@link MarketRiskSensitivity}, restricting to filtered tenors and maturities.
  * 
  * @author Benoit Lacelle
  */
-@Slf4j
-public class MarketDataShiftCombination implements ICombination, IExamplePnLExplainConstant {
+public class ReduceSensitivitiesCombination implements ICombination, IExamplePnLExplainConstant {
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		IAdhocFilter filter = slice.asFilter();
-		if (IAdhocFilter.MATCH_NONE.equals(filter)) {
-			return IValueProvider.NULL;
-		}
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		MarketRiskSensitivity sensitivities = (MarketRiskSensitivity) underlyingValues.getFirst();
 
-		Optional<String> optTenor =
-				EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(filter, K_TENOR), String.class);
-		if (optTenor.isEmpty()) {
-			return IValueProvider.setValue("Lack tenor");
-		}
-		Optional<String> optMaturity =
-				EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(filter, K_MATURITY), String.class);
-		if (optMaturity.isEmpty()) {
-			return IValueProvider.setValue("Lack maturity");
-		}
+		IValueMatcher tenorMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_TENOR);
+		IValueMatcher maturityMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_MATURITY);
 
-		// [-99, 99]
-		int deterministicRandomHash = (optTenor.get() + optMaturity.get()).hashCode() % 100;
-		// [-9.9, 9.9]
-		double deterministicRandomMarketDataShift = deterministicRandomHash / 10D;
+		DoubleAdder accumulated = new DoubleAdder();
+		AtomicBoolean oneContributed = new AtomicBoolean();
 
-		return IValueProvider.setValue(deterministicRandomMarketDataShift);
+		sensitivities.getCoordinatesToDelta().object2DoubleEntrySet().forEach(e -> {
+			Object tenor = e.getKey().get(K_TENOR);
+			if (!tenorMatcher.match(tenor)) {
+				return;
+			}
+			Object maturity = e.getKey().get(K_MATURITY);
+			if (!maturityMatcher.match(maturity)) {
+				return;
+			}
+
+			accumulated.add(e.getDoubleValue());
+			oneContributed.set(true);
+		});
+
+		if (oneContributed.get()) {
+			return accumulated.doubleValue();
+		} else {
+			return null;
+		}
 	}
+
 }

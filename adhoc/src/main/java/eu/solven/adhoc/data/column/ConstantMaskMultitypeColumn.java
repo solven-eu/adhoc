@@ -86,7 +86,12 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 
 	@Override
 	public Stream<SliceAndMeasure<SliceAsMap>> stream() {
-		throw new NotYetImplementedException("TODO");
+		return masked.stream().map(maskedSliceAndMeasure -> {
+			return SliceAndMeasure.<SliceAsMap>builder()
+					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
+					.valueProvider(maskedSliceAndMeasure.getValueProvider())
+					.build();
+		});
 	}
 
 	@Override

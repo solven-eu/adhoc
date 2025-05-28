@@ -31,7 +31,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -80,7 +80,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
-		forEachDistinctSlice(underlyings, new FindFirstCombination(), storage::append);
+		forEachDistinctSlice(underlyings, new CoalesceCombination(), storage::append);
 
 		return SliceToValue.builder().column(storage).build();
 	}

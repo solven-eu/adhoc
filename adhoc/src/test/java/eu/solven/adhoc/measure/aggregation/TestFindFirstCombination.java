@@ -29,12 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 
 public class TestFindFirstCombination {
 	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-	FindFirstCombination combination = new FindFirstCombination();
+	CoalesceCombination combination = new CoalesceCombination();
 
 	@Test
 	public void testEmpty() {

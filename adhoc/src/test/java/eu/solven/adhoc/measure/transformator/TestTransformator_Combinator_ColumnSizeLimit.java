@@ -34,7 +34,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -67,7 +67,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 				.name("byK")
 				.underlying(countAsterisk.getName())
 				.groupBy(GroupByColumns.named("k"))
-				.combinationKey(FindFirstCombination.KEY)
+				.combinationKey(CoalesceCombination.KEY)
 				.build());
 	}
 

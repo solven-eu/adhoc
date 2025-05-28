@@ -27,16 +27,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 
+import com.google.common.collect.Lists;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExamplePnLExplainConstant {
+/**
+ * A dummy duplicate of {@link MarketRiskSensitivity} along all tenor x maturities (independently of the actual
+ * tenor/maturities in the sensitivities).
+ * 
+ * @author Benoit Lacelle
+ */
+public class DuplicateTenorAndMaturityDecomposition implements IDecomposition, IExamplePnLExplainConstant {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
@@ -57,49 +64,32 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		if (!(value instanceof MarketRiskSensitivity sensitivives)) {
-			return List.of(IDecompositionEntry.of(Map.of(), value));
-		}
+		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
 
-		IValueMatcher tenorMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_TENOR);
-		IValueMatcher maturityMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_MATURITY);
+		boolean isTenorGroupedBy = groupedByColumns.contains(K_TENOR);
+		boolean isMaturityGroupedBy = groupedByColumns.contains(K_MATURITY);
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
 
-		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
-
-		sensitivives.getCoordinatesToDelta().object2DoubleEntrySet().forEach(e -> {
-			Map<String, ?> sensitivityCoordinates = e.getKey();
-			double doubleValue = e.getDoubleValue();
-
-			Object tenor = sensitivityCoordinates.get(K_TENOR);
-			Object maturity = sensitivityCoordinates.get(K_MATURITY);
-			if (!tenorMatcher.match(tenor)) {
-				return;
-			} else if (!maturityMatcher.match(maturity)) {
-				return;
-			}
-
-			boolean isTenorGroupedBy = groupedByColumns.contains(K_TENOR);
-			boolean isMaturityGroupedBy = groupedByColumns.contains(K_MATURITY);
-
-			if (isTenorGroupedBy) {
-				if (isMaturityGroupedBy) {
-					// grouped by tenor and maturity
-					decompositions
-							.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor, K_MATURITY, maturity), doubleValue));
-				} else {
-					// grouped by tenor
-					decompositions.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor), doubleValue));
-				}
-			} else if (isMaturityGroupedBy) {
-				// grouped by maturity
-				decompositions.add(IDecompositionEntry.of(Map.of(K_MATURITY, maturity), doubleValue));
+		if (isTenorGroupedBy) {
+			if (isMaturityGroupedBy) {
+				// grouped by tenor and maturity
+				Lists.cartesianProduct(TENORS, TENORS).forEach(tenorAndMaturity -> {
+					String tenor = tenorAndMaturity.get(0);
+					String maturity = tenorAndMaturity.get(1);
+					decompositions.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor, K_MATURITY, maturity), value));
+				});
 			} else {
-				// none are grouped by
-				decompositions.add(IDecompositionEntry.of(Map.of(), doubleValue));
+				// grouped by tenor
+				TENORS.forEach(tenor -> decompositions.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor), value)));
 			}
-		});
+		} else if (isMaturityGroupedBy) {
+			// grouped by maturity
+			TENORS.forEach(maturity -> decompositions.add(IDecompositionEntry.of(Map.of(K_MATURITY, maturity), value)));
+		} else {
+			// none are grouped by
+			decompositions.add(IDecompositionEntry.of(Map.of(), value));
+		}
 
 		return decompositions;
 	}

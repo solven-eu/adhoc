@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;

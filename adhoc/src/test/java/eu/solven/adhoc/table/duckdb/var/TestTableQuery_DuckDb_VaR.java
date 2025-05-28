@@ -53,7 +53,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -193,7 +193,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 					.underlying(k1ArrayFromPrimitives.getName())
 					.decompositionKey(ExampleVaRDecomposition.class.getName())
 					.decompositionOptions(Map.of(NB_SCENARIO, arrayLength))
-					.aggregationKey(FirstNotNullAggregation.class.getName())
+					.aggregationKey(CoalesceAggregation.class.getName())
 					.build();
 			forest.addMeasure(k1Array);
 

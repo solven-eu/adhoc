@@ -30,9 +30,9 @@ import lombok.extern.slf4j.Slf4j;
  * Typically used for advanced {@link IDecomposition} where we know there will be no actual aggregation.
  */
 @Slf4j
-public class FirstNotNullAggregation implements IAggregation {
+public class CoalesceAggregation implements IAggregation {
 
-	public static final String KEY = "FIRST";
+	public static final String KEY = "COALESCE";
 
 	@Override
 	public Object aggregate(Object l, Object r) {

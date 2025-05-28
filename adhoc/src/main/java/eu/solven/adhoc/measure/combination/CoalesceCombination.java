@@ -26,13 +26,14 @@ import java.util.List;
 import java.util.Objects;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
 /**
  * Return the first underlyingValue which is not null. Else null.
  */
-public class FindFirstCombination implements ICombination {
+public class CoalesceCombination implements ICombination {
 
-	public static final String KEY = "FIND_FIRST";
+	public static final String KEY = CoalesceAggregation.KEY;
 
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
@@ -42,10 +43,10 @@ public class FindFirstCombination implements ICombination {
 	/**
 	 * 
 	 * @param combination
-	 * @return true if given combination is a {@link FindFirstCombination}.
+	 * @return true if given combination is a {@link CoalesceCombination}.
 	 */
 	public static boolean isFindFirst(ICombination combination) {
-		return combination instanceof FindFirstCombination;
+		return combination instanceof CoalesceCombination;
 	}
 
 }

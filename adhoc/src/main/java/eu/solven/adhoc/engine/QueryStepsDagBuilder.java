@@ -207,12 +207,6 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 					}
 				}
 
-				if (underlyingSteps.isEmpty()) {
-					// This measure has no explicit underlyings: We add an implicit EmptyAggregator: it will materialize
-					// the slices with no aggregate
-					underlyingSteps = List.of(CubeQueryStep.edit(queryStep).measure(Aggregator.empty()).build());
-				}
-
 				registerUnderlyings(queryStep, underlyingSteps);
 			} else {
 				throw new UnsupportedOperationException("Issue with %s (resolved from %s)"
