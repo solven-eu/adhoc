@@ -36,8 +36,9 @@ import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
@@ -74,7 +75,15 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		return getUnderlyingNames().stream()
+		List<String> names = getUnderlyingNames();
+
+		if (names.isEmpty()) {
+			// This measure has no explicit underlyings: We add an implicit EmptyAggregator: it will materialize
+			// the slices with no aggregate
+			return List.of(CubeQueryStep.edit(step).measure(Aggregator.empty()).build());
+		}
+
+		return names.stream()
 				// Change the requested measureName to the underlying measureName
 				.map(underlyingName -> CubeQueryStep.edit(step).measure(underlyingName).build())
 				.toList();
@@ -82,7 +91,9 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
-		if (underlyings.size() != getUnderlyingNames().size()) {
+		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
+			// The provided column is probably computed for `EmtpyAggregation`
+		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
@@ -91,7 +102,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 		}
 
 		ICombination combination = combinationSupplier.get();
-		if (FindFirstCombination.isFindFirst(combination) && underlyings.size() == 1) {
+		if (CoalesceCombination.isFindFirst(combination) && underlyings.size() == 1) {
 			// Shortcut given FindFirst specific semantic
 			return underlyings.getFirst();
 		}

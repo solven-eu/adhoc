@@ -25,10 +25,10 @@ package eu.solven.adhoc.sum;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
 public class TestFirstNotNull {
-	FirstNotNullAggregation a = new FirstNotNullAggregation();
+	CoalesceAggregation a = new CoalesceAggregation();
 
 	@Test
 	public void testSimple() {

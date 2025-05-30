@@ -20,24 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.column.generated_column;
 
-import java.util.Set;
+import java.util.Optional;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 
-public interface IQueryStepsDagBuilder {
+/**
+ * Anything which may provide a {@link ICompositeColumnGenerator}
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IMayHaveColumnGenerator {
 
-	/**
-	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
-	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
-
-	QueryStepsDag getQueryDag();
+	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
 
 }

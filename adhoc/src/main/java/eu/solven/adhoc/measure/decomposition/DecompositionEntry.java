@@ -20,19 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.column_generator;
+package eu.solven.adhoc.measure.decomposition;
 
-import java.util.Optional;
+import java.util.Map;
 
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import lombok.Builder;
+import lombok.Value;
 
-/**
- * Anything which may provide a {@link IColumnGenerator}
- * 
- * @author Benoit Lacelle
- */
-public interface IMayHaveColumnGenerator {
+@Value
+@Builder
+public class DecompositionEntry implements IDecompositionEntry {
+	Map<String, ?> slice;
 
-	Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
-
+	IValueProvider value;
 }

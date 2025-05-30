@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -53,9 +54,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.sum.FirstNotNullAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -120,7 +120,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	}
 
 	private IQueryPreparator customQueryPreparator() {
-		return VaRQueryPreparator.builder().calculatedColumnsMeasure(mArray).build();
+		return GeneratedColumnsPreparator.builder().generatedColumnsMeasure(mArray).build();
 	}
 
 	String mArray = "k1Array";
@@ -193,7 +193,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 					.underlying(k1ArrayFromPrimitives.getName())
 					.decompositionKey(ExampleVaRDecomposition.class.getName())
 					.decompositionOptions(Map.of(NB_SCENARIO, arrayLength))
-					.aggregationKey(FirstNotNullAggregation.class.getName())
+					.aggregationKey(CoalesceAggregation.class.getName())
 					.build();
 			forest.addMeasure(k1Array);
 
@@ -388,11 +388,11 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
+				.containsKey(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED))
 				.hasSize(1);
 
-		Map<String, ?> measureToValue =
-				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
+		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues()
+				.get(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED));
 
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 

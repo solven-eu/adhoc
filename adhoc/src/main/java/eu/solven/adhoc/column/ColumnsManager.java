@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.column;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -38,6 +39,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
+import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -46,10 +50,13 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -97,7 +104,11 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Singular
-	final ImmutableSet<CalculatedColumn> calculatedColumns;
+	final ImmutableSet<ICalculatedColumn> calculatedColumns;
+
+	@Default
+	@NonNull
+	final ICompositeColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
 	public String transcodeToTable(String cubeColumn) {
@@ -285,7 +296,7 @@ public class ColumnsManager implements IColumnsManager {
 				.map(c -> {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
-						Optional<CalculatedColumn> calculatedColumn = calculatedColumns.stream()
+						Optional<ICalculatedColumn> calculatedColumn = calculatedColumns.stream()
 								.filter(calculated -> calculated.getName().equals(columnName))
 								.findFirst();
 						if (calculatedColumn.isPresent()) {
@@ -428,8 +439,21 @@ public class ColumnsManager implements IColumnsManager {
 		// BEWARE What if they is conflicts? Should pick the higher type? (i.e. potential fallback to Object)
 		calculatedColumns.forEach(c -> columnToType.put(c.getName(), c.getType()));
 		columnToType.putAll(customTypeManager.getColumnTypes());
+		columnToType.putAll(columnGenerator.getColumnTypes());
 
 		return ImmutableMap.copyOf(columnToType);
+	}
+
+	@Override
+	public List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorsFactory operatorsFactory,
+			Set<IMeasure> measures,
+			IValueMatcher columnMatcher) {
+		List<ICompositeColumnGenerator> columnGenerators = new ArrayList<>();
+
+		columnGenerators.add(columnGenerator);
+		columnGenerators.addAll(ColumnGeneratorHelpers.getColumnGenerators(operatorsFactory, measures, columnMatcher));
+
+		return columnGenerators;
 	}
 
 }

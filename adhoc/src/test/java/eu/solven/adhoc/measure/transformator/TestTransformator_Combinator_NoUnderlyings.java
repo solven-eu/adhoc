@@ -20,11 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.measure.transformator;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,47 +31,57 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
-import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestConstants {
-
-	@Override
+/**
+ * Checks the behavior of a {@link Combinator} with no explicit underlyings.
+ * 
+ * @author Benoit Lacelle
+ */
+public class TestTransformator_Combinator_NoUnderlyings extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
+	@Override
 	public void feedTable() {
-		table.add(Map.of("k", "a"));
-		table.add(Map.of("k", "b"));
-		table.add(Map.of("k", "c"));
+		table.add(Map.of("k1", 123));
+		table.add(Map.of("k2", 234));
+		table.add(Map.of("k1", 345, "k2", 456));
 
-		forest.addMeasure(countAsterisk);
+		forest.addMeasure(
+				Combinator.builder().name("constant").combinationKey(ConstantCombinator.class.getName()).build());
+	}
 
-		forest.addMeasure(Bucketor.builder()
-				.name("byK")
-				.underlying(countAsterisk.getName())
-				.groupBy(GroupByColumns.named("k"))
-				.combinationKey(CoalesceCombination.KEY)
-				.build());
+	public static class ConstantCombinator implements ICombination {
+		@Override
+		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+			return "someConstant";
+		}
 	}
 
 	@Test
 	public void testGrandTotal() {
-		CubeWrapper cube = editCube().queryPreparator(
-				DefaultQueryPreparator.builder().implicitOptions(q -> Set.of(StandardQueryOptions.CONCURRENT)).build())
-				.build();
-
-		ITabularView output = cube.execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("constant").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of(countAsterisk.getName(), 3L));
+				.containsEntry(Map.of(), Map.of("constant", "someConstant"));
 	}
 
+	@Test
+	public void testGroupByK1() {
+		ITabularView output = cube().execute(CubeQuery.builder().measure("constant").groupByAlso("k1").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("k1", 123), Map.of("constant", "someConstant"))
+				.containsEntry(Map.of("k1", 345), Map.of("constant", "someConstant"))
+				.hasSize(2);
+	}
 }

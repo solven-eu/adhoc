@@ -173,7 +173,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	}
 
 	@Override
-	public void registerRootWithUnderlyings(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
+	public void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
 		queriedMeasures.forEach(queriedMeasure -> {
 			queriedMeasure = resolveMeasure(canResolveMeasures, queriedMeasure);
 

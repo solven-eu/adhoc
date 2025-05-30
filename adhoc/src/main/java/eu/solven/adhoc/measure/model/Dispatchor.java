@@ -30,6 +30,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
@@ -38,8 +40,6 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
-import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
@@ -119,11 +119,11 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
 		IDecomposition decomposition =
 				operatorsFactory.makeDecomposition(getDecompositionKey(), getDecompositionOptions());
 
-		if (decomposition instanceof IColumnGenerator columnGenerator) {
+		if (decomposition instanceof ICompositeColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);
 		} else {
 			return Optional.empty();

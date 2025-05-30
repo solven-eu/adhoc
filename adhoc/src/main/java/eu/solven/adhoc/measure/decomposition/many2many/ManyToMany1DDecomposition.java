@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -39,6 +38,7 @@ import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -96,13 +96,13 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.optSliced(elementColumn);
 		if (optInput.isEmpty()) {
 			// There is no expressed element
-			return Map.of(Map.of(), value);
+			return List.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		Object element = optInput.get();
@@ -118,12 +118,13 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		return makeDecomposition(element, value, groupColumn, groups);
 	}
 
-	protected Map<Map<String, ?>, Object> makeDecomposition(Object element,
+	protected List<IDecompositionEntry> makeDecomposition(Object element,
 			Object value,
 			String groupColumn,
 			Set<Object> groups) {
 		return groups.stream()
-				.collect(Collectors.toMap(group -> Map.of(groupColumn, group), group -> scale(element, value)));
+				.map(group -> IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)))
+				.toList();
 	}
 
 	protected Set<Object> getGroups(ISliceWithStep slice, Object element) {

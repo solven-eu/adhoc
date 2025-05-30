@@ -55,9 +55,10 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@BeforeEach
 	public void registerMeasures() {
-		forest.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", "d"));
+		String underlying = "d";
+		forest.addMeasure(Aggregator.builder().name(underlying).aggregationKey(SumAggregation.KEY).build());
 
-		forest.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
+		forest.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", underlying));
 
 		forest.getNameToMeasure().forEach((measureName, measure) -> {
 			log.debug("Measure: {}", measureName);
@@ -66,7 +67,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").debug(true).build();
 		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

@@ -33,7 +33,7 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**
  * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
- * when querying the table.
+ * when querying the table. It helps materializing the relevant slices, without requesting any aggregation.
  * 
  * @author Benoit Lacelle
  */

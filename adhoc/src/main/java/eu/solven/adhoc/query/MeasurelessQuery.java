@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -37,7 +38,8 @@ import lombok.Singular;
 import lombok.Value;
 
 /**
- * Typically used to group aggregators together, given they are associated to the same filter, groupBy, etc clauses.
+ * Typically used to group {@link Aggregator} together, given they are associated to the same filter, groupBy, etc
+ * clauses.
  *
  * @author Benoit Lacelle
  */

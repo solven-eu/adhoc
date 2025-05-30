@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.util.IHasName;
 
 /**
@@ -91,11 +91,7 @@ public interface IMeasure extends IHasName, IHasTags {
 		if (Objects.equals(alias, aliased)) {
 			return ReferencedMeasure.ref(alias);
 		} else {
-			return Combinator.builder()
-					.name(alias)
-					.combinationKey(FindFirstCombination.KEY)
-					.underlying(aliased)
-					.build();
+			return Combinator.builder().name(alias).combinationKey(CoalesceCombination.KEY).underlying(aliased).build();
 		}
 	}
 }

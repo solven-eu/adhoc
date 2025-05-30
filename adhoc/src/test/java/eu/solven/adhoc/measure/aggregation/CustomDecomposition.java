@@ -29,6 +29,7 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -38,8 +39,8 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
  */
 public class CustomDecomposition implements IDecomposition {
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
-		return Map.of();
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
+		return List.of();
 	}
 
 	@Override

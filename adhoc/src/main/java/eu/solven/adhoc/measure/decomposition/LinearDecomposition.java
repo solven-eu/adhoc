@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.measure.decomposition;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -67,12 +68,12 @@ public class LinearDecomposition implements IDecomposition {
 	}
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.optSliced(inputColumn);
 		if (optInput.isEmpty()) {
-			return Map.of(Map.of(), value);
+			return List.of(IDecompositionEntry.of(Map.of(), IValueProvider.setValue(value)));
 		}
 
 		Object input = optInput.get();
@@ -81,14 +82,14 @@ public class LinearDecomposition implements IDecomposition {
 
 		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (min.equals(input)) {
-			return Collections.singletonMap(Map.of(outputColumn, min), value);
+			return List.of(IDecompositionEntry.of(Map.of(outputColumn, min), value));
 		} else if (max.equals(input)) {
-			return Collections.singletonMap(Map.of(outputColumn, max), value);
+			return List.of(IDecompositionEntry.of(Map.of(outputColumn, max), value));
 		} else {
-			Map<Map<String, ?>, Object> output = new HashMap<>();
+			List<IDecompositionEntry> output = new ArrayList<>(2);
 
-			output.put(Map.of(outputColumn, min), scale(min, max, input, value));
-			output.put(Map.of(outputColumn, max), scaleComplement(min, max, input, value));
+			output.add(IDecompositionEntry.of(Map.of(outputColumn, min), scale(min, max, input, value)));
+			output.add(IDecompositionEntry.of(Map.of(outputColumn, max), scaleComplement(min, max, input, value)));
 
 			return output;
 		}

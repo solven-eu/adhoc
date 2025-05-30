@@ -20,24 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.dynamic_tenors;
 
-import java.util.Set;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+public class MarketRiskSensitivityAggregation implements IAggregation {
 
-public interface IQueryStepsDagBuilder {
-
-	/**
-	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
-	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
-
-	QueryStepsDag getQueryDag();
+	@Override
+	public Object aggregate(Object left, Object right) {
+		if (left == null) {
+			return right;
+		} else if (right == null) {
+			return left;
+		} else {
+			return ((MarketRiskSensitivity) left).mergeWith((MarketRiskSensitivity) right);
+		}
+	}
 
 }

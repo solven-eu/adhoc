@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.sum;
+package eu.solven.adhoc.measure.dynamic_tenors;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
-/**
- * Typically used for advanced {@link IDecomposition} where we know there will be no actual aggregation.
- */
-@Slf4j
-public class FirstNotNullAggregation implements IAggregation {
+import com.google.common.collect.ImmutableList;
 
-	public static final String KEY = "FIRST";
+public interface IExamplePnLExplainConstant {
+	List<String> TENORS = ImmutableList.of("1M", "3M", "6M", "1Y", "2Y");
 
-	@Override
-	public Object aggregate(Object l, Object r) {
-		if (l == null) {
-			return r;
-		} else if (r == null) {
-			return l;
-		} else if (l == r) {
-			return l;
-		} else {
-			throw new IllegalArgumentException(
-					"%s != %s".formatted(System.identityHashCode(l), System.identityHashCode(r)));
-		}
-	}
+	// Time left for given contract
+	String K_TENOR = "tenor";
+	// Initial duration for given contract (e.g. tenor at inception)
+	String K_MATURITY = "maturity";
+
+	// Some SUM sensitivity/risk/measure
+	String DELTA = "delta";
 }

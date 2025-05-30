@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.SumCombination;
@@ -48,7 +48,7 @@ public class TestIMeasure {
 		Assertions.assertThat(IMeasure.alias("someMeasure", "otherMeasure"))
 				.isInstanceOfSatisfying(Combinator.class, m -> {
 					Assertions.assertThat(m.getName()).isEqualTo("someMeasure");
-					Assertions.assertThat(m.getCombinationKey()).isEqualTo(FindFirstCombination.KEY);
+					Assertions.assertThat(m.getCombinationKey()).isEqualTo(CoalesceCombination.KEY);
 					Assertions.assertThat(m.getUnderlyingNames()).containsExactly("otherMeasure");
 				});
 	}

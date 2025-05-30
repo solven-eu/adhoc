@@ -31,6 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -39,8 +40,8 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";
 
 	@Override
-	public Map<Map<String, ?>, Object> decompose(ISliceWithStep slice, Object value) {
-		return Collections.singletonMap(Map.of(), value);
+	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
+		return Collections.singletonList(IDecompositionEntry.of(Map.of(), value));
 	}
 
 	@Override

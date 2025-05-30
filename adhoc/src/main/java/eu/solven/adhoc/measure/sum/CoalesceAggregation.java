@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.sum;
 
-import java.util.Set;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import lombok.extern.slf4j.Slf4j;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+/**
+ * Typically used for advanced {@link IDecomposition} where we know there will be no actual aggregation.
+ */
+@Slf4j
+public class CoalesceAggregation implements IAggregation {
 
-public interface IQueryStepsDagBuilder {
+	public static final String KEY = "COALESCE";
 
-	/**
-	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
-	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
-
-	QueryStepsDag getQueryDag();
-
+	@Override
+	public Object aggregate(Object l, Object r) {
+		if (l == null) {
+			return r;
+		} else if (r == null) {
+			return l;
+		} else if (l == r) {
+			return l;
+		} else {
+			throw new IllegalArgumentException(
+					"%s != %s".formatted(System.identityHashCode(l), System.identityHashCode(r)));
+		}
+	}
 }

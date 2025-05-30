@@ -36,12 +36,13 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -85,6 +86,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			yield RankAggregation.make(options);
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
+		case CoalesceAggregation.KEY:
+			yield new CoalesceAggregation();
 		default:
 			yield defaultAggregation(key, options);
 		};
@@ -124,8 +127,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			}
 			yield EvaluatedExpressionCombination.parse(enrichedOptions);
 		}
-		case FindFirstCombination.KEY: {
-			yield new FindFirstCombination();
+		case CoalesceCombination.KEY: {
+			yield new CoalesceCombination();
 		}
 		default:
 
@@ -166,6 +169,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 				Constructor<? extends T> constructorWithOptions = asClass.getConstructor(Map.class);
 				return constructorWithOptions.newInstance(options);
 			} catch (NoSuchMethodException e) {
+				log.trace("No `<Map>` constructor. Checking for an empty constructor.");
 				Constructor<? extends T> constructorWithNothing = asClass.getConstructor();
 				return constructorWithNothing.newInstance();
 			}
@@ -191,22 +195,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	}
 
-	protected IDecomposition defaultDecomposition(String key, Map<String, ?> options) {
-		Class<? extends IDecomposition> asClass;
-		try {
-			asClass = (Class<? extends IDecomposition>) Class.forName(key);
-
-		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		}
-
-		try {
-			return asClass.getConstructor(Map.class).newInstance(options);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
-				| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
+	protected IDecomposition defaultDecomposition(String className, Map<String, ?> options) {
+		return makeWithMapOrEmpty(IDecomposition.class, className, options);
 	}
 
 	@Override
@@ -227,21 +217,8 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 
 	}
 
-	protected IFilterEditor defaultEditor(String key, Map<String, ?> options) {
-		Class<? extends IFilterEditor> asClass;
-		try {
-			asClass = (Class<? extends IFilterEditor>) Class.forName(key);
-		} catch (ClassNotFoundException e) {
-			log.trace("No class matches %s".formatted(key));
-			throw new IllegalArgumentException("Unexpected value: " + key);
-		}
-
-		try {
-			return asClass.getConstructor(Map.class).newInstance(options);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
-				| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
+	protected IFilterEditor defaultEditor(String className, Map<String, ?> options) {
+		return makeWithMapOrEmpty(IFilterEditor.class, className, options);
 	}
 
 }

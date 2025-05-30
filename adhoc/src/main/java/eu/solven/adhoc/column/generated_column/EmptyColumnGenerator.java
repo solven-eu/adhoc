@@ -20,24 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.column.generated_column;
 
-import java.util.Set;
+import java.util.Map;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-public interface IQueryStepsDagBuilder {
+public class EmptyColumnGenerator implements ICompositeColumnGenerator {
+
+	@Override
+	public Map<String, Class<?>> getColumnTypes() {
+		return Map.of();
+	}
+
+	@Override
+	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
+		return CoordinatesSample.empty();
+	}
 
 	/**
+	 * Typically useful as default.
 	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
+	 * @return an empty {@link ICompositeColumnGenerator}.
 	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
-
-	QueryStepsDag getQueryDag();
+	public static ICompositeColumnGenerator empty() {
+		return new EmptyColumnGenerator();
+	}
 
 }

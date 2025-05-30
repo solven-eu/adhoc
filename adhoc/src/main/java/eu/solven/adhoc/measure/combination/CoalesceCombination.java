@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.combination;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Objects;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
-public interface IQueryStepsDagBuilder {
+/**
+ * Return the first underlyingValue which is not null. Else null.
+ */
+public class CoalesceCombination implements ICombination {
+
+	public static final String KEY = CoalesceAggregation.KEY;
+
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		return underlyingValues.stream().filter(Objects::nonNull).findFirst().orElse(null);
+	}
 
 	/**
 	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
+	 * @param combination
+	 * @return true if given combination is a {@link CoalesceCombination}.
 	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
-
-	QueryStepsDag getQueryDag();
+	public static boolean isFindFirst(ICombination combination) {
+		return combination instanceof CoalesceCombination;
+	}
 
 }

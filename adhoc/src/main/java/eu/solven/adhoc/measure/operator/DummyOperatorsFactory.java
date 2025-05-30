@@ -27,7 +27,7 @@ import java.util.Map;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
-import eu.solven.adhoc.measure.combination.FindFirstCombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -49,7 +49,7 @@ public class DummyOperatorsFactory implements IOperatorsFactory {
 	IAggregation dummyAggregation = new SumAggregation();
 	@NonNull
 	@Builder.Default
-	ICombination dummyCombination = new FindFirstCombination();
+	ICombination dummyCombination = new CoalesceCombination();
 	@NonNull
 	@Builder.Default
 	IDecomposition dummyDecomposition = new AdhocIdentity();

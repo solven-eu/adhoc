@@ -20,24 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.decomposition;
 
-import java.util.Set;
+import java.util.Map;
 
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.data.cell.IValueProvider;
 
-public interface IQueryStepsDagBuilder {
+/**
+ * An entry amongst the multiple entries of a {@link IDecomposition}.
+ * 
+ * Typically, for `slice=country:G8`, we would return 8 {@link IDecompositionEntry}, once for each country of the `G8`.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IDecompositionEntry {
+	Map<String, ?> getSlice();
 
-	/**
-	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
-	 * @param rootMeasures
-	 *            the measures requested directly by the IAdhocQuery
-	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
+	IValueProvider getValue();
 
-	QueryStepsDag getQueryDag();
+	static IDecompositionEntry of(Map<String, ?> slice, IValueProvider value) {
+		return DecompositionEntry.builder().slice(slice).value(value).build();
+	}
 
+	static IDecompositionEntry of(Map<String, ?> slice, Object value) {
+		if (value instanceof IValueProvider valueProvider) {
+			return of(slice, valueProvider);
+		} else {
+			return of(slice, IValueProvider.setValue(value));
+		}
+	}
 }

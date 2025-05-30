@@ -22,9 +22,16 @@
  */
 package eu.solven.adhoc.column;
 
+import java.util.List;
+import java.util.Set;
+
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -54,5 +61,18 @@ public interface IColumnsManager extends IHasColumnTypes {
 	 * @return the equivalent table column
 	 */
 	String transcodeToTable(String cubeColumn);
+
+	/**
+	 * 
+	 * @param operatorsFactory
+	 * @param measures
+	 *            a {@link Set} of measures providing some {@link ICompositeColumnGenerator}.
+	 * @param columnMatcher
+	 *            filter the columnName.
+	 * @return
+	 */
+	List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorsFactory operatorsFactory,
+			Set<IMeasure> measures,
+			IValueMatcher columnMatcher);
 
 }

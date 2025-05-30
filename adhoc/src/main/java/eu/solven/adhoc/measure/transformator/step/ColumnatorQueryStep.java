@@ -120,6 +120,15 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		Object value = combination.combine(slice.getSlice(), underlyingVs);
 
+		if (isDebug()) {
+			log.info("[DEBUG] Write {} (given {} over {}) in {}",
+					// IValueProvider.getValue(valueProvider),
+					value,
+					combinator.getName(),
+					// slicedRecord,
+					slice);
+		}
+
 		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
 	}
 }

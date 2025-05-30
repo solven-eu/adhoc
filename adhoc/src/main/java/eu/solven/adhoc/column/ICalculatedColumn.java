@@ -23,13 +23,14 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.util.IHasName;
 
 /**
  * Typically extended by an {@link IAdhocColumn}
  * 
  * @author Benoit Lacelle
  */
-public interface ICalculatedColumn {
+public interface ICalculatedColumn extends IHasName {
 
 	/**
 	 * 

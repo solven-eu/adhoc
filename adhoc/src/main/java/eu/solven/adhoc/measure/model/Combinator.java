@@ -32,6 +32,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -39,8 +41,6 @@ import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
-import eu.solven.adhoc.measure.transformator.column_generator.IMayHaveColumnGenerator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -133,10 +133,10 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
 		ICombination combination = operatorsFactory.makeCombination(this);
 
-		if (combination instanceof IColumnGenerator columnGenerator) {
+		if (combination instanceof ICompositeColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);
 		} else {
 			return Optional.empty();

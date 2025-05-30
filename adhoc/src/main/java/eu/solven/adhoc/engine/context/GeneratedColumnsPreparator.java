@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
+package eu.solven.adhoc.engine.context;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
+import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.query.cube.ICubeQuery;
+import lombok.Singular;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Return the first underlyingValue which is not null. Else null.
+ * This {@link IQueryPreparator} helps always keeping given measures, generating given columns. It helps
+ * 
+ * @author Benoit Lacelle
  */
-public class FindFirstCombination implements ICombination {
+@SuperBuilder
+@Deprecated(since = "Poor designs. Some IColumnGenerator should not come from measures")
+public class GeneratedColumnsPreparator extends DefaultQueryPreparator {
 
-	public static final String KEY = "FIND_FIRST";
+	@Singular
+	Set<String> generatedColumnsMeasures;
 
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		return underlyingValues.stream().filter(Objects::nonNull).findFirst().orElse(null);
-	}
+	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
+		MeasureForestBuilder filteredForest = super.filterForest(forest, preparedQuery);
 
-	/**
-	 * 
-	 * @param combination
-	 * @return true if given combination is a {@link FindFirstCombination}.
-	 */
-	public static boolean isFindFirst(ICombination combination) {
-		return combination instanceof FindFirstCombination;
+		generatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest
+				.measure(forest.resolveIfRef(ReferencedMeasure.ref(calculatedMeasure))));
+
+		return filteredForest;
 	}
 
 }
