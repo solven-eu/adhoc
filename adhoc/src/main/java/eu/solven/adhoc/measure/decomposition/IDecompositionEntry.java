@@ -26,6 +26,13 @@ import java.util.Map;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 
+/**
+ * An entry amongst the multiple entries of a {@link IDecomposition}.
+ * 
+ * Typically, for `slice=country:G8`, we would return 8 {@link IDecompositionEntry}, once for each country of the `G8`.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IDecompositionEntry {
 	Map<String, ?> getSlice();
 

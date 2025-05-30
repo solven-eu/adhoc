@@ -90,6 +90,17 @@ public class TestDispatchor_PnLExplain extends ADagTest implements IExamplePnLEx
 				.underlying("sensitivities")
 				.build());
 
+		// Enable a `count(*)`, which counts `1` per sensitivity
+		// BEWARE This is not great design as it leads to re-compute the decomposition already computed for `delta`
+		// An alternative could be to keep track of count in `MarketRiskSensitivity` objects. But it would lead to
+		// computing counts even if most queries may not need them.
+		forest.addMeasure(Dispatchor.builder()
+				.name("count")
+				.decompositionKey(ExpandTenorAndMaturityDecomposition.class.getName())
+				.decompositionOption("count", true)
+				.underlying("sensitivities")
+				.build());
+
 		forest.addMeasure(Combinator.builder()
 				.name("market_shift")
 				.combinationKey(MarketDataShiftCombination.class.getName())
@@ -109,12 +120,17 @@ public class TestDispatchor_PnLExplain extends ADagTest implements IExamplePnLEx
 
 	@Test
 	public void testQueryGrandTotal() {
-		ITabularView output = cube().execute(CubeQuery.builder().measure("pnl_explain").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("pnl_explain", "count").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of("pnl_explain", (12.34D + 23.45) * 2.7 + 34.56D * 4.6 + 45.67D * 7.7))
+				.containsEntry(Map.of(),
+						Map.of("pnl_explain",
+								(12.34D + 23.45) * 2.7 + 34.56D * 4.6 + 45.67D * 7.7,
+								"count",
+								// 3 instead of 4 as the pre-aggregation did not count
+								0L + 3))
 				.hasSize(1);
 	}
 
@@ -137,18 +153,25 @@ public class TestDispatchor_PnLExplain extends ADagTest implements IExamplePnLEx
 
 	@Test
 	public void testGroupByTenor_FilterBlue() {
-		ITabularView output = cube().execute(
-				CubeQuery.builder().measure("pnl_explain").groupByAlso(K_TENOR).andFilter("color", "blue").build());
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure("pnl_explain", "count")
+				.groupByAlso(K_TENOR)
+				.andFilter("color", "blue")
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(K_TENOR, "1Y"),
 						Map.of("pnl_explain",
-								BigDecimal.valueOf(12.34D).multiply(BigDecimal.valueOf(2.7)).doubleValue()))
+								BigDecimal.valueOf(12.34D).multiply(BigDecimal.valueOf(2.7)).doubleValue(),
+								"count",
+								1L))
 				.containsEntry(Map.of(K_TENOR, "3M"),
 						Map.of("pnl_explain",
-								BigDecimal.valueOf(34.56).multiply(BigDecimal.valueOf(4.6)).doubleValue()))
+								BigDecimal.valueOf(34.56).multiply(BigDecimal.valueOf(4.6)).doubleValue(),
+								"count",
+								1L))
 				.hasSize(2);
 	}
 

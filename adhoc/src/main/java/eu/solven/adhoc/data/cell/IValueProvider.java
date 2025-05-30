@@ -61,6 +61,14 @@ public interface IValueProvider {
 		return refV.get();
 	}
 
+	static IValueProvider setValue(long l) {
+		return vr -> vr.onLong(l);
+	}
+
+	static IValueProvider setValue(double d) {
+		return vr -> vr.onDouble(d);
+	}
+
 	/**
 	 * Helper method to convert a plain {@link Object} into a {@link IValueProvider}
 	 * 
@@ -70,4 +78,5 @@ public interface IValueProvider {
 	static IValueProvider setValue(Object o) {
 		return vr -> vr.onObject(o);
 	}
+
 }

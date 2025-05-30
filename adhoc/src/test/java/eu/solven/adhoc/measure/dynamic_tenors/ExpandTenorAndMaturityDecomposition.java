@@ -29,6 +29,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
@@ -36,13 +37,27 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.pepper.mappath.MapPathGet;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Expand {@link MarketRiskSensitivity} along all tenor x maturities.
  * 
  * @author Benoit Lacelle
  */
+@Builder
+@RequiredArgsConstructor
 public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExamplePnLExplainConstant {
+
+	// By default, we sum the sensitivity. We may also just count the number of matching sensitivity
+	@Default
+	final boolean modeCount = false;
+
+	public ExpandTenorAndMaturityDecomposition(Map<String, ?> options) {
+		modeCount = MapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
+	}
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
@@ -76,7 +91,6 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 
 		sensitivives.getCoordinatesToDelta().object2DoubleEntrySet().forEach(e -> {
 			Map<String, ?> sensitivityCoordinates = e.getKey();
-			double doubleValue = e.getDoubleValue();
 
 			Object tenor = sensitivityCoordinates.get(K_TENOR);
 			Object maturity = sensitivityCoordinates.get(K_MATURITY);
@@ -86,6 +100,13 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 				return;
 			}
 
+			IValueProvider valueProvider;
+			if (modeCount) {
+				valueProvider = IValueProvider.setValue(1L);
+			} else {
+				valueProvider = IValueProvider.setValue(e.getDoubleValue());
+			}
+
 			boolean isTenorGroupedBy = groupedByColumns.contains(K_TENOR);
 			boolean isMaturityGroupedBy = groupedByColumns.contains(K_MATURITY);
 
@@ -93,17 +114,17 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 				if (isMaturityGroupedBy) {
 					// grouped by tenor and maturity
 					decompositions
-							.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor, K_MATURITY, maturity), doubleValue));
+							.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor, K_MATURITY, maturity), valueProvider));
 				} else {
 					// grouped by tenor
-					decompositions.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor), doubleValue));
+					decompositions.add(IDecompositionEntry.of(Map.of(K_TENOR, tenor), valueProvider));
 				}
 			} else if (isMaturityGroupedBy) {
 				// grouped by maturity
-				decompositions.add(IDecompositionEntry.of(Map.of(K_MATURITY, maturity), doubleValue));
+				decompositions.add(IDecompositionEntry.of(Map.of(K_MATURITY, maturity), valueProvider));
 			} else {
 				// none are grouped by
-				decompositions.add(IDecompositionEntry.of(Map.of(), doubleValue));
+				decompositions.add(IDecompositionEntry.of(Map.of(), valueProvider));
 			}
 		});
 

@@ -195,7 +195,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 				operandToAppend = null;
 			} else if (s.matches("-?[0-9]+")) {
 				operandToAppend = Long.parseLong(s);
-			} else if (s.matches("-?[0-9]+.[0-9]+([Ee][+-]?[0-9]+)?")) {
+			} else if (s.matches("-?[0-9]+\\.[0-9]+(?:[Ee][+-]?[0-9]+)?")) {
 				// https://stackoverflow.com/questions/10516967/regexp-for-a-double
 				operandToAppend = Double.parseDouble(s);
 			} else {

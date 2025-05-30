@@ -23,20 +23,38 @@
 package eu.solven.adhoc.measure.dynamic_tenors;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.DoubleConsumer;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.pepper.mappath.MapPathGet;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Sum the sensitivity of input {@link MarketRiskSensitivity}, restricting to filtered tenors and maturities.
  * 
  * @author Benoit Lacelle
  */
+@Builder
+@RequiredArgsConstructor
 public class ReduceSensitivitiesCombination implements ICombination, IExamplePnLExplainConstant {
+
+	// By default, we sum the sensitivity. We may also just count the number of matching sensitivity
+	@Default
+	final boolean modeCount = false;
+
+	public ReduceSensitivitiesCombination(Map<String, ?> options) {
+		modeCount = MapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
+	}
+
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		MarketRiskSensitivity sensitivities = (MarketRiskSensitivity) underlyingValues.getFirst();
@@ -44,9 +62,40 @@ public class ReduceSensitivitiesCombination implements ICombination, IExamplePnL
 		IValueMatcher tenorMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_TENOR);
 		IValueMatcher maturityMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_MATURITY);
 
-		DoubleAdder accumulated = new DoubleAdder();
-		AtomicBoolean oneContributed = new AtomicBoolean();
+		if (modeCount) {
+			LongAdder counted = new LongAdder();
 
+			reduce(sensitivities, tenorMatcher, maturityMatcher, d -> {
+				counted.increment();
+			});
+
+			long count = counted.longValue();
+			if (count == 0) {
+				return null;
+			} else {
+				return count;
+			}
+		} else {
+			DoubleAdder summed = new DoubleAdder();
+			AtomicBoolean oneContributed = new AtomicBoolean();
+
+			reduce(sensitivities, tenorMatcher, maturityMatcher, d -> {
+				summed.add(d);
+				oneContributed.set(true);
+			});
+
+			if (oneContributed.get()) {
+				return summed.doubleValue();
+			} else {
+				return null;
+			}
+		}
+	}
+
+	protected void reduce(MarketRiskSensitivity sensitivities,
+			IValueMatcher tenorMatcher,
+			IValueMatcher maturityMatcher,
+			DoubleConsumer valueConsumer) {
 		sensitivities.getCoordinatesToDelta().object2DoubleEntrySet().forEach(e -> {
 			Object tenor = e.getKey().get(K_TENOR);
 			if (!tenorMatcher.match(tenor)) {
@@ -57,15 +106,8 @@ public class ReduceSensitivitiesCombination implements ICombination, IExamplePnL
 				return;
 			}
 
-			accumulated.add(e.getDoubleValue());
-			oneContributed.set(true);
+			valueConsumer.accept(e.getDoubleValue());
 		});
-
-		if (oneContributed.get()) {
-			return accumulated.doubleValue();
-		} else {
-			return null;
-		}
 	}
 
 }

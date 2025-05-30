@@ -40,7 +40,6 @@ public interface ICompositeColumnGenerator extends IHasColumnTypes {
 	 */
 	Object COORDINATE_GENERATED = "generated";
 
-
 	/**
 	 * 
 	 * @param column

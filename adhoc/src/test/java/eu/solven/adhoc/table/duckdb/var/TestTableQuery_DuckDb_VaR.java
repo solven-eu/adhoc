@@ -391,8 +391,8 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 				.containsKey(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED))
 				.hasSize(1);
 
-		Map<String, ?> measureToValue =
-				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED));
+		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues()
+				.get(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED));
 
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 
