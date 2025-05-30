@@ -34,6 +34,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
+import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -91,7 +92,8 @@ public class TestBucketor_PnLExplain extends ADagTest implements IExamplePnLExpl
 		forest.addMeasure(Dispatchor.builder()
 				.name("sensitivities")
 				.underlying("sensitivities.notPropagated")
-				.decompositionKey(DuplicateTenorAndMaturityDecomposition.class.getName())
+				.decompositionKey(DuplicatingDecomposition.class.getName())
+				.decompositionOption("columnToCoordinates", Map.of(K_TENOR, TENORS, K_MATURITY, TENORS))
 				.aggregationKey(CoalesceAggregation.KEY)
 				.build());
 

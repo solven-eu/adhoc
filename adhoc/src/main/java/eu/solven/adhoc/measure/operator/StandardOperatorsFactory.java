@@ -169,6 +169,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 				Constructor<? extends T> constructorWithOptions = asClass.getConstructor(Map.class);
 				return constructorWithOptions.newInstance(options);
 			} catch (NoSuchMethodException e) {
+				log.trace("No `<Map>` constructor. Checking for an empty constructor.");
 				Constructor<? extends T> constructorWithNothing = asClass.getConstructor();
 				return constructorWithNothing.newInstance();
 			}

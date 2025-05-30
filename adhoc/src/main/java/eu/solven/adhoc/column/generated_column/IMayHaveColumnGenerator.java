@@ -20,19 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.column_generator;
+package eu.solven.adhoc.column.generated_column;
 
 import java.util.Optional;
 
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 
 /**
- * Anything which may provide a {@link IColumnGenerator}
+ * Anything which may provide a {@link ICompositeColumnGenerator}
  * 
  * @author Benoit Lacelle
  */
 public interface IMayHaveColumnGenerator {
 
-	Optional<IColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
+	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
 
 }

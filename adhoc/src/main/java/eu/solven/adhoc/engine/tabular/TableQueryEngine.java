@@ -42,6 +42,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
@@ -65,7 +66,6 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.sum.IAggregationCarrier;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -282,16 +282,13 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// We list the generatedColumns instead of listing the table columns as many tables has lax resolution of
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
-		Set<String> generatedColumns = IColumnGenerator.getColumnGenerators(operatorsFactory,
-				// TODO Restrict to the DAG measures
-				queryPod.getForest().getMeasures(),
-				IValueMatcher.MATCH_ALL)
+		Set<String> generatedColumns = queryPod.getColumnsManager()
+				.getGeneratedColumns(operatorsFactory, queryPod.getForest().getMeasures(), IValueMatcher.MATCH_ALL)
 				.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
 				.collect(Collectors.toSet());
 
-		Set<String> groupedByCubeColumns =
-				tableQuery.getGroupBy().getNameToColumn().keySet().stream().collect(Collectors.toSet());
+		Set<String> groupedByCubeColumns = tableQuery.getGroupBy().getGroupedByColumns();
 
 		var edited = tableQuery.toBuilder();
 
@@ -501,7 +498,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @return
 	 */
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
-		return suppressedColumns.stream().collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
+		return suppressedColumns.stream()
+				.collect(Collectors.toMap(c -> c, c -> ICompositeColumnGenerator.COORDINATE_GENERATED));
 	}
 
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -36,6 +37,11 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
+/**
+ * Expand {@link MarketRiskSensitivity} along all tenor x maturities.
+ * 
+ * @author Benoit Lacelle
+ */
 public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExamplePnLExplainConstant {
 
 	@Override
@@ -106,8 +112,8 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		// Supress tenor and maturity as they are columns embedded in the underlying aggregate
-		return List.of(IDecomposition.suppressColumn(IDecomposition.suppressColumn(step, K_TENOR), K_MATURITY));
+		// Suppress tenor and maturity as they are columns embedded in the underlying aggregate
+		return List.of(IDecomposition.suppressColumn(step, Set.of(K_TENOR, K_MATURITY)));
 	}
 
 }

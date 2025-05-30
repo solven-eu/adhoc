@@ -28,12 +28,13 @@ import java.util.Map;
 import java.util.Set;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.MeasurelessQuery.MeasurelessQueryBuilder;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -46,14 +47,15 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  *
  * Also used for many2many: each input element is decomposed into its target groups.
  */
-public interface IDecomposition extends IColumnGenerator {
+public interface IDecomposition extends ICompositeColumnGenerator {
 	/**
 	 *
 	 * @param slice
 	 *            an element/underlying slice
 	 * @param value
 	 * @return the target/pillars/groups slices, each associated to a value (may be the input value, or a fraction of
-	 *         it, or anything else).
+	 *         it, or anything else). Each entry must express all groupByColumns (in `slice.getStep()`). They may
+	 *         express additional columns if it is simpler for the implementation.
 	 */
 	List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value);
 
@@ -68,6 +70,13 @@ public interface IDecomposition extends IColumnGenerator {
 	 */
 	List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step);
 
+	/**
+	 * 
+	 * @param step
+	 * @param column
+	 * @return a {@link MeasurelessQuery} where given column has been suppressed (i.e. removed from
+	 *         {@link IAdhocGroupBy} and filter are turned into `.matchAll`).
+	 */
 	static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, String column) {
 		MeasurelessQueryBuilder underlyingStep = MeasurelessQuery.edit(step);
 
@@ -88,5 +97,15 @@ public interface IDecomposition extends IColumnGenerator {
 		}
 
 		return underlyingStep.build();
+	}
+
+	static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, Set<String> columns) {
+		MeasurelessQuery underlyingStep = MeasurelessQuery.edit(step).build();
+
+		for (String column : columns) {
+			underlyingStep = suppressColumn(underlyingStep, column);
+		}
+
+		return underlyingStep;
 	}
 }

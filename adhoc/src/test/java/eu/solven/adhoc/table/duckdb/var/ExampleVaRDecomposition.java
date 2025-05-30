@@ -23,7 +23,6 @@
 package eu.solven.adhoc.table.duckdb.var;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -37,7 +36,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
-import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -59,9 +57,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		MeasurelessQuery suppressedIndex = IDecomposition.suppressColumn(step, C_SCENARIOINDEX);
-		MeasurelessQuery suppressedName = IDecomposition.suppressColumn(suppressedIndex, C_SCENARIONAME);
-		return Collections.singletonList(suppressedName);
+		return List.of(IDecomposition.suppressColumn(step, Set.of(C_SCENARIOINDEX, C_SCENARIONAME)));
 	}
 
 	@Override

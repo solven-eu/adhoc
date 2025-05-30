@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -55,7 +56,6 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -388,11 +388,11 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
+				.containsKey(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED))
 				.hasSize(1);
 
 		Map<String, ?> measureToValue =
-				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
+				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED));
 
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 

@@ -28,17 +28,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.column_generator.IColumnGenerator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Value;
 
 /**
- * Helps managing {@link IColumnGenerator} when these columns flows down to the {@link Aggregator}
- * {@link CubeQueryStep}. Indeed, {@link IColumnGenerator} may generate columns which are not relevant for the
+ * Helps managing {@link ICompositeColumnGenerator} when these columns flows down to the {@link Aggregator}
+ * {@link CubeQueryStep}. Indeed, {@link ICompositeColumnGenerator} may generate columns which are not relevant for the
  * {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
