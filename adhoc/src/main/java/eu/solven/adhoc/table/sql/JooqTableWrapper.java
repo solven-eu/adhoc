@@ -84,7 +84,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	final String name;
 
 	@NonNull
-	final JooqTableWrapperParameters dbParameters;
+	final JooqTableWrapperParameters tableParameters;
 
 	@Override
 	public String getName() {
@@ -123,10 +123,10 @@ public class JooqTableWrapper implements ITableWrapper {
 		Field<?>[] fields;
 
 		try {
-			fields = dbParameters.getDslSupplier()
+			fields = tableParameters.getDslSupplier()
 					.getDSLContext()
 					.select()
-					.from(dbParameters.getTable())
+					.from(tableParameters.getTable())
 					.limit(0)
 					.fetch()
 					.fields();
@@ -162,7 +162,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	public DSLContext makeDsl() {
-		return dbParameters.getDslSupplier().getDSLContext();
+		return tableParameters.getDslSupplier().getDSLContext();
 	}
 
 	@Override
@@ -211,8 +211,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	protected IJooqTableQueryFactory makeQueryFactory() {
 		DSLContext dslContext = makeDsl();
 
-		IJooqTableQueryFactory queryFactory = makeQueryFactory(dslContext);
-		return queryFactory;
+		return makeQueryFactory(dslContext);
 	}
 
 	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
@@ -234,8 +233,8 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 		return JooqTableQueryFactory.builder()
-				.operatorsFactory(dbParameters.getOperatorsFactory())
-				.table(dbParameters.getTable())
+				.operatorsFactory(tableParameters.getOperatorsFactory())
+				.table(tableParameters.getTable())
 				.dslContext(dslContext)
 				.build();
 	}
@@ -316,7 +315,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
@@ -326,7 +325,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
-		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);

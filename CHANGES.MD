@@ -17,7 +17,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - A not-Aggregator measure without underlying is automatically relying on the `empty` measure
 - `FirstNotNullAggregation` renamed into `CoalesceAggregation`. Its key changed from `FIRST` to `COALESCE`
 - `FirstNotNullCombination` renamed into `CoalesceCombination`. Its key changed from `FIND_FIRST` to `COALESCE`
- 
+- `AtotiMeasureToAdhoc` should be extended with `@SuperBuilder` and a custom SuperBuilder.
+
 ## [0.0.7]
 ### Added
 - `CachingTableWrapper` can be used to add a caching layer on top of a `ITableWrapper`. It can be skipped with `StandardQueryOptions.NO_CACHE`.

@@ -31,10 +31,6 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 public class CustomActivePivotMeasureToAdhoc extends AtotiMeasureToAdhoc {
-	// @Builder(builderMethodName = "customBuilder")
-	// public CustomActivePivotMeasureToAdhoc(ITableTranscoder transcoder, SourceMode sourceMode) {
-	// super(new CustomAtotiConditionCubeToAdhoc(), transcoder, sourceMode);
-	// }
 
 	public static CustomActivePivotMeasureToAdhoc.CustomActivePivotMeasureToAdhocBuilder<?, ?> builder() {
 		return new CustomActivePivotMeasureToAdhoc.CustomActivePivotMeasureToAdhocBuilderImpl()

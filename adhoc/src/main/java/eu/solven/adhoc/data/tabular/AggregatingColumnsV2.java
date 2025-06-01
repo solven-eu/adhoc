@@ -40,7 +40,7 @@ import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;

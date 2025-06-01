@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.Builder;

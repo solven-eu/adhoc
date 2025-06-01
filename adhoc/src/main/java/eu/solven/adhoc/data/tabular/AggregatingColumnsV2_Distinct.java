@@ -35,7 +35,7 @@ import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.array.MultitypeArrayColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier.IHasCarriers;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -91,9 +91,7 @@ public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAgg
 
 		return aggregator -> {
 			IMultitypeColumnFastGet<Integer> column =
-					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-						return makePreColumn();
-					});
+					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> makePreColumn());
 
 			// TODO Could be skipped for not-object aggregate?
 			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());

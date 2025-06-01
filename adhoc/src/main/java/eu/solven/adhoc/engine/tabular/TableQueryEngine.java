@@ -65,7 +65,7 @@ import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -183,7 +183,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		TableQueryToActualTableQuery toSuppressed =
 				TableQueryToActualTableQuery.builder().dagQuery(dagQuery).suppressedQuery(suppressedQuery).build();
 
-		IStopwatch stopWatch = stopwatchFactory.createStarted();
+		IStopwatch stopWatchSinking;
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues;
 
@@ -203,10 +203,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 						.build());
 			}
 
+			stopWatchSinking = stopwatchFactory.createStarted();
 			stepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
-		Duration elapsed = stopWatch.elapsed();
+		Duration elapsed = stopWatchSinking.elapsed();
 		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, stepToValues);
 
 		return stepToValues;
@@ -231,7 +232,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	/**
 	 * @param queryPod
-	 * @param dagHolder2
+	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
 	public Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -337,7 +338,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Duration elapsed = stopWatch.elapsed();
 			if (queryPod.isDebug()) {
 				long totalSize =
-						query.getDagQuery().getAggregators().stream().mapToLong(a -> sliceToAggregates.size(a)).sum();
+						query.getDagQuery().getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
