@@ -126,6 +126,9 @@ public class DuplicatingDecomposition implements IDecomposition {
 			decompositions.add(IDecompositionEntry.of(projectedSlice, value));
 		});
 
+		log.debug("CartesianProduct led to {} decompositions for slice={} and value={}",
+				decompositions.size(), slice, value);
+
 		return decompositions;
 	}
 

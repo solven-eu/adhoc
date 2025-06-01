@@ -77,7 +77,7 @@ public class GroupByHelpers {
 		if (mask.isEmpty()) {
 			return column;
 		} else {
-			return ConstantMaskMultitypeColumn.builder().masked(column).mask(ImmutableMap.copyOf(mask)).build();
+			return ConstantMaskMultitypeColumn.builder().masked(column).masks(mask).build();
 		}
 	}
 

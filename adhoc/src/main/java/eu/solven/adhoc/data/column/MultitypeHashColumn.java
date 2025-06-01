@@ -83,6 +83,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 		if (size >= AdhocUnsafe.limitColumnSize) {
+			// TODO Log the first and last elements
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		} else if (size == 0) {
