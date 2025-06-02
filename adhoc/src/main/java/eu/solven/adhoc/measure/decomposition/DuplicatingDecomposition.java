@@ -22,10 +22,20 @@
  */
 package eu.solven.adhoc.measure.decomposition;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.function.Supplier;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -36,15 +46,6 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Demonstrate how to duplicate some value along some generated columns.
@@ -140,7 +141,9 @@ public class DuplicatingDecomposition implements IDecomposition {
 		});
 
 		log.debug("CartesianProduct led to {} decompositions for slice={} and value={}",
-				decompositions.size(), slice, value);
+				decompositions.size(),
+				slice,
+				value);
 
 		return decompositions;
 	}

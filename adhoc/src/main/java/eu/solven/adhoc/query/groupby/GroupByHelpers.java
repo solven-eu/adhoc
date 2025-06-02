@@ -27,8 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;

@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import lombok.*;
 import org.jooq.AggregateFunction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -87,6 +86,7 @@ import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.*;
 import lombok.Builder.Default;
 import lombok.extern.slf4j.Slf4j;
 
@@ -380,8 +380,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					}
 
 					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-					sqlAggFunction = DSL
-							.aggregate(duckDbFunction, Object.class, field, field, DSL.val(agg.getRank()));
+					sqlAggFunction = DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.val(agg.getRank()));
 				} else {
 					sqlAggFunction = onCustomAggregation(a, namedColumn);
 				}
@@ -408,8 +407,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		String aggregationKey = aggregator.getAggregationKey();
 
 		// TODO Could we prefer some generic aggregation? (e.g. `array_agg` in DuckDB)
-		throw new UnsupportedOperationException(
-				"SQL does not support aggregationKey=%s".formatted(aggregationKey));
+		throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 	}
 
 	protected ConditionWithFilter toCondition(IAdhocFilter filter) {

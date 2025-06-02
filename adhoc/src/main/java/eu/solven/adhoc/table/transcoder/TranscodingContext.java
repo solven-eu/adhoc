@@ -120,4 +120,8 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 	public String toString() {
 		return underlyings().stream().map(u -> u + "->" + queried(u)).collect(Collectors.joining(", "));
 	}
+
+	public boolean isOnlyIdentity() {
+		return underlyingToQueried.isEmpty();
+	}
 }

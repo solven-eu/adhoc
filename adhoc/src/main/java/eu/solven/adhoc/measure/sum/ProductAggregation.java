@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -29,9 +32,6 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
-
-import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * A `PRODUCT` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
@@ -81,7 +81,7 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	}
 
 	public static long asLong(Object o) {
-		return AdhocPrimitiveHelpers.asLong (o);
+		return AdhocPrimitiveHelpers.asLong(o);
 	}
 
 	public static double asDouble(Object o) {

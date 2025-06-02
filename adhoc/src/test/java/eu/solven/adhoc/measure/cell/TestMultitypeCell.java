@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.cell;
 
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +31,6 @@ import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-
-import java.util.Map;
 
 public class TestMultitypeCell {
 	@Test

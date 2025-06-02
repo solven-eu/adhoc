@@ -85,7 +85,7 @@ public class TestProductCombination {
 	public void testRounding() {
 		ProductCombination combination = new ProductCombination();
 
-		Assertions.assertThat(12.34*2.7).isEqualTo(33.318000000000005);
+		Assertions.assertThat(12.34 * 2.7).isEqualTo(33.318_000_000_000_005);
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(12.34, 2.7))).isEqualTo(33.318);
 	}
 }

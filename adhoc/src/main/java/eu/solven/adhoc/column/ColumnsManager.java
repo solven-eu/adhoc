@@ -158,10 +158,10 @@ public class ColumnsManager implements IColumnsManager {
 					.source(this)
 					.build());
 		}
-		if (queryPod.isExplain()) {
+		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
-					.message("Transcoded context is %s given `%s`".formatted(transcodingContext, query))
+					.message("Transcoded context is %s given `%s`".formatted(transcodingContext))
 					.source(this)
 					.build());
 		}

@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
- * <p>
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * <p>
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * <p>
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,7 +22,19 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import org.assertj.core.api.Assertions;
+import org.jooq.*;
+import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.google.common.util.concurrent.AtomicLongMap;
+
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -32,10 +44,10 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregator;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
@@ -45,214 +57,231 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
 import lombok.Value;
-import org.assertj.core.api.Assertions;
-import org.jooq.*;
-import org.jooq.impl.DSL;
-import org.jooq.impl.SQLDataType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
- * Check an advanced scenario where we receive String values, and we want to aggregate them as {@link com.google.common.util.concurrent.AtomicLongMap}.
+ * Check an advanced scenario where we receive String values, and we want to aggregate them as
+ * {@link com.google.common.util.concurrent.AtomicLongMap}.
  */
 public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest implements IAdhocTestConstants {
 
-    String tableName = "someTableName";
+	String tableName = "someTableName";
 
-    JooqTableWrapper table;
+	JooqTableWrapper table;
 
-    @Value
-    @Builder
-    public static class AtomicLongMapCarrier implements IAggregationCarrier {
+	@Value
+	@Builder
+	public static class AtomicLongMapCarrier implements IAggregationCarrier {
 
-         AtomicLongMap<Object> map;
+		AtomicLongMap<Object> map;
 
-        @Override
-        public void acceptValueReceiver(IValueReceiver valueReceiver) {
-            valueReceiver.onObject(map);
-        }
-    }
+		@Override
+		public void acceptValueReceiver(IValueReceiver valueReceiver) {
+			valueReceiver.onObject(map);
+		}
+	}
 
-    /**
-     * Some custom aggregation which handles raw String from the table, and converts them to aggregable AtomicLongMap.
-     */
-    public static class CustomMapAggregation extends AtomicLongMapAggregator
-             implements IAggregationCarrier.IHasCarriers
-    {
+	/**
+	 * Some custom aggregation which handles raw String from the table, and converts them to aggregable AtomicLongMap.
+	 */
+	public static class CustomMapAggregation extends AtomicLongMapAggregator
+			implements IAggregationCarrier.IHasCarriers {
 
-        @Override
-        protected AtomicLongMap<?> asMap(Object o) {
-            if (o instanceof String s) {
-                AtomicLongMap<Object> map = AtomicLongMap.create();
+		@Override
+		protected AtomicLongMap<?> asMap(Object o) {
+			if (o instanceof String s) {
+				AtomicLongMap<Object> map = AtomicLongMap.create();
 
-                Pattern.compile(";").matcher(s).results().forEach(mr -> {
-                    String group = mr.group();
+				Pattern.compile(";").matcher(s).results().forEach(mr -> {
+					String group = mr.group();
 
-                    int indexOfEquals = group.indexOf('=');
+					int indexOfEquals = group.indexOf('=');
 
-                    String key = group.substring(0, indexOfEquals);
-                    long count = Long.parseLong(group.substring(indexOfEquals + 1));
-                    map.addAndGet(key, count);
-                });
+					String key = group.substring(0, indexOfEquals);
+					long count = Long.parseLong(group.substring(indexOfEquals + 1));
+					map.addAndGet(key, count);
+				});
 
-                return map;
-            }
-            return (AtomicLongMap<?>) o;
-        }
+				return map;
+			}
+			return (AtomicLongMap<?>) o;
+		}
 
+		@Override
+		public IAggregationCarrier wrap(Object v) {
+			if (v instanceof String s) {
+				AtomicLongMap<Object> map = AtomicLongMap.create();
 
-                @Override
-        public IAggregationCarrier wrap(Object v) {
-                    if (v instanceof String s) {
-                        AtomicLongMap<Object> map = AtomicLongMap.create();
+				splitToMap(s, map);
 
-                        splitToMap(s, map);
+				return AtomicLongMapCarrier.builder().map(map).build();
+			} else if (v instanceof java.sql.Array array) {
+				AtomicLongMap<Object> map = AtomicLongMap.create();
 
-                        return AtomicLongMapCarrier.builder().map(map).build();
-                    } else if (v instanceof java.sql.Array array) {
-                        AtomicLongMap<Object> map = AtomicLongMap.create();
+				try {
+					for (Object o : ((Object[]) array.getArray())) {
+						String s = o.toString();
 
-                        try {
-                            for (Object o : ((Object[]) array.getArray())) {
-                                String s = o.toString();
+						splitToMap(s, map);
+					}
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
 
-                                splitToMap(s, map);
-                            }
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
+				return AtomicLongMapCarrier.builder().map(map).build();
+			} else {
+				throw new UnsupportedOperationException("o=%s".formatted(v));
+			}
+		}
 
+		/**
+		 *
+		 * @param s
+		 *            a raw value like `a=123;b=234`
+		 * @param map
+		 *            the target map to fill
+		 */
+		private static void splitToMap(String s, AtomicLongMap<Object> map) {
+			Pattern.compile(";").splitAsStream(s).forEach(group -> {
+				int indexOfEquals = group.indexOf('=');
 
-                        return AtomicLongMapCarrier.builder().map(map).build();
-                    } else {
-                throw new UnsupportedOperationException("o=%s".formatted(v));
-            }
-        }
+				String key = group.substring(0, indexOfEquals);
+				long count = Long.parseLong(group.substring(indexOfEquals + 1));
+				map.addAndGet(key, count);
+			});
+		}
+	}
 
-        /**
-         *
-         * @param s a raw value like `a=123;b=234`
-         * @param map the target map to fill
-         */
-        private static void splitToMap(String s, AtomicLongMap<Object> map) {
-            Pattern.compile(";").splitAsStream(s).forEach(group -> {
-                int indexOfEquals = group.indexOf('=');
+	public static class CustomAggregationJooqTableQueryFactory extends JooqTableQueryFactory {
 
-                String key = group.substring(0, indexOfEquals);
-                long count = Long.parseLong(group.substring(indexOfEquals + 1));
-                map.addAndGet(key, count);
-            });
-        }
-    }
+		public CustomAggregationJooqTableQueryFactory(IOperatorsFactory operatorsFactory,
+				TableLike<?> table,
+				DSLContext dslContext,
+				boolean canGroupByAll) {
+			super(operatorsFactory, table, dslContext, canGroupByAll);
+		}
 
-    public static class CustomAggregationJooqTableQueryFactory extends JooqTableQueryFactory {
+		@Override
+		protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
+			if (aggregator.getAggregationKey().equals(CustomMapAggregation.class.getName())) {
+				Field<?> field = DSL.field(namedColumn);
 
-        public CustomAggregationJooqTableQueryFactory( IOperatorsFactory operatorsFactory,  TableLike<?> table,  DSLContext dslContext, boolean canGroupByAll) {
-            super(operatorsFactory, table, dslContext, canGroupByAll);
-        }
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#array_aggarg
+				return DSL.aggregate("array_agg", Object.class, field);
+			}
 
-        @Override
-        protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
-            if (aggregator.getAggregationKey().equals(CustomMapAggregation.class.getName())) {
-                Field<?> field = DSL.field(namedColumn);
+			return super.onCustomAggregation(aggregator, namedColumn);
+		}
+	}
 
-                // https://duckdb.org/docs/stable/sql/functions/aggregates.html#array_aggarg
-                return DSL.aggregate("array_agg", Object.class, field);
-            }
+	{
+		JooqTableWrapperParameters jooqTableWrapperParameters = JooqTableWrapperParameters.builder()
+				.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+				.tableName(tableName)
+				.build();
+		table = new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
+			@Override
+			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
+				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorsFactory(),
+						jooqTableWrapperParameters.getTable(),
+						dslContext,
+						true);
+			}
+		};
+	}
 
-            return super.onCustomAggregation(aggregator, namedColumn);
-        }
-    }
+	DSLContext dsl = table.makeDsl();
 
-    {
-        JooqTableWrapperParameters jooqTableWrapperParameters = JooqTableWrapperParameters.builder().dslSupplier(DuckDbHelper.inMemoryDSLSupplier()).tableName(tableName).build();
-        table = new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
-            @Override
-            protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-                return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorsFactory(), jooqTableWrapperParameters.getTable(), dslContext,true);
-            }
-        };
-    }
+	private CubeWrapper wrapInCube(IMeasureForest forest) {
+		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
+		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
 
-    DSLContext dsl = table.makeDsl();
+		ColumnsManager columnsManager = ColumnsManager.builder().eventBus(adhocEventBus).build();
+		return CubeWrapper.builder()
+				.engine(engine)
+				.forest(forest)
+				.table(table)
+				.engine(engine)
+				.columnsManager(columnsManager)
+				.build();
+	}
 
-    private CubeWrapper wrapInCube(IMeasureForest forest) {
-        IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
-        CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
+	String m = "key:count";
 
-        ColumnsManager columnsManager = ColumnsManager.builder().eventBus(adhocEventBus).build();
-        return CubeWrapper.builder().engine(engine).forest(forest).table(table).engine(engine).columnsManager(columnsManager).build();
-    }
+	@BeforeEach
+	public void initAndInsert() {
+		dsl.createTableIfNotExists(tableName)
+				.column("color", SQLDataType.VARCHAR)
+				.column("key:count", SQLDataType.VARCHAR)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color"))
+				.values("k1=123", "blue")
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color"))
+				.values("k2=234", "red")
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color"))
+				.values("k1=345;k3=456", "blue")
+				.execute();
 
-    String m = "key:count";
+		forest.addMeasure(Aggregator.countAsterisk())
+				.addMeasure(Aggregator.builder().name(m).aggregationKey(CustomMapAggregation.class.getName()).build());
+	}
 
-    @BeforeEach
-    public void initAndInsert() {
-        dsl.createTableIfNotExists(tableName).column("color", SQLDataType.VARCHAR).column("key:count", SQLDataType.VARCHAR).execute();
-        dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color")).values("k1=123", "blue").execute();
-        dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color")).values("k2=234", "red").execute();
-        dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color")).values("k1=345;k3=456", "blue").execute();
+	@Test
+	public void testGetColumns() {
+		Assertions.assertThat(wrapInCube(forest).getColumnTypes())
+				.hasSize(2)
+				.containsEntry("key:count", String.class)
+				.containsEntry("color", String.class);
+	}
 
-        forest.addMeasure(Aggregator.countAsterisk()).addMeasure(Aggregator.builder().name(m).aggregationKey(CustomMapAggregation.class.getName()).build());
-    }
+	@Test
+	public void testGrandTotal() {
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(m, "count(*)").build());
 
-    @Test
-    public void testGetColumns() {
-        Assertions.assertThat(wrapInCube(forest).getColumnTypes()).hasSize(2).containsEntry("key:count", String.class).containsEntry("color", String.class);
-    }
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-    @Test
-    public void testGrandTotal() {
-        // groupBy `a` with no measure: this is a distinct query on given groupBy
-        ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(m, "count(*)").build());
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of(), values -> {
+			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 3).hasEntrySatisfying(m, count -> {
+				Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
+					Map<?, Long> atomicLongMap = alm.asMap();
+					Assertions.assertThat((Map) atomicLongMap)
+							.containsEntry("k1", 0L + 123 + 345)
+							.containsEntry("k2", 0L + 234)
+							.containsEntry("k3", 0L + 456)
+							.hasSize(3);
+				});
+			});
+		}).hasSize(1);
+	}
 
-        MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+	@Test
+	public void testGroupBy() {
+		// groupBy `a` with no measure: this is a distinct query on given groupBy
+		ITabularView result =
+				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("color").measure(m, "count(*)").build());
 
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of(), values -> {
-            Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 3)
-                    .hasEntrySatisfying(m, count -> {
-                        Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
-                            Map<?, Long> atomicLongMap =alm.asMap();
-                            Assertions.assertThat((Map)atomicLongMap).containsEntry("k1",0L + 123+345)
-                                    .containsEntry("k2",0L + 234)
-                                    .containsEntry("k3",0L + 456).hasSize(3);
-                        });
-                    })
-            ;
-        }).hasSize(1);
-    }
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-    @Test
-    public void testGroupBy() {
-        // groupBy `a` with no measure: this is a distinct query on given groupBy
-        ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("color").measure(m, "count(*)").build());
-
-        MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-
-        Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("color", "blue"), values -> {
-            Assertions.assertThat((Map) values).containsEntry("count(*)", 0L +2)
-                    .hasEntrySatisfying(m, count -> {
-                        Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
-                            Map<?, Long> atomicLongMap =alm.asMap();
-                            Assertions.assertThat((Map)atomicLongMap).containsEntry("k1",0L + 123+345)
-                                    .containsEntry("k3",0L + 456).hasSize(2);
-                        });
-                    })
-            ;
-        }).hasEntrySatisfying(Map.of("color", "red"), values -> {
-            Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 1)
-                    .hasEntrySatisfying(m, count -> {
-                        Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
-                            Map<?, Long> atomicLongMap =alm.asMap();
-                            Assertions.assertThat((Map)atomicLongMap).containsEntry("k2",0L + 234).hasSize(1);
-                        });
-                    })
-            ;
-        }).hasSize(2);
-    }
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("color", "blue"), values -> {
+			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 2).hasEntrySatisfying(m, count -> {
+				Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
+					Map<?, Long> atomicLongMap = alm.asMap();
+					Assertions.assertThat((Map) atomicLongMap)
+							.containsEntry("k1", 0L + 123 + 345)
+							.containsEntry("k3", 0L + 456)
+							.hasSize(2);
+				});
+			});
+		}).hasEntrySatisfying(Map.of("color", "red"), values -> {
+			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 1).hasEntrySatisfying(m, count -> {
+				Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
+					Map<?, Long> atomicLongMap = alm.asMap();
+					Assertions.assertThat((Map) atomicLongMap).containsEntry("k2", 0L + 234).hasSize(1);
+				});
+			});
+		}).hasSize(2);
+	}
 
 }

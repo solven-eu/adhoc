@@ -51,7 +51,7 @@ public class MapAggregator<K, V> implements IAggregation {
 		return aggregateMaps(lAsMap, rAsMap);
 	}
 
-	protected Map<?,?> asMap(Object o) {
+	protected Map<?, ?> asMap(Object o) {
 		return (Map<?, ?>) o;
 	}
 

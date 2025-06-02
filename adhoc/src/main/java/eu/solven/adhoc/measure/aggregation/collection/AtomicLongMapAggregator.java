@@ -22,11 +22,9 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-import java.util.Map;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
  * Aggregate inputs as {@link AtomicLongMap}, doing the union as aggregation.

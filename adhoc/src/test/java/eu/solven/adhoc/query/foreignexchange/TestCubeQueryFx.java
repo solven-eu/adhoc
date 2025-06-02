@@ -260,15 +260,15 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
-								time=3ms for openingStream on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								time=2ms for openingStream on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								time=4ms for mergeTableAggregates on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=5ms for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
+								time=5ms sizes=[2] for toSortedColumns on TableQueryV2(filter=color=red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
 								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								|  No cost info
 								\\-- #1 m=k1.CCY(Bucketor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color=red groupBy=(letter) customMarker=JPY
 								    |  size=2 duration=6ms
 								    \\-- #2 m=k1(SUM) filter=color=red groupBy=(ccyFrom, letter) customMarker=JPY
-								        \\  size=2 duration=14ms
+								        \\  size=2 duration=12ms
 								Executed status=OK duration=21ms on table=inMemory forest=TestCubeQueryFx-filtered query=CubeQuery(filter=color=red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
 
 		Assertions.assertThat(messages).hasSize(7);

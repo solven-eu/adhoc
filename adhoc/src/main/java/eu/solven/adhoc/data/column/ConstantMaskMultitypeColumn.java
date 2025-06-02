@@ -43,7 +43,8 @@ import lombok.Value;
  * Decorate a {@link IMultitypeColumnFastGet} to that each slice behave like having an additional {@link Set} of
  * columns.
  * 
- * The mask must not overlap columns in the masked {@link IMultitypeColumnFastGet}. Such a constraint may be detected lazily, but generally not when creating this.
+ * The mask must not overlap columns in the masked {@link IMultitypeColumnFastGet}. Such a constraint may be detected
+ * lazily, but generally not when creating this.
  * 
  * @author Benoit Lacelle
  */
