@@ -22,43 +22,54 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
- * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * {@link IAggregation} which essentially concatenate {@link List}.
  * 
- * @param <K>
- * @param <V>
  * @author Benoit Lacelle
  */
-public class MapAggregator<K, V> implements IAggregation {
+public class UnionListAggregation implements IAggregation {
 
-	public static final String KEY = "UNION_MAP";
+	public static final String KEY = "UNION_LIST";
 
 	public boolean acceptAggregate(Object o) {
-		return o instanceof Map || o == null;
+		return o instanceof List || o == null;
 	}
 
 	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = (Map<?, ?>) l;
-		Map<?, ?> rAsMap = (Map<?, ?>) r;
+	public List<?> aggregate(Object l, Object r) {
+		List<?> lAsList = (List<?>) l;
+		List<?> rAsList = (List<?>) r;
 
-		return aggregateMaps(lAsMap, rAsMap);
+		return aggregateLists(lAsList, rAsList);
 	}
 
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (lAsMap == null) {
-			return (Map<K, V>) rAsMap;
-		} else if (rAsMap == null) {
-			return (Map<K, V>) lAsMap;
+	protected List<?> aggregateLists(List<?> l, List<?> r) {
+		return UnionListAggregation.<Object>unionList(l, r);
+	}
+
+	/**
+	 * This is useful to be used in {@link Map#merge}
+	 * 
+	 * @param <K>
+	 * @param left
+	 * @param right
+	 * @return
+	 */
+	public static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
+		if (left == null || left.isEmpty()) {
+			return right;
+		} else if (right == null || right.isEmpty()) {
+			return left;
 		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will throw
-			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
+			return ImmutableList.<K>builder().addAll(left).addAll(right).build();
 		}
 	}
+
 }

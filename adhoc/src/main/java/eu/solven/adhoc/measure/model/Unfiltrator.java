@@ -34,6 +34,7 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.UnfiltratorQueryStep;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -57,6 +58,11 @@ import lombok.extern.slf4j.Slf4j;
 @Jacksonized
 @Slf4j
 public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
+	/**
+	 * Different mode to modify the {@link IAdhocFilter}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
 	public enum Mode {
 		// if a column is listed, its filters are neutralized into matchAll
@@ -96,6 +102,11 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 		return new UnfiltratorQueryStep(this, step);
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class UnfiltratorBuilder {
 		/**
 		 * Use this if you want only given columns to be filtered, while others are turned into `matchAll`.

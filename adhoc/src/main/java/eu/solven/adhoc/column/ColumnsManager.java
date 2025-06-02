@@ -80,6 +80,11 @@ import lombok.Singular;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Default {@link IColumnsManager}.
+ * 
+ * @author Benoit Lacelle
+ */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Builder(toBuilder = true)
 @Slf4j
@@ -309,15 +314,14 @@ public class ColumnsManager implements IColumnsManager {
 				.flatMap(c -> {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
-						return Stream.of(transcodingContext.underlying(columnName))
-								.map(column -> ReferencedColumn.ref(column));
+						return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
 					} else if (c instanceof CalculatedColumn calculatedColumn) {
 						transcodingContext.addCalculatedColumn(calculatedColumn);
 
 						Collection<ReferencedColumn> operandColumns = getUnderlyingColumns(calculatedColumn);
 						return operandColumns.stream()
 								.map(operandColumn -> transcodingContext.underlying(operandColumn.getName()))
-								.map(operandColumn -> ReferencedColumn.ref(operandColumn));
+								.map(ReferencedColumn::ref);
 					} else if (c instanceof ExpressionColumn expressionColumn) {
 						transcodingContext.underlying(expressionColumn.getName());
 
@@ -338,7 +342,7 @@ public class ColumnsManager implements IColumnsManager {
 		return GroupByColumns.of(transcoded);
 	}
 
-	private static class RecordingRecord implements ITabularRecord {
+	private static final class RecordingRecord implements ITabularRecord {
 		@Getter
 		final Set<String> usedColumn = new HashSet<>();
 

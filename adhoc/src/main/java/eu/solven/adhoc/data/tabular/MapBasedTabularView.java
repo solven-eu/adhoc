@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.MapComparators;
-import eu.solven.adhoc.measure.aggregation.collection.MapAggregator;
+import eu.solven.adhoc.measure.aggregation.collection.MapAggregation;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -49,6 +49,8 @@ import lombok.Getter;
  * A simple {@link ITabularView} based on a {@link TreeMap}. it is especially useful for debugging purposes.
  * 
  * This is NOT serializable with Jackson. {@link ListBasedTabularView} is a serializable alternative.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @EqualsAndHashCode
@@ -118,11 +120,11 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {
-		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregator::aggregateMaps);
+		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregation::aggregateMaps);
 	}
 
 	public void appendSlice(SliceAsMap slice, String measure, Object value) {
-		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregator::aggregateMaps);
+		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregation::aggregateMaps);
 	}
 
 	public IValueReceiver sliceFeeder(SliceAsMap slice, String measureName, boolean materializeNull) {

@@ -144,6 +144,12 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				.build();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public static class QueryPodBuilder {
 		ICubeQuery query;
 		AdhocQueryId queryId;

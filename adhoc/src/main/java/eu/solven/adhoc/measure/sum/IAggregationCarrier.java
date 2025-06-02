@@ -32,6 +32,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IAggregationCarrier {
 
 	/**
@@ -39,6 +40,7 @@ public interface IAggregationCarrier {
 	 * 
 	 * @author Benoit Lacelle
 	 */
+	@FunctionalInterface
 	interface IHasCarriers {
 
 		/**
@@ -62,7 +64,7 @@ public interface IAggregationCarrier {
 			return v -> {
 				Object wrapped;
 				if (v == null) {
-					wrapped = null;
+					wrapped = v;
 				} else {
 					// Wrap the aggregate from table into the aggregation custom wrapper
 					wrapped = wrap(v);

@@ -132,7 +132,7 @@ public class TestAdhocTranscodingHelper {
 	@Test
 	public void testLike() {
 		ColumnFilter startsWithV1 =
-				ColumnFilter.builder().column("c").valueMatcher(LikeMatcher.builder().like("v1%").build()).build();
+				ColumnFilter.builder().column("c").valueMatcher(LikeMatcher.builder().pattern("v1%").build()).build();
 
 		Assertions.assertThat(AdhocTranscodingHelper.match(startsWithV1, Map.of())).isFalse();
 		Assertions.assertThat(AdhocTranscodingHelper.match(startsWithV1, Map.of("c", "v3"))).isFalse();

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.resource;
+package eu.solven.adhoc.util;
 
 /**
  * Mostly duplicated from Smile, not to require a full external dependency.
@@ -43,6 +43,7 @@ class SmileEditDistance {
 	 *            a string.
 	 * @return the distance.
 	 */
+	@SuppressWarnings("PMD.AvoidArrayLoops")
 	public static int levenshtein(String x, String y) {
 		// switch parameters to use the shorter one as y to save space.
 		if (x.length() < y.length()) {

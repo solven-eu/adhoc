@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Implements Polish-notations to express formulas. See https://en.wikipedia.org/wiki/Polish_notation.
  *
+ * @author Benoit Lacelle
  */
 // TODO Enable shifting some column
 @Slf4j
@@ -61,6 +62,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 
 	final IOperatorsFactory operatorsFactory;
 
+	@SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
 	public ReversePolishCombination(Map<String, ?> options) {
 		// e.g. `aggregatedValue[someMeasure],double[10000],*`
 		notation = parseNotation(options);
@@ -102,17 +104,12 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	// BEWARE This is called from the constructor
 	protected String parseNotation(Map<String, ?> options) {
 		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
-		String formula = MapPathGet.getRequiredString(options, K_NOTATION);
-
-		// TODO Throw early if the formula is invalid
-
-		return formula;
+		return MapPathGet.getRequiredString(options, K_NOTATION);
 	}
 
 	@Override
 	public void checkSanity() {
-		// TODO Auto-generated method stub
-
+		// TODO Throw early if the formula is invalid
 	}
 
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
@@ -171,7 +168,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		}
 
 		for (int i = 0; i < elements.length; i++) {
-			String s = elements[i];
+			String s = elements[i].strip();
 
 			Object operandToAppend;
 

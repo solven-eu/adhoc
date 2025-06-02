@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A `SUM` {@link IAggregation}, managing not Number as error objects. As long as we encounter summable input, we do
  * sum. Else we aggregate `errors` into a Set.
+ * 
+ * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j

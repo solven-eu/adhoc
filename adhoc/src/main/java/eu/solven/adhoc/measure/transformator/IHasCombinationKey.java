@@ -28,6 +28,8 @@ import eu.solven.adhoc.measure.model.Combinator;
 
 /**
  * Anything which may require a configured {@link Combinator}
+ * 
+ * @author Benoit Lacelle
  */
 public interface IHasCombinationKey {
 	String KEY_UNDERLYING_NAMES = "underlyingNames";

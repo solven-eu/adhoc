@@ -28,7 +28,10 @@ import java.util.Set;
  * Some operators has a ordered {@link Set} of operands
  *
  * @param <T>
+ * 
+ * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasOperands<T> {
 	Set<T> getOperands();
 }

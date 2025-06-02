@@ -35,6 +35,8 @@ import lombok.ToString;
 
 /**
  * This is a simple way to storage the value for a {@link java.util.Set} of {@link SliceAsMap}.
+ * 
+ * @author Benoit Lacelle
  */
 // BEWARE What is the point of this given IMultitypeColumnFastGet? It forces the generic with SliceAsMap. And hides some
 // methods/processes like `.purgeAggregationCarriers()`. This is also immutable.

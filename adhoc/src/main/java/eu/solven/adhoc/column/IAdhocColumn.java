@@ -37,5 +37,6 @@ import eu.solven.adhoc.util.IHasName;
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",
 		defaultImpl = ReferencedColumn.class)
+@FunctionalInterface
 public interface IAdhocColumn extends IHasName {
 }

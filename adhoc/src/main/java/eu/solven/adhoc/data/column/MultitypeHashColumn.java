@@ -58,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  * Each key may have different types.
  *
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
@@ -86,18 +87,23 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		} else if (size == 0) {
-			if (type == IMultitypeConstants.MASK_LONG) {
-				if (measureToAggregateL instanceof Object2LongOpenHashMap openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
-			} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-				if (measureToAggregateD instanceof Object2DoubleOpenHashMap openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
-			} else if (type == IMultitypeConstants.MASK_OBJECT) {
-				if (measureToAggregateO instanceof Object2ObjectOpenHashMap openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
+			ensureCapacity(type);
+		}
+	}
+
+	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
+	protected void ensureCapacity(int type) {
+		if (type == IMultitypeConstants.MASK_LONG) {
+			if (measureToAggregateL instanceof Object2LongOpenHashMap openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+			}
+		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
+			if (measureToAggregateD instanceof Object2DoubleOpenHashMap openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+			}
+		} else if (type == IMultitypeConstants.MASK_OBJECT) {
+			if (measureToAggregateO instanceof Object2ObjectOpenHashMap openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 			}
 		}
 	}

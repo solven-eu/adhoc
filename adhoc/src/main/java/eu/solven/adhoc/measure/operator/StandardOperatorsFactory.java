@@ -87,7 +87,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
 		case CoalesceAggregation.KEY:
-			yield new CoalesceAggregation();
+			yield new CoalesceAggregation(options);
 		default:
 			yield defaultAggregation(key, options);
 		};

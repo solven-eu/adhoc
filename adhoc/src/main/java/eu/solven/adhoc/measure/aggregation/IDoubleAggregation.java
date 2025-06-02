@@ -27,6 +27,7 @@ package eu.solven.adhoc.measure.aggregation;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IDoubleAggregation {
 
 	double aggregateDoubles(double left, double right);

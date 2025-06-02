@@ -35,7 +35,10 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @see TranscodingContext
  * @see ITableReverseTranscoder
  *
+ * 
+ * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ITableTranscoder {
 	/**
 	 * This may return null for convenience of implementation.

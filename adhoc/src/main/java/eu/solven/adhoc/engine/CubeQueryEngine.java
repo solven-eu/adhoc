@@ -57,6 +57,7 @@ import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -140,19 +141,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 			String eMsg = "Issue executing query=%s options=%s".formatted(queryPod.getQuery(), queryPod.getOptions());
 
-			if (e instanceof IllegalStateException illegalStateE) {
-				// We want to keep bubbling an IllegalStateException
-				throw new IllegalStateException(eMsg, illegalStateE);
-			} else if (e instanceof CompletionException completionE) {
-				if (completionE.getCause() instanceof IllegalStateException) {
-					// We want to keep bubbling an IllegalStateException
-					throw new IllegalStateException(eMsg, completionE);
-				} else {
-					throw new IllegalArgumentException(eMsg, completionE);
-				}
-			} else {
-				throw new IllegalArgumentException(eMsg, e);
-			}
+			throw AdhocExceptionHelpers.wrap(e, eMsg);
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
@@ -224,9 +213,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
 			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
 			// Remove not conflicting
-			nameToCount.asMap().keySet().forEach(m -> nameToCount.decrementAndGet(m));
+			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
 			nameToCount.removeAllZeros();
-			nameToCount.asMap().keySet().forEach(m -> nameToCount.incrementAndGet(m));
+			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
 
 			throw new IllegalArgumentException(
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
@@ -470,6 +459,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
+				log.debug("No sliceToValue for step={}", step);
 			} else {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());

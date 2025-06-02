@@ -34,6 +34,7 @@ import eu.solven.adhoc.measure.model.Combinator;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IAggregation {
 	Object aggregate(Object left, Object right);
 

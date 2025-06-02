@@ -24,10 +24,16 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Arrays;
 
+import lombok.experimental.UtilityClass;
+
+/**
+ * Utilities around debug operations. These methods may be slow (or just *inefficient*), which is acceptable for
+ * debugging purposes.
+ * 
+ * @author Benoit Lacelle
+ */
+@UtilityClass
 public class AdhocDebug {
-	protected AdhocDebug() {
-		// hidden
-	}
 
 	public static String toString(Object o) {
 		if (o instanceof int[] array) {

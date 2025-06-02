@@ -22,11 +22,10 @@
  */
 package eu.solven.adhoc.map;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.NavigableSet;
 import java.util.Objects;
-
-//import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Enables comparing {@link Comparable} of different {@link Class} in the same {@link NavigableSet}.
@@ -34,8 +33,9 @@ import java.util.Objects;
  * @author Benoit Lacelle
  *
  */
-// @SuppressFBWarnings("SE_COMPARATOR_SHOULD_BE_SERIALIZABLE")
-public class ComparableElseClassComparatorV2 implements Comparator<Object> {
+public class ComparableElseClassComparatorV2 implements Comparator<Object>, Serializable {
+	private static final long serialVersionUID = -9148465848745737820L;
+
 	static final Comparator<Object> NULLS_HIGH = nullsHigh();
 
 	final Comparator<Object> nullComparator;
@@ -73,7 +73,6 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object> {
 	}
 
 	@Override
-	@SuppressWarnings("PMD.UnnecessaryCast")
 	public int compare(Object l, Object r) {
 		return doCompare(nullComparator, l, r);
 	}

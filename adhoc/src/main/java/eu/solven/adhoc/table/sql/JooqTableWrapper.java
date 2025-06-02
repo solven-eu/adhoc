@@ -78,7 +78,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JooqTableWrapper implements ITableWrapper {
 	// TODO Investigate the benefit of String internalization
 	// May be propagated into a more general dictionarization
-	private static final boolean internStrings = false;
+	private static final boolean DO_INTERN_STRINGS = false;
 
 	@NonNull
 	final String name;
@@ -265,7 +265,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 				Object value = r.get(columnShift + i);
 				if (value != null) {
-					if (internStrings && value instanceof String string) {
+					if (DO_INTERN_STRINGS && value instanceof String string) {
 						// We argue that given coordinate will be generated many times by the application:
 						// We'd like to enable reference-check on it
 						value = string.intern();

@@ -41,6 +41,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 // @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 // @JsonSubTypes({ @JsonSubTypes.Type(value = GroupByColumns.class, name = "columns"), })
 @JsonDeserialize(as = GroupByColumns.class)
+@FunctionalInterface
 public interface IAdhocGroupBy {
 	IAdhocGroupBy GRAND_TOTAL = GroupByColumns.grandTotal();
 

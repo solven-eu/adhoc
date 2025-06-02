@@ -56,6 +56,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A {@link Combinator} is a {@link IMeasure} which combines the underlying measures for current coordinate.
+ * 
+ * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
@@ -107,16 +109,16 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 
 		// Default options
 		// Enable visibility to the Combinator of the name of the received values
-		allOptions.put(IHasCombinationKey.KEY_UNDERLYING_NAMES, hasUnderlyings.getUnderlyingNames());
+		allOptions.put(KEY_UNDERLYING_NAMES, hasUnderlyings.getUnderlyingNames());
 
 		// TODO Should we provide the Set of columns guaranteed to be available in the slice?
-		// It seemed simpled to provide the whole measure for now
+		// It seemed simpler to provide the whole measure for now
 		if (hasUnderlyings instanceof IHasGroupBy hasGroupBy) {
 			IAdhocGroupBy groupBy = hasGroupBy.getGroupBy();
-			allOptions.put(IHasCombinationKey.KEY_GROUPBY_COLUMNS, groupBy.getGroupedByColumns());
+			allOptions.put(KEY_GROUPBY_COLUMNS, groupBy.getGroupedByColumns());
 		}
 
-		allOptions.put(IHasCombinationKey.KEY_MEASURE, hasUnderlyings);
+		allOptions.put(KEY_MEASURE, hasUnderlyings);
 
 		// override with explicit options
 		allOptions.putAll(explicitOptions);

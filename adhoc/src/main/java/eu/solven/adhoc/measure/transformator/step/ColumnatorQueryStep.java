@@ -44,6 +44,11 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link ITransformatorQueryStep}for {@link Columnator}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
@@ -126,6 +131,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 					value,
 					combinator.getName(),
 					// slicedRecord,
+					underlyings,
 					slice);
 		}
 

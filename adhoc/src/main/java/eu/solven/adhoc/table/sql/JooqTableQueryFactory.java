@@ -98,9 +98,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-// @RequiredArgsConstructor
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	@Builder.Default
@@ -400,8 +400,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 					unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
 				}
-
-				unaliasedField = sqlAggFunction;
 			}
 
 			return unaliasedField.as(filteredAggregator.getAlias());
@@ -533,7 +531,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			condition = DSL.condition(field.in(operands));
 		}
 		case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
-		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getLike()));
+		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getPattern()));
 		case StringMatcher stringMatcher -> condition =
 				DSL.condition(field.cast(String.class).eq(stringMatcher.getString()));
 		case ComparingMatcher comparingMatcher -> {
@@ -555,12 +553,16 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			}
 			condition = DSL.condition(jooqCondition);
 		}
-		default -> condition = null;
-		// throw new UnsupportedOperationException(
-		// "Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
+		default -> condition = onCustomCondition(column, valueMatcher);
 		}
 
 		return Optional.ofNullable(condition);
+	}
+
+	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher) {
+		// throw new UnsupportedOperationException(
+		// "Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
+		return null;
 	}
 
 	@Deprecated(since = "TODO Migrate unitTests")

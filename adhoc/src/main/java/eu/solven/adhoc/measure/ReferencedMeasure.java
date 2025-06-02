@@ -53,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	// @JsonValue
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	@NonNull
 	String ref;
 
@@ -95,6 +96,11 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 		return ReferencedMeasure.builder().ref(name).build();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class ReferencedMeasureBuilder {
 
 		public ReferencedMeasureBuilder() {

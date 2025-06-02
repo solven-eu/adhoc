@@ -24,6 +24,12 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.List;
 
+/**
+ * To be implemented by structure having underlying names. Typically related to measures having underlying measures.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface IHasUnderlyingNames {
 	List<String> getUnderlyingNames();
 }

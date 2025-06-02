@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ITabularRecordStreamReducer {
 
 	IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream);

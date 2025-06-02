@@ -55,6 +55,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link ITransformatorQueryStep} for {@link Dispatchor}.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
@@ -147,7 +152,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		{
 			Set<Set<String>> decompositionColumns = decomposed.stream()
 					.map(IDecompositionEntry::getSlice)
-					.map(s -> s.keySet())
+					.map(Map::keySet)
 					.collect(Collectors.toSet());
 
 			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();

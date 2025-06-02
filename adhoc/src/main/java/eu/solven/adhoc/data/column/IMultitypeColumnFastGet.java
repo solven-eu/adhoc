@@ -52,7 +52,7 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 * Similar to a `.set` but the value is available through a {@link IValueReceiver}
 	 * 
 	 * @param slice
-	 * @param valueReceiver
+	 * @param o
 	 */
 	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
 	default void set(T slice, Object o) {

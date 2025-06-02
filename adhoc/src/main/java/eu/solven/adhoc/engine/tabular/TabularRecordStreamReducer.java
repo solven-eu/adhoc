@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.tabular.AggregatingColumnsV2_Distinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -49,6 +50,11 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Standard {@link ITabularRecordStreamReducer}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Slf4j
@@ -93,11 +99,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
 			String msgE = "Issue processing stream from %s".formatted(stream);
-			if (e instanceof IllegalStateException illegalStateE) {
-				throw new IllegalStateException(msgE, illegalStateE);
-			} else {
-				throw new RuntimeException(msgE, e);
-			}
+			throw AdhocExceptionHelpers.wrap(e, msgE);
 		}
 
 		return grid;

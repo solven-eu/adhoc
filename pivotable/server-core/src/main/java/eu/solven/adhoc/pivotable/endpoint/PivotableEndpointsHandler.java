@@ -109,7 +109,7 @@ public class PivotableEndpointsHandler {
 			try {
 				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmpty);
 			} catch (Exception e) {
-				if (AdhocUnsafe.failFast) {
+				if (AdhocUnsafe.isFailFast()) {
 					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
 				} else {
 					log.warn("Issue loading schema for endpoint={}", endpoint, e);

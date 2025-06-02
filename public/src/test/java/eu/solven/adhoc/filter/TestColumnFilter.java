@@ -61,11 +61,11 @@ public class TestColumnFilter {
 	@Test
 	public void testLikeMatcher() throws JsonProcessingException {
 		IAdhocFilter ksEqualsV =
-				ColumnFilter.builder().column("a").matching(LikeMatcher.builder().like("prefix%").build()).build();
+				ColumnFilter.builder().column("a").matching(LikeMatcher.builder().pattern("prefix%").build()).build();
 
 		Assertions.assertThat(ksEqualsV.isColumnFilter()).isTrue();
 		Assertions.assertThat(ksEqualsV).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
-			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(LikeMatcher.builder().like("prefix%").build());
+			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(LikeMatcher.builder().pattern("prefix%").build());
 		});
 	}
 }

@@ -28,6 +28,11 @@ package eu.solven.adhoc.query.groupby;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IHasSqlExpression {
+	/**
+	 * 
+	 * @return a SQL expression, like `AS c1 + c2`.
+	 */
 	String getSql();
 }

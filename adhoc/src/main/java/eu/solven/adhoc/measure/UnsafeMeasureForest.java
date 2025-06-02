@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.resource.MeasureForestFromResource;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -50,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-public class UnsafeMeasureForest implements IMeasureForest {
+public final class UnsafeMeasureForest implements IMeasureForest {
 	@Getter
 	@Default
 	final String name = "unsafe";
@@ -97,7 +97,7 @@ public class UnsafeMeasureForest implements IMeasureForest {
 			IMeasure resolved = getNameToMeasure().get(refName);
 
 			if (resolved == null) {
-				String minimizing = MeasureForestFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
+				String minimizing = AdhocMapPathGet.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
 						"forest=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));
@@ -140,6 +140,7 @@ public class UnsafeMeasureForest implements IMeasureForest {
 	 * In {@link UnsafeMeasureForest}, a visitor both mutate current {@link IMeasureForest} and return the
 	 * immutable+edited forest.
 	 */
+	@Override
 	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
 		Set<IMeasure> measures = new LinkedHashSet<>();
 
@@ -160,7 +161,11 @@ public class UnsafeMeasureForest implements IMeasureForest {
 		return MeasureForest.fromMeasures(getName(), getMeasures());
 	}
 
-	// TODO Why doesn't this compile?
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class UnsafeMeasureForestBuilder {
 		public UnsafeMeasureForestBuilder measure(IMeasure measure) {
 			this.namedMeasure(measure.getName(), measure);

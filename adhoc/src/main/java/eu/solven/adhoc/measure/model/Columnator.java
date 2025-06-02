@@ -50,6 +50,8 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * If the flag `required` is turned to `false`, this turns into a `rejected` behavior: given columns must not be
  * filtered at all.
+ * 
+ * @author Benoit Lacelle
  */
 @Value
 @Builder(toBuilder = true)
@@ -57,6 +59,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // BEWARE This is a poorly named class. It shall be renamed at some point.
 public class Columnator implements ICombinator {
+	/**
+	 * Different modes describing how columns has to be hidden.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
 	public enum Mode {
 		// required: the selected columns are required in the slice, else null

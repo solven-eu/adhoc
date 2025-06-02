@@ -140,31 +140,12 @@ public class GroupByColumns implements IAdhocGroupBy {
 		return named(Lists.asList(column, moreColumns));
 	}
 
-	// public static class GroupByColumnsBuilder {
-	// /**
-	// *
-	// * @param column
-	// * an additional column to groupBy
-	// * @return the mutated builder
-	// */
-	// public GroupByColumnsBuilder column(IAdhocColumn column) {
-	// NavigableMap<String, IAdhocColumn> currentColumns = this.build().getNameToColumn();
-	//
-	// NavigableMap<String, IAdhocColumn> newColumns = new TreeMap<>(currentColumns);
-	// newColumns.put(column.getColumn(), column);
-	//
-	// this.nameToColumn(newColumns);
-	//
-	// return this;
-	// }
-	// }
-
 	/**
 	 * 
 	 * @return grandTotal as there is no wildcard column.
 	 */
 	public static IAdhocGroupBy grandTotal() {
-		return GroupByColumns.named(Set.of());
+		return named(Set.of());
 	}
 
 }

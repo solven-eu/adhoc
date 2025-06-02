@@ -24,6 +24,12 @@ package eu.solven.adhoc.util;
 
 import java.time.Duration;
 
+/**
+ * Enables measuring time/durations.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface IStopwatch {
 	Duration elapsed();
 }

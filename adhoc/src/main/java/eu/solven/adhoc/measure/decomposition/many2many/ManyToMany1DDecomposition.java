@@ -60,6 +60,8 @@ import lombok.extern.slf4j.Slf4j;
  * For instance, given v=200 on element=FR, we write v=200 into group=G8 and group=G20.
  * 
  * It is 1D as it depends on a single input columns
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class ManyToMany1DDecomposition implements IDecomposition {

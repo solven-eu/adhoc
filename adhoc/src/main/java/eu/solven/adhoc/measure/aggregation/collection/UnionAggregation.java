@@ -35,7 +35,7 @@ public class UnionAggregation implements IAggregation {
 
 	public static final String KEY = "UNION";
 
-	private final MapAggregator<Object, Object> mapAggregator = new MapAggregator<>();
+	private final MapAggregation<Object, Object> mapAggregator = new MapAggregation<>();
 	private final UnionSetAggregation setAggregator = new UnionSetAggregation();
 
 	@Override

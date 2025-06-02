@@ -30,6 +30,8 @@ import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
 /**
  * Return the first underlyingValue which is not null. Else null.
+ * 
+ * @author Benoit Lacelle
  */
 public class CoalesceCombination implements ICombination {
 

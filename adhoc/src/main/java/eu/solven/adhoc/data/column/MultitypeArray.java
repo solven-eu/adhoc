@@ -36,7 +36,14 @@ import it.unimi.dsi.fastutil.longs.LongList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Standard {@link IMultitypeArray}.
+ * 
+ * @author Benoit Lacelle
+ */
+@Slf4j
 @Builder
 public class MultitypeArray implements IMultitypeArray {
 	// Indicate the single type of values stored in this column
@@ -111,6 +118,7 @@ public class MultitypeArray implements IMultitypeArray {
 				if (v == null) {
 					// BEWARE We may want to remove the key
 					// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
+					log.trace("TODO Improve null management");
 				}
 
 				ensureObject();
@@ -121,10 +129,10 @@ public class MultitypeArray implements IMultitypeArray {
 
 	protected void ensureObject() {
 		if (valuesType == IMultitypeConstants.MASK_OBJECT) {
-			// Already on proper type
+			log.trace("Already on proper type");
 		} else {
 			if (valuesType == IMultitypeConstants.MASK_EMPTY) {
-				// First value
+				log.trace("First value");
 			} else if (valuesType == IMultitypeConstants.MASK_LONG) {
 				// Migrate the column from long to object
 				valuesO.addAll(valuesL);

@@ -24,6 +24,9 @@ package eu.solven.adhoc.query.cube;
 
 import java.util.Optional;
 
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.table.ITableWrapper;
+
 /**
  * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
  * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.
@@ -33,7 +36,14 @@ import java.util.Optional;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IHasCustomMarker {
+	/**
+	 * A customMarker is any {@link Object} (but not an {@link Optional}). It is typically interpreted by an
+	 * {@link IMeasure}, or a {@link ITableWrapper}.
+	 * 
+	 * @return
+	 */
 	// friendly with Jackson
 	Object getCustomMarker();
 

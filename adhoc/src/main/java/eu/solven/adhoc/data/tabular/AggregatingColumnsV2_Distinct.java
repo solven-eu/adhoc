@@ -50,9 +50,11 @@ import lombok.extern.slf4j.Slf4j;
  * A data-structure associating each {@link Aggregator} with a {@link IMultitypeMergeableColumn}
  * 
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
+@SuppressWarnings("checkstyle:TypeName")
 public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAggregatingColumnsV2<T, Integer> {
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in

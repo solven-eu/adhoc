@@ -22,6 +22,13 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import eu.solven.adhoc.measure.combination.ICombination;
+
+/**
+ * An {@link ICombination} which sums underlyings.
+ * 
+ * @author Benoit Lacelle
+ */
 @Deprecated(since = "Use `AggregationCombination`", forRemoval = true)
 public class SumCombination extends AggregationCombination {
 	public static final String KEY = SumAggregation.KEY;
@@ -31,7 +38,7 @@ public class SumCombination extends AggregationCombination {
 	}
 
 	public SumCombination() {
-		this(AggregationCombination.DEFAULT_CUSTOM_IF_ANY_NULL);
+		this(DEFAULT_CUSTOM_IF_ANY_NULL);
 	}
 
 }

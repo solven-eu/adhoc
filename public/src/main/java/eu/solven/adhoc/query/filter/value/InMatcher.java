@@ -91,6 +91,7 @@ public class InMatcher implements IValueMatcher {
 	 *            {@link Collection} will be unnested. `null` and `IValueMatchers` are managed specifically.
 	 * @return
 	 */
+	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher isIn(Collection<?> allowedValues) {
 		// TODO Unnest recursively
 		List<Object> unnested = allowedValues.stream().flatMap(allowed -> {
@@ -103,7 +104,7 @@ public class InMatcher implements IValueMatcher {
 		}).toList();
 
 		if (unnested.isEmpty()) {
-			return IValueMatcher.MATCH_NONE;
+			return MATCH_NONE;
 		} else if (unnested.size() == 1) {
 			Object singleValue = unnested.getFirst();
 			return EqualsMatcher.isEqualTo(singleValue);
@@ -136,6 +137,7 @@ public class InMatcher implements IValueMatcher {
 	 * 
 	 * @return
 	 */
+	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher isIn(Object first, Object second, Object... more) {
 		return isIn(Lists.asList(first, second, more));
 	}

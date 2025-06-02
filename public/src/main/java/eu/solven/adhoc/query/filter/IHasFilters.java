@@ -31,6 +31,7 @@ import java.util.Map;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IHasFilters {
 	IHasFilters MATCH_ALL = () -> IAdhocFilter.MATCH_ALL;
 

@@ -50,6 +50,7 @@ import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Default implementation for {@link IAndFilter}.
@@ -62,6 +63,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@Slf4j
 public class AndFilter implements IAndFilter {
 
 	@Singular
@@ -156,7 +158,7 @@ public class AndFilter implements IAndFilter {
 		}).collect(Collectors.toList());
 
 		if (notMatchAll.isEmpty()) {
-			return IAdhocFilter.MATCH_ALL;
+			return MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
 			return notMatchAll.getFirst();
 		} else {
@@ -170,7 +172,9 @@ public class AndFilter implements IAndFilter {
 	 * @param filters
 	 * @return
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static Collection<? extends IAdhocFilter> packColumnFilters(Collection<? extends IAdhocFilter> filters) {
+		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<IAdhocFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.groupingBy(f -> f instanceof IColumnFilter));
 
@@ -224,6 +228,7 @@ public class AndFilter implements IAndFilter {
 								if (allowedValues.size() == 1) {
 									// Keep the allowed value
 									// Happens if we have multiple EqualsMatcher on the same operand
+									log.trace("Keep the allowed value");
 								} else {
 									// This is equivalent to a `.retain`
 									allowedValues.clear();

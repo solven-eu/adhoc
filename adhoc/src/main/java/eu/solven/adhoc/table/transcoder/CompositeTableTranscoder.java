@@ -36,6 +36,12 @@ import lombok.Singular;
  */
 @Builder
 public class CompositeTableTranscoder implements ITableTranscoder {
+	/**
+	 * Different modes when iterating through the available transcoders.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	@SuppressWarnings("PMD.FieldNamingConventions")
 	public enum ChainMode {
 		/**
 		 * Should we return the first not-null underlying

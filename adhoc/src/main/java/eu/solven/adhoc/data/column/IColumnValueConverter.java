@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.cell.IValueFunction;
  *            the uniform output
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IColumnValueConverter<T, U> {
 
 	IValueFunction<U> prepare(T key);

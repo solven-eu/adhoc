@@ -65,6 +65,8 @@ import lombok.extern.slf4j.Slf4j;
  * (country, date).
  * 
  * @see ManyToMany1DDecomposition
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class ManyToManyNDDecomposition implements IDecomposition {
@@ -88,6 +90,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		log.warn("Instantiated with default/empty {}", this.manyToManyDefinition);
 	}
 
+	@SuppressWarnings("ConstructorCallsOverridableMethod")
 	public ManyToManyNDDecomposition(Map<String, ?> options, IManyToManyNDDefinition manyToManyDefinition) {
 		this.options = options;
 		this.manyToManyDefinition = manyToManyDefinition;

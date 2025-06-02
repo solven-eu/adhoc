@@ -29,6 +29,7 @@ import java.util.Map;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasColumnTypes {
 
 	/**

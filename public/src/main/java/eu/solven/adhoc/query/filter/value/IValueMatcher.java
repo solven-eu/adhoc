@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.filter.value;
 
 import java.util.Collection;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -31,6 +32,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.pepper.core.PepperLogHelper;
 
+/**
+ * Abstract a matching strategy. Similar to {@link Predicate}.
+ * 
+ * @author Benoit Lacelle
+ */
 // https://stackoverflow.com/questions/19379863/how-to-deserialize-interface-fields-using-jacksons-objectmapper
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
 		include = JsonTypeInfo.As.PROPERTY,
@@ -47,6 +53,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 		@JsonSubTypes.Type(value = OrMatcher.class, name = "or"),
 		@JsonSubTypes.Type(value = ComparingMatcher.class, name = "compare"),
 		@JsonSubTypes.Type(value = StringMatcher.class, name = "string") })
+@FunctionalInterface
 public interface IValueMatcher {
 	IValueMatcher MATCH_ALL = AndMatcher.builder().build();
 	IValueMatcher MATCH_NONE = OrMatcher.builder().build();

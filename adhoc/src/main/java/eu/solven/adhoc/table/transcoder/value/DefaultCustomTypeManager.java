@@ -28,6 +28,11 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 
+/**
+ * Default {@link ICustomTypeManager}.
+ * 
+ * @author Benoit Lacelle
+ */
 public class DefaultCustomTypeManager implements ICustomTypeManager {
 
 	@Override

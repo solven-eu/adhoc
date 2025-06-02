@@ -28,6 +28,8 @@ import lombok.Builder;
 
 /**
  * A {@link ITableTranscoder} over a {@link Function}.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 public class FunctionTableTranscoder implements ITableTranscoder {

@@ -54,14 +54,15 @@ import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helps working with DuckDB.
+ * 
+ * @author Benoit Lacelle
  */
+@UtilityClass
 public class DuckDbHelper {
-	protected DuckDbHelper() {
-		// hidden
-	}
 
 	/**
 	 * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
@@ -85,7 +86,7 @@ public class DuckDbHelper {
 	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
 	 */
 	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
-		DuckDBConnection duckDbConnection = DuckDbHelper.makeFreshInMemoryDb();
+		DuckDBConnection duckDbConnection = makeFreshInMemoryDb();
 		return dslSupplier(duckDbConnection);
 	}
 
@@ -249,7 +250,7 @@ public class DuckDbHelper {
 		} else if (valueMatcher instanceof NotMatcher notMatcher) {
 			return "NOT " + toFilterExpression(notMatcher.getNegated());
 		} else if (valueMatcher instanceof LikeMatcher likeMatcher) {
-			return "LIKE '%s'".formatted(likeMatcher.getLike());
+			return "LIKE '%s'".formatted(likeMatcher.getPattern());
 		} else {
 			throw new NotYetImplementedException(
 					"TODO: FILTER expression for %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));

@@ -40,7 +40,6 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -59,7 +58,6 @@ import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -221,7 +219,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.nbCells(column.size())
 					// The duration is not decomposed per aggregator
 					.duration(elapsed)
-					.source(TableQueryEngine.this)
+					.source(this)
 					.build());
 
 			sinkExecutionFeedback.registerExecutionFeedback(queryStep,
@@ -231,7 +229,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	/**
 	 * @param queryPod
-	 * @param dagHolder2
+	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
 	public Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -251,10 +249,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				measurelessToAggregators
 						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
 			} else if (leafMeasure instanceof EmptyMeasure) {
-				// ???
-			} else if (leafMeasure instanceof Columnator) {
-				// ???
-				// Happens if we miss given column
+				log.trace("An EmptyMeasure has no underlying measures");
 			} else {
 				// Happens on Transformator with no underlying measure
 				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
@@ -292,8 +287,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		var edited = tableQuery.toBuilder();
 
-		SetView<String> generatedColumnToSuppressFromGroupBy =
-				Sets.intersection(groupedByCubeColumns, generatedColumns);
+		Set<String> generatedColumnToSuppressFromGroupBy = Sets.intersection(groupedByCubeColumns, generatedColumns);
 		if (!generatedColumnToSuppressFromGroupBy.isEmpty()) {
 			// All columns has been validated as being generated
 			IAdhocGroupBy originalGroupby = tableQuery.getGroupBy();
@@ -336,8 +330,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			// BEWARE This timing is dependent of the table
 			Duration elapsed = stopWatch.elapsed();
 			if (queryPod.isDebug()) {
-				long totalSize =
-						query.getDagQuery().getAggregators().stream().mapToLong(a -> sliceToAggregates.size(a)).sum();
+				long totalSize = query.getDagQuery().getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
@@ -366,7 +359,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			// BEWARE This timing is independent of the table
 			Duration elapsed = singToAggregatedStarted.elapsed();
 			if (queryPod.isDebug()) {
-				long totalSize = immutableChunks.values().stream().mapToLong(c -> c.size()).sum();
+				long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
@@ -404,7 +397,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				.build();
 	}
 
-	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
+	protected Optional<Aggregator> optAggregator(Map<String, Set<Aggregator>> columnToAggregators,
 			String aggregatorName) {
 		return columnToAggregators.values()
 				.stream()
@@ -476,8 +469,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
 	 * columns).
 	 * 
+	 * @param queryStep
 	 * @param suppressedColumns
-	 * @param aggregator
 	 * @param column
 	 * @return
 	 */

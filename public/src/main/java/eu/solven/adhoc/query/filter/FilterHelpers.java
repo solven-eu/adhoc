@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +36,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,7 +45,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  * @see SimpleFilterEditor for write operations.
  */
+@UtilityClass
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class FilterHelpers {
 
 	/**
@@ -55,6 +58,7 @@ public class FilterHelpers {
 	 *            some specific column
 	 * @return
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	public static IValueMatcher getValueMatcher(IAdhocFilter filter, String column) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
@@ -124,7 +128,7 @@ public class FilterHelpers {
 			if (columnMatchers.stream().anyMatch(f -> !(f.getValueMatcher() instanceof EqualsMatcher))) {
 				throw new IllegalArgumentException("Only AND of EqualsMatcher can be turned into a Map");
 			}
-			Map<String, Object> asMap = new HashMap<>();
+			Map<String, Object> asMap = new LinkedHashMap<>();
 
 			columnMatchers.forEach(columnFilter -> asMap.put(columnFilter.getColumn(),
 					((EqualsMatcher) columnFilter.getValueMatcher()).getWrapped()));
@@ -175,5 +179,19 @@ public class FilterHelpers {
 				return toString.get();
 			}
 		};
+	}
+
+	public static boolean visit(IAdhocFilter filter, IFilterVisitor filterVisitor) {
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return filterVisitor.testAndOperands(andFilter.getOperands());
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return filterVisitor.testOrOperands(orFilter.getOperands());
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			return filterVisitor.testColumnOperand(columnFilter);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return filterVisitor.testNegatedOperand(notFilter.getNegated());
+		} else {
+			throw new UnsupportedOperationException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
 	}
 }

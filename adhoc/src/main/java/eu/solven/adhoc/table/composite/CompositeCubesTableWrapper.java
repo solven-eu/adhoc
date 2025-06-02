@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -141,6 +142,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		return "CompositeCube over " + cubes.stream().map(ICubeWrapper::getName).collect(Collectors.joining("&"));
 	}
 
+	/**
+	 * The parameters of a {@link ICubeQuery} for a sub- {@link ICubeWrapper} .
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
 	public static class SubQueryParameters {
@@ -152,7 +158,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
-		if (queryPod.getTable() != this) {
+		if (Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
@@ -242,7 +248,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		CompatibleMeasures compatible = CompatibleMeasures.builder()
 				.predefined(predefinedMeasures)
 				.defined(defined.stream()
-						.map(fa -> FilteredAggregator.toAggregator(fa))
+						.map(FilteredAggregator::toAggregator)
 						.collect(Collectors.toCollection(LinkedHashSet::new)))
 				.build();
 		return compatible;
@@ -464,7 +470,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		MeasureForest.MeasureForestBuilder builder = MeasureForest.edit(compositeForest);
 
-		measuresToAdd.forEach(builder::measure);
+		builder.measures(measuresToAdd);
 
 		return builder.build();
 	}

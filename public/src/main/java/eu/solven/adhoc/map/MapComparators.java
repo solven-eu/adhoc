@@ -28,12 +28,15 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Various {@link Comparator} for {@link Map}.
  * 
  * @author Benoit Lacelle
  *
  */
+@UtilityClass
 public class MapComparators {
 	public static <M extends NavigableMap> Comparator<M> navigableMapComparator() {
 		return (Comparator<M>) NavigableMapComparator.INSTANCE;
@@ -46,10 +49,7 @@ public class MapComparators {
 	 */
 	public static <M extends Map> Comparator<M> mapComparator() {
 		// Various casts are here to help javac doing its job
-		return Comparator.comparing(map -> {
-			NavigableMap asNavigableMap = MapComparators.asNavigableMap((Map) map);
-			return (Map) asNavigableMap;
-		}, (Comparator) NavigableMapComparator.INSTANCE);
+		return Comparator.comparing(map -> asNavigableMap((Map) map), (Comparator) NavigableMapComparator.INSTANCE);
 	}
 
 	@SuppressWarnings("unchecked")

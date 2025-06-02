@@ -30,6 +30,8 @@ import eu.solven.adhoc.table.ITableWrapper;
  * the identity.
  *
  * This always returns `null`, hence it is not reversible.
+ * 
+ * @author Benoit Lacelle
  */
 public class IdentityImplicitTranscoder implements ITableTranscoder {
 	@Override

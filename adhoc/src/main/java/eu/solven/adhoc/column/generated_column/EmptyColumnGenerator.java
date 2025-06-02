@@ -27,6 +27,11 @@ import java.util.Map;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
+/**
+ * An empty {@link ICompositeColumnGenerator}.
+ * 
+ * @author Benoit Lacelle
+ */
 public class EmptyColumnGenerator implements ICompositeColumnGenerator {
 
 	@Override

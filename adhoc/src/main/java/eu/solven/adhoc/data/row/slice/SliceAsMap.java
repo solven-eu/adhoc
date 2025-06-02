@@ -40,6 +40,8 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
+ * 
+ * @author Benoit Lacelle
  */
 public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
@@ -62,12 +64,16 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		}
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
-				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
+		assert safeMap.values()
+				.stream()
+				.noneMatch(o -> o instanceof Collection<?>) : "A simpleSlice can not hold value=Collection<?>. Were: %s"
+						.formatted(asMap);
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
-				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
+		assert safeMap.values()
+				.stream()
+				.noneMatch(o -> o instanceof IValueMatcher) : "A simpleSlice can not hold value=IValueMatcher. Were: %s"
+						.formatted(asMap);
 
 		return new SliceAsMap(safeMap);
 	}
@@ -156,7 +162,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		if (mask.isEmpty()) {
 			return this;
 		} else {
-			return SliceAsMap.fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
+			return fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
 		}
 	}
 }

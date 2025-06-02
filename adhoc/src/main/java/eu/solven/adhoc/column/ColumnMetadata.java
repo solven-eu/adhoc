@@ -25,6 +25,8 @@ package eu.solven.adhoc.column;
 import java.util.Collection;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.measure.model.IHasTags;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
@@ -33,6 +35,11 @@ import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
+/**
+ * 
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class ColumnMetadata implements IHasName, IHasTags {
@@ -41,13 +48,14 @@ public class ColumnMetadata implements IHasName, IHasTags {
 	String name;
 
 	@Singular
-	Set<String> tags;
+	ImmutableSet<String> tags;
 
 	@NonNull
 	@Default
 	Class<?> type = Object.class;
 
-	// Alternative names referring to this given. This may not be exhaustive.
+	// Alternative names referring to this given (e.g. in SQL, a column may be qualified or not). The list may not be
+	// exhaustive.
 	@Singular
 	Set<String> aliases;
 

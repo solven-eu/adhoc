@@ -48,6 +48,7 @@ public class StringMatcher implements IValueMatcher {
 		}
 	}
 
+	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher hasToString(Object hasToString) {
 		String string = String.valueOf(hasToString);
 		return StringMatcher.builder().string(string).build();

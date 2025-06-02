@@ -32,6 +32,8 @@ import eu.solven.adhoc.table.ITableWrapper;
  * the identity.
  *
  * This always returns the input column, hence it is reversible.
+ * 
+ * @author Benoit Lacelle
  */
 public class IdentityReversibleTranscoder implements ITableTranscoder, ITableReverseTranscoder {
 	@Override

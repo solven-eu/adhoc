@@ -36,7 +36,7 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.resource.MeasureForestFromResource;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -89,7 +89,7 @@ public class MeasureForest implements IMeasureForest {
 			IMeasure resolved = getNameToMeasure().get(refName);
 
 			if (resolved == null) {
-				String minimizing = MeasureForestFromResource.minimizingDistance(getNameToMeasure().keySet(), refName);
+				String minimizing = AdhocMapPathGet.minimizingDistance(getNameToMeasure().keySet(), refName);
 
 				throw new IllegalArgumentException(
 						"forest=%s No measure named: %s. Did you mean: %s".formatted(name, refName, minimizing));

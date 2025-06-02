@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
  *            the uniform output
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ITabularRecordConverter<T, U> {
 
 	/**

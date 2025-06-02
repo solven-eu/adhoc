@@ -29,7 +29,10 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**
  * Enables adding automatically some options (e.g. `EXPLAIN` or `CONCURRENT`).
+ * 
+ * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IImplicitOptions {
 	/**
 	 * @param query

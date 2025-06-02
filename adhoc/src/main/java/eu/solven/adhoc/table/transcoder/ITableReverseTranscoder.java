@@ -27,6 +27,8 @@ import java.util.Set;
 /**
  * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
  * effectively queried.
+ * 
+ * @author Benoit Lacelle
  */
 public interface ITableReverseTranscoder {
 

@@ -30,6 +30,8 @@ import lombok.ToString;
 
 /**
  * An {@link ITableTranscoder} based on a (not-necessarily bijective) mapping.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @ToString

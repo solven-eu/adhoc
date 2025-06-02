@@ -41,9 +41,15 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Default implementation for {@link IColumnFilter}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized
+@SuppressWarnings("PMD.LinguisticNaming")
 public class ColumnFilter implements IColumnFilter {
 
 	@NonNull
@@ -74,6 +80,7 @@ public class ColumnFilter implements IColumnFilter {
 		return valueMatcher;
 	}
 
+	@Override
 	public String toString() {
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
 			return "%s=%s".formatted(column, equalsMatcher.getWrapped());
@@ -87,6 +94,11 @@ public class ColumnFilter implements IColumnFilter {
 		}
 	}
 
+	/**
+	 * Lombok Builder.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class ColumnFilterBuilder {
 		/**
 		 * Used when we want this to match cases where the column is null
@@ -165,7 +177,7 @@ public class ColumnFilter implements IColumnFilter {
 		}).toList();
 
 		if (expandedList.isEmpty()) {
-			return IAdhocFilter.MATCH_NONE;
+			return MATCH_NONE;
 		} else {
 			return ColumnFilter.builder().column(column).matchIn(expandedList).build();
 		}

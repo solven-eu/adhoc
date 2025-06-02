@@ -33,6 +33,7 @@ import eu.solven.adhoc.table.cache.CachingTableWrapper;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ICustomMarkerCacheStrategy {
 	/**
 	 * 

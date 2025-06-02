@@ -43,6 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Holds default behaviors used by most {@link ITransformatorQueryStep}
+ * 
+ * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -85,10 +87,8 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 						e);
 			}
 
-			if (Integer.bitCount(slicesDone.incrementAndGet()) == 1) {
-				if (isDebug()) {
-					log.info("[DEBUG] Done processing {} slices", slicesDone);
-				}
+			if (Integer.bitCount(slicesDone.incrementAndGet()) == 1 && isDebug()) {
+				log.info("[DEBUG] Done processing {} slices", slicesDone);
 			}
 		});
 	}

@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Benoit Lacelle
  * @see IValueReceiver
  */
+@FunctionalInterface
 public interface IValueProvider {
 
 	/**

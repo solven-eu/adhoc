@@ -29,6 +29,11 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * `not` or `!` boolean operator. It negates the underlying {@link IValueMatcher}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized

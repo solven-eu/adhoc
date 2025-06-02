@@ -29,6 +29,8 @@ import com.google.common.base.Suppliers;
 
 /**
  * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
+ * 
+ * @author Benoit Lacelle
  */
 public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	final Object source;

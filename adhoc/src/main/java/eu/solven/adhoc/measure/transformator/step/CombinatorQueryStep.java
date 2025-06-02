@@ -39,6 +39,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
@@ -49,6 +50,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link ITransformatorQueryStep} for {@link Combinator}.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class CombinatorQueryStep extends ATransformatorQueryStep {
@@ -93,6 +99,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
 			// The provided column is probably computed for `EmtpyAggregation`
+			log.trace("Received EmptyAggregation sliceToValue");
 		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));

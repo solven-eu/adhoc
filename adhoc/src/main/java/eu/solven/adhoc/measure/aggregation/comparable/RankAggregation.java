@@ -45,13 +45,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Returns the n-th elements.
+ * 
+ * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/fr-fr/sql/t-sql/functions/rank-transact-sql
 @Deprecated(since = "NotReady: how would this work with a compositeCube?")
 @Builder
+@Slf4j
 public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
 
 	public static final String KEY = "RANK";
@@ -121,7 +125,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 	 * 
 	 * @author Benoit Lacelle
 	 */
-	public static interface IRankAggregationCarrier extends IAggregationCarrier {
+	public interface IRankAggregationCarrier extends IAggregationCarrier {
 
 		/**
 		 * 
@@ -163,9 +167,10 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		List<Object> topElements;
 
 		public static RankedElementsCarrier empty(RankAggregation rankAggregation) {
-			return RankedElementsCarrier.empty(rankAggregation.getRank(), rankAggregation.isAscElseDesc());
+			return empty(rankAggregation.getRank(), rankAggregation.isAscElseDesc());
 		}
 
+		@SuppressWarnings("PMD.UnnecessaryCast")
 		public static RankedElementsCarrier empty(int rank, boolean ascElseDesc) {
 			Comparator<Object> comparator;
 			if (ascElseDesc) {
@@ -237,11 +242,13 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 				if (insertionIndex >= 0) {
 					if (insertionIndex > rank) {
 						// Skip adding at this element is out of rank
+						log.trace("Skip as insertionIndex={} is out of rank={}", insertionIndex, rank);
 					} else {
 						merged.set(insertionIndex, element);
 					}
 				} else if (insertionIndex < -rank) {
 					// Skip adding at this element is out of rank
+					log.trace("Skip as insertionIndex={} is out of rank={}", insertionIndex, rank);
 				} else {
 					merged.add(-insertionIndex - 1, element);
 				}

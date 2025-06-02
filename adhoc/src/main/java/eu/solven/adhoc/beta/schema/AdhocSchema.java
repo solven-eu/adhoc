@@ -94,10 +94,20 @@ public class AdhocSchema implements IAdhocSchema {
 				}
 			}));
 
+	/**
+	 * Used as key to identify in which context/cube given customMarker is relevant.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
 	public static class CustomMarkerMatchingKey {
+		/**
+		 * Some name for the customMarker
+		 */
+		@NonNull
 		String name;
+		@NonNull
 		IValueMatcher cubeMatcher;
 	}
 
@@ -235,6 +245,13 @@ public class AdhocSchema implements IAdhocSchema {
 		nameToForest.put(measureBag.getName(), measureBag);
 	}
 
+	/**
+	 * 
+	 * @param name
+	 *            some identifier for the customMarker
+	 * @param cubeMatcher
+	 * @param customMarker
+	 */
 	public void registerCustomMarker(String name,
 			IValueMatcher cubeMatcher,
 			CustomMarkerMetadataGenerator customMarker) {

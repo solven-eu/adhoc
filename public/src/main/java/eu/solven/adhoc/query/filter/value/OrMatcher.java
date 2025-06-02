@@ -121,7 +121,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 			return simplifiedOwned(notMatchNone);
 		} else {
 			if (notMatchNone.isEmpty()) {
-				return IValueMatcher.MATCH_NONE;
+				return MATCH_NONE;
 			} else if (notMatchNone.size() == 1) {
 				return notMatchNone.getFirst();
 			} else {

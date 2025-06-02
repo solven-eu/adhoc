@@ -22,6 +22,14 @@
  */
 package eu.solven.adhoc.data.tabular.primitives;
 
+import java.util.function.BiConsumer;
+
+/**
+ * A {@link BiConsumer} accepting a primitive `int` as key, and a primitive `double` as value.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface Int2DoubleBiConsumer {
 	void acceptInt2Double(int i, double d);
 }

@@ -56,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
  * A data-structure associating each {@link Aggregator} with a {@link IMultitypeMergeableColumn}
  * 
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j

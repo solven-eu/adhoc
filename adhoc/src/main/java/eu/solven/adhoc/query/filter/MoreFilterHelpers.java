@@ -36,7 +36,15 @@ import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
 
+/**
+ * Helpers methods around {@link IAdhocFilter} and {@link IValueMatcher}. This includes those which does not fit into
+ * {@link FilterHelpers}, due to dependency to `!public` dependencies.
+ * 
+ * @author Benoit Lacelle
+ */
+@UtilityClass
 public class MoreFilterHelpers {
 
 	public static IValueMatcher transcodeType(ICustomTypeManagerSimple customTypeManager,

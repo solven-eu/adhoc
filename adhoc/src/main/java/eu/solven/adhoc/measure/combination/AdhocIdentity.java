@@ -36,6 +36,11 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
+/**
+ * Centralize most `identity` behavior in Adhoc.
+ * 
+ * @author Benoit Lacelle
+ */
 public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";
 

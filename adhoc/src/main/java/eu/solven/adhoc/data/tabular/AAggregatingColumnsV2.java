@@ -90,6 +90,7 @@ public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implemen
 	}
 
 	// visible for benchmarks
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T extends Comparable<T>> ObjectArrayList<Object2IntMap.Entry<T>> doSort(
 			Consumer<Object2IntBiConsumer<T>> sliceToIndex,
 			int size) {
@@ -120,6 +121,7 @@ public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implemen
 	 *            a sorted (by slice) mapping from slice to index
 	 * @return
 	 */
+	@SuppressWarnings("checkstyle:MethodLength")
 	protected static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copyToNavigable(
 			IMultitypeColumnFastGet<Integer> column,
 			Consumer<Object2IntBiConsumer<T>> orderedSliceToIndex) {

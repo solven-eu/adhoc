@@ -169,6 +169,17 @@ public class TestReversePolishCombination {
 	}
 
 	@Test
+	public void testPollutingWhitespaces() {
+		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
+				" 12.34	,\t23.45 , -\t",
+				"nullIfNotASingleUnderlying",
+				false));
+		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 - 23.45);
+	}
+
+	@Test
 	public void testScientificNotation_Max() {
 		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
 				Double.toString(Double.MAX_VALUE),

@@ -24,6 +24,7 @@ package eu.solven.adhoc.primitive;
 
 import java.math.BigDecimal;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,12 +32,9 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 @Slf4j
 public class AdhocPrimitiveHelpers {
-
-	private AdhocPrimitiveHelpers() {
-		// hidden
-	}
 
 	public static boolean isLongLike(Object o) {
 		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
@@ -45,7 +43,7 @@ public class AdhocPrimitiveHelpers {
 			try {
 				long asLong = bigDecimal.longValueExact();
 				if (log.isTraceEnabled()) {
-					log.trace("This is a long: {} -> ", bigDecimal, asLong);
+					log.trace("This is a long: {} -> {}", bigDecimal, asLong);
 				}
 				return true;
 			} catch (ArithmeticException e) {

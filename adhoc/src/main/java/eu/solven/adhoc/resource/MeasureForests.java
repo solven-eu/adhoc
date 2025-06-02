@@ -58,6 +58,6 @@ public class MeasureForests {
 	}
 
 	public Map<String, IMeasureForest> getNameToForest() {
-		return forests.stream().collect(Collectors.toMap(f -> f.getName(), f -> f));
+		return forests.stream().collect(Collectors.toMap(IMeasureForest::getName, f -> f));
 	}
 }

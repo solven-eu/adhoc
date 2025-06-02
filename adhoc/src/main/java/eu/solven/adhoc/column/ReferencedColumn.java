@@ -54,14 +54,19 @@ public class ReferencedColumn implements IAdhocColumn, IHasWrapped {
 		return ReferencedColumn.builder().name(column).build();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class ReferencedColumnBuilder {
 
 		public ReferencedColumnBuilder() {
+			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String
 		public ReferencedColumnBuilder(String column) {
-
 			this.name(column);
 		}
 	}

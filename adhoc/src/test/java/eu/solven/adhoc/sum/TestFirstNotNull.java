@@ -22,16 +22,34 @@
  */
 package eu.solven.adhoc.sum;
 
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
 public class TestFirstNotNull {
-	CoalesceAggregation a = new CoalesceAggregation();
 
 	@Test
 	public void testSimple() {
+		CoalesceAggregation a = new CoalesceAggregation(Map.of());
+		
+		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
+		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
+		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+
+		Assertions.assertThat(a.aggregate(123, 123)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
+
+		Assertions.assertThatThrownBy(() -> a.aggregate(123, 234)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> a.aggregate("foo", 234)).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testFailIfDifferent() {
+		CoalesceAggregation a = new CoalesceAggregation(Map.of("failIfDifferent", true));
+		
 		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);

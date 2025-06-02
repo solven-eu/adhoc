@@ -24,6 +24,8 @@ package eu.solven.adhoc.data.column;
 
 /**
  * Constants related to multitype data-structures.
+ * 
+ * @author Benoit Lacelle
  */
 public interface IMultitypeConstants {
 	byte MASK_EMPTY = 0;

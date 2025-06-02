@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -45,14 +45,17 @@ import lombok.extern.slf4j.Slf4j;
  * purposes. The first one is not to require {@link ITableTranscoder} to express a bi-directional mapping. The second
  * main purpose is the reverse mapping may be ambiguous, when multiple queries columns could be served by the same
  * underlying column.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @Slf4j
 public class TranscodingContext implements ITableTranscoder, ITableReverseTranscoder {
 	// Most column would be managed through identity transcoding
-	final Set<String> identity = new HashSet<String>();
+	final Set<String> identity = new LinkedHashSet<>();
 	// Some columns would be managed through not-trivial transcoding
-	final SetMultimap<String, String> underlyingToQueried = MultimapBuilder.hashKeys().hashSetValues().build();
+	final SetMultimap<String, String> underlyingToQueried =
+			MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 	@Getter
 	final Map<String, CalculatedColumn> nameToCalculated = new LinkedHashMap<>();

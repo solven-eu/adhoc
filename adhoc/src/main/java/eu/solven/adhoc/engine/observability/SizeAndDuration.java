@@ -27,6 +27,11 @@ import java.time.Duration;
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Pack the core metrics to be reported in `EXPLAIN` operations.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class SizeAndDuration {

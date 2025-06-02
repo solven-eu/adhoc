@@ -220,9 +220,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	/**
 	 * 
 	 * @param canResolveMeasures
-	 * @param queriedMeasure
+	 * @param measure
 	 *            any measure
-	 * @return
+	 * @return an explicit {@link IMeasure}, hence never a {@link ReferencedMeasure}
 	 */
 	protected IMeasure resolveMeasure(ICanResolveMeasure canResolveMeasures, IMeasure measure) {
 		// Make sure the DAG has actual measure nodes, and not references

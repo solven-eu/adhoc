@@ -68,6 +68,11 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	@Singular
 	ImmutableMap<String, ?> aggregationOptions;
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class AggregatorBuilder {
 		String name;
 

@@ -139,7 +139,7 @@ public class CubeWrapper implements ICubeWrapper {
 						});
 					});
 				} catch (Exception e) {
-					if (AdhocUnsafe.failFast) {
+					if (AdhocUnsafe.isFailFast()) {
 						String msg = "Issue looking for an %s in m=%s c=%s"
 								.formatted(ICompositeColumnGenerator.class.getSimpleName(), measure, this.getName());
 						throw new IllegalStateException(msg, e);
@@ -157,6 +157,11 @@ public class CubeWrapper implements ICubeWrapper {
 		return columnToType.values();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class CubeWrapperBuilder {
 		public CubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
 			// BEWARE Is this the proper way the ensure the eventBus is written in proper places?

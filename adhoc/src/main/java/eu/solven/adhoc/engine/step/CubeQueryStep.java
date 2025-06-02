@@ -87,6 +87,11 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	// Used to store transient information, like slow-to-evaluate information
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class CubeQueryStepBuilder {
 		IMeasure measure;
 

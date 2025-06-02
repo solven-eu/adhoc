@@ -27,6 +27,7 @@ package eu.solven.adhoc.query.filter.value;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasWrapped {
 	Object getWrapped();
 }

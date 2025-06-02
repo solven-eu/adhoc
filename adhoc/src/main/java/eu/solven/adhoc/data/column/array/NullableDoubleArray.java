@@ -35,6 +35,11 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 
+/**
+ * Adds `null` capabilities to a {@link DoubleList}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Deprecated(since = "Not-Ready")
 @Builder
 public class NullableDoubleArray extends AbstractDoubleList implements INullableDoubleArray {

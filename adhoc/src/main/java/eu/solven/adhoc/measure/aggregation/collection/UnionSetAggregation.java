@@ -28,6 +28,11 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
+/**
+ * {@link IAggregation} which essentially merge {@link Set}.
+ * 
+ * @author Benoit Lacelle
+ */
 public class UnionSetAggregation implements IAggregation {
 
 	public static final String KEY = "UNION_SET";
@@ -41,7 +46,13 @@ public class UnionSetAggregation implements IAggregation {
 		Set<?> lAsSet = wrapAsSet(l);
 		Set<?> rAsSet = wrapAsSet(r);
 
-		return aggregateSets(lAsSet, rAsSet);
+		Set<?> aggregated = aggregateSets(lAsSet, rAsSet);
+
+		if (aggregated.isEmpty()) {
+			// We prefer returning null, the materializing unnecessarily a slice.
+			return null;
+		}
+		return aggregated;
 	}
 
 	protected Set<?> wrapAsSet(Object l) {
@@ -73,7 +84,7 @@ public class UnionSetAggregation implements IAggregation {
 	public static <T> Set<T> unionSet(Set<? extends T> left, Set<? extends T> right) {
 		if (left == null) {
 			if (right == null) {
-				return null;
+				return ImmutableSet.of();
 			} else {
 				return ImmutableSet.copyOf(right);
 			}

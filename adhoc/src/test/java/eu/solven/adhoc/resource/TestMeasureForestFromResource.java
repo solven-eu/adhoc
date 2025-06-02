@@ -57,24 +57,6 @@ public class TestMeasureForestFromResource {
 	final MeasureForestFromResource fromResource = new MeasureForestFromResource();
 
 	@Test
-	public void testFaultInKey_type() {
-		Map<String, Object> input = Map.of("underlyings", List.of("k1", "k2"));
-
-		Assertions.assertThatThrownBy(() -> fromResource.getListParameter(input, "undelryings"))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Did you mean `underlyings` instead of `undelryings`");
-	}
-
-	@Test
-	public void testFaultInKey_missing() {
-		Map<String, Object> input = Map.of("type", "combinator");
-
-		Assertions.assertThatThrownBy(() -> fromResource.getListParameter(input, "underlyings"))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageNotContaining("instead of");
-	}
-
-	@Test
 	public void testDeepMeasuresAsUnderlyings() {
 		Map<String, Object> input = ImmutableMap.<String, Object>builder()
 				.put("name", "k")

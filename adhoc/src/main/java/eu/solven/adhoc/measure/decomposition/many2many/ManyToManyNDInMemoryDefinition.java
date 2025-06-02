@@ -35,6 +35,11 @@ import com.google.common.collect.SetMultimap;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Standard {@link IManyToManyNDDefinition}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class ManyToManyNDInMemoryDefinition implements IManyToManyNDDefinition {
 	final SetMultimap<Object, Map<String, IValueMatcher>> groupToElements =
