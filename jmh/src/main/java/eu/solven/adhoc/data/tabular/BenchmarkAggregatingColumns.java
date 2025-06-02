@@ -58,7 +58,7 @@ public class BenchmarkAggregatingColumns {
 
 	Object2IntMap<SliceAsMap> sliceToIndex;
 
-	AggregatingColumnsV2<String> columns = AggregatingColumnsV2.<String>builder().build();
+	AggregatingColumns<String> columns = AggregatingColumns.<String>builder().build();
 
 	Aggregator countAsterisk = Aggregator.countAsterisk();
 
@@ -78,13 +78,13 @@ public class BenchmarkAggregatingColumns {
 
 	// @Benchmark
 	public ObjectArrayList<Object2IntMap.Entry<SliceAsMap>> sort() {
-		return AggregatingColumnsV2.<SliceAsMap>doSort(c -> {
+		return AggregatingColumns.<SliceAsMap>doSort(c -> {
 			sliceToIndex.forEach((slice, index) -> c.acceptObject2Int(slice, index));
 		}, sliceToIndex.size());
 	}
 
 	@Benchmark
-	public AggregatingColumnsV2<String> contribute() {
+	public AggregatingColumns<String> contribute() {
 		for (int i = 0; i < size; i++) {
 			columns.contribute(Integer.toString(i), countAsterisk);
 		}
@@ -94,7 +94,7 @@ public class BenchmarkAggregatingColumns {
 
 	// One slow step of `contribute` is the `dictionarize` step
 	@Benchmark
-	public AggregatingColumnsV2<String> contribute_only_dictionarize() {
+	public AggregatingColumns<String> contribute_only_dictionarize() {
 		for (int i = 0; i < size; i++) {
 			columns.dictionarize(Integer.toString(i));
 		}

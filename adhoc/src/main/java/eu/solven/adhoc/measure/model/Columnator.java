@@ -65,6 +65,7 @@ public class Columnator implements ICombinator {
 	 * @author Benoit Lacelle
 	 */
 	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	@SuppressWarnings("PMD.FieldNamingConventions")
 	public enum Mode {
 		// required: the selected columns are required in the slice, else null
 		HideIfMissing,

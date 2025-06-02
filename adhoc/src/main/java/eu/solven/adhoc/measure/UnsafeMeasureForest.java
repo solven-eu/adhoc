@@ -53,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 public final class UnsafeMeasureForest implements IMeasureForest {
 	@Getter
 	@Default
+	@SuppressWarnings("PMD.UnusedAssignment")
 	final String name = "unsafe";
 
 	@NonNull

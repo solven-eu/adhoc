@@ -476,12 +476,12 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * Current implementation restore the suppressedColumn by writing a single member. Another project may prefer
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
-	 * columns).
-<<<<<<< HEAD
+	 * columns). <<<<<<< HEAD
 	 * 
-=======
+	 * =======
 	 *
->>>>>>> origin/master
+	 * >>>>>>> origin/master
+	 * 
 	 * @param queryStep
 	 * @param suppressedColumns
 	 * @param column

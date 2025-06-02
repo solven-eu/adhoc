@@ -86,8 +86,11 @@ import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -99,7 +102,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Builder
 @Slf4j
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	@Builder.Default
@@ -113,6 +116,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	// Typically used for RedShift when it is queried with PostgreSQL dialect
 	@Default
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	boolean canGroupByAll = false;
 
 	/**
@@ -301,7 +305,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return groupedFields;
 	}
 
-	private boolean canGroupByAll() {
+	protected boolean canGroupByAll() {
 		return canGroupByAll || dslContext.dialect() == SQLDialect.DUCKDB;
 	}
 
@@ -411,6 +415,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 	}
 
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected ConditionWithFilter toCondition(IAdhocFilter filter) {
 		if (filter.isMatchAll()) {
 			return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();

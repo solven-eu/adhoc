@@ -176,7 +176,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
-		if (queryPod.getTable() != this) {
+		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 

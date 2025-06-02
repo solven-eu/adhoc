@@ -104,6 +104,7 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	public static class ReferencedMeasureBuilder {
 
 		public ReferencedMeasureBuilder() {
+			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String

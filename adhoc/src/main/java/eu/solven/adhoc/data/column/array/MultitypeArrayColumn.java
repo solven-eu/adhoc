@@ -91,7 +91,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 	}
 
-	@SuppressWarnings("PMD.LooseCoupling")
+	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof LongArrayList openHashMap) {
@@ -314,7 +314,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	public Stream<T> keyStream() {
 		return Stream.of(measureToAggregateL.indexStream(), measureToAggregateD.indexStream(), objectIndexStream())
 				.flatMapToInt(is -> is)
-				.mapToObj(MultitypeArrayColumn.this::toBoxedKey)
+				.mapToObj(this::toBoxedKey)
 		// No need for .distinct as each key is guaranteed to appear in a single column
 		// .distinct()
 		;

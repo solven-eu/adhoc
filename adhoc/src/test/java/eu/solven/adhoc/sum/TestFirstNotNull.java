@@ -34,7 +34,7 @@ public class TestFirstNotNull {
 	@Test
 	public void testSimple() {
 		CoalesceAggregation a = new CoalesceAggregation(Map.of());
-		
+
 		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
@@ -49,7 +49,7 @@ public class TestFirstNotNull {
 	@Test
 	public void testFailIfDifferent() {
 		CoalesceAggregation a = new CoalesceAggregation(Map.of("failIfDifferent", true));
-		
+
 		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
 		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
 		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);

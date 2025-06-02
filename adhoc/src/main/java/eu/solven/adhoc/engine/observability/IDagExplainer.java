@@ -31,8 +31,9 @@ import eu.solven.adhoc.util.IAdhocEventBus;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IDagExplainer {
 
-	void explain(AdhocQueryId adhocQueryId, QueryStepsDag dag);
+	void explain(AdhocQueryId queryId, QueryStepsDag dag);
 
 }

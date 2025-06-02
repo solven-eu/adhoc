@@ -56,6 +56,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
  * @author Benoit Lacelle
  */
 // `extends AbstractMap` enables not duplicating `.toString`
+@SuppressWarnings({ "PMD.GodClass", "PMD.LooseCoupling" })
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	private static final int[] PRE_ORDERED = new int[0];
 
@@ -291,7 +292,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
 	// internalized, and keySet are identical in most cases
 	// `java:S4973` is about the reference comparison, which is done on purpose to potentially skip the `.compareTo`
-	@SuppressWarnings("java:S4973")
+	@SuppressWarnings({ "java:S4973", "PMD.CompareObjectsWithEquals", "PMD.UseEqualsToCompareStrings" })
 	private int compareKey(String thisKey, String otherKey) {
 		if (thisKey == otherKey) {
 			return 0;
@@ -308,6 +309,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	public static final class AdhocMapBuilder {
 		// Cache keyToIndex as it enables faster comparisons
 		// Expected to remain low in memory given the groupBy cardinality is limited
+		@SuppressWarnings("PMD.LooseCoupling")
 		private static final Map<NavigableSet<String>, Object2IntArrayMap<String>> KEYS_TO_INDEXED_KEYS =
 				new ConcurrentHashMap<>();
 

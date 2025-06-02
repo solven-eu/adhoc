@@ -50,15 +50,20 @@ public class UnionSetAggregation implements IAggregation {
 
 		if (aggregated.isEmpty()) {
 			// We prefer returning null, the materializing unnecessarily a slice.
-			return null;
+			return onEmpty();
 		}
 		return aggregated;
+	}
+
+	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
+	protected Set<?> onEmpty() {
+		return null;
 	}
 
 	protected Set<?> wrapAsSet(Object l) {
 		Set<?> asSet;
 		if (l == null) {
-			asSet = null;
+			asSet = onEmpty();
 		} else if (l instanceof Set<?> lAsSet) {
 			asSet = lAsSet;
 		} else if (l instanceof Iterable<?> lAsIterable) {

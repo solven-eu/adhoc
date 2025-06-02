@@ -95,7 +95,7 @@ public class TestAndMatcher {
 				    "negated" : "azerty"
 				  }, {
 				    "type" : "like",
-				    "like" : "a%"
+				    "pattern" : "a%"
 				  } ]
 				}
 																""".trim());

@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 @SuppressWarnings("checkstyle:TypeName")
-public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAggregatingColumnsV2<T, Integer> {
+public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
@@ -138,7 +138,7 @@ public class AggregatingColumnsV2_Distinct<T extends Comparable<T>> extends AAgg
 			// BEWARE The point of this sorting is to improve performance of later
 			// UnderlyingQueryStepHelpers.distinctSlices
 			if (refSortedSliceToIndex.get() == null) {
-				ObjectArrayList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
+				ObjectList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
 					for (int rowIndex = 0; rowIndex < indexToSlice.size(); rowIndex++) {
 						consumer.acceptObject2Int(indexToSlice.get(rowIndex), rowIndex);
 					}

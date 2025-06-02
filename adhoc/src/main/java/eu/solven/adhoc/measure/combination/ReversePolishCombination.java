@@ -122,7 +122,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
 		String replacedFormula = notation;
 
-		do {
+		while (true) {
 			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
 				Object evaluatedSubFormula =
@@ -150,11 +150,12 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 				// continue replacing subFormulas
 				replacedFormula = nextFormula;
 			}
-		} while (true);
+		}
 
 		return evaluateReversePolish(replacedFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 	}
 
+	@SuppressWarnings("PMD.NullAssignment")
 	protected Object evaluateReversePolish(String formula,
 			ISliceWithStep slice,
 			List<?> underlyingValues,
@@ -167,8 +168,8 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 					.formatted(underlyingValues.size(), underlyingMeasuresToIndex.size()));
 		}
 
-		for (int i = 0; i < elements.length; i++) {
-			String s = elements[i].strip();
+		for (String rawElement : elements) {
+			String s = rawElement.strip();
 
 			Object operandToAppend;
 

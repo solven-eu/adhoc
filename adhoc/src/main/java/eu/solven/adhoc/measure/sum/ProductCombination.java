@@ -44,8 +44,7 @@ public class ProductCombination extends AggregationCombination {
 
 	public ProductCombination(Map<String, ?> options) {
 		super(new ProductAggregation(options),
-				MapPathGet.<Boolean>getOptionalAs(options, AggregationCombination.K_CUSTOM_IF_ANY_NULL_OPERAND)
-						.orElse(true));
+				MapPathGet.<Boolean>getOptionalAs(options, K_CUSTOM_IF_ANY_NULL_OPERAND).orElse(true));
 	}
 
 	@Override

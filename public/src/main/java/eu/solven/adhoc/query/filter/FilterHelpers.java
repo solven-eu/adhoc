@@ -58,7 +58,6 @@ public class FilterHelpers {
 	 *            some specific column
 	 * @return
 	 */
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	public static IValueMatcher getValueMatcher(IAdhocFilter filter, String column) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;

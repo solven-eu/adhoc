@@ -90,7 +90,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		log.warn("Instantiated with default/empty {}", this.manyToManyDefinition);
 	}
 
-	@SuppressWarnings("ConstructorCallsOverridableMethod")
+	@SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
 	public ManyToManyNDDecomposition(Map<String, ?> options, IManyToManyNDDefinition manyToManyDefinition) {
 		this.options = options;
 		this.manyToManyDefinition = manyToManyDefinition;
@@ -170,6 +170,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return matchingGroups;
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <E extends Object> SetView<E> intersection(final Set<? extends E> set1, final Set<? extends E> set2) {
 		SetView<E> intersection;
 
@@ -259,9 +260,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<Map<String, IValueMatcher>> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
 
-				Set<IAdhocFilter> elementsFilters = elements.stream()
-						.map(groupElements -> AndFilter.and(groupElements))
-						.collect(Collectors.toSet());
+				Set<IAdhocFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
 
 				IAdhocFilter elementAdditionalFilter = OrFilter.or(elementsFilters);
 

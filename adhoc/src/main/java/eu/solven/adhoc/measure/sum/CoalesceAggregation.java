@@ -75,6 +75,7 @@ public class CoalesceAggregation implements IAggregation {
 		}
 	}
 
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected boolean areSame(Object l, Object r) {
 		if (equalIfSame) {
 			return l == r;

@@ -200,7 +200,7 @@ public class DagExplainer implements IDagExplainer {
 		}
 	}
 
-	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveLiteralAppends" })
 	protected String toString2(DagExplainerState dagState, CubeQueryStep step) {
 		if (step == FAKE_ROOT) {
 			AdhocQueryId queryId = dagState.getQueryId();

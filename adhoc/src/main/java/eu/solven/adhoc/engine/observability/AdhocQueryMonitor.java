@@ -65,6 +65,7 @@ public class AdhocQueryMonitor {
 		slowestQueried = new PriorityBlockingQueue<>(slowestQueriedMax + 1, comparatorForSlowest());
 	}
 
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public void onQueryLifecycleEvent(QueryLifecycleEvent lifecycleEvent) {
 		QueryPod query = lifecycleEvent.getQuery();
 

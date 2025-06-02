@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -64,16 +65,12 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		}
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values()
-				.stream()
-				.noneMatch(o -> o instanceof Collection<?>) : "A simpleSlice can not hold value=Collection<?>. Were: %s"
-						.formatted(asMap);
+		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
+				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values()
-				.stream()
-				.noneMatch(o -> o instanceof IValueMatcher) : "A simpleSlice can not hold value=IValueMatcher. Were: %s"
-						.formatted(asMap);
+		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
+				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
 
 		return new SliceAsMap(safeMap);
 	}
@@ -138,8 +135,9 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
 	public int compareTo(SliceAsMap o) {
-		if (this.asMap instanceof AdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
+		if (this.asMap instanceof IAdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
 			return adhocMap.compareTo(otherAdhocMap);
 		} else {
 			return MapComparators.mapComparator().compare(this.asMap, o.asMap);

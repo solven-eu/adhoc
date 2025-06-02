@@ -63,12 +63,12 @@ public class ColumnarMetadata {
 
 	static final Set<Map.Entry<String, Class<?>>> UNCLEAR_TYPE_WARNED = Sets.newConcurrentHashSet();
 
+	@Singular
+	Map<String, String> columnToTypes;
+
 	public static void clearWarns() {
 		UNCLEAR_TYPE_WARNED.clear();
 	}
-
-	@Singular
-	Map<String, String> columnToTypes;
 
 	public static ColumnarMetadata from(Map<String, Class<?>> columns) {
 		ColumnarMetadataBuilder builder = ColumnarMetadata.builder();

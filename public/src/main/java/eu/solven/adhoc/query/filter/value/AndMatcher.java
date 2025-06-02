@@ -228,7 +228,6 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		return Optional.empty();
 	}
 
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static Optional<IValueMatcher> mergeComparing(IValueMatcher owner,
 			IValueMatcher owned,
 			ComparingMatcher ownedComparing,

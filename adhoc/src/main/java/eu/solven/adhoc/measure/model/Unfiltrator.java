@@ -64,6 +64,7 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	 * @author Benoit Lacelle
 	 */
 	// https://stackoverflow.com/questions/3069743/coding-conventions-naming-enums
+	@SuppressWarnings("PMD.FieldNamingConventions")
 	public enum Mode {
 		// if a column is listed, its filters are neutralized into matchAll
 		Suppress,

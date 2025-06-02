@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -209,7 +208,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 		// Add explicitly requested steps
 		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
 
-		long nbQueriedMeasures = queriedMeasures.stream().map(m -> m.getName()).distinct().count();
+		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
 		if (nbQueriedMeasures < queriedMeasures.size()) {
 			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
 			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
@@ -405,31 +404,40 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			}).toList();
 
 			// BEWARE It looks weird we have to call again `.wrapNode`
-			ITransformatorQueryStep hasUnderlyingQuerySteps =
+			ITransformatorQueryStep transformatorQuerySteps =
 					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
 
 			ISliceToValue coordinatesToValues;
 			try {
-				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+				coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 			} catch (RuntimeException e) {
-				StringBuilder describeStep = new StringBuilder();
-
-				describeStep.append("Issue computing columns for:").append("\r\n");
-
-				// First, we print only measure as a simplistic shorthand of the step
-				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
-						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
-				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
-				describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
-						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
-
-				throw new IllegalStateException(describeStep.toString(), e);
+				throw rethrowWithDetails(queryStep, underlyingSteps, e);
 			}
 
 			return Optional.of(coordinatesToValues);
 		} else {
 			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}
+	}
+
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"PMD.ConsecutiveLiteralAppends" })
+	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
+			List<CubeQueryStep> underlyingSteps,
+			RuntimeException e) {
+		StringBuilder describeStep = new StringBuilder();
+
+		describeStep.append("Issue computing columns for:").append("\r\n");
+
+		// First, we print only measure as a simplistic shorthand of the step
+		describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
+				underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+		// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
+		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
+				underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+
+		return new IllegalStateException(describeStep.toString(), e);
 	}
 
 	/**

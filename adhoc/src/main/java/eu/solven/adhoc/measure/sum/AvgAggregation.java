@@ -104,6 +104,7 @@ public class AvgAggregation implements IAggregation, IAggregationCarrier.IHasCar
 			}
 		}
 
+		@Override
 		public AvgCarrier add(Object element) {
 			if (element instanceof IAvgAggregationCarrier otherCarrier) {
 				return AvgCarrier.builder()

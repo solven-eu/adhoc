@@ -188,6 +188,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 			return add(Lists.asList(element, moreElements));
 		}
 
+		@Override
 		public RankedElementsCarrier add(Object element) {
 			if (element == null) {
 				return this;

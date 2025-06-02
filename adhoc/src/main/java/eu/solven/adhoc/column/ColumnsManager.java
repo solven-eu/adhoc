@@ -349,6 +349,7 @@ public class ColumnsManager implements IColumnsManager {
 		return GroupByColumns.of(transcoded);
 	}
 
+	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	private static final class RecordingRecord implements ITabularRecord {
 		@Getter
 		final Set<String> usedColumn = new HashSet<>();
@@ -416,7 +417,7 @@ public class ColumnsManager implements IColumnsManager {
 		RecordingRecord recording = new RecordingRecord();
 
 		calculatedColumn.getRecordToCoordinate().apply(recording);
-		return recording.getUsedColumn().stream().map(c -> ReferencedColumn.ref(c)).toList();
+		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 
 	protected Collection<? extends FilteredAggregator> transcodeAggregators(TranscodingContext transcodingContext,

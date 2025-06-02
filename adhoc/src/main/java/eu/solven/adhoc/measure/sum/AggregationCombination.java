@@ -75,6 +75,7 @@ public class AggregationCombination implements ICombination {
 	}
 
 	@Override
+	@SuppressWarnings("PMD.NullAssignment")
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
 		MultitypeCell refMultitype = makeMultitypeCell();
 

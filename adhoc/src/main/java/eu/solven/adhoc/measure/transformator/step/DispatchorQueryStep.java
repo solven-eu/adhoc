@@ -150,10 +150,8 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		boolean isMultiGroupSlice;
 
 		{
-			Set<Set<String>> decompositionColumns = decomposed.stream()
-					.map(IDecompositionEntry::getSlice)
-					.map(Map::keySet)
-					.collect(Collectors.toSet());
+			Set<Set<String>> decompositionColumns =
+					decomposed.stream().map(IDecompositionEntry::getSlice).map(Map::keySet).collect(Collectors.toSet());
 
 			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
 			if (decompositionColumns.stream().allMatch(groupByColumns::containsAll)) {

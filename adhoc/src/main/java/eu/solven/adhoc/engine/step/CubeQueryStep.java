@@ -93,6 +93,7 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	 * @author Benoit Lacelle
 	 */
 	public static class CubeQueryStepBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		IMeasure measure;
 
 		public CubeQueryStepBuilder measure(IMeasure measure) {

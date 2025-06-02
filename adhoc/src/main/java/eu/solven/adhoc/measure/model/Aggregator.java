@@ -74,6 +74,7 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 	 * @author Benoit Lacelle
 	 */
 	public static class AggregatorBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		String name;
 
 		public AggregatorBuilder name(String name) {

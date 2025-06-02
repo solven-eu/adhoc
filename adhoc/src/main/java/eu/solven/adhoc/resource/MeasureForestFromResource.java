@@ -258,7 +258,7 @@ public class MeasureForestFromResource {
 	 *            the initial serialized view of {@link IMeasure}
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
-	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+	@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.CognitiveComplexity" })
 	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
 		Comparator<String> comparing =
 				Comparator.comparing(s -> Optional.ofNullable(KEY_TO_INDEX.get(s)).orElse(SORTED_KEYS.size()));

@@ -54,7 +54,7 @@ public class ManyToManyNDInMemoryDefinition implements IManyToManyNDDefinition {
 			Collection<Map<String, IValueMatcher>> matchers = e.getValue();
 
 			return matchers.stream().anyMatch(matcher -> doElementMatch(matcher, columnToElement));
-		}).map(e -> e.getKey()).collect(Collectors.toSet());
+		}).map(Map.Entry::getKey).collect(Collectors.toSet());
 	}
 
 	protected boolean doElementMatch(Map<String, IValueMatcher> matcher, Map<String, ?> columnToElement) {

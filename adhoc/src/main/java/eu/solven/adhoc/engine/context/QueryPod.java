@@ -162,14 +162,14 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		IColumnsManager columnsManager;
 		// boolean columnsManager$set;
 
+		// executorService is problematic as it has @Default
+		ExecutorService executorService;
+
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
 			return this;
 		}
-
-		// executorService is problematic as it has @Default
-		ExecutorService executorService;
 
 		public QueryPodBuilder executorService(ExecutorService executorService) {
 			this.executorService = executorService;
