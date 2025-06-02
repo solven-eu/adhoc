@@ -381,7 +381,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
 					sqlAggFunction = DSL
-							.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
+							.aggregate(duckDbFunction, Object.class, field, field, DSL.val(agg.getRank()));
 				} else {
 					sqlAggFunction = onCustomAggregation(a, namedColumn);
 				}

@@ -83,7 +83,7 @@ public class ForeignExchangeCombination implements ICombination {
 	}
 
 	protected ProductAggregation getProductAggregator() {
-		return new ProductAggregation();
+		return new ProductAggregation(Map.of());
 	}
 
 	protected String getCcyTo(ISliceWithStep slice) {

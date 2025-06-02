@@ -23,14 +23,7 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -364,26 +357,31 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 			immutableChunks = toSortedColumns(queryPod, query, sliceToAggregates);
 
+
 			// BEWARE This timing is independent of the table
 			Duration elapsed = singToAggregatedStarted.elapsed();
-			if (queryPod.isDebug()) {
-				long totalSize = immutableChunks.values().stream().mapToLong(c -> c.size()).sum();
+			if (queryPod.isDebug() || queryPod.isExplain()) {
+				long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
 
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(true)
-						.performance(true)
-						.message("time=%s size=%s for toSortedColumns on %s".formatted(PepperLogHelper
-								.humanDuration(elapsed.toMillis()), totalSize, query.getDagQuery()))
-						.source(this)
-						.build());
-			} else if (queryPod.isExplain()) {
-				eventBus.post(AdhocLogEvent.builder()
-						.explain(true)
-						.performance(true)
-						.message("time=%s for toSortedColumns on %s"
-								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), query.getDagQuery()))
-						.source(this)
-						.build());
+				if (queryPod.isDebug()) {
+					long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
+
+					eventBus.post(AdhocLogEvent.builder()
+							.debug(true)
+							.performance(true)
+							.message("time=%s sizes=%s total_size=%s for toSortedColumns on %s".formatted(PepperLogHelper
+									.humanDuration(elapsed.toMillis()),Arrays.toString(sizes), totalSize, query.getDagQuery()))
+							.source(this)
+							.build());
+				} else if (queryPod.isExplain()) {
+					eventBus.post(AdhocLogEvent.builder()
+							.explain(true)
+							.performance(true)
+							.message("time=%s sizes=%s for toSortedColumns on %s"
+									.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), Arrays.toString(sizes), query.getDagQuery()))
+							.source(this)
+							.build());
+				}
 			}
 		}
 		return immutableChunks;
@@ -476,9 +474,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
 	 * columns).
-	 * 
+	 *
+	 * @param queryStep
 	 * @param suppressedColumns
-	 * @param aggregator
 	 * @param column
 	 * @return
 	 */

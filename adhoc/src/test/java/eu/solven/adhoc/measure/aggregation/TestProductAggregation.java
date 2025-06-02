@@ -27,8 +27,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 
+import java.util.Map;
+
 public class TestProductAggregation {
-	ProductAggregation a = new ProductAggregation();
+	ProductAggregation a = new ProductAggregation(Map.of());
 
 	@Test
 	void testNominal() {

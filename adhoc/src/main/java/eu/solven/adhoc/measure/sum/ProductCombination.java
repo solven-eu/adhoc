@@ -39,11 +39,11 @@ public class ProductCombination extends AggregationCombination {
 	public static final String KEY = "PRODUCT";
 
 	public ProductCombination() {
-		super(new ProductAggregation(), true);
+		super(new ProductAggregation(Map.of()), true);
 	}
 
 	public ProductCombination(Map<String, ?> options) {
-		super(new ProductAggregation(),
+		super(new ProductAggregation(options),
 				MapPathGet.<Boolean>getOptionalAs(options, AggregationCombination.K_CUSTOM_IF_ANY_NULL_OPERAND)
 						.orElse(true));
 	}

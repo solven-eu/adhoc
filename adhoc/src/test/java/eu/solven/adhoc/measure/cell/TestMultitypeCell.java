@@ -30,6 +30,8 @@ import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 
+import java.util.Map;
+
 public class TestMultitypeCell {
 	@Test
 	public void testCrossTypes_allTypes() {
@@ -165,7 +167,7 @@ public class TestMultitypeCell {
 	@Test
 	public void testProduct() {
 		MultitypeCell cell =
-				MultitypeCell.builder().aggregation(new ProductAggregation()).asLong(1L).asDouble(1D).build();
+				MultitypeCell.builder().aggregation(new ProductAggregation(Map.of())).asLong(1L).asDouble(1D).build();
 
 		cell.merge().onLong(123);
 

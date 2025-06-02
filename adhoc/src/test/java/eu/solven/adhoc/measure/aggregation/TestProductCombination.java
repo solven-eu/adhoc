@@ -80,4 +80,12 @@ public class TestProductCombination {
 
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(12, 0))).isEqualTo(0L);
 	}
+
+	@Test
+	public void testRounding() {
+		ProductCombination combination = new ProductCombination();
+
+		Assertions.assertThat(12.34*2.7).isEqualTo(33.318000000000005);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(12.34, 2.7))).isEqualTo(33.318);
+	}
 }
