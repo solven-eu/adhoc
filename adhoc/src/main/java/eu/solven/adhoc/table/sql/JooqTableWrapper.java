@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
@@ -123,12 +124,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		Field<?>[] fields;
 
 		try {
-			fields = tableParameters.getDslSupplier()
-					.getDSLContext()
-					.select()
-					.from(tableParameters.getTable())
-					.limit(0)
-					.fetch()
+			fields = getResultForFields()
 					.fields();
 		} catch (DataAccessException e) {
 			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
@@ -144,6 +140,18 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		}
 		return Arrays.asList(fields);
+	}
+
+	/**
+	 *
+	 * @return a {@link Result} which can be used to fetch the fields of this table.
+	 */
+	protected Result<Record> getResultForFields() {
+		return tableParameters.getDslSupplier()
+				.getDSLContext()
+				.select()
+				.from(tableParameters.getTable())
+				.limit(0).fetch();
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {
