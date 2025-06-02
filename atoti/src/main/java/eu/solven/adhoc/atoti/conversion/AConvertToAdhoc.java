@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.convertion;
+package eu.solven.adhoc.atoti.conversion;
 
 import com.activeviam.properties.impl.ActiveViamProperty;
 import com.qfs.chunk.buffer.allocator.impl.HeapBufferChunkAllocator;

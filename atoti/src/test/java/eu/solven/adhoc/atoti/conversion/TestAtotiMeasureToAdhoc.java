@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.convertion;
+package eu.solven.adhoc.atoti.conversion;
 
 import java.util.Arrays;
 import java.util.List;
@@ -50,8 +50,8 @@ import com.quartetfs.biz.pivot.definitions.impl.PostProcessorDescription;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
-import eu.solven.adhoc.atoti.convertion.AtotiMeasureToAdhoc;
-import eu.solven.adhoc.atoti.convertion.AtotiMeasureToAdhoc.SourceMode;
+import eu.solven.adhoc.atoti.conversion.AtotiMeasureToAdhoc;
+import eu.solven.adhoc.atoti.conversion.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.measure.IMeasureForest;

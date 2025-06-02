@@ -48,6 +48,7 @@ public class ColumnarMetadata {
 	public static final String LONG = SQLDataType.BIGINT.getCastTypeName();
 	public static final String FLOAT = SQLDataType.FLOAT.getCastTypeName();
 	public static final String DOUBLE = SQLDataType.DOUBLE.getCastTypeName();
+	public static final String BOOLEAN = SQLDataType.BOOLEAN.getCastTypeName();
 
 	public static final String OFFSETDATETIME = SQLDataType.OFFSETDATETIME.getCastTypeName();
 	public static final String LOCALDATE = SQLDataType.LOCALDATE.getCastTypeName();
@@ -86,6 +87,8 @@ public class ColumnarMetadata {
 				builder.columnToType(name, DATE);
 			} else if (OffsetDateTime.class.isAssignableFrom(clazz)) {
 				builder.columnToType(name, OFFSETDATETIME);
+			} else if (Boolean.class.isAssignableFrom(clazz)) {
+				builder.columnToType(name, BOOLEAN);
 			} else {
 				if (UNCLEAR_TYPE_WARNED.add(Map.entry(name, clazz))) {
 					log.warn("Unclear type for name={} clazz={}", name, clazz);

@@ -161,7 +161,7 @@ public class ColumnsManager implements IColumnsManager {
 		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
-					.message("Transcoded context is %s given `%s`".formatted(transcodingContext))
+					.message("Transcoded context is %s".formatted(transcodingContext))
 					.source(this)
 					.build());
 		}

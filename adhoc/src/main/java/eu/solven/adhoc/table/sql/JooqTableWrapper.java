@@ -124,8 +124,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		Field<?>[] fields;
 
 		try {
-			fields = getResultForFields()
-					.fields();
+			fields = getResultForFields().fields();
 		} catch (DataAccessException e) {
 			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
 				if (log.isDebugEnabled()) {
@@ -143,7 +142,8 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	/**
-	 *
+	 * This is typically overridden for underlying SQL databases requiring a specific SQL.
+	 * 
 	 * @return a {@link Result} which can be used to fetch the fields of this table.
 	 */
 	protected Result<Record> getResultForFields() {
@@ -151,7 +151,8 @@ public class JooqTableWrapper implements ITableWrapper {
 				.getDSLContext()
 				.select()
 				.from(tableParameters.getTable())
-				.limit(0).fetch();
+				.limit(0)
+				.fetch();
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {
