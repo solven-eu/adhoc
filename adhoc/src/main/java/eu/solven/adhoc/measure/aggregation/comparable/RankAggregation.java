@@ -40,7 +40,7 @@ import com.google.common.collect.UnmodifiableIterator;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

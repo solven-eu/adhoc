@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.cell;
 
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -165,7 +167,7 @@ public class TestMultitypeCell {
 	@Test
 	public void testProduct() {
 		MultitypeCell cell =
-				MultitypeCell.builder().aggregation(new ProductAggregation()).asLong(1L).asDouble(1D).build();
+				MultitypeCell.builder().aggregation(new ProductAggregation(Map.of())).asLong(1L).asDouble(1D).build();
 
 		cell.merge().onLong(123);
 

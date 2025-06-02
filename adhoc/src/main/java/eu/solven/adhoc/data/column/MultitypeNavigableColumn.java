@@ -45,7 +45,7 @@ import com.google.common.primitives.Ints;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.MultitypeArray.MultitypeArrayBuilder;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -291,7 +291,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	public void purgeAggregationCarriers() {
 		values.replaceAllObjects(value -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				return IValueProvider.getValue(vc -> aggregationCarrier.acceptValueReceiver(vc));
+				return IValueProvider.getValue(aggregationCarrier::acceptValueReceiver);
 			} else {
 				return value;
 			}

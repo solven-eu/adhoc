@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -34,13 +36,15 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
 /**
  * Decorate a {@link IMultitypeColumnFastGet} to that each slice behave like having an additional {@link Set} of
  * columns.
  * 
- * The mask must not overlap columns in the masked {@link IMultitypeColumnFastGet}.
+ * The mask must not overlap columns in the masked {@link IMultitypeColumnFastGet}. Such a constraint may be detected
+ * lazily, but generally not when creating this.
  * 
  * @author Benoit Lacelle
  */
@@ -51,7 +55,8 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 	@NonNull
 	final IMultitypeColumnFastGet<SliceAsMap> masked;
 	@NonNull
-	final ImmutableMap<String, ?> mask;
+	@Singular
+	final ImmutableMap<String, ?> masks;
 
 	@Override
 	public long size() {
@@ -70,13 +75,20 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 
 	@Override
 	public void scan(IColumnScanner<SliceAsMap> rowScanner) {
-		masked.scan(unmaskedSlice -> {
-			return rowScanner.onKey(extendSlice(unmaskedSlice));
-		});
+		masked.scan(unmaskedSlice -> rowScanner.onKey(extendSlice(unmaskedSlice)));
 	}
 
 	protected SliceAsMap extendSlice(SliceAsMap unmaskedSlice) {
-		return unmaskedSlice.addColumns(mask);
+		return unmaskedSlice.addColumns(masks);
+	}
+
+	protected SliceAsMap getUnmaskedSlice(Map<String, ?> keyCoordinates) {
+		// BEWARE This assumes the underlying IMultitypeColumnFastGet does not express columns in the mask
+		Map<String, Object> unmaskedKey = new LinkedHashMap<>(keyCoordinates);
+		unmaskedKey.keySet().removeAll(masks.keySet());
+
+		SliceAsMap unmaskedSlice = SliceAsMap.fromMap(unmaskedKey);
+		return unmaskedSlice;
 	}
 
 	@Override
@@ -96,12 +108,14 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 
 	@Override
 	public IValueProvider onValue(SliceAsMap key) {
-		if (!key.getAdhocSliceAsMap().getCoordinates().entrySet().containsAll(mask.entrySet())) {
+		Map<String, Object> keyCoordinates = key.getAdhocSliceAsMap().getCoordinates();
+		if (!keyCoordinates.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);
 		}
 
-		throw new NotYetImplementedException("TODO");
+		SliceAsMap unmaskedSlice = getUnmaskedSlice(keyCoordinates);
+		return masked.onValue(unmaskedSlice);
 	}
 
 	@Override

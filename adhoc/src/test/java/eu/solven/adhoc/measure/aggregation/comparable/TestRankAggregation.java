@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 
 public class TestRankAggregation {
 	@Test

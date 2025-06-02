@@ -33,7 +33,7 @@ import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -83,6 +83,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 		if (size >= AdhocUnsafe.limitColumnSize) {
+			// TODO Log the first and last elements
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		} else if (size == 0) {

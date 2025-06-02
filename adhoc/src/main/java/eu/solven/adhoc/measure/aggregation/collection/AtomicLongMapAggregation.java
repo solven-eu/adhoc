@@ -20,41 +20,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.measure.aggregation.collection;
 
-import java.util.Set;
+import com.google.common.util.concurrent.AtomicLongMap;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
- * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
- * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.
- *
- * For instance, in ActivePivot/Atoti, this could be an IContextValue.
+ * Aggregate inputs as {@link AtomicLongMap}, doing the union as aggregation.
  * 
  * @author Benoit Lacelle
- *
  */
-public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
-	Set<IQueryOption> getOptions();
+public class AtomicLongMapAggregation implements IAggregation {
 
-	@JsonIgnore
-	default boolean isExplain() {
-		return getOptions().contains(StandardQueryOptions.EXPLAIN);
+	public static final String KEY = "ATOMIC_LONG_MAP";
+
+	@Override
+	public AtomicLongMap<?> aggregate(Object l, Object r) {
+		AtomicLongMap<?> lAsMap = asMap(l);
+		AtomicLongMap<?> rAsMap = asMap(r);
+
+		AtomicLongMap<?> merged = aggregateMaps(lAsMap, rAsMap);
+
+		if (merged != null && merged.isEmpty()) {
+			// We prefer a column of null than a column full of empty Maps
+			return null;
+		}
+
+		return merged;
 	}
 
-	@JsonIgnore
-	default boolean isDebug() {
-		return getOptions().contains(StandardQueryOptions.DEBUG);
+	protected AtomicLongMap<?> asMap(Object o) {
+		return (AtomicLongMap<?>) o;
 	}
 
-	@JsonIgnore
-	default boolean isDebugOrExplain() {
-		return isDebug() || isExplain();
+	public static AtomicLongMap<?> aggregateMaps(AtomicLongMap<?> lAsMap, AtomicLongMap<?> rAsMap) {
+		if (lAsMap == null) {
+			return rAsMap;
+		} else if (rAsMap == null) {
+			return lAsMap;
+		} else {
+			AtomicLongMap<Object> merged = AtomicLongMap.create();
+
+			lAsMap.asMap().forEach(merged::addAndGet);
+			rAsMap.asMap().forEach(merged::addAndGet);
+
+			return merged;
+		}
 	}
 }

@@ -45,10 +45,14 @@ public class MapAggregator<K, V> implements IAggregation {
 
 	@Override
 	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = (Map<?, ?>) l;
-		Map<?, ?> rAsMap = (Map<?, ?>) r;
+		Map<?, ?> lAsMap = asMap(l);
+		Map<?, ?> rAsMap = asMap(r);
 
 		return aggregateMaps(lAsMap, rAsMap);
+	}
+
+	protected Map<?, ?> asMap(Object o) {
+		return (Map<?, ?>) o;
 	}
 
 	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {

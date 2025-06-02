@@ -20,13 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.convertion;
+package eu.solven.adhoc.atoti.translation;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -63,14 +59,7 @@ import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.model.Columnator;
-import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.model.*;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -178,6 +167,37 @@ public class AtotiMeasureToAdhoc {
 		return measureForest.build();
 	}
 
+	protected List<String> getUnderlyingNames(IPostProcessorDescription measure) {
+		return getUnderlyingNames(measure.getProperties());
+	}
+
+	public static List<String> getUnderlyingNames(Properties properties) {
+		String key = IPostProcessor.UNDERLYING_MEASURES;
+		return getPropertyList(properties, key);
+	}
+
+	public static List<String> getPropertyList(Properties properties, String key) {
+		String propertyAsString = properties.getProperty(key, "").trim();
+		return Stream.of(propertyAsString.split(IPostProcessor.SEPARATOR))
+				.filter(p -> !Strings.isNullOrEmpty(p))
+				// We strip, as these whitespaces are usually syntactic sugar in XML-files
+				.map(String::strip)
+				.toList();
+	}
+
+	protected void transferTagProperties(IMeasureMemberDescription measure, Consumer<String> tagConsumer) {
+		if (!measure.isVisible()) {
+			tagConsumer.accept("hidden");
+		}
+		if (!Strings.isNullOrEmpty(measure.getGroup())) {
+			tagConsumer.accept("group=" + measure.getGroup());
+		}
+		String folder = measure.getFolder();
+		if (!Strings.isNullOrEmpty(folder)) {
+			tagConsumer.accept("folder=" + folder);
+		}
+	}
+
 	protected List<IMeasure> onAggregatedMeasure(IAggregatedMeasureDescription preAggregatedMeasure) {
 		Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
 				.name(preAggregatedMeasure.getName())
@@ -207,7 +227,7 @@ public class AtotiMeasureToAdhoc {
 			aggregatorBuilder.columnName(columnName);
 		}
 
-		transferProperties(preAggregatedMeasure, aggregatorBuilder::tag);
+		transferTagProperties(preAggregatedMeasure, aggregatorBuilder::tag);
 
 		return List.of(aggregatorBuilder.build());
 	}
@@ -243,7 +263,7 @@ public class AtotiMeasureToAdhoc {
 				.aggregationKey(aggregationKey)
 				.columnName(columnName);
 
-		transferProperties(nativeMeasure, aggregatorBuilder::tag);
+		transferTagProperties(nativeMeasure, aggregatorBuilder::tag);
 		return aggregatorBuilder;
 	}
 
@@ -300,7 +320,7 @@ public class AtotiMeasureToAdhoc {
 			List<String> underlyingNames,
 			Function<Map<String, Object>, Map<String, Object>> onOptions) {
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
-		transferProperties(measure, combinatorBuilder::tag);
+		transferTagProperties(measure, combinatorBuilder::tag);
 
 		if (underlyingNames.isEmpty()) {
 			// When there is no explicit underlying measure, Atoti relies on contributors.COUNT
@@ -329,7 +349,7 @@ public class AtotiMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Filtrator.FiltratorBuilder filtratorBuilder = Filtrator.builder().name(measure.getName());
-		transferProperties(measure, filtratorBuilder::tag);
+		transferTagProperties(measure, filtratorBuilder::tag);
 		filtratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		IAdhocFilter filter = makeFilter(measure, properties);
@@ -345,7 +365,7 @@ public class AtotiMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Shiftor.ShiftorBuilder shiftorBuilder = Shiftor.builder().name(measure.getName());
-		transferProperties(measure, shiftorBuilder::tag);
+		transferTagProperties(measure, shiftorBuilder::tag);
 		shiftorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		shiftorBuilder.editorKey(measure.getPluginKey());
@@ -378,7 +398,7 @@ public class AtotiMeasureToAdhoc {
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		Unfiltrator.UnfiltratorBuilder unfiltratorBuilder = Unfiltrator.builder().name(measure.getName());
-		transferProperties(measure, unfiltratorBuilder::tag);
+		transferTagProperties(measure, unfiltratorBuilder::tag);
 
 		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
@@ -433,17 +453,10 @@ public class AtotiMeasureToAdhoc {
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregation.KEY));
 
-		transferProperties(measure, bucketorBuilder::tag);
+		transferTagProperties(measure, bucketorBuilder::tag);
 
-		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
-		properties.stringPropertyNames()
-				.stream()
-				// Reject the properties which are implicitly available in Adhoc model
-				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-				.filter(k -> !ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION.equals(k))
-				// Do not reject leafLevels as they are ordered in ActivePivot, while unordered in Adhoc
-				// e.g.: some custom DynamicPP may give leafLevels[0] some particular role
-				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
+		Map<String, Object> combinatorOptions =
+				propertiesToOptions(properties, ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION);
 
 		bucketorBuilder.combinationOptions(combinatorOptions);
 
@@ -470,7 +483,7 @@ public class AtotiMeasureToAdhoc {
 	protected IMeasure onColumnator(IPostProcessorDescription measure,
 			Consumer<Columnator.ColumnatorBuilder> builderConsumer) {
 		Columnator.ColumnatorBuilder columnatorBuilder = Columnator.builder().name(measure.getName());
-		transferProperties(measure, columnatorBuilder::tag);
+		transferTagProperties(measure, columnatorBuilder::tag);
 
 		columnatorBuilder.underlyings(getUnderlyingNames(measure));
 
@@ -491,34 +504,51 @@ public class AtotiMeasureToAdhoc {
 		return columnatorBuilder.build();
 	}
 
-	protected List<String> getUnderlyingNames(IPostProcessorDescription measure) {
-		return getUnderlyingNames(measure.getProperties());
+	/**
+	 *
+	 * @param measure
+	 *            ActivePivot measure
+	 * @param dispatchorBuilderConsumer
+	 *            consumer for the main DispatchorBuilder
+	 * @return
+	 */
+	protected List<IMeasure> onDispatchor(IPostProcessorDescription measure,
+			Consumer<Dispatchor.DispatchorBuilder> dispatchorBuilderConsumer) {
+		Properties properties = measure.getProperties();
+
+		List<String> underlyingNames = getUnderlyingNames(properties);
+		if (underlyingNames.size() != 1) {
+			throw new IllegalArgumentException(
+					"[%s] Expected a single underlying but received %s".formatted(measure.getName(), underlyingNames));
+		}
+
+		Dispatchor.DispatchorBuilder dispatchorBuilder = Dispatchor.builder().name(measure.getName());
+
+		dispatchorBuilder.underlying(underlyingNames.getFirst());
+		{
+			Map<String, Object> decompositionOptions = propertiesToOptions(properties);
+
+			dispatchorBuilder.decompositionKey(measure.getPluginKey()).decompositionOptions(decompositionOptions);
+		}
+		dispatchorBuilder.aggregationKey(properties
+				.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION, SumAggregation.KEY));
+
+		transferTagProperties(measure, dispatchorBuilder::tag);
+
+		return List.of(dispatchorBuilder.build());
 	}
 
-	public static List<String> getUnderlyingNames(Properties properties) {
-		String key = IPostProcessor.UNDERLYING_MEASURES;
-		return getPropertyList(properties, key);
-	}
+	protected Map<String, Object> propertiesToOptions(Properties properties, String... excludedProperties) {
+		Map<String, Object> decompositionOptions = new LinkedHashMap<>();
 
-	public static List<String> getPropertyList(Properties properties, String key) {
-		String propertyAsString = properties.getProperty(key, "").trim();
-		return Stream.of(propertyAsString.split(IPostProcessor.SEPARATOR))
-				.filter(p -> !Strings.isNullOrEmpty(p))
-				// We strip, as these whitespaces are usually syntactic sugar in XML-files
-				.map(String::strip)
-				.toList();
-	}
-
-	protected void transferProperties(IMeasureMemberDescription measure, Consumer<String> tagConsumer) {
-		if (!measure.isVisible()) {
-			tagConsumer.accept("hidden");
-		}
-		if (!Strings.isNullOrEmpty(measure.getGroup())) {
-			tagConsumer.accept("group=" + measure.getGroup());
-		}
-		String folder = measure.getFolder();
-		if (!Strings.isNullOrEmpty(folder)) {
-			tagConsumer.accept("folder=" + folder);
-		}
+		properties.stringPropertyNames()
+				.stream()
+				// Reject the properties which are implicitly available in Adhoc model
+				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
+				// There is not `real-time impacts` in Adhoc
+				.filter(k -> !"continuousQueryHandlerKeys".equals(k))
+				.filter(k -> !Set.of(excludedProperties).contains(k))
+				.forEach(key -> decompositionOptions.put(key, properties.get(key)));
+		return decompositionOptions;
 	}
 }

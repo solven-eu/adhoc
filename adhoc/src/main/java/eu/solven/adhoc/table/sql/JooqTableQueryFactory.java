@@ -86,10 +86,8 @@ import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.Builder;
+import lombok.*;
 import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -98,7 +96,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-// @RequiredArgsConstructor
+@AllArgsConstructor
 @Builder
 @Slf4j
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
@@ -257,6 +255,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return field;
 	}
 
+	@Deprecated(since = "Useless?")
 	protected boolean isExpression(String columnName) {
 		return AdhocJooqHelper.isExpression(columnName);
 	}
@@ -381,11 +380,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					}
 
 					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-					sqlAggFunction = DSL
-							.aggregate(duckDbFunction, Object.class, field, field, DSL.field(DSL.val(agg.getRank())));
+					sqlAggFunction = DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.val(agg.getRank()));
 				} else {
-					throw new UnsupportedOperationException(
-							"SQL does not support aggregationKey=%s".formatted(aggregationKey));
+					sqlAggFunction = onCustomAggregation(a, namedColumn);
 				}
 
 				if (filteredAggregator.getFilter().isMatchAll()) {
@@ -400,12 +397,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 					unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
 				}
-
-				unaliasedField = sqlAggFunction;
 			}
 
 			return unaliasedField.as(filteredAggregator.getAlias());
 		}
+	}
+
+	protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
+		String aggregationKey = aggregator.getAggregationKey();
+
+		// TODO Could we prefer some generic aggregation? (e.g. `array_agg` in DuckDB)
+		throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 	}
 
 	protected ConditionWithFilter toCondition(IAdhocFilter filter) {

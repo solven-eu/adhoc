@@ -67,7 +67,7 @@ export default {
                 <small v-html="mark(measure.combinationKey + '(' + measure.underlyings.join(', ') + ')')" />
             </span>
             <span v-else-if="measure.type == '.Dispatchor'">
-                <small v-html="'dispatching by ' + mark(measure.decompositionKey + '(' + measure.underlyings.join(', ') + ')')" />
+                <small v-html="'dispatching by ' + mark(measure.decompositionKey + '(' + measure.underlying + ')')" />
             </span>
             <span v-else-if="measure.type == '.Filtrator'">
                 <small v-html="'filtering ' + mark(measure.filter + '(' + measure.underlying + ')')" />

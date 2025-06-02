@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -37,6 +41,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {
 
 	public static final String KEY = "PRODUCT";
+
+	// TODO Switch to an enum Mode
+	boolean useBigDecimal;
+
+	public ProductAggregation(Map<String, ?> options) {
+		useBigDecimal = MapPathGet.<Boolean>getOptionalAs(options, "useBigDecimal").orElse(false);
+	}
 
 	public static boolean isProduct(String operator) {
 		return "*".equals(operator) || ProductAggregation.KEY.equals(operator)
@@ -61,7 +72,7 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 
 	@Override
 	public double aggregateDoubles(double left, double right) {
-		return left * right;
+		return BigDecimal.valueOf(left).multiply(BigDecimal.valueOf(right)).doubleValue();
 	}
 
 	@Override
@@ -70,11 +81,11 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	}
 
 	public static long asLong(Object o) {
-		return ((Number) o).longValue();
+		return AdhocPrimitiveHelpers.asLong(o);
 	}
 
 	public static double asDouble(Object o) {
-		return ((Number) o).doubleValue();
+		return AdhocPrimitiveHelpers.asDouble(o);
 	}
 
 	@Override
