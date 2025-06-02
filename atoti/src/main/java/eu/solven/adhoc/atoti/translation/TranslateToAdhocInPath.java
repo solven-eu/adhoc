@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.conversion;
+package eu.solven.adhoc.atoti.translation;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,11 +37,11 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link AConvertToAdhoc} which will persist each cube forest into an individual file.
+ * A {@link ATranslateToAdhoc} which will persist each cube forest into an individual file.
  */
 @SuperBuilder
 @Slf4j
-public class ConvertToAdhocInPath extends AConvertToAdhoc {
+public class TranslateToAdhocInPath extends ATranslateToAdhoc {
 
 	@NonNull
 	@Getter
@@ -55,7 +55,7 @@ public class ConvertToAdhocInPath extends AConvertToAdhoc {
 
 	@NonNull
 	@Builder.Default
-	MeasureForestFromResource measuresSetFromResource = new MeasureForestFromResource();
+	MeasureForestFromResource fromResource = new MeasureForestFromResource();
 
 	protected Path getPathForPivot(String pivotId) {
 		return directory.resolve("forest-" + pivotId + "." + format);
@@ -67,7 +67,7 @@ public class ConvertToAdhocInPath extends AConvertToAdhoc {
 			String pivotId = forest.getName();
 			Path pathForPivot = getPathForPivot(pivotId);
 			try {
-				String asString = measuresSetFromResource.asString(format, forest);
+				String asString = fromResource.asString(format, forest);
 
 				log.info("Writing -> measureForest for {}: length={}", pivotId, asString.length());
 				Files.writeString(pathForPivot, asString);
@@ -76,8 +76,7 @@ public class ConvertToAdhocInPath extends AConvertToAdhoc {
 				try {
 					// Check we can load back the configuration file
 					// TODO This may be valid only for local file-systems
-					measuresSetFromResource
-							.loadForestFromResource(pivotId, format, new FileSystemResource(pathForPivot));
+					fromResource.loadForestFromResource(pivotId, format, new FileSystemResource(pathForPivot));
 				} catch (Throwable e) {
 					log.warn("Issue loading-back path={} from adhoc for {}", pathForPivot, pivotId, e);
 				}
@@ -89,8 +88,8 @@ public class ConvertToAdhocInPath extends AConvertToAdhoc {
 		log.info("Written Adhoc files into {}", directory);
 	}
 
-	public static ConvertToAdhocInPathBuilder<?, ?> openForTemporaryFolder() throws IOException {
-		Path directory = Files.createTempDirectory(ConvertToAdhocInPath.class.getSimpleName());
-		return ConvertToAdhocInPath.builder().directory(directory);
+	public static TranslateToAdhocInPathBuilder<?, ?> openForTemporaryFolder() throws IOException {
+		Path directory = Files.createTempDirectory(TranslateToAdhocInPath.class.getSimpleName());
+		return TranslateToAdhocInPath.builder().directory(directory);
 	}
 }

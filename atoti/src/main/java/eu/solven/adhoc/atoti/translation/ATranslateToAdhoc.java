@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.conversion;
+package eu.solven.adhoc.atoti.translation;
 
 import com.activeviam.properties.impl.ActiveViamProperty;
 import com.qfs.chunk.buffer.allocator.impl.HeapBufferChunkAllocator;
@@ -46,7 +46,7 @@ import lombok.experimental.SuperBuilder;
  * (https://github.com/jboss-javassist/javassist/issues/369)
  */
 @SuperBuilder
-public abstract class AConvertToAdhoc {
+public abstract class ATranslateToAdhoc {
 	@NonNull
 	IActivePivotManagerDescription apManagerDescription;
 
@@ -74,7 +74,7 @@ public abstract class AConvertToAdhoc {
 				HeapBufferChunkAllocator.class.getName());
 	}
 
-	public void convert() {
+	public void translate() {
 		MeasureForests.MeasureForestsBuilder forests = MeasureForests.builder();
 
 		// Local cubes

@@ -31,7 +31,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * 
  * @author Benoit Lacelle
  */
-public class AtomicLongMapAggregator implements IAggregation {
+public class AtomicLongMapAggregation implements IAggregation {
 
 	public static final String KEY = "ATOMIC_LONG_MAP";
 
@@ -40,7 +40,14 @@ public class AtomicLongMapAggregator implements IAggregation {
 		AtomicLongMap<?> lAsMap = asMap(l);
 		AtomicLongMap<?> rAsMap = asMap(r);
 
-		return aggregateMaps(lAsMap, rAsMap);
+		AtomicLongMap<?> merged = aggregateMaps(lAsMap, rAsMap);
+
+		if (merged != null && merged.isEmpty()) {
+			// We prefer a column of null than a column full of empty Maps
+			return null;
+		}
+
+		return merged;
 	}
 
 	protected AtomicLongMap<?> asMap(Object o) {

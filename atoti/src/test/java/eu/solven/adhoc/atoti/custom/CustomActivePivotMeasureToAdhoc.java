@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.atoti.conversion.AtotiMeasureToAdhoc;
+import eu.solven.adhoc.atoti.translation.AtotiMeasureToAdhoc;
 import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 

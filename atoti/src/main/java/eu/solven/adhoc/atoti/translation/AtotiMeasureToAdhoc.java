@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.conversion;
+package eu.solven.adhoc.atoti.translation;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -455,7 +455,8 @@ public class AtotiMeasureToAdhoc {
 
 		transferTagProperties(measure, bucketorBuilder::tag);
 
-		Map<String, Object> combinatorOptions = propertiesToOptions(properties, ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION);
+		Map<String, Object> combinatorOptions =
+				propertiesToOptions(properties, ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION);
 
 		bucketorBuilder.combinationOptions(combinatorOptions);
 
@@ -505,30 +506,32 @@ public class AtotiMeasureToAdhoc {
 
 	/**
 	 *
-	 * @param measure ActivePivot measure
-	 * @param dispatchorBuilderConsumer consumer for the main DispatchorBuilder
+	 * @param measure
+	 *            ActivePivot measure
+	 * @param dispatchorBuilderConsumer
+	 *            consumer for the main DispatchorBuilder
 	 * @return
 	 */
-	protected List<IMeasure> onDispatchor(IPostProcessorDescription measure, Consumer<Dispatchor.DispatchorBuilder> dispatchorBuilderConsumer) {
+	protected List<IMeasure> onDispatchor(IPostProcessorDescription measure,
+			Consumer<Dispatchor.DispatchorBuilder> dispatchorBuilderConsumer) {
 		Properties properties = measure.getProperties();
 
 		List<String> underlyingNames = getUnderlyingNames(properties);
 		if (underlyingNames.size() != 1) {
-			throw new IllegalArgumentException("[%s] Expected a single underlying but received %s".formatted(measure.getName(), underlyingNames));
+			throw new IllegalArgumentException(
+					"[%s] Expected a single underlying but received %s".formatted(measure.getName(), underlyingNames));
 		}
 
-		Dispatchor.DispatchorBuilder dispatchorBuilder = Dispatchor.builder()
-				.name(measure.getName());
+		Dispatchor.DispatchorBuilder dispatchorBuilder = Dispatchor.builder().name(measure.getName());
 
-		dispatchorBuilder .underlying(underlyingNames.getFirst());
+		dispatchorBuilder.underlying(underlyingNames.getFirst());
 		{
 			Map<String, Object> decompositionOptions = propertiesToOptions(properties);
 
-			dispatchorBuilder
-					.decompositionKey(measure.getPluginKey())
-					.decompositionOptions(decompositionOptions);
+			dispatchorBuilder.decompositionKey(measure.getPluginKey()).decompositionOptions(decompositionOptions);
 		}
-		dispatchorBuilder .aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION, SumAggregation.KEY));
+		dispatchorBuilder.aggregationKey(properties
+				.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION, SumAggregation.KEY));
 
 		transferTagProperties(measure, dispatchorBuilder::tag);
 
@@ -540,9 +543,9 @@ public class AtotiMeasureToAdhoc {
 
 		properties.stringPropertyNames()
 				.stream()
-// Reject the properties which are implicitly available in Adhoc model
+				// Reject the properties which are implicitly available in Adhoc model
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-// There is not `real-time impacts` in Adhoc
+				// There is not `real-time impacts` in Adhoc
 				.filter(k -> !"continuousQueryHandlerKeys".equals(k))
 				.filter(k -> !Set.of(excludedProperties).contains(k))
 				.forEach(key -> decompositionOptions.put(key, properties.get(key)));

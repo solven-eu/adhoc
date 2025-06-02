@@ -45,7 +45,7 @@ import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregator;
+import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -83,7 +83,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 	/**
 	 * Some custom aggregation which handles raw String from the table, and converts them to aggregable AtomicLongMap.
 	 */
-	public static class CustomMapAggregation extends AtomicLongMapAggregator
+	public static class CustomMapAggregation extends AtomicLongMapAggregation
 			implements IAggregationCarrier.IHasCarriers {
 
 		@Override
