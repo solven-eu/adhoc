@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map;
 
-import java.awt.datatransfer.StringSelection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
