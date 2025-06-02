@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -49,7 +50,7 @@ public class AvgAggregation implements IAggregation, IAggregationCarrier.IHasCar
 		 * 
 		 * @param input
 		 *            May be any Comparable object, or a {@link IAvgAggregationCarrier}.
-		 * @return a new IRankAggregationCarrier integrating given
+		 * @return a new IAvgAggregationCarrier integrating given
 		 */
 		IAvgAggregationCarrier add(Object input);
 

@@ -27,8 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -79,7 +77,7 @@ public class GroupByHelpers {
 		if (mask.isEmpty()) {
 			return column;
 		} else {
-			return ConstantMaskMultitypeColumn.builder().masked(column).mask(ImmutableMap.copyOf(mask)).build();
+			return ConstantMaskMultitypeColumn.builder().masked(column).masks(mask).build();
 		}
 	}
 

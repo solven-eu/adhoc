@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
@@ -84,7 +85,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	final String name;
 
 	@NonNull
-	final JooqTableWrapperParameters dbParameters;
+	final JooqTableWrapperParameters tableParameters;
 
 	@Override
 	public String getName() {
@@ -123,13 +124,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		Field<?>[] fields;
 
 		try {
-			fields = dbParameters.getDslSupplier()
-					.getDSLContext()
-					.select()
-					.from(dbParameters.getTable())
-					.limit(0)
-					.fetch()
-					.fields();
+			fields = getResultForFields().fields();
 		} catch (DataAccessException e) {
 			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
 				if (log.isDebugEnabled()) {
@@ -144,6 +139,20 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		}
 		return Arrays.asList(fields);
+	}
+
+	/**
+	 * This is typically overridden for underlying SQL databases requiring a specific SQL.
+	 * 
+	 * @return a {@link Result} which can be used to fetch the fields of this table.
+	 */
+	protected Result<Record> getResultForFields() {
+		return tableParameters.getDslSupplier()
+				.getDSLContext()
+				.select()
+				.from(tableParameters.getTable())
+				.limit(0)
+				.fetch();
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {
@@ -162,7 +171,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	public DSLContext makeDsl() {
-		return dbParameters.getDslSupplier().getDSLContext();
+		return tableParameters.getDslSupplier().getDSLContext();
 	}
 
 	@Override
@@ -211,8 +220,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	protected IJooqTableQueryFactory makeQueryFactory() {
 		DSLContext dslContext = makeDsl();
 
-		IJooqTableQueryFactory queryFactory = makeQueryFactory(dslContext);
-		return queryFactory;
+		return makeQueryFactory(dslContext);
 	}
 
 	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
@@ -234,8 +242,8 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 		return JooqTableQueryFactory.builder()
-				.operatorsFactory(dbParameters.getOperatorsFactory())
-				.table(dbParameters.getTable())
+				.operatorsFactory(tableParameters.getOperatorsFactory())
+				.table(tableParameters.getTable())
 				.dslContext(dslContext)
 				.build();
 	}
@@ -316,7 +324,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
@@ -326,7 +334,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
-		if (SQLDialect.DUCKDB.equals(dbParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);

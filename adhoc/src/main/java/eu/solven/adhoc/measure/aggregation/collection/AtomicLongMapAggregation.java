@@ -22,47 +22,50 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
- * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * Aggregate inputs as {@link AtomicLongMap}, doing the union as aggregation.
  * 
- * @param <K>
- * @param <V>
  * @author Benoit Lacelle
  */
-public class MapAggregation<K, V> implements IAggregation {
+public class AtomicLongMapAggregation implements IAggregation {
 
-	public static final String KEY = "UNION_MAP";
-
-	public boolean acceptAggregate(Object o) {
-		return o instanceof Map || o == null;
-	}
+	public static final String KEY = "ATOMIC_LONG_MAP";
 
 	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = asMap(l);
-		Map<?, ?> rAsMap = asMap(r);
+	public AtomicLongMap<?> aggregate(Object l, Object r) {
+		AtomicLongMap<?> lAsMap = asMap(l);
+		AtomicLongMap<?> rAsMap = asMap(r);
 
-		return aggregateMaps(lAsMap, rAsMap);
+		AtomicLongMap<?> merged = aggregateMaps(lAsMap, rAsMap);
+
+		if (merged != null && merged.isEmpty()) {
+			// We prefer a column of null than a column full of empty Maps
+			return null;
+		}
+
+		return merged;
 	}
 
-	protected Map<?, ?> asMap(Object o) {
-		return (Map<?, ?>) o;
+	protected AtomicLongMap<?> asMap(Object o) {
+		return (AtomicLongMap<?>) o;
 	}
 
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
+	public static AtomicLongMap<?> aggregateMaps(AtomicLongMap<?> lAsMap, AtomicLongMap<?> rAsMap) {
 		if (lAsMap == null) {
-			return (Map<K, V>) rAsMap;
+			return rAsMap;
 		} else if (rAsMap == null) {
-			return (Map<K, V>) lAsMap;
+			return lAsMap;
 		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will throw
-			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
+			AtomicLongMap<Object> merged = AtomicLongMap.create();
+
+			lAsMap.asMap().forEach(merged::addAndGet);
+			rAsMap.asMap().forEach(merged::addAndGet);
+
+			return merged;
 		}
 	}
 }

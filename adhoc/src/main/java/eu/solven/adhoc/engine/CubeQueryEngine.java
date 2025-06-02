@@ -51,6 +51,7 @@ import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
@@ -58,6 +59,7 @@ import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -65,7 +67,6 @@ import eu.solven.adhoc.measure.operator.IHasOperatorsFactory;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -286,8 +287,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		TableQueryEngine makeTableQueryEngine = makeTableQueryEngine();
-		return makeTableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
+		ITableQueryEngine tableQueryEngine = makeTableQueryEngine();
+		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
 	}
 
 	protected TableQueryEngine makeTableQueryEngine() {

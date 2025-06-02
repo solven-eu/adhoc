@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
@@ -63,8 +64,9 @@ public class DuplicatingDecomposition implements IDecomposition {
 	final Supplier<Map<String, Class<?>>> columnToTypeSupplier = Suppliers.memoize(() -> {
 		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
 
-		this.columnToCoordinates.forEach((column, coordinates) -> {
-			columnToType.put(column, getColumnClass(column, coordinates));
+		getDuplicatedColumns().forEach(column -> {
+			Class<?> columnClass = getColumnClass(column, getDefaultCoordinates(column));
+			columnToType.put(column, columnClass);
 		});
 
 		return columnToType;
@@ -74,7 +76,19 @@ public class DuplicatingDecomposition implements IDecomposition {
 		columnToCoordinates = MapPathGet.getRequiredMap(options, "columnToCoordinates");
 	}
 
-	private Class<?> getColumnClass(String column, Collection<?> coordinates) {
+	protected Set<String> getDuplicatedColumns() {
+		return columnToCoordinates.keySet();
+	}
+
+	protected Collection<?> getDefaultCoordinates(String column) {
+		return columnToCoordinates.get(column);
+	}
+
+	protected ImmutableList<?> getCoordinatesAlongColumn(String relevantColumn, Object value) {
+		return ImmutableList.copyOf(columnToCoordinates.get(relevantColumn));
+	}
+
+	protected Class<?> getColumnClass(String column, Collection<?> coordinates) {
 		if (coordinates.isEmpty()) {
 			log.warn("No coordinates along {}. It could lead to unexpected empty views", column);
 			return Object.class;
@@ -86,7 +100,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		Collection<?> coordinates = columnToCoordinates.get(column);
+		Collection<?> coordinates = getDefaultCoordinates(column);
 		if (coordinates == null) {
 			throw new IllegalArgumentException("Unexpected column: " + column);
 		}
@@ -105,11 +119,11 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 		// Do a copy as we will iterate often over this List
 		List<String> relevantColumns =
-				ImmutableList.copyOf(Sets.intersection(groupedByColumns, columnToCoordinates.keySet()));
+				ImmutableList.copyOf(Sets.intersection(groupedByColumns, getDuplicatedColumns()));
 
 		List<List<?>> indexToCoordinates = new ArrayList<>(relevantColumns.size());
 		for (String relevantColumn : relevantColumns) {
-			indexToCoordinates.add(ImmutableList.copyOf(columnToCoordinates.get(relevantColumn)));
+			indexToCoordinates.add(getCoordinatesAlongColumn(relevantColumn, value));
 		}
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
@@ -126,13 +140,18 @@ public class DuplicatingDecomposition implements IDecomposition {
 			decompositions.add(IDecompositionEntry.of(projectedSlice, value));
 		});
 
+		log.debug("CartesianProduct led to {} decompositions for slice={} and value={}",
+				decompositions.size(),
+				slice,
+				value);
+
 		return decompositions;
 	}
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		// Suppress duplicated columns as they are supposedly not provided by the ITableWrapper
-		return List.of(IDecomposition.suppressColumn(step, columnToCoordinates.keySet()));
+		return List.of(IDecomposition.suppressColumn(step, getDuplicatedColumns()));
 	}
 
 }

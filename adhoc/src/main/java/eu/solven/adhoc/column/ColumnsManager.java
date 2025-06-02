@@ -163,6 +163,13 @@ public class ColumnsManager implements IColumnsManager {
 					.source(this)
 					.build());
 		}
+		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
+			eventBus.post(AdhocLogEvent.builder()
+					.explain(true)
+					.message("Transcoded context is %s".formatted(transcodingContext))
+					.source(this)
+					.build());
+		}
 
 		ITableWrapper table = queryPod.getTable();
 		ITabularRecordStream tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);

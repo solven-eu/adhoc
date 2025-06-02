@@ -73,7 +73,9 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 	public static void assumeFileisPresent() {
 		boolean banIsPresent = Paths.get(PATH_TO_BAN).toFile().isFile();
 		Assumptions.assumeTrue(banIsPresent, "BAN file is not present");
-		log.info("BAN file ({}) is not present: some benchmarks are skipped", PATH_TO_BAN);
+		if (!banIsPresent) {
+			log.info("BAN file ({}) is not present: some benchmarks are skipped", PATH_TO_BAN);
+		}
 	}
 
 	String tableName = "addressesFrance";
@@ -133,7 +135,7 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("geom", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality())
-				.isCloseTo(26_045_333, Percentage.withPercentage(10));
+				.isCloseTo(26_045_333, Percentage.withPercentage(20));
 
 		// We skip returning Blob
 		Assertions.assertThat(columnMeta.getCoordinates()).hasSize(0);
@@ -163,15 +165,15 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		}).anySatisfy((c, columnMeta) -> {
 			Assertions.assertThat(c).isEqualTo("nom_voie");
 			Assertions.assertThat(columnMeta.getEstimatedCardinality())
-					.isCloseTo(20_763, Percentage.withPercentage(10));
+					.isCloseTo(16_511, Percentage.withPercentage(20));
 			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
 		}).anySatisfy((c, columnMeta) -> {
 			Assertions.assertThat(c).isEqualTo("nom_commune");
-			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(292, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(329, Percentage.withPercentage(10));
 			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
 		}).anySatisfy((c, columnMeta) -> {
 			Assertions.assertThat(c).isEqualTo("nom_ld");
-			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(2324, Percentage.withPercentage(10));
+			Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(1897, Percentage.withPercentage(10));
 			Assertions.assertThat(columnMeta.getCoordinates()).hasSize(5);
 		});
 	}

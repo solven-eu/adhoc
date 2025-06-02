@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.atoti.custom;
 
-import eu.solven.adhoc.atoti.convertion.AtotiConditionCubeToAdhoc;
+import eu.solven.adhoc.atoti.translation.AtotiConditionCubeToAdhoc;
 
 /**
  * Check we can customize ActivePivotConditionCubeToAdhoc

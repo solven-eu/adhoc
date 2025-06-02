@@ -23,9 +23,9 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -56,6 +56,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -63,7 +64,6 @@ import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
-import eu.solven.adhoc.measure.sum.IAggregationCarrier;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -181,7 +181,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		TableQueryToActualTableQuery toSuppressed =
 				TableQueryToActualTableQuery.builder().dagQuery(dagQuery).suppressedQuery(suppressedQuery).build();
 
-		IStopwatch stopWatch = stopwatchFactory.createStarted();
+		IStopwatch stopWatchSinking;
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues;
 
@@ -193,7 +193,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 				// Slowness also due to fetching stream characteristics, which actually open the query
 				Duration openingElasped = openingStopwatch.elapsed();
 				eventBus.post(AdhocLogEvent.builder()
-						.explain(true)
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
 						.performance(true)
 						.message("time=%s for openingStream on %s"
 								.formatted(PepperLogHelper.humanDuration(openingElasped.toMillis()), dagQuery))
@@ -201,10 +202,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 						.build());
 			}
 
+			stopWatchSinking = stopwatchFactory.createStarted();
 			stepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
-		Duration elapsed = stopWatch.elapsed();
+		Duration elapsed = stopWatchSinking.elapsed();
 		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, stepToValues);
 
 		return stepToValues;
@@ -358,24 +360,31 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 			// BEWARE This timing is independent of the table
 			Duration elapsed = singToAggregatedStarted.elapsed();
-			if (queryPod.isDebug()) {
-				long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
+			if (queryPod.isDebug() || queryPod.isExplain()) {
+				long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
 
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(true)
-						.performance(true)
-						.message("time=%s size=%s for toSortedColumns on %s".formatted(PepperLogHelper
-								.humanDuration(elapsed.toMillis()), totalSize, query.getDagQuery()))
-						.source(this)
-						.build());
-			} else if (queryPod.isExplain()) {
-				eventBus.post(AdhocLogEvent.builder()
-						.explain(true)
-						.performance(true)
-						.message("time=%s for toSortedColumns on %s"
-								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), query.getDagQuery()))
-						.source(this)
-						.build());
+				if (queryPod.isDebug()) {
+					long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
+
+					eventBus.post(AdhocLogEvent.builder()
+							.debug(true)
+							.performance(true)
+							.message("time=%s sizes=%s total_size=%s for toSortedColumns on %s".formatted(
+									PepperLogHelper.humanDuration(elapsed.toMillis()),
+									Arrays.toString(sizes),
+									totalSize,
+									query.getDagQuery()))
+							.source(this)
+							.build());
+				} else if (queryPod.isExplain()) {
+					eventBus.post(AdhocLogEvent.builder()
+							.explain(true)
+							.performance(true)
+							.message("time=%s sizes=%s for toSortedColumns on %s".formatted(PepperLogHelper
+									.humanDuration(elapsed.toMillis()), Arrays.toString(sizes), query.getDagQuery()))
+							.source(this)
+							.build());
+				}
 			}
 		}
 		return immutableChunks;
@@ -416,7 +425,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected Map<CubeQueryStep, ISliceToValue> toSortedColumns(QueryPod queryPod,
 			TableQueryToActualTableQuery query,
 			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
-		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new HashMap<>();
+		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 		TableQueryV2 dagTableQuery = query.getDagQuery();
 
 		Set<String> suppressedGroupBys = query.getSuppressedGroupBy();
@@ -468,7 +477,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
 	 * columns).
+<<<<<<< HEAD
 	 * 
+=======
+	 *
+>>>>>>> origin/master
 	 * @param queryStep
 	 * @param suppressedColumns
 	 * @param column

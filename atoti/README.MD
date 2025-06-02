@@ -1,13 +1,11 @@
 # Adhoc for Atoti/ActivePivot
 
-Atoti/ActivePivot is a very performant in-memory database.
-
-https://www.atoti.io/
+[Atoti/ActivePivot](https://www.atoti.io/) is a very performant in-memory database.
 
 This module helps interacting between Adhoc and Atoti/ActivePivot. Main features are:
 
-- Convertion from ActivePivot measures descritpions to Adhoc forests. (It migrates a tree of measures, but not the actual PostProcessor implementations).
-- Query ActivePivot from Adhoc. (e.g. to backtest a migrated PostProcessor over data stored in ActivePivot).
+- Translation from ActivePivot measures descriptions to Adhoc forests. (It translated a tree of measures, but not the actual PostProcessor implementations).
+- Query ActivePivot from Adhoc. (e.g. to backtest a translated PostProcessor over data stored in ActivePivot).
 
 ## Activeviam Intellectual Property Considerations
 
@@ -79,35 +77,35 @@ The equivalent Adhoc query looks like:
 
 Note: Adhoc does not enable multi-level hierarchies nor slicing-hierarchies. They may be introduced at some point, through an additional mechanism expressing these hierarchies (i.e. through a dedicated object similarly to `IMissingColumnManager`, which centralize missing column management, instead of having each column having to define its specificities).
 
-# Migrating PostProcessors
+# Translating PostProcessors
 
 Adhoc `IMeasure` is equivalent to ActivePivot measures.
 
 ## Tree of measures
 
-One can migrate existing ActivePivot measure trees with `ActivePivotMeasuresToAdhoc`.
+One can translate existing ActivePivot measure trees with `ActivePivotMeasuresToAdhoc`.
 
 It requires to be run by Adhoc, hence in a JDK21 JVM. Though, ActivePivot5.X requires a JDK11 for most of its actions. Luckily, loading an `IActivePivotDescription` does not required a JDK11.
 
 The simpler approach is to have a unit-test in your ActivePivot project, which provides one (or multiple) `IActivePivotDescription`. It can be turned into an Adhoc forest through:
 
 ```
-AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().build();
-IMeasureForest forest = converter.convert("someCubeName", someActivePivotDescription);
+AtotiMeasureToAdhoc translator = AtotiMeasureToAdhoc.builder().build();
+IMeasureForest forest = converter.translate("someCubeName", someActivePivotDescription);
 ```
 
 ## Native measures
 
-They can be automatically migrated with `ActivePivotMeasuresToAdhoc.convertNativeMeasure`.
+They can be automatically translated with `AtotiMeasureToAdhoc`.
 
-1. `contributors.COUNT` is typically migrated into `COUNT(*)`
-2. `update.TIMESTAMP` is migrated into a `MAX` over an unknown column.
+1. `contributors.COUNT` is typically translated into `COUNT(*)`
+2. `update.TIMESTAMP` is translated into a `MAX` over an unknown column.
 
 ## Pre-aggregated measures
 
-ActivePivot `IAggregationFunction` can be migrated into Adhoc `IAggregation`.
+ActivePivot `IAggregationFunction` can be translated into Adhoc `IAggregation`.
 
-ActivePivot `AggregatedMeasure` can be migrated into Adhoc `IAggregator`.
+ActivePivot `AggregatedMeasure` can be translated into Adhoc `IAggregator`.
 
 ## Post-processed measure
 

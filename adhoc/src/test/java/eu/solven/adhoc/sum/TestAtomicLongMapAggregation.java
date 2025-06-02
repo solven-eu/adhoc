@@ -20,26 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.sum;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.sum.ProductAggregation;
+import com.google.common.util.concurrent.AtomicLongMap;
 
-public class TestProductAggregation {
-	ProductAggregation a = new ProductAggregation(Map.of());
+import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 
-	@Test
-	void testNominal() {
-		Assertions.assertThat(a.aggregate(123, 234.56)).isEqualTo(123 * 234.56);
-	}
+public class TestAtomicLongMapAggregation {
+	AtomicLongMapAggregation agg = new AtomicLongMapAggregation();
 
 	@Test
-	void testNull() {
-		Assertions.assertThat(a.aggregate(123, null)).isEqualTo(123);
-		Assertions.assertThat(a.aggregate(null, 234.56)).isEqualTo(234.56);
+	public void testAggregation() {
+		AtomicLongMap<String> k1 = AtomicLongMap.create();
+		k1.addAndGet("k1", 123);
+
+		Assertions.assertThat(agg.aggregate((Object) null, null)).isEqualTo(null);
+
+		Assertions.assertThat(agg.aggregate(AtomicLongMap.create(), null)).isEqualTo(null);
+		Assertions.assertThat(agg.aggregate(null, k1)).isEqualTo(k1);
+
+		AtomicLongMap<String> k2 = AtomicLongMap.create();
+		k2.addAndGet("k2", 234);
+		Assertions.assertThat(agg.aggregate(k1, k2).asMap()).isEqualTo(Map.of("k1", 123L, "k2", 234L));
+
+		AtomicLongMap<String> k2k3 = AtomicLongMap.create();
+		k2k3.addAndGet("k2", 345);
+		k2k3.addAndGet("k3", 456);
+		Assertions.assertThat(agg.aggregate(k2, k2k3).asMap()).isEqualTo(Map.of("k2", 234L + 345L, "k3", 456L));
+
+		LocalDate now = LocalDate.now();
+		AtomicLongMap<LocalDate> nowMap = AtomicLongMap.create();
+		nowMap.addAndGet(now, 567);
+		Assertions.assertThat(agg.aggregate(k1, nowMap).asMap()).isEqualTo(Map.of("k1", 123L, now, 567L));
+
 	}
 }
