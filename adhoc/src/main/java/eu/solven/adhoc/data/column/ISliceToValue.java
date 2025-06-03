@@ -51,7 +51,7 @@ public interface ISliceToValue {
 
 	Set<SliceAsMap> slicesSet();
 
-	void onValue(SliceAsMap slice, IValueReceiver valueReceiver);
+	IValueProvider onValue(SliceAsMap slice);
 
 	void forEachSlice(IColumnScanner<SliceAsMap> columnScanner);
 
@@ -77,9 +77,7 @@ public interface ISliceToValue {
 	static <T> Object getValue(ISliceToValue storage, IAdhocSlice slice) {
 		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
 
-		IValueProvider valueProvider = valueConsumer -> storage.onValue(sliceAsMap, valueConsumer);
-
-		return IValueProvider.getValue(valueProvider);
+		return IValueProvider.getValue(storage.onValue(sliceAsMap));
 	}
 
 }

@@ -22,7 +22,12 @@
  */
 package eu.solven.adhoc.atoti.translation;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -59,10 +64,19 @@ import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
-import eu.solven.adhoc.measure.model.*;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -274,7 +288,9 @@ public class AtotiMeasureToAdhoc {
 		Class<?> implementationClass = ppFactory.getImplementationClass();
 		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass)
 				|| ABaseDynamicAggregationPostProcessor.class.isAssignableFrom(implementationClass)) {
-			return onDynamicPostProcessor(measure);
+			return onDynamicPostProcessor(measure, builder -> {
+
+			});
 		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)) {
 			return onFilteringPostProcessor(measure);
 		} else if (DrillupPostProcessor.class.isAssignableFrom(implementationClass)) {
@@ -342,6 +358,16 @@ public class AtotiMeasureToAdhoc {
 		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
 
 		return List.of(combinatorBuilder.build());
+	}
+
+	/**
+	 * Typically used to convert from `l@h@d` to `l`.
+	 * 
+	 * @param level
+	 * @return
+	 */
+	protected String levelToColumn(String level) {
+		return transcoder.underlyingNonNull(level);
 	}
 
 	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure) {
@@ -432,13 +458,14 @@ public class AtotiMeasureToAdhoc {
 		// By chaining AND operations, we may end with a simpler filter (e.g. given a single filter clause)
 		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 		for (int i = 0; i < Math.min(levels.size(), filters.size()); i++) {
-			IAdhocFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levels.get(i), filters.get(i));
+			IAdhocFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levelToColumn(levels.get(i)), filters.get(i));
 			filter = AndFilter.and(filter, columnFilter);
 		}
 		return filter;
 	}
 
-	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure) {
+	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure,
+			Consumer<Bucketor.BucketorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 
 		List<String> underlyingNames = getUnderlyingNames(measure);
@@ -449,7 +476,7 @@ public class AtotiMeasureToAdhoc {
 				.name(measure.getName())
 				.underlyings(underlyingNames)
 				.combinationKey(measure.getPluginKey())
-				.groupBy(GroupByColumns.named(leafLevels))
+				.groupBy(makeGroupBy(leafLevels))
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregation.KEY));
 
@@ -460,7 +487,13 @@ public class AtotiMeasureToAdhoc {
 
 		bucketorBuilder.combinationOptions(combinatorOptions);
 
+		onBuilder.accept(bucketorBuilder);
+
 		return List.of(bucketorBuilder.build());
+	}
+
+	protected IAdhocGroupBy makeGroupBy(List<String> leafLevels) {
+		return GroupByColumns.named(leafLevels);
 	}
 
 	// TODO Some formula may be more complex than a simple Combinator

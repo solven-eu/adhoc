@@ -103,7 +103,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		SliceAsMap shiftedSlice = shiftSlice(slice);
 
 		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
-		whereToReadShifted.onValue(shiftedSlice, output.putSlice(slice.getAdhocSliceAsMap()));
+		whereToReadShifted.onValue(shiftedSlice).acceptReceiver(output.putSlice(slice.getAdhocSliceAsMap()));
 	}
 
 	/**
@@ -113,7 +113,8 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 * @return
 	 */
 	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
-		IAdhocFilter filter = slice.asFilter();
+		// BEWARE the filter from queryStep are meaningless here
+		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,9 +122,10 @@ public class FilterHelpers {
 			}
 			List<IColumnFilter> columnMatchers = andFilter.getOperands().stream().map(f -> (IColumnFilter) f).toList();
 			if (columnMatchers.stream().anyMatch(f -> !(f.getValueMatcher() instanceof EqualsMatcher))) {
-				throw new IllegalArgumentException("Only AND of EqualsMatcher can be turned into a Map");
+				throw new IllegalArgumentException(
+						"Only AND of EqualsMatcher can be turned into a Map. Got filter=%s".formatted(columnMatchers));
 			}
-			Map<String, Object> asMap = new HashMap<>();
+			Map<String, Object> asMap = new LinkedHashMap<>();
 
 			columnMatchers.forEach(columnFilter -> asMap.put(columnFilter.getColumn(),
 					((EqualsMatcher) columnFilter.getValueMatcher()).getWrapped()));
