@@ -68,6 +68,6 @@ public interface ITableTranscoder {
 	 * @return a {@link ITableTranscoder} which does not transcode anything.
 	 */
 	static ITableTranscoder identity() {
-		return new IdentityImplicitTranscoder();
+		return IdentityImplicitTranscoder.IDENTITY.get();
 	}
 }

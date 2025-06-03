@@ -38,33 +38,39 @@ import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.table.sql.DSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Dummy application to test manually BigQuery integration.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
+@UtilityClass
 public class SimpleAdhocBigQueryApp {
 
-	public static void main(String... args) throws Exception {
+	public static void main(String... args) {
 		String projectId = "adhoc-testoverpublicdatasets";
 		simpleApp(projectId);
 	}
 
+	@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.LooseCoupling" })
 	public static void simpleApp(String projectId) {
 		BigQueryOptions bigQueryOptions = BigQueryOptions.newBuilder()
 				.setProjectId(projectId)
 				// .setCredentials(credentials)
 				.build();
 
-		AdhocBigQueryTableWrapperParameters dbParameters = AdhocBigQueryTableWrapperParameters.builder()
-				.bigQueryOptions(bigQueryOptions)
-				.base(JooqTableWrapperParameters.builder()
-						.dslSupplier(DSLSupplier.fromDialect(SQLDialect.CUBRID))
-						.tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
-						.build())
-				.build();
-		AdhocBigQueryTableWrapper bgDbWrapper =
-				AdhocBigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
+		// AdhocBigQueryTableWrapperParameters dbParameters = AdhocBigQueryTableWrapperParameters.builder()
+		// .bigQueryOptions(bigQueryOptions)
+		// .base(JooqTableWrapperParameters.builder()
+		// .dslSupplier(DSLSupplier.fromDialect(SQLDialect.CUBRID))
+		// .tableName(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
+		// .build())
+		// .build();
+		//// AdhocBigQueryTableWrapper bgDbWrapper =
+		//// AdhocBigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
 
 		// bgDbWrapper.openDbStream(DatabaseQuery.builder().aggregators(null))
 
@@ -124,7 +130,7 @@ public class SimpleAdhocBigQueryApp {
 				// String type
 				String url = row.get("url").getStringValue();
 				String viewCount = row.get("view_count").getStringValue();
-				System.out.printf("%s : %s views\n", url, viewCount);
+				log.info("{} : {} views\n", url, viewCount);
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();

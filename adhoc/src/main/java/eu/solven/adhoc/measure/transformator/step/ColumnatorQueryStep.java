@@ -45,7 +45,7 @@ import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep}for {@link Columnator}.
+ * {@link ITransformatorQueryStep} for {@link Columnator}.
  * 
  * @author Benoit Lacelle
  */
@@ -61,9 +61,9 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		Optional<String> optHiddenColumn = columnator.getColumns().stream().filter(this::isHidden).findAny();
+		Optional<String> optHidingColumn = columnator.getColumns().stream().filter(this::isHiding).findAny();
 
-		if (optHiddenColumn.isPresent()) {
+		if (optHidingColumn.isPresent()) {
 			return Collections.emptyList();
 		}
 
@@ -75,7 +75,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	 * @param column
 	 * @return true if given column is leading to a rejection
 	 */
-	protected boolean isHidden(String column) {
+	protected boolean isHiding(String column) {
 		boolean columnIsPresent = isColumnPresent(column);
 
 		Mode mode = columnator.getMode();

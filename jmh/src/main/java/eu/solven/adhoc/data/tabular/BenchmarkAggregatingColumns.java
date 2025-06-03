@@ -46,12 +46,18 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
+/**
+ * Benchmarks related with {@link AggregatingColumns}.
+ * 
+ * @author Benoit Lacelle
+ */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
 @Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
+@SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkAggregatingColumns {
 
 	int size = 1_000_000;

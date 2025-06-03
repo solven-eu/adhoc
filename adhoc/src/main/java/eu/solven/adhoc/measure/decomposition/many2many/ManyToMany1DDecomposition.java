@@ -47,9 +47,11 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -147,46 +149,29 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
 		// want to filter all groups for each element
-		Set<String> queryMatchingGroups = (Set<String>) queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
+		Object queryMatchingGroups = queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
 			return getQueryMatchingGroupsNoCache(slice);
 		});
-		return queryMatchingGroups;
+		return (Set<String>) queryMatchingGroups;
 	}
 
-	private Set<?> getQueryMatchingGroupsNoCache(ISliceWithStep slice) {
+	protected Set<?> getQueryMatchingGroupsNoCache(ISliceWithStep slice) {
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
 		IAdhocFilter filter = slice.getQueryStep().getFilter();
 
-		return manyToManyDefinition.getMatchingGroups(group -> doFilter(groupColumn, group, filter));
+		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(filter, groupColumn, group));
 	}
 
-	protected boolean doFilter(String groupColumn, Object groupCandidate, IAdhocFilter filter) {
-		if (filter.isMatchAll()) {
-			return true;
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			if (!columnFilter.getColumn().equals(groupColumn)) {
-				// The group column is not filtered: accept this group as it is not rejected
-				// e.g. we filter color=pink: it should not reject countryGroup=G8
-				return true;
-			} else {
-				boolean match = columnFilter.getValueMatcher().match(groupCandidate);
-
-				log.debug("{} is matched", groupCandidate);
-
-				return match;
-			}
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands()
-					.stream()
-					.allMatch(subFilter -> doFilter(groupColumn, groupCandidate, subFilter));
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands()
-					.stream()
-					.anyMatch(subFilter -> doFilter(groupColumn, groupCandidate, subFilter));
-		} else {
-			throw new UnsupportedOperationException("%s is not managed".formatted(filter));
-		}
+	protected boolean doFilterGroup(IAdhocFilter filter, String groupColumn, Object groupCandidate) {
+		return MoreFilterHelpers.match(ITableTranscoder.identity(),
+				filter,
+				Map.of(groupColumn, groupCandidate),
+				filterMissingColumn -> {
+					// The group column is not filtered: accept this group as it is not rejected
+					// e.g. we filter color=pink: it should not reject countryGroup=G8
+					return true;
+				});
 	}
 
 	/**

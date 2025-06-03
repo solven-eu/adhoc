@@ -32,6 +32,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -47,18 +48,23 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class EndpointSchemaMetadata {
 
+	@NonNull
 	@Singular
 	NavigableMap<String, ColumnarMetadata> tables;
 
+	@NonNull
 	@Singular
-	NavigableMap<String, List<IMeasure>> measureBags;
+	NavigableMap<String, List<IMeasure>> forests;
 
+	@NonNull
 	@Singular
 	NavigableMap<String, CubeSchemaMetadata> cubes;
 
+	@NonNull
 	@Singular
 	NavigableMap<String, CubeQuery> queries;
 
+	@NonNull
 	@Singular
 	NavigableMap<String, CustomMarkerMetadata> customMarkers;
 }

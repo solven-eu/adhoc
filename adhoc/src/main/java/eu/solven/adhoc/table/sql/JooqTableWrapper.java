@@ -51,6 +51,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -58,8 +59,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.NonNull;
@@ -250,7 +249,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		return sqlQuery.getQuery().stream().map(r -> intoMap(sqlQuery.getFields(), r)).filter(row -> {
-			return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), sqlQuery.getLeftover(), row);
+			return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
 		});
 
 	}

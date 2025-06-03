@@ -29,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Give access to Git properties through {@link Environment}.
+ * 
+ * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/76679347/spring-boot-service-is-not-picking-up-the-git-properties-file-generated-by-the-g
 @Slf4j

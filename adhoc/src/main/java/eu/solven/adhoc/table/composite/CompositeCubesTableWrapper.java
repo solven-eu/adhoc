@@ -158,7 +158,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
-		if (Objects.equals(this, queryPod.getTable())) {
+		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 

@@ -29,6 +29,11 @@ import java.util.random.RandomGenerator;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
 
+/**
+ * {@link IUuidGenerator} based on {@link Generators}. It can be seeded.
+ * 
+ * @author Benoit Lacelle
+ */
 public class JUGUuidGenerator implements IUuidGenerator {
 
 	private RandomBasedGenerator generator;

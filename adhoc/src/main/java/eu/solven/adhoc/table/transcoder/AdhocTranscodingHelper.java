@@ -33,16 +33,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.IFilterVisitor;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -141,98 +132,4 @@ public class AdhocTranscodingHelper {
 		return transcoded;
 	}
 
-	/**
-	 * 
-	 * @param filter
-	 * @param input
-	 * @return true if the input matches the filter
-	 */
-	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
-		return match(new IdentityImplicitTranscoder(), filter, input);
-	}
-
-	/**
-	 * 
-	 * @param transcoder
-	 * @param filter
-	 * @param input
-	 * @return true if the input matches the filter, where each column in input is transcoded.
-	 */
-	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
-		return FilterHelpers.visit(filter, new IFilterVisitor() {
-
-			@Override
-			public boolean testAndOperands(Set<? extends IAdhocFilter> operands) {
-				return operands.stream().allMatch(f -> match(transcoder, f, input));
-			}
-
-			@Override
-			public boolean testOrOperands(Set<? extends IAdhocFilter> operands) {
-				return operands.stream().anyMatch(f -> match(transcoder, f, input));
-			}
-
-			@Override
-			public boolean testColumnOperand(IColumnFilter columnFilter) {
-				String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-				Object value = input.get(underlyingColumn);
-
-				if (value == null) {
-					if (input.containsKey(underlyingColumn)) {
-						log.trace("Key to null-ref");
-					} else {
-						log.trace("Missing key");
-						if (columnFilter.isNullIfAbsent()) {
-							log.trace("Treat absent as null");
-						} else {
-							log.trace("Do not treat absent as null, but as missing, hence not matched");
-							return false;
-						}
-					}
-				}
-
-				return columnFilter.getValueMatcher().match(value);
-			}
-
-			@Override
-			public boolean testNegatedOperand(IAdhocFilter negated) {
-				return !match(transcoder, negated, input);
-			}
-
-		});
-	}
-
-	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
-		if (filter.isMatchAll()) {
-			return true;
-		} else if (filter.isMatchNone()) {
-			return false;
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-			Object value = input.getGroupBy(underlyingColumn);
-
-			if (value == null) {
-				if (input.getGroupBys().containsKey(underlyingColumn)) {
-					log.trace("Key to null-ref");
-				} else {
-					log.trace("Missing key");
-					if (columnFilter.isNullIfAbsent()) {
-						log.trace("Treat absent as null");
-					} else {
-						log.trace("Do not treat absent as null, but as missing hence not acceptable");
-						return false;
-					}
-				}
-			}
-
-			return columnFilter.getValueMatcher().match(value);
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return !match(transcoder, notFilter.getNegated(), input);
-		} else {
-			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
-		}
-	}
 }

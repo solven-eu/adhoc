@@ -43,13 +43,18 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMap;
 
+/**
+ * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
+ * 
+ * @author Benoit Lacelle
+ */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
 @Warmup(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
-public class BenchmarkAdhocMap_ComparateTo {
+public class BenchmarkAdhocMapComparateTo {
 
 	private String c1 = "c1";
 	private String c2 = "c2";
@@ -89,8 +94,7 @@ public class BenchmarkAdhocMap_ComparateTo {
 	// }
 
 	public static void main(String[] args) throws RunnerException {
-		Options opt =
-				new OptionsBuilder().include(BenchmarkAdhocMap_ComparateTo.class.getSimpleName()).forks(1).build();
+		Options opt = new OptionsBuilder().include(BenchmarkAdhocMapComparateTo.class.getSimpleName()).forks(1).build();
 		new Runner(opt).run();
 	}
 

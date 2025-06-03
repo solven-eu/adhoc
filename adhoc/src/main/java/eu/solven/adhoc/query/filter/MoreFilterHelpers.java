@@ -22,8 +22,13 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -37,6 +42,7 @@ import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helpers methods around {@link IAdhocFilter} and {@link IValueMatcher}. This includes those which does not fit into
@@ -45,7 +51,24 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 @UtilityClass
+@Slf4j
 public class MoreFilterHelpers {
+
+	/**
+	 * When matching a {@link IColumnFilter} but the input misses given column.
+	 * 
+	 * By default, we behave as if the value was null if {@link IColumnFilter#isNullIfAbsent()}. Else we consider the
+	 * entry does not match (e.g. `color=blue` should not matcher `country=FR`).
+	 */
+	private static final Predicate<IColumnFilter> IF_MISSING_COLUMN = filterMissingColumn -> {
+		if (filterMissingColumn.isNullIfAbsent()) {
+			log.trace("Treat absent as null");
+			return filterMissingColumn.getValueMatcher().match(null);
+		} else {
+			log.trace("Do not treat absent as null, but as missing, hence not matched");
+			return false;
+		}
+	};
 
 	public static IValueMatcher transcodeType(ICustomTypeManagerSimple customTypeManager,
 			String column,
@@ -116,6 +139,111 @@ public class MoreFilterHelpers {
 		} else {
 			throw new UnsupportedOperationException(
 					"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
+	}
+
+	/**
+	 * 
+	 * @param filter
+	 * @param input
+	 * @return true if the input matches the filter
+	 */
+	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
+		return match(ITableTranscoder.identity(), filter, input, IF_MISSING_COLUMN);
+	}
+
+	public static boolean match(IAdhocFilter filter, String column, Object value) {
+		return match(ITableTranscoder.identity(), filter, Collections.singletonMap(column, value), IF_MISSING_COLUMN);
+	}
+
+	/**
+	 * 
+	 * @param transcoder
+	 * @param filter
+	 * @param input
+	 * @return true if the input matches the filter, where each column in input is transcoded.
+	 */
+	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
+		return match(transcoder, filter, input, IF_MISSING_COLUMN);
+	}
+
+	public static boolean match(ITableTranscoder transcoder,
+			IAdhocFilter filter,
+			Map<String, ?> input,
+			Predicate<IColumnFilter> onMissingColumn) {
+		return FilterHelpers.visit(filter, new IFilterVisitor() {
+
+			@Override
+			public boolean testAndOperands(Set<? extends IAdhocFilter> operands) {
+				return operands.stream().allMatch(f -> match(transcoder, f, input, onMissingColumn));
+			}
+
+			@Override
+			public boolean testOrOperands(Set<? extends IAdhocFilter> operands) {
+				return operands.stream().anyMatch(f -> match(transcoder, f, input, onMissingColumn));
+			}
+
+			@Override
+			public boolean testColumnOperand(IColumnFilter columnFilter) {
+				String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
+				Object value = input.get(underlyingColumn);
+
+				if (value == null) {
+					if (input.containsKey(underlyingColumn)) {
+						log.trace("Key to null-ref");
+					} else {
+						log.trace("Missing key");
+						return onMissingColumn.test(columnFilter);
+					}
+				}
+
+				return columnFilter.getValueMatcher().match(value);
+			}
+
+			@Override
+			public boolean testNegatedOperand(IAdhocFilter negated) {
+				return !match(transcoder, negated, input, onMissingColumn);
+			}
+
+		});
+	}
+
+	public static boolean match(IAdhocFilter filter, ITabularRecord input) {
+		return match(ITableTranscoder.identity(), filter, input);
+	}
+
+	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
+		if (filter.isMatchAll()) {
+			return true;
+		} else if (filter.isMatchNone()) {
+			return false;
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
+			Object value = input.getGroupBy(underlyingColumn);
+
+			if (value == null) {
+				if (input.getGroupBys().containsKey(underlyingColumn)) {
+					log.trace("Key to null-ref");
+				} else {
+					log.trace("Missing key");
+					if (columnFilter.isNullIfAbsent()) {
+						log.trace("Treat absent as null");
+					} else {
+						log.trace("Do not treat absent as null, but as missing hence not acceptable");
+						return false;
+					}
+				}
+			}
+
+			return columnFilter.getValueMatcher().match(value);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return !match(transcoder, notFilter.getNegated(), input);
+		} else {
+			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
 		}
 	}
 }

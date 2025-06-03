@@ -51,12 +51,12 @@ import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
  */
 // https://docs.aws.amazon.com/redshift/latest/mgmt/data-api.html
 @Slf4j
-public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
+public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 
 	final AdhocRedshiftTableWrapperParameters redShiftParameters;
 
 	@Builder(builderMethodName = "redshift")
-	public AdhocRedShiftTableWrapper(String name, AdhocRedshiftTableWrapperParameters redShiftParameters) {
+	public AdhocRedshiftTableWrapper(String name, AdhocRedshiftTableWrapperParameters redShiftParameters) {
 		super(name, redShiftParameters.getBase());
 
 		this.redShiftParameters = redShiftParameters;
@@ -78,50 +78,50 @@ public class AdhocRedShiftTableWrapper extends JooqTableWrapper {
 				.sql(sqlStatement)
 				.build();
 
-		try {
-			CompletableFuture<Stream<ITabularRecord>> completable = CompletableFuture.supplyAsync(() -> {
-				try {
-					ExecuteStatementResponse response = getAsyncDataClient().executeStatement(statementRequest).join();
-					return response.id();
-				} catch (RedshiftDataException e) {
-					throw new RuntimeException("Error executing statement: " + e.getMessage(), e);
-				}
-			}).exceptionally(exception -> {
-				log.info("Error: {}", exception.getMessage());
-				return "ERROR-%s".formatted(exception.getMessage());
-			}).thenApply(statementId -> {
-				GetStatementResultRequest resultRequest = GetStatementResultRequest.builder().id(statementId).build();
-
-				return getAsyncDataClient().getStatementResult(resultRequest)
-						.<Stream<ITabularRecord>>handle((response, exception) -> {
-							if (exception != null) {
-								log.info("Error getting statement result {} ", exception.getMessage());
-								throw new RuntimeException("Error getting statement result: " + exception.getMessage(),
-										exception);
-							}
-
-							// Extract and print the field values using streams if the response is valid.
-							return response.records().stream().map(row -> toTabularRecord(sqlQuery, row));
-						})
-						.join();
-			}).thenApply(result -> {
-				// Process the result here
-				log.info("Result: {}", result);
-				return result;
-			});
-
-			return completable.join();
-		} catch (RuntimeException rt) {
-			Throwable cause = rt.getCause();
-			if (cause instanceof RedshiftDataException redshiftEx) {
-				log.info("Redshift Data error occurred: {} Error code: {}",
-						redshiftEx.getMessage(),
-						redshiftEx.awsErrorDetails().errorCode());
-			} else {
-				log.info("An unexpected error occurred: {}", rt.getMessage());
+		// try {
+		CompletableFuture<Stream<ITabularRecord>> completable = CompletableFuture.supplyAsync(() -> {
+			try {
+				ExecuteStatementResponse response = getAsyncDataClient().executeStatement(statementRequest).join();
+				return response.id();
+			} catch (RedshiftDataException e) {
+				throw new RuntimeException("Error executing statement: " + e.getMessage(), e);
 			}
-			throw rt;
-		}
+		}).exceptionally(exception -> {
+			log.info("Error: {}", exception.getMessage());
+			return "ERROR-%s".formatted(exception.getMessage());
+		}).thenApply(statementId -> {
+			GetStatementResultRequest resultRequest = GetStatementResultRequest.builder().id(statementId).build();
+
+			return getAsyncDataClient().getStatementResult(resultRequest)
+					.<Stream<ITabularRecord>>handle((response, exception) -> {
+						if (exception != null) {
+							log.info("Error getting statement result {} ", exception.getMessage());
+							throw new RuntimeException("Error getting statement result: " + exception.getMessage(),
+									exception);
+						}
+
+						// Extract and print the field values using streams if the response is valid.
+						return response.records().stream().map(row -> toTabularRecord(sqlQuery, row));
+					})
+					.join();
+		}).thenApply(result -> {
+			// Process the result here
+			log.info("Result: {}", result);
+			return result;
+		});
+
+		return completable.join();
+		// } catch (RuntimeException rt) {
+		// Throwable cause = rt.getCause();
+		// if (cause instanceof RedshiftDataException redshiftEx) {
+		// log.info("Redshift Data error occurred: {} Error code: {}",
+		// redshiftEx.getMessage(),
+		// redshiftEx.awsErrorDetails().errorCode());
+		// } else {
+		// log.info("An unexpected error occurred: {}", rt.getMessage());
+		// }
+		// throw rt;
+		// }
 	}
 
 	protected TabularRecordOverMaps toTabularRecord(IJooqTableQueryFactory.QueryWithLeftover sqlQuery,

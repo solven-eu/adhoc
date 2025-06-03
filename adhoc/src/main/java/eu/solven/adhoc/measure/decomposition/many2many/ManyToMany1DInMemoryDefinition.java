@@ -75,11 +75,6 @@ public class ManyToMany1DInMemoryDefinition implements IManyToMany1DDefinition {
 		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
 	}
 
-	// @Override
-	// public Set<Object> getElements(Object group) {
-	// return groupToElements.get(group);
-	// }
-
 	public void putElementToGroup(Object element, Object group) {
 		elementToGroups.put(element, group);
 		groupToElements.put(group, element);

@@ -28,6 +28,7 @@ import java.util.Set;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.IHasName;
 
 /**
@@ -44,7 +45,18 @@ public interface IMeasureForest extends IHasName, IHasMeasures, ICanResolveMeasu
 	 * @return an actual {@link IMeasure}, never a {@link ReferencedMeasure}
 	 */
 	@Override
-	IMeasure resolveIfRef(IMeasure measure);
+	default IMeasure resolveIfRef(IMeasure measure) {
+		Optional<IMeasure> optResolved = resolveIfRefOpt(measure);
+
+		return optResolved.orElseThrow(() -> {
+			String refName = measure.getName();
+
+			String minimizing = AdhocMapPathGet.minimizingDistance(getNameToMeasure().keySet(), refName);
+
+			throw new IllegalArgumentException(
+					"forest=%s No measure named: %s. Did you mean: %s".formatted(getName(), refName, minimizing));
+		});
+	}
 
 	/**
 	 * 

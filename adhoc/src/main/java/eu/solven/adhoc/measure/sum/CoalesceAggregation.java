@@ -63,11 +63,12 @@ public class CoalesceAggregation implements IAggregation {
 		} else if (areSame(l, r)) {
 			return l;
 		} else if (failIfDifferent) {
-			if (!Objects.equals(l, r) || !equalIfSame) {
-				throw new IllegalArgumentException("%s != %s".formatted(l, r));
-			} else {
+			if (Objects.equals(l, r) && equalIfSame) {
+				// Show identityHashCode if equals but rejected for different ref
 				throw new IllegalArgumentException(
-						"%s != %s".formatted(System.identityHashCode(l), System.identityHashCode(r)));
+						"%s != %s (%s)".formatted(System.identityHashCode(l), System.identityHashCode(r), l));
+			} else {
+				throw new IllegalArgumentException("%s != %s".formatted(l, r));
 			}
 		} else {
 			// Give priority to left/first object

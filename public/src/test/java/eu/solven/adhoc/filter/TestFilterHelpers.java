@@ -37,7 +37,11 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.*;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 
 public class TestFilterHelpers {
 
@@ -144,4 +148,20 @@ public class TestFilterHelpers {
 		Assertions.assertThat(wrappedWithToString.match("foo")).isTrue();
 		Assertions.assertThat(wrappedWithToString.match("bar")).isFalse();
 	}
+
+	@Test
+	public void testAsMap_or() {
+		Assertions.assertThat(FilterHelpers.asMap(ColumnFilter.isEqualTo("c", "v"))).isEqualTo(Map.of("c", "v"));
+
+		// BEWARE We may introduce a `toList` to manage OR.
+		Assertions
+				.assertThatThrownBy(() -> FilterHelpers
+						.asMap(OrFilter.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2"))))
+				.isInstanceOf(IllegalArgumentException.class);
+
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(IAdhocFilter.MATCH_NONE))
+				.isInstanceOf(IllegalArgumentException.class);
+
+	}
+
 }

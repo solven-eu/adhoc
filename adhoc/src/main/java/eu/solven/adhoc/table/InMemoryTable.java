@@ -52,10 +52,9 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -138,7 +137,7 @@ public class InMemoryTable implements ITableWrapper {
 
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
-				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
+				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
 				return toRecord(tableQuery, aggregateColumns, groupByColumns, nbKeys, row);
@@ -222,7 +221,7 @@ public class InMemoryTable implements ITableWrapper {
 					.stream()
 					.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
 					.forEach(a -> {
-						if (!AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), a.getFilter(), row)) {
+						if (!MoreFilterHelpers.match(a.getFilter(), row)) {
 							// This aggregate is rejected by the `FILTER` clause
 							return;
 						}

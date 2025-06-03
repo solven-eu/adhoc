@@ -174,7 +174,7 @@ public class AdhocSchema implements IAdhocSchema {
 			String name = e.getKey();
 			IMeasureForest forest = e.getValue();
 			List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
-			metadata.measureBag(name, measures);
+			metadata.forest(name, measures);
 		});
 
 		nameToTable.entrySet().stream().filter(e -> isRequested(query.getTable(), allIfEmpty, e)).forEach(e -> {

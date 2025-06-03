@@ -253,8 +253,10 @@ public class TableQueryEngine implements ITableQueryEngine {
 			} else if (leafMeasure instanceof EmptyMeasure) {
 				log.trace("An EmptyMeasure has no underlying measures");
 			} else {
-				// Happens on Transformator with no underlying measure
-				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
+				// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as having no
+				// underlying step)
+				log.debug("step={} has been planned having no underlying step", step);
+				// throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
 			}
 		});
 

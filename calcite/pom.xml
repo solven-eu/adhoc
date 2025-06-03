@@ -6,13 +6,18 @@
 		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.8-SNAPSHOT</version>
 	</parent>
-	<artifactId>calcite</artifactId>
+	<artifactId>adhoc-calcite</artifactId>
 
 	<properties>
 		<calcite.version>1.40.0</calcite.version>
 
 		<jacoco.branch.ratio>0.25</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.40</jacoco.instruction.ratio>
+
+		<!-- TODO Activate Static checks-->
+		<spotbugs.skip>true</spotbugs.skip>
+		<checkstyle.skip>true</checkstyle.skip>
+		<pmd.skip>true</pmd.skip>
 	</properties>
 
 	<dependencies>

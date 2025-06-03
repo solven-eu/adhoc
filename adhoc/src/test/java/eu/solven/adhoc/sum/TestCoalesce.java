@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
-public class TestFirstNotNull {
+public class TestCoalesce {
 
 	@Test
 	public void testSimple() {
@@ -42,8 +42,8 @@ public class TestFirstNotNull {
 		Assertions.assertThat(a.aggregate(123, 123)).isEqualTo(123);
 		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
 
-		Assertions.assertThatThrownBy(() -> a.aggregate(123, 234)).isInstanceOf(IllegalArgumentException.class);
-		Assertions.assertThatThrownBy(() -> a.aggregate("foo", 234)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate("foo", 234)).isEqualTo("foo");
 	}
 
 	@Test
