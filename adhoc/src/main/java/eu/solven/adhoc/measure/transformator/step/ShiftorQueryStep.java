@@ -113,7 +113,9 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 * @return
 	 */
 	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
-		IAdhocFilter editedSlice = shift(slice.asFilter(), step.getCustomMarker());
+		IAdhocFilter filter = slice.asFilter();
+
+		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
 		// Typically useful on querying grandTotal

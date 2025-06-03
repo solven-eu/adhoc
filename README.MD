@@ -438,3 +438,5 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
+- [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
+- [Feature] Improve connection pooling in JooQ examples.

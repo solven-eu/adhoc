@@ -60,7 +60,19 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	public IAdhocFilter asFilter() {
 		// AND the slice with the step as the step may express some filters which are not in the slice
 		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
-		return AndFilter.and(slice.asFilter(), queryStep.getFilter());
+		IAdhocFilter filter = AndFilter.and(slice.asFilter(), queryStep.getFilter());
+
+		if (filter.isMatchNone()) {
+			// These cases are unclear.
+			// One occurrence was due to improper type conversion
+			// e.g. a filter with wrong type `y=2025` as String, while receiving a slice with `y=2025` as long.
+			throw new IllegalStateException("AND between slice=`%s` and query.filter=`` led to .matchNone"
+					.formatted(slice.asFilter(), queryStep.getFilter()));
+		}
+
+		// BEWARE We should also check it is always a `AND` of `EQUALS`.
+
+		return filter;
 	}
 
 	@Override
