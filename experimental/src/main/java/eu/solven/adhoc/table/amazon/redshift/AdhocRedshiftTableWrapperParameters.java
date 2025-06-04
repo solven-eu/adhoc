@@ -43,6 +43,9 @@ public class AdhocRedshiftTableWrapperParameters {
 	RedshiftDataAsyncClient asyncDataClient;
 
 	@NonNull
+	String workgroupName;
+	
+	@NonNull
 	String database;
 
 	@NonNull

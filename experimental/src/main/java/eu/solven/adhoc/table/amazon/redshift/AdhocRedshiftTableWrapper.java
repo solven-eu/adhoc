@@ -74,6 +74,7 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 				// .clusterIdentifier(clusterId)
 				.database(redShiftParameters.getDatabase())
 				.dbUser(redShiftParameters.getDbUser())
+				.workgroupName(redShiftParameters.getWorkgroupName())
 				// .parameters(yearParam)
 				.sql(sqlStatement)
 				.build();
