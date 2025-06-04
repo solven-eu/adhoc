@@ -22,14 +22,19 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.NavigableMap;
 
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -38,13 +43,20 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
+@Builder
 public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
-	private final Map<String, Class<?>> cubeColumns;
+	@Singular
+	private final NavigableMap<String, Class<?>> cubeColumns;
 
 	@Override
 	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
+		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+			return EqualsMatcher.isEqualTo(toTable(column, equalsMatcher.getOperand()));
+		} else if (valueMatcher instanceof InMatcher inMatcher) {
+			return InMatcher.isIn(inMatcher.getOperands().stream().map(operand -> toTable(column, operand)).toList());
+		}
 		return valueMatcher;
 	}
 
@@ -58,9 +70,20 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 			Class<?> cubeColumnClass = cubeColumns.get(column);
 
 			if (coordinate instanceof String coordinateAsString) {
-				if (cubeColumnClass.equals(String.class)) {
+				if (CharSequence.class.isAssignableFrom(cubeColumnClass)) {
 					// column holds `String` and we filter a `String`
 					return coordinate;
+				} else if (cubeColumnClass.equals(LocalDate.class)) {
+					// column holds `LocalDate` and we filter a `String`
+					try {
+						return LocalDate.parse(coordinateAsString);
+					} catch (RuntimeException e) {
+						log.warn("Filtering v=`{}` while column={} has type={}",
+								coordinateAsString,
+								column,
+								cubeColumnClass);
+						return StringMatcher.hasToString(coordinateAsString);
+					}
 				} else {
 					// One very generic but probably slow way to convert from String is to search matching
 					// coordinates

@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
@@ -44,7 +46,8 @@ public interface IAdhocSlice {
 
 	/**
 	 *
-	 * @return an {@link IAdhocFilter} equivalent to this slice.
+	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is also a {@link AndFilter}
+	 *         of {@link EqualsMatcher}.
 	 */
 	IAdhocFilter asFilter();
 

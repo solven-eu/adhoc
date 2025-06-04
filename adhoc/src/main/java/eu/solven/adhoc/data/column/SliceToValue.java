@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import lombok.Builder;
@@ -51,8 +51,8 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public void onValue(SliceAsMap slice, IValueReceiver valueReceiver) {
-		column.onValue(slice.getAdhocSliceAsMap(), valueReceiver);
+	public IValueProvider onValue(SliceAsMap slice) {
+		return column.onValue(slice.getAdhocSliceAsMap());
 	}
 
 	@Override

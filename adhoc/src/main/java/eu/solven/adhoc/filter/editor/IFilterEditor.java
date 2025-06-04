@@ -57,11 +57,11 @@ public interface IFilterEditor {
 
 	/**
 	 *
-	 * @param input
+	 * @param filter
 	 *            some input {@link IAdhocFilter}
 	 * @return a {@link IAdhocFilter}, typically computed from the input filter.
 	 */
-	IAdhocFilter editFilter(IAdhocFilter input);
+	IAdhocFilter editFilter(IAdhocFilter filter);
 
 	/**
 	 * Most {@link IFilterEditor} would not need to extend this more complex method.

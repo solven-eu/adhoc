@@ -53,8 +53,8 @@ public interface ICombination {
 	 * @return the combined result at given slice.
 	 */
 	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		IValueProvider valueProvider =
-				combine(slice, SlicedRecordFromArray.builder().measures(underlyingValues).build());
+		SlicedRecordFromArray slicedRecord = SlicedRecordFromArray.builder().measures(underlyingValues).build();
+		IValueProvider valueProvider = combine(slice, slicedRecord);
 
 		return IValueProvider.getValue(valueProvider);
 	}

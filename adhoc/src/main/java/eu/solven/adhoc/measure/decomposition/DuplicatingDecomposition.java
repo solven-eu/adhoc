@@ -40,6 +40,7 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
@@ -84,6 +85,13 @@ public class DuplicatingDecomposition implements IDecomposition {
 		return columnToCoordinates.get(column);
 	}
 
+	/**
+	 * 
+	 * @param relevantColumn
+	 * @param value
+	 *            the aggregate may help computing the coordinates along which the duplication should occur.
+	 * @return the coordinates along which given value has to be duplicated.
+	 */
 	protected ImmutableList<?> getCoordinatesAlongColumn(String relevantColumn, Object value) {
 		return ImmutableList.copyOf(columnToCoordinates.get(relevantColumn));
 	}
@@ -123,7 +131,14 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 		List<List<?>> indexToCoordinates = new ArrayList<>(relevantColumns.size());
 		for (String relevantColumn : relevantColumns) {
-			indexToCoordinates.add(getCoordinatesAlongColumn(relevantColumn, value));
+			ImmutableList<?> unfilteredCoordinates = getCoordinatesAlongColumn(relevantColumn, value);
+
+			// Filter coordinates according to filters
+			// BEWARE This is a 1D filtering: some combinations may be filtered (e.g. with an OR).
+			IValueMatcher valueMatcher = FilterHelpers.getValueMatcherLax(slice.asFilter(), relevantColumn);
+			indexToCoordinates.add(unfilteredCoordinates.stream()
+					.filter(o -> valueMatcher.match(o))
+					.collect(ImmutableList.toImmutableList()));
 		}
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();

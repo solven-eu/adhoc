@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.eventbus;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
@@ -62,4 +65,24 @@ public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable 
 
 	@NonNull
 	Object source;
+
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	public static class AdhocLogEventBuilder {
+		/**
+		 * Accept a template like `c={}` or `c=%s` and parameters to be injected into the template.
+		 * 
+		 * @param template
+		 * @param parameters
+		 * @return
+		 */
+		public AdhocLogEventBuilder messageT(String template, Object... parameters) {
+			// From SLF4J placeholder `{}` to `.formatted` `%s`
+			String templateForFormatted = template.replaceAll(Pattern.quote("{}"), Matcher.quoteReplacement("%s"));
+			return this.message(templateForFormatted.formatted(parameters));
+		}
+	}
 }

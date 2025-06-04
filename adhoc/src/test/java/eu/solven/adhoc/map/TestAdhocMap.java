@@ -23,12 +23,18 @@
 package eu.solven.adhoc.map;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 
 public class TestAdhocMap {
 	// Not a String to ensure we accept various types
@@ -119,5 +125,26 @@ public class TestAdhocMap {
 		Assertions.assertThatComparable(b1NowZ1)
 				// Trailing `z` after common `date` make is greater
 				.isGreaterThan(b1Now);
+	}
+
+	@Test
+	public void testEntrySet_Order() {
+		int size = 128;
+		ImmutableSet<String> keys = IntStream.range(0, size)
+				.mapToObj(i -> Strings.padStart(Integer.toString(i), 3, '0'))
+				.collect(ImmutableSet.toImmutableSet());
+
+		AdhocMapBuilder builder = AdhocMap.builder(keys);
+
+		IntStream.range(0, size).forEach(i -> builder.append("v_" + i));
+
+		AdhocMap map = builder.build();
+
+		List<Entry<String, Object>> entries = map.entrySet().stream().toList();
+		for (int i = 0; i < size; i++) {
+			Assertions.assertThat(entries.get(i))
+					.as("i=%s", i)
+					.isEqualTo(Map.entry(Strings.padStart(Integer.toString(i), 3, '0'), "v_" + i));
+		}
 	}
 }

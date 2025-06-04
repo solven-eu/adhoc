@@ -34,9 +34,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
@@ -155,7 +155,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		return Streams.mapWithIndex(keySet().stream(), (key, index) -> {
 			Object value = valuesAsList.get(Ints.checkedCast(index));
 			return Map.entry(key, value);
-		}).collect(Collectors.toSet());
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**

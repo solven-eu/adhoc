@@ -207,6 +207,12 @@ public class AdhocSchema implements IAdhocSchema {
 		}
 
 		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
+
+		if (query.isDebugOrExplain()) {
+			// This can be helpful to debug why some `c=v` filters are turned into `c.toString() matches v`
+			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
+		}
+
 		return cubeWrapper.execute(transcodedQuery);
 	}
 
@@ -229,7 +235,8 @@ public class AdhocSchema implements IAdhocSchema {
 
 	protected ICustomTypeManagerSimple makeTypeManager(ICubeWrapper cubeWrapper) {
 		Map<String, Class<?>> cubeColumns = cacheCubeToColumnToType.getUnchecked(cubeWrapper.getName());
-		ICustomTypeManagerSimple customTypeManager = new CubeWrapperTypeTranscoder(cubeColumns);
+		ICustomTypeManagerSimple customTypeManager =
+				CubeWrapperTypeTranscoder.builder().cubeColumns(cubeColumns).build();
 		return customTypeManager;
 	}
 

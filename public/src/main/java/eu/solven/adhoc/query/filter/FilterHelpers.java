@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -56,9 +57,19 @@ public class FilterHelpers {
 	 *            some {@link IAdhocFilter}, potentially complex
 	 * @param column
 	 *            some specific column
-	 * @return
+	 * @return a perfectly matching {@link IValueMatcher} for given column. By perfect, we mean the provided
+	 *         {@link IValueMatcher} covers exactly the {@link IAdhocFilter} along given column. This is typically false
+	 *         for `OrFilter`.
 	 */
 	public static IValueMatcher getValueMatcher(IAdhocFilter filter, String column) {
+		return getValueMatcherLax(filter, column, true);
+	}
+
+	public static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column) {
+		return getValueMatcherLax(filter, column, false);
+	}
+
+	private static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
 		} else if (filter.isMatchNone()) {
@@ -81,7 +92,7 @@ public class FilterHelpers {
 			} else if (negated.isMatchNone()) {
 				return IValueMatcher.MATCH_ALL;
 			}
-			IValueMatcher valueMatcher = getValueMatcher(negated, column);
+			IValueMatcher valueMatcher = getValueMatcherLax(negated, column, throwOnOr);
 
 			if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
 				// The underlying filter is unrelated to `column`: should not negate `matchAll`
@@ -91,17 +102,38 @@ public class FilterHelpers {
 			// This is a not trivial valueMatcher: negate it
 			return NotMatcher.not(valueMatcher);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IValueMatcher> filters =
-					andFilter.getOperands().stream().map(f -> getValueMatcher(f, column)).collect(Collectors.toSet());
+			Set<IValueMatcher> filters = andFilter.getOperands()
+					.stream()
+					.map(f -> getValueMatcherLax(f, column, throwOnOr))
+					.collect(Collectors.toSet());
 
 			if (filters.isEmpty()) {
 				// This is a weird case as it should have been caught be initial `isMatchAll`
 				log.warn("Please report this case: column={} filter={}", column, filter);
 				return IValueMatcher.MATCH_ALL;
-			} else if (filters.size() == 1) {
-				return filters.stream().findFirst().get();
 			} else {
 				return AndMatcher.and(filters);
+			}
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			Set<IValueMatcher> matchers = orFilter.getOperands()
+					.stream()
+					.map(f -> getValueMatcherLax(f, column, throwOnOr))
+					.collect(Collectors.toSet());
+
+			if (matchers.isEmpty()) {
+				// This is a weird case as it should have been caught be initial `isMatchNone`
+				log.warn("Please report this case: column={} filter={}", column, filter);
+				return IValueMatcher.MATCH_ALL;
+			} else if (matchers.size() == 1 && matchers.contains(IValueMatcher.MATCH_ALL)) {
+				// There is an OR, but it does not refer the requested column
+				return IValueMatcher.MATCH_ALL;
+			} else {
+				if (throwOnOr) {
+					throw new UnsupportedOperationException(
+							"filter=%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+				}
+
+				return OrMatcher.or(matchers.stream().filter(m -> !IValueMatcher.MATCH_ALL.equals(m)).toList());
 			}
 		} else {
 			throw new UnsupportedOperationException(
@@ -125,7 +157,8 @@ public class FilterHelpers {
 			}
 			List<IColumnFilter> columnMatchers = andFilter.getOperands().stream().map(f -> (IColumnFilter) f).toList();
 			if (columnMatchers.stream().anyMatch(f -> !(f.getValueMatcher() instanceof EqualsMatcher))) {
-				throw new IllegalArgumentException("Only AND of EqualsMatcher can be turned into a Map");
+				throw new IllegalArgumentException(
+						"Only AND of EqualsMatcher can be turned into a Map. Got filter=%s".formatted(columnMatchers));
 			}
 			Map<String, Object> asMap = new LinkedHashMap<>();
 
