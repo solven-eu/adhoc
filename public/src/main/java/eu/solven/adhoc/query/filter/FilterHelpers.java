@@ -130,7 +130,7 @@ public class FilterHelpers {
 							"filter=%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
 				}
 
-				return OrMatcher.or(matchers.stream().filter(m -> !m.equals(IValueMatcher.MATCH_ALL)).toList());
+				return OrMatcher.or(matchers.stream().filter(m -> !IValueMatcher.MATCH_ALL.equals(m)).toList());
 			}
 		} else {
 			throw new UnsupportedOperationException(

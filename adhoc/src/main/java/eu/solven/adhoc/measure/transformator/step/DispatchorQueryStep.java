@@ -50,7 +50,6 @@ import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
