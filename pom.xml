@@ -313,7 +313,7 @@
 							<!-- https://github.com/spring-io/spring-javaformat -->
 							<groupId>io.spring.javaformat</groupId>
 							<artifactId>spring-javaformat-checkstyle</artifactId>
-							<version>0.0.43</version>
+							<version>0.0.46</version>
 						</dependency>
 					</dependencies>
 					<executions>
