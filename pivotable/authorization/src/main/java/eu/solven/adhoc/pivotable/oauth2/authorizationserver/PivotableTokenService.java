@@ -44,6 +44,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
+import eu.solven.adhoc.pivotable.login.ITokenHolder;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
@@ -53,6 +54,11 @@ import eu.solven.adhoc.tools.JdkUuidGenerator;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Manages {@link ITokenHolder}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class PivotableTokenService {
 
@@ -64,7 +70,7 @@ public class PivotableTokenService {
 	public PivotableTokenService(Environment env, IUuidGenerator uuidgenerator) {
 		this.env = env;
 		this.uuidGenerator = uuidgenerator;
-		this.supplierSymetricKey = () -> loadSigningJwk();
+		this.supplierSymetricKey = this::loadSigningJwk;
 
 		log.info("iss={}", getIssuer());
 		log.info("{}.kid={}", IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, loadSigningJwk().getKeyID());
@@ -76,8 +82,8 @@ public class PivotableTokenService {
 	}
 
 	public static void main(String[] args) {
-		JWK secretKey = PivotableTokenService.generateSignatureSecret(new JdkUuidGenerator());
-		System.out.println("Secret key for JWT signing: " + secretKey.toJSONString());
+		JWK secretKey = generateSignatureSecret(new JdkUuidGenerator());
+		log.info("Secret key for JWT signing: {}", secretKey.toJSONString());
 	}
 
 	@SneakyThrows(JOSEException.class)
@@ -149,9 +155,8 @@ public class PivotableTokenService {
 	 * access token can be used to perform tasks on behalf of the user on subsequent HTTP calls to the application until
 	 * it expires or is revoked.
 	 * 
-	 * @param user
+	 * @param accountId
 	 *            The user for whom to generate an access token.
-	 * @param playerId
 	 * @throws IllegalArgumentException
 	 *             if provided argument is <code>null</code>.
 	 * @return The generated JWT access token.

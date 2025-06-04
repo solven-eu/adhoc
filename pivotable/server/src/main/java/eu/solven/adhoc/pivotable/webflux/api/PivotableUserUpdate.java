@@ -29,6 +29,11 @@ import lombok.Builder.Default;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Holds details which may be mutated about a User.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized

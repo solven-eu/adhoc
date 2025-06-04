@@ -30,6 +30,8 @@ import lombok.AllArgsConstructor;
 
 /**
  * Demonstrates controller, useful to do basic integrations tests before wiring real routes.
+ * 
+ * @author Benoit Lacelle
  */
 @RestController
 @AllArgsConstructor

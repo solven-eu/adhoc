@@ -69,6 +69,7 @@ public class FilterHelpers {
 		return getValueMatcherLax(filter, column, false);
 	}
 
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;

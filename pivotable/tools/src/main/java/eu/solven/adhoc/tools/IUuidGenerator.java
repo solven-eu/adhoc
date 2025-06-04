@@ -31,6 +31,7 @@ import java.util.UUID;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 // https://github.com/cowtowncoder/java-uuid-generator
 public interface IUuidGenerator {
 	UUID randomUUID();

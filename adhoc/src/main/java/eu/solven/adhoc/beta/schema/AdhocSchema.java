@@ -52,6 +52,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.NonNull;
@@ -138,13 +139,24 @@ public class AdhocSchema implements IAdhocSchema {
 	public EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty) {
 		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
-		nameToCube.entrySet().stream().filter(e -> isRequested(query.getCube(), allIfEmpty, e)).forEach(e -> {
-			String cubeName = e.getKey();
-			ICubeWrapper cube = e.getValue();
+		nameToCube.entrySet().stream().filter(c -> isRequested(query.getCube(), allIfEmpty, c)).forEach(c -> {
+			String cubeName = c.getKey();
+			ICubeWrapper cube = c.getValue();
 
 			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-			cubeSchema.columns(ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)));
+			ColumnarMetadata columns;
+			try {
+				columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName));
+			} catch (RuntimeException e) {
+				if (AdhocUnsafe.isFailFast()) {
+					throw e;
+				} else {
+					log.warn("Issue fetching columns from cube={}", cubeName, e);
+					columns = ColumnarMetadata.from(Map.of("error", e.getClass()));
+				}
+			}
+			cubeSchema.columns(columns);
 			cubeSchema.measures(cube.getNameToMeasure());
 
 			Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();

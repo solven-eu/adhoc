@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PivotableLoginRouter {
 
-	private static final RequestPredicate json(String path) {
+	private static RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
 		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
 	}

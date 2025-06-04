@@ -201,12 +201,13 @@ export default {
 
 			gridMetadata.nb_rows = data.array.length;
 
+			// https://github.com/6pac/SlickGrid/issues/1114
+			grid.remapAllColumnsRowSpan();
+
 			// https://github.com/6pac/SlickGrid/wiki/Slick.Grid#invalidate
 			// since we have a rowspan that spans nearly the entire length to the bottom,
 			// we need to invalidate everything so that it recalculate all rowspan cell heights
 			grid.invalidate();
-			// https://github.com/6pac/SlickGrid/issues/1114
-			grid.remapAllColumnsRowSpan();
 		};
 
 		// https://stackoverflow.com/questions/12128680/slickgrid-what-is-a-data-view

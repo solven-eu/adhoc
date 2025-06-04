@@ -63,6 +63,7 @@ import net.datafaker.providers.base.Country;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.AvoidDuplicateLiterals" })
 public class InjectSimpleExampleCubesConfig {
 
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`

@@ -65,4 +65,13 @@ public class TestAdhocUnsafe {
 		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(123);
 		Assertions.assertThat(AdhocUnsafe.defaultCapacity()).isEqualTo(123);
 	}
+
+	@Test
+	public void testToggleFailfast() {
+		Assertions.assertThat(AdhocUnsafe.isFailFast()).isTrue();
+		AdhocUnsafe.outFailFast();
+		Assertions.assertThat(AdhocUnsafe.isFailFast()).isFalse();
+		AdhocUnsafe.inFailFast();
+		Assertions.assertThat(AdhocUnsafe.isFailFast()).isTrue();
+	}
 }

@@ -31,6 +31,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * API enabling clearing anything transient. Useful for integration tests.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableClearHandler {

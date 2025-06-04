@@ -36,6 +36,11 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Unclear.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Slf4j
@@ -51,9 +56,8 @@ public class PivotableWebclientServerProperties {
 
 	public static String loadRefreshToken(Environment env, IUuidGenerator uuidGenerator, String refreshToken) {
 		if ("NEEDS_A_PROPER_VALUE".equals(refreshToken)) {
-			throw new IllegalStateException(
-					"Needs to define properly '%s'".formatted(PivotableWebclientServerProperties.ENV_REFRESH_TOKEN));
-		} else if (PivotableWebclientServerProperties.PLACEHOLDER_GENERATEFAKEPLAYER.equals(refreshToken)) {
+			throw new IllegalStateException("Needs to define properly '%s'".formatted(ENV_REFRESH_TOKEN));
+		} else if (PLACEHOLDER_GENERATEFAKEPLAYER.equals(refreshToken)) {
 			if (!env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
 				throw new IllegalStateException(
 						"Can not generate a refreshToken if not `%s`".formatted(IPivotableSpringProfiles.P_FAKEUSER));
@@ -63,7 +67,7 @@ public class PivotableWebclientServerProperties {
 			PivotableTokenService kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
 			RefreshTokenWrapper wrappedRefreshToken = kumiteTokenService.wrapInJwtRefreshToken(FakeUser.ACCOUNT_ID);
 			refreshToken = wrappedRefreshToken.getRefreshToken();
-		} else if (PivotableWebclientServerProperties.PLACEHOLDER_GENERATERANDOMPLAYER.equals(refreshToken)) {
+		} else if (PLACEHOLDER_GENERATERANDOMPLAYER.equals(refreshToken)) {
 			{
 				log.info("Generating on-the-fly a fakeUser refreshToken");
 			}
@@ -75,14 +79,12 @@ public class PivotableWebclientServerProperties {
 	}
 
 	public static PivotableWebclientServerProperties forTests(Environment env, int randomServerPort) {
-		String refreshToken = loadRefreshToken(env,
-				JdkUuidGenerator.INSTANCE,
-				PivotableWebclientServerProperties.PLACEHOLDER_GENERATERANDOMPLAYER);
+		String refreshToken = loadRefreshToken(env, JdkUuidGenerator.INSTANCE, PLACEHOLDER_GENERATERANDOMPLAYER);
 
 		// https://github.com/spring-projects/spring-boot/issues/5077
 		String baseUrl = env.getRequiredProperty(KEY_PLAYER_CONTESTBASEURL)
 				.replaceFirst("LocalServerPort", Integer.toString(randomServerPort));
 
-		return PivotableWebclientServerProperties.builder().baseUrl(baseUrl).refreshToken(refreshToken).build();
+		return builder().baseUrl(baseUrl).refreshToken(refreshToken).build();
 	}
 }

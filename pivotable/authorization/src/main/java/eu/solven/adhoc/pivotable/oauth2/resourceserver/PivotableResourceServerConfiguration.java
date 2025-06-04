@@ -44,6 +44,11 @@ import eu.solven.adhoc.tools.IUuidGenerator;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Manages decoding of JWT.
+ * 
+ * @author Benoit Lacelle
+ */
 @Configuration
 @Slf4j
 public class PivotableResourceServerConfiguration {
@@ -68,6 +73,7 @@ public class PivotableResourceServerConfiguration {
 		return NimbusReactiveJwtDecoder.withSecretKey(secretKey).macAlgorithm(MAC_ALGORITHM).build();
 	}
 
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public static OctetSequenceKey loadOAuth2SigningKey(Environment env, IUuidGenerator uuidGenerator)
 			throws ParseException {
 		String secretKeySpec = env.getRequiredProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY);

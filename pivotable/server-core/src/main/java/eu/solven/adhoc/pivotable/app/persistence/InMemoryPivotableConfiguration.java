@@ -28,6 +28,11 @@ import org.springframework.context.annotation.Profile;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 
+/**
+ * Pivotable when not relying on a database for persistence.
+ * 
+ * @author Benoit Lacelle
+ */
 @Import({
 
 		InMemoryUserRepository.class,

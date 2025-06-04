@@ -30,6 +30,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import lombok.experimental.UtilityClass;
 import reactor.core.publisher.Mono;
 
 /**
@@ -38,10 +39,16 @@ import reactor.core.publisher.Mono;
  * @author Benoit Lacelle
  *
  */
+@UtilityClass
 public class AdhocHandlerHelper {
+	/**
+	 * JavaScript may typically turn a missing value into `undefined` String. This is then an invalid input, deserves
+	 * fail fast behavior.
+	 */
+	private static final String C_UNDEFINED = "undefined";
 
 	public static UUID uuid(String rawUuid, String idKey) {
-		if ("undefined".equals(rawUuid)) {
+		if (C_UNDEFINED.equals(rawUuid)) {
 			throw new IllegalArgumentException("`undefined` is an invalid `%s`".formatted(idKey));
 		} else if (rawUuid == null) {
 			throw new IllegalArgumentException("`null` is an invalid `%s`".formatted(idKey));
@@ -76,7 +83,7 @@ public class AdhocHandlerHelper {
 	}
 
 	private static String string(String rawValue, String idKey) {
-		if ("undefined".equals(rawValue)) {
+		if (C_UNDEFINED.equals(rawValue)) {
 			throw new IllegalArgumentException("`undefined` is an invalid `%s`".formatted(idKey));
 		} else if (rawValue == null) {
 			throw new IllegalArgumentException("`null` is an invalid `%s`".formatted(idKey));
@@ -90,7 +97,7 @@ public class AdhocHandlerHelper {
 		Optional<String> optBoolean = request.queryParam(idKey);
 
 		return optBoolean.map(rawBoolean -> {
-			if ("undefined".equals(rawBoolean)) {
+			if (C_UNDEFINED.equals(rawBoolean)) {
 				throw new IllegalArgumentException("`undefined` is an invalid rawBoolean");
 			}
 
@@ -106,7 +113,7 @@ public class AdhocHandlerHelper {
 		Optional<String> optDouble = request.queryParam(idKey);
 
 		return optDouble.map(rawDouble -> {
-			if ("undefined".equals(rawDouble)) {
+			if (C_UNDEFINED.equals(rawDouble)) {
 				throw new IllegalArgumentException("`undefined` is an invalid rawDouble");
 			}
 

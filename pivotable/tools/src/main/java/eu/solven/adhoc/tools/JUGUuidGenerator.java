@@ -36,7 +36,7 @@ import com.fasterxml.uuid.impl.RandomBasedGenerator;
  */
 public class JUGUuidGenerator implements IUuidGenerator {
 
-	private RandomBasedGenerator generator;
+	final RandomBasedGenerator generator;
 
 	public JUGUuidGenerator(RandomGenerator randomGenerator) {
 		Random random = Random.from(randomGenerator);

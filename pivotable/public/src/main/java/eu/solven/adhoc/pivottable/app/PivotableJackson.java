@@ -29,6 +29,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import lombok.experimental.UtilityClass;
+
+/**
+ * {@link ObjectMapper} specific behavior in Pivotable.
+ * 
+ * @author Benoit Lacelle
+ */
+@UtilityClass
 public class PivotableJackson {
 	public static ObjectMapper objectMapper() {
 		ObjectMapper objectMapper = new ObjectMapper();

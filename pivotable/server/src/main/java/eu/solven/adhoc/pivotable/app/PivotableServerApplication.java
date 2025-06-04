@@ -42,6 +42,11 @@ import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
 import eu.solven.adhoc.tools.GitPropertySourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * The main entrypoint for the application.
+ * 
+ * @author Benoit Lacelle
+ */
 @SpringBootApplication(scanBasePackages = "none")
 @Import({
 

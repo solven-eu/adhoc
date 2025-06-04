@@ -58,6 +58,11 @@ import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Enable authentication with social identity providers (e.g. GitHub, Google).
+ * 
+ * @author Benoit Lacelle
+ */
 @EnableWebFluxSecurity
 @Import({
 
@@ -79,6 +84,12 @@ public class PivotableSocialWebFluxSecurity {
 		return oidcReactiveOAuth2UserService;
 	}
 
+	/**
+	 * 
+	 * @param http
+	 * @param env
+	 * @return a {@link SecurityWebFilterChain} related to social identity providers.
+	 */
 	// https://github.com/ch4mpy/spring-addons/tree/master/samples/tutorials/resource-server_with_ui
 	// https://stackoverflow.com/questions/74744901/default-401-instead-of-redirecting-for-oauth2-login-spring-security
 	// `-1` as this has to be used in priority aver the API securityFilterChain

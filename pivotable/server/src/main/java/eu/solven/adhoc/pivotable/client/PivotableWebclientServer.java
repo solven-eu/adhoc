@@ -59,8 +59,9 @@ import reactor.core.publisher.Mono;
  */
 // https://www.baeldung.com/spring-5-webclient
 @Slf4j
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PivotableWebclientServer implements IPivotableServer {
-	final String PREFIX = IPivotableApiConstants.PREFIX;
+	static final String PREFIX = IPivotableApiConstants.PREFIX;
 
 	final String baseUrl;
 	final String refreshToken;
@@ -132,6 +133,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	}
 
 	// https://stackoverflow.com/questions/65972564/spring-reactive-web-client-rest-request-with-oauth-token-in-case-of-401-response
+	@SuppressWarnings("checkstyle:MagicNumber")
 	Mono<AccessTokenWrapper> accessToken() {
 		// Return the same Mono for 45 minutes
 		return requestAccessToken()

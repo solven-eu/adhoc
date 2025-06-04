@@ -74,6 +74,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class InjectPixarExampleCubesConfig {
 
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
@@ -87,6 +88,7 @@ public class InjectPixarExampleCubesConfig {
 		return null;
 	}
 
+	@SuppressWarnings("checkstyle.MethodLength")
 	protected void registerPixarFilms(AdhocSchema schema) {
 		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 

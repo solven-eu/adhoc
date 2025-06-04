@@ -193,4 +193,18 @@ public class AdhocUnsafe {
 		// re-hash.
 		return limitColumnSize;
 	}
+
+	public static void inFailFast() {
+		if (!failFast) {
+			log.info("Switching failfast=true");
+			failFast = true;
+		}
+	}
+
+	public static void outFailFast() {
+		if (failFast) {
+			log.info("Switching failfast=false");
+			failFast = false;
+		}
+	}
 }
