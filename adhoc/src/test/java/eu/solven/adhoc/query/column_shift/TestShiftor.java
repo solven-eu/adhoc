@@ -38,7 +38,6 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**

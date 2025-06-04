@@ -50,6 +50,7 @@ import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -139,20 +140,19 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 		List<IDecompositionEntry> decomposed = decomposition.decompose(slice.getSlice(), value);
 
-		// If current slice is holding multiple groups (e.g. a filter with an IN), we should accept each element
+		// If current slice is contributing to multiple groups (e.g. a filter with an IN), we should accept each element
 		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
 		// G20`, `FR` should contributes only once).
+		// NOTE This is a performance optimization, as we could rely on `outputCoordinatesAlreadyContributed`
 		boolean isMultiGroupSlice;
 
 		{
-			Set<Set<String>> decompositionColumns = decomposed.stream()
-					.map(IDecompositionEntry::getSlice)
-					.map(s -> s.keySet())
-					.collect(Collectors.toSet());
-
 			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
-			if (decompositionColumns.stream().allMatch(groupByColumns::containsAll)) {
-				// all group columns are expressed in groupBy
+			if (decomposed.stream()
+					.map(IDecompositionEntry::getSlice)
+					.map(Map::keySet)
+					.allMatch(groupByColumns::containsAll)) {
+				// all decomposition columns are expressed in groupBy
 				isMultiGroupSlice = false;
 			} else {
 				// TODO We may also manage the case where we filter a single group
@@ -175,6 +175,11 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			}
 
 			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
+
+			if (isNotRelevant(outputCoordinate)) {
+				log.debug("Rejected the improper decomposedEntry slice={}", outputCoordinate);
+				return;
+			}
 
 			if (
 			// Not multiGroupSlice: the group is single and clearly stated
@@ -225,5 +230,10 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		});
 
 		return queryCoordinatesBuilder.build();
+	}
+
+	protected boolean isNotRelevant(Map<String, ?> decomposedSlice) {
+		// TODO Reject decomposed slice which does not fit into the queryStep filter
+		return false;
 	}
 }

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.eventbus;
 
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 import com.google.common.eventbus.Subscribe;
 

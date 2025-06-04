@@ -66,12 +66,13 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 			// These cases are unclear.
 			// One occurrence was due to improper type conversion
 			// e.g. a filter with wrong type `y=2025` as String, while receiving a slice with `y=2025` as long.
-			throw new IllegalStateException("AND between slice=`%s` and query.filter=`` led to .matchNone"
+			// Another occurrence is Dispatchor writing into Slice which are filtered out. May happen on simple but
+			// inefficient IDecomposition writing in filtered slices.
+			throw new IllegalStateException("AND between slice=`%s` and query.filter=`%s` led to .matchNone"
 					.formatted(slice.asFilter(), queryStep.getFilter()));
 		}
 
-		// BEWARE We should also check it is always a `AND` of `EQUALS`.
-
+		// BEWARE We should also check it is always an `AND` of `EQUALS`.
 		return filter;
 	}
 

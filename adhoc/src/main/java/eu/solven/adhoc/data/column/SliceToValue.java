@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import lombok.Builder;
