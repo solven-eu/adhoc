@@ -32,6 +32,11 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Used?
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 @Deprecated(since = "used?")

@@ -27,11 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Logs while iterating through a {@link ITabularRecordStream}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 @Builder
 public class TabularRecordLogger {

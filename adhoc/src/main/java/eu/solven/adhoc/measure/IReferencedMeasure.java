@@ -22,6 +22,14 @@
  */
 package eu.solven.adhoc.measure;
 
+import eu.solven.adhoc.measure.model.IMeasure;
+
+/**
+ * Used by {@link IMeasure} which are referred by their name.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface IReferencedMeasure {
 	/**
 	 * 

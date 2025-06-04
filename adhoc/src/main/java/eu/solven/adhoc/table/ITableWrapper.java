@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -94,7 +95,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	default Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		return columnToValueMatcher.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> getCoordinates(e.getKey(), e.getValue(), limit)));
+				.collect(Collectors.toMap(Entry::getKey, e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
 
 }

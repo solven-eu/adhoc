@@ -35,6 +35,8 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 /**
  * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
  * computed by a {@link ITransformatorQueryStep}.
+ * 
+ * @author Benoit Lacelle
  */
 public interface ISliceToValue {
 	/**

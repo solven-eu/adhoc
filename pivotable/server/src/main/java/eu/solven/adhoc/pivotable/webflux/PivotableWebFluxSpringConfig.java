@@ -38,6 +38,11 @@ import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Wraps API-related conponents.
+ * 
+ * @author Benoit Lacelle
+ */
 @Import({
 
 		PivotableSpaRouter.class,

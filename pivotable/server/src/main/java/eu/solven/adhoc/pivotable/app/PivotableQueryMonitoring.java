@@ -27,6 +27,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+/**
+ * Add beans related to query monitoring.
+ * 
+ * @author Benoit Lacelle
+ */
 @Configuration
 @Import({
 

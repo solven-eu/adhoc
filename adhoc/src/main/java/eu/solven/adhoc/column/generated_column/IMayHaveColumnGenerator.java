@@ -31,6 +31,7 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IMayHaveColumnGenerator {
 
 	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);

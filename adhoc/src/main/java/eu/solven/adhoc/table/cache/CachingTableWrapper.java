@@ -80,6 +80,10 @@ public class CachingTableWrapper implements ITableWrapper {
 	@NonNull
 	final ITableWrapper decorated;
 
+	@NonNull
+	@Default
+	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(DEFAULT_MAX_WEIGHT).build();
+
 	/**
 	 * Key for the cache. It refers to a single non-filtering {@link FilteredAggregator}.
 	 * 
@@ -95,7 +99,7 @@ public class CachingTableWrapper implements ITableWrapper {
 			this.tableQuery = tableQuery;
 
 			if (tableQuery.getAggregators().isEmpty()) {
-				// Request for slices/emptyMeasure
+				log.trace("Request for slices/emptyMeasure");
 			} else {
 				if (tableQuery.getAggregators().size() != 1) {
 					throw new IllegalArgumentException("Must have a single aggregator. Was %s".formatted(tableQuery));
@@ -141,7 +145,7 @@ public class CachingTableWrapper implements ITableWrapper {
 				})
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
-				.removalListener(new RemovalListener<CachingKey, CachingValue>() {
+				.removalListener(new RemovalListener<>() {
 					@Override
 					public void onRemoval(RemovalNotification<CachingKey, CachingValue> notification) {
 						log.debug("RemovalNotification cause={} {} size={}",
@@ -151,10 +155,6 @@ public class CachingTableWrapper implements ITableWrapper {
 					}
 				});
 	}
-
-	@NonNull
-	@Default
-	final Cache<CachingKey, CachingValue> cache = defaultCacheBuilder().maximumWeight(DEFAULT_MAX_WEIGHT).build();
 
 	public void invalidateAll() {
 		cache.invalidateAll();
@@ -171,6 +171,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		return decorated.getName();
 	}
 
+	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		if (queryPod.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
@@ -235,7 +236,12 @@ public class CachingTableWrapper implements ITableWrapper {
 
 			// If the cache is empty, we'll return the result from underlying, which tells if distinct or not
 			// If the cache is not empty, the merging process does not distinct slices, else it may generate duplicates
-			boolean distinctSlices = fromCache.isEmpty() ? decoratedRecordsStream.isDistinctSlices() : false;
+			boolean distinctSlices;
+			if (fromCache.isEmpty()) {
+				distinctSlices = decoratedRecordsStream.isDistinctSlices();
+			} else {
+				distinctSlices = false;
+			}
 
 			return new ITabularRecordStream() {
 

@@ -40,12 +40,18 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 
+/**
+ * Benchmarks related with {@link ComparableElseClassComparatorV2}.
+ * 
+ * @author Benoit Lacelle
+ */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
 @Warmup(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
+@SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkComparableElseClassComparatorV2 {
 
 	private ComparableElseClassComparatorV2 comparator = new ComparableElseClassComparatorV2();

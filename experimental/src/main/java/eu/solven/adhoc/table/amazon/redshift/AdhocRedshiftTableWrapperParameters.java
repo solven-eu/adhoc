@@ -28,6 +28,11 @@ import lombok.NonNull;
 import lombok.Value;
 import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
 
+/**
+ * Parameters to configure a {@link AdhocRedshiftTableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class AdhocRedshiftTableWrapperParameters {

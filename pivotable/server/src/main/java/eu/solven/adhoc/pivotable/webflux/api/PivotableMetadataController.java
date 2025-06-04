@@ -34,6 +34,8 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 
 /**
  * Holds various details/metadata/enrichment about the application.
+ * 
+ * @author Benoit Lacelle
  */
 @RestController
 public class PivotableMetadataController {

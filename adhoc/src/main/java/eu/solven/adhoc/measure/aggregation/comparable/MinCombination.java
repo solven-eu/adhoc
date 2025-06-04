@@ -31,6 +31,8 @@ import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
  * Return the maximum amongst the underlying values.
+ * 
+ * @author Benoit Lacelle
  */
 public class MinCombination implements ICombination {
 

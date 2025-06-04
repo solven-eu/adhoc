@@ -55,6 +55,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@SuppressWarnings("PMD.GodClass")
 public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	@NonNull
 	@Singular
@@ -123,7 +124,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		}
 
 		if (notMatchAll.isEmpty()) {
-			return IValueMatcher.MATCH_ALL;
+			return MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
 			return notMatchAll.getFirst();
 		} else {
@@ -174,6 +175,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	 * @return true an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
 	 *         returning `owner AND owned`.
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	static Optional<IValueMatcher> mergeMatchers(IValueMatcher owner, IValueMatcher owned) {
 		if (owner.equals(owned)) {
 			return Optional.of(owner);
@@ -215,13 +217,10 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 			} else
 
 			// Comparing
-			if (owned instanceof ComparingMatcher ownedComparing) {
-				if (owner instanceof ComparingMatcher ownerComparing) {
-					Optional<IValueMatcher> optSimplified =
-							mergeComparing(owner, owned, ownedComparing, ownerComparing);
-					if (optSimplified.isPresent()) {
-						return optSimplified;
-					}
+			if (owned instanceof ComparingMatcher ownedComparing && owner instanceof ComparingMatcher ownerComparing) {
+				Optional<IValueMatcher> optSimplified = mergeComparing(owner, owned, ownedComparing, ownerComparing);
+				if (optSimplified.isPresent()) {
+					return optSimplified;
 				}
 			}
 		}
@@ -252,10 +251,10 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 				// Either this is a between, or this is a matchNone
 				if (ownerComparing.isGreaterThan() && ownerMinusOwned > 0) {
 					// `a >= X && a <= Y && X >= Y` ==> `matchNone`
-					return Optional.of(IValueMatcher.MATCH_NONE);
+					return Optional.of(MATCH_NONE);
 				} else if (!ownerComparing.isGreaterThan() && ownerMinusOwned < 0) {
 					// `a <= X && a >= Y && X <= Y` ==> `matchNone`
-					return Optional.of(IValueMatcher.MATCH_NONE);
+					return Optional.of(MATCH_NONE);
 				} else {
 					// `a >= X && a <= Y && X <= Y` ==> `matchNone`
 					return Optional.empty();
@@ -300,7 +299,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		if (other.match(operand)) {
 			return equalsMatcher;
 		} else {
-			return IValueMatcher.MATCH_NONE;
+			return MATCH_NONE;
 		}
 	}
 
@@ -314,7 +313,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		if (other.match(null)) {
 			return nullMatcher;
 		} else {
-			return IValueMatcher.MATCH_NONE;
+			return MATCH_NONE;
 		}
 	}
 
@@ -330,8 +329,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		} else if (negated instanceof InMatcher negatedIn) {
 			Set<?> disallowedElements = negatedIn.getOperands();
 
-			List<?> disallowedButAllowedByOther =
-					disallowedElements.stream().filter(disallowed -> other.match(disallowed)).toList();
+			List<?> disallowedButAllowedByOther = disallowedElements.stream().filter(other::match).toList();
 
 			if (disallowedButAllowedByOther.isEmpty()) {
 				// The whole not is already rejected by `other`
@@ -358,7 +356,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	private static IValueMatcher mergeGivenIn(InMatcher inMatcher, IValueMatcher other) {
 		Set<?> inOperands = inMatcher.getOperands();
 
-		List<?> allowedInBoth = inOperands.stream().filter(ownerOperand -> other.match(ownerOperand)).toList();
+		List<?> allowedInBoth = inOperands.stream().filter(other::match).toList();
 
 		return InMatcher.isIn(allowedInBoth);
 	}

@@ -27,6 +27,7 @@ package eu.solven.adhoc.measure.combination;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasSanityChecks {
 	/**
 	 * Would throw if something is wrong. May log WARNs.

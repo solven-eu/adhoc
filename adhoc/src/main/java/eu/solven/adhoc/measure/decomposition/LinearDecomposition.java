@@ -49,6 +49,8 @@ import eu.solven.pepper.mappath.MapPathGet;
  * measure intosome min and max value to the output column.
  * <p>
  * For instance, given v=200 on input=13 with min=0 and max=100, we write 26 into output=0 and 174 into output=100.
+ * 
+ * @author Benoit Lacelle
  */
 public class LinearDecomposition implements IDecomposition {
 	public static final String KEY = "linear";
@@ -118,6 +120,7 @@ public class LinearDecomposition implements IDecomposition {
 		}
 	}
 
+	@SuppressWarnings("PMD.UnnecessaryBoxing")
 	protected Object scaleComplement(Number min, Number max, Object input, Object value) {
 		Object scaled = scale(min, max, input, value);
 

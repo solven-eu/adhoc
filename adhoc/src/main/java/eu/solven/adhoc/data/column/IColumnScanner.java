@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IColumnScanner<T> {
 	/**
 	 * 

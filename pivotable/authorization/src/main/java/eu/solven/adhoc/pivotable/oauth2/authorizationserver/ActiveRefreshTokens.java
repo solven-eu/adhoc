@@ -28,6 +28,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+/**
+ * Keep track of active tokens.
+ * 
+ * @author Benoit Lacelle
+ */
 public class ActiveRefreshTokens {
 	final Map<UUID, Set<UUID>> accountIdToJti = new ConcurrentHashMap<>();
 

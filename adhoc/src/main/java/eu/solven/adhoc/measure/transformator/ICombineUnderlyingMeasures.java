@@ -22,5 +22,12 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
+import eu.solven.adhoc.measure.model.Combinator;
+
+/**
+ * Relates with {@link Combinator}.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface ICombineUnderlyingMeasures extends IHasUnderlyingMeasures, IHasCombinationKey {
 }

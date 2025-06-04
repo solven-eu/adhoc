@@ -36,7 +36,6 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -100,13 +99,8 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		}
 
 		if (query.getOptions().contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
-			if (measure instanceof ReferencedMeasure ref) {
-				return this.forest.resolveIfRefOpt(ref)
-						.orElseGet(() -> EmptyMeasure.builder().name(ref.getRef()).build());
-			} else {
-				return this.forest.resolveIfRefOpt(measure)
-						.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
-			}
+			return this.forest.resolveIfRefOpt(measure)
+					.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
 		} else {
 			return this.forest.resolveIfRef(measure);
 		}
@@ -144,6 +138,12 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				.build();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public static class QueryPodBuilder {
 		ICubeQuery query;
 		AdhocQueryId queryId;
@@ -156,14 +156,14 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		IColumnsManager columnsManager;
 		// boolean columnsManager$set;
 
+		// executorService is problematic as it has @Default
+		ExecutorService executorService;
+
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
 			return this;
 		}
-
-		// executorService is problematic as it has @Default
-		ExecutorService executorService;
 
 		public QueryPodBuilder executorService(ExecutorService executorService) {
 			this.executorService = executorService;

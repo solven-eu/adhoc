@@ -35,6 +35,12 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 
+/**
+ * Standard {@link INullableObjectDictionary}.
+ * 
+ * @param <T>
+ * @author Benoit Lacelle
+ */
 @Deprecated(since = "Not-Ready")
 @Builder
 public class NullableObjectList<T> extends AbstractObjectList<T> implements INullableObjectDictionary<T> {
@@ -46,7 +52,7 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 
 	@Default
 	@NonNull
-	final ObjectList<T> list = new ObjectArrayList<T>();
+	final ObjectList<T> list = new ObjectArrayList<>();
 
 	@Override
 	public boolean isNull(int index) {

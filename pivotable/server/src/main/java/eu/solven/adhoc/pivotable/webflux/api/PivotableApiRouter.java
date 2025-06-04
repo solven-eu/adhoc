@@ -53,9 +53,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Configuration(proxyBeanMethods = false)
 @Slf4j
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PivotableApiRouter {
 
-	private static final RequestPredicate json(String path) {
+	private static RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
 		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
 	}

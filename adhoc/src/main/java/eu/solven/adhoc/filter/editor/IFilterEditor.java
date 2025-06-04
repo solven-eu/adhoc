@@ -38,7 +38,13 @@ import lombok.Value;
  *
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IFilterEditor {
+	/**
+	 * The deepest context for {@link IFilterEditor}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
 	class FilterEditorContext implements IHasCustomMarker {

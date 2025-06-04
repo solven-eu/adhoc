@@ -37,6 +37,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  *
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ICubeQueryEngine {
 
 	/**

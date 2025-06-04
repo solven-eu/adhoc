@@ -31,6 +31,7 @@ import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IStopwatchFactory {
 	IStopwatch createStarted();
 

@@ -37,5 +37,5 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 public interface IAdhocUserRepository {
 	Optional<PivotableUser> getUser(PivotableUserRawRaw accountId);
 
-	PivotableUser registerOrUpdate(PivotableUserPreRegister AdhocUserPreRegister);
+	PivotableUser registerOrUpdate(PivotableUserPreRegister userPreRegister);
 }

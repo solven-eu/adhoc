@@ -40,6 +40,11 @@ import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableMetadataController;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Everything related with security in Pivotable.
+ * 
+ * @author Benoit Lacelle
+ */
 // https://docs.spring.io/spring-security/reference/reactive/oauth2/login/advanced.html#webflux-oauth2-login-advanced-userinfo-endpoint
 @EnableWebFluxSecurity
 @Import({

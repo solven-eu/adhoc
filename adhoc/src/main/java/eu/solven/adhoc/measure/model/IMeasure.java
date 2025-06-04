@@ -54,6 +54,7 @@ public interface IMeasure extends IHasName, IHasTags {
 	 * 
 	 * @return the name of the {@link IMeasure}. It has to be unique within a given {@link MeasureForest}.
 	 */
+	@Override
 	String getName();
 
 	/**

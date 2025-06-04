@@ -30,12 +30,16 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.ParserException;
 
 import eu.solven.adhoc.query.ICountMeasuresConstants;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility methods to help coding with JooQ.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
+@UtilityClass
 public class AdhocJooqHelper {
 
 	/**

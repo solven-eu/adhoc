@@ -32,12 +32,14 @@ import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.data.tabular.AggregatingColumnsV2;
-import eu.solven.adhoc.data.tabular.AggregatingColumnsV2_Distinct;
+import eu.solven.adhoc.data.tabular.AggregatingColumns;
+import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -49,6 +51,11 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Standard {@link ITabularRecordStreamReducer}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Slf4j
@@ -63,9 +70,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures(ITabularRecordStream stream) {
 		if (stream.isDistinctSlices()) {
-			return AggregatingColumnsV2_Distinct.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+			return AggregatingColumnsDistinct.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
 		} else {
-			return AggregatingColumnsV2.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+			return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
 		}
 	}
 
@@ -93,11 +100,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
 			String msgE = "Issue processing stream from %s".formatted(stream);
-			if (e instanceof IllegalStateException illegalStateE) {
-				throw new IllegalStateException(msgE, illegalStateE);
-			} else {
-				throw new RuntimeException(msgE, e);
-			}
+			throw AdhocExceptionHelpers.wrap(e, msgE);
 		}
 
 		return grid;
@@ -172,7 +175,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			coordinatesBuilder.append(value);
 		}
 
-		AdhocMap asMap = coordinatesBuilder.build();
+		IAdhocMap asMap = coordinatesBuilder.build();
 		return Optional.of(SliceAsMap.fromMap(asMap));
 	}
 

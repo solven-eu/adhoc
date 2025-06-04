@@ -87,7 +87,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
 		case CoalesceAggregation.KEY:
-			yield new CoalesceAggregation();
+			yield new CoalesceAggregation(options);
 		default:
 			yield defaultAggregation(key, options);
 		};
@@ -121,9 +121,9 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		case EvaluatedExpressionCombination.KEY: {
 			try {
 				Class.forName("com.ezylang.evalex.Expression");
-			} catch (ClassNotFoundException ex) {
+			} catch (ClassNotFoundException e) {
 				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loaded."
-						+ " It is an `<optional>true</optional>` maven dependency you need to activate manually");
+						+ " It is an `<optional>true</optional>` maven dependency you need to activate manually", e);
 			}
 			yield EvaluatedExpressionCombination.parse(enrichedOptions);
 		}
@@ -138,7 +138,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 	}
 
 	protected Map<String, Object> enrichOptions(Map<String, ?> options) {
-		Map<String, Object> enriched = new LinkedHashMap<String, Object>(options);
+		Map<String, Object> enriched = new LinkedHashMap<>(options);
 
 		// Some operators needs to create more operators (e.g. ReversePolishCombination)
 		enriched.put("operatorsFactory", this);
@@ -157,7 +157,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 			asClass = (Class<? extends T>) Class.forName(className);
 		} catch (ClassNotFoundException e) {
 			log.trace("No class matches %s".formatted(className));
-			throw new IllegalArgumentException("Unexpected value: " + className);
+			throw new IllegalArgumentException("Unexpected value: " + className, e);
 		}
 
 		if (!parentClazz.isAssignableFrom(asClass)) {

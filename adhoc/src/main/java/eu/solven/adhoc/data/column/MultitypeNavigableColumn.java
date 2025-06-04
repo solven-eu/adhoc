@@ -71,6 +71,7 @@ import lombok.extern.slf4j.Slf4j;
  * The key has to be {@link Comparable}, so that `stream().sorted()` is a no-op, for performance reasons.
  *
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
@@ -250,11 +251,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		// No need for .distinct as each key is guaranteed to appear in a single column
 		return StreamSupport.stream(Spliterators.spliterator(keys, // keys is guaranteed to hold distinct value
-				Spliterator.DISTINCT |
-				// keys are sorted naturally
-						Spliterator.ORDERED | Spliterator.SORTED |
+				Spliterator.DISTINCT
+						// keys are sorted naturally
+						| Spliterator.ORDERED
+						| Spliterator.SORTED
 						// When read, this can not be edited anymore
-						Spliterator.IMMUTABLE),
+						| Spliterator.IMMUTABLE),
 				false);
 
 	}
@@ -323,6 +325,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	 * @param input
 	 * @return a copy into a {@link MultitypeNavigableColumn}
 	 */
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copy(IMultitypeColumnFastGet<T> input) {
 		int size = Ints.checkedCast(input.size());
 
@@ -340,18 +343,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				@Override
 				public void onLong(long v) {
 					nbLong.incrementAndGet();
-					keyToObject.add(new AbstractObject2LongMap.BasicEntry<T>(sm.getSlice(), v));
+					keyToObject.add(new AbstractObject2LongMap.BasicEntry<>(sm.getSlice(), v));
 				}
 
 				@Override
 				public void onDouble(double v) {
 					nbDouble.incrementAndGet();
-					keyToObject.add(new AbstractObject2DoubleMap.BasicEntry<T>(sm.getSlice(), v));
+					keyToObject.add(new AbstractObject2DoubleMap.BasicEntry<>(sm.getSlice(), v));
 				}
 
 				@Override
 				public void onObject(Object v) {
-					keyToObject.add(new AbstractObject2ObjectMap.BasicEntry<T, Object>(sm.getSlice(), v));
+					keyToObject.add(new AbstractObject2ObjectMap.BasicEntry<>(sm.getSlice(), v));
 				}
 			});
 		});

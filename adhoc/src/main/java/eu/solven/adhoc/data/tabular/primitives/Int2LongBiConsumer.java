@@ -22,6 +22,14 @@
  */
 package eu.solven.adhoc.data.tabular.primitives;
 
+import java.util.function.BiConsumer;
+
+/**
+ * A {@link BiConsumer} accepting a primitive `long` as key, and a primitive `long` as value.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface Int2LongBiConsumer {
 	void acceptInt2Long(int i, long l);
 }

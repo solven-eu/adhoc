@@ -46,6 +46,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * @author Benoit Lacelle
  */
 public class RatioOverCurrentColumnValueCompositor {
+	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	public Set<IMeasure> addTo(String column, String underlying) {
 		String wholeMeasureName = "%s_%s=%s_whole".formatted(underlying, column, "current");
 		String sliceMeasureName = "%s_%s=%s_slice".formatted(underlying, column, "current");

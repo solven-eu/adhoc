@@ -46,11 +46,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Manages tokens.
+ * 
+ * @author Benoit Lacelle
+ */
 @AllArgsConstructor
 @Slf4j
 public class AccessTokenHandler {
 
-	final PivotableTokenService kumiteTokenService;
+	final PivotableTokenService tokenService;
 	final PivotableUsersRegistry usersRegistry;
 
 	final ActiveRefreshTokens activeRefreshTokens;
@@ -63,8 +68,7 @@ public class AccessTokenHandler {
 
 			Map.Entry<Jwt, PivotableUser> jwtToUser = userFromRefreshTokenJwt(authentication);
 
-			AccessTokenWrapper tokenWrapper =
-					kumiteTokenService.wrapInJwtAccessToken(jwtToUser.getValue().getAccountId());
+			AccessTokenWrapper tokenWrapper = tokenService.wrapInJwtAccessToken(jwtToUser.getValue().getAccountId());
 
 			String accessTokenJti = getJti(tokenWrapper);
 

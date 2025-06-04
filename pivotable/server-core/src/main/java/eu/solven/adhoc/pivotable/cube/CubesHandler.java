@@ -35,6 +35,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Used?
+ * 
+ * @author Benoit Lacelle
+ */
 @Deprecated(since = "used?")
 @RequiredArgsConstructor
 @Slf4j

@@ -43,7 +43,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
 public class AdhocAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(value = { IAdhocEventBus.class,
+	@ConditionalOnMissingBean({ IAdhocEventBus.class,
 			com.google.common.eventbus.EventBus.class,
 			org.greenrobot.eventbus.EventBus.class })
 	public IAdhocEventBus adhocEventBus() {
@@ -51,33 +51,33 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = IAdhocEventBus.class)
-	@ConditionalOnBean(value = com.google.common.eventbus.EventBus.class)
+	@ConditionalOnMissingBean(IAdhocEventBus.class)
+	@ConditionalOnBean(com.google.common.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGuava(com.google.common.eventbus.EventBus eventBus) {
 		return eventBus::post;
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = IAdhocEventBus.class)
-	@ConditionalOnBean(value = org.greenrobot.eventbus.EventBus.class)
+	@ConditionalOnMissingBean(IAdhocEventBus.class)
+	@ConditionalOnBean(org.greenrobot.eventbus.EventBus.class)
 	public IAdhocEventBus adhocEventBusFromGreenRobot(org.greenrobot.eventbus.EventBus eventBus) {
 		return eventBus::post;
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = IOperatorsFactory.class)
+	@ConditionalOnMissingBean(IOperatorsFactory.class)
 	public IOperatorsFactory adhocOperatorsFactory() {
 		return new StandardOperatorsFactory();
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = IStopwatchFactory.class)
+	@ConditionalOnMissingBean(IStopwatchFactory.class)
 	public IStopwatchFactory stopwatchFactory() {
 		return IStopwatchFactory.guavaStopwatchFactory();
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = ICubeQueryEngine.class)
+	@ConditionalOnMissingBean(ICubeQueryEngine.class)
 	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
 			IOperatorsFactory operatorsFactory,
 			IStopwatchFactory stopwatchFactory) {

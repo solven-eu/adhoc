@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  * The key has to be {@link Comparable}, so that `stream().sorted()` is a no-op, for performance reasons.
  *
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j

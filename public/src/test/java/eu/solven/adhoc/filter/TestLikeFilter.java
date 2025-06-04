@@ -23,6 +23,7 @@
 package eu.solven.adhoc.filter;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -31,7 +32,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 public class TestLikeFilter {
 	@Test
 	public void testJustText() {
-		IValueMatcher matcher = LikeMatcher.builder().like("a").build();
+		IValueMatcher matcher = LikeMatcher.builder().pattern("a").build();
 
 		Assertions.assertThat(matcher.match("a")).isTrue();
 		Assertions.assertThat(matcher.match("A")).isTrue();
@@ -44,7 +45,7 @@ public class TestLikeFilter {
 
 	@Test
 	public void testStartsWith() {
-		IValueMatcher matcher = LikeMatcher.builder().like("a%").build();
+		IValueMatcher matcher = LikeMatcher.builder().pattern("a%").build();
 
 		Assertions.assertThat(matcher.match("a")).isTrue();
 		Assertions.assertThat(matcher.match("A")).isTrue();
@@ -60,7 +61,7 @@ public class TestLikeFilter {
 
 	@Test
 	public void testContains() {
-		IValueMatcher matcher = LikeMatcher.builder().like("%a%").build();
+		IValueMatcher matcher = LikeMatcher.builder().pattern("%a%").build();
 
 		Assertions.assertThat(matcher.match("a")).isTrue();
 		Assertions.assertThat(matcher.match("A")).isTrue();
@@ -76,7 +77,7 @@ public class TestLikeFilter {
 
 	@Test
 	public void testContainsTwo() {
-		IValueMatcher matcher = LikeMatcher.builder().like("%a%b%").build();
+		IValueMatcher matcher = LikeMatcher.builder().pattern("%a%b%").build();
 
 		Assertions.assertThat(matcher.match("a")).isFalse();
 		Assertions.assertThat(matcher.match("A")).isFalse();
@@ -92,7 +93,7 @@ public class TestLikeFilter {
 
 	@Test
 	public void testTwiceThenOther() {
-		IValueMatcher matcher = LikeMatcher.builder().like("%a%a%b%").build();
+		IValueMatcher matcher = LikeMatcher.builder().pattern("%a%a%b%").build();
 
 		Assertions.assertThat(matcher.match("a")).isFalse();
 		Assertions.assertThat(matcher.match("A")).isFalse();
@@ -104,5 +105,24 @@ public class TestLikeFilter {
 		Assertions.assertThat(matcher.match("1a1a1b1")).isTrue();
 
 		Assertions.assertThat(matcher.match("b")).isFalse();
+	}
+
+	@Disabled("TODO")
+	@Test
+	public void testEscapeRegexSpecialChars() {
+		IValueMatcher matcher = LikeMatcher.builder().pattern("a[b").build();
+
+		Assertions.assertThat(matcher.match("a[b")).isTrue();
+		Assertions.assertThat(matcher.match("A")).isFalse();
+	}
+
+	// https://stackoverflow.com/questions/19749787/how-to-use-a-percent-in-a-like-without-it-being-treated-as-a-wildcard
+	@Disabled("TODO")
+	@Test
+	public void testEscapePercent() {
+		IValueMatcher matcher = LikeMatcher.builder().pattern("%\\%%").build();
+
+		Assertions.assertThat(matcher.match("a%b")).isTrue();
+		Assertions.assertThat(matcher.match("ab")).isFalse();
 	}
 }

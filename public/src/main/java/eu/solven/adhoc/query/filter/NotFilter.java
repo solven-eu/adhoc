@@ -27,6 +27,11 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * A boolean `not`/`!`.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized

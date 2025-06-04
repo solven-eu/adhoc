@@ -93,8 +93,13 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		return measures;
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class CubeQueryBuilder {
-		// @Singular
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		ImmutableSet<IMeasure> measures = ImmutableSet.of();
 
 		// https://github.com/projectlombok/lombok/pull/3193

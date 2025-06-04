@@ -34,6 +34,11 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Stores available {@link AdhocSchema}.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableAdhocSchemaRegistry {

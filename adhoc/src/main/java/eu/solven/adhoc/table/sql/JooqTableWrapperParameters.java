@@ -33,6 +33,11 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * Helps configuring a {@link JooqTableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class JooqTableWrapperParameters {
@@ -47,6 +52,11 @@ public class JooqTableWrapperParameters {
 	@NonNull
 	final TableLike<?> table;
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class JooqTableWrapperParametersBuilder {
 		public JooqTableWrapperParametersBuilder tableName(String tableName) {
 			this.tableName(DSL.quotedName(tableName));

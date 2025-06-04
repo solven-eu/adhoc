@@ -27,7 +27,10 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
  * This provides an implicit {@link IAdhocFilter}, typically based on a static security context.
+ * 
+ * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IImplicitFilter {
 	/**
 	 * BEWARE The output filter does not require to include the query own filter.

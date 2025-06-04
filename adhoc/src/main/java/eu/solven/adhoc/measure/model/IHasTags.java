@@ -29,6 +29,7 @@ import java.util.Set;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasTags {
 	String TAG_DEBUG = "debug";
 

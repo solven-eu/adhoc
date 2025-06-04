@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * This data-structure does not maintain order. Typically `SUM(123, 'a', 234)` could lead to `'123a234'` or `'357a'`.
  *
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j

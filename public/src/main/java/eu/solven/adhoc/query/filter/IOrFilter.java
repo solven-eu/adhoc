@@ -26,6 +26,12 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * `OR` over {@link IAdhocFilter}s.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
 public interface IOrFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
 
 	@Override

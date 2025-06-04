@@ -105,6 +105,13 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 		return fullQueryPod.toBuilder().forest(relevantForest).build();
 	}
 
+	/**
+	 * 
+	 * @param forest
+	 * @param preparedQuery
+	 * @return a {@link MeasureForest} restricted to the measures playing a role in {@link ICubeQuery}.
+	 */
+	@SuppressWarnings("PMD.CollapsibleIfStatements")
 	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
 		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
 

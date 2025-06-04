@@ -24,6 +24,11 @@ package eu.solven.adhoc.tools;
 
 import java.util.UUID;
 
+/**
+ * {@link IUuidGenerator} based on core JDK. It can *not* be seeded.
+ * 
+ * @author Benoit Lacelle
+ */
 public class JdkUuidGenerator implements IUuidGenerator {
 
 	public static final IUuidGenerator INSTANCE = new JdkUuidGenerator();

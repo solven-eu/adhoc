@@ -33,6 +33,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasColumns extends IHasColumnTypes {
 
 	/**
@@ -44,6 +45,6 @@ public interface IHasColumns extends IHasColumnTypes {
 
 	@Override
 	default Map<String, Class<?>> getColumnTypes() {
-		return getColumns().stream().collect(Collectors.toMap(c -> c.getName(), c -> c.getType()));
+		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
 	}
 }

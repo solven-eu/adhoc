@@ -23,7 +23,9 @@
 package eu.solven.adhoc.util;
 
 /**
- * To be impemented by components having a name, which can generally be used as identifier.
+ * To be implemented by components having a name, which can generally be used as identifier.
+ * 
+ * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface IHasName {

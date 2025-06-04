@@ -31,6 +31,8 @@ import lombok.Value;
 
 /**
  * An {@link eu.solven.adhoc.engine.step.CubeQueryStep} has been evaluated.
+ * 
+ * @author Benoit Lacelle
  */
 @Value
 @Builder

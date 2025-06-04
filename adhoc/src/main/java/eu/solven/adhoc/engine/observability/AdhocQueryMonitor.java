@@ -46,6 +46,8 @@ public class AdhocQueryMonitor {
 	public static final String TAG_QUERY_START = "QUERY_START";
 	public static final String TAG_QUERY_DONE = "QUERY_DONE";
 
+	private static final int DEFAULT_MAX_SLOW_QUERIES = 100;
+
 	// TODO Is it a leak to reference the whole context?
 	protected final Map<QueryPod, OffsetDateTime> queryToStart = new ConcurrentHashMap<>();
 
@@ -54,7 +56,7 @@ public class AdhocQueryMonitor {
 	protected final BlockingQueue<Map.Entry<QueryPod, Duration>> slowestQueried;
 
 	public AdhocQueryMonitor() {
-		this(100);
+		this(DEFAULT_MAX_SLOW_QUERIES);
 	}
 
 	public AdhocQueryMonitor(int maxSlowQueries) {
@@ -63,6 +65,7 @@ public class AdhocQueryMonitor {
 		slowestQueried = new PriorityBlockingQueue<>(slowestQueriedMax + 1, comparatorForSlowest());
 	}
 
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public void onQueryLifecycleEvent(QueryLifecycleEvent lifecycleEvent) {
 		QueryPod query = lifecycleEvent.getQuery();
 

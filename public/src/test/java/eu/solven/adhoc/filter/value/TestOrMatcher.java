@@ -85,7 +85,7 @@ public class TestOrMatcher {
 				  "type" : "or",
 				  "operands" : [ "azerty", {
 				    "type" : "like",
-				    "like" : "b%"
+				    "pattern" : "b%"
 				  } ]
 				}
 																				""".trim());

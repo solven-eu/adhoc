@@ -25,6 +25,11 @@ package eu.solven.adhoc.data.column.array;
 import eu.solven.adhoc.data.tabular.primitives.Int2LongBiConsumer;
 import it.unimi.dsi.fastutil.longs.LongList;
 
+/**
+ * Adds `null` capabilities to a {@link LongList}.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface INullableLongArray extends LongList, INullableArray {
 
 	void forEach(Int2LongBiConsumer indexToValue);

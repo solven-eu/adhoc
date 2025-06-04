@@ -28,29 +28,24 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
-import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helps transcoding from one column-model to another. Typically as measures may refer to a given set of columns, while
  * underlying database may have different names for these columns.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
+@UtilityClass
 public class AdhocTranscodingHelper {
-	protected AdhocTranscodingHelper() {
-		// hidden
-	}
 
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
@@ -114,7 +109,7 @@ public class AdhocTranscodingHelper {
 			Object transcodedValue = transcoder.transcodeValue(column, rawValue);
 
 			// Register only not trivial mappings
-			if (rawValue != transcodedValue) {
+			if (!Objects.equals(rawValue, transcodedValue)) {
 				if (columnToTranscodedValue.get() == null) {
 					columnToTranscodedValue.set(new ArrayList<>());
 				}
@@ -137,86 +132,4 @@ public class AdhocTranscodingHelper {
 		return transcoded;
 	}
 
-	/**
-	 * 
-	 * @param filter
-	 * @param input
-	 * @return true if the input matches the filter
-	 */
-	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
-		return match(new IdentityImplicitTranscoder(), filter, input);
-	}
-
-	/**
-	 * 
-	 * @param transcoder
-	 * @param filter
-	 * @param input
-	 * @return true if the input matches the filter, where each column in input is transcoded.
-	 */
-	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
-		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-			Object value = input.get(underlyingColumn);
-
-			if (value == null) {
-				if (input.containsKey(underlyingColumn)) {
-					log.trace("Key to null-ref");
-				} else {
-					log.trace("Missing key");
-					if (columnFilter.isNullIfAbsent()) {
-						log.trace("Treat absent as null");
-					} else {
-						log.trace("Do not treat absent as null, but as missing, hence not matched");
-						return false;
-					}
-				}
-			}
-
-			return columnFilter.getValueMatcher().match(value);
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return !match(transcoder, notFilter.getNegated(), input);
-		} else {
-			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
-		}
-	}
-
-	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, ITabularRecord input) {
-		if (filter.isMatchAll()) {
-			return true;
-		} else if (filter.isMatchNone()) {
-			return false;
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, input));
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, input));
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-			Object value = input.getGroupBy(underlyingColumn);
-
-			if (value == null) {
-				if (input.getGroupBys().containsKey(underlyingColumn)) {
-					log.trace("Key to null-ref");
-				} else {
-					log.trace("Missing key");
-					if (columnFilter.isNullIfAbsent()) {
-						log.trace("Treat absent as null");
-					} else {
-						log.trace("Do not treat absent as null, but as missing hence not acceptable");
-						return false;
-					}
-				}
-			}
-
-			return columnFilter.getValueMatcher().match(value);
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return !match(transcoder, notFilter.getNegated(), input);
-		} else {
-			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
-		}
-	}
 }

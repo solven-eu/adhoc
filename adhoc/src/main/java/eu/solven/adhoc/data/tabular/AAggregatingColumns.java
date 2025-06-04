@@ -50,7 +50,9 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -67,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implements IMultitypeMergeableGrid<T> {
+public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements IMultitypeMergeableGrid<T> {
 
 	@NonNull
 	@Default
@@ -90,6 +92,7 @@ public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implemen
 	}
 
 	// visible for benchmarks
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T extends Comparable<T>> ObjectArrayList<Object2IntMap.Entry<T>> doSort(
 			Consumer<Object2IntBiConsumer<T>> sliceToIndex,
 			int size) {
@@ -120,6 +123,7 @@ public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implemen
 	 *            a sorted (by slice) mapping from slice to index
 	 * @return
 	 */
+	@SuppressWarnings("checkstyle:MethodLength")
 	protected static <T extends Comparable<T>> IMultitypeColumnFastGet<T> copyToNavigable(
 			IMultitypeColumnFastGet<Integer> column,
 			Consumer<Object2IntBiConsumer<T>> orderedSliceToIndex) {
@@ -130,8 +134,8 @@ public abstract class AAggregatingColumnsV2<T extends Comparable<T>, K> implemen
 		int size = Ints.checkedCast(column.size());
 		List<T> slices = new ArrayList<>(size);
 
-		Supplier<LongArrayList> valuesL = Suppliers.memoize(() -> new LongArrayList(size));
-		Supplier<DoubleArrayList> valuesD = Suppliers.memoize(() -> new DoubleArrayList(size));
+		Supplier<LongList> valuesL = Suppliers.memoize(() -> new LongArrayList(size));
+		Supplier<DoubleList> valuesD = Suppliers.memoize(() -> new DoubleArrayList(size));
 		Supplier<List<Object>> valuesO = Suppliers.memoize(() -> new ArrayList<>(size));
 
 		AtomicReference<Object2LongBiConsumer<T>> refOnLong = new AtomicReference<>();

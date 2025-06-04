@@ -40,14 +40,17 @@ import eu.solven.adhoc.query.StandardQueryOptions;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
 	Set<IQueryOption> getOptions();
 
+	@Override
 	@JsonIgnore
 	default boolean isExplain() {
 		return getOptions().contains(StandardQueryOptions.EXPLAIN);
 	}
 
+	@Override
 	@JsonIgnore
 	default boolean isDebug() {
 		return getOptions().contains(StandardQueryOptions.DEBUG);

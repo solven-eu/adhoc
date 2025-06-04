@@ -26,7 +26,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -54,7 +53,7 @@ public class TableQueryToActualTableQuery {
 	public Set<String> getSuppressedGroupBy() {
 		Set<String> queriedColumns = dagQuery.getGroupBy().getNameToColumn().keySet();
 		Set<String> withoutSuppressedColumns = suppressedQuery.getGroupBy().getNameToColumn().keySet();
-		SetView<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
+		Set<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
 		return ImmutableSet.copyOf(suppressedView);
 	}
 }

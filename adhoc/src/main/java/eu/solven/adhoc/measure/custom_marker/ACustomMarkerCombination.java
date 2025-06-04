@@ -62,6 +62,11 @@ public abstract class ACustomMarkerCombination implements ICombination {
 		}
 	}
 
+	/**
+	 * 
+	 * @return the default value for given customMarker.
+	 */
+	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	protected Object getDefault() {
 		return null;
 	}

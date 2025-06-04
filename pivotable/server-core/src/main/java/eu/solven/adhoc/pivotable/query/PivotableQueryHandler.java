@@ -41,13 +41,18 @@ import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * Pivotable API for queries.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableQueryHandler {
@@ -70,7 +75,7 @@ public class PivotableQueryHandler {
 			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery());
 		})
 				// ListBasedTabularView is serializable with Jackson
-				.map(view -> ListBasedTabularView.load(view))
+				.map(ListBasedTabularView::load)
 				.flatMap(view -> ServerResponse.ok()
 						.contentType(MediaType.APPLICATION_JSON)
 						.body(BodyInserters.fromValue(view)));
@@ -132,7 +137,8 @@ public class PivotableQueryHandler {
 
 				List<IValueMatcher> filters = rawFilters.stream()
 						.distinct()
-						.<IValueMatcher>map(rawFilter -> StringMatcher.builder().string(rawFilter).build())
+						// This equalsMatcher may later be turned into a StringMatcher
+						.<IValueMatcher>map(EqualsMatcher::isEqualTo)
 						.toList();
 
 				ColumnFilter columnFilter = ColumnFilter.builder()

@@ -50,10 +50,12 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -65,6 +67,8 @@ import lombok.extern.slf4j.Slf4j;
  * (country, date).
  * 
  * @see ManyToMany1DDecomposition
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class ManyToManyNDDecomposition implements IDecomposition {
@@ -88,6 +92,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		log.warn("Instantiated with default/empty {}", this.manyToManyDefinition);
 	}
 
+	@SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
 	public ManyToManyNDDecomposition(Map<String, ?> options, IManyToManyNDDefinition manyToManyDefinition) {
 		this.options = options;
 		this.manyToManyDefinition = manyToManyDefinition;
@@ -121,7 +126,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 		IAdhocFilter filter = slice.getQueryStep().getFilter();
 
-		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(groupColumn, group, filter));
+		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(filter, groupColumn, group));
 	}
 
 	@Override
@@ -167,6 +172,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return matchingGroups;
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <E extends Object> SetView<E> intersection(final Set<? extends E> set1, final Set<? extends E> set2) {
 		SetView<E> intersection;
 
@@ -179,32 +185,15 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return intersection;
 	}
 
-	protected boolean doFilterGroup(String groupColumn, Object groupCandidate, IAdhocFilter filter) {
-		if (filter.isMatchAll()) {
-			return true;
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			if (!columnFilter.getColumn().equals(groupColumn)) {
-				// The group column is not filtered: accept this group as it is not rejected
-				// e.g. we filter color=pink: it should not reject countryGroup=G8
-				return true;
-			} else {
-				boolean match = columnFilter.getValueMatcher().match(groupCandidate);
-
-				log.debug("{} is matched", groupCandidate);
-
-				return match;
-			}
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands()
-					.stream()
-					.allMatch(subFilter -> doFilterGroup(groupColumn, groupCandidate, subFilter));
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands()
-					.stream()
-					.anyMatch(subFilter -> doFilterGroup(groupColumn, groupCandidate, subFilter));
-		} else {
-			throw new UnsupportedOperationException("%s is not managed".formatted(filter));
-		}
+	protected boolean doFilterGroup(IAdhocFilter filter, String groupColumn, Object groupCandidate) {
+		return MoreFilterHelpers.match(ITableTranscoder.identity(),
+				filter,
+				Map.of(groupColumn, groupCandidate),
+				filterMissingColumn -> {
+					// The group column is not filtered: accept this group as it is not rejected
+					// e.g. we filter color=pink: it should not reject countryGroup=G8
+					return true;
+				});
 	}
 
 	/**
@@ -256,9 +245,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<Map<String, IValueMatcher>> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
 
-				Set<IAdhocFilter> elementsFilters = elements.stream()
-						.map(groupElements -> AndFilter.and(groupElements))
-						.collect(Collectors.toSet());
+				Set<IAdhocFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
 
 				IAdhocFilter elementAdditionalFilter = OrFilter.or(elementsFilters);
 

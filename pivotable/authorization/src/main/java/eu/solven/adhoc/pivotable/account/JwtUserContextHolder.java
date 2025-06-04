@@ -32,6 +32,11 @@ import eu.solven.adhoc.account.IAdhocUserContextHolder;
 import eu.solven.adhoc.security.LoginRouteButNotAuthenticatedException;
 import reactor.core.publisher.Mono;
 
+/**
+ * {@link IAdhocUserContextHolder} for JWT.
+ * 
+ * @author Benoit Lacelle
+ */
 public class JwtUserContextHolder implements IAdhocUserContextHolder {
 
 	@Override

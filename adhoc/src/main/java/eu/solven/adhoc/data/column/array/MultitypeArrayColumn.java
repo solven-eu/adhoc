@@ -55,6 +55,7 @@ import lombok.extern.slf4j.Slf4j;
  * Each key may have different types.
  *
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
@@ -86,18 +87,23 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
 		} else if (size == 0) {
-			if (type == IMultitypeConstants.MASK_LONG) {
-				if (measureToAggregateL instanceof LongArrayList openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
-			} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-				if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
-			} else if (type == IMultitypeConstants.MASK_OBJECT) {
-				if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
-					openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
-				}
+			ensureCapacity(type);
+		}
+	}
+
+	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
+	protected void ensureCapacity(int type) {
+		if (type == IMultitypeConstants.MASK_LONG) {
+			if (measureToAggregateL instanceof LongArrayList openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+			}
+		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
+			if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+			}
+		} else if (type == IMultitypeConstants.MASK_OBJECT) {
+			if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 			}
 		}
 	}
@@ -236,6 +242,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 	}
 
+	@SuppressWarnings("PMD.UnnecessaryBoxing")
 	protected T toBoxedKey(int i) {
 		return (T) Integer.valueOf(i);
 	}
@@ -307,7 +314,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	public Stream<T> keyStream() {
 		return Stream.of(measureToAggregateL.indexStream(), measureToAggregateD.indexStream(), objectIndexStream())
 				.flatMapToInt(is -> is)
-				.mapToObj(i -> toBoxedKey(i))
+				.mapToObj(this::toBoxedKey)
 		// No need for .distinct as each key is guaranteed to appear in a single column
 		// .distinct()
 		;

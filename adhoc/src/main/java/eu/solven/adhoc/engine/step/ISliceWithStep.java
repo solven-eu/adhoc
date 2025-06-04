@@ -27,6 +27,8 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 /**
  * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more contact to
  * {@link eu.solven.adhoc.measure.model.IMeasure}.
+ * 
+ * @author Benoit Lacelle
  */
 public interface ISliceWithStep extends IAdhocSlice {
 	/**

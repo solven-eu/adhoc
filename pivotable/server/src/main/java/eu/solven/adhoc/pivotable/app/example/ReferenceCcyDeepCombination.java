@@ -38,10 +38,12 @@ public class ReferenceCcyDeepCombination extends ACustomMarkerCombination {
 	public static final String CCY_DEFAULT = "EUR";
 	public static final String PATH_DEEP_CCY = "$.deep.ccy";
 
+	@Override
 	protected Object getDefault() {
 		return CCY_DEFAULT;
 	}
 
+	@Override
 	protected String getJoinedMapPath() {
 		return PATH_DEEP_CCY;
 	}

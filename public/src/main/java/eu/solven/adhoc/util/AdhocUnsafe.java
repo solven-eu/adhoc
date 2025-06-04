@@ -29,12 +29,18 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
+import lombok.Getter;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Some various unsafe constants, one should edit if he knows what he's doing.
+ * 
+ * @author Benoit Lacelle
  */
+@UtilityClass
 @Slf4j
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
 public class AdhocUnsafe {
 	static {
 		reloadProperties();
@@ -87,6 +93,7 @@ public class AdhocUnsafe {
 					result = Boolean.parseBoolean(property);
 				}
 			} catch (IllegalArgumentException | NullPointerException e) {
+				log.trace("Issue parsing boolean for key={}", key, e);
 			}
 			return result;
 		} catch (RuntimeException e) {
@@ -118,7 +125,8 @@ public class AdhocUnsafe {
 	 * On multiple occasions, we encounter exceptions which are not fatal. Should we be resilient, or fail-fast?
 	 */
 	// By default, failFast. This is a simple flag for projects preferring resiliency.
-	public static boolean failFast;
+	@Getter
+	private static boolean failFast;
 
 	private static int parallelism;
 
@@ -128,12 +136,12 @@ public class AdhocUnsafe {
 	 * Used for unitTests
 	 */
 	public static boolean deterministicUUID = false;
-	public static AtomicLong deterministicUUIDIndex = new AtomicLong();
-	public static AtomicLong deterministicQueryIndex = new AtomicLong();
+	private static final AtomicLong DETERMINISTIC_UUID_INDEX = new AtomicLong();
+	private static final AtomicLong DETERMINISTIC_QUERY_INDEX = new AtomicLong();
 
 	public static UUID randomUUID() {
 		if (deterministicUUID) {
-			String uuidIndexAsString = Long.toString(deterministicUUIDIndex.getAndIncrement());
+			String uuidIndexAsString = Long.toString(DETERMINISTIC_UUID_INDEX.getAndIncrement());
 			return UUID.fromString("00000000-0000-0000-0000-" + Strings.padStart(uuidIndexAsString, 12, '0'));
 		} else {
 			return UUID.randomUUID();
@@ -141,16 +149,16 @@ public class AdhocUnsafe {
 	}
 
 	public static void resetDeterministicQueryIds() {
-		if (!AdhocUnsafe.deterministicUUID) {
+		if (!deterministicUUID) {
 			log.warn("queryIds are now deterministic. This should not happen in PRD");
 		}
-		AdhocUnsafe.deterministicUUID = true;
-		AdhocUnsafe.deterministicUUIDIndex.set(0);
-		AdhocUnsafe.deterministicQueryIndex.set(0);
+		deterministicUUID = true;
+		DETERMINISTIC_UUID_INDEX.set(0);
+		DETERMINISTIC_QUERY_INDEX.set(0);
 	}
 
 	public static long nextQueryIndex() {
-		return deterministicQueryIndex.getAndIncrement();
+		return DETERMINISTIC_QUERY_INDEX.getAndIncrement();
 	}
 
 	private static int defaultParallelism() {
@@ -162,12 +170,12 @@ public class AdhocUnsafe {
 	/**
 	 * @return the default parallelism when calling Executors#newWorkStealingPool
 	 */
-	public static int parallelism() {
+	public static int getParallelism() {
 		return parallelism;
 	}
 
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
-	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(AdhocUnsafe.parallelism());
+	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(getParallelism());
 
 	/**
 	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is
@@ -184,5 +192,19 @@ public class AdhocUnsafe {
 		// There is no default capacity: fallback on limitColumnSize. This way, data-structures would never grow nor
 		// re-hash.
 		return limitColumnSize;
+	}
+
+	public static void inFailFast() {
+		if (!failFast) {
+			log.info("Switching failfast=true");
+			failFast = true;
+		}
+	}
+
+	public static void outFailFast() {
+		if (failFast) {
+			log.info("Switching failfast=false");
+			failFast = false;
+		}
 	}
 }

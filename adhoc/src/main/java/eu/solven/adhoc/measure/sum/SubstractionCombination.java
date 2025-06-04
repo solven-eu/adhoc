@@ -45,8 +45,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 	public static final String KEY = "SUBSTRACTION";
 
 	public static boolean isSubstraction(String operator) {
-		return "-".equals(operator) || SubstractionCombination.KEY.equals(operator)
-				|| operator.equals(SubstractionCombination.class.getName());
+		return "-".equals(operator) || KEY.equals(operator) || operator.equals(SubstractionCombination.class.getName());
 	}
 
 	@Override
@@ -78,7 +77,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 			return -AdhocPrimitiveHelpers.asDouble(o);
 		}
 
-		if (AdhocUnsafe.failFast) {
+		if (AdhocUnsafe.isFailFast()) {
 			throw new NotYetImplementedException("Unclear expected behavior when negating not numbers: %s"
 					.formatted(PepperLogHelper.getObjectAndClass(o)));
 		} else {
@@ -94,7 +93,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(left) && AdhocPrimitiveHelpers.isDoubleLike(right)) {
 			return AdhocPrimitiveHelpers.asDouble(left) - AdhocPrimitiveHelpers.asDouble(right);
 		} else {
-			if (AdhocUnsafe.failFast) {
+			if (AdhocUnsafe.isFailFast()) {
 				throw new NotYetImplementedException(
 						"Unclear expected behavior when substracting not numbers: %s and %s".formatted(
 								PepperLogHelper.getObjectAndClass(left),

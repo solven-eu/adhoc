@@ -62,7 +62,7 @@ public class MultitypeCell implements IMultitypeCell {
 			@Override
 			public void onLong(long v) {
 				if (aggregation instanceof ILongAggregation longAggregation) {
-					types |= 1;
+					types |= IMultitypeConstants.MASK_LONG;
 					MultitypeCell.this.asLong = longAggregation.aggregateLongs(asLong, v);
 				} else {
 					onObject(v);
@@ -72,7 +72,7 @@ public class MultitypeCell implements IMultitypeCell {
 			@Override
 			public void onDouble(double v) {
 				if (aggregation instanceof IDoubleAggregation doubleAggregation) {
-					types |= 2;
+					types |= IMultitypeConstants.MASK_DOUBLE;
 					MultitypeCell.this.asDouble = doubleAggregation.aggregateDoubles(asDouble, v);
 				} else {
 					onObject(v);
@@ -82,7 +82,7 @@ public class MultitypeCell implements IMultitypeCell {
 			@Override
 			public void onObject(Object object) {
 				if (object != null) {
-					types |= 8;
+					types |= IMultitypeConstants.MASK_OBJECT;
 					MultitypeCell.this.asObject = aggregation.aggregate(asObject, object);
 				}
 			}

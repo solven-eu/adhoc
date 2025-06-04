@@ -46,6 +46,8 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * 123*0.8 into 1.0`).
  *
  * Also used for many2many: each input element is decomposed into its target groups.
+ * 
+ * @author Benoit Lacelle
  */
 public interface IDecomposition extends ICompositeColumnGenerator {
 	/**

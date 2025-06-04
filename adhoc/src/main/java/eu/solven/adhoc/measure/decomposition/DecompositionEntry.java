@@ -28,6 +28,11 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Standard {@link IDecompositionEntry}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class DecompositionEntry implements IDecompositionEntry {

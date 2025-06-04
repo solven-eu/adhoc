@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
@@ -30,8 +34,13 @@ import eu.solven.adhoc.table.ITableWrapper;
  * the identity.
  *
  * This always returns `null`, hence it is not reversible.
+ * 
+ * @author Benoit Lacelle
  */
 public class IdentityImplicitTranscoder implements ITableTranscoder {
+	static final Supplier<IdentityImplicitTranscoder> IDENTITY =
+			Suppliers.memoize(() -> new IdentityImplicitTranscoder());
+
 	@Override
 	public String underlying(String queried) {
 		return null;

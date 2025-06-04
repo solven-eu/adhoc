@@ -27,6 +27,11 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Couple a schema with its endpoint.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized

@@ -33,8 +33,17 @@ import lombok.Value;
 
 /**
  * Converts a {@link TableQuery} into a sql {@link ResultQuery}
+ * 
+ * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IJooqTableQueryFactory {
+	/**
+	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
+	 * applied manually over the output from the database.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
 	class QueryWithLeftover {

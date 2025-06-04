@@ -30,11 +30,14 @@ import org.springframework.util.ReflectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Jackson specific classes for Adhoc classes.
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 public class AdhocJackson {
 
 	/**

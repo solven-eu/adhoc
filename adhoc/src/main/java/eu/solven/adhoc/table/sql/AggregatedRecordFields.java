@@ -31,6 +31,8 @@ import lombok.Value;
 
 /**
  * Help transforming a {@link org.jooq.Record} into {@link eu.solven.adhoc.data.row.ITabularRecord}
+ * 
+ * @author Benoit Lacelle
  */
 @Value
 @Builder

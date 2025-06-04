@@ -37,6 +37,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,7 +46,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  * @see SimpleFilterEditor for write operations.
  */
+@UtilityClass
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class FilterHelpers {
 
 	/**
@@ -66,6 +69,7 @@ public class FilterHelpers {
 		return getValueMatcherLax(filter, column, false);
 	}
 
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
@@ -208,5 +212,19 @@ public class FilterHelpers {
 				return toString.get();
 			}
 		};
+	}
+
+	public static boolean visit(IAdhocFilter filter, IFilterVisitor filterVisitor) {
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return filterVisitor.testAndOperands(andFilter.getOperands());
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return filterVisitor.testOrOperands(orFilter.getOperands());
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			return filterVisitor.testColumnOperand(columnFilter);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return filterVisitor.testNegatedOperand(notFilter.getNegated());
+		} else {
+			throw new UnsupportedOperationException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
 	}
 }

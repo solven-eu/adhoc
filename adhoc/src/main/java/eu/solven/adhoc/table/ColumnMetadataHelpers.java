@@ -30,10 +30,14 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helpers related to fetch metadata information (e.g. cardinality, topK members, etc) about a table column.
+ * 
+ * @author Benoit Lacelle
  */
+@UtilityClass
 public class ColumnMetadataHelpers {
 
 	public static CoordinatesSample getCoordinatesMostGeneric(ITableWrapper table,

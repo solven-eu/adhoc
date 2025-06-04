@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,29 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.operator;
+package eu.solven.adhoc.query.filter;
 
-public interface IStandardOperators {
+import java.util.Set;
 
-	/**
-	 * Sum inputs with standard addition. If a NaN is encountered, the aggregate is NaN.
-	 */
-	String SUM = "SUM";
-	/**
-	 * Sum inputs with standard addition. If a NaN is encountered, it is excluded from the aggregation.
-	 */
-	String SAFE_SUM = "SAFE_SUM";
-	/**
-	 * Count the number of considered input records (similarly to SQL)
-	 */
-	String COUNT = "COUNT";
-	/**
-	 * Count the number of cells considered in the query. It helps understanding the granularity of the considered data,
-	 * or the presence/lack of intermediate cubes.
-	 */
-	String CELLCOUNT = "CELLCOUNT";
+/**
+ * To be used with {@link FilterHelpers#visit(IAdhocFilter, IFilterVisitor)}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IFilterVisitor {
+	boolean testAndOperands(Set<? extends IAdhocFilter> operands);
 
-	@Deprecated(since = "avg should be computed as the ratio of SUM / COUNT")
-	String AVG = "AVG";
+	boolean testOrOperands(Set<? extends IAdhocFilter> operands);
 
+	boolean testColumnOperand(IColumnFilter columnFilter);
+
+	boolean testNegatedOperand(IAdhocFilter negated);
 }

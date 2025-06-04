@@ -31,6 +31,11 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Wraps an access_token, it is OAUth2 meaning.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized

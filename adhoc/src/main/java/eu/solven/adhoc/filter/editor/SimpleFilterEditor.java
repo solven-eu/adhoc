@@ -144,7 +144,6 @@ public class SimpleFilterEditor implements IFilterEditor {
 
 	/**
 	 * 
-	 * @param filter
 	 * @param retainedColumns
 	 * @return a {@link IFilterEditor} where not retainedColumns are turned into `matchAll`
 	 */

@@ -39,6 +39,11 @@ import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Spring {@link Configuration} for Pivotable components.
+ * 
+ * @author Benoit Lacelle
+ */
 @Configuration
 @Import({
 

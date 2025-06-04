@@ -28,7 +28,14 @@ import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
+import lombok.experimental.UtilityClass;
 
+/**
+ * A randomUser may be useful in some integration tests.
+ * 
+ * @author Benoit Lacelle
+ */
+@UtilityClass
 public class RandomUser {
 	public static final UUID ACCOUNT_ID = UUID.fromString("FFFFFFFF-FFFF-FFFF-FFFF-000000000000");
 

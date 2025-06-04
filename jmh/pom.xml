@@ -13,6 +13,11 @@
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
+
+		<!-- Many issues are reported from JMH-generated classes -->
+		<pmd.skip>true</pmd.skip>
+		<cpd.skip>true</cpd.skip>
+		<spotbugs.skip>true</spotbugs.skip>
 	</properties>
 
 	<dependencies>

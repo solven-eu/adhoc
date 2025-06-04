@@ -20,19 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.tools;
-
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
-
-import lombok.extern.slf4j.Slf4j;
+package eu.solven.adhoc.exception;
 
 /**
- * Give access to Git properties through {@link Environment}.
+ * Dedicated for cases when an operation is not available as current structure is immutable.
+ * 
+ * @author Benoit Lacelle
  */
-// https://stackoverflow.com/questions/76679347/spring-boot-service-is-not-picking-up-the-git-properties-file-generated-by-the-g
-@Slf4j
-@PropertySource(value = { "classpath:git.properties" }, ignoreResourceNotFound = true)
-public class GitPropertySourceConfig {
+public class NotSupportedAsImmutableException extends UnsupportedOperationException {
+	private static final long serialVersionUID = -3866534447995553855L;
 
 }

@@ -40,7 +40,6 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -60,7 +59,6 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -223,7 +221,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.nbCells(column.size())
 					// The duration is not decomposed per aggregator
 					.duration(elapsed)
-					.source(TableQueryEngine.this)
+					.source(this)
 					.build());
 
 			sinkExecutionFeedback.registerExecutionFeedback(queryStep,
@@ -253,13 +251,12 @@ public class TableQueryEngine implements ITableQueryEngine {
 				measurelessToAggregators
 						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
 			} else if (leafMeasure instanceof EmptyMeasure) {
-				// ???
-			} else if (leafMeasure instanceof Columnator) {
-				// ???
-				// Happens if we miss given column
+				log.trace("An EmptyMeasure has no underlying measures");
 			} else {
-				// Happens on Transformator with no underlying measure
-				throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
+				// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as having no
+				// underlying step)
+				log.debug("step={} has been planned having no underlying step", step);
+				// throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
 			}
 		});
 
@@ -294,8 +291,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		var edited = tableQuery.toBuilder();
 
-		SetView<String> generatedColumnToSuppressFromGroupBy =
-				Sets.intersection(groupedByCubeColumns, generatedColumns);
+		Set<String> generatedColumnToSuppressFromGroupBy = Sets.intersection(groupedByCubeColumns, generatedColumns);
 		if (!generatedColumnToSuppressFromGroupBy.isEmpty()) {
 			// All columns has been validated as being generated
 			IAdhocGroupBy originalGroupby = tableQuery.getGroupBy();
@@ -435,7 +431,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				.build();
 	}
 
-	protected Optional<Aggregator> isAggregator(Map<String, Set<Aggregator>> columnToAggregators,
+	protected Optional<Aggregator> optAggregator(Map<String, Set<Aggregator>> columnToAggregators,
 			String aggregatorName) {
 		return columnToAggregators.values()
 				.stream()
@@ -505,8 +501,12 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * Current implementation restore the suppressedColumn by writing a single member. Another project may prefer
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
-	 * columns).
+	 * columns). <<<<<<< HEAD
+	 * 
+	 * =======
 	 *
+	 * >>>>>>> origin/master
+	 * 
 	 * @param queryStep
 	 * @param suppressedColumns
 	 * @param column

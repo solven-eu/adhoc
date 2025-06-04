@@ -46,7 +46,7 @@ public interface IHasMeasures {
 	 */
 	@JsonIgnore
 	default Map<String, IMeasure> getNameToMeasure() {
-		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(m -> m.getName(), m -> m));
+		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(IMeasure::getName, m -> m));
 	}
 
 	/**

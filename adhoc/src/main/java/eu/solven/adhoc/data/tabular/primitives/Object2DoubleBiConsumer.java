@@ -22,6 +22,14 @@
  */
 package eu.solven.adhoc.data.tabular.primitives;
 
+import java.util.function.BiConsumer;
+
+/**
+ * A {@link BiConsumer} accepting a primitive `double` as value.
+ * 
+ * @param <T>
+ * @author Benoit Lacelle
+ */
 @FunctionalInterface
 public interface Object2DoubleBiConsumer<T> {
 	void acceptObject2Double(T o, double d);

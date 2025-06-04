@@ -32,6 +32,7 @@ import reactor.core.publisher.Mono;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IAdhocUserContextHolder {
 	Mono<UUID> authenticatedAccountId();
 }

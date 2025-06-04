@@ -40,9 +40,9 @@ import org.springframework.core.io.Resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -56,13 +56,9 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -73,16 +69,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MeasureForestFromResource {
-	public static final String KEY_TYPE = "type";
+	public static final String K_TYPE = "type";
+	private static final String K_NAME = "name";
+	private static final String K_COMBINATION_OPTIONS = "combinationOptions";
 
-	private static final List<String> sortedKeys = List.of("name",
-			KEY_TYPE,
+	private static final List<String> SORTED_KEYS = ImmutableList.of(K_NAME,
+			K_TYPE,
 			"aggregationKey",
 			"combinationKey",
 			IHasCombinationKey.KEY_UNDERLYING_NAMES,
 			"underlyingName");
-	private static final Map<String, Integer> keyToIndex =
-			sortedKeys.stream().collect(Collectors.toUnmodifiableMap(s -> s, sortedKeys::indexOf));
+	private static final Map<String, Integer> KEY_TO_INDEX =
+			SORTED_KEYS.stream().collect(Collectors.toUnmodifiableMap(s -> s, SORTED_KEYS::indexOf));
 
 	// Used to generate a name for anonymous measures
 	final AtomicInteger anonymousIndex = new AtomicInteger();
@@ -126,10 +124,10 @@ public class MeasureForestFromResource {
 			});
 		}
 
-		Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, "name");
+		Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, K_NAME);
 		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
-		mutableMeasureAsMap.put("name", name);
+		mutableMeasureAsMap.put(K_NAME, name);
 
 		IMeasure asMeasure = new ObjectMapper().convertValue(mutableMeasureAsMap, IMeasure.class);
 
@@ -137,177 +135,6 @@ public class MeasureForestFromResource {
 		measures.addFirst(asMeasure);
 
 		return measures;
-	}
-
-	/**
-	 * @param type
-	 * @param measureAsMap
-	 * @param measures
-	 * @param name
-	 * @return the default behavior is to throw
-	 */
-	protected IMeasure onUnknownType(String type, Map<String, ?> measureAsMap, List<IMeasure> measures, String name) {
-		Class<? extends IMeasure> clazz;
-		try {
-			clazz = (Class<? extends IMeasure>) Class.forName(type);
-		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Issue loading %s".formatted(type), e);
-		}
-
-		ObjectMapper objectMapper = new ObjectMapper();
-		// https://stackoverflow.com/questions/4486787/jackson-with-json-unrecognized-field-not-marked-as-ignorable
-		// objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-		try {
-			measureAsMap = new LinkedHashMap<>(measureAsMap);
-			measureAsMap.remove(KEY_TYPE);
-
-			IMeasure measure = objectMapper.convertValue(measureAsMap, clazz);
-
-			return measure;
-		} catch (RuntimeException e) {
-			throw new IllegalArgumentException("Unexpected value: " + type, e);
-		}
-	}
-
-	protected IMeasure makeDispatchor(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		Object rawUnderlying = getAnyParameter(measure, "underlying");
-
-		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
-
-		Dispatchor.DispatchorBuilder builder = Dispatchor.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlying(underlyingName);
-		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
-
-		String decompositionKey = getStringParameter(measure, "decompositionKey");
-		builder.decompositionKey(decompositionKey);
-
-		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "decompositionOptions")
-				.ifPresent(builder::decompositionOptions);
-
-		return builder.build();
-	}
-
-	protected IMeasure makeBucketor(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		List<?> rawUnderlyings = getListParameter(measure, "underlyings");
-
-		List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
-			return registerMeasuresReturningMainOne(rawUnderlying, measures);
-		}).collect(Collectors.toList());
-
-		Bucketor.BucketorBuilder builder = Bucketor.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlyings(underlyingNames);
-
-		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
-
-		MapPathGet.getOptionalString(measure, "combinationKey").ifPresent(builder::combinationKey);
-		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "combinationOptions").ifPresent(builder::combinationOptions);
-
-		Object rawGroupBy = getAnyParameter(measure, "groupBy");
-		builder.groupBy(toGroupBy(rawGroupBy));
-
-		return builder.build();
-	}
-
-	protected @NonNull IAdhocGroupBy toGroupBy(Object rawGroupBy) {
-		if (rawGroupBy instanceof List<?> wildcards) {
-			List<ReferencedColumn> adhocColumns = wildcards.stream().map(columnDefinition -> {
-				if (columnDefinition instanceof String asString) {
-					return ReferencedColumn.ref(asString);
-				} else {
-					// CalculatedColumn
-					throw new UnsupportedOperationException("TODO");
-				}
-			}).toList();
-			return GroupByColumns.of(adhocColumns);
-		} else {
-			throw new UnsupportedOperationException(
-					"TODO: manage %s".formatted(PepperLogHelper.getObjectAndClass(rawGroupBy)));
-		}
-	}
-
-	protected IMeasure makeFiltrator(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		// Filtrator has a single underlying measure
-		Object rawUnderlying = getAnyParameter(measure, "underlying");
-
-		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
-
-		Filtrator.FiltratorBuilder builder = Filtrator.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlying(underlyingName);
-
-		Map<String, ?> rawFilter = getMapParameter(measure, "filter");
-		builder.filter(toFilter(rawFilter));
-
-		return builder.build();
-	}
-
-	protected IMeasure makeUnfiltrator(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		// Unfiltrator has a single underlying measure
-		Object rawUnderlying = getAnyParameter(measure, "underlying");
-
-		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
-
-		Unfiltrator.UnfiltratorBuilder builder = Unfiltrator.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlying(underlyingName);
-
-		List<String> unfiltered = (List<String>) getListParameter(measure, "unfiltereds");
-		builder.columns(unfiltered);
-
-		return builder.build();
-	}
-
-	protected IMeasure makeShiftor(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		// Filtrator has a single underlying measure
-		Object rawUnderlying = getAnyParameter(measure, "underlying");
-
-		String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
-
-		Shiftor.ShiftorBuilder builder = Shiftor.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlying(underlyingName);
-
-		MapPathGet.getOptionalString(measure, "editorKey").ifPresent(builder::editorKey);
-		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "editorOptions").ifPresent(builder::editorOptions);
-
-		return builder.build();
-	}
-
-	protected IMeasure makeCombinator(Map<String, ?> measure, List<IMeasure> measures, String name) {
-		List<?> rawUnderlyings = getListParameter(measure, "underlyings");
-
-		List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
-			return registerMeasuresReturningMainOne(rawUnderlying, measures);
-		}).collect(Collectors.toList());
-
-		Combinator.CombinatorBuilder builder = Combinator.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()))
-				.underlyings(underlyingNames);
-
-		MapPathGet.getOptionalString(measure, "combinationKey").ifPresent(builder::combinationKey);
-		MapPathGet.<Map<String, ?>>getOptionalAs(measure, "combinationOptions").ifPresent(builder::combinationOptions);
-
-		return builder.build();
-	}
-
-	protected IMeasure makeAggregator(Map<String, ?> measure, String name) {
-		Aggregator.AggregatorBuilder builder = Aggregator.builder()
-				.name(name)
-				.tags(MapPathGet.<List<String>>getOptionalAs(measure, "tags").orElse(List.of()));
-
-		MapPathGet.getOptionalString(measure, "columnName").ifPresent(builder::columnName);
-		MapPathGet.getOptionalString(measure, "aggregationKey").ifPresent(builder::aggregationKey);
-
-		return builder.build();
 	}
 
 	protected String registerMeasuresReturningMainOne(Object rawUnderlying, List<IMeasure> measures) {
@@ -323,75 +150,6 @@ public class MeasureForestFromResource {
 			throw new IllegalArgumentException(
 					"Invalid underlying: %s".formatted(PepperLogHelper.getObjectAndClass(rawUnderlying)));
 		}
-	}
-
-	protected @NonNull IAdhocFilter toFilter(Map<String, ?> rawFilter) {
-		ObjectMapper objectMapper = new ObjectMapper();
-
-		return objectMapper.convertValue(rawFilter, IAdhocFilter.class);
-	}
-
-	protected Map<String, ?> getMapParameter(Map<String, ?> map, String key) {
-		try {
-			return MapPathGet.getRequiredMap(map, key);
-		} catch (IllegalArgumentException e) {
-			return onIllegalGet(map, key, e);
-		}
-	}
-
-	public String getStringParameter(Map<String, ?> map, String key) {
-		try {
-			return MapPathGet.getRequiredString(map, key);
-		} catch (IllegalArgumentException e) {
-			return onIllegalGet(map, key, e);
-		}
-	}
-
-	public Object getAnyParameter(Map<String, ?> map, String key) {
-		try {
-			return MapPathGet.getRequiredAs(map, key);
-		} catch (IllegalArgumentException e) {
-			return onIllegalGet(map, key, e);
-		}
-	}
-
-	public List<?> getListParameter(Map<String, ?> map, String key) {
-		try {
-			return MapPathGet.getRequiredAs(map, key);
-		} catch (IllegalArgumentException e) {
-			return onIllegalGet(map, key, e);
-		}
-	}
-
-	protected <T> T onIllegalGet(Map<String, ?> map, String key, IllegalArgumentException e) {
-		if (map.isEmpty()) {
-			throw new IllegalArgumentException("input map is empty while looking for %s".formatted(key));
-		} else if (e.getMessage().contains("(key not present)")) {
-			String minimizingDistance = minimizingDistance(map.keySet(), key);
-
-			if (SmileEditDistance.levenshtein(minimizingDistance, key) <= 2) {
-				throw new IllegalArgumentException(
-						"Did you mean `%s` instead of `%s`".formatted(minimizingDistance, key),
-						e);
-			} else {
-				// It seems we're rather missing the input than having a typo
-				throw e;
-			}
-		} else {
-			throw e;
-		}
-	}
-
-	/**
-	 *
-	 * @param options
-	 * @param key
-	 * @return the option minimizing its distance to the requested key.
-	 */
-	public static String minimizingDistance(Collection<String> options, String key) {
-		String minimizingDistance =
-				options.stream().min(Comparator.comparing(s -> SmileEditDistance.levenshtein(s, key))).orElse("?");
-		return minimizingDistance;
 	}
 
 	public MeasureForest loadForestFromResource(String name, String format, Resource resource) throws IOException {
@@ -416,7 +174,7 @@ public class MeasureForestFromResource {
 			List forestsAsList = objectMapper.readValue(inputStream, List.class);
 
 			forestsAsList.forEach(forest -> {
-				String name = MapPathGet.getRequiredString(forest, "name");
+				String name = MapPathGet.getRequiredString(forest, K_NAME);
 				List measures = MapPathGet.getRequiredAs(forest, "measures");
 				forests.forest(makeForest(name, measures));
 			});
@@ -469,7 +227,7 @@ public class MeasureForestFromResource {
 					.map(m -> asMap(objectMapper, m))
 					.collect(Collectors.toList());
 
-			nameToForest.add(ImmutableMap.of("name", forestName, "measures", asMaps));
+			nameToForest.add(ImmutableMap.of(K_NAME, forestName, "measures", asMaps));
 		});
 
 		try {
@@ -500,15 +258,15 @@ public class MeasureForestFromResource {
 	 *            the initial serialized view of {@link IMeasure}
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
+	@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.CognitiveComplexity" })
 	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
 		Comparator<String> comparing =
-				Comparator.comparing(s -> Optional.ofNullable(keyToIndex.get(s)).orElse(sortedKeys.size()));
+				Comparator.comparing(s -> Optional.ofNullable(KEY_TO_INDEX.get(s)).orElse(SORTED_KEYS.size()));
 		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
 
 		clean.putAll(map);
 
 		if (measure instanceof Aggregator a) {
-			// clean.put(KEY_TYPE, "aggregator");
 			if (SumAggregation.KEY.equals(a.getAggregationKey())) {
 				clean.remove("aggregationKey");
 			}
@@ -519,49 +277,44 @@ public class MeasureForestFromResource {
 				clean.remove("aggregationOptions");
 			}
 		} else if (measure instanceof Combinator c) {
-			// clean.put(KEY_TYPE, "combinator");
-
-			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
+			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
 					c.getUnderlyingNames())) {
-				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_UNDERLYING_NAMES);
+				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 			}
-			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
-				clean.remove("combinationOptions");
+			if (MapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+				clean.remove(K_COMBINATION_OPTIONS);
 			}
-		} else if (measure instanceof Filtrator f) {
-			// clean.put(KEY_TYPE, "filtrator");
-		} else if (measure instanceof Unfiltrator u) {
-			// clean.put(KEY_TYPE, "unfiltrator");
-		} else if (measure instanceof Shiftor s) {
-			// clean.put(KEY_TYPE, "shiftor");
-		} else if (measure instanceof Columnator c) {
-			// clean.put(KEY_TYPE, "shiftor");
 		} else if (measure instanceof Dispatchor d) {
-			// clean.put(KEY_TYPE, "dispatchor");
-
 			if (d.getAggregationOptions().isEmpty()) {
 				clean.remove("aggregationOptions");
 			}
 		} else if (measure instanceof Bucketor b) {
-			// clean.put(KEY_TYPE, "bucketor");
-
-			MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_MEASURE);
+			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
 					b.getUnderlyingNames())) {
-				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_UNDERLYING_NAMES);
+				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 			}
 			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_GROUPBY_COLUMNS),
 					b.getGroupBy().getGroupedByColumns())) {
-				MapPathRemove.remove(clean, "combinationOptions", IHasCombinationKey.KEY_GROUPBY_COLUMNS);
+				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_GROUPBY_COLUMNS);
 			}
-			if (MapPathGet.getRequiredMap(clean, "combinationOptions").isEmpty()) {
-				clean.remove("combinationOptions");
+			if (MapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+				clean.remove(K_COMBINATION_OPTIONS);
 			}
 
 			if (b.getAggregationOptions().isEmpty()) {
 				clean.remove("aggregationOptions");
 			}
+
+		} else if (measure instanceof Filtrator f) {
+			log.trace("Keep this branch to write short `type`: {}", f);
+		} else if (measure instanceof Unfiltrator u) {
+			log.trace("Keep this branch to write short `type`: {}", u);
+		} else if (measure instanceof Shiftor s) {
+			log.trace("Keep this branch to write short `type`: {}", s);
+		} else if (measure instanceof Columnator c) {
+			log.trace("Keep this branch to write short `type`: {}", c);
 		} else {
 			onUnknownMeasureType(measure, clean);
 		}
@@ -577,6 +330,6 @@ public class MeasureForestFromResource {
 		log.warn("Unknown measureType: {}", measure);
 
 		// This workaround a side-effect of https://github.com/FasterXML/jackson-databind/issues/5030
-		asMap.put(KEY_TYPE, measure.getClass().getName());
+		asMap.put(K_TYPE, measure.getClass().getName());
 	}
 }

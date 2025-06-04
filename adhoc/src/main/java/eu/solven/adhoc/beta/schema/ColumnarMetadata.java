@@ -38,6 +38,11 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * An API-compatible data-structure to provide information about a {@link Set} of columns.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized
@@ -58,12 +63,12 @@ public class ColumnarMetadata {
 
 	static final Set<Map.Entry<String, Class<?>>> UNCLEAR_TYPE_WARNED = Sets.newConcurrentHashSet();
 
+	@Singular
+	Map<String, String> columnToTypes;
+
 	public static void clearWarns() {
 		UNCLEAR_TYPE_WARNED.clear();
 	}
-
-	@Singular
-	Map<String, String> columnToTypes;
 
 	public static ColumnarMetadata from(Map<String, Class<?>> columns) {
 		ColumnarMetadataBuilder builder = ColumnarMetadata.builder();

@@ -165,7 +165,7 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 		// Not sub-sized as on trySplit, the bunch of forked querySteps can not be sized as it depends on the
 		// execution of other nodes
 		// Not ordered as some nextStep would depends on query execution order
-		return Spliterator.SIZED | Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.NONNULL;
+		return SIZED | DISTINCT | IMMUTABLE | NONNULL;
 	}
 
 	public static Stream<CubeQueryStep> fromDAG(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {

@@ -27,6 +27,11 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * Identify a column, in the context of a cube or a table.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder(toBuilder = true)
 public class ColumnIdentifier {

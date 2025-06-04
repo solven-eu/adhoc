@@ -24,12 +24,27 @@ package eu.solven.adhoc.table.composite;
 
 import java.util.Set;
 
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.Builder;
 import lombok.Value;
+import lombok.experimental.UtilityClass;
 
+/**
+ * Helpers dedicated to {@link CompositeCubesTableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
+@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
+@UtilityClass
 public class CompositeCubeHelper {
+	/**
+	 * Details {@link IMeasure} which are compatible given an {@link ICubeQuery} and a {@link ICubeWrapper}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@Builder
 	public static class CompatibleMeasures {

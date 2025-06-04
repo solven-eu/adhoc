@@ -51,6 +51,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link ITransformatorQueryStep} for {@link Bucketor}.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class BucketorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {

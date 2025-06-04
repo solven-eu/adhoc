@@ -108,6 +108,7 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	 * @param logMethod
 	 *            Will print, given a message template as key, and a array with values as value.
 	 */
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected void printLogEvent(AdhocLogEvent event, BiConsumer<String, Object[]> logMethod) {
 		if (event.isExplain() && event.getMessage().contains(EOL)) {
 			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",

@@ -35,6 +35,11 @@ import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * API to fetch information about users.
+ * 
+ * @author Benoit Lacelle
+ */
 @AllArgsConstructor
 public class UsersSearchHandler {
 	final PivotableUsersRegistry usersRegistry;
@@ -45,7 +50,7 @@ public class UsersSearchHandler {
 
 		Optional<PivotableUser> optUser = usersRegistry.optUser(accountId);
 
-		List<PivotableUser> match = optUser.map(u -> Collections.singletonList(u)).orElse(Collections.emptyList());
+		List<PivotableUser> match = optUser.map(Collections::singletonList).orElse(Collections.emptyList());
 
 		return AdhocHandlerHelper.okAsJson(match);
 	}

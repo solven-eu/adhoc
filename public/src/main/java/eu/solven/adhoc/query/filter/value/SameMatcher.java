@@ -29,7 +29,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * To be used with {@link ColumnFilter}, for equality-based matchers.
+ * To be used with {@link ColumnFilter}, for referenced-based matchers.
  * 
  * @author Benoit Lacelle
  *
@@ -42,6 +42,7 @@ public class SameMatcher implements IValueMatcher {
 	Object operand;
 
 	@Override
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	public boolean match(Object value) {
 		return operand == value;
 	}

@@ -37,6 +37,7 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface DSLSupplier {
 	DSLContext getDSLContext();
 

@@ -24,6 +24,11 @@ package eu.solven.adhoc.table.transcoder.value;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
+/**
+ * Provides logic about type transcoding on a per-column basis.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface ICustomTypeManagerSimple {
 	/**
 	 *

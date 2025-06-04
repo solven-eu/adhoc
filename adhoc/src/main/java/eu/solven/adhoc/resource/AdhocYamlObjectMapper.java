@@ -26,10 +26,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * This is the only class actually referring to {@link YAMLFactory}. This is useful as Jackson YAML databind is an
  * optional dependency.
+ * 
+ * @author Benoit Lacelle
  */
+@UtilityClass
 public class AdhocYamlObjectMapper {
 	public static ObjectMapper yamlObjectMapper() {
 		// Use a qualifiedName to enable loading this class even if YAMLGenerator is not on the classPath

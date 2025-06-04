@@ -371,7 +371,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
 				.measure(k1Sum.getName())
-				.andFilter("a", LikeMatcher.builder().like("a1%").build())
+				.andFilter("a", LikeMatcher.builder().pattern("a1%").build())
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

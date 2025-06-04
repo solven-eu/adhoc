@@ -30,6 +30,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ISliceAndValueConsumer {
 	@Deprecated(since = "Should rely on `IValueConsumer putSlice(AdhocSliceAsMap slice)`")
 	default void putSlice(SliceAsMap slice, Object value) {

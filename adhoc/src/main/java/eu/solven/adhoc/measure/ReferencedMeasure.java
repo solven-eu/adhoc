@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure;
 
-import java.util.Comparator;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -50,9 +49,10 @@ import lombok.extern.slf4j.Slf4j;
 @Jacksonized
 @JsonSerialize(using = HasWrappedSerializer.class)
 @Slf4j
-public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped, Comparable<ReferencedMeasure> {
+public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrapped {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	// @JsonValue
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	@NonNull
 	String ref;
 
@@ -82,22 +82,19 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 		return this;
 	}
 
-	@Override
-	public int compareTo(ReferencedMeasure o) {
-		if (this.getClass() != o.getClass()) {
-			return this.getClass().getName().compareTo(o.getClass().getName());
-		}
-
-		return Comparator.comparing(ReferencedMeasure::getRef).compare(this, o);
-	}
-
 	public static ReferencedMeasure ref(String name) {
 		return ReferencedMeasure.builder().ref(name).build();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class ReferencedMeasureBuilder {
 
 		public ReferencedMeasureBuilder() {
+			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String

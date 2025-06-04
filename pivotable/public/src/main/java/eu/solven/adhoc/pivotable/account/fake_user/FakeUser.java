@@ -28,12 +28,14 @@ import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
+import lombok.experimental.UtilityClass;
 
 /**
  * The fake-user is useful when we want to have a trivial authentication, for unit-tests or integrations.
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 public class FakeUser {
 
 	// IKumiteSpringProfiles.P_DEFAULT_FAKE_USER

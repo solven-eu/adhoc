@@ -32,10 +32,16 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+/**
+ * Comes from Kumite. Is it relevant in Pivotable?
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 @Jacksonized
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@Deprecated(since = "Comes from Kumite. Is it relevant in Pivotable?")
 public class RefreshTokenWrapper implements ITokenHolder {
 	String refreshToken;
 	Set<UUID> playerIds;

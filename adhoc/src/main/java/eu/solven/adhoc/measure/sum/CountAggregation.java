@@ -31,6 +31,8 @@ import lombok.Value;
 
 /**
  * Count the number of received entries. Typically used for `COUNT(*)` row count.
+ * 
+ * @author Benoit Lacelle
  */
 public class CountAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
 
@@ -38,6 +40,12 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 
 	private static final CountAggregationCarrier COUNT_1 = CountAggregationCarrier.builder().count(1).build();
 
+	/**
+	 * {@link IAggregationCarrier} which holds the actual acount, while a received `int` or `long` may actually means
+	 * `count=1`.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	public static class CountAggregationCarrier implements IAggregationCarrier {
 		long count;

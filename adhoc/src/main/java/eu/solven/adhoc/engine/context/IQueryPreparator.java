@@ -39,6 +39,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @see IColumnsManager
  * @see IImplicitFilter
  */
+@FunctionalInterface
 public interface IQueryPreparator {
 	/**
 	 * 

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.jgrapht.graph.DirectedMultigraph;
 import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -65,7 +67,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	// Holds the querySteps which underlying steps are pending for processing
 	// Not a Set as we want FIFO behavior, for reproducability
-	final LinkedList<CubeQueryStep> pending = new LinkedList<>();
+	final Deque<CubeQueryStep> pending = new LinkedList<>();
 
 	// Holds the querySteps which underlying steps are processed
 	final Set<CubeQueryStep> processed = new HashSet<>();
@@ -168,6 +170,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		});
 	}
 
+	@Override
 	public QueryStepsDag getQueryDag() {
 		return QueryStepsDag.builder().dag(dag).multigraph(multigraph).queried(roots).build();
 	}
@@ -200,11 +203,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 					}).toList();
 				} catch (RuntimeException e) {
 					String msgE = "Issue computing the underlying querySteps for %s".formatted(queryStep);
-					if (e instanceof IllegalStateException) {
-						throw new IllegalStateException(msgE, e);
-					} else {
-						throw new IllegalArgumentException(msgE, e);
-					}
+					throw AdhocExceptionHelpers.wrap(e, msgE);
 				}
 
 				registerUnderlyings(queryStep, underlyingSteps);
@@ -220,9 +219,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	/**
 	 * 
 	 * @param canResolveMeasures
-	 * @param queriedMeasure
+	 * @param measure
 	 *            any measure
-	 * @return
+	 * @return an explicit {@link IMeasure}, hence never a {@link ReferencedMeasure}
 	 */
 	protected IMeasure resolveMeasure(ICanResolveMeasure canResolveMeasures, IMeasure measure) {
 		// Make sure the DAG has actual measure nodes, and not references

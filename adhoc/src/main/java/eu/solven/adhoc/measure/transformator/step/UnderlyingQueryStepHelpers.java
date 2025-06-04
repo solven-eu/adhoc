@@ -45,6 +45,11 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Helper around {@link ISliceToValue}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
 public class UnderlyingQueryStepHelpers {
 	protected UnderlyingQueryStepHelpers() {
@@ -94,7 +99,7 @@ public class UnderlyingQueryStepHelpers {
 			} else if (notSorted.size() == 1) {
 				notSortedAsSet = notSorted.iterator().next().slicesSet();
 			} else {
-				notSortedAsSet = notSorted.stream().flatMap(s -> s.slices()).collect(Collectors.toSet());
+				notSortedAsSet = notSorted.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
 			}
 
 			Stream<SliceAndMeasures> notSortedSlices = notSortedAsSet.stream().map(sliceAsMap -> {
@@ -141,10 +146,12 @@ public class UnderlyingQueryStepHelpers {
 
 		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIterator(queryStep, sortedIterators);
 
-		int characteristics = // keys are sorted naturally
-				Spliterator.ORDERED | Spliterator.SORTED |
+		int characteristics = 0
+				// keys are sorted naturally
+				| Spliterator.ORDERED
+				| Spliterator.SORTED
 				// When read, this can not be edited anymore
-						Spliterator.IMMUTABLE;
+				| Spliterator.IMMUTABLE;
 		Spliterator<SliceAndMeasures> spliterator =
 				Spliterators.spliteratorUnknownSize(mergedIterator, characteristics);
 		return StreamSupport.stream(spliterator, false);

@@ -29,6 +29,7 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasOperatorsFactory {
 	IOperatorsFactory getOperatorsFactory();
 

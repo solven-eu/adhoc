@@ -22,57 +22,47 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
-import java.util.List;
+import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
-public class UnionListAggregator<K> implements IAggregation {
+/**
+ * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * 
+ * @param <K>
+ * @param <V>
+ * @author Benoit Lacelle
+ */
+public class MapAggregation<K, V> implements IAggregation {
 
-	public static final String KEY = "UNION_LIST";
+	public static final String KEY = "UNION_MAP";
 
 	public boolean acceptAggregate(Object o) {
-		return o instanceof List || o == null;
+		return o instanceof Map || o == null;
 	}
 
 	@Override
-	public List<K> aggregate(Object l, Object r) {
-		List<K> lAsList = (List<K>) l;
-		List<K> rAsList = (List<K>) r;
+	public Map<K, V> aggregate(Object l, Object r) {
+		Map<?, ?> lAsMap = asMap(l);
+		Map<?, ?> rAsMap = asMap(r);
 
-		return aggregateLists(lAsList, rAsList);
+		return aggregateMaps(lAsMap, rAsMap);
 	}
 
-	protected List<K> aggregateLists(List<K> l, List<K> r) {
-		if (l == null || l.isEmpty()) {
-			return r;
-		} else if (r == null || r.isEmpty()) {
-			return l;
+	protected Map<?, ?> asMap(Object o) {
+		return (Map<?, ?>) o;
+	}
+
+	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
+		if (lAsMap == null) {
+			return (Map<K, V>) rAsMap;
+		} else if (rAsMap == null) {
+			return (Map<K, V>) lAsMap;
 		} else {
-			return (List<K>) ImmutableList.builder().addAll(l).addAll(r).build();
+			// BEWARE In case on conflict, ImmutableMap.builder() will throw
+			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
 		}
-	}
-
-	// @Override
-	// public double aggregateDoubles(double left, double right) {
-	// throw new UnsupportedOperationException("Can not %s on doubles".formatted(KEY));
-	// }
-
-	// @Override
-	// public long aggregateLongs(long left, long right) {
-	// throw new UnsupportedOperationException("Can not %s on longs".formatted(KEY));
-	// }
-
-	/**
-	 * This is useful to be used in {@link Map#}.merge
-	 * 
-	 * @param <T>
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	public static <T> List<T> unionList(List<T> left, List<T> right) {
-		return new UnionListAggregator<T>().aggregateLists(left, right);
 	}
 }

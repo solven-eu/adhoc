@@ -22,11 +22,18 @@
  */
 package eu.solven.adhoc.pivotable.oauth2;
 
+/**
+ * Constants related with OAuth2 configuration in Pivotable.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IPivotableOAuth2Constants {
 	// https://connect2id.com/products/server/docs/api/token#url
 	String KEY_OAUTH2_ISSUER = "adhoc.pivotable.oauth2.issuer-base-url";
 	String KEY_JWT_SIGNINGKEY = "adhoc.pivotable.oauth2.signing-key";
 
-	// Used to generate a signingKey on the fly. Useful for integrationTests
+	/**
+	 * Used to generate a signingKey on the fly. Useful for integrationTests
+	 */
 	String GENERATE = "GENERATE";
 }

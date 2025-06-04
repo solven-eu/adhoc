@@ -22,10 +22,15 @@
  */
 package eu.solven.adhoc.query;
 
+/**
+ * Constants related to SQL `count(*)` usual aggregation.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface ICountMeasuresConstants {
 
-	// A marker for the special columnName `*`, typically used in `COUNT(*)`
+	/**
+	 * A marker for the special columnName `*`, typically used in `COUNT(*)`
+	 */
 	String ASTERISK = "*";
-
-	// IMeasuredAxis COUNT_MEASURE = new MeasuredAxis(STAR, IStandardOperators.COUNT);
 }

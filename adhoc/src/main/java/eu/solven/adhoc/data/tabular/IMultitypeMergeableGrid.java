@@ -40,6 +40,7 @@ public interface IMultitypeMergeableGrid<T> {
 	 * 
 	 * @author Benoit Lacelle
 	 */
+	@FunctionalInterface
 	interface IOpenedSlice {
 		IValueReceiver contribute(IAliasedAggregator aggregator);
 	}

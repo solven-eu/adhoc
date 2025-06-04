@@ -34,6 +34,11 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * Parameters for {@link AdhocBigQueryTableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
 @Value
 @Builder
 public class AdhocBigQueryTableWrapperParameters {

@@ -30,6 +30,7 @@ import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasParentQueryId {
 	AdhocQueryId getParentQueryId();
 }

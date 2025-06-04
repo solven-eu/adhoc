@@ -33,7 +33,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.*;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
@@ -41,6 +40,7 @@ import eu.solven.adhoc.beta.schema.ColumnarMetadata;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -59,6 +59,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableEndpointsHandler {
+	private static final int DEFAULT_LIMIT_COORDINATES = 100;
+
 	final PivotableEndpointsRegistry endpointsRegistry;
 	final PivotableAdhocSchemaRegistry schemasRegistry;
 
@@ -109,7 +111,7 @@ public class PivotableEndpointsHandler {
 			try {
 				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmpty);
 			} catch (Exception e) {
-				if (AdhocUnsafe.failFast) {
+				if (AdhocUnsafe.isFailFast()) {
 					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
 				} else {
 					log.warn("Issue loading schema for endpoint={}", endpoint, e);
@@ -141,7 +143,8 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "coordinate")
 				.ifPresent(id -> parameters.coordinate(Optional.of(EqualsMatcher.isEqualTo(id))));
 
-		Number limitCoordinates = AdhocHandlerHelper.optNumber(request, "limit_coordinates").orElse(100);
+		Number limitCoordinates =
+				AdhocHandlerHelper.optNumber(request, "limit_coordinates").orElse(DEFAULT_LIMIT_COORDINATES);
 		parameters.limitCoordinates(limitCoordinates.intValue());
 
 		AdhocColumnSearch columnSearch = parameters.build();

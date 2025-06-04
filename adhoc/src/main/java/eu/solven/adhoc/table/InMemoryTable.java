@@ -40,7 +40,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -53,10 +52,9 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -67,14 +65,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A simple {@link ITableWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not execute
  * groupBys, nor it handles calculated columns (over SQL expressions).
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 @SuperBuilder
 public class InMemoryTable implements ITableWrapper {
-
-	public static InMemoryTable newInstance(Map<String, ?> options) {
-		return InMemoryTable.builder().build();
-	}
 
 	@Default
 	@NonNull
@@ -91,6 +87,10 @@ public class InMemoryTable implements ITableWrapper {
 	@Default
 	boolean throwOnUnknownColumn = true;
 
+	public static InMemoryTable newInstance(Map<String, ?> options) {
+		return InMemoryTable.builder().build();
+	}
+
 	public void add(Map<String, ?> row) {
 		rows.add(row);
 	}
@@ -101,7 +101,7 @@ public class InMemoryTable implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
-		if (queryPod.getTable() != this) {
+		if (!this.equals(queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
@@ -137,7 +137,7 @@ public class InMemoryTable implements ITableWrapper {
 
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
-				return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), tableQuery.getFilter(), row);
+				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
 				return toRecord(tableQuery, aggregateColumns, groupByColumns, nbKeys, row);
@@ -148,7 +148,7 @@ public class InMemoryTable implements ITableWrapper {
 
 				// groupBy groupedByColumns
 				Map<Map<String, ?>, Optional<ITabularRecord>> groupedAggregatedRecord =
-						stream.collect(Collectors.groupingBy(r -> r.getGroupBys(),
+						stream.collect(Collectors.groupingBy(ITabularRecord::getGroupBys,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
 
@@ -164,7 +164,7 @@ public class InMemoryTable implements ITableWrapper {
 				if (distinctSlices) {
 					List<ITabularRecord> asList = stream.toList();
 
-					long nbSlices = asList.stream().map(r -> r.getGroupBys()).count();
+					long nbSlices = asList.stream().map(ITabularRecord::getGroupBys).count();
 					if (nbSlices != asList.size()) {
 						// TODO We may implement the aggregations, but it may be unnecessary for unitTests
 						throw new IllegalStateException("Rows does not enable distinct groupBys");
@@ -185,7 +185,7 @@ public class InMemoryTable implements ITableWrapper {
 
 		{
 			Set<String> tableColumns = getColumnTypes().keySet();
-			SetView<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
+			Set<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
 			if (!unknownFilteredColumns.isEmpty()) {
 				if (throwOnUnknownColumn) {
 					throw new IllegalArgumentException(
@@ -195,7 +195,7 @@ public class InMemoryTable implements ITableWrapper {
 				}
 			}
 
-			SetView<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
+			Set<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
 			if (!unknownGroupedByColumns.isEmpty()) {
 				if (throwOnUnknownColumn) {
 					throw new IllegalArgumentException(
@@ -221,7 +221,7 @@ public class InMemoryTable implements ITableWrapper {
 					.stream()
 					.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
 					.forEach(a -> {
-						if (!AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), a.getFilter(), row)) {
+						if (!MoreFilterHelpers.match(a.getFilter(), row)) {
 							// This aggregate is rejected by the `FILTER` clause
 							return;
 						}

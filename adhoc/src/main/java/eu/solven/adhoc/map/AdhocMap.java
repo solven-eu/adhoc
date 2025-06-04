@@ -42,13 +42,21 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.exception.NotSupportedAsImmutableException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 
+/**
+ * A custom {@link Map}, dedicated to performance optimizations, specific to Adhoc context.
+ * 
+ * @author Benoit Lacelle
+ */
 // `extends AbstractMap` enables not duplicating `.toString`
+@SuppressWarnings({ "PMD.GodClass", "PMD.LooseCoupling" })
 public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	private static final int[] PRE_ORDERED = new int[0];
 
@@ -113,22 +121,22 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	@Override
 	public Object put(String key, Object value) {
-		throw new UnsupportedOperationException("This is immutable");
+		throw new NotSupportedAsImmutableException();
 	}
 
 	@Override
 	public Object remove(Object key) {
-		throw new UnsupportedOperationException("This is immutable");
+		throw new NotSupportedAsImmutableException();
 	}
 
 	@Override
 	public void putAll(Map<? extends String, ? extends Object> m) {
-		throw new UnsupportedOperationException("This is immutable");
+		throw new NotSupportedAsImmutableException();
 	}
 
 	@Override
 	public void clear() {
-		throw new UnsupportedOperationException("This is immutable");
+		throw new NotSupportedAsImmutableException();
 	}
 
 	@Override
@@ -210,6 +218,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 	}
 
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected boolean equalsKeyToIndex(Object2IntArrayMap<String> keyToIndex, Object2IntArrayMap<String> keyToIndex2) {
 		if (keyToIndex == keyToIndex2) {
 			// Same key ref
@@ -222,6 +231,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	// Looks a lot like NavigableMapComparator. Duplication?
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	@Override
 	public int compareTo(AdhocMap other) {
 		if (this == other) {
@@ -282,7 +292,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
 	// internalized, and keySet are identical in most cases
 	// `java:S4973` is about the reference comparison, which is done on purpose to potentially skip the `.compareTo`
-	@SuppressWarnings("java:S4973")
+	@SuppressWarnings({ "java:S4973", "PMD.CompareObjectsWithEquals", "PMD.UseEqualsToCompareStrings" })
 	private int compareKey(String thisKey, String otherKey) {
 		if (thisKey == otherKey) {
 			return 0;
@@ -291,10 +301,16 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 	}
 
-	public static class AdhocMapBuilder {
+	/**
+	 * Helps building {@link AdhocMap} instances.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	public static final class AdhocMapBuilder {
 		// Cache keyToIndex as it enables faster comparisons
 		// Expected to remain low in memory given the groupBy cardinality is limited
-		private static final Map<NavigableSet<String>, Object2IntArrayMap<String>> keysToIndexedKeys =
+		@SuppressWarnings("PMD.LooseCoupling")
+		private static final Map<NavigableSet<String>, Object2IntArrayMap<String>> KEYS_TO_INDEXED_KEYS =
 				new ConcurrentHashMap<>();
 
 		final NavigableSet<String> keys;
@@ -311,7 +327,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 				// identity reordering
 				reordering = PRE_ORDERED;
 			} else {
-				ObjectArrayList<Object2IntMap.Entry<String>> keyToIndex = new ObjectArrayList<>();
+				ObjectList<Object2IntMap.Entry<String>> keyToIndex = new ObjectArrayList<>();
 
 				keys.forEach(key -> keyToIndex.add(new AbstractObject2IntMap.BasicEntry<>(key, keyToIndex.size())));
 
@@ -341,9 +357,10 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			return this;
 		}
 
+		@SuppressWarnings("PMD.LooseCoupling")
 		public AdhocMap build() {
 			// Object2IntArrayMap enables keeping the order
-			Object2IntArrayMap<String> keyToIndex = keysToIndexedKeys.computeIfAbsent(keys, k -> {
+			Object2IntArrayMap<String> keyToIndex = KEYS_TO_INDEXED_KEYS.computeIfAbsent(keys, k -> {
 				Object2IntArrayMap<String> keyToIndexL = new Object2IntArrayMap<>(k.size());
 
 				// -1 is not a valid index: it is a good default value (better than the defaultDefault 0)

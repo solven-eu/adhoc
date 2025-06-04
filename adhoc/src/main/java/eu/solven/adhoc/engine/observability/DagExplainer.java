@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DagExplainer implements IDagExplainer {
 	private static final String FAKE_ROOT_MEASURE = "$ADHOC$fakeRoot";
 
-	static final CubeQueryStep fakeRoot = CubeQueryStep.builder()
+	static final CubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
 			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
 			.filter(IAdhocFilter.MATCH_ALL)
 			.groupBy(IAdhocGroupBy.GRAND_TOTAL)
@@ -71,6 +71,11 @@ public class DagExplainer implements IDagExplainer {
 	@NonNull
 	IAdhocEventBus eventBus;
 
+	/**
+	 * Store the mutating state during an `EXPLAIN`, like some details about the indentation.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	@Value
 	@RequiredArgsConstructor
 	public static class DagExplainerState {
@@ -81,7 +86,7 @@ public class DagExplainer implements IDagExplainer {
 		QueryStepsDag dag;
 
 		public List<CubeQueryStep> getUnderlyingSteps(CubeQueryStep step) {
-			if (step == fakeRoot) {
+			if (step == FAKE_ROOT) {
 				// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
 				return dag.getQueried().stream().sorted(this.orderForExplain()).toList();
 			} else {
@@ -110,7 +115,7 @@ public class DagExplainer implements IDagExplainer {
 	public void explain(AdhocQueryId queryId, QueryStepsDag dag) {
 		DagExplainerState state = newDagExplainerState(queryId, dag);
 
-		printStepAndUnderlyings(state, fakeRoot, Optional.empty(), true);
+		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
 	}
 
 	protected DagExplainerState newDagExplainerState(AdhocQueryId queryId, QueryStepsDag dag) {
@@ -119,9 +124,7 @@ public class DagExplainer implements IDagExplainer {
 
 	/**
 	 * 
-	 * @param queryStepsDag
-	 * @param stepToIndentation
-	 * @param stepToReference
+	 * @param dagState
 	 * @param step
 	 *            currently show queryStep
 	 * @param optParent
@@ -197,8 +200,9 @@ public class DagExplainer implements IDagExplainer {
 		}
 	}
 
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveLiteralAppends" })
 	protected String toString2(DagExplainerState dagState, CubeQueryStep step) {
-		if (step == fakeRoot) {
+		if (step == FAKE_ROOT) {
 			AdhocQueryId queryId = dagState.getQueryId();
 			UUID parentQueryId = queryId.getParentQueryId();
 			if (parentQueryId == null) {
@@ -212,7 +216,7 @@ public class DagExplainer implements IDagExplainer {
 
 		sb.append("m=")
 				.append(step.getMeasure().getName())
-				.append("(")
+				.append('(')
 				.append(toString(step))
 				.append(')')
 

@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -40,6 +41,8 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
+ * 
+ * @author Benoit Lacelle
  */
 public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
@@ -132,8 +135,9 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
 	public int compareTo(SliceAsMap o) {
-		if (this.asMap instanceof AdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
+		if (this.asMap instanceof IAdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
 			return adhocMap.compareTo(otherAdhocMap);
 		} else {
 			return MapComparators.mapComparator().compare(this.asMap, o.asMap);
@@ -156,7 +160,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		if (mask.isEmpty()) {
 			return this;
 		} else {
-			return SliceAsMap.fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
+			return fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
 		}
 	}
 }

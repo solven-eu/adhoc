@@ -36,6 +36,8 @@ import lombok.ToString;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @ToString

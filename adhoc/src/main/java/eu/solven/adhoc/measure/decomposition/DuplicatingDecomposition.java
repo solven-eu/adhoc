@@ -137,7 +137,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 			// BEWARE This is a 1D filtering: some combinations may be filtered (e.g. with an OR).
 			IValueMatcher valueMatcher = FilterHelpers.getValueMatcherLax(slice.asFilter(), relevantColumn);
 			indexToCoordinates.add(unfilteredCoordinates.stream()
-					.filter(o -> valueMatcher.match(o))
+					.filter(valueMatcher::match)
 					.collect(ImmutableList.toImmutableList()));
 		}
 

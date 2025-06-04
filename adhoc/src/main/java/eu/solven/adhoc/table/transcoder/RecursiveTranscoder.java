@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import lombok.Builder;
@@ -30,6 +33,8 @@ import lombok.NonNull;
 
 /**
  * A decorating {@link ITableTranscoder} , which applies the transcoding logic recursively
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 public class RecursiveTranscoder implements ITableTranscoder {
@@ -51,7 +56,7 @@ public class RecursiveTranscoder implements ITableTranscoder {
 
 		boolean first = true;
 		String nextQueried = queried;
-		do {
+		while (true) {
 			String nextUnderlying = transcoder.underlying(nextQueried);
 
 			if (nextUnderlying == null) {
@@ -82,6 +87,6 @@ public class RecursiveTranscoder implements ITableTranscoder {
 
 			first = false;
 			nextQueried = nextUnderlying;
-		} while (true);
+		}
 	}
 }

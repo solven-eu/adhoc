@@ -29,6 +29,11 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Manages users.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 public final class PivotableUsersRegistry {
 
@@ -54,13 +59,11 @@ public final class PivotableUsersRegistry {
 
 	/**
 	 * 
-	 * @param AdhocUserRaw
+	 * @param userPreRegister
 	 * @return a {@link PivotableUser}. This may be a new account if this was not known. If this was already known, we
 	 *         update the oauth2 details and return an existing accountId
 	 */
 	public PivotableUser registerOrUpdate(PivotableUserPreRegister userPreRegister) {
-		PivotableUser AdhocUser = userRepository.registerOrUpdate(userPreRegister);
-
-		return AdhocUser;
+		return userRepository.registerOrUpdate(userPreRegister);
 	}
 }

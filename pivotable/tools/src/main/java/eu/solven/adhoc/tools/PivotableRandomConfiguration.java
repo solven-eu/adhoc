@@ -32,6 +32,11 @@ import org.springframework.core.env.Environment;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Spring {@link Configuration} related to random generation.
+ * 
+ * @author Benoit Lacelle
+ */
 @Configuration
 @Slf4j
 public class PivotableRandomConfiguration {

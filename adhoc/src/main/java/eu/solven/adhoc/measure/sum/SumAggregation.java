@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Object (by their `.toString`) depending on the
  * inputs.
+ * 
+ * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
@@ -43,8 +45,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	public static final String KEY = "SUM";
 
 	public static boolean isSum(String operator) {
-		return "+".equals(operator) || SumAggregation.KEY.equals(operator)
-				|| operator.equals(SumAggregation.class.getName());
+		return "+".equals(operator) || KEY.equals(operator) || operator.equals(SumAggregation.class.getName());
 	}
 
 	@Override
@@ -77,6 +78,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		}
 	}
 
+	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Object aggregateObjects(Object l, Object r) {
 		// Fallback by concatenating Strings
 		String concatenated = l.toString() + r.toString();

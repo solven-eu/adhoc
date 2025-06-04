@@ -68,22 +68,21 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	@Getter(AccessLevel.PRIVATE)
 	Supplier<Boolean> operandIsDoubleLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isDoubleLike(getOperand()));
 
+	@Override
 	public Object getWrapped() {
 		return operand;
 	}
 
 	@Override
 	public boolean match(Object value) {
-		if (operand == value || operand.equals(value)) {
+		if (operand.equals(value)) {
 			return true;
 		}
 
 		if (operandIsDoubleLike.get()) {
-			if (operandIsLongLike.get()) {
-				if (AdhocPrimitiveHelpers.isLongLike(value)) {
-					// We consider `int 3` and `long 3` to be equals
-					return AdhocPrimitiveHelpers.asLong(operand) == AdhocPrimitiveHelpers.asLong(value);
-				}
+			if (operandIsLongLike.get() && AdhocPrimitiveHelpers.isLongLike(value)) {
+				// We consider `int 3` and `long 3` to be equals
+				return AdhocPrimitiveHelpers.asLong(operand) == AdhocPrimitiveHelpers.asLong(value);
 			}
 
 			if (AdhocPrimitiveHelpers.isDoubleLike(value)) {
@@ -95,9 +94,15 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 		return false;
 	}
 
+	/**
+	 * Lombok builder.
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class EqualsMatcherBuilder {
 
 		public EqualsMatcherBuilder() {
+			// Empty constructors is required by Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain Object
@@ -140,6 +145,7 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 	 *            typically a value for which `.equals` is relevant. `null` and `IValueMatcher` are special cases.
 	 * @return
 	 */
+	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher isEqualTo(Object operand) {
 		if (operand == null) {
 			return NullMatcher.matchNull();

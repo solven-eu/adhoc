@@ -22,6 +22,12 @@
  */
 package eu.solven.adhoc.pivotable.login;
 
+/**
+ * What is the purpose of this?
+ * 
+ * @author Benoit Lacelle
+ */
+@Deprecated(since = "What is the purpose of this?")
 public interface ITokenHolder {
 
 }

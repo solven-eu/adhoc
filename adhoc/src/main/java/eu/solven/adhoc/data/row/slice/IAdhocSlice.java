@@ -35,6 +35,8 @@ import eu.solven.pepper.core.PepperLogHelper;
 
 /**
  * A slice expresses the axes along which a query is filtered.
+ * 
+ * @author Benoit Lacelle
  */
 public interface IAdhocSlice {
 	/**

@@ -50,6 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class InjectAdvancedExamplesCubesConfig {
 
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`

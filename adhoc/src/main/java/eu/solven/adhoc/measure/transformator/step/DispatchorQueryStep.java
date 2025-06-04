@@ -55,6 +55,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * {@link ITransformatorQueryStep} for {@link Dispatchor}.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {

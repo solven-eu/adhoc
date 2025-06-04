@@ -70,7 +70,7 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	 * @return true if the aggregationKey refers to {@link EmptyAggregation}
 	 */
 	public static boolean isEmpty(String aggregationKey) {
-		return EmptyAggregation.KEY.equals(aggregationKey) || aggregationKey.equals(EmptyAggregation.class.getName());
+		return KEY.equals(aggregationKey) || aggregationKey.equals(EmptyAggregation.class.getName());
 	}
 
 	/**
@@ -83,7 +83,8 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	}
 
 	public static boolean isEmpty(Set<? extends IAliasedAggregator> aggregators) {
-		boolean hasEmpty = aggregators.stream().map(aa -> aa.getAggregator()).anyMatch(EmptyAggregation::isEmpty);
+		boolean hasEmpty =
+				aggregators.stream().map(IAliasedAggregator::getAggregator).anyMatch(EmptyAggregation::isEmpty);
 
 		if (hasEmpty && aggregators.size() >= 2) {
 			throw new IllegalArgumentException("Must not query must empty and non-empty: " + aggregators);

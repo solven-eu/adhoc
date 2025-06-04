@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,6 +57,7 @@ import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -141,19 +141,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 			String eMsg = "Issue executing query=%s options=%s".formatted(queryPod.getQuery(), queryPod.getOptions());
 
-			if (e instanceof IllegalStateException illegalStateE) {
-				// We want to keep bubbling an IllegalStateException
-				throw new IllegalStateException(eMsg, illegalStateE);
-			} else if (e instanceof CompletionException completionE) {
-				if (completionE.getCause() instanceof IllegalStateException) {
-					// We want to keep bubbling an IllegalStateException
-					throw new IllegalStateException(eMsg, completionE);
-				} else {
-					throw new IllegalArgumentException(eMsg, completionE);
-				}
-			} else {
-				throw new IllegalArgumentException(eMsg, e);
-			}
+			throw AdhocExceptionHelpers.wrap(e, eMsg);
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
@@ -220,14 +208,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 		// Add explicitly requested steps
 		Set<IMeasure> queriedMeasures = getRootMeasures(queryPod);
 
-		long nbQueriedMeasures = queriedMeasures.stream().map(m -> m.getName()).distinct().count();
+		long nbQueriedMeasures = queriedMeasures.stream().map(IMeasure::getName).distinct().count();
 		if (nbQueriedMeasures < queriedMeasures.size()) {
 			AtomicLongMap<String> nameToCount = AtomicLongMap.create();
 			queriedMeasures.forEach(m -> nameToCount.incrementAndGet(m.getName()));
 			// Remove not conflicting
-			nameToCount.asMap().keySet().forEach(m -> nameToCount.decrementAndGet(m));
+			nameToCount.asMap().keySet().forEach(nameToCount::decrementAndGet);
 			nameToCount.removeAllZeros();
-			nameToCount.asMap().keySet().forEach(m -> nameToCount.incrementAndGet(m));
+			nameToCount.asMap().keySet().forEach(nameToCount::incrementAndGet);
 
 			throw new IllegalArgumentException(
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
@@ -416,31 +404,40 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			}).toList();
 
 			// BEWARE It looks weird we have to call again `.wrapNode`
-			ITransformatorQueryStep hasUnderlyingQuerySteps =
+			ITransformatorQueryStep transformatorQuerySteps =
 					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
 
 			ISliceToValue coordinatesToValues;
 			try {
-				coordinatesToValues = hasUnderlyingQuerySteps.produceOutputColumn(underlyings);
+				coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 			} catch (RuntimeException e) {
-				StringBuilder describeStep = new StringBuilder();
-
-				describeStep.append("Issue computing columns for:").append("\r\n");
-
-				// First, we print only measure as a simplistic shorthand of the step
-				describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
-						underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
-				// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
-				describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
-						underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
-
-				throw new IllegalStateException(describeStep.toString(), e);
+				throw rethrowWithDetails(queryStep, underlyingSteps, e);
 			}
 
 			return Optional.of(coordinatesToValues);
 		} else {
 			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}
+	}
+
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"PMD.ConsecutiveLiteralAppends" })
+	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
+			List<CubeQueryStep> underlyingSteps,
+			RuntimeException e) {
+		StringBuilder describeStep = new StringBuilder();
+
+		describeStep.append("Issue computing columns for:").append("\r\n");
+
+		// First, we print only measure as a simplistic shorthand of the step
+		describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
+				underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+		// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
+		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
+				underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+
+		return new IllegalStateException(describeStep.toString(), e);
 	}
 
 	/**
@@ -471,6 +468,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
+				log.debug("No sliceToValue for step={}", step);
 			} else {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());

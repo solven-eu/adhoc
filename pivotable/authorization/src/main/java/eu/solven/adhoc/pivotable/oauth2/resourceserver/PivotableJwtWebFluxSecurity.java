@@ -41,6 +41,11 @@ import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Default security configuration for Pivotable.
+ * 
+ * @author Benoit Lacelle
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableJwtWebFluxSecurity {
@@ -56,6 +61,7 @@ public class PivotableJwtWebFluxSecurity {
 	 */
 	@Order(Ordered.LOWEST_PRECEDENCE)
 	@Bean
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	public SecurityWebFilterChain configureApi(Environment env,
 			ReactiveJwtDecoder jwtDecoder,
 			ServerHttpSecurity http) {

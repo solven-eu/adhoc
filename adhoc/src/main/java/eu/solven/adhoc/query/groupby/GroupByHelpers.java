@@ -33,12 +33,14 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helps methods around {@link IAdhocGroupBy}
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 public class GroupByHelpers {
 
 	public static IAdhocGroupBy union(IAdhocGroupBy left, @NonNull IAdhocGroupBy right) {

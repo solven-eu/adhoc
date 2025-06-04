@@ -49,15 +49,6 @@ import lombok.Value;
  */
 @Builder
 public class CachingOperatorsFactory implements IOperatorsFactory {
-	@Value
-	@Builder
-	static class OperatorsFactoryKey {
-		@NonNull
-		String key;
-		@NonNull
-		@Singular
-		ImmutableMap<String, ?> options;
-	}
 
 	@NonNull
 	IOperatorsFactory operatorsFactory;
@@ -76,6 +67,16 @@ public class CachingOperatorsFactory implements IOperatorsFactory {
 	@NonNull
 	@Default
 	Cache<OperatorsFactoryKey, IFilterEditor> filterEditorsCache = CacheBuilder.newBuilder().build();
+
+	@Value
+	@Builder
+	static class OperatorsFactoryKey {
+		@NonNull
+		String key;
+		@NonNull
+		@Singular
+		ImmutableMap<String, ?> options;
+	}
 
 	public void invalidateAll() {
 		aggregationsCache.invalidateAll();

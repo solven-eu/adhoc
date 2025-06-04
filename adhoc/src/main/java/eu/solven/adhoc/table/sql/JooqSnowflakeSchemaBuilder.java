@@ -46,8 +46,9 @@ import lombok.NonNull;
  * <p>
  * This also facilitate the registration of proper transcoder. This implementation give priority to the first encounter
  * of a field, giving priority to the LEFT table over the RIGHT table.
+ * 
+ * @author Benoit Lacelle
  */
-// @Builder
 public class JooqSnowflakeSchemaBuilder {
 	// JOINs often refers the same name from the joined tables: this map will record the qualified field to refer when
 	// the unqualified field is queried
@@ -164,12 +165,17 @@ public class JooqSnowflakeSchemaBuilder {
 		return this;
 	}
 
-	public static class JooqSnowflakeSchemaBuilderBuilder {
-
-		// https://github.com/projectlombok/lombok/issues/2307#issuecomment-1119511303
-		private JooqSnowflakeSchemaBuilderBuilder snowflakeTable(Table<Record> snowflakeTable) {
-			return this;
-		}
-	}
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	// public static class JooqSnowflakeSchemaBuilderBuilder {
+	//
+	// // https://github.com/projectlombok/lombok/issues/2307#issuecomment-1119511303
+	// private JooqSnowflakeSchemaBuilderBuilder snowflakeTable(Table<Record> snowflakeTable) {
+	// return this;
+	// }
+	// }
 
 }

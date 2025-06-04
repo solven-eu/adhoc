@@ -132,9 +132,10 @@ public class TabularRecordOverMaps implements ITabularRecord {
 
 	@Override
 	public String toString() {
-		return TabularRecordOverMaps.toString(this);
+		return toString(this);
 	}
 
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
 	public static String toString(ITabularRecord tabularRecord) {
 		StringBuilder string = new StringBuilder();
 
@@ -150,7 +151,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 				.filter(aggregateName -> null != tabularRecord.getAggregate(aggregateName))
 				.map(aggregateName -> aggregateName + "=" + tabularRecord.getAggregate(aggregateName))
 				.collect(Collectors.joining(", ")));
-		string.append("}");
+		string.append('}');
 
 		return string.toString();
 	}

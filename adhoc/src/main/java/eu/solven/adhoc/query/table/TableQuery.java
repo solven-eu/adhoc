@@ -118,7 +118,7 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 				.stream()
 				.distinct()
 				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
-				.map(a -> a.getAlias())
+				.map(FilteredAggregator::getAlias)
 				.toList();
 
 		List<String> columns = new ArrayList<>();

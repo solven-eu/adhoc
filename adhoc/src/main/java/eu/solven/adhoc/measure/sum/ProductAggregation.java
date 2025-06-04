@@ -35,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A `PRODUCT` {@link IAggregation}. It will aggregate as longs, doubles or Strings depending on the inputs.
+ * 
+ * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/product-function-dax
 @Slf4j
@@ -50,8 +52,7 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	}
 
 	public static boolean isProduct(String operator) {
-		return "*".equals(operator) || ProductAggregation.KEY.equals(operator)
-				|| operator.equals(ProductAggregation.class.getName());
+		return "*".equals(operator) || KEY.equals(operator) || ProductAggregation.class.getName().equals(operator);
 	}
 
 	@Override

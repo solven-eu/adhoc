@@ -46,7 +46,7 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -56,10 +56,11 @@ import lombok.extern.slf4j.Slf4j;
  * A data-structure associating each {@link Aggregator} with a {@link IMultitypeMergeableColumn}
  * 
  * @param <T>
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
-public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingColumnsV2<T, Integer> {
+public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
@@ -149,8 +150,8 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 			// UnderlyingQueryStepHelpers.distinctSlices
 
 			if (refSortedSliceToIndex.get() == null) {
-				ObjectArrayList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
-					sliceToIndex.forEach((slice, index) -> consumer.acceptObject2Int(slice, index));
+				ObjectList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
+					sliceToIndex.forEach(consumer::acceptObject2Int);
 				}, sliceToIndex.size());
 
 				refSortedSliceToIndex.set(sortedEntries);
@@ -169,7 +170,7 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 
 	protected IMultitypeColumnFastGet<T> wrapNavigableColumnGivenIndexes(IMultitypeColumnFastGet<Integer> column,
 			Map<Integer, T> indexToSlice) {
-		return new IMultitypeColumnFastGet<T>() {
+		return new IMultitypeColumnFastGet<>() {
 
 			@Override
 			public long size() {
@@ -216,7 +217,7 @@ public class AggregatingColumnsV2<T extends Comparable<T>> extends AAggregatingC
 
 			@Override
 			public Stream<T> keyStream() {
-				return column.keyStream().map(rowIndex -> indexToSlice.get(rowIndex));
+				return column.keyStream().map(indexToSlice::get);
 			}
 
 			@Override

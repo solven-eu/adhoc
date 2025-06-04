@@ -51,6 +51,8 @@ import lombok.extern.jackson.Jacksonized;
  * A simple {@link ITabularView} based on a {@link ArrayList}. It is especially useful for Jackson (de)serialization.
  * 
  * {@link MapBasedTabularView} may be simpler to manipulate.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @Jacksonized

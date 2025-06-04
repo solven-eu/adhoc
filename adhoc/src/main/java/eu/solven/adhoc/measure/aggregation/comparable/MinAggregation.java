@@ -26,6 +26,8 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * Keep the lowest value amongst encountered values
+ * 
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 public class MinAggregation extends MaxAggregation {

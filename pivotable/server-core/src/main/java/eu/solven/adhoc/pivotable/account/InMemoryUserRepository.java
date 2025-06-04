@@ -35,6 +35,11 @@ import eu.solven.adhoc.tools.IUuidGenerator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Manage users in-memory.
+ * 
+ * @author Benoit Lacelle
+ */
 @AllArgsConstructor
 @Slf4j
 public class InMemoryUserRepository implements IAdhocUserRepository, IAdhocUserRawRawRepository {
@@ -59,25 +64,25 @@ public class InMemoryUserRepository implements IAdhocUserRepository, IAdhocUserR
 	}
 
 	@Override
-	public PivotableUser registerOrUpdate(PivotableUserPreRegister AdhocUserPreRegister) {
-		PivotableUserRawRaw rawRaw = AdhocUserPreRegister.getRawRaw();
+	public PivotableUser registerOrUpdate(PivotableUserPreRegister userPreRegister) {
+		PivotableUserRawRaw rawRaw = userPreRegister.getRawRaw();
 
 		return accountIdToUser.compute(rawRaw, (k, alreadyIn) -> {
-			PivotableUser.PivotableUserBuilder AdhocUserBuilder = PivotableUser.builder()
+			PivotableUser.PivotableUserBuilder userBuilder = PivotableUser.builder()
 					.rawRaw(rawRaw)
 					// TODO We should merge with pre-existing details
-					.details(AdhocUserPreRegister.getDetails());
+					.details(userPreRegister.getDetails());
 			if (alreadyIn == null) {
 				UUID accountId = generateAccountId(rawRaw);
 
 				putIfAbsent(accountId, rawRaw);
 
-				AdhocUserBuilder.accountId(accountId);
+				userBuilder.accountId(accountId);
 			} else {
-				AdhocUserBuilder.accountId(alreadyIn.getAccountId());
+				userBuilder.accountId(alreadyIn.getAccountId());
 			}
 
-			return AdhocUserBuilder.build();
+			return userBuilder.build();
 		});
 	}
 

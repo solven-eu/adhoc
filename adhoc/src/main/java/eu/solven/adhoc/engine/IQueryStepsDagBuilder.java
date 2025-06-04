@@ -26,7 +26,13 @@ import java.util.Set;
 
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.cube.ICubeQuery;
 
+/**
+ * Helps building a DAG for a {@link ICubeQuery} steps.
+ * 
+ * @author Benoit Lacelle
+ */
 public interface IQueryStepsDagBuilder {
 
 	/**

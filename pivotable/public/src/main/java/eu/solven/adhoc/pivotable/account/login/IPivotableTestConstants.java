@@ -28,6 +28,12 @@ import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 
+/**
+ * Holds constants specific for test usage.
+ * 
+ * @author Benoit Lacelle
+ */
+@SuppressWarnings({ "checkstyle.ConstantName", "PMD.FieldNamingConventions" })
 public interface IPivotableTestConstants {
 	String PROVIDERID_TEST = "test";
 

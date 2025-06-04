@@ -56,6 +56,7 @@ import reactor.core.publisher.Mono;
  * @author Benoit Lacelle
  *
  */
+@SuppressWarnings("checkstyle:MagicNumber")
 @Component
 // '-2' to have higher priority than the default WebExceptionHandler
 @Order(-2)

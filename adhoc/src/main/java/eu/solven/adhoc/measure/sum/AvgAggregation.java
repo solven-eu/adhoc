@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.sum;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -33,31 +32,44 @@ import lombok.Value;
 
 /**
  * Returns the n-th elements.
+ * 
+ * @author Benoit Lacelle
  */
-// https://learn.microsoft.com/fr-fr/sql/t-sql/functions/rank-transact-sql
 public class AvgAggregation implements IAggregation, IAggregationCarrier.IHasCarriers {
 
 	public static final String KEY = "AVG";
 
 	/**
-	 * The {@link IAggregationCarrier} for {@link RankAggregation}
+	 * The {@link IAggregationCarrier} for {@link AvgAggregation}
 	 * 
 	 * @author Benoit Lacelle
 	 */
-	public static interface IAvgAggregationCarrier extends IAggregationCarrier {
+	public interface IAvgAggregationCarrier extends IAggregationCarrier {
 
 		/**
 		 * 
 		 * @param input
 		 *            May be any Comparable object, or a {@link IAvgAggregationCarrier}.
-		 * @return a new IRankAggregationCarrier integrating given
+		 * @return a new IAvgAggregationCarrier integrating given
 		 */
 		IAvgAggregationCarrier add(Object input);
 
+		/**
+		 * 
+		 * @return the number of aggregated items
+		 */
 		long getCount();
 
+		/**
+		 * 
+		 * @return the sum of aggregated `long` items
+		 */
 		long getSumLong();
 
+		/**
+		 * 
+		 * @return the sum of aggregated `double` items
+		 */
 		double getSumDouble();
 
 	}
@@ -92,6 +104,7 @@ public class AvgAggregation implements IAggregation, IAggregationCarrier.IHasCar
 			}
 		}
 
+		@Override
 		public AvgCarrier add(Object element) {
 			if (element instanceof IAvgAggregationCarrier otherCarrier) {
 				return AvgCarrier.builder()

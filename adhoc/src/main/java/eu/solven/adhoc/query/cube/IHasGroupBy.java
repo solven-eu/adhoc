@@ -30,6 +30,7 @@ import java.util.List;
  * @author Benoit Lacelle
  *
  */
+@FunctionalInterface
 public interface IHasGroupBy {
 	IAdhocGroupBy getGroupBy();
 }

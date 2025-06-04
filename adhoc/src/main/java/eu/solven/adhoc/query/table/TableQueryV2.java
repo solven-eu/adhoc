@@ -147,11 +147,11 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 		groupByToFilteredAggregators.asMap().forEach((groupBy, filteredAggregators) -> {
 			// This is the filter applicable to all aggregators: it will be applied in WHERE
 			Set<IAdhocFilter> filters = filteredAggregators.stream()
-					.map(fa -> fa.getFilter())
+					.map(FilteredAggregator::getFilter)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 			IAdhocFilter commonFilter = commonFilter(filters);
 
-			TableQueryV2Builder v2Builder = TableQueryV2.edit(groupBy).filter(commonFilter);
+			TableQueryV2Builder v2Builder = edit(groupBy).filter(commonFilter);
 
 			filteredAggregators.forEach(filteredAggregator -> {
 				IAdhocFilter strippedFromWhere = stripFilterFromWhere(commonFilter, filteredAggregator.getFilter());
@@ -189,7 +189,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 		// Split the FILTER in smaller parts
 		Set<? extends IAdhocFilter> andOperators = splitAnd(filter);
 
-		Set<IAdhocFilter> notInWhere = new LinkedHashSet<IAdhocFilter>();
+		Set<IAdhocFilter> notInWhere = new LinkedHashSet<>();
 
 		// For each part of `FILTER`, reject those already filtered in `WHERE`
 		for (IAdhocFilter subFilter : andOperators) {

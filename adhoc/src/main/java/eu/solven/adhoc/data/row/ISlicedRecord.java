@@ -66,7 +66,7 @@ public interface ISlicedRecord {
 	 *            first indexes.
 	 */
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
-	default void asArray(Object[] array) {
+	default void intoArray(Object... array) {
 		for (int i = 0; i < Math.min(array.length, size()); i++) {
 			int finalI = i;
 			array[i] = IValueProvider.getValue(read(finalI));

@@ -33,6 +33,8 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * Keep the highest value amongst encountered values
+ * 
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAggregation {

@@ -22,17 +22,37 @@
  */
 package eu.solven.adhoc.measure.sum;
 
+import java.util.Map;
+import java.util.Objects;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Typically used for advanced {@link IDecomposition} where we know there will be no actual aggregation.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class CoalesceAggregation implements IAggregation {
 
 	public static final String KEY = "COALESCE";
+
+	/**
+	 * If true, equality is based on the reference, not on `.equals`. Default is false.
+	 */
+	boolean equalIfSame;
+	/**
+	 * If true, `.aggregate` would fail if receiving different objects.
+	 */
+	boolean failIfDifferent;
+
+	public CoalesceAggregation(Map<String, ?> options) {
+		equalIfSame = MapPathGet.<Boolean>getOptionalAs(options, "equalIfSame").orElse(false);
+		failIfDifferent = MapPathGet.<Boolean>getOptionalAs(options, "failIfDifferent").orElse(false);
+	}
 
 	@Override
 	public Object aggregate(Object l, Object r) {
@@ -40,11 +60,28 @@ public class CoalesceAggregation implements IAggregation {
 			return r;
 		} else if (r == null) {
 			return l;
-		} else if (l == r) {
+		} else if (areSame(l, r)) {
 			return l;
+		} else if (failIfDifferent) {
+			if (Objects.equals(l, r) && equalIfSame) {
+				// Show identityHashCode if equals but rejected for different ref
+				throw new IllegalArgumentException(
+						"%s != %s (%s)".formatted(System.identityHashCode(l), System.identityHashCode(r), l));
+			} else {
+				throw new IllegalArgumentException("%s != %s".formatted(l, r));
+			}
 		} else {
-			throw new IllegalArgumentException(
-					"%s != %s".formatted(System.identityHashCode(l), System.identityHashCode(r)));
+			// Give priority to left/first object
+			return l;
+		}
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected boolean areSame(Object l, Object r) {
+		if (equalIfSame) {
+			return l == r;
+		} else {
+			return Objects.equals(l, r);
 		}
 	}
 }

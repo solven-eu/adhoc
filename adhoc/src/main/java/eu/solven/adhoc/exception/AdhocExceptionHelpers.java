@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,49 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation.collection;
+package eu.solven.adhoc.exception;
 
-import java.util.Map;
+import java.util.concurrent.CompletionException;
 
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import lombok.experimental.UtilityClass;
 
 /**
- * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * Utilities related to {@link Exception} and {@link Throwable}.
  * 
- * @param <K>
- * @param <V>
  * @author Benoit Lacelle
  */
-public class MapAggregator<K, V> implements IAggregation {
+@UtilityClass
+public class AdhocExceptionHelpers {
 
-	public static final String KEY = "UNION_MAP";
-
-	public boolean acceptAggregate(Object o) {
-		return o instanceof Map || o == null;
-	}
-
-	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = asMap(l);
-		Map<?, ?> rAsMap = asMap(r);
-
-		return aggregateMaps(lAsMap, rAsMap);
-	}
-
-	protected Map<?, ?> asMap(Object o) {
-		return (Map<?, ?>) o;
-	}
-
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (lAsMap == null) {
-			return (Map<K, V>) rAsMap;
-		} else if (rAsMap == null) {
-			return (Map<K, V>) lAsMap;
+	public static RuntimeException wrap(RuntimeException e, String eMsg) {
+		if (e instanceof IllegalStateException illegalStateE) {
+			// We want to keep bubbling an IllegalStateException
+			return new IllegalStateException(eMsg, illegalStateE);
+		} else if (e instanceof CompletionException completionE) {
+			if (completionE.getCause() instanceof IllegalStateException) {
+				// We want to keep bubbling an IllegalStateException
+				return new IllegalStateException(eMsg, completionE);
+			} else {
+				return new IllegalArgumentException(eMsg, completionE);
+			}
 		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will throw
-			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
+			return new IllegalArgumentException(eMsg, e);
 		}
 	}
+
 }
