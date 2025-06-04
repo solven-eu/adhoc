@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,7 +103,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		fields.forEach(field -> {
 			String fieldName = field.getName();
 
-			Class<?> fieldType = field.getType();
+			Class<?> fieldType = getFieldType(field);
 			ColumnMetadata previousColumn =
 					columnToType.put(fieldName, ColumnMetadata.builder().name(fieldName).type(fieldType).build());
 			if (previousColumn != null) {
@@ -118,6 +119,19 @@ public class JooqTableWrapper implements ITableWrapper {
 		});
 
 		return columnToType.values();
+	}
+
+	protected Class<?> getFieldType(Field<?> field) {
+		// Relates with org.duckdb.DuckDBVector.getObject(int)
+		Class<?> rawFieldType = field.getType();
+
+		if (java.sql.Date.class.isAssignableFrom(rawFieldType)) {
+			// BEWARE Clarify the proper to infer from rawTypes to the actual types expected to be returned by the JDBC
+			// driver
+			return LocalDate.class;
+		} else {
+			return rawFieldType;
+		}
 	}
 
 	protected List<Field<?>> getFields() {
@@ -142,7 +156,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	/**
-	 * This is typically overridden for underlying SQL databases requiring a specific SQL.
+	 * This may be overridden for underlying SQL databases requiring a specific SQL.
 	 * 
 	 * @return a {@link Result} which can be used to fetch the fields of this table.
 	 */
@@ -249,6 +263,7 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		// Field<?>[] fields = sqlQuery.getQuery().fields();
 		return sqlQuery.getQuery().stream().map(r -> intoMap(sqlQuery.getFields(), r)).filter(row -> {
 			return AdhocTranscodingHelper.match(new IdentityImplicitTranscoder(), sqlQuery.getLeftover(), row);
 		});
@@ -286,7 +301,6 @@ public class JooqTableWrapper implements ITableWrapper {
 				}
 			}
 		}
-
 		Map<String, Object> slice;
 		columnShift += fields.getAggregates().size();
 		{
