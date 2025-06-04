@@ -90,7 +90,7 @@
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
-		<checkstyle.version>10.24.0</checkstyle.version>
+		<checkstyle.version>10.25.0</checkstyle.version>
 		<!-- https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
 		<stereotype.check.plugin.version>4.0.0</stereotype.check.plugin.version>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
