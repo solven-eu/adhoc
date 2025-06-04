@@ -39,8 +39,16 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestEqualsMatcher {
+	@Test
+	public void testEqualsHashcode() {
+		EqualsVerifier.forClass(EqualsMatcher.class)
+				.withIgnoredFields("operandIsLongLike", "operandIsDoubleLike")
+				.verify();
+	}
+
 	@Test
 	public void testSimple() {
 		IValueMatcher equalsMatcher = EqualsMatcher.isEqualTo("a");

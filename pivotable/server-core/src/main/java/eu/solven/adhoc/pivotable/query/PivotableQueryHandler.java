@@ -41,9 +41,9 @@ import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -132,7 +132,7 @@ public class PivotableQueryHandler {
 
 				List<IValueMatcher> filters = rawFilters.stream()
 						.distinct()
-						.<IValueMatcher>map(rawFilter -> EqualsMatcher.builder().operand(rawFilter).build())
+						.<IValueMatcher>map(rawFilter -> StringMatcher.builder().string(rawFilter).build())
 						.toList();
 
 				ColumnFilter columnFilter = ColumnFilter.builder()

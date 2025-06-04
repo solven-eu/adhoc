@@ -36,6 +36,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,10 +62,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	String mName = "k1.EUR";
 
 	public static class ToEurShifter implements IFilterEditor {
-		public ToEurShifter(Map<String, ?> options) {
-			// Instantiation through key requires a Map constructor
-		}
-
 		@Override
 		public IAdhocFilter editFilter(IAdhocFilter input) {
 			return SimpleFilterEditor.shift(input, "ccy", "EUR");
@@ -181,6 +178,22 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123);
 		}).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	// This test is interesting to ensure Shiftor does not mix-up filters from slice and filters from queryStep
+	@Test
+	public void testFilterByComplexColor() {
+		prepareMeasures();
+
+		ITabularView output = cube()
+				.execute(CubeQuery.builder().measure(mName).andFilter(ColumnFilter.isLike("color", "bl%")).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).isEmpty();
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
 		});
 	}

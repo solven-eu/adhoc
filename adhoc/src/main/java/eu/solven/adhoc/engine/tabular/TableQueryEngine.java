@@ -301,7 +301,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 			IAdhocGroupBy originalGroupby = tableQuery.getGroupBy();
 			IAdhocGroupBy suppressedGroupby =
 					GroupByHelpers.suppressColumns(originalGroupby, generatedColumnToSuppressFromGroupBy);
-			log.debug("Suppressing generatedColumns in groupBy from {} to {}", originalGroupby, suppressedGroupby);
+			if (queryPod.isDebugOrExplain()) {
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
+						.source(this)
+						.messageT("Suppressing generatedColumns in groupBy from {} to {}",
+								originalGroupby,
+								suppressedGroupby)
+						.build());
+			} else {
+				log.debug("Suppressing generatedColumns in groupBy from {} to {}", originalGroupby, suppressedGroupby);
+			}
 			edited.groupBy(suppressedGroupby);
 		}
 
@@ -314,7 +325,19 @@ public class TableQueryEngine implements ITableQueryEngine {
 			IAdhocFilter originalFilter = tableQuery.getFilter();
 			IAdhocFilter suppressedFilter =
 					SimpleFilterEditor.suppressColumn(originalFilter, generatedColumnToSuppressFromFilter);
-			log.debug("Suppressing generatedColumns in filter from {} to {}", originalFilter, suppressedFilter);
+
+			if (queryPod.isDebugOrExplain()) {
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
+						.source(this)
+						.messageT("Suppressing generatedColumns in filter from {} to {}",
+								originalFilter,
+								suppressedFilter)
+						.build());
+			} else {
+				log.debug("Suppressing generatedColumns in filter from {} to {}", originalFilter, suppressedFilter);
+			}
 			edited.filter(suppressedFilter);
 		}
 

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.eventbus;
 
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 import com.google.common.eventbus.Subscribe;
 
@@ -116,12 +115,12 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 					event.getMessage(),
 					event.getSource() };
 			// In EXPLAIN, we want rows to be well aligned, as we print some sort of ascii-graph
-			Stream.of(event.getMessage().split(EOL)).forEach(messageRow -> {
-				// TODO This is errorProne, and unitTests may need static mocking of SLF4J
+			for (String messageRow : event.getMessage().split(EOL)) {
 				arguments[2] = messageRow;
 
+				// BEWARE Do not use `Stream.of` else the logger would refer a different class, and break the alignment
 				logMethod.accept("{}{} {} (source={})", arguments);
-			});
+			}
 		} else {
 			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
 					event.isExplain() ? "[EXPLAIN]" : "",

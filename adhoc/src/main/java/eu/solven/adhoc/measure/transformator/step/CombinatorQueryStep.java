@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -119,15 +120,15 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			SliceAndMeasures slice,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-
 		ISlicedRecord slicedRecord = slice.getMeasures();
+		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getAdhocSliceAsMap());
 		try {
 			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
 
-			valueProvider.acceptReceiver(output.putSlice(slice.getSlice().getAdhocSliceAsMap()));
+			valueProvider.acceptReceiver(outputSlice);
 		} catch (RuntimeException e) {
 			if (step.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
-				output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(e);
+				outputSlice.onObject(e);
 			} else {
 				throw new IllegalArgumentException(
 						"Issue evaluating %s over %s in %s".formatted(combinator.getName(), slicedRecord, slice),

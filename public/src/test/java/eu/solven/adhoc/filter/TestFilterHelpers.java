@@ -37,7 +37,12 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.value.*;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestFilterHelpers {
 
@@ -50,7 +55,7 @@ public class TestFilterHelpers {
 	}
 
 	@Test
-	public void testGetValueMatcher_or() {
+	public void testGetValueMatcher_and() {
 		IAdhocFilter like1OrLike2 = AndFilter.and(ColumnFilter.isLike("c1", "1%"), ColumnFilter.isLike("c2", "2%"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c1")).isEqualTo(LikeMatcher.matching("1%"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c2")).isEqualTo(LikeMatcher.matching("2%"));
@@ -125,6 +130,29 @@ public class TestFilterHelpers {
 	public void testGetFilteredColumns_or() {
 		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
+	}
+
+	@Test
+	public void testGetValueMatcher_or() {
+		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
+		Assertions.assertThatThrownBy(() -> FilterHelpers.getValueMatcher(filter, "c1"))
+				.isInstanceOf(UnsupportedOperationException.class);
+
+		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "unknown")).isEqualTo(IValueMatcher.MATCH_ALL);
+	}
+
+	@Test
+	public void testGetValueMatcher_or_lax() {
+		IAdhocFilter filter = OrFilter.or(AndFilter.and(Map.of("c1", "v1")),
+				AndFilter.and(Map.of("c2", "v21")),
+				AndFilter.and(Map.of("c2", "v22", "c3", "v3")));
+
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
+		// Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c2")).isEqualTo(InMatcher.isIn("v21",
+		// "v22"));
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c2"))
+				.isEqualTo(OrMatcher.or(EqualsMatcher.isEqualTo("v21"), EqualsMatcher.isEqualTo("v22")));
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "unknown")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 
 	@Test
