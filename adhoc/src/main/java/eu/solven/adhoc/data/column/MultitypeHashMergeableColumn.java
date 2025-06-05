@@ -52,7 +52,6 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 
 	@Override
 	public IValueReceiver merge(T key) {
-
 		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
@@ -150,7 +149,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 			@Override
 			public void onObject(Object v) {
 				IValueProvider existingAggregate = onValue(key);
-				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptReceiver(set(key));
+				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptReceiver(unsafePut(key, true));
 			}
 		};
 	}

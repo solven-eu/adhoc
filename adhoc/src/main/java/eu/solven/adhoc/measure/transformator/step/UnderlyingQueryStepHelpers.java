@@ -80,19 +80,23 @@ public class UnderlyingQueryStepHelpers {
 		// It is unclear how to implement an algorithm handling both sorted and hash columns
 		// We would have to de-duplicates slices, and merge measures. To be tested and benchmarked.
 		if (underlyings.stream().anyMatch(sv -> !sv.isEmpty() && !sv.isSorted())) {
-			// One of the underlying is not sorted
+			// One of the underlying is not sorted: this will output a not-sorted merge distinct
+			// TODO It is a pity to lose all sorted available information due to one (potentially very small) not
+			// sorted column.
 
 			// Typically from MultitypeColumnHash
 			List<ISliceToValue> notSorted = new ArrayList<>();
 
 			for (ISliceToValue sliceToValue : underlyings) {
 				if (sliceToValue.isEmpty()) {
+					// TODO Why don't we keep the original sliceToValue?
 					notSorted.add(SliceToValue.builder().column(MultitypeHashColumn.empty()).build());
 				} else {
 					notSorted.add(sliceToValue);
 				}
 			}
 
+			// Merge all SliceAsMap in a Set
 			Set<SliceAsMap> notSortedAsSet;
 			if (notSorted.isEmpty()) {
 				notSortedAsSet = Set.of();
@@ -102,8 +106,12 @@ public class UnderlyingQueryStepHelpers {
 				notSortedAsSet = notSorted.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
 			}
 
+			int size = underlyings.size();
 			Stream<SliceAndMeasures> notSortedSlices = notSortedAsSet.stream().map(sliceAsMap -> {
-				List<?> underlyingVs = underlyings.stream().map(u -> ISliceToValue.getValue(u, sliceAsMap)).toList();
+				List<Object> underlyingVs = new ArrayList<>(size);
+				for (int i = 0; i < size; i++) {
+					underlyingVs.add(ISliceToValue.getValue(underlyings.get(i), sliceAsMap));
+				}
 
 				return SliceAndMeasures.from(sliceAsMap, queryStep, underlyingVs);
 			});

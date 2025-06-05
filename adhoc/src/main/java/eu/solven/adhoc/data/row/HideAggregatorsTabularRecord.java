@@ -66,7 +66,7 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 
 	@Override
 	public Map<String, ?> aggregatesAsMap() {
-		Map<String, Object> copy = new LinkedHashMap<>(keptAggregates.size());
+		Map<String, Object> copy = LinkedHashMap.newLinkedHashMap(keptAggregates.size());
 
 		keptAggregates.forEach(keptAggregate -> {
 			decorated.onAggregate(keptAggregate).acceptReceiver(o -> {

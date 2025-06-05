@@ -61,7 +61,7 @@ public class MapBasedTabularView implements ITabularView {
 
 	public static MapBasedTabularView load(ITabularView from) {
 		int capacity = Ints.checkedCast(from.size());
-		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new LinkedHashMap<>(capacity);
+		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = LinkedHashMap.newLinkedHashMap(capacity);
 		MapBasedTabularView newView = MapBasedTabularView.builder().coordinatesToValues(coordinatesToValues).build();
 
 		return load(from, newView);

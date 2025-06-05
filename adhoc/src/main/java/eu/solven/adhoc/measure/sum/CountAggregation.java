@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.sum;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Value;
@@ -105,10 +106,13 @@ public class CountAggregation implements IAggregation, IAggregationCarrier.IHasC
 
 	@Override
 	public IAggregationCarrier wrap(Object rawCount) {
-		if (rawCount instanceof Integer count) {
-			return CountAggregationCarrier.builder().count(count).build();
-		} else if (rawCount instanceof Long count) {
-			return CountAggregationCarrier.builder().count(count).build();
+		if (AdhocPrimitiveHelpers.isLongLike(rawCount)) {
+			long asLong = AdhocPrimitiveHelpers.asLong(rawCount);
+			if (asLong == 0L) {
+				// This may happens on SQL like `count(*) FILTER (c = 'v')`
+				return null;
+			}
+			return CountAggregationCarrier.builder().count(asLong).build();
 		} else if (rawCount instanceof CountAggregationCarrier count) {
 			return count;
 		} else {

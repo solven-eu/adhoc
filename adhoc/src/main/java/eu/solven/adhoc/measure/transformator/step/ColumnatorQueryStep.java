@@ -117,10 +117,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures slice,
-			ICombination combination,
-			ISliceAndValueConsumer output) {
+	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		List<?> underlyingVs = slice.getMeasures().asList();
 
 		Object value = combination.combine(slice.getSlice(), underlyingVs);
@@ -131,7 +128,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 					value,
 					combinator.getName(),
 					// slicedRecord,
-					underlyings,
+					underlyingVs,
 					slice);
 		}
 

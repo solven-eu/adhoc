@@ -96,10 +96,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 	}
 
 	@Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures slice,
-			ICombination combination,
-			ISliceAndValueConsumer output) {
+	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		throw new UnsupportedOperationException(
 				"Unclear how to refactor IDispator in AHasUnderlyingQuerySteps.onSlice");
 	}

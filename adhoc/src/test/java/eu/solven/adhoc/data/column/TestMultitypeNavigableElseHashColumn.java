@@ -22,49 +22,29 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
- * 
- * @param <T>
- *            typically {@link SliceAsMap}
- * @author Benoit Lacelle
- */
-public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
+public class TestMultitypeNavigableElseHashColumn {
+	@Test
+	public void testPutUnordered() {
+		MultitypeNavigableElseHashColumn<String> column = MultitypeNavigableElseHashColumn.<String>builder().build();
 
-	/**
-	 * Similar to a `.get` but the value is available through a {@link IValueReceiver}
-	 * 
-	 * @param slice
-	 * @param valueReceiver
-	 */
-	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
-	default void onValue(T slice, IValueReceiver valueReceiver) {
-		onValue(slice).acceptReceiver(valueReceiver);
+		// Ordered
+		column.append("a").onLong(123);
+		column.append("c").onLong(345);
+
+		// Unordered
+		column.append("b").onLong(234);
+		// May be ordered
+		column.append("e").onLong(567);
+		// Unordered
+		column.append("d").onLong(456);
+
+		// the hash section has no guaranteed order
+		Assertions.assertThat(column.keyStream().toList()).startsWith("a", "c", "e").contains("b", "d");
+
+		Assertions.assertThat(column.navigable.keyStream().toList()).containsExactly("a", "c", "e");
+		Assertions.assertThat(column.hash.keyStream().toList()).contains("b", "d").hasSize(2);
 	}
-
-	IValueProvider onValue(T key);
-
-	/**
-	 * Similar to a `.set` but the value is available through a {@link IValueReceiver}
-	 * 
-	 * @param slice
-	 * @param o
-	 */
-	@Deprecated(since = "Prefer `IValueProvider set(T key)`")
-	default void set(T slice, Object o) {
-		set(slice).onObject(o);
-	}
-
-	/**
-	 * 
-	 * @param key
-	 * @return a IValueReceiver to provide the value
-	 */
-	@Deprecated(since = "Should be removed from the API")
-	IValueReceiver set(T key);
-
 }

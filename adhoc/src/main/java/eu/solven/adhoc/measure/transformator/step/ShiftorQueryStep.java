@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
@@ -44,6 +42,8 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
+import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -113,20 +113,30 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 * @return
 	 */
 	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
-		// BEWARE the filter from queryStep are meaningless here
+		// BEWARE the filter from queryStep is meaningless here
 		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
+		AdhocMapBuilder builder = AdhocMap.builder(step.getGroupBy().getGroupedByColumns());
+
+		step.getGroupBy().getGroupedByColumns().forEach(column -> {
+			Object value = editedAsMap.get(column);
+			if (value == null) {
+				throw new IllegalStateException("Missing value for column=%s in %s".formatted(column, editedAsMap));
+			}
+			builder.append(value);
+		});
+
 		// Typically useful on querying grandTotal
-		if (!Sets.difference(editedAsMap.keySet(), step.getGroupBy().getGroupedByColumns()).isEmpty()) {
-			editedAsMap = new HashMap<>(editedAsMap);
+		// if (!Sets.difference(editedAsMap.keySet(), step.getGroupBy().getGroupedByColumns()).isEmpty()) {
+		// editedAsMap = new HashMap<>(editedAsMap);
+		//
+		// editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
+		// }
 
-			editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
-		}
-
-		return SliceAsMap.fromMap(editedAsMap);
+		return SliceAsMap.fromMap(builder.build());
 	}
 
 	protected boolean isDebug() {

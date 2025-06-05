@@ -71,12 +71,11 @@ public interface ISliceToValue {
 
 	/**
 	 * 
-	 * @param <T>
 	 * @param storage
 	 * @param slice
 	 * @return the value as {@link Object} on given slice
 	 */
-	static <T> Object getValue(ISliceToValue storage, IAdhocSlice slice) {
+	static Object getValue(ISliceToValue storage, IAdhocSlice slice) {
 		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
 
 		return IValueProvider.getValue(storage.onValue(sliceAsMap));

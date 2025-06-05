@@ -108,10 +108,7 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 	}
 
 	@Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures bucketedSlice,
-			ICombination combinator,
-			ISliceAndValueConsumer output) {
+	protected void onSlice(SliceAndMeasures bucketedSlice, ICombination combinator, ISliceAndValueConsumer output) {
 		try {
 			IValueProvider valueProvider = combinator.combine(bucketedSlice.getSlice(), bucketedSlice.getMeasures());
 

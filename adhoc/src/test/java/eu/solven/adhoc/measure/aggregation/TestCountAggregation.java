@@ -29,7 +29,7 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation.CountAggregationCarrier;
 
 public class TestCountAggregation {
-	IAggregation aggregation = new CountAggregation();
+	CountAggregation aggregation = new CountAggregation();
 
 	@Test
 	public void testSimple() {
@@ -53,5 +53,15 @@ public class TestCountAggregation {
 				.assertThat(aggregation.aggregate(CountAggregationCarrier.builder().count(3).build(),
 						CountAggregationCarrier.builder().count(2).build()))
 				.isEqualTo(CountAggregationCarrier.builder().count(5).build());
+	}
+
+	@Test
+	public void testWrap() {
+		Assertions.assertThat(aggregation.wrap(123)).isEqualTo(CountAggregationCarrier.builder().count(123).build());
+
+		// With `count(*) FILTER ( c ='v')`, DuckDB may return 0
+		Assertions.assertThat(aggregation.wrap(0)).isNull();
+
+		Assertions.assertThatThrownBy(() -> aggregation.wrap(-123)).isInstanceOf(IllegalArgumentException.class);
 	}
 }

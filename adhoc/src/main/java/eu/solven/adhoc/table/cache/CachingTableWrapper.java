@@ -260,7 +260,7 @@ public class CachingTableWrapper implements ITableWrapper {
 					log.debug("Done receiving tabularRecords for t={} q={}", queryPod.getTable().getName(), tableQuery);
 
 					Map<FilteredAggregator, CachingValue> cachedAndJustInTime =
-							new LinkedHashMap<>(tableQuery.getAggregators().size());
+							LinkedHashMap.newLinkedHashMap(tableQuery.getAggregators().size());
 
 					cachedAndJustInTime.putAll(fromCache);
 

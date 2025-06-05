@@ -141,7 +141,6 @@ public class AndFilter implements IAndFilter {
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
-	// BEWARE Synchronize with AndFilter
 	private static IAdhocFilter andNotOptimized(Collection<? extends IAdhocFilter> filters) {
 		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
 			return MATCH_NONE;
@@ -296,10 +295,20 @@ public class AndFilter implements IAndFilter {
 	 * @return a filter doing an `AND` between each {@link Map} entry,
 	 */
 	public static IAdhocFilter and(Map<String, ?> columnToFilter) {
-		return and(columnToFilter.entrySet()
-				.stream()
-				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
-				.collect(Collectors.toList()));
+		int size = columnToFilter.size();
+		List<ColumnFilter> columnFilters = new ArrayList<>(size);
+
+		columnToFilter.forEach((k, v) -> {
+			columnFilters.add(ColumnFilter.builder().column(k).matching(v).build());
+		});
+
+		// BEWARE Do not call `.and` due to most optimizations/checks are irrelevant
+		// And this is a performance bottleneck in Shiftor
+		if (columnFilters.size() == 1) {
+			return columnFilters.getFirst();
+		} else {
+			return AndFilter.builder().filters(columnFilters).build();
+		}
 	}
 
 }

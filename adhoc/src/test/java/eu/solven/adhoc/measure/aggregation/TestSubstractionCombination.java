@@ -22,14 +22,20 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.Collections2;
+
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestSubstractionCombination {
@@ -66,5 +72,38 @@ public class TestSubstractionCombination {
 
 		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(null, "Arg")))
 				.isInstanceOf(NotYetImplementedException.class);
+	}
+
+	@Test
+	public void testSimpleCases_fromSlicedRecord() {
+		SubstractionCombination combination = new SubstractionCombination();
+
+		List<IValueProvider> valueProviders = new ArrayList<>();
+		valueProviders.add(IValueProvider.setValue(123));
+		valueProviders.add(IValueProvider.setValue(12.34));
+		valueProviders.add(IValueProvider.NULL);
+
+		Assertions
+				.assertThat(IValueProvider.getValue(combination.combine(slice,
+						SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build())))
+				.isEqualTo(123L);
+
+		Assertions.assertThat(IValueProvider.getValue(combination.combine(slice,
+				SlicedRecordFromSlices.builder()
+						.valueProvider(IValueProvider.setValue(123))
+						.valueProvider(IValueProvider.NULL)
+						.build())))
+				.isEqualTo(123L);
+
+		// Coverage
+		{
+			Collections2.permutations(valueProviders).stream().filter(l -> l.size() == 2).forEach(vps -> {
+				IValueProvider vp =
+						combination.combine(slice, SlicedRecordFromSlices.builder().valueProviders(vps).build());
+				Object o = IValueProvider.getValue(vp);
+
+				Assertions.assertThat(o).isNotNull();
+			});
+		}
 	}
 }

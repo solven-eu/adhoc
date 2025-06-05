@@ -23,6 +23,7 @@
 package eu.solven.adhoc.filter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -265,5 +266,16 @@ public class TestAndFilter {
 		IAdhocFilter f2Then1 = AndFilter.and(ColumnFilter.isEqualTo("c2", "v2"), ColumnFilter.isEqualTo("c1", "v1"));
 
 		Assertions.assertThat(f1Then2).isEqualTo(f2Then1);
+	}
+
+	@Test
+	public void testFromMap() {
+		// size==0
+		Assertions.assertThat(AndFilter.and(Map.of())).isEqualTo(IAdhocFilter.MATCH_ALL);
+		// size==1
+		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1"))).isEqualTo(ColumnFilter.isEqualTo("c1", "v1"));
+		// size==2
+		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1", "c2", "v2")))
+				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")));
 	}
 }

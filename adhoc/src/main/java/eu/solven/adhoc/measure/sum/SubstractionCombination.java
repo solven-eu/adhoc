@@ -24,6 +24,9 @@ package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
@@ -46,6 +49,82 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 
 	public static boolean isSubstraction(String operator) {
 		return "-".equals(operator) || KEY.equals(operator) || operator.equals(SubstractionCombination.class.getName());
+	}
+
+	@Override
+	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		if (slicedRecord.isEmpty()) {
+			return IValueProvider.NULL;
+		} else if (slicedRecord.size() == 1) {
+			return slicedRecord.read(0);
+		}
+
+		IValueProvider left = slicedRecord.read(0);
+		IValueProvider right = slicedRecord.read(1);
+
+		return valueReceiver -> left.acceptReceiver(new IValueReceiver() {
+
+			@Override
+			public void onLong(long leftValue) {
+				right.acceptReceiver(new IValueReceiver() {
+
+					@Override
+					public void onLong(long rightValue) {
+						valueReceiver.onLong(leftValue - rightValue);
+					}
+
+					@Override
+					public void onDouble(double rightValue) {
+						valueReceiver.onDouble(leftValue - rightValue);
+					}
+
+					@Override
+					public void onObject(Object rightValue) {
+						if (rightValue == null) {
+							valueReceiver.onLong(leftValue);
+						} else {
+							valueReceiver.onObject(substract(leftValue, rightValue));
+						}
+					}
+				});
+			}
+
+			@Override
+			public void onDouble(double leftValue) {
+				right.acceptReceiver(new IValueReceiver() {
+
+					@Override
+					public void onLong(long rightValue) {
+						valueReceiver.onDouble(leftValue - rightValue);
+					}
+
+					@Override
+					public void onDouble(double rightValue) {
+						valueReceiver.onDouble(leftValue - rightValue);
+					}
+
+					@Override
+					public void onObject(Object rightValue) {
+						if (rightValue == null) {
+							valueReceiver.onDouble(leftValue);
+						} else {
+							valueReceiver.onObject(substract(leftValue, rightValue));
+						}
+					}
+				});
+			}
+
+			@Override
+			public void onObject(Object leftValue) {
+				right.acceptReceiver(rightValue -> {
+					if (rightValue == null) {
+						valueReceiver.onObject(leftValue);
+					} else {
+						valueReceiver.onObject(substract(leftValue, rightValue));
+					}
+				});
+			}
+		});
 	}
 
 	@Override

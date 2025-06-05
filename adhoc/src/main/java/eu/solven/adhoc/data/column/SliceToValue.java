@@ -52,7 +52,7 @@ public class SliceToValue implements ISliceToValue {
 
 	@Override
 	public IValueProvider onValue(SliceAsMap slice) {
-		return column.onValue(slice.getAdhocSliceAsMap());
+		return column.onValue(slice);
 	}
 
 	@Override

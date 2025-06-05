@@ -440,3 +440,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
 - [Feature] Improve connection pooling in JooQ examples.
+- [Feature] Introduce a `IMultitypeColumnFastGet` handling in `navigable` chunk as much as possible, and keeping not-sorted into a `hash`.
