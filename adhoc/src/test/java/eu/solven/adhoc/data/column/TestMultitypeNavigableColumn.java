@@ -57,7 +57,7 @@ public class TestMultitypeNavigableColumn {
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(23.45);
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onObject(LocalDate.now());
 
-		IMultitypeColumnFastGet<String> sortedCopy = MultitypeNavigableColumn.copy(notSorted);
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
@@ -73,7 +73,7 @@ public class TestMultitypeNavigableColumn {
 
 		notSorted.purgeAggregationCarriers();
 
-		IMultitypeColumnFastGet<String> sortedCopy = MultitypeNavigableColumn.copy(notSorted);
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).isEmpty();

@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
@@ -60,6 +61,15 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 		return getStep().isDebug();
 	}
 
+	/**
+	 * BEWARE This can be very impactful for performance. Typically, a {@link MultitypeNavigableColumn} should be chosen
+	 * only if we are guaranteed to write slices in sorted order.
+	 * 
+	 * One should also return a {@link IMultitypeMergeableColumn} if the transformator may contribute multiple times to
+	 * the same slice.
+	 * 
+	 * @return a {@link IMultitypeColumnFastGet} to hold the result of this column.
+	 */
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
 		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
 	}
@@ -67,7 +77,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, combination, output));
+		forEachDistinctSlice(underlyings, slice -> onSlice(slice, combination, output));
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
@@ -97,8 +107,5 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 		return UnderlyingQueryStepHelpers.distinctSlices(getStep(), underlyings);
 	}
 
-	protected abstract void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures slice,
-			ICombination combination,
-			ISliceAndValueConsumer output);
+	protected abstract void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output);
 }

@@ -28,8 +28,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestSubstractionCombination {
@@ -66,5 +68,22 @@ public class TestSubstractionCombination {
 
 		Assertions.assertThatThrownBy(() -> combination.combine(slice, Arrays.asList(null, "Arg")))
 				.isInstanceOf(NotYetImplementedException.class);
+	}
+
+	@Test
+	public void testSimpleCases_fromSlicedRecord() {
+		SubstractionCombination combination = new SubstractionCombination();
+
+		Assertions
+				.assertThat(IValueProvider.getValue(combination.combine(slice,
+						SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build())))
+				.isEqualTo(123L);
+
+		Assertions.assertThat(IValueProvider.getValue(combination.combine(slice,
+				SlicedRecordFromSlices.builder()
+						.valueProvider(IValueProvider.setValue(123))
+						.valueProvider(IValueProvider.NULL)
+						.build())))
+				.isEqualTo(123L);
 	}
 }

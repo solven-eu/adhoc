@@ -461,7 +461,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
 				// Force a HashMap not to rely on default TreeMap
-				.coordinatesToValues(new LinkedHashMap<>(Ints.saturatedCast(expectedOutputCardinality)))
+				.coordinatesToValues(LinkedHashMap.newLinkedHashMap(Ints.saturatedCast(expectedOutputCardinality)))
 				.build();
 
 		stepsToReturn.forEachRemaining(step -> {

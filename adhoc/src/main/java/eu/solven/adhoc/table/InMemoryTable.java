@@ -213,7 +213,7 @@ public class InMemoryTable implements ITableWrapper {
 			Set<String> groupByColumns,
 			int nbKeys,
 			Map<String, ?> row) {
-		Map<String, Object> aggregates = new LinkedHashMap<>(nbKeys);
+		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(nbKeys);
 
 		aggregateColumns.forEach(aggregatedColumn -> {
 			Object aggregatorUnderlyingValue = row.get(aggregatedColumn);

@@ -123,10 +123,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			SliceAndMeasures slice,
-			ICombination combination,
-			ISliceAndValueConsumer output) {
+	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		ISlicedRecord slicedRecord = slice.getMeasures();
 		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getAdhocSliceAsMap());
 		try {
