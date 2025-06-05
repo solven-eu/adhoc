@@ -49,6 +49,8 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 			onQueryStepIsEvaluating(queryStepIsEvaluating);
 		} else if (event instanceof AdhocLogEvent logEvent) {
 			onAdhocLogEvent(logEvent);
+		} else if (event instanceof QueryLifecycleEvent lifecycleEvent) {
+			onQueryLifecycleEvent(lifecycleEvent);
 		} else {
 			log.warn("Not managed properly: {}", event);
 		}
