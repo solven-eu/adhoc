@@ -32,6 +32,7 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -71,7 +72,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	 * @return a {@link IMultitypeColumnFastGet} to hold the result of this column.
 	 */
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
+		return MultitypeNavigableElseHashColumn.<SliceAsMap>builder().build();
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,

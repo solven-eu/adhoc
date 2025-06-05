@@ -32,6 +32,7 @@ import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ public class TestMultitypeNavigableColumn {
 	MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
 
 	@Test
-	public void testCopyFromNotSorted() {
+	public void testCopyFromNotSorted_multiTypes() {
 		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
 
 		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c"));
@@ -55,12 +56,71 @@ public class TestMultitypeNavigableColumn {
 
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(123);
 		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(23.45);
-		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onObject(LocalDate.now());
+		LocalDate today = LocalDate.now();
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onObject(today);
 
 		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
+
+		List<Object> values = sortedCopy.stream().map(m -> IValueProvider.getValue(m.getValueProvider())).toList();
+		Assertions.assertThat(values).hasSize(3).contains(123L, 23.45D, today);
+	}
+
+	@Test
+	public void testCopyFromNotSorted_long() {
+		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
+
+		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c"));
+
+		// Not seeded as we want the test to check various configurations through time
+		Random r = new SecureRandom();
+		long seed = r.nextLong();
+		// Print the (random) seed for reproduction if necessary
+		log.info("Seed={}", seed);
+		r = new Random(seed);
+
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(123);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(234);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onLong(345);
+
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
+
+		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
+		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
+
+		long[] values =
+				sortedCopy.stream().mapToLong(m -> IValueProviderTestHelpers.getLong(m.getValueProvider())).toArray();
+		Assertions.assertThat(values).hasSize(3).contains(123, 234, 345);
+	}
+
+	@Test
+	public void testCopyFromNotSorted_double() {
+		IMultitypeColumnFastGet<String> notSorted = MultitypeHashColumn.<String>builder().build();
+
+		List<String> randomKeys = new ArrayList<>(Arrays.asList("a", "b", "c"));
+
+		// Not seeded as we want the test to check various configurations through time
+		Random r = new SecureRandom();
+		long seed = r.nextLong();
+		// Print the (random) seed for reproduction if necessary
+		log.info("Seed={}", seed);
+		r = new Random(seed);
+
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(12.34);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(23.45);
+		notSorted.append(randomKeys.remove(r.nextInt(randomKeys.size()))).onDouble(34.56);
+
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
+
+		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
+		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
+
+		double[] values = sortedCopy.stream()
+				.mapToDouble(m -> IValueProviderTestHelpers.getDouble(m.getValueProvider()))
+				.toArray();
+		Assertions.assertThat(values).hasSize(3).contains(12.34D, 23.45D, 34.56D);
 	}
 
 	@Test

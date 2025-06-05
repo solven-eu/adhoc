@@ -24,6 +24,8 @@ package eu.solven.adhoc.data.column;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 
@@ -36,7 +38,7 @@ public interface IValueProviderTestHelpers {
 			@Override
 			public void onLong(long v) {
 				if (v == Long.MAX_VALUE) {
-					throw new IllegalArgumentException("requireOnLong does not handle Long.MAX_VALUE");
+					throw new IllegalArgumentException("getLong does not handle Long.MAX_VALUE");
 				}
 
 				longRef.set(v);
@@ -44,10 +46,33 @@ public interface IValueProviderTestHelpers {
 
 			@Override
 			public void onObject(Object v) {
-				throw new IllegalArgumentException("requireOnLong requires onLong and not onObject");
+				throw new IllegalArgumentException("getLong requires onLong and not onObject");
 			}
 		});
 
 		return longRef.get();
+	}
+
+	static double getDouble(IValueProvider valueProvider) {
+		AtomicDouble doubleRef = new AtomicDouble(Double.MAX_VALUE);
+
+		valueProvider.acceptReceiver(new IValueReceiver() {
+
+			@Override
+			public void onDouble(double v) {
+				if (v == Long.MAX_VALUE) {
+					throw new IllegalArgumentException("getDouble does not handle Double.MAX_VALUE");
+				}
+
+				doubleRef.set(v);
+			}
+
+			@Override
+			public void onObject(Object v) {
+				throw new IllegalArgumentException("getDouble requires onLong and not onObject");
+			}
+		});
+
+		return doubleRef.get();
 	}
 }
