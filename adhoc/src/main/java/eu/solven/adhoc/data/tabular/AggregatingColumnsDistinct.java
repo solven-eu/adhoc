@@ -79,7 +79,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
 		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
-		return MultitypeArrayColumn.builder().build();
+		return MultitypeArrayColumn.<Integer>builder().build();
 	}
 
 	@Override
@@ -101,7 +101,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			if (agg instanceof IHasCarriers hasCarriers) {
 				return hasCarriers.wrap(column.append(keyIndex));
 			} else {
-				return column.set(keyIndex);
+				return column.append(keyIndex);
 			}
 		};
 	}

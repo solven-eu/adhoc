@@ -46,6 +46,10 @@ public interface IMultitypeColumn<T> {
 	 */
 	long size();
 
+	/**
+	 * 
+	 * @return true if this column has size==0.
+	 */
 	boolean isEmpty();
 
 	/**
@@ -56,6 +60,7 @@ public interface IMultitypeColumn<T> {
 	void purgeAggregationCarriers();
 
 	/**
+	 * Append-else-merge.
 	 * 
 	 * @param slice
 	 * @return the {@link IValueReceiver} into which the value has to be written. If the key already exists, switch to

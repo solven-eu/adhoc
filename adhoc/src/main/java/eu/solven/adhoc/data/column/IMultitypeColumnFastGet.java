@@ -54,7 +54,7 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 * @param slice
 	 * @param o
 	 */
-	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
+	@Deprecated(since = "Prefer `IValueProvider set(T key)`")
 	default void set(T slice, Object o) {
 		set(slice).onObject(o);
 	}
@@ -64,6 +64,7 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 * @param key
 	 * @return a IValueReceiver to provide the value
 	 */
+	@Deprecated(since = "Should be removed from the API")
 	IValueReceiver set(T key);
 
 }

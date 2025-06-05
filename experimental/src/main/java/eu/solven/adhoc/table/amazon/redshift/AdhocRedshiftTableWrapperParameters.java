@@ -44,7 +44,7 @@ public class AdhocRedshiftTableWrapperParameters {
 
 	@NonNull
 	String workgroupName;
-	
+
 	@NonNull
 	String database;
 

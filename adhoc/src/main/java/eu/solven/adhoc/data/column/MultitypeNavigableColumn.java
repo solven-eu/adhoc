@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +62,13 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T> {
+	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
+
+		@Override
+		public void onObject(Object v) {
+			throw new UnsupportedOperationException("This is a placeholder");
+		}
+	};
 
 	// This List is ordered at all times
 	// This List has only distinct elements
@@ -92,7 +100,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public IValueReceiver set(T key) {
-		return write(key, false);
+		return write(key, false, true);
 	}
 
 	/**
@@ -103,10 +111,31 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		return write(key, true);
+		return write(key, true, true);
 	}
 
-	protected IValueReceiver write(T key, boolean mergeElseSet) {
+	public Optional<IValueReceiver> appendIfOptimal(T key) {
+		IValueReceiver valueReceiver = write(key, true, false);
+
+		if (INSERTION_REJECTED == valueReceiver) {
+			return Optional.empty();
+		} else {
+			return Optional.of(valueReceiver);
+		}
+	}
+
+	/**
+	 * 
+	 * @param key
+	 * @param mergeElseSet
+	 *            if true and the key has already a value, we merge the input with the current value. Else we replace
+	 *            the existing value by the provided value.
+	 * @param insertEvenIfNotLast
+	 *            if true, and given key is new but not last, we do an random insertion (which is slow as it requires
+	 *            shitfing following keys and values). If false, returns a null IValueReceiver.
+	 * @return
+	 */
+	protected IValueReceiver write(T key, boolean mergeElseSet, boolean insertEvenIfNotLast) {
 		int size = keys.size();
 		int valuesSize = values.size();
 		if (size != valuesSize) {
@@ -142,18 +171,28 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 					valueConsumer = set(index);
 				}
 			} else {
-				// BEWARE This case should not happen. For now, we try handling it smoothly
-				// It typically happens if it is used to receive table aggregates while the table does not provide
-				// sorted results.
-				// It typically happens if some underlying queryStep does not return a properly sorted column.
-				if (Integer.bitCount(slowPath.incrementAndGet()) == 1) {
-					log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
+				if (insertEvenIfNotLast) {
+					valueConsumer = onRandomInsertion(key, index);
+				} else {
+					valueConsumer = INSERTION_REJECTED;
 				}
-				int insertionIndex = -index - 1;
-				keys.add(insertionIndex, key);
-				valueConsumer = values.add(insertionIndex);
 			}
 		}
+		return valueConsumer;
+	}
+
+	private IValueReceiver onRandomInsertion(T key, int index) {
+		IValueReceiver valueConsumer;
+		// BEWARE This case should not happen. For now, we try handling it smoothly
+		// It typically happens if it is used to receive table aggregates while the table does not provide
+		// sorted results.
+		// It typically happens if some underlying queryStep does not return a properly sorted column.
+		if (Integer.bitCount(slowPath.incrementAndGet()) == 1) {
+			log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
+		}
+		int insertionIndex = -index - 1;
+		keys.add(insertionIndex, key);
+		valueConsumer = values.add(insertionIndex);
 		return valueConsumer;
 	}
 

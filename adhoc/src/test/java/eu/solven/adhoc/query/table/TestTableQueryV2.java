@@ -148,19 +148,18 @@ public class TestTableQueryV2 {
 	@Test
 	public void testAndMatcher() {
 		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet.of(filterAPrefix, filterAPrefixNotAzerty));
-		Assertions.assertThat(v2)
-				.hasSize(1)
-				.contains(TableQueryV2.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.aggregator(
-								FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(sumK1)
-								.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.isEqualTo("azerty")))))
-								.index(1)
-								.build())
-						.filter(AndFilter.and(Map.of("a", LikeMatcher.matching("a%"))))
-						.build());
+		Assertions.assertThat(v2).singleElement().satisfies(q -> {
+			Assertions.assertThat(q.getGroupBy()).isEqualTo(GroupByColumns.named("a"));
+			Assertions.assertThat(q.getAggregators())
+					.hasSize(2)
+					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
+					.contains(FilteredAggregator.builder()
+							.aggregator(sumK1)
+							.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.isEqualTo("azerty")))))
+							.index(1)
+							.build());
+			Assertions.assertThat(q.getFilter()).isEqualTo(AndFilter.and(Map.of("a", LikeMatcher.matching("a%"))));
+		});
 	}
 
 	@Test

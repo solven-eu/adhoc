@@ -403,7 +403,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	/**
 	 * 
-	 * @param asMap
+	 * @param map
 	 * @return a copy of the input, as an {@link AdhocMap}
 	 */
 	public static IAdhocMap copyOf(Map<String, ?> map) {
@@ -411,7 +411,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 			// For performance, we expect to be generally in this branch
 			return adhocMap;
 		} else {
-			AdhocMapBuilder builder = AdhocMap.builder(map.keySet());
+			AdhocMapBuilder builder = builder(map.keySet());
 
 			map.values().forEach(builder::append);
 

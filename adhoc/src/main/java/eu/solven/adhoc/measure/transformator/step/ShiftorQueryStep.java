@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;

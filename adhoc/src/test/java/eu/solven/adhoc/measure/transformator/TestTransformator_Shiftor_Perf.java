@@ -104,7 +104,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 		public IAdhocFilter editFilter(IAdhocFilter filter) {
 			IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, "d");
 
-			if (valueMatcher.equals(IValueMatcher.MATCH_ALL) || valueMatcher.equals(IValueMatcher.MATCH_NONE)) {
+			if (IValueMatcher.MATCH_ALL.equals(valueMatcher) || IValueMatcher.MATCH_NONE.equals(valueMatcher)) {
 				return filter;
 			} else if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
 				LocalDate shiftedDate = shiftDate((LocalDate) equalsMatcher.getOperand());

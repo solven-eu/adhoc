@@ -302,9 +302,13 @@ public class AndFilter implements IAndFilter {
 			columnFilters.add(ColumnFilter.builder().column(k).matching(v).build());
 		});
 
-		// BEWARE Do not call `.and` due to most (all?) optimizations/checks are irrelevant
+		// BEWARE Do not call `.and` due to most optimizations/checks are irrelevant
 		// And this is a performance bottleneck in Shiftor
-		return AndFilter.builder().filters(columnFilters).build();
+		if (columnFilters.size() == 1) {
+			return columnFilters.getFirst();
+		} else {
+			return AndFilter.builder().filters(columnFilters).build();
+		}
 	}
 
 }
