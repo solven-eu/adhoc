@@ -121,7 +121,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 	}
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		// Not MultitypeNavigableColumn as decomposition will prevent writing slices in ordered
+		// Not MultitypeNavigableColumn as decomposition will prevent writing slices in order.
 		// BEWARE This should be reviewed, as some later IMeasure would expect to receive an ordered slices
 		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}

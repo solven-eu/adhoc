@@ -37,9 +37,10 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyV1;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersV1;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.measure.transformator.step.UnderlyingQueryStepHelpers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,6 +54,8 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
 
 	protected abstract CubeQueryStep getStep();
+
+	private DagBottomUpStrategyV1 bottomUpStrategy = new DagBottomUpStrategyV1();
 
 	protected IMeasure getMeasure() {
 		return getStep().getMeasure();
@@ -72,7 +75,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	 * @return a {@link IMultitypeColumnFastGet} to hold the result of this column.
 	 */
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeNavigableElseHashColumn.<SliceAsMap>builder().build();
+		return bottomUpStrategy.makeStorage();
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
@@ -105,7 +108,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	}
 
 	protected Stream<SliceAndMeasures> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpers.distinctSlices(getStep(), underlyings);
+		return bottomUpStrategy.distinctSlices(getStep(), underlyings);
 	}
 
 	protected abstract void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output);

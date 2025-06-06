@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersV1;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -39,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @param <T>
  * @author Benoit Lacelle
+ * @see UnderlyingQueryStepHelpersV1
  */
 @Deprecated(since = "Not-ready")
 @Builder

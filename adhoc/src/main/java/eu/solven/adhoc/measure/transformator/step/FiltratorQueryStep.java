@@ -91,10 +91,11 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 		Object value = combination.combine(slice.getSlice(), underlyingVs);
 
+		SliceAsMap sliceAsMap = slice.getSlice().getAdhocSliceAsMap();
 		if (isDebug()) {
-			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, getMeasure().getName());
+			log.info("[DEBUG] Write {}={} (given {}) in {}", getMeasure().getName(), value, underlyingVs, sliceAsMap);
 		}
 
-		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
+		output.putSlice(sliceAsMap).onObject(value);
 	}
 }
