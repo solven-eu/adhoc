@@ -103,10 +103,6 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("country", "FR").build();
 		ITabularView output = cube().execute(adhocQuery);
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		// NaN as we divide by US, hence dividing by 0 (as there is no row in both FR and US)
@@ -119,10 +115,6 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 	public void testWildcardCountry() {
 		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").groupByAlso("country").build();
 		ITabularView output = cube().execute(adhocQuery);
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("country", "FR"), Map.of("country", "US"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -137,7 +129,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testParis() {
-		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").debug(true).build();
 		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
