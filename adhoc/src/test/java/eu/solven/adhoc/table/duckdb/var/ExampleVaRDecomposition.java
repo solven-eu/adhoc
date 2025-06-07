@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -57,7 +58,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		return List.of(IDecomposition.suppressColumn(step, Set.of(C_SCENARIOINDEX, C_SCENARIONAME)));
+		return List.of(DecompositionHelpers.suppressColumn(step, Set.of(C_SCENARIOINDEX, C_SCENARIONAME)));
 	}
 
 	@Override

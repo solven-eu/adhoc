@@ -45,6 +45,9 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  * 
  * @author Benoit Lacelle
  */
+// Many duplications with v0
+// CPD-OFF
+@SuppressWarnings("CPD-START")
 public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasures> {
 
 	final CubeQueryStep queryStep;

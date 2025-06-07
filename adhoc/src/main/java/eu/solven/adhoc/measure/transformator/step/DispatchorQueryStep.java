@@ -41,6 +41,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -50,6 +51,8 @@ import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
+import eu.solven.adhoc.query.filter.FilterMatcher;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -126,45 +129,47 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
+	@Getter
+	@RequiredArgsConstructor
+	protected static class DecompositionMergingContext {
+		final boolean isMultiGroupSlice;
+		final Set<Map<String, ?>> outputCoordinatesAlreadyContributed;
+
+		public static DecompositionMergingContext multiGroupSlice() {
+			return new DecompositionMergingContext(true, new HashSet<>());
+		}
+
+		public static DecompositionMergingContext monoGroupSlice() {
+			return new DecompositionMergingContext(false, Set.of());
+		}
+
+		public boolean addToSlice(Map<String, ?> outputCoordinate) {
+			if (!isMultiGroupSlice) {
+				// Not multiGroupSlice: the group is single and clearly stated
+				return true;
+			}
+
+			// multiGroupSlice: ensure current element has not already been contributed
+			return outputCoordinatesAlreadyContributed.add(outputCoordinate);
+		}
+	}
+
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
 			SliceAndMeasures slice,
 			IDecomposition decomposition,
 			IMultitypeMergeableColumn<SliceAsMap> aggregatingView) {
-		List<?> underlyingVs = slice.getMeasures().asList();
-
-		Object value = underlyingVs.getFirst();
+		Object value = IValueProvider.getValue(slice.getMeasures().read(0));
 
 		if (value == null) {
-			// The underlyingStep is empty
+			// The underlying value is empty: nothing to dispatch
 			return;
 		}
 
 		List<IDecompositionEntry> decomposed = decomposition.decompose(slice.getSlice(), value);
 
-		// If current slice is contributing to multiple groups (e.g. a filter with an IN), we should accept each element
-		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
-		// G20`, `FR` should contributes only once).
-		// NOTE This is a performance optimization, as we could rely on `outputCoordinatesAlreadyContributed`
-		boolean isMultiGroupSlice;
-
-		{
-			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
-			if (decomposed.stream()
-					.map(IDecompositionEntry::getSlice)
-					.map(Map::keySet)
-					.allMatch(groupByColumns::containsAll)) {
-				// all decomposition columns are expressed in groupBy
-				isMultiGroupSlice = false;
-			} else {
-				// TODO We may also manage the case where we filter a single group
-				isMultiGroupSlice = true;
-			}
-
-		}
-
 		// This may actually be a mis-design, as `.decompose` should not have returned groups if groups are in
 		// filter.
-		Set<Map<String, ?>> outputCoordinatesAlreadyContributed = new HashSet<>();
+		DecompositionMergingContext mergingContext = makeMergingContext(slice, decomposed);
 
 		decomposed.forEach(decompositionEntry -> {
 			Map<String, ?> fragmentCoordinate = decompositionEntry.getSlice();
@@ -177,16 +182,12 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
 
-			if (isNotRelevant(outputCoordinate)) {
+			if (!isRelevant(outputCoordinate)) {
 				log.debug("Rejected the improper decomposedEntry slice={}", outputCoordinate);
 				return;
 			}
 
-			if (
-			// Not multiGroupSlice: the group is single and clearly stated
-			!isMultiGroupSlice
-					// multiGroupSlice: ensure current element has not already been contributed
-					|| outputCoordinatesAlreadyContributed.add(outputCoordinate)) {
+			if (mergingContext.addToSlice(outputCoordinate)) {
 				SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
 				fragmentValueProvider.acceptReceiver(aggregatingView.merge(coordinateAsSlice));
 
@@ -205,6 +206,37 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 				log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
 			}
 		});
+	}
+
+	private DecompositionMergingContext makeMergingContext(SliceAndMeasures slice,
+			List<IDecompositionEntry> decomposed) {
+		DecompositionMergingContext mergingContext;
+		// If current slice is contributing to multiple groups (e.g. a filter with an IN), we should accept each element
+		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
+		// G20`, `FR` should contributes only once).
+		// NOTE This is a performance optimization, as we could rely on `outputCoordinatesAlreadyContributed`
+		boolean isMultiGroupSlice;
+
+		{
+			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
+			if (decomposed.stream()
+					.map(IDecompositionEntry::getSlice)
+					.map(Map::keySet)
+					.allMatch(groupByColumns::containsAll)) {
+				// all decomposition columns are expressed in groupBy
+				isMultiGroupSlice = false;
+			} else {
+				// TODO We may also manage the case where we filter a single group
+				isMultiGroupSlice = true;
+			}
+		}
+
+		if (isMultiGroupSlice) {
+			mergingContext = DecompositionMergingContext.multiGroupSlice();
+		} else {
+			mergingContext = DecompositionMergingContext.monoGroupSlice();
+		}
+		return mergingContext;
 	}
 
 	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy groupBy,
@@ -233,8 +265,18 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		return queryCoordinatesBuilder.build();
 	}
 
-	protected boolean isNotRelevant(Map<String, ?> decomposedSlice) {
-		// TODO Reject decomposed slice which does not fit into the queryStep filter
-		return false;
+	/**
+	 * Some {@link IDecomposition} may provide irrelevant {@link IDecompositionEntry} given queryStep
+	 * {@link IAdhocFilter}.
+	 * 
+	 * @param decomposedSlice
+	 * @return
+	 */
+	protected boolean isRelevant(Map<String, ?> decomposedSlice) {
+		return FilterMatcher.builder()
+				.filter(step.getFilter())
+				.onMissingColumn(DecompositionHelpers.onMissingColumn())
+				.build()
+				.match(decomposedSlice);
 	}
 }

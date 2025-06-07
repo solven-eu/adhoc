@@ -37,21 +37,21 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
-import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -164,14 +164,11 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	protected boolean doFilterGroup(IAdhocFilter filter, String groupColumn, Object groupCandidate) {
-		return MoreFilterHelpers.match(ITableTranscoder.identity(),
-				filter,
-				Map.of(groupColumn, groupCandidate),
-				filterMissingColumn -> {
-					// The group column is not filtered: accept this group as it is not rejected
-					// e.g. we filter color=pink: it should not reject countryGroup=G8
-					return true;
-				});
+		return FilterMatcher.builder()
+				.filter(filter)
+				.onMissingColumn(DecompositionHelpers.onMissingColumn())
+				.build()
+				.match(Map.of(groupColumn, groupCandidate));
 	}
 
 	/**

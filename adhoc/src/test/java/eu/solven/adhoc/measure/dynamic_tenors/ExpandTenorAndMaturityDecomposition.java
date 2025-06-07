@@ -32,6 +32,7 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -134,7 +135,7 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		// Suppress tenor and maturity as they are columns embedded in the underlying aggregate
-		return List.of(IDecomposition.suppressColumn(step, Set.of(K_TENOR, K_MATURITY)));
+		return List.of(DecompositionHelpers.suppressColumn(step, Set.of(K_TENOR, K_MATURITY)));
 	}
 
 }

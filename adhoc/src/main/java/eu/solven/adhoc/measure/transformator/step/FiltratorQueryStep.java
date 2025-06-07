@@ -93,7 +93,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 		SliceAsMap sliceAsMap = slice.getSlice().getAdhocSliceAsMap();
 		if (isDebug()) {
-			log.info("[DEBUG] Write {}={} (given {}) in {}", getMeasure().getName(), value, underlyingVs, sliceAsMap);
+			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, sliceAsMap);
 		}
 
 		output.putSlice(sliceAsMap).onObject(value);

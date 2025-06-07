@@ -32,14 +32,12 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
-import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyV1;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersV1;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +51,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
 
-	protected abstract CubeQueryStep getStep();
+	// TODO Introduce a way to customize this default value
+	private final DagBottomUpStrategyV1 bottomUpStrategy = new DagBottomUpStrategyV1();
 
-	private DagBottomUpStrategyV1 bottomUpStrategy = new DagBottomUpStrategyV1();
+	protected abstract CubeQueryStep getStep();
 
 	protected IMeasure getMeasure() {
 		return getStep().getMeasure();

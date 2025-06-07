@@ -124,7 +124,10 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 			SliceAsMap outputCoordinate = queriedSlice(step.getGroupBy(), bucketedSlice.getSlice());
 
 			if (isDebug()) {
-				log.info("[DEBUG] m={} contributed {} into {}", bucketor.getName(), valueProvider, outputCoordinate);
+				log.info("[DEBUG] m={} contributed {} into {}",
+						bucketor.getName(),
+						IValueProvider.getValue(valueProvider),
+						outputCoordinate);
 			}
 
 			valueProvider.acceptReceiver(output.putSlice(outputCoordinate));

@@ -22,23 +22,12 @@
  */
 package eu.solven.adhoc.measure.decomposition;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.query.MeasurelessQuery;
-import eu.solven.adhoc.query.MeasurelessQuery.MeasurelessQueryBuilder;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
  * Used for {@link eu.solven.adhoc.measure.model.IMeasure} which generates/contributes into multiple slices given an
@@ -72,42 +61,4 @@ public interface IDecomposition extends ICompositeColumnGenerator {
 	 */
 	List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step);
 
-	/**
-	 * 
-	 * @param step
-	 * @param column
-	 * @return a {@link MeasurelessQuery} where given column has been suppressed (i.e. removed from
-	 *         {@link IAdhocGroupBy} and filter are turned into `.matchAll`).
-	 */
-	static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, String column) {
-		MeasurelessQueryBuilder underlyingStep = MeasurelessQuery.edit(step);
-
-		if (step.getGroupBy().getGroupedByColumns().contains(column)) {
-			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			Map<String, IAdhocColumn> groupByWithoutIndex = new LinkedHashMap<>(step.getGroupBy().getNameToColumn());
-			groupByWithoutIndex.remove(column);
-			underlyingStep.groupBy(GroupByColumns.of(groupByWithoutIndex.values())).build();
-		}
-
-		if (FilterHelpers.getFilteredColumns(step.getFilter()).contains(column)) {
-			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			IAdhocFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(column));
-
-			underlyingStep.filter(supressedFilter);
-			// BEWARE In a different design, we should ensure we query only the relevant underlying double columns.
-			// This is not done here as it would require more coupled logics
-		}
-
-		return underlyingStep.build();
-	}
-
-	static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, Set<String> columns) {
-		MeasurelessQuery underlyingStep = MeasurelessQuery.edit(step).build();
-
-		for (String column : columns) {
-			underlyingStep = suppressColumn(underlyingStep, column);
-		}
-
-		return underlyingStep;
-	}
 }

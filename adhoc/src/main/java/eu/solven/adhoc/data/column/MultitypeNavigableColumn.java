@@ -329,7 +329,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		int index = getIndex(key);
 
 		if (index < 0) {
-			return valueConsumer -> valueConsumer.onObject(null);
+			return IValueProvider.NULL;
 		} else {
 			return valueConsumer -> onValue(index, valueConsumer);
 		}
