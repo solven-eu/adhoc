@@ -272,9 +272,15 @@ export const useUserStore = defineStore("user", {
 
 					{
 						tokens.access_token_expired = false;
+
+						// https://stackoverflow.com/questions/7687884/add-10-seconds-to-a-date
+						const expiresAt = new Date();
+						expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
+
+						tokens.expires_at = expiresAt;
 					}
 
-					console.log("Tokens are stored");
+					console.log("Tokens are stored. Expires at", tokens.expires_at);
 					store.$patch({ tokens: tokens });
 
 					watch(
@@ -307,7 +313,14 @@ export const useUserStore = defineStore("user", {
 		},
 
 		async loadIfMissingUserTokens() {
-			if (this.tokens.access_token && !this.tokens.access_token_expired) {
+			if (
+				// We do have an accessToken
+				this.tokens.access_token &&
+				// We did not detect an expiry (e.g. receiving a 401)
+				!this.tokens.access_token_expired &&
+				// The token should not expire within 15 seconds
+				new Date() - this.tokens.expires_at > 15
+			) {
 				console.debug("Authenticated and a valid access_tokenTokens is stored", this.tokens.access_token);
 			} else {
 				await this.loadUserTokens();
@@ -348,6 +361,8 @@ export const useUserStore = defineStore("user", {
 					if (response.status == 401) {
 						console.log("The access_token is expired as we received a 401");
 						this.tokens.access_token_expired = true;
+
+						// TODO Implement an automated retry after updated userTokens
 					} else if (!response.ok) {
 						console.trace("StackTrace for !ok on", url);
 					}

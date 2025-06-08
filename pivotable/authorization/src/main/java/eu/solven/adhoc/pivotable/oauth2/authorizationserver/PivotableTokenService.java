@@ -109,15 +109,14 @@ public class PivotableTokenService {
 		// https://auth0.com/blog/rs256-vs-hs256-whats-the-difference/
 		// https://security.stackexchange.com/questions/194830/recommended-asymmetric-algorithms-for-jwt
 		// https://curity.io/resources/learn/jwt-best-practices/
-		JWSHeader.Builder headerBuilder =
-				new JWSHeader.Builder(JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName()))
-						.type(JOSEObjectType.JWT);
+		JWSAlgorithm jwsAlgorithm = JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName());
+		JWSHeader.Builder headerBuilder = new JWSHeader.Builder(jwsAlgorithm).type(JOSEObjectType.JWT);
 
 		Instant now = Instant.now();
 
 		String issuer = getIssuer();
 		JWTClaimsSet.Builder claimsSetBuilder = new JWTClaimsSet.Builder().subject(accountId.toString())
-				.audience("Adhoc-Server")
+				.audience("Pivotable-Server")
 				// https://connect2id.com/products/server/docs/api/token#url
 				.issuer(issuer)
 				// https://www.oauth.com/oauth2-servers/access-tokens/self-encoded-access-tokens/

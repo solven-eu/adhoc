@@ -14,6 +14,8 @@ import AdhocQueryGrid from "./adhoc-query-grid.js";
 
 import { useRouter } from "vue-router";
 
+import AdhocMeasuresDag from "./adhoc-measures-dag.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -22,6 +24,7 @@ export default {
 		AdhocQueryWizard,
 		AdhocQueryExecutor,
 		AdhocQueryGrid,
+		AdhocMeasuresDag,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -96,8 +99,15 @@ export default {
 			},
 		});
 
+		const measuresDagModel = reactive({
+			main: "",
+			highlight: [],
+		});
+
 		// https://vuejs.org/guide/components/provide-inject.html
 		provide("queryModel", queryModel);
+		provide("cube", props.cube);
+		provide("measuresDagModel", measuresDagModel);
 
 		const tabularView = reactive({});
 
@@ -164,6 +174,7 @@ export default {
 			queryModel,
 			tabularView,
 			domId,
+			measuresDagModel,
 		};
 	},
 	template: /* HTML */ `
@@ -181,6 +192,8 @@ export default {
             <div class="col-9">
                 <AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
             </div>
+
+            <AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
         </div>
     `,
 };

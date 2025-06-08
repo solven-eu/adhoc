@@ -54,7 +54,7 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="container">
+        <div class="container-fluid">
             <AdhocNavbar />
 
             <main>

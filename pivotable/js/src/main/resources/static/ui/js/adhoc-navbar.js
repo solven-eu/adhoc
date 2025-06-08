@@ -1,3 +1,4 @@
+import { ref } from "vue";
 import { mapState } from "pinia";
 import { useUserStore } from "./store-user.js";
 
@@ -15,12 +16,29 @@ export default {
 
 		userStore.initializeUser();
 
-		return {};
+		const expiresIn = ref(null);
+
+		// TODO Watch for initial tokens
+		const updateClock = function () {
+			if (userStore.tokens.expires_at) {
+				expiresIn.value = Math.round((userStore.tokens.expires_at - new Date()) / (60 * 1000));
+			} else {
+				expiresIn.value = "?";
+			}
+		};
+
+		// https://stackoverflow.com/questions/65817482/time-on-vue-js-refreshing-automatically
+		setInterval(() => {
+			updateClock();
+		}, 20 * 1000);
+		updateClock();
+
+		return { expiresIn };
 	},
 	template: /* HTML */ `
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-                <RouterLink class="navbar-brand" to="/">Adhoc</RouterLink>
+                <RouterLink class="navbar-brand" to="/">Pivotable (Adhoc)</RouterLink>
                 <button
                     class="navbar-toggler"
                     type="button"
@@ -52,7 +70,7 @@ export default {
                         />
                         <Logout />
                     </span>
-                    needsToLogin={{needsToLogin}} needsToRefreshAccessToken={{needsToRefreshAccessToken}}
+                    needsToLogin={{needsToLogin}} needsToRefreshAccessToken={{needsToRefreshAccessToken}} expires_in={{expiresIn}} minutes
                 </div>
             </div>
         </nav>
