@@ -62,7 +62,9 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	LocalDate today = LocalDate.now();
 
-	public final CubeQueryEngine engine = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final CubeQueryEngine engine = editEngine()
+			.factories(makeFactories().toBuilder().operatorsFactory(makeOperatorsFactory(fxStorage)).build())
+			.build();
 	public final CubeWrapper cube = editCube().engine(engine).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {

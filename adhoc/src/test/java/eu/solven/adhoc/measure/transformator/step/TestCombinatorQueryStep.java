@@ -30,11 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 
 public class TestCombinatorQueryStep {
@@ -57,7 +57,7 @@ public class TestCombinatorQueryStep {
 
 		Assertions.assertThat(combinator.getUnderlyingNames()).containsExactly("invalidUnderlying");
 
-		ITransformatorQueryStep node = combinator.wrapNode(new StandardOperatorsFactory(),
+		ITransformatorQueryStep node = combinator.wrapNode(AdhocFactories.builder().build(),
 				CubeQueryStep.builder().measure("someName").build());
 
 		Assertions.assertThat(node.getUnderlyingSteps()).singleElement().satisfies(step -> {
@@ -73,7 +73,7 @@ public class TestCombinatorQueryStep {
 				.underlyings(Arrays.asList("otherName"))
 				.build();
 
-		ITransformatorQueryStep node = combinator.wrapNode(new StandardOperatorsFactory(),
+		ITransformatorQueryStep node = combinator.wrapNode(AdhocFactories.builder().build(),
 				CubeQueryStep.builder().measure("someName").build());
 
 		ISliceToValue underlying = Mockito.mock(ISliceToValue.class);

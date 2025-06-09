@@ -28,8 +28,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.FiltratorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
@@ -75,8 +75,8 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
-		return new FiltratorQueryStep(this, transformationFactory, step);
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
+		return new FiltratorQueryStep(this, factories, step);
 	}
 
 }

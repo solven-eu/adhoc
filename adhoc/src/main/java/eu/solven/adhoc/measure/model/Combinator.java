@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
@@ -127,11 +128,11 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
 		if (!getName().equals(step.getMeasure().getName())) {
 			throw new IllegalArgumentException("Conflict %s != %s".formatted(getName(), step.getMeasure().getName()));
 		}
-		return new CombinatorQueryStep(this, transformationFactory, step);
+		return new CombinatorQueryStep(this, factories, step);
 	}
 
 	@Override

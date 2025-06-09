@@ -48,6 +48,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -62,8 +63,6 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -77,7 +76,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
-import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -97,15 +95,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 	@NonNull
 	@Default
 	@Getter
-	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
 	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
-
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 
 	@Override
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -185,7 +179,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues;
 
-		IStopwatch openingStopwatch = stopwatchFactory.createStarted();
+		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
 		// Open the stream: the table may or may not return after the actual execution
 		try (ITabularRecordStream rowsStream = openTableStream(queryPod, suppressedQuery)) {
 			if (queryPod.isExplain() || queryPod.isDebug()) {
@@ -202,7 +196,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 						.build());
 			}
 
-			stopWatchSinking = stopwatchFactory.createStarted();
+			stopWatchSinking = factories.getStopwatchFactory().createStarted();
 			stepToValues = aggregateStreamToAggregates(queryPod, toSuppressed, rowsStream);
 		}
 
@@ -282,7 +276,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
 		Set<String> generatedColumns = queryPod.getColumnsManager()
-				.getGeneratedColumns(operatorsFactory, queryPod.getForest().getMeasures(), IValueMatcher.MATCH_ALL)
+				.getGeneratedColumns(factories.getOperatorsFactory(),
+						queryPod.getForest().getMeasures(),
+						IValueMatcher.MATCH_ALL)
 				.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
 				.collect(Collectors.toSet());
@@ -350,7 +346,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates;
 		{
-			IStopwatch stopWatch = stopwatchFactory.createStarted();
+			IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
 			sliceToAggregates = mergeTableAggregates(queryPod, query.getSuppressedQuery(), stream);
 
@@ -379,7 +375,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Map<CubeQueryStep, ISliceToValue> immutableChunks;
 		{
-			IStopwatch singToAggregatedStarted = stopwatchFactory.createStarted();
+			IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
 			immutableChunks = toSortedColumns(queryPod, query, sliceToAggregates);
 
@@ -425,7 +421,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	protected ITabularRecordStreamReducer makeTabularRecordStreamReducer(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return TabularRecordStreamReducer.builder()
-				.operatorsFactory(operatorsFactory)
+				.operatorsFactory(factories.getOperatorsFactory())
 				.queryPod(queryPod)
 				.tableQuery(tableQuery)
 				.build();
@@ -464,7 +460,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.build();
 
 			boolean doPurgeCarriers;
-			if (operatorsFactory.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
+			if (factories.getOperatorsFactory()
+					.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
 				if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
 					doPurgeCarriers = false;
 				} else {

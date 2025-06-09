@@ -44,6 +44,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
@@ -157,9 +158,10 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 		}
 	}
 
-	public final CubeQueryEngine aqe =
-			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
+	public final CubeQueryEngine engine = editEngine()
+			.factories(AdhocFactories.builder().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build())
+			.build();
+	public final CubeWrapper cube = CubeWrapper.builder().table(table).engine(engine).forest(forest).build();
 
 	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
@@ -228,7 +230,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -245,7 +247,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallElement).build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallElement).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -260,7 +262,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -273,7 +275,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 	public void test_GroupByElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, smallGroup)
@@ -291,7 +293,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 	public void test_GroupByElement_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of(smallGroup, largeGroup))
@@ -312,7 +314,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 	public void test_GroupByGroup_FilterOneElement() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallElement)
@@ -333,7 +335,7 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

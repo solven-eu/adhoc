@@ -31,11 +31,11 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -53,8 +53,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
 
-	public ColumnatorQueryStep(Columnator columnator, IOperatorsFactory operatorsFactory, CubeQueryStep step) {
-		super(columnator, operatorsFactory, step);
+	public ColumnatorQueryStep(Columnator columnator, AdhocFactories factories, CubeQueryStep step) {
+		super(columnator, factories, step);
 
 		this.columnator = columnator;
 	}
@@ -107,13 +107,13 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			return SliceToValue.empty();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> outputColumn = factories.getColumnsFactory().makeColumn(underlyings);
 
-		ICombination transformation = operatorsFactory.makeCombination(combinator);
+		ICombination transformation = factories.getOperatorsFactory().makeCombination(combinator);
 
-		forEachDistinctSlice(underlyings, transformation, storage::append);
+		forEachDistinctSlice(underlyings, transformation, outputColumn::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.builder().column(outputColumn).build();
 	}
 
 	@Override

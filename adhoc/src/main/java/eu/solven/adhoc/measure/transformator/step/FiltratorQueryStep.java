@@ -30,14 +30,15 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FiltratorQueryStep extends ATransformatorQueryStep {
 	final Filtrator filtrator;
-	final IOperatorsFactory transformationFactory;
+	@Getter(AccessLevel.PROTECTED)
+	final AdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -78,7 +80,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> storage = factories.getColumnsFactory().makeColumn(underlyings);
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), storage::append);
 

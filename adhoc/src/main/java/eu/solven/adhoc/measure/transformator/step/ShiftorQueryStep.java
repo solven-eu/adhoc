@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -45,7 +46,6 @@ import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Getter;
@@ -61,14 +61,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ShiftorQueryStep implements ITransformatorQueryStep {
 	final Shiftor shiftor;
-	final IOperatorsFactory operatorsFactory;
+	final AdhocFactories factories;
 	@Getter
 	final CubeQueryStep step;
 
 	final Supplier<IFilterEditor> filterEditorSupplier = Suppliers.memoize(this::makeFilterEditor);
 
 	protected IFilterEditor makeFilterEditor() {
-		return operatorsFactory.makeEditor(shiftor.getEditorKey(), shiftor.getEditorOptions());
+		return factories.getOperatorsFactory().makeEditor(shiftor.getEditorKey(), shiftor.getEditorOptions());
 	}
 
 	@Override

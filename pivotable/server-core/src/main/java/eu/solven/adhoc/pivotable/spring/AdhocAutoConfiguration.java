@@ -27,8 +27,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.IColumnsFactory;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.StandardColumnFactory;
 import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.util.IAdhocEventBus;
@@ -71,20 +74,32 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean(IColumnsFactory.class)
+	public IColumnsFactory columnsFactory() {
+		return StandardColumnFactory.builder().build();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean(IStopwatchFactory.class)
 	public IStopwatchFactory stopwatchFactory() {
 		return IStopwatchFactory.guavaStopwatchFactory();
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(ICubeQueryEngine.class)
-	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
-			IOperatorsFactory operatorsFactory,
+	@ConditionalOnMissingBean(AdhocFactories.class)
+	public AdhocFactories adhocFactories(IOperatorsFactory operatorsFactory,
+			IColumnsFactory columnsFactory,
 			IStopwatchFactory stopwatchFactory) {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus)
+		return AdhocFactories.builder()
 				.operatorsFactory(operatorsFactory)
+				.columnsFactory(columnsFactory)
 				.stopwatchFactory(stopwatchFactory)
 				.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(ICubeQueryEngine.class)
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, AdhocFactories adhocFactories) {
+		return CubeQueryEngine.builder().eventBus(eventBus).factories(adhocFactories).build();
 	}
 }

@@ -36,17 +36,18 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,18 +61,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BucketorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
 	final Bucketor bucketor;
-	final IOperatorsFactory operatorsFactory;
+	@Getter(AccessLevel.PROTECTED)
+	final AdhocFactories factories;
 	@Getter
 	final CubeQueryStep step;
 
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
 	protected ICombination makeCombination() {
-		return operatorsFactory.makeCombination(bucketor);
+		return factories.getOperatorsFactory().makeCombination(bucketor);
 	}
 
 	protected IAggregation getMakeAggregation() {
-		return operatorsFactory.makeAggregation(bucketor);
+		return factories.getOperatorsFactory().makeAggregation(bucketor);
 	}
 
 	public List<String> getUnderlyingNames() {

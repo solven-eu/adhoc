@@ -39,6 +39,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
@@ -54,8 +55,10 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
-	CubeQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
-	CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
+	CubeQueryEngine engine = editEngine()
+			.factories(AdhocFactories.builder().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build())
+			.build();
+	CubeWrapper cube = CubeWrapper.builder().table(table).engine(engine).forest(forest).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
@@ -111,7 +114,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -125,7 +128,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "FR").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "FR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -139,7 +142,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "CH").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "CH").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -153,7 +156,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "CH").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "CH").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -167,7 +170,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G20").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G20").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -181,7 +184,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G8").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G8").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -195,7 +198,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "unknownGroup").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "unknownGroup").build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
 
@@ -206,7 +209,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_GroupByElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
+		ITabularView output = cube.execute(
 				CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cElement).andFilter(cGroup, "G8").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -220,7 +223,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_GroupByElement_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of("G8", "G20"))
@@ -238,7 +241,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_GroupByGroup_noFilter() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).build());
+		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -252,7 +255,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_GroupByGroup_FilterOneElement() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
+		ITabularView output = cube.execute(
 				CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).andFilter(cElement, "FR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -267,7 +270,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_GroupByGroup_FilterMultipleElements() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder()
+		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, Set.of("FR", "CH"))
@@ -286,7 +289,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "FR").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, "FR").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -299,7 +302,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_NoGroupBy_FilterMultipleElements() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(
+		ITabularView output = cube.execute(
 				CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, Set.of("FR", "CH")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -313,7 +316,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 		prepareMeasures();
 
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G8").build());
+				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "G8").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -326,7 +329,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 	public void test_NoGroupBy_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = aqw
+		ITabularView output = cube
 				.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, Set.of("G8", "G20")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -342,7 +345,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 
 		{
 			prepareMeasures();
-			aqw.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).explain(true).build());
+			cube.execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).explain(true).build());
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""

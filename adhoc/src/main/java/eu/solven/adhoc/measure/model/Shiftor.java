@@ -29,9 +29,9 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ShiftorQueryStep;
@@ -84,8 +84,8 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep step) {
-		return new ShiftorQueryStep(this, operatorsFactory, step);
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
+		return new ShiftorQueryStep(this, factories, step);
 	}
 
 }

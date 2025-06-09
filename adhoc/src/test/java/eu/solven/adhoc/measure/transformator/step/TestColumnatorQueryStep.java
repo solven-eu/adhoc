@@ -26,10 +26,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
@@ -47,7 +47,7 @@ public class TestColumnatorQueryStep {
 		Columnator measure = Columnator.builder().name("measureName").column("c").build();
 
 		ColumnatorQueryStep queryStep =
-				new ColumnatorQueryStep(measure, new StandardOperatorsFactory(), Mockito.mock(CubeQueryStep.class));
+				new ColumnatorQueryStep(measure, AdhocFactories.builder().build(), Mockito.mock(CubeQueryStep.class));
 
 		Assertions.assertThat(queryStep.isMonoSelected(IAdhocFilter.MATCH_ALL, "c")).isFalse();
 		// TODO should matchNone be considered mono-selected, as not multi-selected, which is generally the expected

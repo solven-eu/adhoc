@@ -38,6 +38,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToManyNDDefinition;
@@ -56,8 +57,9 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 
 	ManyToManyNDInMemoryDefinition manyToManyDefinition = new ManyToManyNDInMemoryDefinition();
 
-	public final CubeQueryEngine engine =
-			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
+	public final CubeQueryEngine engine = editEngine()
+			.factories(AdhocFactories.builder().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build())
+			.build();
 	public final CubeWrapper cube = editCube().engine(engine).build();
 
 	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.util.IStopwatchFactory;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * For {@link IMeasure} which has underlying measures.
+ * Centralize the basic factories used through Adhoc.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
+@Value
+@Builder(toBuilder = true)
+public class AdhocFactories {
+	@NonNull
+	@Default
+	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
 
-	ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery);
+	@NonNull
+	@Default
+	IColumnsFactory columnsFactory = StandardColumnFactory.builder().build();
+
+	@NonNull
+	@Default
+	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 }

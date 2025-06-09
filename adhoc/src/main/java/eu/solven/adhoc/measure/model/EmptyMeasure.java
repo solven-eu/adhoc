@@ -29,8 +29,8 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
@@ -68,7 +68,7 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep queryStep) {
 		return new ITransformatorQueryStep() {
 
 			@Override

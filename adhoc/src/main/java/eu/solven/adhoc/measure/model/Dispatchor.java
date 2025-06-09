@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
@@ -114,8 +115,8 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep adhocSubQuery) {
-		return new DispatchorQueryStep(this, operatorsFactory, adhocSubQuery);
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery) {
+		return new DispatchorQueryStep(this, factories, adhocSubQuery);
 	}
 
 	@Override

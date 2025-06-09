@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
@@ -40,7 +41,6 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -54,7 +54,7 @@ public class TestDagExplainerForPerfs {
 		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
 		QueryStepsDagBuilder queryStepsDagBuilder =
-				new QueryStepsDagBuilder(new StandardOperatorsFactory(), "someCube", CubeQuery.builder().build());
+				new QueryStepsDagBuilder(AdhocFactories.builder().build(), "someCube", CubeQuery.builder().build());
 
 		Map<String, IMeasure> refToMeasure = new HashMap<>();
 

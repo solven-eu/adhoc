@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import java.util.List;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 
 /**
- * For {@link IMeasure} which has underlying measures.
+ * Holds the strategy to create {@link IMultitypeColumn} and {@link SliceToValue}.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
+public interface IColumnsFactory {
 
-	ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery);
+	IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings);
+
+	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
+
 }

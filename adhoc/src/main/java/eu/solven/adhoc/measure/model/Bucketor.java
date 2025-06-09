@@ -29,9 +29,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
@@ -102,8 +102,8 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep queryStep) {
-		return new BucketorQueryStep(this, transformationFactory, queryStep);
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep queryStep) {
+		return new BucketorQueryStep(this, factories, queryStep);
 	}
 
 }
