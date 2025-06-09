@@ -75,9 +75,42 @@ public interface IMultitypeColumn<T> {
 
 	void scan(IColumnScanner<T> rowScanner);
 
+	@Deprecated(since = "It seems useless", forRemoval = true)
 	<U> Stream<U> stream(IColumnValueConverter<T, U> converter);
 
 	Stream<SliceAndMeasure<T>> stream();
+
+	/**
+	 * 
+	 * @param strategy
+	 * @return a {@link Stream} with the requested strategy
+	 */
+	default Stream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
+		return defaultStream(this, strategy);
+	}
+
+	/**
+	 * 
+	 * @param <T>
+	 * @param column
+	 * @param stragegy
+	 * @return a valid (yet possibly not optimal) {@link Stream} given the strategy, making no assumption on the column.
+	 */
+	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
+	static <T> Stream<SliceAndMeasure<T>> defaultStream(IMultitypeColumn<T> column, StreamStrategy stragegy) {
+		return switch (stragegy) {
+		case StreamStrategy.ALL:
+			yield column.stream();
+		case StreamStrategy.SORTED_SUB:
+			// Assume there is no sorted leg
+			yield Stream.empty();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			// As we assume there is no sorted leg, the complement is all
+			yield column.stream();
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + stragegy);
+		};
+	}
 
 	Stream<T> keyStream();
 

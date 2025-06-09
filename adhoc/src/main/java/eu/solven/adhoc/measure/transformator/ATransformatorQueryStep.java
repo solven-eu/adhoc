@@ -36,7 +36,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyV1;
+import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyNavigableElseHash;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
 
 	// TODO Introduce a way to customize this default value
-	private final DagBottomUpStrategyV1 bottomUpStrategy = new DagBottomUpStrategyV1();
+	private final DagBottomUpStrategyNavigableElseHash bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();
 
 	protected abstract CubeQueryStep getStep();
 

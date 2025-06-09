@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersV1;
+import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @param <T>
  * @author Benoit Lacelle
- * @see UnderlyingQueryStepHelpersV1
+ * @see UnderlyingQueryStepHelpersNavigableElseHash
  */
 @Deprecated(since = "Not-ready")
 @Builder
@@ -135,6 +135,21 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> implement
 					}
 				}
 			});
+		};
+	}
+
+	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
+	@Override
+	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
+		return switch (stragegy) {
+		case StreamStrategy.ALL:
+			yield this.stream();
+		case StreamStrategy.SORTED_SUB:
+			yield navigable.stream();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield hash.stream();
+		default:
+			yield IMultitypeColumn.defaultStream(this, stragegy);
 		};
 	}
 

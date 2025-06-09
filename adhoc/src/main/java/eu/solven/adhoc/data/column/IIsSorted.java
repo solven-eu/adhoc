@@ -22,21 +22,12 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
-
 /**
- * Enables conversion from given types (including primitive types) into a uniform type.
+ * Marker interface indicated some object is guaranteed to be sorted.
  * 
- * @param <T>
- *            the type of some key
- * @param <U>
- *            the uniform output
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-@Deprecated(since = "It seems useless", forRemoval = true)
-public interface IColumnValueConverter<T, U> {
-
-	IValueFunction<U> prepare(T key);
+@Deprecated(since = "Used by DagBottomUpStrategyV0")
+public interface IIsSorted {
 
 }

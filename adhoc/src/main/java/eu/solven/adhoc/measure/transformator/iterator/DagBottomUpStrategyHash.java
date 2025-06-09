@@ -22,38 +22,31 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
- * Relies on {@link MultitypeNavigableColumn} by default, and {@link UnderlyingQueryStepHelpersV0} to merge underlyings.
- * 
- * Known issue: some {@link ITransformatorQueryStep} will not write slices in proper order (e.g. Dispatchor): so they
- * rely on a {@link MultitypeHashColumn}. Hence, dependents measures may receive navigable and hash columns. Given
- * merging strategy will fallback into a distinctNotSorted {@link Iterator}, which is not efficient given the default
- * {@link MultitypeNavigableColumn} (of the dependent).
+ * This {@link IDagBottomUpStrategy} relies exclusively on {@link MultitypeHashColumn}. It never tries to sort the
+ * slices.
  * 
  * @author Benoit Lacelle
  */
-public class DagBottomUpStrategyV0 implements IDagBottomUpStrategy {
+public class DagBottomUpStrategyHash implements IDagBottomUpStrategy {
 
 	@Override
 	public IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
+		return MultitypeHashColumn.<SliceAsMap>builder().build();
 	}
 
 	@Override
 	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpersV0.distinctSlices(step, underlyings);
+		return UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(step, underlyings);
 	}
 
 }

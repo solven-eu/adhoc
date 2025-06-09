@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersV1;
+import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 
 public class TestUnderlyingQueryStepHelpers {
 	@Test
@@ -54,7 +54,8 @@ public class TestUnderlyingQueryStepHelpers {
 			underlyings.add(SliceToValue.builder().column(column).build());
 		}
 
-		List<SliceAndMeasures> slices = UnderlyingQueryStepHelpersV1.distinctSlices(queryStep, underlyings).toList();
+		List<SliceAndMeasures> slices =
+				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(3).anySatisfy(slice -> {
 			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
@@ -85,7 +86,8 @@ public class TestUnderlyingQueryStepHelpers {
 			underlyings.add(SliceToValue.builder().column(column).build());
 		}
 
-		List<SliceAndMeasures> slices = UnderlyingQueryStepHelpersV1.distinctSlices(queryStep, underlyings).toList();
+		List<SliceAndMeasures> slices =
+				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(5).anySatisfy(slice -> {
 			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
@@ -138,7 +140,8 @@ public class TestUnderlyingQueryStepHelpers {
 			underlyings.add(SliceToValue.builder().column(column).build());
 		}
 
-		List<SliceAndMeasures> slices = UnderlyingQueryStepHelpersV1.distinctSlices(queryStep, underlyings).toList();
+		List<SliceAndMeasures> slices =
+				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		List<Object> coordinates =
 				slices.stream().map(s -> s.getSlice().getAdhocSliceAsMap().getCoordinates().get("c")).toList();

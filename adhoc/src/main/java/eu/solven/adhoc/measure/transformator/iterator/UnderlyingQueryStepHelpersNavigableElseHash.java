@@ -33,9 +33,12 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.common.primitives.Booleans;
+
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +50,8 @@ import lombok.extern.slf4j.Slf4j;
  * @see MultitypeNavigableElseHashColumn
  */
 @Slf4j
-public class UnderlyingQueryStepHelpersV1 {
-	protected UnderlyingQueryStepHelpersV1() {
+public class UnderlyingQueryStepHelpersNavigableElseHash {
+	protected UnderlyingQueryStepHelpersNavigableElseHash() {
 		// hidden
 	}
 
@@ -59,6 +62,7 @@ public class UnderlyingQueryStepHelpersV1 {
 	 *            the underlyings for given queryStep.
 	 * @return the union-Set of slices
 	 */
+	@SuppressWarnings("PMD.LinguisticNaming")
 	public static Stream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings) {
 		boolean debug = queryStep.isDebug();
@@ -77,8 +81,26 @@ public class UnderlyingQueryStepHelpersV1 {
 
 		Stream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, underlyings);
 
+		boolean[] hasNotSorted = new boolean[underlyings.size()];
+
+		for (int i = 0; i < underlyings.size(); i++) {
+			// TODO We may have count the number of notSorted processed slices, to know if there is no more pending
+			// slices
+			if (underlyings.get(i).stream(StreamStrategy.SORTED_SUB_COMPLEMENT).findAny().isPresent()) {
+				hasNotSorted[i] = true;
+			}
+		}
+
+		if (!Booleans.contains(hasNotSorted, true)) {
+			// Not a single notSorted leg
+			return sortedSlices;
+		}
+
+		// This is expensive: collected all sorted slices, to skip them from notSorted legs
 		Set<SliceAsMap> sortedSlicesAsSet = new HashSet<>();
 
+		// BEWARE: This will fill `sortedSlicesAsSet` lazily, while iterating along sortedSlices, before processing
+		// notSorted slices. This is broken if one`.parallel` the stream.
 		sortedSlices = sortedSlices.peek(s -> {
 			sortedSlicesAsSet.add(s.getSlice().getAdhocSliceAsMap());
 		});
@@ -96,30 +118,29 @@ public class UnderlyingQueryStepHelpersV1 {
 	 *            {@link ISliceToValue} required to be sorted.
 	 * @return a merged {@link Stream}, based on the input sorted ISliceToValue
 	 */
-	@SuppressWarnings("PMD.LinguisticNaming")
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings) {
-		boolean[] isNotSorted = new boolean[underlyings.size()];
-
-		for (int i = 0; i < underlyings.size(); i++) {
-			if (!underlyings.get(i).isSorted()) {
-				isNotSorted[i] = true;
-			}
-		}
+		// boolean[] isNotSorted = new boolean[underlyings.size()];
+		//
+		// for (int i = 0; i < underlyings.size(); i++) {
+		// if (!underlyings.get(i).isSorted()) {
+		// isNotSorted[i] = true;
+		// }
+		// }
 
 		// Exclude the notSortedIterators: they will be processed in a later step
 		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators = underlyings.stream().map(s -> {
-			if (s.isSorted()) {
-				return s.stream().iterator();
-			} else {
-				// throw new IllegalArgumentException(
-				// "This requires input Stream to be sorted. queryStep=%s".formatted(queryStep));
-				return Collections.<SliceAndMeasure<SliceAsMap>>emptyIterator();
-			}
+			// if (s.isSorted()) {
+			// return s.stream().iterator();
+			// } else {
+			// return Collections.<SliceAndMeasure<SliceAsMap>>emptyIterator();
+			// }
+			return s.stream(StreamStrategy.SORTED_SUB).iterator();
 		}).toList();
 
-		Iterator<SliceAndMeasures> mergedIterator =
-				new MergedSlicesIteratorV1(queryStep, sortedIterators, isNotSorted, underlyings);
+		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorNavigableElseHash(queryStep, sortedIterators
+		// , isNotSorted
+				, underlyings);
 
 		int characteristics = 0
 				// keys are sorted naturally
@@ -152,11 +173,7 @@ public class UnderlyingQueryStepHelpersV1 {
 		for (int rawI = 0; rawI < size; rawI++) {
 			int i = rawI;
 			ISliceToValue sliceToValue = underlyings.get(i);
-			if (sliceToValue.isSorted()) {
-				// sorted columns (and their slices) have been processed in a separate step
-				continue;
-			}
-			Stream<SliceAndMeasures> unsortedStream = sliceToValue.stream()
+			Stream<SliceAndMeasures> unsortedStream = sliceToValue.stream(StreamStrategy.SORTED_SUB_COMPLEMENT)
 					// Skip the slices already processed by sorted iterators
 					.filter(s -> !sortedSlicesAsSet.contains(s.getSlice()))
 					// Skip the slices processed by unsorted iterators

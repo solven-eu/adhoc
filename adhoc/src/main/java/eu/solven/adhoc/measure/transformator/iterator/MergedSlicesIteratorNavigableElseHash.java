@@ -48,7 +48,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 // Many duplications with v0
 // CPD-OFF
 @SuppressWarnings("CPD-START")
-public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasures> {
+public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<SliceAndMeasures> {
 
 	final CubeQueryStep queryStep;
 
@@ -57,14 +57,14 @@ public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasure
 	// Used to get faster the next/minimum slice
 	final Queue<PeekingIterator<SliceAndMeasure<SliceAsMap>>> queue;
 
-	@SuppressWarnings("PMD.LinguisticNaming")
-	final boolean[] isNotSorted;
+	// @SuppressWarnings("PMD.LinguisticNaming")
+	// final boolean[] isNotSorted;
 	final List<? extends ISliceToValue> rawSlices;
 
-	@SuppressWarnings("PMD.ArrayIsStoredDirectly")
-	public MergedSlicesIteratorV1(CubeQueryStep queryStep,
+	// @SuppressWarnings("PMD.ArrayIsStoredDirectly")
+	public MergedSlicesIteratorNavigableElseHash(CubeQueryStep queryStep,
 			List<? extends Iterator<SliceAndMeasure<SliceAsMap>>> iterators,
-			boolean[] isNotSorted,
+			// boolean[] isNotSorted,
 			List<? extends ISliceToValue> rawSlices) {
 		this.queryStep = queryStep;
 		sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();
@@ -79,7 +79,7 @@ public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasure
 				.filter(Iterator::hasNext)
 				.forEach(queue::add);
 
-		this.isNotSorted = isNotSorted;
+		// this.isNotSorted = isNotSorted;
 		this.rawSlices = rawSlices;
 	}
 
@@ -108,11 +108,7 @@ public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasure
 
 		for (int i = 0; i < size; i++) {
 			PeekingIterator<SliceAndMeasure<SliceAsMap>> iterator = sortedIterators.get(i);
-			if (isNotSorted[i]) {
-				// The sorted iterator is empty as this column is not sorted
-				assert !iterator.hasNext();
-				valueProviders.add(rawSlices.get(i).onValue(slice));
-			} else if (iterator.hasNext() && iterator.peek().getSlice().equals(slice)) {
+			if (iterator.hasNext() && iterator.peek().getSlice().equals(slice)) {
 				// Given peeked elements, this slice is confirmed in this column
 				// We could assert it is equal to `slice`
 				SliceAndMeasure<SliceAsMap> next = iterator.peek();
@@ -120,8 +116,7 @@ public class MergedSlicesIteratorV1 extends UnmodifiableIterator<SliceAndMeasure
 
 				nbMatchingSlice++;
 			} else {
-				// Given peeked elements, this slice is not present in this column
-				valueProviders.add(IValueProvider.NULL);
+				valueProviders.add(rawSlices.get(i).onValue(slice));
 			}
 		}
 

@@ -43,13 +43,14 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helper around {@link ISliceToValue}.
+ * Enable merging {@link Stream} of {@link SliceAndMeasures}, expected most of them to be
+ * {@link MultitypeNavigableColumn}.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class UnderlyingQueryStepHelpersV0 {
-	protected UnderlyingQueryStepHelpersV0() {
+public class UnderlyingQueryStepHelpersNavigable {
+	protected UnderlyingQueryStepHelpersNavigable() {
 		// hidden
 	}
 
@@ -115,8 +116,7 @@ public class UnderlyingQueryStepHelpersV0 {
 
 			return notSortedSlices;
 		} else {
-			// All underlyings are sorted
-			// Typically from MultitypeColumnNavigable
+			// All underlyings are sorted (typically from MultitypeColumnNavigable)
 			List<ISliceToValue> sorted = new ArrayList<>();
 
 			for (ISliceToValue slices : underlyings) {
@@ -149,7 +149,7 @@ public class UnderlyingQueryStepHelpersV0 {
 			}
 		}).map(s -> s.stream().iterator()).toList();
 
-		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorV0(queryStep, sortedIterators);
+		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorNavigable(queryStep, sortedIterators);
 
 		int characteristics = 0
 				// keys are sorted naturally
