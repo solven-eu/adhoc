@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T> {
+public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T>, IIsSorted {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
@@ -250,13 +250,26 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public Stream<SliceAndMeasure<T>> stream() {
-		doLock();
-
 		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
 						.valueProvider(vc -> values.read(i).acceptReceiver(vc))
 						.build());
+	}
+
+	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
+	@Override
+	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
+		return switch (stragegy) {
+		case StreamStrategy.ALL:
+		case StreamStrategy.SORTED_SUB:
+			// The whole column is sorted
+			yield stream();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield Stream.empty();
+		default:
+			yield IMultitypeColumn.defaultStream(this, stragegy);
+		};
 	}
 
 	@Override
@@ -329,7 +342,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		int index = getIndex(key);
 
 		if (index < 0) {
-			return valueConsumer -> valueConsumer.onObject(null);
+			return IValueProvider.NULL;
 		} else {
 			return valueConsumer -> onValue(index, valueConsumer);
 		}

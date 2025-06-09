@@ -43,6 +43,7 @@ public interface ISliceToValue {
 	 * 
 	 * @return true if `keySetStream` is already sorted
 	 */
+	@Deprecated(since = "Some structures can be mixed (e.g. a section is navigable, another is hash)")
 	boolean isSorted();
 
 	long size();
@@ -65,9 +66,17 @@ public interface ISliceToValue {
 	 *            object
 	 * @return a {@link Stream} of objects built by the rowConverter
 	 */
+	@Deprecated(since = "It seems useless", forRemoval = true)
 	<U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowConverter);
 
 	Stream<SliceAndMeasure<SliceAsMap>> stream();
+
+	/**
+	 * 
+	 * @param strategy
+	 * @return a {@link Stream} with the requested strategy
+	 */
+	Stream<SliceAndMeasure<SliceAsMap>> stream(StreamStrategy strategy);
 
 	/**
 	 * 

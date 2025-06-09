@@ -60,8 +60,10 @@ public class SlicedRecordFromArray implements ISlicedRecord {
 
 	@Override
 	public String toString() {
-		// Some measure may be an int[]
-		return measures.stream().map(AdhocDebug::toString).collect(Collectors.joining(", ", "[", "]"));
+		return measures.stream()
+				// Some measure may return an long[] or double[]
+				.map(AdhocDebug::toString)
+				.collect(Collectors.joining(", ", "[", "]"));
 	}
 
 }

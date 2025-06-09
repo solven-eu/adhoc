@@ -277,7 +277,7 @@ public class TestSecurity_WithOAuth2User {
 	public void testLoginAccessToken() {
 		log.debug("About {}", PivotableLoginController.class);
 
-		PivotableUser kumiteUser;
+		PivotableUser user;
 
 		// Beware `.mutateWith(oauth2Login)` skips KumiteOAuth2UserService, hence automated registration on first OAuth2
 		// login
@@ -288,7 +288,7 @@ public class TestSecurity_WithOAuth2User {
 				attributes.put("id", userPreRegister.getRawRaw().getSub());
 				attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());
 			});
-			kumiteUser = oauth2UserService.onAdhocUserRaw(userPreRegister);
+			user = oauth2UserService.onAdhocUserRaw(userPreRegister);
 		}
 
 		webTestClient
@@ -310,7 +310,7 @@ public class TestSecurity_WithOAuth2User {
 							.containsKey("access_token")
 							.containsEntry("token_type", "Bearer")
 							.containsEntry("expires_in", 3600L)
-							.hasSize(4);
+							.hasSize(3);
 				});
 	}
 

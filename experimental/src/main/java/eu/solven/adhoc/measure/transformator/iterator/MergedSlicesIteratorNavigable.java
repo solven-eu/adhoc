@@ -44,7 +44,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  * 
  * @author Benoit Lacelle
  */
-public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures> {
+public class MergedSlicesIteratorNavigable extends UnmodifiableIterator<SliceAndMeasures> {
 
 	final CubeQueryStep queryStep;
 
@@ -53,7 +53,7 @@ public class MergedSlicesIterator extends UnmodifiableIterator<SliceAndMeasures>
 	// Used to get faster the next/minimum slice
 	final Queue<PeekingIterator<SliceAndMeasure<SliceAsMap>>> queue;
 
-	public MergedSlicesIterator(CubeQueryStep queryStep,
+	public MergedSlicesIteratorNavigable(CubeQueryStep queryStep,
 			List<? extends Iterator<SliceAndMeasure<SliceAsMap>>> iterators) {
 		this.queryStep = queryStep;
 		sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();

@@ -32,14 +32,13 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
-import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyNavigableElseHash;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.measure.transformator.step.UnderlyingQueryStepHelpers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +50,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
+
+	// TODO Introduce a way to customize this default value
+	private final DagBottomUpStrategyNavigableElseHash bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();
 
 	protected abstract CubeQueryStep getStep();
 
@@ -72,7 +74,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	 * @return a {@link IMultitypeColumnFastGet} to hold the result of this column.
 	 */
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeNavigableElseHashColumn.<SliceAsMap>builder().build();
+		return bottomUpStrategy.makeStorage();
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
@@ -105,7 +107,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	}
 
 	protected Stream<SliceAndMeasures> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpers.distinctSlices(getStep(), underlyings);
+		return bottomUpStrategy.distinctSlices(getStep(), underlyings);
 	}
 
 	protected abstract void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output);

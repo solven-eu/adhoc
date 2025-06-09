@@ -20,23 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.measure.transformator.iterator;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
+import java.util.List;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
- * Enables conversion from given types (including primitive types) into a uniform type.
+ * Wraps the strategy to store results from {@link ITransformatorQueryStep}, and to merge underlyings
+ * {@link ITransformatorQueryStep} results.
  * 
- * @param <T>
- *            the type of some key
- * @param <U>
- *            the uniform output
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-@Deprecated(since = "It seems useless", forRemoval = true)
-public interface IColumnValueConverter<T, U> {
+public interface IDagBottomUpStrategy {
 
-	IValueFunction<U> prepare(T key);
+	/**
+	 * 
+	 * @return the storage for a {@link ITransformatorQueryStep} output.
+	 */
+	IMultitypeColumnFastGet<SliceAsMap> makeStorage();
+
+	/**
+	 * 
+	 * @param step
+	 * @param underlyings
+	 * @return a {@link Stream} of {@link SliceAndMeasure}, which each {@link SliceAndMeasure} have a distinct
+	 *         {@link SliceAsMap}, and the relevant value from underlyings.
+	 */
+	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 
 }

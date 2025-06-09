@@ -129,13 +129,6 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			builder.append(value);
 		});
 
-		// Typically useful on querying grandTotal
-		// if (!Sets.difference(editedAsMap.keySet(), step.getGroupBy().getGroupedByColumns()).isEmpty()) {
-		// editedAsMap = new HashMap<>(editedAsMap);
-		//
-		// editedAsMap.keySet().retainAll(step.getGroupBy().getGroupedByColumns());
-		// }
-
 		return SliceAsMap.fromMap(builder.build());
 	}
 

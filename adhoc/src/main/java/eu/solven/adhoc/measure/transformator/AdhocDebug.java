@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Arrays;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -46,6 +47,8 @@ public class AdhocDebug {
 			return Arrays.toString(array);
 		} else if (o instanceof Object[] array) {
 			return Arrays.deepToString(array);
+		} else if (o instanceof IValueProvider valueProvider) {
+			return toString(IValueProvider.getValue(valueProvider));
 		} else {
 			return String.valueOf(o);
 		}

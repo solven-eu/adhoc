@@ -20,23 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.measure.transformator.iterator;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
+import java.util.List;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- * Enables conversion from given types (including primitive types) into a uniform type.
+ * This {@link IDagBottomUpStrategy} relies exclusively on {@link MultitypeHashColumn}. It never tries to sort the
+ * slices.
  * 
- * @param <T>
- *            the type of some key
- * @param <U>
- *            the uniform output
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-@Deprecated(since = "It seems useless", forRemoval = true)
-public interface IColumnValueConverter<T, U> {
+public class DagBottomUpStrategyHash implements IDagBottomUpStrategy {
 
-	IValueFunction<U> prepare(T key);
+	@Override
+	public IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	}
+
+	@Override
+	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
+		return UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(step, underlyings);
+	}
 
 }

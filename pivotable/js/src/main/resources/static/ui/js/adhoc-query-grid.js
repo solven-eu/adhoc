@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, reactive } from "vue";
+import { ref, watch, onMounted, reactive, inject } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -321,6 +321,25 @@ export default {
 				clickedCell.value = item;
 
 				openCellModal(clickedCell.value);
+			});
+
+			const refDagModal = ref(null);
+			const measuresDagModel = inject("measuresDagModel");
+			grid.onHeaderClick.subscribe(function (e, args) {
+				const column = args.column.id;
+				console.log("Header clicked", column);
+
+				if (Object.keys(props.cube.measures).includes(column)) {
+					if (!refDagModal.value) {
+						let measureDagModal = new Modal(document.getElementById("measureDag"), {});
+						refDagModal.value = measureDagModal;
+					}
+
+					measuresDagModel.main = column;
+					refDagModal.value.show();
+				} else {
+					console.debug("No behavior when clicking header of column");
+				}
 			});
 
 			// Register the watch once the grid is mounted and initialized

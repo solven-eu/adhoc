@@ -92,12 +92,17 @@ public class SliceToValue implements ISliceToValue {
 
 	@Override
 	public boolean isSorted() {
-		if (column instanceof MultitypeNavigableColumn<SliceAsMap>) {
+		if (column instanceof IIsSorted) {
 			// TODO Introduce dedicated interface
 			// .keySetStream().spliterator().hasCharacteristics(Spliterator.SORTED)
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public Stream<SliceAndMeasure<SliceAsMap>> stream(StreamStrategy strategy) {
+		return column.stream(strategy);
 	}
 
 }

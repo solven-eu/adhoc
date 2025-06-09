@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.step;
+package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,19 +40,17 @@ import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.transformator.iterator.MergedSlicesIterator;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helper around {@link ISliceToValue}.
+ * Enable merging {@link Stream} of {@link SliceAndMeasures}, expected most of them to be
+ * {@link MultitypeNavigableColumn}.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class UnderlyingQueryStepHelpers {
-	protected UnderlyingQueryStepHelpers() {
+public class UnderlyingQueryStepHelpersNavigable {
+	protected UnderlyingQueryStepHelpersNavigable() {
 		// hidden
 	}
 
@@ -118,8 +116,7 @@ public class UnderlyingQueryStepHelpers {
 
 			return notSortedSlices;
 		} else {
-			// All underlyings are sorted
-			// Typically from MultitypeColumnNavigable
+			// All underlyings are sorted (typically from MultitypeColumnNavigable)
 			List<ISliceToValue> sorted = new ArrayList<>();
 
 			for (ISliceToValue slices : underlyings) {
@@ -152,7 +149,7 @@ public class UnderlyingQueryStepHelpers {
 			}
 		}).map(s -> s.stream().iterator()).toList();
 
-		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIterator(queryStep, sortedIterators);
+		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorNavigable(queryStep, sortedIterators);
 
 		int characteristics = 0
 				// keys are sorted naturally

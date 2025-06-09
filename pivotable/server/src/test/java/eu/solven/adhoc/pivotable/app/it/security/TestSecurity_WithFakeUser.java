@@ -96,7 +96,7 @@ public class TestSecurity_WithFakeUser extends TestSecurity_WithOAuth2User {
 							.containsKey("access_token")
 							.containsEntry("token_type", "Bearer")
 							.containsEntry("expires_in", 3600L)
-							.hasSize(4);
+							.hasSize(3);
 				});
 	}
 

@@ -22,21 +22,18 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
+import java.util.stream.Stream;
 
 /**
- * Enables conversion from given types (including primitive types) into a uniform type.
+ * Enables an {@link IMultitypeColumnFastGet} to output a given {@link Stream}.
  * 
- * @param <T>
- *            the type of some key
- * @param <U>
- *            the uniform output
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-@Deprecated(since = "It seems useless", forRemoval = true)
-public interface IColumnValueConverter<T, U> {
-
-	IValueFunction<U> prepare(T key);
-
+public enum StreamStrategy {
+	// All slices
+	ALL,
+	// Sorted fraction
+	SORTED_SUB,
+	// The complement of the sorted fraction
+	SORTED_SUB_COMPLEMENT,
 }

@@ -145,9 +145,10 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 		IValueProvider valueProvider = combination.combine(slice, slicedRecord);
 
 		if (isDebug()) {
-			log.info("[DEBUG] Write {} (given {} over {}) in {}",
-					IValueProvider.getValue(valueProvider),
+			log.info("[DEBUG] Write {}={} ({} over {}) in {}",
 					combinator.getName(),
+					IValueProvider.getValue(valueProvider),
+					combinator.getCombinationKey(),
 					slicedRecord,
 					slice);
 		}

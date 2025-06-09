@@ -45,7 +45,11 @@ const formatters = function (formatOptions) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
 			rtn.text = numberFormat.format(value);
+		} else if (typeof value === "object") {
+			rtn.text = JSON.stringify(value);
 		} else {
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
+			// string, boolean, bigint, etc
 			rtn.text = value;
 		}
 		rtn.toolTip = value;

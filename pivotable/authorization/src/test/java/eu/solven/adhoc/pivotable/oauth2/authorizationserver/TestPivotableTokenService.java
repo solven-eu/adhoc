@@ -81,7 +81,7 @@ public class TestPivotableTokenService {
 		Assertions.assertThat(auth.getPrincipal()).isOfAnyClassIn(Jwt.class);
 		Jwt jwt = (Jwt) auth.getPrincipal();
 		Assertions.assertThat(jwt.getSubject()).isEqualTo(accountId.toString());
-		Assertions.assertThat(jwt.getAudience()).containsExactly("Adhoc-Server");
+		Assertions.assertThat(jwt.getAudience()).containsExactly("Pivotable-Server");
 	}
 
 	@Test
@@ -113,6 +113,6 @@ public class TestPivotableTokenService {
 		Assertions.assertThat(auth.getPrincipal()).isOfAnyClassIn(Jwt.class);
 		Jwt jwt = (Jwt) auth.getPrincipal();
 		Assertions.assertThat(jwt.getSubject()).isEqualTo(accountId.toString());
-		Assertions.assertThat(jwt.getAudience()).containsExactly("Adhoc-Server");
+		Assertions.assertThat(jwt.getAudience()).containsExactly("Pivotable-Server");
 	}
 }
