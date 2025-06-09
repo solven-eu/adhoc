@@ -49,6 +49,8 @@ import eu.solven.adhoc.measure.model.Shiftor;
  * 
  * @author Benoit Lacelle
  */
+// TODO Design issue in eu.solven.adhoc.data.column.SliceToValue.isSorted() which assume a IMultitypeColumnFastGet is
+// sorted or not, while MultitypeNavigableElseHashColumn is partially sorted.
 public class DagBottomUpStrategyV1 implements IDagBottomUpStrategy {
 
 	@Override

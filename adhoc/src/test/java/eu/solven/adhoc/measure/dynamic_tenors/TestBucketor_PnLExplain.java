@@ -27,10 +27,13 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
+import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
@@ -223,4 +226,22 @@ public class TestBucketor_PnLExplain extends ADagTest implements IExamplePnLExpl
 				.hasSize(1);
 	}
 
+	@Test
+	public void testRelevancyHeuristics() {
+		CubeRelevancy relevancy = new RelevancyHeuristic().computeRelevancies(forest);
+
+		Assertions.assertThat(relevancy.getColumnToRelevancy()).hasSize(2).hasEntrySatisfying("maturity", r -> {
+			Assertions.assertThat(r.getScore()).isCloseTo(1.0, Offset.offset(0.001));
+		}).hasEntrySatisfying("tenor", r -> {
+			Assertions.assertThat(r.getScore()).isCloseTo(1.0, Offset.offset(0.001));
+		});
+
+		Assertions.assertThat(relevancy.getMeasureToRelevancy()).hasSize(3).hasEntrySatisfying("market_shift", r -> {
+			Assertions.assertThat(r.getScore()).isCloseTo(4.0, Offset.offset(0.001));
+		}).hasEntrySatisfying("pnl_explain", r -> {
+			Assertions.assertThat(r.getScore()).isCloseTo(4.0, Offset.offset(0.001));
+		}).hasEntrySatisfying("sensitivities.notPropagated", r -> {
+			Assertions.assertThat(r.getScore()).isCloseTo(1.0, Offset.offset(0.001));
+		});
+	}
 }
