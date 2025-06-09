@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 
 /**
- * A {@link IAggregation} which is not known by {@link StandardOperatorsFactory}
+ * A {@link IAggregation} which is not known by {@link StandardOperatorFactory}
  */
 public class CustomAggregation implements IAggregation {
 	@Override

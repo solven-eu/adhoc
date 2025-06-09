@@ -20,28 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.measure.operator;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 
-import eu.solven.adhoc.measure.sum.SumAggregation;
+/**
+ * For classes holding an {@link IOperatorFactory}
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IHasOperatorFactory {
+	IOperatorFactory getOperatorFactory();
 
-public class TestCustomOperatorsFactory {
-	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
-
-	@Test
-	public void testAggregation_custom() {
-		IAggregation aggregation = factory.makeAggregation("CUSTOM");
-
-		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
+	/**
+	 * 
+	 * @param o
+	 *            typically a {@link CubeQueryEngine}
+	 * @return an {@link IOperatorFactory}, a default one if the input does not implement {@link IHasOperatorFactory}.
+	 */
+	static IOperatorFactory getOperatorsFactory(Object o) {
+		if (o instanceof IHasOperatorFactory hasOperatorFactory) {
+			return hasOperatorFactory.getOperatorFactory();
+		} else {
+			return new StandardOperatorFactory();
+		}
 	}
-
-	@Test
-	public void testAggregation_fallback() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregation.KEY);
-
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregation.class);
-	}
-
 }

@@ -37,7 +37,7 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
  *
  * @author Benoit Lacelle
  */
-public interface IOperatorsFactory {
+public interface IOperatorFactory {
 	/**
 	 * @param key
 	 * @param options

@@ -99,14 +99,14 @@ public abstract class ARawDagTest {
 	}
 
 	/**
-	 * Typically used to edit the operatorsFactory
+	 * Typically used to edit the operatorFactory
 	 */
 	public CubeQueryEngine.CubeQueryEngineBuilder editEngine() {
 		return engine.toBuilder();
 	}
 
 	/**
-	 * Typically used to edit the operatorsFactory
+	 * Typically used to edit the operatorFactory
 	 */
 	public CubeWrapperBuilder editCube() {
 		return ((CubeWrapper) cubeSupplier.get()).toBuilder();

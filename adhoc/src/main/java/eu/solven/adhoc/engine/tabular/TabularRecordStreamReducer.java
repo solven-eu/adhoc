@@ -40,7 +40,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
-	IOperatorsFactory operatorsFactory;
+	IOperatorFactory operatorFactory;
 
 	@NonNull
 	QueryPod queryPod;
@@ -70,9 +70,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures(ITabularRecordStream stream) {
 		if (stream.isDistinctSlices()) {
-			return AggregatingColumnsDistinct.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+			return AggregatingColumnsDistinct.<SliceAsMap>builder().operatorFactory(operatorFactory).build();
 		} else {
-			return AggregatingColumns.<SliceAsMap>builder().operatorsFactory(operatorsFactory).build();
+			return AggregatingColumns.<SliceAsMap>builder().operatorFactory(operatorFactory).build();
 		}
 	}
 

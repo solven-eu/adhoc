@@ -255,7 +255,7 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 		return JooqTableQueryFactory.builder()
-				.operatorsFactory(tableParameters.getOperatorsFactory())
+				.operatorFactory(tableParameters.getOperatorFactory())
 				.table(tableParameters.getTable())
 				.dslContext(dslContext)
 				.build();

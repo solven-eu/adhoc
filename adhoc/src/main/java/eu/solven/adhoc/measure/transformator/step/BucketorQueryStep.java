@@ -69,11 +69,11 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
 	protected ICombination makeCombination() {
-		return factories.getOperatorsFactory().makeCombination(bucketor);
+		return factories.getOperatorFactory().makeCombination(bucketor);
 	}
 
 	protected IAggregation getMakeAggregation() {
-		return factories.getOperatorsFactory().makeAggregation(bucketor);
+		return factories.getOperatorFactory().makeAggregation(bucketor);
 	}
 
 	public List<String> getUnderlyingNames() {

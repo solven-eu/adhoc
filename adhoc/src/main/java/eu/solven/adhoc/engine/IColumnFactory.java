@@ -20,18 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.measure;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 
 /**
- * Extends {@link StandardOperatorsFactory} with Atoti additional operators.
+ * Holds the strategy to create {@link IMultitypeColumn} and {@link SliceToValue}.
+ * 
+ * @author Benoit Lacelle
  */
-@Slf4j
-@RequiredArgsConstructor
-@Deprecated(since = "May be useless if not Atoti operators is specific enough")
-public class AtotiOperatorsFactory extends StandardOperatorsFactory {
+public interface IColumnFactory {
+
+	IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings);
+
+	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 
 }

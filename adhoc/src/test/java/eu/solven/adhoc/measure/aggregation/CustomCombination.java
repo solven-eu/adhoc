@@ -23,10 +23,10 @@
 package eu.solven.adhoc.measure.aggregation;
 
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 
 /**
- * A {@link ICombination} which is not known by {@link StandardOperatorsFactory}
+ * A {@link ICombination} which is not known by {@link StandardOperatorFactory}
  */
 public class CustomCombination implements ICombination {
 }

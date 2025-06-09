@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -40,11 +40,11 @@ import lombok.Value;
 public class AdhocFactories {
 	@NonNull
 	@Default
-	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	IOperatorFactory operatorFactory = new StandardOperatorFactory();
 
 	@NonNull
 	@Default
-	IColumnsFactory columnsFactory = StandardColumnFactory.builder().build();
+	IColumnFactory columnsFactory = StandardColumnFactory.builder().build();
 
 	@NonNull
 	@Default

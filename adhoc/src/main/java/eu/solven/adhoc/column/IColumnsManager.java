@@ -30,7 +30,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
@@ -64,14 +64,14 @@ public interface IColumnsManager extends IHasColumnTypes {
 
 	/**
 	 * 
-	 * @param operatorsFactory
+	 * @param operatorFactory
 	 * @param measures
 	 *            a {@link Set} of measures providing some {@link ICompositeColumnGenerator}.
 	 * @param columnMatcher
 	 *            filter the columnName.
 	 * @return
 	 */
-	List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorsFactory operatorsFactory,
+	List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
 			Set<IMeasure> measures,
 			IValueMatcher columnMatcher);
 

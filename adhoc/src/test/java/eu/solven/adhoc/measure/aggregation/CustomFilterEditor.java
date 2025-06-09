@@ -24,11 +24,11 @@ package eu.solven.adhoc.measure.aggregation;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
 /**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
+ * A {@link IDecomposition} which is not known by {@link StandardOperatorFactory}
  */
 public class CustomFilterEditor implements IFilterEditor {
 	@Override

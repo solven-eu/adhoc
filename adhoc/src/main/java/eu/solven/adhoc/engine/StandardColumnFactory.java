@@ -37,12 +37,12 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 
 /**
- * Default implementation for {@link IColumnsFactory}.
+ * Default implementation for {@link IColumnFactory}.
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class StandardColumnFactory implements IColumnsFactory {
+public class StandardColumnFactory implements IColumnFactory {
 	@NonNull
 	@Default
 	private final IDagBottomUpStrategy bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();

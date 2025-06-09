@@ -37,7 +37,7 @@ import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
@@ -136,8 +136,8 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
-		ICombination combination = operatorsFactory.makeCombination(this);
+	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
+		ICombination combination = operatorFactory.makeCombination(this);
 
 		if (combination instanceof ICompositeColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);

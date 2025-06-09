@@ -30,12 +30,12 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorsFactory}
+ * A {@link IDecomposition} which is not known by {@link StandardOperatorFactory}
  */
 public class CustomDecomposition implements IDecomposition {
 	@Override

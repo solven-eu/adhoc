@@ -7,7 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `CompositeTableTranscoder` is introduced.
 - `IDecompositionEntry` is introduced.
 - `IDagBottomUpStrategy` is introduced.
-- `IColumnsFactory` is introduced.
+- `IDagBottomUpStrategy` is introduced.
 - `AdhocFactories` is introduced.
 
 ### Removed

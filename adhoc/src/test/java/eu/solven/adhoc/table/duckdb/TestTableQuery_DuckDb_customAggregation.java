@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
@@ -153,11 +153,11 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 
 	public static class CustomAggregationJooqTableQueryFactory extends JooqTableQueryFactory {
 
-		public CustomAggregationJooqTableQueryFactory(IOperatorsFactory operatorsFactory,
+		public CustomAggregationJooqTableQueryFactory(IOperatorFactory operatorFactory,
 				TableLike<?> table,
 				DSLContext dslContext,
 				boolean canGroupByAll) {
-			super(operatorsFactory, table, dslContext, canGroupByAll);
+			super(operatorFactory, table, dslContext, canGroupByAll);
 		}
 
 		@Override
@@ -181,7 +181,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		table = new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorsFactory(),
+				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorFactory(),
 						jooqTableWrapperParameters.getTable(),
 						dslContext,
 						true);

@@ -50,8 +50,8 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -159,13 +159,13 @@ public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implemen
 	}
 
 	public final CubeQueryEngine engine = editEngine()
-			.factories(AdhocFactories.builder().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build())
+			.factories(AdhocFactories.builder().operatorFactory(makeOperatorsFactory(manyToManyDefinition)).build())
 			.build();
 	public final CubeWrapper cube = CubeWrapper.builder().table(table).engine(engine).forest(forest).build();
 
-	private @NonNull IOperatorsFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
+	private @NonNull IOperatorFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
-		return new StandardOperatorsFactory() {
+		return new StandardOperatorFactory() {
 			@Override
 			public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
 				if (ManyToMany1DDecomposition.KEY.equals(key)

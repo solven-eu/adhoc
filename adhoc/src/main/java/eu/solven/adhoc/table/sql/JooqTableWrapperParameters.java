@@ -26,8 +26,8 @@ import org.jooq.Name;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -44,7 +44,7 @@ public class JooqTableWrapperParameters {
 
 	@NonNull
 	@Default
-	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	IOperatorFactory operatorFactory = new StandardOperatorFactory();
 
 	@NonNull
 	DSLSupplier dslSupplier;

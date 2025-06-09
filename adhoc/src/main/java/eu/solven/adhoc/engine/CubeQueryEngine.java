@@ -62,8 +62,8 @@ import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IHasOperatorsFactory;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
@@ -84,7 +84,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
+public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
 	// This shall not conflict with any user measure
@@ -106,8 +106,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	}
 
 	@Override
-	public IOperatorsFactory getOperatorsFactory() {
-		return factories.getOperatorsFactory();
+	public IOperatorFactory getOperatorFactory() {
+		return factories.getOperatorFactory();
 	}
 
 	@Override
@@ -467,7 +467,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
 
 				boolean hasCarrierMeasure = step.getMeasure() instanceof Aggregator agg
-						&& factories.getOperatorsFactory()
+						&& factories.getOperatorFactory()
 								.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 

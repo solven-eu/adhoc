@@ -55,8 +55,8 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -106,7 +106,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	@Builder.Default
-	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	IOperatorFactory operatorFactory = new StandardOperatorFactory();
 
 	@NonNull
 	final TableLike<?> table;
@@ -373,7 +373,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					Field<?> field = DSL.field(namedColumn);
 					sqlAggFunction = DSL.count(field);
 				} else if (RankAggregation.isRank(aggregationKey)) {
-					RankAggregation agg = (RankAggregation) operatorsFactory.makeAggregation(a);
+					RankAggregation agg = (RankAggregation) operatorFactory.makeAggregation(a);
 
 					Field<?> field = DSL.field(namedColumn);
 					String duckDbFunction;

@@ -96,7 +96,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 	}
 
 	protected IDecomposition makeDecomposition() {
-		return factories.getOperatorsFactory()
+		return factories.getOperatorFactory()
 				.makeDecomposition(dispatchor.getDecompositionKey(), dispatchor.getDecompositionOptions());
 	}
 
@@ -114,7 +114,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			throw new IllegalArgumentException("A dispatchor expects a single underlying");
 		}
 
-		IAggregation agg = factories.getOperatorsFactory().makeAggregation(dispatchor.getAggregationKey());
+		IAggregation agg = factories.getOperatorFactory().makeAggregation(dispatchor.getAggregationKey());
 
 		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
 

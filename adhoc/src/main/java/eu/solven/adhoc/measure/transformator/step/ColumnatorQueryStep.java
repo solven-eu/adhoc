@@ -109,7 +109,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 
 		IMultitypeColumnFastGet<SliceAsMap> outputColumn = factories.getColumnsFactory().makeColumn(underlyings);
 
-		ICombination transformation = factories.getOperatorsFactory().makeCombination(combinator);
+		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
 		forEachDistinctSlice(underlyings, transformation, outputColumn::append);
 

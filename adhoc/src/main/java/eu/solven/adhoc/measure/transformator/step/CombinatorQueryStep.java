@@ -70,7 +70,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
 	protected ICombination makeCombination() {
-		return factories.getOperatorsFactory().makeCombination(combinator);
+		return factories.getOperatorFactory().makeCombination(combinator);
 	}
 
 	public List<String> getUnderlyingNames() {

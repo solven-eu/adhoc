@@ -68,7 +68,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	final Supplier<IFilterEditor> filterEditorSupplier = Suppliers.memoize(this::makeFilterEditor);
 
 	protected IFilterEditor makeFilterEditor() {
-		return factories.getOperatorsFactory().makeEditor(shiftor.getEditorKey(), shiftor.getEditorOptions());
+		return factories.getOperatorFactory().makeEditor(shiftor.getEditorKey(), shiftor.getEditorOptions());
 	}
 
 	@Override

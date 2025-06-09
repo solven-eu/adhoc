@@ -34,8 +34,8 @@ import java.util.regex.Pattern;
 import com.google.common.base.CharMatcher;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +60,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	final boolean nullIfNotASingleUnderlying;
 	final Map<String, Integer> underlyingMeasuresToIndex = new LinkedHashMap<>();
 
-	final IOperatorsFactory operatorsFactory;
+	final IOperatorFactory operatorFactory;
 
 	@SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
 	public ReversePolishCombination(Map<String, ?> options) {
@@ -77,8 +77,8 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		parseUnderlyingMeasures(notation).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 				underlyingMeasuresToIndex.size()));
 
-		operatorsFactory = MapPathGet.<IOperatorsFactory>getOptionalAs(options, "operatorsFactory")
-				.orElseGet(StandardOperatorsFactory::new);
+		operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, "operatorFactory")
+				.orElseGet(StandardOperatorFactory::new);
 	}
 
 	/**
@@ -239,6 +239,6 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	}
 
 	protected ICombination getCombination(String operator) {
-		return operatorsFactory.makeCombination(operator, Map.of());
+		return operatorFactory.makeCombination(operator, Map.of());
 	}
 }

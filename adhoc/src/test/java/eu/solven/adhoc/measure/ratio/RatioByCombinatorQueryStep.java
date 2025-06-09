@@ -83,7 +83,7 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 
 		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
 
-		ICombination transformation = factories.getOperatorsFactory().makeCombination(combinator);
+		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
 		forEachDistinctSlice(underlyings, transformation, storage::append);
 

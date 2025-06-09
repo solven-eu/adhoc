@@ -51,7 +51,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -457,13 +457,13 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	@Override
-	public List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorsFactory operatorsFactory,
+	public List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
 			Set<IMeasure> measures,
 			IValueMatcher columnMatcher) {
 		List<ICompositeColumnGenerator> columnGenerators = new ArrayList<>();
 
 		columnGenerators.add(columnGenerator);
-		columnGenerators.addAll(ColumnGeneratorHelpers.getColumnGenerators(operatorsFactory, measures, columnMatcher));
+		columnGenerators.addAll(ColumnGeneratorHelpers.getColumnGenerators(operatorFactory, measures, columnMatcher));
 
 		return columnGenerators;
 	}

@@ -276,7 +276,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
 		Set<String> generatedColumns = queryPod.getColumnsManager()
-				.getGeneratedColumns(factories.getOperatorsFactory(),
+				.getGeneratedColumns(factories.getOperatorFactory(),
 						queryPod.getForest().getMeasures(),
 						IValueMatcher.MATCH_ALL)
 				.stream()
@@ -421,7 +421,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	protected ITabularRecordStreamReducer makeTabularRecordStreamReducer(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return TabularRecordStreamReducer.builder()
-				.operatorsFactory(factories.getOperatorsFactory())
+				.operatorFactory(factories.getOperatorFactory())
 				.queryPod(queryPod)
 				.tableQuery(tableQuery)
 				.build();
@@ -460,7 +460,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.build();
 
 			boolean doPurgeCarriers;
-			if (factories.getOperatorsFactory()
+			if (factories.getOperatorFactory()
 					.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
 				if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
 					doPurgeCarriers = false;
