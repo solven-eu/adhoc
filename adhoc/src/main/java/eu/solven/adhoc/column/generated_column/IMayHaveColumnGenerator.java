@@ -24,7 +24,7 @@ package eu.solven.adhoc.column.generated_column;
 
 import java.util.Optional;
 
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 
 /**
  * Anything which may provide a {@link ICompositeColumnGenerator}
@@ -34,6 +34,6 @@ import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 @FunctionalInterface
 public interface IMayHaveColumnGenerator {
 
-	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory);
+	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory);
 
 }

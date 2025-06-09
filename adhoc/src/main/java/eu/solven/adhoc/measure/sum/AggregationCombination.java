@@ -33,8 +33,8 @@ import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
 
@@ -59,12 +59,12 @@ public class AggregationCombination implements ICombination {
 	final boolean customIfAnyNullOperand;
 
 	public AggregationCombination(Map<String, ?> options) {
-		IOperatorsFactory operatorsFactory = MapPathGet.<IOperatorsFactory>getOptionalAs(options, "aggregationKey")
-				.orElseGet(() -> new StandardOperatorsFactory());
+		IOperatorFactory operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, "aggregationKey")
+				.orElseGet(() -> new StandardOperatorFactory());
 
 		Optional<Map<String, ?>> optAggregationOptions = MapPathGet.getOptionalAs(options, "aggregationOptions");
 		String aggregationKey = MapPathGet.getRequiredString(options, "aggregationKey");
-		agg = operatorsFactory.makeAggregation(aggregationKey, optAggregationOptions.orElse(Map.of()));
+		agg = operatorFactory.makeAggregation(aggregationKey, optAggregationOptions.orElse(Map.of()));
 
 		customIfAnyNullOperand = MapPathGet.<Boolean>getOptionalAs(options, K_CUSTOM_IF_ANY_NULL_OPERAND)
 				.orElse(DEFAULT_CUSTOM_IF_ANY_NULL);

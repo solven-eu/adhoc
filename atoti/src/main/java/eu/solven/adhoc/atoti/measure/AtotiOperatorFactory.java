@@ -20,28 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.atoti.measure;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-import eu.solven.adhoc.measure.sum.SumAggregation;
-
-public class TestCustomOperatorsFactory {
-	CustomOperatorsFactory factory = CustomOperatorsFactory.builder().build();
-
-	@Test
-	public void testAggregation_custom() {
-		IAggregation aggregation = factory.makeAggregation("CUSTOM");
-
-		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
-	}
-
-	@Test
-	public void testAggregation_fallback() {
-		IAggregation aggregation = factory.makeAggregation(SumAggregation.KEY);
-
-		Assertions.assertThat(aggregation).isInstanceOf(SumAggregation.class);
-	}
+/**
+ * Extends {@link StandardOperatorFactory} with Atoti additional operators.
+ */
+@Slf4j
+@RequiredArgsConstructor
+@Deprecated(since = "May be useless if no Atoti operators is specific enough")
+public class AtotiOperatorFactory extends StandardOperatorFactory {
 
 }

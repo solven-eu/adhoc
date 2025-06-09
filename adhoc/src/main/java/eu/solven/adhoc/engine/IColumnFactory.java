@@ -20,30 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.operator;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.engine.CubeQueryEngine;
+import java.util.List;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 
 /**
- * For classes holding an {@link IOperatorsFactory}
+ * Holds the strategy to create {@link IMultitypeColumn} and {@link SliceToValue}.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface IHasOperatorsFactory {
-	IOperatorsFactory getOperatorsFactory();
+public interface IColumnFactory {
 
-	/**
-	 * 
-	 * @param o
-	 *            typically a {@link CubeQueryEngine}
-	 * @return an {@link IOperatorsFactory}, a default one if the input does not implement {@link IHasOperatorsFactory}.
-	 */
-	static IOperatorsFactory getOperatorsFactory(Object o) {
-		if (o instanceof IHasOperatorsFactory hasOperatorsFactory) {
-			return hasOperatorsFactory.getOperatorsFactory();
-		} else {
-			return new StandardOperatorsFactory();
-		}
-	}
+	IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings);
+
+	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
+
 }

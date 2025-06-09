@@ -40,37 +40,37 @@ import lombok.Singular;
 import lombok.Value;
 
 /**
- * A decorating {@link IOperatorsFactory} with a cache-policy.
+ * A decorating {@link IOperatorFactory} with a cache-policy.
  * 
- * Typically used in early projects, where {@link IOperatorsFactory} generates a lot of Exceptions with a fall-back
+ * Typically used in early projects, where {@link IOperatorFactory} generates a lot of Exceptions with a fall-back
  * strategy.
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class CachingOperatorsFactory implements IOperatorsFactory {
+public class CachingOperatorFactory implements IOperatorFactory {
 
 	@NonNull
-	IOperatorsFactory operatorsFactory;
-
-	@NonNull
-	@Default
-	Cache<OperatorsFactoryKey, IAggregation> aggregationsCache = CacheBuilder.newBuilder().build();
+	IOperatorFactory operatorFactory;
 
 	@NonNull
 	@Default
-	Cache<OperatorsFactoryKey, ICombination> combinationsCache = CacheBuilder.newBuilder().build();
+	Cache<OperatorFactoryKey, IAggregation> aggregationsCache = CacheBuilder.newBuilder().build();
 
 	@NonNull
 	@Default
-	Cache<OperatorsFactoryKey, IDecomposition> decompositionsCache = CacheBuilder.newBuilder().build();
+	Cache<OperatorFactoryKey, ICombination> combinationsCache = CacheBuilder.newBuilder().build();
+
 	@NonNull
 	@Default
-	Cache<OperatorsFactoryKey, IFilterEditor> filterEditorsCache = CacheBuilder.newBuilder().build();
+	Cache<OperatorFactoryKey, IDecomposition> decompositionsCache = CacheBuilder.newBuilder().build();
+	@NonNull
+	@Default
+	Cache<OperatorFactoryKey, IFilterEditor> filterEditorsCache = CacheBuilder.newBuilder().build();
 
 	@Value
 	@Builder
-	static class OperatorsFactoryKey {
+	static class OperatorFactoryKey {
 		@NonNull
 		String key;
 		@NonNull
@@ -87,9 +87,9 @@ public class CachingOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
-		OperatorsFactoryKey cacheKey = OperatorsFactoryKey.builder().key(key).options(options).build();
+		OperatorFactoryKey cacheKey = OperatorFactoryKey.builder().key(key).options(options).build();
 		try {
-			return aggregationsCache.get(cacheKey, () -> operatorsFactory.makeAggregation(key, options));
+			return aggregationsCache.get(cacheKey, () -> operatorFactory.makeAggregation(key, options));
 		} catch (ExecutionException e) {
 			throw new RuntimeException("Issue making aggregation for key=%s options=%s".formatted(key, options), e);
 		}
@@ -97,9 +97,9 @@ public class CachingOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public ICombination makeCombination(String key, Map<String, ?> options) {
-		OperatorsFactoryKey cacheKey = OperatorsFactoryKey.builder().key(key).options(options).build();
+		OperatorFactoryKey cacheKey = OperatorFactoryKey.builder().key(key).options(options).build();
 		try {
-			return combinationsCache.get(cacheKey, () -> operatorsFactory.makeCombination(key, options));
+			return combinationsCache.get(cacheKey, () -> operatorFactory.makeCombination(key, options));
 		} catch (ExecutionException e) {
 			throw new RuntimeException("Issue making combination for key=%s options=%s".formatted(key, options), e);
 		}
@@ -107,9 +107,9 @@ public class CachingOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-		OperatorsFactoryKey cacheKey = OperatorsFactoryKey.builder().key(key).options(options).build();
+		OperatorFactoryKey cacheKey = OperatorFactoryKey.builder().key(key).options(options).build();
 		try {
-			return decompositionsCache.get(cacheKey, () -> operatorsFactory.makeDecomposition(key, options));
+			return decompositionsCache.get(cacheKey, () -> operatorFactory.makeDecomposition(key, options));
 		} catch (ExecutionException e) {
 			throw new RuntimeException("Issue making decomposition for key=%s options=%s".formatted(key, options), e);
 		}
@@ -117,9 +117,9 @@ public class CachingOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IFilterEditor makeEditor(String key, Map<String, ?> options) {
-		OperatorsFactoryKey cacheKey = OperatorsFactoryKey.builder().key(key).options(options).build();
+		OperatorFactoryKey cacheKey = OperatorFactoryKey.builder().key(key).options(options).build();
 		try {
-			return filterEditorsCache.get(cacheKey, () -> operatorsFactory.makeEditor(key, options));
+			return filterEditorsCache.get(cacheKey, () -> operatorFactory.makeEditor(key, options));
 		} catch (ExecutionException e) {
 			throw new RuntimeException("Issue making aggregation for key=%s options=%s".formatted(key, options), e);
 		}

@@ -99,7 +99,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		return aggregator -> {
 			IMultitypeMergeableColumn<Integer> column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-						IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+						IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
 						return makePreColumn(agg);
 					});
 

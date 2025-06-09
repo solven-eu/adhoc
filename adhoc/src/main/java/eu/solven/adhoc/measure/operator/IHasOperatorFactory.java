@@ -20,13 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.measure.operator;
 
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 
 /**
- * A {@link ICombination} which is not known by {@link StandardOperatorFactory}
+ * For classes holding an {@link IOperatorFactory}
+ * 
+ * @author Benoit Lacelle
  */
-public class CustomCombination implements ICombination {
+@FunctionalInterface
+public interface IHasOperatorFactory {
+	IOperatorFactory getOperatorFactory();
+
+	/**
+	 * 
+	 * @param o
+	 *            typically a {@link CubeQueryEngine}
+	 * @return an {@link IOperatorFactory}, a default one if the input does not implement {@link IHasOperatorFactory}.
+	 */
+	static IOperatorFactory getOperatorsFactory(Object o) {
+		if (o instanceof IHasOperatorFactory hasOperatorFactory) {
+			return hasOperatorFactory.getOperatorFactory();
+		} else {
+			return new StandardOperatorFactory();
+		}
+	}
 }

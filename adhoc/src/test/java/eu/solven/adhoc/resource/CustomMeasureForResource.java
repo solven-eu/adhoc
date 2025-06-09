@@ -31,9 +31,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
@@ -80,7 +80,7 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery) {
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery) {
 		return new EmptyTransformator();
 	}
 }

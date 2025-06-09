@@ -22,11 +22,26 @@
  */
 package eu.solven.adhoc.measure.aggregation;
 
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A {@link ICombination} which is not known by {@link StandardOperatorFactory}
- */
-public class CustomCombination implements ICombination {
+import eu.solven.adhoc.measure.sum.SumAggregation;
+
+public class TestCustomOperatorFactory {
+	CustomOperatorFactory factory = CustomOperatorFactory.builder().build();
+
+	@Test
+	public void testAggregation_custom() {
+		IAggregation aggregation = factory.makeAggregation("CUSTOM");
+
+		Assertions.assertThat(aggregation).isInstanceOf(CustomAggregation.class);
+	}
+
+	@Test
+	public void testAggregation_fallback() {
+		IAggregation aggregation = factory.makeAggregation(SumAggregation.KEY);
+
+		Assertions.assertThat(aggregation).isInstanceOf(SumAggregation.class);
+	}
+
 }

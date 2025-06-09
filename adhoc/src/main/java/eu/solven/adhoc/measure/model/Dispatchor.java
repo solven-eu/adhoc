@@ -32,11 +32,12 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -114,14 +115,14 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory operatorsFactory, CubeQueryStep adhocSubQuery) {
-		return new DispatchorQueryStep(this, operatorsFactory, adhocSubQuery);
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery) {
+		return new DispatchorQueryStep(this, factories, adhocSubQuery);
 	}
 
 	@Override
-	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
+	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
 		IDecomposition decomposition =
-				operatorsFactory.makeDecomposition(getDecompositionKey(), getDecompositionOptions());
+				operatorFactory.makeDecomposition(getDecompositionKey(), getDecompositionOptions());
 
 		if (decomposition instanceof ICompositeColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);

@@ -43,8 +43,8 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -62,12 +62,14 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	LocalDate today = LocalDate.now();
 
-	public final CubeQueryEngine engine = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final CubeQueryEngine engine =
+			editEngine().factories(makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build())
+					.build();
 	public final CubeWrapper cube = editCube().engine(engine).build();
 
-	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
+	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
-		return new StandardOperatorsFactory() {
+		return new StandardOperatorFactory() {
 			@Override
 			public ICombination makeCombination(String key, Map<String, ?> options) {
 				return switch (key) {

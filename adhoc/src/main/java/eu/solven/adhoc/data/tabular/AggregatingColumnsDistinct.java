@@ -96,7 +96,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> makePreColumn());
 
 			// TODO Could be skipped for not-object aggregate?
-			IAggregation agg = operatorsFactory.makeAggregation(aggregator.getAggregator());
+			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
 
 			if (agg instanceof IHasCarriers hasCarriers) {
 				return hasCarriers.wrap(column.append(keyIndex));

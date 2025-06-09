@@ -40,11 +40,12 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Bucketor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.foreignexchange.ForeignExchangeCombination;
@@ -66,24 +67,26 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 	LocalDate today = LocalDate.now();
 
-	public final CubeQueryEngine aqe = editEngine().operatorsFactory(makeOperatorsFactory(fxStorage)).build();
+	public final CubeQueryEngine aqe =
+			editEngine().factories(AdhocFactories.builder().operatorFactory(makeOperatorsFactory(fxStorage)).build())
+					.build();
 	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
 
-	private @NonNull IOperatorsFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
+	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
-        return new StandardOperatorsFactory() {
-            @Override
-            public ICombination makeCombination(String key, Map<String, ?> options) {
-                return switch (key) {
-                    case ForeignExchangeCombination.KEY: {
-                        yield new ForeignExchangeCombination(fxStorage);
-                    }
-                    default:
-                        yield super.makeCombination(key, options);
-                };
-            }
-        };
-    }
+		return new StandardOperatorFactory() {
+			@Override
+			public ICombination makeCombination(String key, Map<String, ?> options) {
+				return switch (key) {
+				case ForeignExchangeCombination.KEY: {
+					yield new ForeignExchangeCombination(fxStorage);
+				}
+				default:
+					yield super.makeCombination(key, options);
+				};
+			}
+		};
+	}
 
 	@Override
 	@BeforeEach

@@ -49,8 +49,8 @@ import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IHasOperatorsFactory;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -123,13 +123,13 @@ public class CubeWrapper implements ICubeWrapper {
 					ColumnMetadata.builder().name(columnName).tag("calculated").type(type).build());
 		});
 
-		IOperatorsFactory operatorsFactory = IHasOperatorsFactory.getOperatorsFactory(engine);
+		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
 		forest.getMeasures().forEach(measure -> {
 			if (measure instanceof IMayHaveColumnGenerator mayHaveColumnGenerator) {
 				try {
 
 					Optional<ICompositeColumnGenerator> optColumnGenerator =
-							mayHaveColumnGenerator.optColumnGenerator(operatorsFactory);
+							mayHaveColumnGenerator.optColumnGenerator(operatorFactory);
 
 					optColumnGenerator.ifPresent(columnGenerator -> {
 						// TODO How conflicts should be handled?
@@ -174,9 +174,9 @@ public class CubeWrapper implements ICubeWrapper {
 
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
-		IOperatorsFactory operatorsFactory = IHasOperatorsFactory.getOperatorsFactory(engine);
+		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
 
-		List<ICompositeColumnGenerator> columnGenerators = columnsManager.getGeneratedColumns(operatorsFactory,
+		List<ICompositeColumnGenerator> columnGenerators = columnsManager.getGeneratedColumns(operatorFactory,
 				forest.getMeasures(),
 				InMatcher.isIn(columnToValueMatcher.keySet()));
 

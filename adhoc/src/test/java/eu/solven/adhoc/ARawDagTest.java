@@ -32,6 +32,7 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -54,18 +55,21 @@ public abstract class ARawDagTest {
 			UnsafeMeasureForest.builder().name(this.getClass().getSimpleName()).build();
 
 	public IStopwatch makeStopwatch() {
-		// return IStopwatchFactory.guavaStopwatchFactory().createStarted();
 		return stopwatchFactory.createStarted();
 	}
 
 	public IStopwatchFactory makeStopwatchFactory() {
 		return new StopWatchTestFactory();
-		// return IStopwatchFactory.guavaStopwatchFactory().createStarted();
 	}
 
 	public final IStopwatchFactory stopwatchFactory = makeStopwatchFactory();
+
+	public AdhocFactories makeFactories() {
+		return AdhocFactories.builder().stopwatchFactory(stopwatchFactory).build();
+	}
+
 	public final CubeQueryEngine engine =
-			CubeQueryEngine.builder().eventBus(eventBus::post).stopwatchFactory(stopwatchFactory).build();
+			CubeQueryEngine.builder().eventBus(eventBus::post).factories(makeFactories()).build();
 
 	public abstract ITableWrapper makeTable();
 
@@ -95,14 +99,14 @@ public abstract class ARawDagTest {
 	}
 
 	/**
-	 * Typically used to edit the operatorsFactory
+	 * Typically used to edit the operatorFactory
 	 */
 	public CubeQueryEngine.CubeQueryEngineBuilder editEngine() {
 		return engine.toBuilder();
 	}
 
 	/**
-	 * Typically used to edit the operatorsFactory
+	 * Typically used to edit the operatorFactory
 	 */
 	public CubeWrapperBuilder editCube() {
 		return ((CubeWrapper) cubeSupplier.get()).toBuilder();

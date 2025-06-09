@@ -20,18 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.measure;
+package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.util.IStopwatchFactory;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * Extends {@link StandardOperatorsFactory} with Atoti additional operators.
+ * Centralize the basic factories used through Adhoc.
+ * 
+ * @author Benoit Lacelle
  */
-@Slf4j
-@RequiredArgsConstructor
-@Deprecated(since = "May be useless if not Atoti operators is specific enough")
-public class AtotiOperatorsFactory extends StandardOperatorsFactory {
+@Value
+@Builder(toBuilder = true)
+public class AdhocFactories {
+	@NonNull
+	@Default
+	IOperatorFactory operatorFactory = new StandardOperatorFactory();
 
+	@NonNull
+	@Default
+	IColumnFactory columnsFactory = StandardColumnFactory.builder().build();
+
+	@NonNull
+	@Default
+	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 }

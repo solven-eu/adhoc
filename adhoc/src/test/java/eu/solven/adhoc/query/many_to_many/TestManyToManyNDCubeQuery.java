@@ -38,6 +38,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToManyNDDefinition;
@@ -45,8 +46,8 @@ import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToManyNDInMemoryDefinition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -56,13 +57,14 @@ public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestCon
 
 	ManyToManyNDInMemoryDefinition manyToManyDefinition = new ManyToManyNDInMemoryDefinition();
 
-	public final CubeQueryEngine engine =
-			editEngine().operatorsFactory(makeOperatorsFactory(manyToManyDefinition)).build();
+	public final CubeQueryEngine engine = editEngine()
+			.factories(AdhocFactories.builder().operatorFactory(makeOperatorsFactory(manyToManyDefinition)).build())
+			.build();
 	public final CubeWrapper cube = editCube().engine(engine).build();
 
-	IOperatorsFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
+	IOperatorFactory makeOperatorsFactory(IManyToManyNDDefinition manyToManyDefinition) {
 
-		return new StandardOperatorsFactory() {
+		return new StandardOperatorFactory() {
 			@Override
 			public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
 				if (ManyToMany1DDecomposition.KEY.equals(key)

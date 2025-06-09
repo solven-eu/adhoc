@@ -46,8 +46,8 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.tabular.primitives.Object2DoubleBiConsumer;
 import eu.solven.adhoc.data.tabular.primitives.Object2IntBiConsumer;
 import eu.solven.adhoc.data.tabular.primitives.Object2LongBiConsumer;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
@@ -73,7 +73,7 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 
 	@NonNull
 	@Default
-	IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	IOperatorFactory operatorFactory = new StandardOperatorFactory();
 
 	protected abstract int dictionarize(T key);
 

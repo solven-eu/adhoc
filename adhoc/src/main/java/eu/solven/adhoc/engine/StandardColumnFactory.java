@@ -20,41 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.engine;
 
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.decomposition.IDecomposition;
-import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyNavigableElseHash;
+import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
+import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
- * A {@link IDecomposition} which is not known by {@link StandardOperatorFactory}
+ * Default implementation for {@link IColumnFactory}.
+ * 
+ * @author Benoit Lacelle
  */
-public class CustomDecomposition implements IDecomposition {
+@Builder
+public class StandardColumnFactory implements IColumnFactory {
+	@NonNull
+	@Default
+	private final IDagBottomUpStrategy bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();
+
 	@Override
-	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		return List.of();
+	public IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
+		return bottomUpStrategy.makeStorage();
 	}
 
 	@Override
-	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		return List.of();
-	}
-
-	@Override
-	public Map<String, Class<?>> getColumnTypes() {
-		return Map.of();
-	}
-
-	@Override
-	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		return CoordinatesSample.empty();
+	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
+		return bottomUpStrategy.distinctSlices(step, underlyings);
 	}
 }

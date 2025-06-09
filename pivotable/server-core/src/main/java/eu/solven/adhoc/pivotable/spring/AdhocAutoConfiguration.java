@@ -27,10 +27,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.engine.StandardColumnFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
@@ -65,9 +68,15 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(IOperatorsFactory.class)
-	public IOperatorsFactory adhocOperatorsFactory() {
-		return new StandardOperatorsFactory();
+	@ConditionalOnMissingBean(IOperatorFactory.class)
+	public IOperatorFactory adhocOperatorsFactory() {
+		return new StandardOperatorFactory();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(IColumnFactory.class)
+	public IColumnFactory columnsFactory() {
+		return StandardColumnFactory.builder().build();
 	}
 
 	@Bean
@@ -77,14 +86,20 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(ICubeQueryEngine.class)
-	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus,
-			IOperatorsFactory operatorsFactory,
+	@ConditionalOnMissingBean(AdhocFactories.class)
+	public AdhocFactories adhocFactories(IOperatorFactory operatorFactory,
+			IColumnFactory columnsFactory,
 			IStopwatchFactory stopwatchFactory) {
-		return CubeQueryEngine.builder()
-				.eventBus(eventBus)
-				.operatorsFactory(operatorsFactory)
+		return AdhocFactories.builder()
+				.operatorFactory(operatorFactory)
+				.columnsFactory(columnsFactory)
 				.stopwatchFactory(stopwatchFactory)
 				.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(ICubeQueryEngine.class)
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, AdhocFactories adhocFactories) {
+		return CubeQueryEngine.builder().eventBus(eventBus).factories(adhocFactories).build();
 	}
 }

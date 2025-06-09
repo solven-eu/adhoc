@@ -36,6 +36,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.map.AdhocMap;
@@ -45,7 +46,6 @@ import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.AdhocDebug;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +68,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
 	final Dispatchor dispatchor;
-	final IOperatorsFactory operatorsFactory;
+	@Getter(AccessLevel.PROTECTED)
+	final AdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -94,8 +96,8 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 	}
 
 	protected IDecomposition makeDecomposition() {
-		return operatorsFactory.makeDecomposition(dispatchor.getDecompositionKey(),
-				dispatchor.getDecompositionOptions());
+		return factories.getOperatorFactory()
+				.makeDecomposition(dispatchor.getDecompositionKey(), dispatchor.getDecompositionOptions());
 	}
 
 	@Override
@@ -112,7 +114,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			throw new IllegalArgumentException("A dispatchor expects a single underlying");
 		}
 
-		IAggregation agg = operatorsFactory.makeAggregation(dispatchor.getAggregationKey());
+		IAggregation agg = factories.getOperatorFactory().makeAggregation(dispatchor.getAggregationKey());
 
 		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
 

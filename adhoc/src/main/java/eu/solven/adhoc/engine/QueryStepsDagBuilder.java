@@ -39,7 +39,6 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -54,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
-	final IOperatorsFactory operatorsFactory;
+	final AdhocFactories factories;
 	final String table;
 	final ICubeQuery query;
 
@@ -72,8 +71,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	// Holds the querySteps which underlying steps are processed
 	final Set<CubeQueryStep> processed = new HashSet<>();
 
-	public QueryStepsDagBuilder(IOperatorsFactory operatorsFactory, String cube, ICubeQuery query) {
-		this.operatorsFactory = operatorsFactory;
+	public QueryStepsDagBuilder(AdhocFactories factories, String cube, ICubeQuery query) {
+		this.factories = factories;
 		this.table = cube;
 		this.query = query;
 	}
@@ -192,7 +191,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformatorQueryStep wrappedQueryStep = measureWithUnderlyings.wrapNode(operatorsFactory, queryStep);
+				ITransformatorQueryStep wrappedQueryStep = measureWithUnderlyings.wrapNode(factories, queryStep);
 
 				List<CubeQueryStep> underlyingSteps;
 				try {

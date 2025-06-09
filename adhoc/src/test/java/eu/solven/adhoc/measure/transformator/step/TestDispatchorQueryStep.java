@@ -28,9 +28,9 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 
@@ -38,7 +38,7 @@ public class TestDispatchorQueryStep {
 	private boolean isRelevant(Map<String, String> decompositionSLice, IAdhocFilter stepFilter) {
 		Dispatchor d = Dispatchor.builder().name("d").underlying("u").build();
 		CubeQueryStep cubeStep = CubeQueryStep.builder().measure("d").filter(stepFilter).build();
-		DispatchorQueryStep step = new DispatchorQueryStep(d, new StandardOperatorsFactory(), cubeStep);
+		DispatchorQueryStep step = new DispatchorQueryStep(d, AdhocFactories.builder().build(), cubeStep);
 
 		return step.isRelevant(decompositionSLice);
 	}

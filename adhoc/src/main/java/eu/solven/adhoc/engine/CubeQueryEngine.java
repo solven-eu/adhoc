@@ -62,16 +62,14 @@ import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IHasOperatorsFactory;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
-import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -86,7 +84,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
+public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
 	// This shall not conflict with any user measure
@@ -94,8 +92,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 	@NonNull
 	@Default
-	@Getter
-	final IOperatorsFactory operatorsFactory = new StandardOperatorsFactory();
+	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
@@ -103,18 +100,19 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	@Getter
 	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
 
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
-
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName() + "=" + engineId;
 	}
 
 	@Override
+	public IOperatorFactory getOperatorFactory() {
+		return factories.getOperatorFactory();
+	}
+
+	@Override
 	public ITabularView execute(QueryPod queryPod) {
-		IStopwatch stopWatch = stopwatchFactory.createStarted();
+		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 		boolean postedAboutDone = false;
 		try {
 			postAboutQueryStart(queryPod);
@@ -259,7 +257,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	}
 
 	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
-		return new QueryStepsDagBuilder(operatorsFactory, queryPod.getTable().getName(), queryPod.getQuery());
+		return new QueryStepsDagBuilder(factories, queryPod.getTable().getName(), queryPod.getQuery());
 	}
 
 	protected ITabularView executeDag(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -291,11 +289,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 	}
 
 	protected TableQueryEngine makeTableQueryEngine() {
-		return TableQueryEngine.builder()
-				.eventBus(eventBus)
-				.operatorsFactory(operatorsFactory)
-				.stopwatchFactory(stopwatchFactory)
-				.build();
+		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 
 	/**
@@ -352,7 +346,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 
 					List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 
-					IStopwatch stepWatch = stopwatchFactory.createStarted();
+					IStopwatch stepWatch = factories.getStopwatchFactory().createStarted();
 
 					Optional<ISliceToValue> optOutputColumn =
 							processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
@@ -404,8 +398,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 			}).toList();
 
 			// BEWARE It looks weird we have to call again `.wrapNode`
-			ITransformatorQueryStep transformatorQuerySteps =
-					hasUnderlyingMeasures.wrapNode(operatorsFactory, queryStep);
+			ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
 
 			ISliceToValue coordinatesToValues;
 			try {
@@ -474,7 +467,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorsFactory {
 						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
 
 				boolean hasCarrierMeasure = step.getMeasure() instanceof Aggregator agg
-						&& operatorsFactory.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
+						&& factories.getOperatorFactory()
+								.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
 				IColumnScanner<SliceAsMap> baseRowScanner =

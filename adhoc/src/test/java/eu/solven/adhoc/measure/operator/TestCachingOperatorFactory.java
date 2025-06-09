@@ -36,9 +36,9 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 
-public class TestCachingOperatorsFactory {
-	IOperatorsFactory notCaching = Mockito.mock(IOperatorsFactory.class);
-	CachingOperatorsFactory caching = CachingOperatorsFactory.builder().operatorsFactory(notCaching).build();
+public class TestCachingOperatorFactory {
+	IOperatorFactory notCaching = Mockito.mock(IOperatorFactory.class);
+	CachingOperatorFactory caching = CachingOperatorFactory.builder().operatorFactory(notCaching).build();
 
 	@Test
 	public void testMakeAggregation() {

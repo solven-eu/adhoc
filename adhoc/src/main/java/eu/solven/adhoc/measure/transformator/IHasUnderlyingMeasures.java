@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
@@ -34,5 +34,5 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
  */
 public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
 
-	ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep adhocSubQuery);
+	ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep adhocSubQuery);
 }

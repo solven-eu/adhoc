@@ -34,9 +34,10 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
@@ -127,16 +128,16 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(IOperatorsFactory transformationFactory, CubeQueryStep step) {
+	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
 		if (!getName().equals(step.getMeasure().getName())) {
 			throw new IllegalArgumentException("Conflict %s != %s".formatted(getName(), step.getMeasure().getName()));
 		}
-		return new CombinatorQueryStep(this, transformationFactory, step);
+		return new CombinatorQueryStep(this, factories, step);
 	}
 
 	@Override
-	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorsFactory operatorsFactory) {
-		ICombination combination = operatorsFactory.makeCombination(this);
+	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
+		ICombination combination = operatorFactory.makeCombination(this);
 
 		if (combination instanceof ICompositeColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);

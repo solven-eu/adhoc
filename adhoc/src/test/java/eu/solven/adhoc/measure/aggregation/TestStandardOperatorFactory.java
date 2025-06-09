@@ -28,13 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.StandardOperatorsFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-public class TestStandardOperatorsFactory {
-	StandardOperatorsFactory factory = new StandardOperatorsFactory();
+public class TestStandardOperatorFactory {
+	StandardOperatorFactory factory = new StandardOperatorFactory();
 
 	@Test
 	public void testAggregation_byKey() {
@@ -69,7 +69,7 @@ public class TestStandardOperatorsFactory {
 
 		Assertions.assertThat(combination).isInstanceOfSatisfying(WithOptionsCombination.class, withOptions -> {
 			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("k", "v");
-			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("operatorsFactory", factory);
+			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("operatorFactory", factory);
 		});
 	}
 }

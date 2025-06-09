@@ -57,13 +57,13 @@ import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A default {@link IOperatorsFactory} wrapping core {@link IAggregation}, {@link ICombination}, {@link IDecomposition}
+ * A default {@link IOperatorFactory} wrapping core {@link IAggregation}, {@link ICombination}, {@link IDecomposition}
  * and {@link IFilterEditor}.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class StandardOperatorsFactory implements IOperatorsFactory {
+public class StandardOperatorFactory implements IOperatorFactory {
 
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
@@ -141,7 +141,7 @@ public class StandardOperatorsFactory implements IOperatorsFactory {
 		Map<String, Object> enriched = new LinkedHashMap<>(options);
 
 		// Some operators needs to create more operators (e.g. ReversePolishCombination)
-		enriched.put("operatorsFactory", this);
+		enriched.put("operatorFactory", this);
 
 		return enriched;
 	}

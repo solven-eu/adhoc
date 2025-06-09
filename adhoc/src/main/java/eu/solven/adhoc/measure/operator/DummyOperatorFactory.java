@@ -36,14 +36,14 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * An {@link IOperatorsFactory} which always return the same dummy. Useful for early projects with a predefined
+ * An {@link IOperatorFactory} which always return the same dummy. Useful for early projects with a predefined
  * {@link eu.solven.adhoc.measure.IMeasureForest}.
  * 
  * @author Benoit Lacelle
  */
 @Builder
 @Slf4j
-public class DummyOperatorsFactory implements IOperatorsFactory {
+public class DummyOperatorFactory implements IOperatorFactory {
 	@NonNull
 	@Builder.Default
 	IAggregation dummyAggregation = new SumAggregation();

@@ -37,25 +37,21 @@ import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A decorating {@link IOperatorsFactory} with a cache-policy.
+ * A decorating {@link IOperatorFactory} with a cache-policy.
  * 
- * Typically used in early projects, where {@link IOperatorsFactory} generates a lot of Exceptions with a fall-back
+ * Typically used in early projects, where {@link IOperatorFactory} generates a lot of Exceptions with a fall-back
  * strategy.
  * 
  * @author Benoit Lacelle
  */
 @Builder
 @Slf4j
-public class CompositeOperatorsFactory implements IOperatorsFactory {
+public class CompositeOperatorFactory implements IOperatorFactory {
 	@NonNull
 	@Singular
-	ImmutableList<IOperatorsFactory> operatorsFactories;
+	ImmutableList<IOperatorFactory> operatorFactories;
 
-	protected void logOnException(String method,
-			String key,
-			Map<String, ?> options,
-			IOperatorsFactory of,
-			Throwable t) {
+	protected void logOnException(String method, String key, Map<String, ?> options, IOperatorFactory of, Throwable t) {
 		if (log.isDebugEnabled()) {
 			log.warn("Issue with {} with key={} options={} on operatorFactory={}", method, key, options, of, t);
 		} else {
@@ -70,7 +66,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
-		return operatorsFactories.stream().map(of -> {
+		return operatorFactories.stream().map(of -> {
 			try {
 				return Optional.of(of.makeAggregation(key, options));
 			} catch (RuntimeException e) {
@@ -87,7 +83,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public ICombination makeCombination(String key, Map<String, ?> options) {
-		return operatorsFactories.stream().map(of -> {
+		return operatorFactories.stream().map(of -> {
 			try {
 				return Optional.of(of.makeCombination(key, options));
 			} catch (RuntimeException e) {
@@ -104,7 +100,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
-		return operatorsFactories.stream().map(of -> {
+		return operatorFactories.stream().map(of -> {
 			try {
 				return Optional.of(of.makeDecomposition(key, options));
 			} catch (RuntimeException e) {
@@ -121,7 +117,7 @@ public class CompositeOperatorsFactory implements IOperatorsFactory {
 
 	@Override
 	public IFilterEditor makeEditor(String key, Map<String, ?> options) {
-		return operatorsFactories.stream().map(of -> {
+		return operatorFactories.stream().map(of -> {
 			try {
 				return Optional.of(of.makeEditor(key, options));
 			} catch (RuntimeException e) {

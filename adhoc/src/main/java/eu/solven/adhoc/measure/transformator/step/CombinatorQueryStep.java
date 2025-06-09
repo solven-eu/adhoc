@@ -35,18 +35,19 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.operator.IOperatorsFactory;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,14 +61,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CombinatorQueryStep extends ATransformatorQueryStep {
 	final ICombinator combinator;
-	final IOperatorsFactory operatorsFactory;
+	@Getter(AccessLevel.PROTECTED)
+	final AdhocFactories factories;
+
 	@Getter
 	final CubeQueryStep step;
 
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
 	protected ICombination makeCombination() {
-		return operatorsFactory.makeCombination(combinator);
+		return factories.getOperatorFactory().makeCombination(combinator);
 	}
 
 	public List<String> getUnderlyingNames() {
@@ -115,7 +118,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> storage = factories.getColumnsFactory().makeColumn(underlyings);
 
 		forEachDistinctSlice(underlyings, combination, storage::append);
 
