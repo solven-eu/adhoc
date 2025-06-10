@@ -173,7 +173,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select 1 from "someTableName" group by ()
+				select count(1) from "someTableName" group by ()
 				""".trim());
 	}
 

@@ -329,11 +329,14 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onBasicPostProcessor(IPostProcessorDescription measure) {
-		return onCombinator(measure, getUnderlyingNames(measure), Function.identity());
+		return onCombinator(measure, getUnderlyingNames(measure), b -> {
+
+		}, Function.identity());
 	}
 
 	protected List<IMeasure> onCombinator(IPostProcessorDescription measure,
 			List<String> underlyingNames,
+			Consumer<Combinator.CombinatorBuilder> onBuilder,
 			Function<Map<String, Object>, Map<String, Object>> onOptions) {
 		Combinator.CombinatorBuilder combinatorBuilder = Combinator.builder().name(measure.getName());
 		transferTagProperties(measure, combinatorBuilder::tag);
@@ -356,6 +359,8 @@ public class AtotiMeasureToAdhoc {
 
 		combinatorBuilder.combinationKey(measure.getPluginKey());
 		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
+
+		onBuilder.accept(combinatorBuilder);
 
 		return List.of(combinatorBuilder.build());
 	}
@@ -504,7 +509,9 @@ public class AtotiMeasureToAdhoc {
 
 		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(notation));
 
-		List<IMeasure> combinator = onCombinator(measure, underlyingNames, options -> {
+		List<IMeasure> combinator = onCombinator(measure, underlyingNames, b -> {
+			b.combinationKey(ReversePolishCombination.class.getName());
+		}, options -> {
 			options.remove(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
 			options.put(ReversePolishCombination.K_NOTATION, notation);
 

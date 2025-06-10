@@ -109,7 +109,8 @@ export default {
 		function computeMarkdown() {
 			let markdown = [];
 
-			markdown.push("flowchart TD");
+			// `LR` will have better rendering on measure with many dependents, as long measure will not prevent each measure to have a fixed height
+			markdown.push("flowchart LR");
 
 			// From measure name to some mermaid friendly id
 			const nameToId = {};
@@ -183,11 +184,11 @@ export default {
 	},
 	template: /* HTML */ `
         <!-- Modal -->
-        <div class="modal fade" id="measureDag" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade" id="measureDag" tabindex="-1" aria-labelledby="measuresDagModalLabel" aria-hidden="true">
             <div class="modal-dialog  modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Measure Info</h5>
+                        <h5 class="modal-title" id="measuresDagModalLabel">Measure Info</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">

@@ -48,10 +48,13 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -172,7 +175,18 @@ public class ColumnsManager implements IColumnsManager {
 		}
 
 		ITableWrapper table = queryPod.getTable();
-		ITabularRecordStream tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
+		ITabularRecordStream tabularRecordStream;
+
+		try {
+			tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
+		} catch (RuntimeException e) {
+			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+				tabularRecordStream = AdhocExceptionAsMeasureValueHelper.makeErrorStream(transcodedQuery, e);
+			} else {
+				String msgE = "Issue opening stream from %s for query=%s".formatted(table, transcodedQuery);
+				throw AdhocExceptionHelpers.wrap(e, msgE);
+			}
+		}
 
 		return transcodeRows(transcodingContext, tabularRecordStream);
 	}

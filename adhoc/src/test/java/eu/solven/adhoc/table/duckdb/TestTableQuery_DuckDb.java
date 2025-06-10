@@ -91,7 +91,10 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 
 	@Test
 	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList())
+				.isInstanceOf(DataAccessException.class)
+				.hasStackTraceContaining(
+						"Caused by: java.sql.SQLException: Catalog Error: Table with name someTableName does not exist!");
 	}
 
 	@Test
@@ -119,11 +122,29 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
 
-		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList()).isInstanceOf(DataAccessException.class);
+		Assertions.assertThatThrownBy(() -> table.streamSlices(qK1).toList())
+				.isInstanceOf(DataAccessException.class)
+				.hasStackTraceContaining("java.sql.SQLException: Binder Error:"
+						+ " No function matches the given name and argument types 'sum(VARCHAR)'."
+						+ " You might need to add explicit type casts");
 	}
 
 	@Test
-	public void testReturn_nullableamb() {
+	public void test_GroupByUnknown() {
+		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> table.streamSlices(qK1.toBuilder().groupBy(GroupByColumns.named("unknownColumn")).build())
+								.toList())
+				.isInstanceOf(DataAccessException.class)
+				.hasStackTraceContaining("Caused by: java.sql.SQLException: "
+						+ "Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!");
+	}
+
+	@Test
+	public void testReturn_nullable() {
 		dsl.createTableIfNotExists(tableName)
 				.column("k1", SQLDataType.DOUBLE)
 				.column("k2", SQLDataType.DOUBLE)
@@ -135,6 +156,23 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		List<Map<String, ?>> tableStream = table.streamSlices(qK1).toList();
 
 		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
+	}
+
+	// Hits an edge as `select 1 from "someTableName" group by ALL` does NOT group by in DuckDB.
+	@Test
+	public void testReturn_grandTotalEmptyMeasure() {
+		dsl.createTableIfNotExists(tableName)
+				.column("k1", SQLDataType.DOUBLE)
+				.column("k2", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
+
+		List<Map<String, ?>> tableStream =
+				table.streamSlices(TableQuery.builder().aggregators(Set.of(Aggregator.empty())).build()).toList();
+
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of());
 	}
 
 	@Test
@@ -228,7 +266,22 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 	}
 
 	@Test
-	public void testWholeQuery() {
+	public void testWholeQuery_noMeasure() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsEntry(Map.of(), Map.of());
+	}
+
+	@Test
+	public void testWholeQuery_sumK1() {
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
@@ -452,7 +505,7 @@ public class TestTableQuery_DuckDb extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(countAsterisk);
 
 		{
-			CubeQuery query = CubeQuery.builder().measure(countAsterisk).explain(true).build();
+			CubeQuery query = CubeQuery.builder().measure(countAsterisk).build();
 
 			ITabularView result = wrapInCube(forest).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);

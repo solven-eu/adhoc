@@ -42,6 +42,7 @@ import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -99,8 +100,15 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
-			String msgE = "Issue processing stream from %s".formatted(stream);
-			throw AdhocExceptionHelpers.wrap(e, msgE);
+			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+				NavigableSet<String> groupedByColumns = tableQuery.getGroupBy().getGroupedByColumns();
+				SliceAsMap errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
+
+				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
+			} else {
+				String msgE = "Issue processing stream from %s".formatted(stream);
+				throw AdhocExceptionHelpers.wrap(e, msgE);
+			}
 		}
 
 		return grid;

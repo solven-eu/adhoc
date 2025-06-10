@@ -109,7 +109,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 
 	@Override
 	public void checkSanity() {
-		// TODO Throw early if the formula is invalid
+		// TODO Throw early if the notation is invalid
 	}
 
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
@@ -219,7 +219,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	}
 
 	protected Object onOperator(ISliceWithStep slice, List<Object> pendingOperands, String s) {
-		// TODO We may also accept any IAggregation
+		// TODO We may also accept any IAggregation, through AggregationCombination
 		ICombination combination = getCombination(s);
 
 		List<Object> operands;
