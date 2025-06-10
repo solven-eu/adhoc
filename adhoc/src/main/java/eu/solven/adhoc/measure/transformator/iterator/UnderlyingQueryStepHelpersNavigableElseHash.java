@@ -37,7 +37,7 @@ import com.google.common.primitives.Booleans;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

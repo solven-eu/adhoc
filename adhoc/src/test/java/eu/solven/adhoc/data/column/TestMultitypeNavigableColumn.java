@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

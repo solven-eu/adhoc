@@ -441,3 +441,5 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
 - [Feature] Improve connection pooling in JooQ examples.
 - [Feature] Introduce a `IMultitypeColumnFastGet` handling in `navigable` chunk as much as possible, and keeping not-sorted into a `hash`.
+- [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
+- [Debt] Rename `Bucketor` into `Partitionor`

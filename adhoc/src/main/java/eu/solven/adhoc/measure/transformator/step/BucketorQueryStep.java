@@ -33,7 +33,6 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -96,7 +95,7 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
+		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
 
@@ -105,8 +104,8 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 		return SliceToValue.builder().column(aggregatingView).build();
 	}
 
-	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeNavigableMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings) {
+		return factories.getColumnsFactory().makeColumn(agg, underlyings);
 	}
 
 	@Override

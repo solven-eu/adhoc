@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.column;
 
 import java.util.Map;
 
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

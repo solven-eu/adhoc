@@ -20,19 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.navigable_else_hash;
 
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.StreamStrategy;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -42,8 +50,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  * @see UnderlyingQueryStepHelpersNavigableElseHash
  */
-@Deprecated(since = "Not-ready")
-@Builder
+@SuperBuilder
 @Slf4j
 public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T> {
 	@Default

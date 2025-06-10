@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
  * This {@link IDagBottomUpStrategy} relies exclusively on {@link MultitypeHashColumn}. It never tries to sort the
@@ -40,8 +43,13 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 public class DagBottomUpStrategyHash implements IDagBottomUpStrategy {
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
 		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	}
+
+	@Override
+	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
+		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
 	@Override

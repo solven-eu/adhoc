@@ -35,8 +35,8 @@ import java.util.stream.StreamSupport;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

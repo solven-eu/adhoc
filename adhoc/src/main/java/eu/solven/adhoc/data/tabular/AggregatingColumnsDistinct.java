@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.array.MultitypeArrayColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;

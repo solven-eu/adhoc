@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
