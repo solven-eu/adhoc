@@ -31,6 +31,7 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.MultitypeArray.MultitypeArrayBuilder;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleImmutableList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;

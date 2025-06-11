@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.navigable;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -42,6 +42,14 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.IIsSorted;
+import eu.solven.adhoc.data.column.IMultitypeArray;
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.MultitypeArray;
+import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.util.AdhocUnsafe;

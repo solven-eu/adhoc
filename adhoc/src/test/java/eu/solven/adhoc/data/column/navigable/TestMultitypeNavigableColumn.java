@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.navigable;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
@@ -34,6 +34,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
+import eu.solven.adhoc.data.column.MultitypeColumnHelpers;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import lombok.extern.slf4j.Slf4j;
 

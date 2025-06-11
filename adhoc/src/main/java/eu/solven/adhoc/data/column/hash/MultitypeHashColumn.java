@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.hash;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +33,10 @@ import com.google.common.collect.Streams;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -95,18 +99,23 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
-			if (measureToAggregateL instanceof Object2LongOpenHashMap openHashMap) {
+			if (measureToAggregateL instanceof Object2LongOpenHashMap<?> openHashMap) {
 				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-			if (measureToAggregateD instanceof Object2DoubleOpenHashMap openHashMap) {
+			if (measureToAggregateD instanceof Object2DoubleOpenHashMap<?> openHashMap) {
 				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
-			if (measureToAggregateO instanceof Object2ObjectOpenHashMap openHashMap) {
+			if (measureToAggregateO instanceof Object2ObjectOpenHashMap<?, ?> openHashMap) {
 				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
 			}
 		}
+	}
+
+	protected boolean containsKey(T key) {
+		return measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
+				|| measureToAggregateO.containsKey(key);
 	}
 
 	/**
@@ -117,8 +126,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		if (measureToAggregateL.containsKey(key) || measureToAggregateD.containsKey(key)
-				|| measureToAggregateO.containsKey(key)) {
+		if (containsKey(key)) {
 			return merge(key);
 		}
 

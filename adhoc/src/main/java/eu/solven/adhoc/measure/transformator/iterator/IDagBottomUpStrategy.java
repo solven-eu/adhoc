@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
@@ -43,7 +45,9 @@ public interface IDagBottomUpStrategy {
 	 * 
 	 * @return the storage for a {@link ITransformatorQueryStep} output.
 	 */
-	IMultitypeColumnFastGet<SliceAsMap> makeStorage();
+	IMultitypeColumnFastGet<SliceAsMap> makeColumn();
+
+	IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg);
 
 	/**
 	 * 
@@ -53,5 +57,4 @@ public interface IDagBottomUpStrategy {
 	 *         {@link SliceAsMap}, and the relevant value from underlyings.
 	 */
 	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
-
 }

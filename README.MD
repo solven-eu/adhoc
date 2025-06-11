@@ -443,3 +443,5 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
 - [Feature] Record statistics about used measures in storage, for easier re-use.
 - [Feature] Ability in `GroupBy` to add an `ALL` coordinate, referring to the grandTotal. It would help emulating pivot-tables.
+- [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
+- [Debt] Rename `Bucketor` into `Partitionor`
