@@ -4,12 +4,12 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.8-SNAPSHOT</version>
+		<version>0.0.8</version>
 	</parent>
-	<!-- `name` is required by Sonatype-->
-	<name>${project.groupId}:${project.artifactId}</name>
 
 	<artifactId>adhoc-atoti</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<activepivot.server.version>5.11.16</activepivot.server.version>
