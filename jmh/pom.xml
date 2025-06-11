@@ -6,7 +6,10 @@
 		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.9-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>adhoc-jmh</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<jmh.version>1.37</jmh.version>

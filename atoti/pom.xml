@@ -8,6 +8,8 @@
 	</parent>
 
 	<artifactId>adhoc-atoti</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<activepivot.server.version>5.11.16</activepivot.server.version>

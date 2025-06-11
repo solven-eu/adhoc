@@ -6,7 +6,10 @@
 		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.9-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>adhoc-spring</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<cucumber.version>7.14.0</cucumber.version>

@@ -6,7 +6,10 @@
 		<artifactId>pivotable</artifactId>
 		<version>0.0.9-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>pivotable-tools</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Technical tools</description>
 
 	<properties>

@@ -6,7 +6,10 @@
 		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.9-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>adhoc-experimental</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>

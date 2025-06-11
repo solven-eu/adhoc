@@ -6,7 +6,10 @@
 		<artifactId>pivotable</artifactId>
 		<version>0.0.9-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>pivotable-js</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 	<description>JavaScript/SPA static resources</description>
 
 	<build>

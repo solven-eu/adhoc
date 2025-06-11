@@ -8,6 +8,8 @@
 	</parent>
 
 	<artifactId>pivotable-authorization</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Manage access_token and refresh_token</description>
 
 	<properties>
