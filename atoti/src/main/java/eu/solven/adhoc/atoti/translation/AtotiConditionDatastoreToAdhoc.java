@@ -40,6 +40,8 @@ import lombok.extern.slf4j.Slf4j;
  * Works with {@link com.qfs.condition.ICondition} but not {@link com.quartetfs.fwk.filtering.ICondition}.
  *
  * Typically used for store filtering.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class AtotiConditionDatastoreToAdhoc {
@@ -63,11 +65,9 @@ public class AtotiConditionDatastoreToAdhoc {
 					return ColumnFilter.isMatching(constantCondition.getFields()[0], RegexMatcher.compile(regex));
 
 				} else if (implementationCode == ImplementationCode.AND) {
-					return AndFilter
-							.and(Stream.of(subConditions).map(subCondition -> convertToAdhoc(subCondition)).toList());
+					return AndFilter.and(Stream.of(subConditions).map(this::convertToAdhoc).toList());
 				} else if (implementationCode == ImplementationCode.OR) {
-					return OrFilter
-							.or(Stream.of(subConditions).map(subCondition -> convertToAdhoc(subCondition)).toList());
+					return OrFilter.or(Stream.of(subConditions).map(this::convertToAdhoc).toList());
 				} else if (implementationCode == ImplementationCode.TRUE) {
 					return IAdhocFilter.MATCH_ALL;
 				} else if (implementationCode == ImplementationCode.FALSE) {

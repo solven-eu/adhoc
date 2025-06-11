@@ -133,10 +133,12 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 		return l.getCoordinate(getHierarchyIndex(column), getLevelIndex(column));
 	}
 
+	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	protected int getLevelIndex(String column) {
 		return 0;
 	}
 
+	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
 	protected int getHierarchyIndex(String column) {
 		return 0;
 	}
@@ -173,7 +175,7 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 					Stream.of("%s@%s".formatted(l.getName(), h.getName()), "%s".formatted(l.getName()))
 							// Register a simpler alias if it is not ambiguous
 							.filter(s -> nameToCount.get(s) == 1)
-							.forEach(alias -> columnBuilder.alias(alias));
+							.forEach(columnBuilder::alias);
 
 					ColumnMetadata column = columnBuilder.build();
 					columns.add(column);

@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).
  * But this is not specific to querying ActivePivot as an Adhoc Database.
+ * 
+ * @author Benoit Lacelle
  */
 @Builder
 @Slf4j

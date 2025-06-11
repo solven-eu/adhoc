@@ -22,18 +22,11 @@
  */
 package eu.solven.adhoc.atoti.table;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
-import com.google.common.util.concurrent.AtomicLongMap;
 import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.fwk.query.IQueryable;
 
-import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Getter;
@@ -63,49 +56,5 @@ public class AdhocAtotiTable extends AAdhocAtotiTable {
 	@Override
 	protected IQueryable inferQueryable() {
 		return inferPivotId();
-	}
-
-	@Override
-	public List<ColumnMetadata> getColumns() {
-		List<ColumnMetadata> columns = new ArrayList<>();
-
-		AtomicLongMap<String> nameToCount = AtomicLongMap.create();
-
-		inferPivotId().getDimensions().forEach(d -> {
-			d.getHierarchies().forEach(h -> {
-				h.getLevels().forEach(l -> {
-					nameToCount.incrementAndGet("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
-					nameToCount.incrementAndGet("%s@%s".formatted(l.getName(), h.getName()));
-					nameToCount.incrementAndGet("%s".formatted(l.getName()));
-				});
-			});
-		});
-
-		inferPivotId().getDimensions().forEach(d -> {
-			d.getHierarchies().forEach(h -> {
-				h.getLevels().forEach(l -> {
-					ColumnMetadataBuilder columnBuilder =
-							ColumnMetadata.builder().name("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
-
-					columnBuilder.tag("d=" + d.getName());
-					columnBuilder.tag("h=" + h.getName());
-
-					Stream.of("%s@%s".formatted(l.getName(), h.getName()), "%s".formatted(l.getName()))
-							// Register a simpler alias if it is not ambiguous
-							.filter(s -> nameToCount.get(s) == 1)
-							.forEach(alias -> columnBuilder.alias(alias));
-
-					ColumnMetadata column = columnBuilder.build();
-					columns.add(column);
-				});
-			});
-		});
-
-		return columns;
-	}
-
-	@Override
-	public String getName() {
-		return pivotId;
 	}
 }

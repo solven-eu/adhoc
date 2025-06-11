@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Extends {@link StandardOperatorFactory} with Atoti additional operators.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 @RequiredArgsConstructor

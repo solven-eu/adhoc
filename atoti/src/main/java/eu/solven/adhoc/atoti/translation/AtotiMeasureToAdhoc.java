@@ -98,12 +98,14 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
+@SuppressWarnings("PMD.GodClass")
 public class AtotiMeasureToAdhoc {
 	/**
 	 * Hints the target table model queried by Adhoc measures as migrated from ActivePivot.
 	 * 
 	 * @author Benoit Lacelle
 	 */
+	@SuppressWarnings("PMD.FieldNamingConventions")
 	public enum SourceMode {
 		/**
 		 * Adhoc will query data equivalent to the data in Atoti Datastore.

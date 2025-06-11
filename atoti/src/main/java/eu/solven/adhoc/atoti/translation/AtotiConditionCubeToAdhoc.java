@@ -50,6 +50,8 @@ import lombok.extern.slf4j.Slf4j;
  * com.qfs.condition.{@link com.qfs.condition.ICondition}.
  *
  * Typically used for cube filtering.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 public class AtotiConditionCubeToAdhoc {

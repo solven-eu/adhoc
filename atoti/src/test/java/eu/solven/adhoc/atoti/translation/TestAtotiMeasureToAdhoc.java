@@ -52,7 +52,6 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
-import eu.solven.adhoc.atoti.translation.AtotiMeasureToAdhoc;
 import eu.solven.adhoc.atoti.translation.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;

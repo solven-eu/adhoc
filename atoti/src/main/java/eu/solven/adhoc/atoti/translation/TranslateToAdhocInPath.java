@@ -38,6 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A {@link ATranslateToAdhoc} which will persist each cube forest into an individual file.
+ * 
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j

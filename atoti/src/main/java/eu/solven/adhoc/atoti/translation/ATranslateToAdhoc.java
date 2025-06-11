@@ -40,10 +40,10 @@ import lombok.experimental.SuperBuilder;
  * This would run in a JDK21 jvm, while ActivePivot is generally expected to run over JDK11. One may encounter some
  * issues:
  *
- * -
- *
  * - com.quartetfs.fwk.types.impl.TransferCompiler may need to call `javassist.CtClass#toClass(java.lang.Class)`
  * (https://github.com/jboss-javassist/javassist/issues/369)
+ * 
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 public abstract class ATranslateToAdhoc {

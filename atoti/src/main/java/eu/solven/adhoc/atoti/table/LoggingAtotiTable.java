@@ -39,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * This simulates a ActivePivot/Atoti instance receiving {@link IGetAggregatesQuery}. Can be used to log about the
  * received {@link IGetAggregatesQuery}.
+ * 
+ * @author Benoit Lacelle
  */
 @SuperBuilder
 @Slf4j
@@ -64,11 +66,11 @@ public class LoggingAtotiTable extends AAdhocAtotiTable implements IQueryable {
 	}
 
 	@Override
-	public <ResultType> ResultType execute(IQuery<ResultType> query) {
+	public <R> R execute(IQuery<R> query) {
 		if (query instanceof IGetAggregatesQuery gaq) {
 			log.info("pivot={} received gaq={}", getPivotId(), gaq);
 
-			return (ResultType) EmptyCellSet.getInstance();
+			return (R) EmptyCellSet.getInstance();
 		} else {
 			throw new UnsupportedOperationException("query=%s".formatted(query));
 		}
