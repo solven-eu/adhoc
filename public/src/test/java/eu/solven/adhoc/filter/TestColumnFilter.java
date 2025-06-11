@@ -24,6 +24,12 @@ package eu.solven.adhoc.filter;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.SameMatcher;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -52,20 +58,89 @@ public class TestColumnFilter {
 	}
 
 	@Test
-	public void testInEmpty() throws JsonProcessingException {
+	public void testInEmpty()   {
 		IAdhocFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
 
 		Assertions.assertThat(ksEqualsV).isEqualTo(IAdhocFilter.MATCH_NONE);
 	}
 
 	@Test
-	public void testLikeMatcher() throws JsonProcessingException {
-		IAdhocFilter ksEqualsV =
+	public void testLikeMatcher()   {
+		IAdhocFilter filter =
 				ColumnFilter.builder().column("a").matching(LikeMatcher.builder().pattern("prefix%").build()).build();
 
-		Assertions.assertThat(ksEqualsV.isColumnFilter()).isTrue();
-		Assertions.assertThat(ksEqualsV).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
+		Assertions.assertThat(filter.isColumnFilter()).isTrue();
+		Assertions.assertThat(filter).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
 			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(LikeMatcher.builder().pattern("prefix%").build());
 		});
+	}
+
+	@Test
+	public void testToString_equals() {
+		IAdhocFilter filter = ColumnFilter.isEqualTo("c", "v");
+
+		Assertions.assertThat(filter).hasToString("c==v");
+	}
+
+	@Test
+	public void testToString_equals_not() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.isEqualTo("v"))).build();
+
+		Assertions.assertThat(filter).hasToString("c!=v");
+	}
+
+	@Test
+	public void testToString_same() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(SameMatcher.builder().operand("v").build()).build();
+
+		Assertions.assertThat(filter).hasToString("c===v");
+	}
+
+	@Test
+	public void testToString_same_not() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NotMatcher.not(SameMatcher.builder().operand("v").build())).build();
+
+		Assertions.assertThat(filter).hasToString("c!==v");
+	}
+
+	@Test
+	public void testToString_null() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NullMatcher.matchNull()).build();
+
+		Assertions.assertThat(filter).hasToString("c===null");
+	}
+
+	@Test
+	public void testToString_null_not() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NotMatcher.not(NullMatcher.matchNull())).build();
+
+		Assertions.assertThat(filter).hasToString("c!==null");
+	}
+	@Test
+	public void testToString_in() {
+		IAdhocFilter filter = ColumnFilter.isIn("c", ImmutableSet.of("v1", "v2"));
+
+		Assertions.assertThat(filter).hasToString("c=in=(v1,v2)");
+	}
+
+	@Test
+	public void testToString_out() {
+		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NotMatcher.not(InMatcher.isIn("v1", "v2"))).build();
+
+		Assertions.assertThat(filter).hasToString("c=out=(v1,v2)");
+	}
+
+	@Test
+	public void testToString_likes() {
+		IAdhocFilter ksEqualsV = ColumnFilter.builder().column("c").matching(LikeMatcher.matching("a%")).build();
+
+		Assertions.assertThat(ksEqualsV).hasToString("c matches `LikeMatcher(pattern=a%)`");
+	}
+
+	@Test
+	public void testToString_not_likes() {
+		IAdhocFilter ksEqualsV = ColumnFilter.builder().column("c").matching(NotMatcher.not(LikeMatcher.matching("a%"))).build();
+
+		Assertions.assertThat(ksEqualsV).hasToString("c does NOT match `LikeMatcher(pattern=a%)`");
 	}
 }

@@ -62,4 +62,12 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.isEqualTo("Dispatchor[SUM]");
 
 	}
+
+	// Ensure toString() is concise not to pollute the explain
+	@Test
+	public void testToString() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		Assertions.assertThat(dagExplainer.toString()).isEqualTo(DagExplainer.class.getSimpleName());
+	}
 }

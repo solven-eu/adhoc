@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IColumnToString;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
@@ -82,8 +83,8 @@ public class ColumnFilter implements IColumnFilter {
 
 	@Override
 	public String toString() {
-		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return "%s=%s".formatted(column, equalsMatcher.getWrapped());
+		if (valueMatcher instanceof IColumnToString customToString) {
+			return customToString.toString(column, false);
 		} else {
 			if (valueMatcher.match(null)) {
 				return "%s matches `%s` (nullIfAbsent=%s)".formatted(column, valueMatcher, nullIfAbsent);

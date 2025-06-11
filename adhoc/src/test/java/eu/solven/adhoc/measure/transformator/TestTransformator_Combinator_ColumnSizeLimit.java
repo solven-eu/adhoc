@@ -35,7 +35,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -63,7 +63,7 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 
 		forest.addMeasure(countAsterisk);
 
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name("byK")
 				.underlying(countAsterisk.getName())
 				.groupBy(GroupByColumns.named("k"))

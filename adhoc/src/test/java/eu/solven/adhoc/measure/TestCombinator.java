@@ -30,14 +30,14 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestCombinator {
 	@Test
 	public void testOptions_bucketor() {
-		Bucketor measure = Bucketor.builder()
+		Partitionor measure = Partitionor.builder()
 				.name("measureName")
 				.combinationOptions(Map.of("k", "v"))
 				.groupBy(GroupByColumns.named("c"))

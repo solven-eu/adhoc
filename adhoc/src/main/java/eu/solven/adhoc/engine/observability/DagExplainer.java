@@ -251,4 +251,9 @@ public class DagExplainer implements IDagExplainer {
 		}
 	}
 
+	@Override
+	public String toString() {
+		// Simpler toString not to pollute the logs as source of AdhocLogEvent
+		return this.getClass().getSimpleName();
+	}
 }

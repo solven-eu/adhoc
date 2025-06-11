@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.measure.model.Partitionor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,6 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
@@ -93,7 +93,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 	String mName = "k1.CCY";
 
 	void prepareMeasures() {
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name(mName)
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))
@@ -181,9 +181,9 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testLackBucketor() {
-		// We miss a bucketor aggregating the converted value per ccyFrom
+		// We miss a partitionor aggregating the converted value per ccyFrom
 		{
-			forest.addMeasure(Bucketor.builder()
+			forest.addMeasure(Partitionor.builder()
 					.name(mName)
 					.underlyings(Arrays.asList("k1"))
 					.combinationKey(ForeignExchangeCombination.KEY)

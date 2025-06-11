@@ -36,7 +36,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombineUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
-import eu.solven.adhoc.measure.transformator.step.BucketorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.PartitionorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Slf4j
 @Jacksonized
-public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
+public class Partitionor implements IMeasure, ICombineUnderlyingMeasures, IHasAggregationKey, IHasGroupBy {
 	@NonNull
 	String name;
 
@@ -103,7 +103,7 @@ public class Bucketor implements IMeasure, ICombineUnderlyingMeasures, IHasAggre
 
 	@Override
 	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep queryStep) {
-		return new BucketorQueryStep(this, factories, queryStep);
+		return new PartitionorQueryStep(this, factories, queryStep);
 	}
 
 }

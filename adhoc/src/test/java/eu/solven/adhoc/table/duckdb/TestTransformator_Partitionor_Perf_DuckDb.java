@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.table.duckdb;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,36 +28,54 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import eu.solven.adhoc.measure.transformator.TestTransformator_Partitionor_Perf;
 import org.assertj.core.api.Assertions;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Similar to {@link TestTransformator_Combinator_Perf}, but based on DuckDb.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
-public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocTestConstants {
+public class TestTransformator_Partitionor_Perf_DuckDb extends ARawDagTest implements IAdhocTestConstants {
+	static {
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
+	}
+
 	static final int maxCardinality = 1_000_000 / 10;
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}", TestTransformator_Bucketor_Perf.class.getName(), maxCardinality);
+		log.info("{} is evaluated on cardinality={}", TestTransformator_Partitionor_Perf.class.getName(), maxCardinality);
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
 	}
 
@@ -66,19 +84,33 @@ public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocT
 		AdhocUnsafe.resetProperties();
 	}
 
+	String tableName = "someTableName";
+
+	JooqTableWrapper table = new JooqTableWrapper(tableName,
+			JooqTableWrapperParameters.builder()
+					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+					.tableName(tableName)
+					.build());
+
+	DSLContext dsl = table.makeDsl();
+
 	@Override
-	public InMemoryTable makeTable() {
-		return InMemoryTable.builder().distinctSlices(true).build();
+	public ITableWrapper makeTable() {
+		dsl.execute("""
+				CREATE OR REPLACE TABLE %s (l VARCHAR, row_index INTEGER, k1 INTEGER, k2 INTEGER);
+				INSERT INTO %s (
+				    SELECT
+				    	'A',
+				        i,
+				        i,
+				        i %% 9
+				    FROM range(%s) AS t(i)
+				);
+								""".formatted(tableName, tableName, maxCardinality));
+		return table;
 	}
 
-	@BeforeEach
 	@Override
-	public void feedTable() {
-		for (int i = 0; i < maxCardinality; i++) {
-			table.add(Map.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
-		}
-	}
-
 	public IStopwatchFactory makeStopwatchFactory() {
 		return IStopwatchFactory.guavaStopwatchFactory();
 	}
@@ -87,7 +119,7 @@ public class TestTransformator_Bucketor_Perf extends ADagTest implements IAdhocT
 
 	@BeforeEach
 	public void registerMeasures() {
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name(m)
 				.underlyings(Arrays.asList("k1", "k2"))
 				.combinationKey(ProductCombination.KEY)

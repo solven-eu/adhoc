@@ -65,7 +65,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -472,14 +472,14 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure,
-			Consumer<Bucketor.BucketorBuilder> onBuilder) {
+			Consumer<Partitionor.BucketorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		List<String> leafLevels = getPropertyList(properties, ABaseDynamicAggregationPostProcessorV2.LEAF_LEVELS);
 
-		Bucketor.BucketorBuilder bucketorBuilder = Bucketor.builder()
+		Partitionor.BucketorBuilder bucketorBuilder = Partitionor.builder()
 				.name(measure.getName())
 				.underlyings(underlyingNames)
 				.combinationKey(measure.getPluginKey())

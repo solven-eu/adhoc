@@ -32,7 +32,7 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -86,7 +86,7 @@ public interface IAdhocTestConstants {
 			.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("a", "a1")))
 			.build();
 
-	Bucketor sum_MaxK1K2ByA = Bucketor.builder()
+	Partitionor sum_MaxK1K2ByA = Partitionor.builder()
 			.name("sum_maxK1K2ByA")
 			.underlyings(Arrays.asList("k1", "k2"))
 			.groupBy(GroupByColumns.named("a"))

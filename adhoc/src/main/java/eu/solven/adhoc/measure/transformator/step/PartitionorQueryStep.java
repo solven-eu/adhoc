@@ -41,7 +41,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -52,14 +52,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Bucketor}.
+ * {@link ITransformatorQueryStep} for {@link Partitionor}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class BucketorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
-	final Bucketor bucketor;
+public class PartitionorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
+	final Partitionor partitionor;
 	@Getter(AccessLevel.PROTECTED)
 	final AdhocFactories factories;
 	@Getter
@@ -68,21 +68,21 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 	final Supplier<ICombination> combinationSupplier = Suppliers.memoize(this::makeCombination);
 
 	protected ICombination makeCombination() {
-		return factories.getOperatorFactory().makeCombination(bucketor);
+		return factories.getOperatorFactory().makeCombination(partitionor);
 	}
 
 	protected IAggregation getMakeAggregation() {
-		return factories.getOperatorFactory().makeAggregation(bucketor);
+		return factories.getOperatorFactory().makeAggregation(partitionor);
 	}
 
 	public List<String> getUnderlyingNames() {
-		return bucketor.getUnderlyings();
+		return partitionor.getUnderlyings();
 	}
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
-			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), bucketor.getGroupBy());
+			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
 			return CubeQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
 		}).collect(Collectors.toList());
 	}
@@ -116,8 +116,8 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
-						bucketor.getName(),
-						bucketor.getCombinationKey(),
+						partitionor.getName(),
+						partitionor.getCombinationKey(),
 						bucketedSlice.getMeasures(),
 						IValueProvider.getValue(valueProvider),
 						bucketedSlice);
@@ -127,7 +127,7 @@ public class BucketorQueryStep extends ATransformatorQueryStep implements ITrans
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}",
-						bucketor.getName(),
+						partitionor.getName(),
 						IValueProvider.getValue(valueProvider),
 						outputCoordinate);
 			}

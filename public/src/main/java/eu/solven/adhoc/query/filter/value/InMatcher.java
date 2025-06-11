@@ -55,7 +55,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class InMatcher implements IValueMatcher {
+public class InMatcher implements IValueMatcher, IColumnToString {
 	@NonNull
 	@Singular
 	ImmutableSet<?> operands;
@@ -160,6 +160,18 @@ public class InMatcher implements IValueMatcher {
 			return operands.stream().filter(clazz::isInstance).map(clazz::cast).collect(ImmutableSet.toImmutableSet());
 		} else {
 			return ImmutableSet.of();
+		}
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		// https://github.com/jirutka/rsql-parser?tab=readme-ov-file#grammar-and-semantic
+		String operandsToString = operands.stream().map(String::valueOf).collect(Collectors.joining(",", "(", ")"));
+
+		if (negated) {
+			return column + "=out=" + operandsToString;
+		} else{
+			return column + "=in=" + operandsToString;
 		}
 	}
 }

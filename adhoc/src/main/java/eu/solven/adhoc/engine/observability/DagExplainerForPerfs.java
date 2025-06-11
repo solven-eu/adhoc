@@ -76,5 +76,4 @@ public class DagExplainerForPerfs extends DagExplainer {
 				cost.getSize(),
 				PepperLogHelper.humanDuration(cost.getDuration().toNanos(), TimeUnit.NANOSECONDS));
 	}
-
 }

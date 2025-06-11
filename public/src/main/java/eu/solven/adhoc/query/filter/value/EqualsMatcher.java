@@ -56,7 +56,7 @@ import lombok.extern.jackson.Jacksonized;
 // BEWARE This is not a strict `equals`, as it has special rules around ints and longs
 // We may introduce a StrictEqualsMatcher
 // BEWARE Should we introduce a way to match primitive value without boxing?
-public class EqualsMatcher implements IValueMatcher, IHasWrapped {
+public class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToString {
 	@NonNull
 	// @JsonValue
 	Object operand;
@@ -92,6 +92,16 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped {
 		}
 
 		return false;
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		// https://github.com/jirutka/rsql-parser?tab=readme-ov-file#grammar-and-semantic
+		if (negated) {
+			return  "%s!=%s".formatted(column, getWrapped());
+		} else {
+			return  "%s==%s".formatted(column, getWrapped());
+		}
 	}
 
 	/**

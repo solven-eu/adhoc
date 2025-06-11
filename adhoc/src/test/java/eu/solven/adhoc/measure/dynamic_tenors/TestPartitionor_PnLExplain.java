@@ -39,7 +39,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
@@ -60,7 +60,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * @author Benoit Lacelle
  */
 // https://www.investopedia.com/terms/t/tenor.asp#toc-tenor-vs-maturity
-public class TestBucketor_PnLExplain extends ADagTest implements IExamplePnLExplainConstant {
+public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLExplainConstant {
 
 	@BeforeEach
 	@Override
@@ -124,7 +124,7 @@ public class TestBucketor_PnLExplain extends ADagTest implements IExamplePnLExpl
 				.underlying("delta")
 				.build());
 
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name("pnl_explain")
 				.groupBy(GroupByColumns.named(K_TENOR, K_MATURITY))
 				.combinationKey(EvaluatedExpressionCombination.KEY)

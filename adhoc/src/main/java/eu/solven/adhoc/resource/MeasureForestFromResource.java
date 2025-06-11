@@ -36,6 +36,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.measure.model.Partitionor;
 import org.springframework.core.io.Resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,7 +47,6 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -289,7 +289,7 @@ public class MeasureForestFromResource {
 			if (d.getAggregationOptions().isEmpty()) {
 				clean.remove("aggregationOptions");
 			}
-		} else if (measure instanceof Bucketor b) {
+		} else if (measure instanceof Partitionor b) {
 			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
 					b.getUnderlyingNames())) {
