@@ -447,7 +447,7 @@ public class TestAtotiMeasureToAdhoc {
 				.containsEntry("someFormula",
 						Combinator.builder()
 								.name("someFormula")
-								.combinationKey(ArithmeticFormulaPostProcessor.PLUGIN_KEY)
+								.combinationKey(ReversePolishCombination.class.getName())
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										.put("customKey", "customValue")
 										.put(ReversePolishCombination.K_NOTATION,

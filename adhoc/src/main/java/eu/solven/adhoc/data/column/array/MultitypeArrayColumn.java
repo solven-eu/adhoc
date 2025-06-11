@@ -59,7 +59,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-@Deprecated(since = "Not-Ready")
 public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T> {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
@@ -75,7 +74,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	final INullableDoubleArray measureToAggregateD = NullableDoubleArray.builder().list(new DoubleArrayList(0)).build();
 	@Default
 	@NonNull
-	final INullableObjectDictionary<Object> measureToAggregateO =
+	final INullableObjectList<Object> measureToAggregateO =
 			NullableObjectList.builder().list(new ObjectArrayList<>(0)).build();
 
 	/**
@@ -396,5 +395,8 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 				});
 			}
 		}
+
+		// TODO Typically on CountAggregation, we turned all Carriers into a long. So `measureToAggregateO` holds only
+		// `null`, and it could be cleared.
 	}
 }

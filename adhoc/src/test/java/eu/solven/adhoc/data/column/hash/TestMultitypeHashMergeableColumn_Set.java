@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.hash;
 
 import java.time.LocalDate;
 import java.util.LinkedHashSet;

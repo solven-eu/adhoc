@@ -130,7 +130,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		cubes.stream().flatMap(cube -> cube.getColumns().stream()).forEach(c -> columnToJavaType.put(c.getName(), c));
 
 		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn,
-				ColumnMetadata.builder().name(cubeColumn).tag("adhoc").build()));
+				ColumnMetadata.builder().name(cubeColumn).tag("adhoc").type(String.class).build()));
 
 		return columnToJavaType.asMap().entrySet().stream().map(e -> {
 			return ColumnMetadata.merge(e.getValue());

@@ -20,41 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iterator;
+package eu.solven.adhoc.data.column.navigable_else_hash;
 
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.Optional;
 
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * This {@link IDagBottomUpStrategy} relies exclusively on {@link MultitypeHashColumn}. It never tries to sort the
- * slices.
- * 
+ * A {@link IMultitypeMergeableColumn} based on {@link MultitypeNavigableElseHashColumn}
+ *
+ * @param <T>
  * @author Benoit Lacelle
  */
-public class DagBottomUpStrategyHash implements IDagBottomUpStrategy {
+@SuperBuilder
+@Slf4j
+public class MultitypeNavigableElseHashMergeableColumn<T extends Comparable<T>>
+		extends MultitypeNavigableElseHashColumn<T> implements IMultitypeMergeableColumn<T> {
+	@NonNull
+	@Getter
+	IAggregation aggregation;
 
-	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
-		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	public static <T extends Comparable<T>> MultitypeNavigableElseHashMergeableColumnBuilder<T, ?, ?> builder(
+			IAggregation aggregation) {
+		return new MultitypeNavigableElseHashMergeableColumnBuilderImpl<T>().aggregation(aggregation)
+				.navigable(MultitypeNavigableMergeableColumn.<T>builder().aggregation(aggregation).build())
+				.hash(MultitypeHashMergeableColumn.<T>builder().aggregation(aggregation).build());
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
-	}
+	public IValueReceiver merge(T slice) {
+		Optional<IValueReceiver> navigableReceiver = navigable.appendIfOptimal(slice);
 
-	@Override
-	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
-		return UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(step, underlyings);
+		return navigableReceiver.orElseGet(() -> hash.append(slice));
 	}
-
 }

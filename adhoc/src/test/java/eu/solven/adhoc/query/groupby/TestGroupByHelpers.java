@@ -27,7 +27,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
 public class TestGroupByHelpers {

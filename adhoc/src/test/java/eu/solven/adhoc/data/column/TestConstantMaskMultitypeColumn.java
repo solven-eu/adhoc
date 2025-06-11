@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
 public class TestConstantMaskMultitypeColumn {

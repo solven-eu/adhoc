@@ -36,14 +36,14 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 
 /**
- * Standard {@link INullableObjectDictionary}.
+ * Standard {@link INullableObjectList}.
  * 
  * @param <T>
  * @author Benoit Lacelle
  */
 @Deprecated(since = "Not-Ready")
 @Builder
-public class NullableObjectList<T> extends AbstractObjectList<T> implements INullableObjectDictionary<T> {
+public class NullableObjectList<T> extends AbstractObjectList<T> implements INullableObjectList<T> {
 
 	// Use to register the bits to skip, as not all indexes may be written in LongList
 	@Default
@@ -127,7 +127,7 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 		indexStream().forEach(index -> indexToValue.acceptInt2Object(index, list.get(index)));
 	}
 
-	public static <T> INullableObjectDictionary<T> empty() {
+	public static <T> INullableObjectList<T> empty() {
 		return NullableObjectList.<T>builder().list(ObjectLists.emptyList()).build();
 	}
 

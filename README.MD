@@ -428,7 +428,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Composite] `getCoordinates` should be executed once per underlying cube
-- [Composite] Enable a failing sub-query not to break the composite query
+- [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Enable calculated columns, computed right after the table
 - [Feature] Break rowspan on right columns
@@ -440,4 +440,8 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
 - [Feature] Improve connection pooling in JooQ examples.
-- [Feature] Introduce a `IMultitypeColumnFastGet` handling in `navigable` chunk as much as possible, and keeping not-sorted into a `hash`.
+- [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
+- [Feature] Record statistics about used measures in storage, for easier re-use.
+- [Feature] Ability in `GroupBy` to add an `ALL` coordinate, referring to the grandTotal. It would help emulating pivot-tables.
+- [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
+- [Debt] Rename `Bucketor` into `Partitionor`

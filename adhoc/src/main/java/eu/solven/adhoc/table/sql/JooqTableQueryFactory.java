@@ -222,7 +222,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		if (selectedFields.isEmpty()) {
 			// Typically happens on EmptyAggregation
 			// We force one field to prevent JooQ querying automatically for `*`
-			selectedFields.add(DSL.val(1));
+			// BEWARE Rely on `count(1)` and not `1`, else DuckDB considers all fields are requested, and the groupBy
+			// lists all rows.
+			selectedFields.add(DSL.aggregate("count", long.class, DSL.val(1)));
 		}
 
 		return selectedFields;

@@ -20,31 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.array;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.data.tabular.primitives.Int2ObjectBiConsumer;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 
-public class TestMultitypeNavigableElseHashColumn {
-	@Test
-	public void testPutUnordered() {
-		MultitypeNavigableElseHashColumn<String> column = MultitypeNavigableElseHashColumn.<String>builder().build();
-
-		// Ordered
-		column.append("a").onLong(123);
-		column.append("c").onLong(345);
-
-		// Unordered
-		column.append("b").onLong(234);
-		// May be ordered
-		column.append("e").onLong(567);
-		// Unordered
-		column.append("d").onLong(456);
-
-		// the hash section has no guaranteed order
-		Assertions.assertThat(column.keyStream().toList()).startsWith("a", "c", "e").contains("b", "d");
-
-		Assertions.assertThat(column.navigable.keyStream().toList()).containsExactly("a", "c", "e");
-		Assertions.assertThat(column.hash.keyStream().toList()).contains("b", "d").hasSize(2);
-	}
+/**
+ * A {@link ObjectList} which enables some indexes to be associated to null
+ * 
+ * @author Benoit Lacelle
+ */
+public interface INullableObjectList<T> extends ObjectList<T>, INullableArray {
+	void forEach(Int2ObjectBiConsumer indexToValue);
 }

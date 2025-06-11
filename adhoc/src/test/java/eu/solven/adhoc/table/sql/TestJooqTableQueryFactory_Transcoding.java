@@ -80,7 +80,7 @@ public class TestJooqTableQueryFactory_Transcoding {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().toString()).isEqualTo("""
-				select 1
+				select count(1)
 				from "someTableName"
 				where (
 				  "k1" = 'v1'

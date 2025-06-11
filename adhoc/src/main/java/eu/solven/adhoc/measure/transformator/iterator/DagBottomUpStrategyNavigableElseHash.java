@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Shiftor;
 
@@ -54,8 +57,13 @@ import eu.solven.adhoc.measure.model.Shiftor;
 public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrategy {
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
+	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
 		return MultitypeNavigableElseHashColumn.<SliceAsMap>builder().build();
+	}
+
+	@Override
+	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
+		return MultitypeNavigableElseHashMergeableColumn.<SliceAsMap>builder(agg).build();
 	}
 
 	@Override

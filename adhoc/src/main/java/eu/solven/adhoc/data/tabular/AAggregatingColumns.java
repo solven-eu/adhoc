@@ -41,7 +41,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.MultitypeArray.MultitypeArrayBuilder;
-import eu.solven.adhoc.data.column.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.tabular.primitives.Object2DoubleBiConsumer;
 import eu.solven.adhoc.data.tabular.primitives.Object2IntBiConsumer;

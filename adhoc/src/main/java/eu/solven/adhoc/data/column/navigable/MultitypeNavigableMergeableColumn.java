@@ -20,12 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.data.column.navigable;
 
 import java.util.Arrays;
 import java.util.List;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IMultitypeColumn;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import lombok.Getter;

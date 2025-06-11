@@ -169,7 +169,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 				.containsEntry(k2Sum.getColumnName(), Double.class)
 				.containsEntry(k3Sum.getColumnName(), Double.class)
 				.containsEntry("k4", Double.class)
-				.containsEntry("cubeSlicer", Object.class)
+				.containsEntry("cubeSlicer", String.class)
 				.hasSize(8);
 
 		Assertions.assertThat(cube3.getColumns()).anySatisfy(c -> {

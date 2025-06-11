@@ -22,19 +22,25 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.util.stream.IntStream;
+
 import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestDuckDbHelper {
 	@Test
 	public void testFilterExpr_like() {
@@ -123,5 +129,16 @@ public class TestDuckDbHelper {
 				.isEqualTo(
 						"""
 								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ALL""");
+	}
+
+	@Disabled
+	@Test
+	public void testMakeConnections_leak() {
+		DSLSupplier supplier = DuckDbHelper.inMemoryDSLSupplier();
+
+		IntStream.range(0, 16 * 1024).forEach(i -> {
+			log.info("{}", i);
+			supplier.getDSLContext();
+		});
 	}
 }
