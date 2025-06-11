@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -58,202 +58,187 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Helps working with DuckDB.
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
 public class DuckDbHelper {
 
-	/**
-	 * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
-	 *
-	 * Everything which not persisted is discarded when the connection is closed: it can be used to read/write files,
-	 * but any inMemory tables would be dropped.
-	 *
-	 * @return a {@link DuckDBConnection} to an new DuckDB InMemory instance.
-	 */
-	// https://duckdb.org/docs/api/java.html
-	public static DuckDBConnection makeFreshInMemoryDb() {
-		try {
-			return (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:");
-		} catch (SQLException e) {
-			throw new IllegalStateException("Issue opening an InMemory DuckDB", e);
-		}
-	}
+    public static String getInMemoryJdbcUrl() {
+        return "jdbc:duckdb:";
+    }
 
-	/**
-	 *
-	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
-	 */
-	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
-		DuckDBConnection duckDbConnection = makeFreshInMemoryDb();
-		return dslSupplier(duckDbConnection);
-	}
+    /**
+     * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
+     * <p>
+     * Everything which not persisted is discarded when the connection is closed: it can be used to read/write files,
+     * but any inMemory tables would be dropped.
+     *
+     * @return a {@link DuckDBConnection} to an new DuckDB InMemory instance.
+     */
+// https://duckdb.org/docs/api/java.html
+    public static DuckDBConnection makeFreshInMemoryDb() {
+        try {
+            return (DuckDBConnection) DriverManager.getConnection(getInMemoryJdbcUrl());
+        } catch (SQLException e) {
+            throw new IllegalStateException("Issue opening an InMemory DuckDB", e);
+        }
+    }
 
-	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
-		return () -> {
-			Connection duplicated;
-			try {
-				duplicated = duckDbConnection.duplicate();
-			} catch (SQLException e) {
-				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
-			}
-			return DSLSupplier.fromConnection(() -> duplicated).getDSLContext();
-		};
-	}
+    /**
+     * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
+     */
+    public static @NonNull DSLSupplier inMemoryDSLSupplier() {
+        DuckDBConnection duckDbConnection = makeFreshInMemoryDb();
+        return dslSupplier(duckDbConnection);
+    }
 
-	public static CoordinatesSample getCoordinates(JooqTableWrapper table,
-			String column,
-			IValueMatcher valueMatcher,
-			int limit) {
-		return getCoordinates(table, Map.of(column, valueMatcher), limit).get(column);
-	}
+    /**
+     * One should prefer relying on a pooling mecanisms, like HikariCP, to avoid the overhead of creating/duplicating a new connection each time.
+     *
+     * @param duckDbConnection
+     * @return
+     */
+    @Deprecated(since = "Inefficient to duplicate the connection for each query")
+    public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
+        return () -> {
+            Connection duplicated;
+            try {
+                duplicated = duckDbConnection.duplicate();
+            } catch (SQLException e) {
+                throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
+            }
+            return DSLSupplier.fromConnection(() -> duplicated).getDSLContext();
+        };
+    }
 
-	/**
-	 * Compute in a single query the estimated cardinality and a selection of the most present coordinates specialized
-	 * for DuckDB.
-	 * 
-	 * @param table
-	 * @param columnToValueMatcher
-	 * @param limit
-	 *            the maximum number of coordinates per column
-	 * @return
-	 */
-	public static Map<String, CoordinatesSample> getCoordinates(JooqTableWrapper table,
-			Map<String, IValueMatcher> columnToValueMatcher,
-			int limit) {
-		if (columnToValueMatcher.isEmpty()) {
-			return Map.of();
-		}
+    public static CoordinatesSample getCoordinates(JooqTableWrapper table, String column, IValueMatcher valueMatcher, int limit) {
+        return getCoordinates(table, Map.of(column, valueMatcher), limit).get(column);
+    }
 
-		List<String> columns = new ArrayList<>();
+    /**
+     * Compute in a single query the estimated cardinality and a selection of the most present coordinates specialized
+     * for DuckDB.
+     *
+     * @param table
+     * @param columnToValueMatcher
+     * @param limit                the maximum number of coordinates per column
+     * @return
+     */
+    public static Map<String, CoordinatesSample> getCoordinates(JooqTableWrapper table, Map<String, IValueMatcher> columnToValueMatcher, int limit) {
+        if (columnToValueMatcher.isEmpty()) {
+            return Map.of();
+        }
 
-		// select approx_count_distinct("id") "approx_count_distinct", approx_top_k("id", 100) "approx_top_k" from
-		// read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet') group by ()
-		TableQueryBuilder queryBuilder = TableQuery.builder();
+        List<String> columns = new ArrayList<>();
 
-		columnToValueMatcher.forEach((column, valueMatcher) -> {
-			int columnIndex = columns.size();
-			columns.add(column);
-			appendGetCoordinatesMeasures(limit, column, valueMatcher, columnIndex, queryBuilder);
-		});
+        // select approx_count_distinct("id") "approx_count_distinct", approx_top_k("id", 100) "approx_top_k" from
+        // read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet') group by ()
+        TableQueryBuilder queryBuilder = TableQuery.builder();
 
-		TableQuery tableQuery = queryBuilder.build();
+        columnToValueMatcher.forEach((column, valueMatcher) -> {
+            int columnIndex = columns.size();
+            columns.add(column);
+            appendGetCoordinatesMeasures(limit, column, valueMatcher, columnIndex, queryBuilder);
+        });
 
-		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records().findAny();
-		if (optCardinalityRecord.isEmpty()) {
-			Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
+        TableQuery tableQuery = queryBuilder.build();
 
-			columns.forEach(column -> columnToCoordinates.put(column, CoordinatesSample.empty()));
+        Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records().findAny();
+        if (optCardinalityRecord.isEmpty()) {
+            Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
 
-			return columnToCoordinates;
-		} else {
-			Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
-			ITabularRecord tabularRecord = optCardinalityRecord.get();
+            columns.forEach(column -> columnToCoordinates.put(column, CoordinatesSample.empty()));
 
-			for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
-				String measuresSuffix = "_" + columnIndex;
+            return columnToCoordinates;
+        } else {
+            Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
+            ITabularRecord tabularRecord = optCardinalityRecord.get();
 
-				long estimatedCardinality = (long) IValueProvider
-						.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix));
+            for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
+                String measuresSuffix = "_" + columnIndex;
 
-				// TODO Is it important to call `Array.free()`?
-				java.sql.Array array = (java.sql.Array) IValueProvider
-						.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
+                long estimatedCardinality = (long) IValueProvider.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix));
 
-				List<Object> coordinates;
-				if (array == null) {
-					// BEWARE When does this happen?
-					coordinates = ImmutableList.of();
-				} else {
-					try {
-						Object[] nativeArray = (Object[]) array.getArray();
+                // TODO Is it important to call `Array.free()`?
+                java.sql.Array array = (java.sql.Array) IValueProvider.getValue(tabularRecord.onAggregate("approx_top_k" + measuresSuffix));
 
-						if (nativeArray.length >= 1 && nativeArray[0] instanceof java.sql.Blob) {
-							// BEWARE We should have skip the search altogether
-							// Returning a Blob, or a `byte[]` has unclear usage/support
-							coordinates = ImmutableList.of();
-						} else {
-							coordinates = ImmutableList.copyOf(nativeArray);
-						}
-					} catch (SQLException e) {
-						throw new IllegalArgumentException(e);
-					}
-				}
+                List<Object> coordinates;
+                if (array == null) {
+                    // BEWARE When does this happen?
+                    coordinates = ImmutableList.of();
+                } else {
+                    try {
+                        Object[] nativeArray = (Object[]) array.getArray();
 
-				columnToCoordinates.put(columns.get(columnIndex),
-						CoordinatesSample.builder()
-								.coordinates(coordinates)
-								.estimatedCardinality(estimatedCardinality)
-								.build());
-			}
+                        if (nativeArray.length >= 1 && nativeArray[0] instanceof java.sql.Blob) {
+                            // BEWARE We should have skip the search altogether
+                            // Returning a Blob, or a `byte[]` has unclear usage/support
+                            coordinates = ImmutableList.of();
+                        } else {
+                            coordinates = ImmutableList.copyOf(nativeArray);
+                        }
+                    } catch (SQLException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
 
-			return columnToCoordinates;
-		}
+                columnToCoordinates.put(columns.get(columnIndex), CoordinatesSample.builder().coordinates(coordinates).estimatedCardinality(estimatedCardinality).build());
+            }
 
-	}
+            return columnToCoordinates;
+        }
 
-	static void appendGetCoordinatesMeasures(int limit,
-			String column,
-			IValueMatcher valueMatcher,
-			int columnIndex,
-			TableQueryBuilder queryBuilder) {
-		String measuresSuffix = "_" + columnIndex;
+    }
 
-		Name columnName = AdhocJooqHelper.name(column, () -> DSL.using(SQLDialect.DUCKDB).parser());
+    static void appendGetCoordinatesMeasures(int limit, String column, IValueMatcher valueMatcher, int columnIndex, TableQueryBuilder queryBuilder) {
+        String measuresSuffix = "_" + columnIndex;
 
-		int returnedCoordinates;
+        Name columnName = AdhocJooqHelper.name(column, () -> DSL.using(SQLDialect.DUCKDB).parser());
 
-		if (limit < 0) {
-			returnedCoordinates = Integer.MAX_VALUE;
-		} else {
-			returnedCoordinates = limit;
-		}
-		String countExpression = "approx_count_distinct(%s)".formatted(columnName);
-		String topKExpression = "approx_top_k(%s, %s)".formatted(columnName, returnedCoordinates);
+        int returnedCoordinates;
 
-		if (!IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-			String filterExpression = toFilterExpression(valueMatcher);
-			String filterSuffix = " FILTER (CAST(%s AS VARCHAR) %s)".formatted(columnName, filterExpression);
+        if (limit < 0) {
+            returnedCoordinates = Integer.MAX_VALUE;
+        } else {
+            returnedCoordinates = limit;
+        }
+        String countExpression = "approx_count_distinct(%s)".formatted(columnName);
+        String topKExpression = "approx_top_k(%s, %s)".formatted(columnName, returnedCoordinates);
 
-			countExpression += filterSuffix;
-			topKExpression += filterSuffix;
-		}
+        if (!IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
+            String filterExpression = toFilterExpression(valueMatcher);
+            String filterSuffix = " FILTER (CAST(%s AS VARCHAR) %s)".formatted(columnName, filterExpression);
 
-		queryBuilder
-				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
-				.aggregator(Aggregator.builder()
-						.aggregationKey(ExpressionAggregation.KEY)
-						.name("approx_count_distinct" + measuresSuffix)
-						.columnName(countExpression)
-						.build())
+            countExpression += filterSuffix;
+            topKExpression += filterSuffix;
+        }
 
-				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
-				.aggregator(Aggregator.builder()
-						.aggregationKey(ExpressionAggregation.KEY)
-						.name("approx_top_k" + measuresSuffix)
-						.columnName(topKExpression)
-						.build());
-	}
+        queryBuilder
+                // https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+                .aggregator(Aggregator.builder().aggregationKey(ExpressionAggregation.KEY).name("approx_count_distinct" + measuresSuffix).columnName(countExpression).build())
 
-	/**
-	 * 
-	 * @param valueMatcher
-	 * @return a SQL expression matching input IValueMatcher for a `FILTER` expression
-	 */
-	// https://duckdb.org/docs/stable/sql/query_syntax/filter.html
-	static String toFilterExpression(IValueMatcher valueMatcher) {
-		if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-			return "1 = 1";
-		} else if (IValueMatcher.MATCH_NONE.equals(valueMatcher)) {
-			return "1 = 0";
-		} else if (valueMatcher instanceof NotMatcher notMatcher) {
-			return "NOT " + toFilterExpression(notMatcher.getNegated());
-		} else if (valueMatcher instanceof LikeMatcher likeMatcher) {
-			return "LIKE '%s'".formatted(likeMatcher.getPattern());
-		} else {
-			throw new NotYetImplementedException(
-					"TODO: FILTER expression for %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
-		}
-	}
+                // https://duckdb.org/docs/stable/sql/functions/aggregates.html#approximate-aggregates
+                .aggregator(Aggregator.builder().aggregationKey(ExpressionAggregation.KEY).name("approx_top_k" + measuresSuffix).columnName(topKExpression).build());
+    }
+
+    /**
+     * @param valueMatcher
+     * @return a SQL expression matching input IValueMatcher for a `FILTER` expression
+     */
+// https://duckdb.org/docs/stable/sql/query_syntax/filter.html
+    static String toFilterExpression(IValueMatcher valueMatcher) {
+        if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
+            return "1 = 1";
+        } else if (IValueMatcher.MATCH_NONE.equals(valueMatcher)) {
+            return "1 = 0";
+        } else if (valueMatcher instanceof NotMatcher notMatcher) {
+            return "NOT " + toFilterExpression(notMatcher.getNegated());
+        } else if (valueMatcher instanceof LikeMatcher likeMatcher) {
+            return "LIKE '%s'".formatted(likeMatcher.getPattern());
+        } else {
+            throw new NotYetImplementedException("TODO: FILTER expression for %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
+        }
+
+    }
 }
