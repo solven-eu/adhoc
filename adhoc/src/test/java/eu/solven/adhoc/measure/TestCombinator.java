@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestCombinator {

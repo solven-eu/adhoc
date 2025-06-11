@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import eu.solven.adhoc.measure.transformator.TestTransformator_Partitionor_Perf;
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
@@ -46,6 +45,7 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
+import eu.solven.adhoc.measure.transformator.TestTransformator_Partitionor_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -75,7 +75,9 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ARawDagTest imple
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}", TestTransformator_Partitionor_Perf.class.getName(), maxCardinality);
+		log.info("{} is evaluated on cardinality={}",
+				TestTransformator_Partitionor_Perf.class.getName(),
+				maxCardinality);
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
 	}
 

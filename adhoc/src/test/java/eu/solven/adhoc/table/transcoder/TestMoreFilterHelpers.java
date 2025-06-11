@@ -106,7 +106,7 @@ public class TestMoreFilterHelpers {
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
 
-		Assertions.assertThat(kIsNull.toString()).isEqualTo("k matches `NullMatcher()` (nullIfAbsent=true)");
+		Assertions.assertThat(kIsNull.toString()).isEqualTo("k===null");
 	}
 
 	@Test
@@ -134,7 +134,10 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testJavaUtilSetOf() {
-		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Set.of("v1", "v2")).build();
+		Set<String> allowedValues = Set.of("v1", "v2");
+		Assertions.assertThat(allowedValues.getClass().getName()).startsWith("java.util.ImmutableCollections$");
+
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(allowedValues).build();
 
 		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of())).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
@@ -143,8 +146,7 @@ public class TestMoreFilterHelpers {
 		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v3"))).isFalse();
 
 		// The .toString can not be guaranteed as we test a not deterministic implementation: `Set.of`
-		Assertions.assertThat(filter.toString())
-				.isIn("k matches `InMatcher{size=2, #0=v1, #1=v2}`", "k matches `InMatcher{size=2, #0=v2, #1=v1}`");
+		Assertions.assertThat(filter.toString()).isIn("k=in=(v1,v2)", "k=in=(v2,v1)");
 	}
 
 	@Test

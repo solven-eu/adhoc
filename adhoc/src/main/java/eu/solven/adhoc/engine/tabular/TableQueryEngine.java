@@ -520,8 +520,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @return
 	 */
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
-		return suppressedColumns.stream()
-				.collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
+		return suppressedColumns.stream().collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 
 }

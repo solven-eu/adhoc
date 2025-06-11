@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyNavigableElseHash;
@@ -55,8 +54,7 @@ public class StandardColumnFactory implements IColumnFactory {
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg,
-			List<? extends ISliceToValue> underlyings) {
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings) {
 		return bottomUpStrategy.makeColumn(agg);
 	}
 

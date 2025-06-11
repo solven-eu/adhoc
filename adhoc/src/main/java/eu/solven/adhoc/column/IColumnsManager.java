@@ -72,7 +72,7 @@ public interface IColumnsManager extends IHasColumnTypes {
 	 * @return
 	 */
 	List<IColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
-                                               Set<IMeasure> measures,
-                                               IValueMatcher columnMatcher);
+			Set<IMeasure> measures,
+			IValueMatcher columnMatcher);
 
 }

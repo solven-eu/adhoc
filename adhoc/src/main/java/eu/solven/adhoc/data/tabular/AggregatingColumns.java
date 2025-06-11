@@ -23,11 +23,8 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
@@ -37,7 +34,6 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
@@ -51,7 +47,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -150,8 +145,9 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
 	}
 
-	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column, Object2IntFunction<T> sliceToIndex,
-															  Int2ObjectFunction<T> indexToSlice) {
+	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column,
+			Object2IntFunction<T> sliceToIndex,
+			Int2ObjectFunction<T> indexToSlice) {
 		return new IMultitypeColumnFastGet<>() {
 
 			@Override
@@ -206,6 +202,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			@Override
 			public IValueReceiver set(T key) {
 				throw new UnsupportedOperationException("Read-Only");
+			}
+
+			@Override
+			public String toString() {
+				return "column=" + column;
 			}
 		};
 	}

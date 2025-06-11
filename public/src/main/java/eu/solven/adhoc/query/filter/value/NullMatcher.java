@@ -49,7 +49,7 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 
 	@Override
 	public String toString(String column, boolean negated) {
-		if(negated) {
+		if (negated) {
 			return column + "!==null";
 		} else {
 			return column + "===null";

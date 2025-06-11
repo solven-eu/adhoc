@@ -25,14 +25,11 @@ package eu.solven.adhoc.table.sql;
 import java.sql.Connection;
 import java.util.function.Supplier;
 
-import org.apfloat.spi.DataStorage;
+import javax.sql.DataSource;
+
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-
-import lombok.NonNull;
-
-import javax.sql.DataSource;
 
 /**
  * Helps building a proper {@link DSLContext}, typically for {@link JooqTableWrapper}.

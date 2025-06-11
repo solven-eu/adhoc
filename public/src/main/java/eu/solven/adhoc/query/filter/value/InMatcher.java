@@ -170,7 +170,7 @@ public class InMatcher implements IValueMatcher, IColumnToString {
 
 		if (negated) {
 			return column + "=out=" + operandsToString;
-		} else{
+		} else {
 			return column + "=in=" + operandsToString;
 		}
 	}

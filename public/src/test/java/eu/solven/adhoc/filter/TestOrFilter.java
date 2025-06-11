@@ -62,7 +62,7 @@ public class TestOrFilter {
 				.mapToObj(i -> ColumnFilter.builder().column("k" + i).matching(i).build())
 				.collect(Collectors.toList());
 
-		Assertions.assertThat(OrFilter.or(filters).toString()).isEqualTo("k0=0|k1=1|k2=2|k3=3|k4=4");
+		Assertions.assertThat(OrFilter.or(filters).toString()).isEqualTo("k0==0|k1==1|k2==2|k3==3|k4==4");
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class TestOrFilter {
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(OrFilter.or(filters).toString())
-				.contains("#0=k=0", "#1=k=1")
+				.contains("#0=k==0", "#1=k==1")
 				.doesNotContain("7")
 				.hasSizeLessThan(512);
 	}

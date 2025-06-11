@@ -41,8 +41,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This is useful to check advanced behaviors around customMarker. A legitimate case for customMarker is to force a
- * customMarker for a given measure, while other measure may be dynamic.
+ * Standard behavior of {@link Shiftor}.
  */
 @Slf4j
 public class TestShiftor extends ADagTest implements IAdhocTestConstants {

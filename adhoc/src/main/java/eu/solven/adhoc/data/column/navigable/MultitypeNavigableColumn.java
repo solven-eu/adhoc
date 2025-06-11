@@ -133,6 +133,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	/**
+	 * To be called before a guaranteed `add` operation.
+	 */
+	protected void checkSizeBeforeAdd() {
+		long size = size();
+		if (size >= AdhocUnsafe.limitColumnSize) {
+			// TODO Log the first and last elements
+			throw new IllegalStateException(
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+		}
+	}
+
+	/**
 	 * 
 	 * @param key
 	 * @param mergeElseSet
@@ -166,6 +178,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		IValueReceiver valueConsumer;
 
 		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
+			checkSizeBeforeAdd();
+
 			// In most cases, we append a greater key, because we process sorted keys
 			keys.add(key);
 			valueConsumer = values.add();

@@ -472,8 +472,8 @@ public class ColumnsManager implements IColumnsManager {
 
 	@Override
 	public List<IColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
-                                                      Set<IMeasure> measures,
-                                                      IValueMatcher columnMatcher) {
+			Set<IMeasure> measures,
+			IValueMatcher columnMatcher) {
 		List<IColumnGenerator> columnGenerators = new ArrayList<>();
 
 		columnGenerators.add(columnGenerator);

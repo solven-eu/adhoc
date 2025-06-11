@@ -57,7 +57,9 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}", TestTransformator_Partitionor_Perf.class.getName(), maxCardinality);
+		log.info("{} is evaluated on cardinality={}",
+				TestTransformator_Partitionor_Perf.class.getName(),
+				maxCardinality);
 		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
 	}
 

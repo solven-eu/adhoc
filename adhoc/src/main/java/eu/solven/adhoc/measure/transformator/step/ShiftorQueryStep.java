@@ -35,7 +35,6 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -175,14 +174,14 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyings.size() != 2");
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeColumn(underlyings);
 
 		forEachDistinctSlice1(underlyings, storage::append);
 
 		return SliceToValue.builder().column(storage).build();
 	}
 
-	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
+		return factories.getColumnsFactory().makeColumn(underlyings);
 	}
 }

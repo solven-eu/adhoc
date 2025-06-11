@@ -56,7 +56,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.isEqualTo("Unfiltrator");
 
 		Assertions.assertThat(dagExplainer.toString(CubeQueryStep.builder().measure(sum_MaxK1K2ByA).build()))
-				.isEqualTo("Bucketor[MAX][SUM]");
+				.isEqualTo("Partitionor[MAX][SUM]");
 
 		Assertions.assertThat(dagExplainer.toString(CubeQueryStep.builder().measure(dispatchFrom0To100).build()))
 				.isEqualTo("Dispatchor[SUM]");

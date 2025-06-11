@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBConnection;
 import org.jooq.impl.DSL;
@@ -48,6 +47,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -388,8 +388,8 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
 				.hasSize(1);
 
-		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues()
-				.get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
+		Map<String, ?> measureToValue =
+				mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
 
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 
@@ -399,11 +399,12 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	// filter scenarioIndex on empty measure
 	@Test
 	public void testGroupByScenario_emptyMeasure() {
-		ITabularView result = wrapInCube(forest)
-				.execute(CubeQuery.builder().groupByAlso(C_SCENARIOINDEX).build());
+		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso(C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of(C_SCENARIOINDEX, "generated")).hasSize(1);
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsKey(Map.of(C_SCENARIOINDEX, "generated"))
+				.hasSize(1);
 
 		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, "generated"));
 		Assertions.assertThat(measureToValue).isEmpty();

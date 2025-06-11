@@ -37,7 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class NotMatcher implements IValueMatcher, IColumnToString{
+public class NotMatcher implements IValueMatcher, IColumnToString {
 
 	@NonNull
 	final IValueMatcher negated;

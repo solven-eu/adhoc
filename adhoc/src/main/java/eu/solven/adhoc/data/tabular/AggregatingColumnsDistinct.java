@@ -31,21 +31,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.array.MultitypeArrayColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.NotYetImplementedException;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -140,8 +134,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 		// Reverse from `slice->index` to `index->slice`
 		Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(indexToSlice.size());
-		for (int  i = 0 ; i < indexToSlice.size() ; i++){
-			sliceToIndex.put(indexToSlice.get(i),i);
+		for (int i = 0; i < indexToSlice.size(); i++) {
+			sliceToIndex.put(indexToSlice.get(i), i);
 		}
 
 		// Turn the columnByIndex to a columnBySlice

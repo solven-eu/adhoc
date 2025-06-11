@@ -49,7 +49,7 @@ public class SameMatcher implements IValueMatcher, IColumnToString {
 
 	@Override
 	public String toString(String column, boolean negated) {
-		if (negated)	{
+		if (negated) {
 			return column + "!==" + operand;
 		} else {
 			return column + "===" + operand;
