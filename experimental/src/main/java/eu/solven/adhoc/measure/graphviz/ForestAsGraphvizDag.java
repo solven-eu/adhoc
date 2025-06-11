@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.resource.MeasureForests;
 import guru.nidi.graphviz.attribute.Font;

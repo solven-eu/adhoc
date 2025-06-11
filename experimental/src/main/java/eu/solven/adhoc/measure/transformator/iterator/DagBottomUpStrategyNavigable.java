@@ -51,13 +51,13 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
-		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
+	public<T > IMultitypeColumnFastGet<T> makeColumn() {
+		return (MultitypeNavigableColumn) MultitypeNavigableColumn.builder().build();
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeNavigableMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+	public<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
+		return (IMultitypeMergeableColumn) MultitypeNavigableMergeableColumn.builder().aggregation(agg).build();
 	}
 
 	@Override

@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.decomposition;
 
 import java.util.List;
 
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -38,7 +38,7 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
  * 
  * @author Benoit Lacelle
  */
-public interface IDecomposition extends ICompositeColumnGenerator {
+public interface IDecomposition extends IColumnGenerator {
 	/**
 	 *
 	 * @param slice

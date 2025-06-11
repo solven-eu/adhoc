@@ -41,7 +41,7 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -116,7 +116,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	@Default
 	@NonNull
-	final ICompositeColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
+	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
 	public String transcodeToTable(String cubeColumn) {
@@ -471,10 +471,10 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	@Override
-	public List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
-			Set<IMeasure> measures,
-			IValueMatcher columnMatcher) {
-		List<ICompositeColumnGenerator> columnGenerators = new ArrayList<>();
+	public List<IColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
+                                                      Set<IMeasure> measures,
+                                                      IValueMatcher columnMatcher) {
+		List<IColumnGenerator> columnGenerators = new ArrayList<>();
 
 		columnGenerators.add(columnGenerator);
 		columnGenerators.addAll(ColumnGeneratorHelpers.getColumnGenerators(operatorFactory, measures, columnMatcher));

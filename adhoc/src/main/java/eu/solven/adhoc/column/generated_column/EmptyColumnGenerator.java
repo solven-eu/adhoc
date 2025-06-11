@@ -28,11 +28,11 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * An empty {@link ICompositeColumnGenerator}.
+ * An empty {@link IColumnGenerator}.
  * 
  * @author Benoit Lacelle
  */
-public class EmptyColumnGenerator implements ICompositeColumnGenerator {
+public class EmptyColumnGenerator implements IColumnGenerator {
 
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
@@ -47,9 +47,9 @@ public class EmptyColumnGenerator implements ICompositeColumnGenerator {
 	/**
 	 * Typically useful as default.
 	 * 
-	 * @return an empty {@link ICompositeColumnGenerator}.
+	 * @return an empty {@link IColumnGenerator}.
 	 */
-	public static ICompositeColumnGenerator empty() {
+	public static IColumnGenerator empty() {
 		return new EmptyColumnGenerator();
 	}
 

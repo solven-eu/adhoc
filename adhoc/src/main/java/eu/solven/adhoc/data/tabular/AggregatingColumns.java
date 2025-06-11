@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,14 +37,18 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -61,6 +66,10 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
+	@NonNull
+	@Default
+	AdhocFactories factories = AdhocFactories.builder().build();
+
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
@@ -74,18 +83,14 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	@Default
 	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
 
-	// Compute only was the sorted version of slicesToIndex. This is re-used by each column
-	private final AtomicReference<List<Object2IntMap.Entry<T>>> refSortedSliceToIndex = new AtomicReference<>();
-
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
-		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
-		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
-		return MultitypeHashMergeableColumn.<Integer>builder().aggregation(agg).build();
+		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
+		return factories.getColumnsFactory().makeColumn(agg, Arrays.asList());
 	}
 
 	@Override
@@ -137,39 +142,16 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
-		if (column instanceof MultitypeNavigableColumn<?>) {
-			Map<Integer, T> indexToSlice = new HashMap<>(sliceToIndex.size());
-			sliceToIndex.forEach((slice, rowIndex) -> indexToSlice.put(rowIndex, slice));
+		// Reverse from `slice->index` to `index->slice`
+		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
+		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
 
-			// Turn the columnByIndex to a columnBySlice
-			return wrapNavigableColumnGivenIndexes(column, indexToSlice);
-		} else {
-			// TODO Should we have some sort of strategy to decide when to switch to the sorting strategy?
-
-			// BEWARE The point of this sorting is to improve performance of later
-			// UnderlyingQueryStepHelpers.distinctSlices
-
-			if (refSortedSliceToIndex.get() == null) {
-				ObjectList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
-					sliceToIndex.forEach(consumer::acceptObject2Int);
-				}, sliceToIndex.size());
-
-				refSortedSliceToIndex.set(sortedEntries);
-			}
-
-			return copyToNavigable(column, sliceToIndex -> {
-				refSortedSliceToIndex.get().forEach(e -> {
-					T slice = e.getKey();
-					int rowIndex = e.getIntValue();
-
-					sliceToIndex.acceptObject2Int(slice, rowIndex);
-				});
-			});
-		}
+		// Turn the columnByIndex to a columnBySlice
+		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
 	}
 
-	protected IMultitypeColumnFastGet<T> wrapNavigableColumnGivenIndexes(IMultitypeColumnFastGet<Integer> column,
-			Map<Integer, T> indexToSlice) {
+	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column, Object2IntFunction<T> sliceToIndex,
+															  Int2ObjectFunction<T> indexToSlice) {
 		return new IMultitypeColumnFastGet<>() {
 
 			@Override
@@ -194,16 +176,12 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 			@Override
 			public void scan(IColumnScanner<T> rowScanner) {
-				column.scan(rowIndex -> {
-					return rowScanner.onKey(indexToSlice.get(rowIndex));
-				});
+				column.scan(rowIndex -> rowScanner.onKey(indexToSlice.apply(rowIndex)));
 			}
 
 			@Override
 			public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-				return column.stream(rowIndex -> {
-					return converter.prepare(indexToSlice.get(rowIndex));
-				});
+				return column.stream(rowIndex -> converter.prepare(indexToSlice.apply(rowIndex)));
 			}
 
 			@Override
@@ -217,12 +195,12 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 			@Override
 			public Stream<T> keyStream() {
-				return column.keyStream().map(indexToSlice::get);
+				return column.keyStream().map(indexToSlice::apply);
 			}
 
 			@Override
 			public IValueProvider onValue(T key) {
-				return column.onValue(sliceToIndex.get(key));
+				return column.onValue(sliceToIndex.apply(key));
 			}
 
 			@Override

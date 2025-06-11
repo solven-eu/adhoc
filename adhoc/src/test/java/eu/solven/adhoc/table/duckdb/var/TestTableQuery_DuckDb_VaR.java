@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBConnection;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -106,8 +106,6 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 									"""))
 					.build());
 
-	DSLContext dsl = table.makeDsl();
-
 	private CubeWrapper wrapInCube(IMeasureForest forest) {
 		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
@@ -152,8 +150,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 					        if(random() > 0.5, 'red', 'blue'),
 					        list_transform(range(%s), x -> RANDOM()::DECIMAL(2, 1))::DOUBLE[]
 					    FROM range(%s)
-					);
-										""".formatted(arrayLength, maxCardinality));
+					);""".formatted(arrayLength, maxCardinality));
 		});
 
 		registerMeasures();
@@ -388,15 +385,28 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKey(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED))
+				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
 				.hasSize(1);
 
 		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues()
-				.get(Map.of(C_SCENARIOINDEX, ICompositeColumnGenerator.COORDINATE_GENERATED));
+				.get(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED));
 
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 
 		Assertions.assertThat(measureToValue.get(countAsterisk.getName())).isEqualTo(2L);
+	}
+
+	// filter scenarioIndex on empty measure
+	@Test
+	public void testGroupByScenario_emptyMeasure() {
+		ITabularView result = wrapInCube(forest)
+				.execute(CubeQuery.builder().groupByAlso(C_SCENARIOINDEX).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of(C_SCENARIOINDEX, "generated")).hasSize(1);
+
+		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, "generated"));
+		Assertions.assertThat(measureToValue).isEmpty();
 	}
 
 	@Test

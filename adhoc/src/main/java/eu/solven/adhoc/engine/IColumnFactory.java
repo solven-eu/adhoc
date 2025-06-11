@@ -47,7 +47,7 @@ public interface IColumnFactory {
 	 * @param underlyings
 	 * @return a column which will hold result for the given underlyings
 	 */
-	IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeColumnFastGet<T> makeColumn(List<? extends ISliceToValue> underlyings);
 
 	/**
 	 * @param agg
@@ -56,7 +56,7 @@ public interface IColumnFactory {
 	 *         the same slice.
 	 *
 	 */
-	IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings);
 
 	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 }

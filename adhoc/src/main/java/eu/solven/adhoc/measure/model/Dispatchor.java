@@ -30,7 +30,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -120,11 +120,11 @@ public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggrega
 	}
 
 	@Override
-	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
+	public Optional<IColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
 		IDecomposition decomposition =
 				operatorFactory.makeDecomposition(getDecompositionKey(), getDecompositionOptions());
 
-		if (decomposition instanceof ICompositeColumnGenerator columnGenerator) {
+		if (decomposition instanceof IColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);
 		} else {
 			return Optional.empty();

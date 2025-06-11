@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -136,10 +136,10 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 	}
 
 	@Override
-	public Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
+	public Optional<IColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
 		ICombination combination = operatorFactory.makeCombination(this);
 
-		if (combination instanceof ICompositeColumnGenerator columnGenerator) {
+		if (combination instanceof IColumnGenerator columnGenerator) {
 			return Optional.of(columnGenerator);
 		} else {
 			return Optional.empty();

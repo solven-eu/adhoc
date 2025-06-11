@@ -50,6 +50,7 @@ import com.quartetfs.biz.pivot.definitions.impl.JoinMeasureDescription;
 import com.quartetfs.biz.pivot.postprocessing.IPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ABasicPostProcessor;
+import com.quartetfs.biz.pivot.postprocessing.impl.AFilteringPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ALocationShiftPostProcessor;
 import com.quartetfs.biz.pivot.postprocessing.impl.ArithmeticFormulaPostProcessor;
 import com.quartetfs.fwk.Registry;
@@ -291,10 +292,12 @@ public class AtotiMeasureToAdhoc {
 		if (ABaseDynamicAggregationPostProcessorV2.class.isAssignableFrom(implementationClass)
 				|| ABaseDynamicAggregationPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDynamicPostProcessor(measure, builder -> {
-
+				// no default customization
 			});
-		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)) {
-			return onFilteringPostProcessor(measure);
+		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass) || AFilteringPostProcessor.class.isAssignableFrom(implementationClass)) {
+			return onFilteringPostProcessor(measure, builder -> {
+				// no default customization
+			});
 		} else if (DrillupPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDrillupPostProcessor(measure);
 		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
@@ -377,7 +380,7 @@ public class AtotiMeasureToAdhoc {
 		return transcoder.underlyingNonNull(level);
 	}
 
-	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure) {
+	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure, Consumer<Filtrator.FiltratorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
@@ -388,6 +391,8 @@ public class AtotiMeasureToAdhoc {
 		IAdhocFilter filter = makeFilter(measure, properties);
 
 		filtratorBuilder.filter(filter);
+
+		onBuilder.accept(filtratorBuilder);
 
 		return List.of(filtratorBuilder.build());
 	}
@@ -472,14 +477,14 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onDynamicPostProcessor(IPostProcessorDescription measure,
-			Consumer<Partitionor.BucketorBuilder> onBuilder) {
+			Consumer<Partitionor.PartitionorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
 		List<String> leafLevels = getPropertyList(properties, ABaseDynamicAggregationPostProcessorV2.LEAF_LEVELS);
 
-		Partitionor.BucketorBuilder bucketorBuilder = Partitionor.builder()
+		Partitionor.PartitionorBuilder partitionorBuilder = Partitionor.builder()
 				.name(measure.getName())
 				.underlyings(underlyingNames)
 				.combinationKey(measure.getPluginKey())
@@ -487,16 +492,16 @@ public class AtotiMeasureToAdhoc {
 				.aggregationKey(properties.getProperty(ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION,
 						SumAggregation.KEY));
 
-		transferTagProperties(measure, bucketorBuilder::tag);
+		transferTagProperties(measure, partitionorBuilder::tag);
 
 		Map<String, Object> combinatorOptions =
 				propertiesToOptions(properties, ABaseDynamicAggregationPostProcessorV2.AGGREGATION_FUNCTION);
 
-		bucketorBuilder.combinationOptions(combinatorOptions);
+		partitionorBuilder.combinationOptions(combinatorOptions);
 
-		onBuilder.accept(bucketorBuilder);
+		onBuilder.accept(partitionorBuilder);
 
-		return List.of(bucketorBuilder.build());
+		return List.of(partitionorBuilder.build());
 	}
 
 	protected IAdhocGroupBy makeGroupBy(List<String> leafLevels) {

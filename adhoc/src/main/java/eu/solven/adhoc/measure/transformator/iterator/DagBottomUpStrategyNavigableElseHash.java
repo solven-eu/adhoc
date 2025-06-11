@@ -57,13 +57,13 @@ import eu.solven.adhoc.measure.model.Shiftor;
 public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrategy {
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
-		return MultitypeNavigableElseHashColumn.<SliceAsMap>builder().build();
+	public <T> IMultitypeColumnFastGet<T> makeColumn() {
+		return (IMultitypeColumnFastGet) MultitypeNavigableElseHashColumn.builder().build();
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeNavigableElseHashMergeableColumn.<SliceAsMap>builder(agg).build();
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
+		return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.builder(agg).build();
 	}
 
 	@Override

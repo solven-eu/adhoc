@@ -50,12 +50,12 @@ public class StandardColumnFactory implements IColumnFactory {
 	private final IDagBottomUpStrategy bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
+	public <T> IMultitypeColumnFastGet<T> makeColumn(List<? extends ISliceToValue> underlyings) {
 		return bottomUpStrategy.makeColumn();
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg,
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg,
 			List<? extends ISliceToValue> underlyings) {
 		return bottomUpStrategy.makeColumn(agg);
 	}

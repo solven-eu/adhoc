@@ -27,13 +27,13 @@ import java.util.Optional;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 
 /**
- * Anything which may provide a {@link ICompositeColumnGenerator}
+ * Anything which may provide a {@link IColumnGenerator}
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface IMayHaveColumnGenerator {
 
-	Optional<ICompositeColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory);
+	Optional<IColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory);
 
 }
