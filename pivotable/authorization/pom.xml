@@ -6,6 +6,9 @@
 		<artifactId>pivotable</artifactId>
 		<version>0.0.8-SNAPSHOT</version>
 	</parent>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
+
 
 	<artifactId>pivotable-authorization</artifactId>
 	<description>Manage access_token and refresh_token</description>

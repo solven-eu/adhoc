@@ -28,7 +28,7 @@ The style is ensured with Spotless, and various sub-plugins. Just run `mvn spotl
     
 ## In case of error:
 
-        mvn reset --hard HEAD~~
+        git reset --hard HEAD~~
         git tag -d vXXX
         git push --delete origin vXXX
 
