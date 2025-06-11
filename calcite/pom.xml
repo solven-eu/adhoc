@@ -6,10 +6,10 @@
 		<artifactId>aggregator-adhoc</artifactId>
 		<version>0.0.8-SNAPSHOT</version>
 	</parent>
-	<!-- `name` is required by Sonatype-->
-	<name>${project.groupId}:${project.artifactId}</name>
 
 	<artifactId>adhoc-calcite</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<calcite.version>1.40.0</calcite.version>

@@ -6,10 +6,10 @@
 		<artifactId>pivotable</artifactId>
 		<version>0.0.8-SNAPSHOT</version>
 	</parent>
-	<!-- `name` is required by Sonatype-->
-	<name>${project.groupId}:${project.artifactId}</name>
 
 	<artifactId>pivotable-public</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
 		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
