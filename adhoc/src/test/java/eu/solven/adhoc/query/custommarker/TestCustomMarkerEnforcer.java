@@ -43,7 +43,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
@@ -101,7 +101,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	String mNameUSD = "k1.USD";
 
 	void prepareMeasures() {
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name(mName)
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))

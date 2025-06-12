@@ -24,12 +24,12 @@ package eu.solven.adhoc.data.column;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 
 /**
  * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
  * 
- * Typically used by {@link Bucketor}.
+ * Typically used by {@link Partitionor}.
  * 
  * @param <T>
  * @author Benoit Lacelle

@@ -46,12 +46,12 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -289,7 +289,7 @@ public class MeasureForestFromResource {
 			if (d.getAggregationOptions().isEmpty()) {
 				clean.remove("aggregationOptions");
 			}
-		} else if (measure instanceof Bucketor b) {
+		} else if (measure instanceof Partitionor b) {
 			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
 			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
 					b.getUnderlyingNames())) {

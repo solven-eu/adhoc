@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
-import eu.solven.adhoc.measure.model.Bucketor;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -52,7 +52,7 @@ public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestCo
 
 		forest.addMeasure(countAsterisk);
 
-		forest.addMeasure(Bucketor.builder()
+		forest.addMeasure(Partitionor.builder()
 				.name("byK")
 				.underlying(countAsterisk.getName())
 				.groupBy(GroupByColumns.named("k"))

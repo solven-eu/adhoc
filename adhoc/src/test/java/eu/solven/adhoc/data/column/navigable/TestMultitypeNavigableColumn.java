@@ -224,7 +224,16 @@ public class TestMultitypeNavigableColumn {
 			Assertions.assertThat(o).isNull();
 		});
 
-		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{size=1, #0=k1->null(null)}");
+		Assertions.assertThat(column.isEmpty()).isTrue();
+		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{size=0}");
+	}
+
+	@Test
+	public void testUnknown() {
+		column.append("k").onLong(123);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("k"))).isEqualTo(123L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("unknownKey"))).isNull();
 	}
 
 }

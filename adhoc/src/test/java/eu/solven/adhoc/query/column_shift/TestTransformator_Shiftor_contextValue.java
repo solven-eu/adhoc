@@ -64,9 +64,6 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	String mName = "k1.dynamic";
 
 	public static class ToCcyShifter implements IFilterEditor {
-		public ToCcyShifter(Map<String, ?> options) {
-			// Instantiation through key requires a Map constructor
-		}
 
 		@Override
 		public IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {

@@ -45,9 +45,9 @@ public interface IDagBottomUpStrategy {
 	 * 
 	 * @return the storage for a {@link ITransformatorQueryStep} output.
 	 */
-	IMultitypeColumnFastGet<SliceAsMap> makeColumn();
+	<T> IMultitypeColumnFastGet<T> makeColumn();
 
-	IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg);
+	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg);
 
 	/**
 	 * 

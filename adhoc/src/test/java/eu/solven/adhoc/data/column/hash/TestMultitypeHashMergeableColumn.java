@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Collections2;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -262,6 +263,16 @@ public class TestMultitypeHashMergeableColumn {
 			Assertions.assertThat(o).isNull();
 		});
 
+		Assertions.assertThat(column.isEmpty()).isTrue();
 		Assertions.assertThat(column.toString()).isEqualTo("MultitypeHashMergeableColumn{}");
 	}
+
+	@Test
+	public void testUnknown() {
+		column.append("k").onLong(123);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("k"))).isEqualTo(123L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("unknownKey"))).isNull();
+	}
+
 }

@@ -25,7 +25,7 @@ package eu.solven.adhoc.column;
 import java.util.List;
 import java.util.Set;
 
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -66,12 +66,12 @@ public interface IColumnsManager extends IHasColumnTypes {
 	 * 
 	 * @param operatorFactory
 	 * @param measures
-	 *            a {@link Set} of measures providing some {@link ICompositeColumnGenerator}.
+	 *            a {@link Set} of measures providing some {@link IColumnGenerator}.
 	 * @param columnMatcher
 	 *            filter the columnName.
 	 * @return
 	 */
-	List<ICompositeColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
+	List<IColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
 			Set<IMeasure> measures,
 			IValueMatcher columnMatcher);
 

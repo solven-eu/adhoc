@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.resource.MeasureForests;
 import guru.nidi.graphviz.attribute.Font;
@@ -56,9 +56,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ForestAsGraphvizDag {
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOSHAPE =
-			List.of(Map.entry(Bucketor.class, "star"));
+			List.of(Map.entry(Partitionor.class, "star"));
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOCOLOR =
-			List.of(Map.entry(Bucketor.class, "yellow"),
+			List.of(Map.entry(Partitionor.class, "yellow"),
 					Map.entry(Filtrator.class, "grey"),
 					Map.entry(Combinator.class, "cyan"));
 

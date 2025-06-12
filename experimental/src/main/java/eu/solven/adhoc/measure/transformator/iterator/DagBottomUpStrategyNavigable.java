@@ -32,7 +32,6 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
@@ -50,14 +49,15 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
  */
 public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 
+	@SuppressWarnings("PMD.UnnecessaryCast")
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> makeColumn() {
-		return MultitypeNavigableColumn.<SliceAsMap>builder().build();
+	public <T> IMultitypeColumnFastGet<T> makeColumn() {
+		return (MultitypeNavigableColumn) MultitypeNavigableColumn.builder().build();
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {
-		return MultitypeNavigableMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
+		return (IMultitypeMergeableColumn) MultitypeNavigableMergeableColumn.builder().aggregation(agg).build();
 	}
 
 	@Override

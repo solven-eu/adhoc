@@ -58,15 +58,19 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Helps working with DuckDB.
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
 public class DuckDbHelper {
 
+	public static String getInMemoryJdbcUrl() {
+		return "jdbc:duckdb:";
+	}
+
 	/**
 	 * This {@link DuckDBConnection} should be `.duplicate` in case of multi-threaded access.
-	 *
+	 * <p>
 	 * Everything which not persisted is discarded when the connection is closed: it can be used to read/write files,
 	 * but any inMemory tables would be dropped.
 	 *
@@ -75,14 +79,13 @@ public class DuckDbHelper {
 	// https://duckdb.org/docs/api/java.html
 	public static DuckDBConnection makeFreshInMemoryDb() {
 		try {
-			return (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:");
+			return (DuckDBConnection) DriverManager.getConnection(getInMemoryJdbcUrl());
 		} catch (SQLException e) {
 			throw new IllegalStateException("Issue opening an InMemory DuckDB", e);
 		}
 	}
 
 	/**
-	 *
 	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
 	 */
 	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
@@ -90,6 +93,14 @@ public class DuckDbHelper {
 		return dslSupplier(duckDbConnection);
 	}
 
+	/**
+	 * One should prefer relying on a pooling mecanisms, like HikariCP, to avoid the overhead of creating/duplicating a
+	 * new connection each time.
+	 *
+	 * @param duckDbConnection
+	 * @return
+	 */
+	@Deprecated(since = "Inefficient to duplicate the connection for each query")
 	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
 		return () -> {
 			Connection duplicated;
@@ -112,7 +123,7 @@ public class DuckDbHelper {
 	/**
 	 * Compute in a single query the estimated cardinality and a selection of the most present coordinates specialized
 	 * for DuckDB.
-	 * 
+	 *
 	 * @param table
 	 * @param columnToValueMatcher
 	 * @param limit
@@ -237,7 +248,6 @@ public class DuckDbHelper {
 	}
 
 	/**
-	 * 
 	 * @param valueMatcher
 	 * @return a SQL expression matching input IValueMatcher for a `FILTER` expression
 	 */
@@ -255,5 +265,6 @@ public class DuckDbHelper {
 			throw new NotYetImplementedException(
 					"TODO: FILTER expression for %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
 		}
+
 	}
 }

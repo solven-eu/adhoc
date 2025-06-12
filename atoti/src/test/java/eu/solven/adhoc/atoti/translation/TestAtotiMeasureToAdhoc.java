@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import eu.solven.adhoc.measure.model.Partitionor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,6 @@ import eu.solven.adhoc.atoti.translation.AtotiMeasureToAdhoc.SourceMode;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -338,7 +338,7 @@ public class TestAtotiMeasureToAdhoc {
 				.containsKeys("contributors.COUNT", "someAggregatedMeasure")
 
 				.containsEntry("someLeafMeasure",
-						Bucketor.builder()
+						Partitionor.builder()
 								.name("someLeafMeasure")
 								.aggregationKey("MAX")
 								.underlying("someAggregatedMeasure")

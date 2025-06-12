@@ -37,7 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class NotMatcher implements IValueMatcher {
+public class NotMatcher implements IValueMatcher, IColumnToString {
 
 	@NonNull
 	final IValueMatcher negated;
@@ -81,5 +81,15 @@ public class NotMatcher implements IValueMatcher {
 		}
 
 		return NotMatcher.builder().negated(negated).build();
+	}
+
+	@Override
+	public String toString(String column, boolean isNegated) {
+		if (negated instanceof IColumnToString customToString) {
+			return customToString.toString(column, !isNegated);
+		} else {
+			// Similar to eu.solven.adhoc.query.filter.ColumnFilter.toString
+			return "%s does NOT match `%s`".formatted(column, negated);
+		}
 	}
 }

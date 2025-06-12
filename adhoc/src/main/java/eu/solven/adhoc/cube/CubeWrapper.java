@@ -39,7 +39,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
@@ -128,7 +128,7 @@ public class CubeWrapper implements ICubeWrapper {
 			if (measure instanceof IMayHaveColumnGenerator mayHaveColumnGenerator) {
 				try {
 
-					Optional<ICompositeColumnGenerator> optColumnGenerator =
+					Optional<IColumnGenerator> optColumnGenerator =
 							mayHaveColumnGenerator.optColumnGenerator(operatorFactory);
 
 					optColumnGenerator.ifPresent(columnGenerator -> {
@@ -141,11 +141,11 @@ public class CubeWrapper implements ICubeWrapper {
 				} catch (Exception e) {
 					if (AdhocUnsafe.isFailFast()) {
 						String msg = "Issue looking for an %s in m=%s c=%s"
-								.formatted(ICompositeColumnGenerator.class.getSimpleName(), measure, this.getName());
+								.formatted(IColumnGenerator.class.getSimpleName(), measure, this.getName());
 						throw new IllegalStateException(msg, e);
 					} else {
 						log.warn("Issue looking for an {} in m={} c={}",
-								ICompositeColumnGenerator.class.getSimpleName(),
+								IColumnGenerator.class.getSimpleName(),
 								measure,
 								this.getName(),
 								e);
@@ -176,7 +176,7 @@ public class CubeWrapper implements ICubeWrapper {
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
 
-		List<ICompositeColumnGenerator> columnGenerators = columnsManager.getGeneratedColumns(operatorFactory,
+		List<IColumnGenerator> columnGenerators = columnsManager.getGeneratedColumns(operatorFactory,
 				forest.getMeasures(),
 				InMatcher.isIn(columnToValueMatcher.keySet()));
 

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -50,6 +51,8 @@ public class NotFilter implements INotFilter {
 			return MATCH_NONE;
 		} else if (filter.isMatchNone()) {
 			return MATCH_ALL;
+		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
+			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
 		}
 		return NotFilter.builder().negated(filter).build();
 	}

@@ -41,7 +41,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.column.generated_column.ICompositeColumnGenerator;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
@@ -498,11 +498,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * Current implementation restore the suppressedColumn by writing a single member. Another project may prefer
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
 	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
-	 * columns). <<<<<<< HEAD
-	 * 
-	 * =======
-	 *
-	 * >>>>>>> origin/master
+	 * columns).
 	 * 
 	 * @param queryStep
 	 * @param suppressedColumns
@@ -513,9 +509,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Set<String> suppressedColumns,
 			IMultitypeColumnFastGet<SliceAsMap> column) {
 		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
-		IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed =
-				GroupByHelpers.addConstantColumns(column, constantValues);
-		return columnWithSuppressed;
+		return GroupByHelpers.addConstantColumns(column, constantValues);
 	}
 
 	/**
@@ -526,8 +520,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @return
 	 */
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
-		return suppressedColumns.stream()
-				.collect(Collectors.toMap(c -> c, c -> ICompositeColumnGenerator.COORDINATE_GENERATED));
+		return suppressedColumns.stream().collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 
 }

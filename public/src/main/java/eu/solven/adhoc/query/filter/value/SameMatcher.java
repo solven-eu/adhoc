@@ -37,7 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class SameMatcher implements IValueMatcher {
+public class SameMatcher implements IValueMatcher, IColumnToString {
 	@NonNull
 	Object operand;
 
@@ -45,5 +45,14 @@ public class SameMatcher implements IValueMatcher {
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	public boolean match(Object value) {
 		return operand == value;
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		if (negated) {
+			return column + "!==" + operand;
+		} else {
+			return column + "===" + operand;
+		}
 	}
 }

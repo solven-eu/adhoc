@@ -31,11 +31,11 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -84,6 +84,10 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		// Read slices from the natural undelryingStep, as the natural slices to write
 		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(underlyingMeasure).build();
 
+		if (whereToReadShifted.equals(whereToReadForWrite)) {
+			log.debug("whereToReadShited and whereToWrite are equals");
+		}
+
 		// Query both querySteps, as they may not provide the same slices
 		return Arrays.asList(whereToReadShifted, whereToReadForWrite);
 	}
@@ -92,18 +96,6 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		FilterEditorContext filterEditorContext =
 				IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build();
 		return filterEditorSupplier.get().editFilter(filterEditorContext);
-	}
-
-	// @Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
-			ISliceAndValueConsumer output) {
-		ISliceToValue whereToReadShifted = underlyings.getFirst();
-
-		SliceAsMap shiftedSlice = shiftSlice(slice);
-
-		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
-		whereToReadShifted.onValue(shiftedSlice).acceptReceiver(output.putSlice(slice.getAdhocSliceAsMap()));
 	}
 
 	/**
@@ -134,6 +126,30 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 	protected boolean isDebug() {
 		return getStep().isDebug();
+	}
+
+	// @Override
+	protected void onSlice(List<? extends ISliceToValue> underlyings,
+			ISliceWithStep slice,
+			ISliceAndValueConsumer output) {
+		ISliceToValue whereToReadShifted = underlyings.getFirst();
+
+		SliceAsMap shiftedSlice = shiftSlice(slice);
+
+		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
+		IValueProvider shiftedValue = whereToReadShifted.onValue(shiftedSlice);
+		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
+		shiftedValue.acceptReceiver(output.putSlice(sliceAsMap));
+
+		if (isDebug()) {
+			log.info("[DEBUG] Write {}={} at {} (shifted from {} by {} to {})",
+					shiftor.getName(),
+					IValueProvider.getValue(shiftedValue),
+					sliceAsMap,
+					shiftor.getUnderlying(),
+					shiftor.getEditorKey(),
+					shiftedSlice);
+		}
 	}
 
 	protected void forEachDistinctSlice1(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {
@@ -175,14 +191,14 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyings.size() != 2");
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> storage = makeColumn(underlyings);
 
 		forEachDistinctSlice1(underlyings, storage::append);
 
 		return SliceToValue.builder().column(storage).build();
 	}
 
-	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
+		return factories.getColumnsFactory().makeColumn(underlyings);
 	}
 }

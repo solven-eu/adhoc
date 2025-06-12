@@ -2,6 +2,11 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.9]
+### Changed
+- `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.
+- `Bucketor` is renamed `Partitionor`.
+
 ## [0.0.8]
 ### Added
 - `CompositeTableTranscoder` is introduced.

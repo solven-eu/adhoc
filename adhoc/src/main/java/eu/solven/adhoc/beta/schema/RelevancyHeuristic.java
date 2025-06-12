@@ -37,9 +37,9 @@ import com.google.common.util.concurrent.AtomicLongMap;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import lombok.Builder;
 import lombok.Value;
@@ -123,8 +123,8 @@ public class RelevancyHeuristic {
 					IMeasure measure = forest.resolveIfRef(ReferencedMeasure.ref(currentD));
 					if (measure instanceof Columnator columnator) {
 						columnator.getColumns().forEach(columnToRef::incrementAndGet);
-					} else if (measure instanceof Bucketor bucketor) {
-						bucketor.getGroupBy().getGroupedByColumns().forEach(columnToRef::incrementAndGet);
+					} else if (measure instanceof Partitionor partitionor) {
+						partitionor.getGroupBy().getGroupedByColumns().forEach(columnToRef::incrementAndGet);
 					}
 
 					oneAdded.set(true);

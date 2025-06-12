@@ -37,7 +37,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class NullMatcher implements IValueMatcher {
+public class NullMatcher implements IValueMatcher, IColumnToString {
 	public static @NonNull IValueMatcher matchNull() {
 		return NullMatcher.builder().build();
 	}
@@ -45,5 +45,14 @@ public class NullMatcher implements IValueMatcher {
 	@Override
 	public boolean match(Object value) {
 		return value == null;
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		if (negated) {
+			return column + "!==null";
+		} else {
+			return column + "===null";
+		}
 	}
 }

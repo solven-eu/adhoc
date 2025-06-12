@@ -380,7 +380,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			List<CubeQueryStep> underlyingSteps,
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
-			// This may happen on a IMeasure which is missing a required column
+			// This may happen on a Columnator which is missing a required column
 			return Optional.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {

@@ -313,15 +313,15 @@ public class TestMeasureForestFromResource {
 	}
 
 	@Test
-	public void testBucketor() throws IOException {
-		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testBucketor").build();
+	public void testPartitionor() throws IOException {
+		UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name("testPartitionor").build();
 
 		measureBag.addMeasure(IAdhocTestConstants.sum_MaxK1K2ByA);
 		measureBag.addMeasure(IAdhocTestConstants.k1Sum);
 		measureBag.addMeasure(IAdhocTestConstants.k2Sum);
 
 		String asString = fromResource.asString("json", measureBag);
-		MeasureForest fromString = fromResource.loadForestFromResource("testBucketor",
+		MeasureForest fromString = fromResource.loadForestFromResource("testPartitionor",
 				"json",
 				new ByteArrayResource(asString.getBytes(StandardCharsets.UTF_8)));
 
@@ -332,7 +332,7 @@ public class TestMeasureForestFromResource {
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				[ {
 				  "name" : "sum_maxK1K2ByA",
-				  "type" : ".Bucketor",
+				  "type" : ".Partitionor",
 				  "aggregationKey" : "SUM",
 				  "combinationKey" : "MAX",
 				  "groupBy" : {
@@ -546,7 +546,7 @@ public class TestMeasureForestFromResource {
 	}
 
 	@Test
-	public void testRemoveUselessProperties_Bucketor() {
+	public void testRemoveUselessProperties_Partitionor() {
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> rawMap = objectMapper.convertValue(IAdhocTestConstants.sum_MaxK1K2ByA, Map.class);
@@ -558,7 +558,7 @@ public class TestMeasureForestFromResource {
 				.containsEntry("combinationKey", "MAX")
 				.containsEntry("groupBy", Map.of("columns", List.of("a")))
 				.containsEntry("name", "sum_maxK1K2ByA")
-				.containsEntry("type", ".Bucketor")
+				.containsEntry("type", ".Partitionor")
 				.containsEntry("underlyings", Arrays.asList("k1", "k2"));
 	}
 

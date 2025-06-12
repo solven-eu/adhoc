@@ -25,14 +25,14 @@ package eu.solven.adhoc.table.sql;
 import java.sql.Connection;
 import java.util.function.Supplier;
 
+import javax.sql.DataSource;
+
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
-import lombok.NonNull;
-
 /**
- * Helps building a proper {@link DSLContext}, typically to {@link JooqTableWrapper}.
+ * Helps building a proper {@link DSLContext}, typically for {@link JooqTableWrapper}.
  * 
  * @author Benoit Lacelle
  *
@@ -56,7 +56,11 @@ public interface DSLSupplier {
 	 * @param sqlDialect
 	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
 	 */
-	static @NonNull DSLSupplier fromDialect(SQLDialect sqlDialect) {
+	static DSLSupplier fromDialect(SQLDialect sqlDialect) {
 		return () -> DSL.using(sqlDialect);
+	}
+
+	static DSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
+		return () -> DSL.using(datasource, sqlDialect);
 	}
 }

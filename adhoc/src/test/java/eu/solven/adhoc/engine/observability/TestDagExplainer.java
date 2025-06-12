@@ -56,10 +56,18 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.isEqualTo("Unfiltrator");
 
 		Assertions.assertThat(dagExplainer.toString(CubeQueryStep.builder().measure(sum_MaxK1K2ByA).build()))
-				.isEqualTo("Bucketor[MAX][SUM]");
+				.isEqualTo("Partitionor[MAX][SUM]");
 
 		Assertions.assertThat(dagExplainer.toString(CubeQueryStep.builder().measure(dispatchFrom0To100).build()))
 				.isEqualTo("Dispatchor[SUM]");
 
+	}
+
+	// Ensure toString() is concise not to pollute the explain
+	@Test
+	public void testToString() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		Assertions.assertThat(dagExplainer.toString()).isEqualTo(DagExplainer.class.getSimpleName());
 	}
 }

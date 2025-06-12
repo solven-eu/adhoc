@@ -96,6 +96,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	// Used to report slowPathes, may be due to bugs/unoptimized_cases/mis-usages
 	final AtomicInteger slowPath = new AtomicInteger();
 
+	// Used to clean lazily a null insertion
+	final AtomicInteger lastInsertionIndex = new AtomicInteger(-1);
+
 	protected IValueReceiver merge(int index) {
 		if (index < 0) {
 			throw new ArrayIndexOutOfBoundsException("index=%s must be positive".formatted(index));
@@ -133,6 +136,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	/**
+	 * To be called before a guaranteed `add` operation.
+	 */
+	protected void checkSizeBeforeAdd() {
+		long size = size();
+		if (size >= AdhocUnsafe.limitColumnSize) {
+			// TODO Log the first and last elements
+			throw new IllegalStateException(
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+		}
+	}
+
+	/**
 	 * 
 	 * @param key
 	 * @param mergeElseSet
@@ -166,7 +181,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		IValueReceiver valueConsumer;
 
 		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
+			checkSizeBeforeAdd();
+
 			// In most cases, we append a greater key, because we process sorted keys
+			lastInsertionIndex.set(keys.size());
 			keys.add(key);
 			valueConsumer = values.add();
 		} else {
@@ -180,6 +198,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				}
 			} else {
 				if (insertEvenIfNotLast) {
+					checkSizeBeforeAdd();
 					valueConsumer = onRandomInsertion(key, index);
 				} else {
 					valueConsumer = INSERTION_REJECTED;
@@ -189,9 +208,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return valueConsumer;
 	}
 
-	private IValueReceiver onRandomInsertion(T key, int index) {
-		IValueReceiver valueConsumer;
-		// BEWARE This case should not happen. For now, we try handling it smoothly
+	// BEWARE This is a very awkward design. This is due to making sure we do not leave any `null` in the column.
+	protected void lazyClearLastWrite() {
+		if (lastInsertionIndex.get() >= 0 && IValueProvider.isNull(values.read(lastInsertionIndex.get()))) {
+			keys.remove(lastInsertionIndex.get());
+			values.remove(lastInsertionIndex.get());
+
+			lastInsertionIndex.set(-1);
+		}
+	}
+
+	protected IValueReceiver onRandomInsertion(T key, int index) {
+		// BEWARE This case should be rare. For now, we try handling it smoothly
 		// It typically happens if it is used to receive table aggregates while the table does not provide
 		// sorted results.
 		// It typically happens if some underlying queryStep does not return a properly sorted column.
@@ -199,13 +227,15 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
 		}
 		int insertionIndex = -index - 1;
+		lastInsertionIndex.set(insertionIndex);
 		keys.add(insertionIndex, key);
-		valueConsumer = values.add(insertionIndex);
-		return valueConsumer;
+		return values.add(insertionIndex);
 	}
 
 	protected void doLock() {
 		if (!locked) {
+			lazyClearLastWrite();
+
 			locked = true;
 			assert keys.stream().distinct().count() == keys.size() : "multiple .put with same key is illegal";
 		}
@@ -215,9 +245,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		if (locked) {
 			throw new IllegalStateException("This is locked. Can not append key=%s".formatted(key));
 		}
+
+		lazyClearLastWrite();
 	}
 
 	protected int getIndex(T key) {
+		lazyClearLastWrite();
+
 		if (keys.isEmpty()) {
 			return -1;
 		}
@@ -282,11 +316,15 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 	@Override
 	public long size() {
+		lazyClearLastWrite();
+
 		return keys.size();
 	}
 
 	@Override
 	public boolean isEmpty() {
+		lazyClearLastWrite();
+
 		return keys.isEmpty();
 	}
 
@@ -361,6 +399,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	protected IValueReceiver set(int index) {
+		lastInsertionIndex.set(index);
 		return values.set(index);
 	}
 
@@ -370,6 +409,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		if (index >= 0) {
 			keys.remove(index);
 			values.remove(index);
+
+			if (index == lastInsertionIndex.get()) {
+				lastInsertionIndex.set(-1);
+			}
 		}
 	}
 }

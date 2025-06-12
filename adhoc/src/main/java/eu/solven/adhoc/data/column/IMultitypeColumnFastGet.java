@@ -46,6 +46,12 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 		onValue(slice).acceptReceiver(valueReceiver);
 	}
 
+	/**
+	 * 
+	 * @param key
+	 * @return an {@link IValueReceiver} to accept a value for given key. If the value is null, the operation should be
+	 *         without effect.
+	 */
 	IValueProvider onValue(T key);
 
 	/**

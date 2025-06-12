@@ -28,10 +28,10 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.IMeasureForestVisitor;
-import eu.solven.adhoc.measure.model.Bucketor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -58,7 +58,7 @@ public class RatioOverCurrentColumnValueCompositor {
 
 				// A Bucketor will make explicit what's the current value for requested column
 				// Filter the specific country: if we were filtering color=red, this filters both color and country
-				.add(Bucketor.builder()
+				.add(Partitionor.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
 						.groupBy(GroupByColumns.named(column))

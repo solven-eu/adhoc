@@ -30,7 +30,6 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
@@ -47,7 +46,7 @@ public interface IColumnFactory {
 	 * @param underlyings
 	 * @return a column which will hold result for the given underlyings
 	 */
-	IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeColumnFastGet<T> makeColumn(List<? extends ISliceToValue> underlyings);
 
 	/**
 	 * @param agg
@@ -56,7 +55,7 @@ public interface IColumnFactory {
 	 *         the same slice.
 	 *
 	 */
-	IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings);
 
 	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 }

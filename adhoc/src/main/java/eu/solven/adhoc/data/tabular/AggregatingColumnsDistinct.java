@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,17 +31,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.array.MultitypeArrayColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -56,6 +55,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("checkstyle:TypeName")
 public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
+	@NonNull
+	@Default
+	AdhocFactories factories = AdhocFactories.builder().build();
+
 	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
@@ -77,9 +80,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
-		// Not Navigable as not all table will provide slices properly sorted (e.g. InMemoryTable)
-		// TODO WHy not Navigable as we always finish by sorting in .closeColumn?
-		return MultitypeArrayColumn.<Integer>builder().build();
+		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
+		return factories.getColumnsFactory().makeColumn(Arrays.asList());
 	}
 
 	@Override
@@ -130,29 +132,14 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
-		if (column instanceof MultitypeNavigableColumn<?>) {
-			throw new NotYetImplementedException("TODO");
-		} else {
-			// TODO Should we have some sort of strategy to decide when to switch to the sorting strategy?
-
-			// BEWARE The point of this sorting is to improve performance of later
-			// UnderlyingQueryStepHelpers.distinctSlices
-			if (refSortedSliceToIndex.get() == null) {
-				ObjectList<Object2IntMap.Entry<T>> sortedEntries = doSort(consumer -> {
-					for (int rowIndex = 0; rowIndex < indexToSlice.size(); rowIndex++) {
-						consumer.acceptObject2Int(indexToSlice.get(rowIndex), rowIndex);
-					}
-				}, indexToSlice.size());
-
-				refSortedSliceToIndex.set(sortedEntries);
-			}
-
-			return copyToNavigable(column, sliceToIndex -> {
-				refSortedSliceToIndex.get().forEach(e -> {
-					sliceToIndex.acceptObject2Int(e.getKey(), e.getIntValue());
-				});
-			});
+		// Reverse from `slice->index` to `index->slice`
+		Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(indexToSlice.size());
+		for (int i = 0; i < indexToSlice.size(); i++) {
+			sliceToIndex.put(indexToSlice.get(i), i);
 		}
+
+		// Turn the columnByIndex to a columnBySlice
+		return AggregatingColumns.undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
 	}
 
 }

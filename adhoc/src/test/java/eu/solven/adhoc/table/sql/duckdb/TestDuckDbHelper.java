@@ -31,6 +31,9 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
@@ -133,11 +136,19 @@ public class TestDuckDbHelper {
 
 	@Disabled
 	@Test
-	public void testMakeConnections_leak() {
-		DSLSupplier supplier = DuckDbHelper.inMemoryDSLSupplier();
+	public void testMakeConnections_withPool() {
+		// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#rocket-initialization
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl(DuckDbHelper.getInMemoryJdbcUrl());
+
+		HikariDataSource ds = new HikariDataSource(config);
+
+		DSLSupplier supplier = DSLSupplier.fromDatasource(ds, SQLDialect.DUCKDB);
 
 		IntStream.range(0, 16 * 1024).forEach(i -> {
-			log.info("{}", i);
+			if (Integer.bitCount(i + 1) == 1) {
+				log.info("testMakeConnections_withPool #{}", i);
+			}
 			supplier.getDSLContext();
 		});
 	}
