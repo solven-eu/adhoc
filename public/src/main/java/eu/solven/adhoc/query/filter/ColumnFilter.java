@@ -48,7 +48,7 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 @SuppressWarnings("PMD.LinguisticNaming")
 public class ColumnFilter implements IColumnFilter {

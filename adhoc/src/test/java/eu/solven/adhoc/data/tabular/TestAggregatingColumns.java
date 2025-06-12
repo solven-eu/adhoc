@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.data.tabular;
 
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A boolean `not`/`!`.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder
-@Jacksonized
-public class NotFilter implements INotFilter {
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.measure.model.Aggregator;
 
-	@NonNull
-	final IAdhocFilter negated;
+public class TestAggregatingColumns {
+	Aggregator a = Aggregator.sum("c");
 
-	@Override
-	public boolean isNot() {
-		return true;
+	@Test
+	public void testUnknownKey() {
+		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
+
+		aggregatingColumns.contribute("k", a).onLong(123);
+
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a, false);
+
+		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
+		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();
+
 	}
-
-	public static IAdhocFilter not(IAdhocFilter filter) {
-		if (filter.isMatchAll()) {
-			return MATCH_NONE;
-		} else if (filter.isMatchNone()) {
-			return MATCH_ALL;
-		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
-			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
-		}
-		return NotFilter.builder().negated(filter).build();
-	}
-
 }

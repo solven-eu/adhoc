@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpers
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
+@ToString
 public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T> {
 	@Default
 	@NonNull

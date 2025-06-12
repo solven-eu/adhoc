@@ -33,6 +33,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -56,8 +58,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 2;
-	static final int nbDays = 100_000;
+	static final int maxCardinality = 100;
+	static final int nbDays = 10_000;
 
 	@BeforeAll
 	public static void setLimits() {
@@ -82,14 +84,12 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
 			for (int d = 0; d < nbDays; d++) {
-				table.add(Map.of("l",
-						"A",
-						"row_index",
-						i,
-						"d",
-						today.minusDays(d),
-						"k1",
-						(i + (nbDays - d) * (nbDays - d))));
+				table.add(ImmutableMap.<String, Object>builder()
+						.put("l", "A")
+						.put("row_index", i)
+						.put("d", today.minusDays(d))
+						.put("k1", (i + (nbDays - d) * (nbDays - d)))
+						.build());
 			}
 		}
 	}
@@ -143,7 +143,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void testGrandTotal() {
 		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
-		ITabularView output = cube().execute(CubeQuery.builder().measure(dToD).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dToD).explain(true).build());
 
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
@@ -156,8 +156,12 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void testGroupByDate_maxRow() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = cube().execute(
-				CubeQuery.builder().measure(dToD).groupByAlso("d").andFilter("row_index", maxCardinality - 1).build());
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(dToD)
+				.groupByAlso("d")
+				.andFilter("row_index", maxCardinality - 1)
+				.explain(true)
+				.build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(nbDays)
@@ -181,8 +185,8 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void testGroupByRow_Today() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = cube()
-				.execute(CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).build());
+		ITabularView output = cube().execute(
+				CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).explain(true).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(maxCardinality)

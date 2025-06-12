@@ -36,7 +36,7 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\";year=gt=2003");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"name=Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
+						"name==Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
 	}
 
 	@Test
@@ -44,7 +44,7 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\" and year>2003");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"name=Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
+						"name==Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
 	}
 
 	@Test
@@ -53,7 +53,7 @@ public class TestRsqlToAdhocFilter {
 				.rsql("genres=in=(sci-fi,action);(director=='Christopher Nolan',actor==*Bale);year=ge=2000");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"genres matches `InMatcher{size=2, #0=sci-fi, #1=action}`&director=Christopher Nolan|actor=*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
+						"genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
 	}
 
 	@Test
@@ -62,7 +62,7 @@ public class TestRsqlToAdhocFilter {
 				.rsql("genres=in=(sci-fi,action) and (director=='Christopher Nolan' or actor==*Bale) and year>=2000");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"genres matches `InMatcher{size=2, #0=sci-fi, #1=action}`&director=Christopher Nolan|actor=*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
+						"genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan;year=ge=2000;year=lt=2010");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"director.lastName=Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
+						"director.lastName==Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
 	}
 
 	@Test
@@ -78,24 +78,22 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan and year>=2000 and year<2010");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo(
-						"director.lastName=Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
+						"director.lastName==Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
 	}
 
 	@Test
 	public void testComparison_v3() {
 		IAdhocFilter filter = rsqlToAdhocFilter
-				.rsql("genres=in=(sci-fi,action);genres=out=(romance,animated,horror),director==Que*Tarantino");
+				.rsql("genres=in=(sci-fi,action);genres2=out=(romance,animated,horror),director==Que*Tarantino");
 		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"genres matches `InMatcher{size=2, #0=sci-fi, #1=action}`&NotFilter(negated=genres matches `InMatcher{size=3, #0=romance, #1=animated, #2=horror}`)|director=Que*Tarantino");
+				.isEqualTo("genres=in=(sci-fi,action)&genres2=out=(romance,animated,horror)|director==Que*Tarantino");
 	}
 
 	@Test
 	public void testComparison_v4() {
 		IAdhocFilter filter = rsqlToAdhocFilter
-				.rsql("genres=in=(sci-fi,action) and genres=out=(romance,animated,horror) or director==Que*Tarantino");
+				.rsql("genres=in=(sci-fi,action) and genres2=out=(romance,animated,horror) or director==Que*Tarantino");
 		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"genres matches `InMatcher{size=2, #0=sci-fi, #1=action}`&NotFilter(negated=genres matches `InMatcher{size=3, #0=romance, #1=animated, #2=horror}`)|director=Que*Tarantino");
+				.isEqualTo("genres=in=(sci-fi,action)&genres2=out=(romance,animated,horror)|director==Que*Tarantino");
 	}
 }

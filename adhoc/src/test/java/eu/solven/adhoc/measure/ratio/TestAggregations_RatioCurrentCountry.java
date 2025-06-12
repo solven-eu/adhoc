@@ -161,14 +161,16 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 			cube().execute(adhocQuery);
 		}
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=d_country=current_ratio(Columnator[SUM]) filter=country=US groupBy=grandTotal
-				    \\-- #2 m=d_country=current_ratio_postcheck(Combinator[DIVIDE]) filter=country=US groupBy=grandTotal
-				        |\\- #3 m=d_country=current_slice(Bucketor[SUM][SUM]) filter=country=US groupBy=grandTotal
-				        |   \\-- #4 m=d(SUM) filter=country=US groupBy=(country)
-				        \\-- #5 m=d_country=current_whole(Unfiltrator) filter=country=US groupBy=grandTotal
-				            \\-- !3""");
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								\\-- #1 m=d_country=current_ratio(Columnator[SUM]) filter=country==US groupBy=grandTotal
+								    \\-- #2 m=d_country=current_ratio_postcheck(Combinator[DIVIDE]) filter=country==US groupBy=grandTotal
+								        |\\- #3 m=d_country=current_slice(Partitionor[SUM][SUM]) filter=country==US groupBy=grandTotal
+								        |   \\-- #4 m=d(SUM) filter=country==US groupBy=(country)
+								        \\-- #5 m=d_country=current_whole(Unfiltrator) filter=country==US groupBy=grandTotal
+								            \\-- !3""");
 
 		Assertions.assertThat(messages).hasSize(7);
 	}

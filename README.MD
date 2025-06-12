@@ -446,3 +446,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
 - [Pivotable] Enable selection of `tag` without browsing measures (important when there are many measures)
 - [Pivotable] Show selected options as tag, even when carousel is shrinked.
+- [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).

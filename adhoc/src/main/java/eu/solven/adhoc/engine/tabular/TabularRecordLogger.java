@@ -64,17 +64,22 @@ public class TabularRecordLogger {
 				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.
 				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
 				int currentOut = nbOut.incrementAndGet();
-				if (tableQuery.isDebug() && Integer.bitCount(currentOut) == 1) {
-					log.info("Rejected row #{}: {} (table={})", currentOut, input, table);
+				if (logAboutRow(tableQuery, currentOut)) {
+					log.info("[DEBUG] Rejected row #{}: {} (table={})", currentOut, input, table);
 				}
 			} else {
 				int currentIn = nbIn.incrementAndGet();
-				if (tableQuery.isDebug() && Integer.bitCount(currentIn) == 1) {
-					log.info("Accepted row #{}: {} (table={})", currentIn, input, table);
+				if (logAboutRow(tableQuery, currentIn)) {
+					log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
 				}
 			}
 		};
 		return peekOnCoordinate;
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	protected boolean logAboutRow(TableQueryV2 tableQuery, int currentOut) {
+		return tableQuery.isDebug() && (currentOut <= 16 || Integer.bitCount(currentOut) == 1);
 	}
 
 }

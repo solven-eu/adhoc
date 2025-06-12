@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.cell;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -78,6 +79,31 @@ public interface IValueProvider {
 	 */
 	static IValueProvider setValue(Object o) {
 		return vr -> vr.onObject(o);
+	}
+
+	static boolean isNull(IValueProvider valueProvider) {
+		AtomicBoolean isNullRef = new AtomicBoolean();
+
+		valueProvider.acceptReceiver(new IValueReceiver() {
+			@Override
+			public void onLong(long v) {
+				// not null
+			}
+
+			@Override
+			public void onDouble(double v) {
+				// not null
+			}
+
+			@Override
+			public void onObject(Object v) {
+				if (v == null) {
+					isNullRef.set(true);
+				}
+			}
+		});
+
+		return isNullRef.get();
 	}
 
 }
