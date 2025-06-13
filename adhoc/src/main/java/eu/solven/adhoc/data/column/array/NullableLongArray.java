@@ -79,6 +79,13 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	}
 
 	@Override
+	public boolean add(long k) {
+		set(size(), k);
+
+		return true;
+	}
+
+	@Override
 	public boolean addNull() {
 		nullBitmap.add(size());
 		list.add(0L);

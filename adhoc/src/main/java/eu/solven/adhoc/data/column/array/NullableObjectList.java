@@ -81,6 +81,13 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 	}
 
 	@Override
+	public boolean add(T k) {
+		set(size(), k);
+
+		return true;
+	}
+
+	@Override
 	public boolean addNull() {
 		nullBitmap.add(size());
 		list.add(null);

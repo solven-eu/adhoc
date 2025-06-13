@@ -25,11 +25,16 @@ package eu.solven.adhoc.beta.schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.column.ColumnMetadata;
 
 public class TestColumnarMetadata {
 	@BeforeEach
@@ -60,8 +65,8 @@ public class TestColumnarMetadata {
 		Assertions.assertThat(ColumnarMetadata.UNCLEAR_TYPE_WARNED).isEmpty();
 	}
 
-	private Map<String, String> toApiTypes(Map<String, Class<?>> toString2) {
-		return ColumnarMetadata.from(toString2).build().getColumnToTypes();
+	private Map<String, String> toApiTypes(Map<String, Class<?>> nameToType) {
+		return ColumnarMetadata.from(nameToType).build().getColumnToTypes();
 	}
 
 	private static class SomeCustomClass {
@@ -75,5 +80,19 @@ public class TestColumnarMetadata {
 
 		Assertions.assertThat(ColumnarMetadata.UNCLEAR_TYPE_WARNED)
 				.contains(Map.entry("someName", SomeCustomClass.class));
+	}
+
+	@Test
+	public void testGetColumns() {
+		ColumnarMetadata columnar =
+				ColumnarMetadata.from(List.of(ColumnMetadata.builder().name("c").tag("someTag").build())).build();
+
+		Assertions.assertThat(columnar.getColumns()).hasSize(1).hasEntrySatisfying("c", map -> {
+			Assertions.assertThat(map)
+					.asInstanceOf(InstanceOfAssertFactories.MAP)
+					.hasSize(2)
+					.containsEntry("type", "blob")
+					.containsEntry("tags", Set.of("someTag"));
+		});
 	}
 }
