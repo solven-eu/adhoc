@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -153,6 +154,9 @@ public class InjectSimpleExampleCubesConfig {
 						.possibleValues(() -> Set.of(ReferenceCcyDeepCombination.CCY_DEFAULT, "USD", "JPY"))
 						.defaultValue(() -> Optional.of(ReferenceCcyDeepCombination.CCY_DEFAULT))
 						.build());
+
+		schema.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simple").column("ccy").build(),
+				Set.of("core"));
 	}
 
 	protected InMemoryTable prefillInmemoryTable() {

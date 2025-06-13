@@ -24,11 +24,14 @@ package eu.solven.adhoc.beta.schema;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.cache.CacheBuilder;
@@ -36,6 +39,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -84,16 +89,30 @@ public class AdhocSchema implements IAdhocSchema {
 	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
 	// `getColumns` is an expensive operations, as it analyzes the underlying table
-	final LoadingCache<String, Map<String, Class<?>>> cacheCubeToColumnToType =
+	final LoadingCache<String, Collection<? extends ColumnMetadata>> cacheCubeToColumnToType =
 			CacheBuilder.newBuilder().expireAfterWrite(Duration.ofHours(1)).build(CacheLoader.from(cubeName -> {
 				ICubeWrapper cube = nameToCube.get(cubeName);
 
 				if (cube == null) {
-					return Map.of();
+					return List.<ColumnMetadata>of();
 				} else {
-					return cube.getColumnTypes();
+					Collection<ColumnMetadata> rawColumns = cube.getColumns();
+
+					ColumnIdentifier columnIdTemplate = ColumnIdentifier.builder()
+							.isCubeElseTable(true)
+							.holder(cubeName)
+							.column("netYetDefined")
+							.build();
+
+					List<ColumnMetadata> enriched =
+							rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c)).toList();
+					return enriched;
 				}
 			}));
+
+	// AdhocSchema may add additional tags to those hardcoded into the ICubeWrapper
+	final Map<ColumnIdentifier, Set<String>> columnToTags = new ConcurrentHashMap<>();
+	final Map<MeasureIdentifier, Set<String>> measureToTags = new ConcurrentHashMap<>();
 
 	/**
 	 * Used as key to identify in which context/cube given customMarker is relevant.
@@ -110,6 +129,17 @@ public class AdhocSchema implements IAdhocSchema {
 		String name;
 		@NonNull
 		IValueMatcher cubeMatcher;
+	}
+
+	protected ColumnMetadata enrichColumn(ColumnIdentifier columnIdTemplate, ColumnMetadata column) {
+		ColumnMetadataBuilder builder = column.toBuilder();
+
+		Set<String> additionalTags = columnToTags.get(columnIdTemplate.toBuilder().column(column.getName()).build());
+		if (additionalTags != null) {
+			builder.tags(additionalTags);
+		}
+
+		return builder.build();
 	}
 
 	public void invalidateAll() {
@@ -147,13 +177,13 @@ public class AdhocSchema implements IAdhocSchema {
 
 			ColumnarMetadata columns;
 			try {
-				columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName));
+				columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
 			} catch (RuntimeException e) {
 				if (AdhocUnsafe.isFailFast()) {
 					throw e;
 				} else {
 					log.warn("Issue fetching columns from cube={}", cubeName, e);
-					columns = ColumnarMetadata.from(Map.of("error", e.getClass()));
+					columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
 				}
 			}
 			cubeSchema.columns(columns);
@@ -193,7 +223,7 @@ public class AdhocSchema implements IAdhocSchema {
 			String name = e.getKey();
 			ITableWrapper table = e.getValue();
 			// TODO Should we cache?
-			metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()));
+			metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()).build());
 		});
 
 		// nameToQuery.forEach((name, query) -> {
@@ -246,9 +276,14 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	protected ICustomTypeManagerSimple makeTypeManager(ICubeWrapper cubeWrapper) {
-		Map<String, Class<?>> cubeColumns = cacheCubeToColumnToType.getUnchecked(cubeWrapper.getName());
+		Collection<? extends ColumnMetadata> cubeColumns = cacheCubeToColumnToType.getUnchecked(cubeWrapper.getName());
+
+		Map<String, Class<?>> columnToType = new HashMap<>();
+
+		cubeColumns.forEach(column -> columnToType.put(column.getName(), column.getType()));
+
 		ICustomTypeManagerSimple customTypeManager =
-				CubeWrapperTypeTranscoder.builder().cubeColumns(cubeColumns).build();
+				CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType).build();
 		return customTypeManager;
 	}
 
@@ -301,8 +336,8 @@ public class AdhocSchema implements IAdhocSchema {
 		}
 	}
 
-	public Map<String, Class<?>> getCubeColumns(String cube) {
-		return nameToCube.get(cube).getColumnTypes();
+	public Map<String, ColumnMetadata> getCubeColumns(String cube) {
+		return nameToCube.get(cube).getColumnsAsMap();
 	}
 
 	public Collection<ICubeWrapper> getCubes() {
@@ -311,6 +346,14 @@ public class AdhocSchema implements IAdhocSchema {
 
 	public CubeWrapperBuilder openCubeWrapperBuilder() {
 		return CubeWrapper.builder().engine(engine);
+	}
+
+	public void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags) {
+		columnToTags.computeIfAbsent(columnIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+	}
+
+	public void tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags) {
+		measureToTags.computeIfAbsent(measureIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
 	}
 
 	// public void registerQuery(String name, IAdhocQuery query) {

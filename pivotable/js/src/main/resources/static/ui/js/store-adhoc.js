@@ -248,7 +248,11 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
-		async loadEndpointSchemas(endpointId) {
+		/**
+		 * @param {string} endpointId id of the requested endpoint.
+		 * @param {string} cubeId [Optional] id the the requested cube.
+		 */
+		async loadEndpointSchemas(endpointId, cubeId) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -285,13 +289,18 @@ export const useAdhocStore = defineStore("adhoc", {
 					store.nbSchemaFetching--;
 				}
 			}
-
-			let url = "/endpoints/schemas";
-			if (endpointId) {
-				// The schemas of a specific endpoint
-				url += "?endpoint_id=" + encodeURIComponent(endpointId);
-			}
 			return this.loadEndpointIfMissing(endpointId).then(() => {
+				let url = "/endpoints/schemas";
+				if (endpointId) {
+					// The schemas of a specific endpoint
+					url += "?endpoint_id=" + encodeURIComponent(endpointId);
+				}
+				if (cubeId) {
+					// Restrict the schema to given cube
+					// TODO Dynamic leading policy for `?` or `&`
+					url += "&cube=" + encodeURIComponent(cubeId);
+				}
+
 				return fetchFromUrl(url);
 			});
 		},
@@ -352,7 +361,7 @@ export const useAdhocStore = defineStore("adhoc", {
 		async loadCubeSchema(cubeId, endpointId) {
 			const store = this;
 
-			return store.loadEndpointSchemas(endpointId).then((schemas) => {
+			return store.loadEndpointSchemas(endpointId, cubeId).then((schemas) => {
 				if (schemas.length == 0) {
 					const cubes = [];
 					if (cubeId) {

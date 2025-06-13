@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 	@Singular
-	private final NavigableMap<String, Class<?>> cubeColumns;
+	private final NavigableMap<String, Class<?>> columnToTypes;
 
 	@Override
 	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
@@ -67,7 +67,7 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 			// To be clarified as `toTable` is called mainly on `EqualsMatcher` which does not accept `null`.
 			return null;
 		} else {
-			Class<?> cubeColumnClass = cubeColumns.get(column);
+			Class<?> cubeColumnClass = columnToTypes.get(column);
 
 			if (coordinate instanceof String coordinateAsString) {
 				if (CharSequence.class.isAssignableFrom(cubeColumnClass)) {
@@ -125,6 +125,6 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 
 	@Override
 	public boolean mayTranscode(String column) {
-		return cubeColumns.containsKey(column);
+		return columnToTypes.containsKey(column);
 	}
 }

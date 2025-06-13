@@ -47,6 +47,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -102,6 +103,16 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> queryBuilder.cube(Optional.of(id)));
 		IAdhocSchema.AdhocSchemaQuery query = queryBuilder.build();
 
+		boolean allIfEmptyPost;
+		if (allIfEmpty && (query.getCube().isPresent() || query.getCube().isPresent() || query.getCube().isPresent())) {
+			// A subset of the schema is requested: restrict ourselves to what's requested
+			// Typically, we do not want to return a single cube, and all tables
+			allIfEmptyPost = false;
+		} else {
+			// the whole schema is request
+			allIfEmptyPost = true;
+		}
+
 		List<TargetedEndpointSchemaMetadata> schemas = endpoints.stream().map(endpoint -> {
 			if (!"http://localhost:self".equals(endpoint.getUrl())) {
 				throw new NotYetImplementedException("%s".formatted(PepperLogHelper.getObjectAndClass(endpoint)));
@@ -109,7 +120,7 @@ public class PivotableEndpointsHandler {
 
 			EndpointSchemaMetadata schemaMetadata;
 			try {
-				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmpty);
+				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmptyPost);
 			} catch (Exception e) {
 				if (AdhocUnsafe.isFailFast()) {
 					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
@@ -194,7 +205,7 @@ public class PivotableEndpointsHandler {
 	}
 
 	protected List<ColumnStatistics> addMatchingColumns(TargetedEndpointSchemaMetadata schemaMetadata,
-			ColumnIdentifier tableId,
+			ColumnIdentifier columnTemplate,
 			AdhocColumnSearch columnSearch,
 			ColumnarMetadata holderColumns) {
 		List<ColumnStatistics> columns = new ArrayList<>();
@@ -204,7 +215,7 @@ public class PivotableEndpointsHandler {
 
 			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
-			Map<String, String> columnToTypes = holderColumns.getColumnToTypes();
+			Map<String, ? extends Map<String, ?>> columnToTypes = holderColumns.getColumns();
 			// columnSearch.getName().ifPresent(searchedColumnName -> {
 
 			columnToTypes.entrySet()
@@ -212,9 +223,8 @@ public class PivotableEndpointsHandler {
 					.filter(e -> columnSearch.getName().isEmpty() || columnSearch.getName().get().match(e.getKey()))
 					.forEach(e -> {
 						String column = e.getKey();
-						String type = e.getValue();
 
-						ColumnIdentifier columnId = tableId.toBuilder().column(column).build();
+						ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
 
 						CoordinatesSample coordinates = schema.getCoordinates(columnId,
 								columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL),
@@ -222,9 +232,10 @@ public class PivotableEndpointsHandler {
 
 						columns.add(ColumnStatistics.builder()
 								.entrypointId(endpointId)
-								.holder(tableId.getHolder())
+								.holder(columnTemplate.getHolder())
 								.column(column)
-								.type(type)
+								.type(MapPathGet.getRequiredString(columnToTypes, "type"))
+								.tags(MapPathGet.getRequiredAs(columnToTypes, "tags"))
 								.coordinates(coordinates.getCoordinates())
 								.estimatedCardinality(coordinates.getEstimatedCardinality())
 								.build());

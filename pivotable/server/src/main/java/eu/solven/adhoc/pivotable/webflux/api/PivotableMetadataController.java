@@ -22,12 +22,16 @@
  */
 package eu.solven.adhoc.pivotable.webflux.api;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -43,16 +47,40 @@ public class PivotableMetadataController {
 	@GetMapping(IPivotableApiConstants.PREFIX + "/public/metadata")
 	@Bean
 	public Map<String, ?> getMetadata() {
+		// Linked as we want DEBUG and EXPLAIN first
 		Map<String, Object> metadata = new LinkedHashMap<>();
 
 		{
-			Map<String, Object> queryOptions = new LinkedHashMap<>();
-			queryOptions.put(StandardQueryOptions.DEBUG.toString(),
-					"Forces the query to be executed with `debug=true`. Very fine-grained information are added in logs");
-			queryOptions.put(StandardQueryOptions.EXPLAIN.toString(),
-					"Forces the query to be executed with `explain=true`. Query informative information are added in logs");
-			queryOptions.put(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.toString(),
-					"Unknown measures should be treated as empty. By default, they lead to an exception.");
+			List<Map<String, Object>> queryOptions = new ArrayList<>();
+
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put("name", StandardQueryOptions.DEBUG.toString())
+					.put("description",
+							"Forces the query to be executed with `debug=true`. Very fine-grained information are added in logs")
+					.build());
+
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put("name", StandardQueryOptions.EXPLAIN.toString())
+					.put("description",
+							"Forces the query to be executed with `explain=true`. Query informative information are added in logs")
+					.build());
+
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put("name", StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.toString())
+					.put("description",
+							"Unknown measures should be treated as empty. By default, they lead to an exception.")
+					.build());
+
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put("name", StandardQueryOptions.CONCURRENT.toString())
+					.put("description", "Enable concurrency in the query execution. May expect better performance.")
+					.build());
+
+			queryOptions.add(ImmutableMap.<String, Object>builder()
+					.put("name", StandardQueryOptions.NO_CACHE.toString())
+					.put("description",
+							"Force disabling any caching (if any are configured). Toggle-off does not add any cache by itself.")
+					.build());
 
 			metadata.put("query_options", queryOptions);
 		}

@@ -14,10 +14,13 @@ import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
 import AdhocQueryWizardCustomMarker from "./adhoc-query-wizard-custommarker.js";
 import AdhocQueryWizardOptions from "./adhoc-query-wizard-options.js";
 
+import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
+
+import AdhocAccordionItemColumns from "./adhoc-query-wizard-accordion-columns.js";
+
 import { useUserStore } from "./store-user.js";
 
-// Ordering of columns
-import _ from "lodashEs";
+import wizardHelper from "./adhoc-query-wizard-helper.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -28,6 +31,8 @@ export default {
 		AdhocQueryWizardFilter,
 		AdhocQueryWizardCustomMarker,
 		AdhocQueryWizardOptions,
+		AdhocQueryWizardMeasureTag,
+		AdhocAccordionItemColumns,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -56,6 +61,11 @@ export default {
 			},
 			cube(store) {
 				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+			},
+
+			// Used for options
+			metadata(store) {
+				return store.metadata;
 			},
 		}),
 	},
@@ -87,74 +97,35 @@ export default {
 		// Used for manual input of a JSON
 		const queryJsonInput = ref("");
 
-		const filtered = function (inputsAsObjectOrArray) {
-			const filtereditems = [];
-
-			const searchedValue = searchOptions.text;
-			const searchedValueLowerCase = searchedValue.toLowerCase();
-
-			for (const inputKey in inputsAsObjectOrArray) {
-				let matchAllTags = true;
-				const inputElement = inputsAsObjectOrArray[inputKey];
-
-				if (typeof inputElement === "object" && searchOptions.tags.length >= 1) {
-					// Accept only if input has at least one requested tag
-					if (inputElement.tags) {
-						for (const tag of searchOptions.tags) {
-							if (!inputElement.tags.includes(tag)) {
-								matchAllTags = false;
-							}
-						}
-					} else {
-						// No a single tag or input not taggable
-					}
-				}
-
-				let matchText = false;
-
-				// We consider only values, as keys are generic
-				// For instance, `name` should not match `name=NiceNick`
-				const inputElementAsString = searchOptions.throughJson ? JSON.stringify(Object.values(inputElement)) : "";
-
-				if (inputKey.includes(searchedValue) || inputElementAsString.includes(searchedValue)) {
-					matchText = true;
-				}
-
-				if (!matchText && !searchOptions.caseSensitive) {
-					// Retry without case-sensitivity
-					if (inputKey.toLowerCase().includes(searchedValueLowerCase) || inputElementAsString.toLowerCase().includes(searchedValueLowerCase)) {
-						matchText = true;
-					}
-				}
-
-				if (matchAllTags && matchText) {
-					if (Array.isArray(inputsAsObjectOrArray)) {
-						filtereditems.push(inputElement);
-					} else {
-						// inputElement may be an Object or a primitive or a String
-						if (typeof inputElement === "object") {
-							filtereditems.push({ ...inputElement, ...{ key: inputKey } });
-						} else {
-							filtereditems.push({ key: inputKey, value: inputElement });
-						}
-					}
-				}
-			}
-
-			// Measures has to be sorted by name
-			// https://stackoverflow.com/questions/8996963/how-to-perform-case-insensitive-sorting-array-of-string-in-javascript
-			return _.sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
+		const filtered = function (arrayOrObject) {
+			return wizardHelper.filtered(searchOptions, arrayOrObject);
 		};
 
 		const removeTag = function (tag) {
-			const tags = searchOptions.tags;
-			if (tags.includes(tag)) {
-				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-				const tagIndex = tags.indexOf(tag);
-				tags.splice(tagIndex, 1);
-			}
+			return wizardHelper.removeTag(props.searchOptions, tag);
 		};
 
+		const availableTags = function () {
+			// https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Global_Objects/Set
+			const tags = new Set();
+
+			const cube = store.schemas[this.endpointId]?.cubes[this.cubeId];
+			for (const measure of Object.values(cube.measures)) {
+				for (const tag of measure.tags) {
+					tags.add(tag);
+				}
+			}
+			for (const column of Object.values(cube.columns.columns)) {
+				for (const tag of column.tags) {
+					tags.add(tag);
+				}
+			}
+
+			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
+			return Array.from(tags);
+		};
+
+		// TODO This is duplicated
 		const clearFilters = function () {
 			searchOptions.text = "";
 			// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
@@ -166,6 +137,7 @@ export default {
 			filtered,
 			removeTag,
 			clearFilters,
+			availableTags,
 		};
 	},
 	template: /* HTML */ `
@@ -185,64 +157,22 @@ export default {
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
                 <AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
-                <div class="accordion" id="accordionWizard">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button
-                                class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#wizardColumns"
-                                aria-expanded="false"
-                                aria-controls="wizardColumns"
-                            >
-                                <span v-if="searchOptions.text">
-                                    <span class="text-decoration-line-through"> {{ Object.keys(cube.columns.columnToTypes).length}} </span>&nbsp;
-                                    <span> {{ Object.keys(filtered(cube.columns.columnToTypes)).length}} </span> columns
-                                </span>
-                                <span v-else> {{ Object.keys(cube.columns.columnToTypes).length}} columns </span>
-                            </button>
-
-                            <div v-if="nbColumnFetching > 0">
-                                <div
-                                    class="progress"
-                                    role="progressbar"
-                                    aria-label="Basic example"
-                                    :aria-valuenow="Object.keys(cube.columns.columnToTypes).length - nbColumnFetching"
-                                    aria-valuemin="0"
-                                    :aria-valuemax="Object.keys(cube.columns.columnToTypes).length"
-                                >
-                                    <!-- https://stackoverflow.com/questions/21716294/how-to-change-max-value-of-bootstrap-progressbar -->
-                                    <div
-                                        class="progress-bar"
-                                        :style="'width: ' + 100 * (Object.keys(cube.columns.columnToTypes).length - nbColumnFetching) / Object.keys(cube.columns.columnToTypes).length + '%'"
-                                    >
-                                        {{(Object.keys(cube.columns.columnToTypes).length - nbColumnFetching)}} /
-                                        {{Object.keys(cube.columns.columnToTypes).length}}
-                                    </div>
-                                </div>
-                            </div>
-                        </h2>
-                        <div id="wizardColumns" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                            <div class="accordion-body vh-50 overflow-scroll px-0">
-                                <ul v-for="(columnToType) in filtered(cube.columns.columnToTypes)" class="list-group">
-                                    <li class="list-group-item ">
-                                        <AdhocQueryWizardColumn
-                                            :queryModel="queryModel"
-                                            :column="columnToType.key"
-                                            :type="columnToType.value"
-                                            :endpointId="endpointId"
-                                            :cubeId="cubeId"
-                                            :searchOptions="searchOptions"
-                                        />
-                                    </li>
-                                </ul>
-                                <span v-if="0 === filtered(cube.columns.columnToTypes).length">
-                                    Search options match no column. <button type="button" class="btn btn-secondary" @click="clearFilters">clearFilters</button>
-                                </span>
-                            </div>
-                        </div>
+                <div>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Tags
+                            <span v-if="searchOptions.tags.length == 0"> {{availableTags().length}} </span>
+                            <span v-else> {{searchOptions.tags.length}} / {{availableTags().length}} </span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item" v-for="tag in availableTags()">
+                                <AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
+                            </li>
+                        </ul>
                     </div>
+                </div>
+                <div class="accordion" id="accordionWizard">
+                    <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button
@@ -318,7 +248,7 @@ export default {
                                 aria-expanded="false"
                                 aria-controls="wizardOptions"
                             >
-                                Options
+                                {{ Object.keys(metadata.query_options).length}} options <small>({{filtered(queryModel.options).length}})</small>
                             </button>
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">

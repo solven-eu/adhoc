@@ -1,6 +1,9 @@
 import { computed } from "vue";
 
+// Used for debouncing on search
 import _ from "lodashEs";
+
+import wizardHelper from "./adhoc-query-wizard-helper.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -25,7 +28,11 @@ export default {
 			props.searchOptions.text = props.searchOptions.text_debounced;
 		}, 300);
 
-		return { onSearchedText };
+		const removeTag = function (tag) {
+			return wizardHelper.removeTag(props.searchOptions, tag);
+		};
+
+		return { onSearchedText, removeTag };
 	},
 	template: /* HTML */ `
         <div>
@@ -51,7 +58,9 @@ export default {
                 </div>
             </small>
 
-            <small v-for="tag in searchOptions.tags" class="badge text-bg-primary" @click="removeTag(tag)"> {{tag}} <i class="bi bi-x-circle"></i> </small>
+            <small v-for="tag in searchOptions.tags" type="button" class="badge text-bg-primary" @click="removeTag(tag)">
+                {{tag}} <i class="bi bi-x-circle"></i>
+            </small>
         </div>
     `,
 };
