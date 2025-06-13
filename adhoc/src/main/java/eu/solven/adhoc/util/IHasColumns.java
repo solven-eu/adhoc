@@ -44,7 +44,7 @@ public interface IHasColumns extends IHasColumnTypes {
 	Collection<ColumnMetadata> getColumns();
 
 	default Map<String, ColumnMetadata> getColumnsAsMap() {
-		return getColumns().stream().collect(Collectors.toMap(c -> c.getName(), c -> c));
+		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, c -> c));
 	}
 
 	@Override

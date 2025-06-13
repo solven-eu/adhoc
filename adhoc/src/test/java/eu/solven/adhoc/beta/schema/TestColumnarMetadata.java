@@ -42,7 +42,7 @@ public class TestColumnarMetadata {
 		Assertions.assertThat(toApiTypes(Map.of("someName", String.class))).isEqualTo(Map.of("someName", "varchar"));
 
 		Assertions.assertThat(toApiTypes(Map.of("someName", Integer.class))).isEqualTo(Map.of("someName", "integer"));
-		Assertions.assertThat(toApiTypes(Map.of("someName", Long.class) )).isEqualTo(Map.of("someName", "bigint"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", Long.class))).isEqualTo(Map.of("someName", "bigint"));
 
 		Assertions.assertThat(toApiTypes(Map.of("someName", Float.class))).isEqualTo(Map.of("someName", "float"));
 		Assertions.assertThat(toApiTypes(Map.of("someName", Double.class))).isEqualTo(Map.of("someName", "double"));

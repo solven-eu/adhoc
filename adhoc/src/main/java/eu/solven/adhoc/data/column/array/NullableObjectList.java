@@ -27,10 +27,12 @@ import java.util.stream.IntStream;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.data.tabular.primitives.Int2ObjectBiConsumer;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
+import it.unimi.dsi.fastutil.objects.ObjectSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -41,6 +43,7 @@ import lombok.NonNull;
  * @param <T>
  * @author Benoit Lacelle
  */
+// BEWARE What is the point of registering nulls in a bitmap as we record null in an Object[]?
 @Deprecated(since = "Not-Ready")
 @Builder
 public class NullableObjectList<T> extends AbstractObjectList<T> implements INullableObjectList<T> {
@@ -61,7 +64,7 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 
 	@Override
 	public T get(int index) {
-		if (index >= size() || nullBitmap.contains(index)) {
+		if (index < 0 || index >= size() || nullBitmap.contains(index)) {
 			return null;
 		}
 		return list.get(index);
@@ -75,6 +78,14 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 	@Override
 	public int sizeNotNull() {
 		return size() - nullBitmap.getCardinality();
+	}
+
+	@Override
+	public boolean addNull() {
+		nullBitmap.add(size());
+		list.add(null);
+
+		return true;
 	}
 
 	@Override
@@ -125,6 +136,11 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 	@Override
 	public void forEach(Int2ObjectBiConsumer indexToValue) {
 		indexStream().forEach(index -> indexToValue.acceptInt2Object(index, list.get(index)));
+	}
+
+	@Override
+	public ObjectSpliterator<T> spliterator() {
+		throw new NotYetImplementedException("TODO");
 	}
 
 	public static <T> INullableObjectList<T> empty() {

@@ -104,7 +104,8 @@ public class PivotableEndpointsHandler {
 		IAdhocSchema.AdhocSchemaQuery query = queryBuilder.build();
 
 		boolean allIfEmptyPost;
-		if (allIfEmpty && (query.getCube().isPresent() || query.getCube().isPresent() || query.getCube().isPresent())) {
+		if (allIfEmpty
+				&& (query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent())) {
 			// A subset of the schema is requested: restrict ourselves to what's requested
 			// Typically, we do not want to return a single cube, and all tables
 			allIfEmptyPost = false;
@@ -215,14 +216,15 @@ public class PivotableEndpointsHandler {
 
 			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
-			Map<String, ? extends Map<String, ?>> columnToTypes = holderColumns.getColumns();
+			Map<String, ? extends Map<String, ?>> columnToDetails = holderColumns.getColumns();
 			// columnSearch.getName().ifPresent(searchedColumnName -> {
 
-			columnToTypes.entrySet()
+			columnToDetails.entrySet()
 					.stream()
 					.filter(e -> columnSearch.getName().isEmpty() || columnSearch.getName().get().match(e.getKey()))
 					.forEach(e -> {
 						String column = e.getKey();
+						Map<String, ?> columnDetails = e.getValue();
 
 						ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
 
@@ -234,8 +236,8 @@ public class PivotableEndpointsHandler {
 								.entrypointId(endpointId)
 								.holder(columnTemplate.getHolder())
 								.column(column)
-								.type(MapPathGet.getRequiredString(columnToTypes, "type"))
-								.tags(MapPathGet.getRequiredAs(columnToTypes, "tags"))
+								.type(MapPathGet.getRequiredString(columnDetails, "type"))
+								.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
 								.coordinates(coordinates.getCoordinates())
 								.estimatedCardinality(coordinates.getEstimatedCardinality())
 								.build());

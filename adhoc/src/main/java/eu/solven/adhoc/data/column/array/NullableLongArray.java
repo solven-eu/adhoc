@@ -27,10 +27,12 @@ import java.util.stream.IntStream;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.data.tabular.primitives.Int2LongBiConsumer;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.longs.AbstractLongList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongLists;
+import it.unimi.dsi.fastutil.longs.LongSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -60,7 +62,7 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 
 	@Override
 	public long getLong(int index) {
-		if (index >= size() || nullBitmap.contains(index)) {
+		if (index < 0 || index >= size() || nullBitmap.contains(index)) {
 			return Long.MIN_VALUE;
 		}
 		return list.getLong(index);
@@ -74,6 +76,14 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	@Override
 	public int sizeNotNull() {
 		return size() - nullBitmap.getCardinality();
+	}
+
+	@Override
+	public boolean addNull() {
+		nullBitmap.add(size());
+		list.add(0L);
+
+		return true;
 	}
 
 	@Override
@@ -124,6 +134,11 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	@Override
 	public void forEach(Int2LongBiConsumer indexToValue) {
 		indexStream().forEach(index -> indexToValue.acceptInt2Long(index, list.getLong(index)));
+	}
+
+	@Override
+	public LongSpliterator spliterator() {
+		throw new NotYetImplementedException("TODO");
 	}
 
 	public static INullableLongArray empty() {

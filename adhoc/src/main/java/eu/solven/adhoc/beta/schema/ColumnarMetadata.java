@@ -33,6 +33,7 @@ import java.util.TreeSet;
 
 import org.jooq.impl.SQLDataType;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -68,10 +69,10 @@ public class ColumnarMetadata {
 	static final Set<Map.Entry<String, Class<?>>> UNCLEAR_TYPE_WARNED = Sets.newConcurrentHashSet();
 
 	@Singular
-	Map<String, String> columnToTypes;
+	ImmutableMap<String, String> columnToTypes;
 
 	@Singular
-	Map<String, Set<String>> columnToTags;
+	ImmutableMap<String, Set<String>> columnToTags;
 
 	public Map<String, ? extends Map<String, ?>> getColumns() {
 		Map<String, Map<String, Object>> columnToProperties = new TreeMap<>();

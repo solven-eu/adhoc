@@ -27,10 +27,12 @@ import java.util.stream.IntStream;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleLists;
+import it.unimi.dsi.fastutil.doubles.DoubleSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -60,7 +62,9 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 
 	@Override
 	public double getDouble(int index) {
-		if (index >= size() || nullBitmap.contains(index)) {
+		if (index < 0 || index >= size() || nullBitmap.contains(index)) {
+			// TODO Should we have a defaultValue?
+			// TODO Should we pick defaultValue from DoubleArrayList?
 			return Double.MIN_VALUE;
 		}
 		return list.getDouble(index);
@@ -77,6 +81,21 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 	}
 
 	@Override
+	public boolean add(double k) {
+		set(size(), k);
+
+		return true;
+	}
+
+	@Override
+	public boolean addNull() {
+		nullBitmap.add(size());
+		list.add(0D);
+
+		return true;
+	}
+
+	@Override
 	public double set(int index, double k) {
 		// e.g. if `key==1` but `size==0`, we have to skip `key==0`
 
@@ -84,7 +103,9 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 		if (size <= index) {
 			// size is too small
 			if (size < index) {
+				// Add 0D in the primitive array
 				list.addElements(size, new double[index - size]);
+				// Register the skipped indexes as null
 				nullBitmap.add(size, index - size);
 			}
 			list.add(k);
@@ -105,7 +126,7 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 			return 0L;
 		}
 		if (nullBitmap.contains(i)) {
-			return 0L;
+			return 0D;
 		}
 		nullBitmap.add(i);
 		return list.getDouble(i);
@@ -124,6 +145,12 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 	@Override
 	public void forEach(Int2DoubleBiConsumer indexToValue) {
 		indexStream().forEach(index -> indexToValue.acceptInt2Double(index, list.getDouble(index)));
+	}
+
+	@Override
+	public DoubleSpliterator spliterator() {
+		// How to convert null into a DoubleSpliterator?
+		throw new NotYetImplementedException("TODO");
 	}
 
 	public static INullableDoubleArray empty() {

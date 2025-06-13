@@ -53,4 +53,6 @@ public interface INullableArray {
 	 */
 	IntStream indexStream();
 
+	boolean addNull();
+
 }

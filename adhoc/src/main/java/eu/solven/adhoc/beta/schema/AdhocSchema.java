@@ -72,6 +72,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class AdhocSchema implements IAdhocSchema {
 	@Builder.Default
 	@NonNull

@@ -44,6 +44,9 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 @RestController
 public class PivotableMetadataController {
 
+	private static final String K_DESC = "description";
+	private static final String K_NAME = "name";
+
 	@GetMapping(IPivotableApiConstants.PREFIX + "/public/metadata")
 	@Bean
 	public Map<String, ?> getMetadata() {
@@ -54,31 +57,30 @@ public class PivotableMetadataController {
 			List<Map<String, Object>> queryOptions = new ArrayList<>();
 
 			queryOptions.add(ImmutableMap.<String, Object>builder()
-					.put("name", StandardQueryOptions.DEBUG.toString())
-					.put("description",
+					.put(K_NAME, StandardQueryOptions.DEBUG.toString())
+					.put(K_DESC,
 							"Forces the query to be executed with `debug=true`. Very fine-grained information are added in logs")
 					.build());
 
 			queryOptions.add(ImmutableMap.<String, Object>builder()
-					.put("name", StandardQueryOptions.EXPLAIN.toString())
-					.put("description",
+					.put(K_NAME, StandardQueryOptions.EXPLAIN.toString())
+					.put(K_DESC,
 							"Forces the query to be executed with `explain=true`. Query informative information are added in logs")
 					.build());
 
 			queryOptions.add(ImmutableMap.<String, Object>builder()
-					.put("name", StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.toString())
-					.put("description",
-							"Unknown measures should be treated as empty. By default, they lead to an exception.")
+					.put(K_NAME, StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.toString())
+					.put(K_DESC, "Unknown measures should be treated as empty. By default, they lead to an exception.")
 					.build());
 
 			queryOptions.add(ImmutableMap.<String, Object>builder()
-					.put("name", StandardQueryOptions.CONCURRENT.toString())
-					.put("description", "Enable concurrency in the query execution. May expect better performance.")
+					.put(K_NAME, StandardQueryOptions.CONCURRENT.toString())
+					.put(K_DESC, "Enable concurrency in the query execution. May expect better performance.")
 					.build());
 
 			queryOptions.add(ImmutableMap.<String, Object>builder()
-					.put("name", StandardQueryOptions.NO_CACHE.toString())
-					.put("description",
+					.put(K_NAME, StandardQueryOptions.NO_CACHE.toString())
+					.put(K_DESC,
 							"Force disabling any caching (if any are configured). Toggle-off does not add any cache by itself.")
 					.build());
 
