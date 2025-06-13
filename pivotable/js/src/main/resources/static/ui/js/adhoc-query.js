@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch, onMounted, provide } from "vue";
+import { reactive, ref, watch, provide } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -56,7 +56,6 @@ export default {
 	},
 	setup(props) {
 		const store = useAdhocStore();
-		const userStore = useUserStore();
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 

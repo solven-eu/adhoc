@@ -1,10 +1,7 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { reactive, ref } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
-
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocMeasure from "./adhoc-query-wizard-measure.js";
 
@@ -71,11 +68,8 @@ export default {
 	},
 	setup(props) {
 		const store = useAdhocStore();
-		const userStore = useUserStore();
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
-
-		const autoQuery = ref(true);
 
 		const searchOptions = reactive({
 			text: "",
@@ -94,15 +88,16 @@ export default {
 			tags: [],
 		});
 
-		// Used for manual input of a JSON
-		const queryJsonInput = ref("");
-
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(searchOptions, arrayOrObject);
 		};
 
 		const removeTag = function (tag) {
-			return wizardHelper.removeTag(props.searchOptions, tag);
+			return wizardHelper.removeTag(searchOptions, tag);
+		};
+
+		const clearFilters = function () {
+			return wizardHelper.clearFilters(searchOptions);
 		};
 
 		const availableTags = function () {
@@ -123,13 +118,6 @@ export default {
 
 			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
 			return Array.from(tags);
-		};
-
-		// TODO This is duplicated
-		const clearFilters = function () {
-			searchOptions.text = "";
-			// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
-			searchOptions.tags.length = 0;
 		};
 
 		return {

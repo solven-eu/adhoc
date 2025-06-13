@@ -1,9 +1,7 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { ref } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
-
-import { useUserStore } from "./store-user.js";
 
 import AdhocQueryWizardColumnFilter from "./adhoc-query-wizard-column-filter.js";
 
@@ -51,10 +49,7 @@ export default {
 		}),
 	},
 	emits: ["saveFilter"],
-	setup(props) {
-		const store = useAdhocStore();
-		const userStore = useUserStore();
-
+	setup() {
 		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
 		const filterRef = ref(null);
 

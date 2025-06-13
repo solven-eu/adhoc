@@ -1,4 +1,4 @@
-import { inject, ref, watchEffect, watch } from "vue";
+import { inject, ref, watch } from "vue";
 import mermaid from "mermaid";
 
 export default {

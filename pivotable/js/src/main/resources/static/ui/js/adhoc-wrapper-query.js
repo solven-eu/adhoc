@@ -1,16 +1,11 @@
-import { computed, reactive, ref, watch, onMounted, provide } from "vue";
+import { watch } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-import AdhocCubeHeader from "./adhoc-cube-header.js";
-
 import { useUserStore } from "./store-user.js";
 
 import AdhocQuery from "./adhoc-query.js";
-
-import { useRouter } from "vue-router";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration

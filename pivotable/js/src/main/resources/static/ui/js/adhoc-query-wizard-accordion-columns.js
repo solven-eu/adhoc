@@ -1,13 +1,9 @@
-import { computed, reactive, ref, watch, onMounted, inject } from "vue";
+import { inject } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
-
-import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
-
-import { useUserStore } from "./store-user.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
@@ -42,18 +38,12 @@ export default {
 		...mapState(useAdhocStore, {}),
 	},
 	setup(props) {
-		const store = useAdhocStore();
-		const userStore = useUserStore();
-
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(props.searchOptions, arrayOrObject);
 		};
 
-		// TODO This is duplicated
 		const clearFilters = function () {
-			searchOptions.text = "";
-			// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
-			searchOptions.tags.length = 0;
+			return wizardHelper.clearFilters(props.searchOptions);
 		};
 
 		const queryModel = inject("queryModel");

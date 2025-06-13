@@ -10,6 +10,13 @@ export default {
 			tags.splice(tagIndex, 1);
 		}
 	},
+
+	clearFilters: function (searchOptions) {
+		searchOptions.text = "";
+		// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+		searchOptions.tags.length = 0;
+	},
+
 	filtered: function (searchOptions, inputsAsObjectOrArray) {
 		const filtereditems = [];
 

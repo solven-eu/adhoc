@@ -6,8 +6,6 @@ import { useAdhocStore } from "./store-adhoc.js";
 // https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 import { Tooltip } from "bootstrap";
 
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-
 import AdhocEndpointSchemaRef from "./adhoc-endpoint-schema-ref.js";
 
 import AdhocCube from "./adhoc-cube.js";
