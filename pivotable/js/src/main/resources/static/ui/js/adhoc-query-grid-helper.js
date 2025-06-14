@@ -211,12 +211,12 @@ export default {
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
 				// Align measures to the right to make it easier to detect large number
-				cssClass: "text-end",
+				// `font-monospace` is useful to have numbers properly aligned through the column
+				cssClass: "text-end font-monospace",
 			};
 
 			// Override the style from `.slick-header-column`
-			// `font-monospace` is useful to have numbers properly aligned through the column
-			column.headerCssClass = "text-end justify-content-end font-monospace";
+			column.headerCssClass = "text-end justify-content-end";
 
 			if (measureName.indexOf("%") >= 0) {
 				column["formatter"] = measureFormatters.percentFormatter;

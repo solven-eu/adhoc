@@ -25,8 +25,7 @@ export default {
 			required: true,
 		},
 	},
-	computed: {
-	},
+	computed: {},
 	setup(props) {
 		const store = useAdhocStore();
 
