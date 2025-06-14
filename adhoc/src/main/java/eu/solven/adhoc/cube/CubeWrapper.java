@@ -44,8 +44,8 @@ import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -71,7 +71,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Value
-@StandardQueryPreparator(toBuilder = true)
+@Builder(toBuilder = true)
 @Slf4j
 public class CubeWrapper implements ICubeWrapper {
 	@NonNull
@@ -96,7 +96,7 @@ public class CubeWrapper implements ICubeWrapper {
 	// Wrap a query (e.g. with queryId, implicitFilter, etc)
 	@NonNull
 	@Default
-	final IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+	final IQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
 
 	@Override
 	public Map<String, IMeasure> getNameToMeasure() {

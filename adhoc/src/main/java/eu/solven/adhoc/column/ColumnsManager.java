@@ -68,9 +68,9 @@ import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
-import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -89,7 +89,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@StandardCustomTypeManager(toBuilder = true)
+@Builder(toBuilder = true)
 @Slf4j
 public class ColumnsManager implements IColumnsManager {
 
@@ -108,7 +108,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
-	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
+	final ICustomTypeManager customTypeManager = new StandardCustomTypeManager();
 
 	@NonNull
 	@Singular
