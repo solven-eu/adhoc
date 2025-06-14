@@ -23,7 +23,9 @@
 package eu.solven.adhoc.beta.schema;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,9 +34,11 @@ import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {
@@ -89,4 +93,59 @@ public class TestAdhocSchema {
 				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 0L + 1))
 				.hasSize(1);
 	}
+
+	@Test
+	public void testGetSchema() {
+		AdhocSchema schema = AdhocSchema.builder().build();
+
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		table.add(Map.of("k", "v"));
+		schema.registerTable(table);
+
+		IMeasureForest forest = MeasureForest.fromMeasures("simpleForest", Arrays.asList(Aggregator.countAsterisk()));
+		schema.registerForest(forest);
+
+		CubeWrapper cube = CubeWrapper.builder().name("simpleCube").forest(forest).table(table).build();
+		schema.registerCube(cube);
+
+		{
+			EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), false);
+			Assertions.assertThat(metadata.getTables()).isEmpty();
+			Assertions.assertThat(metadata.getForests()).isEmpty();
+			Assertions.assertThat(metadata.getCubes()).isEmpty();
+		}
+
+		{
+			EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+			Assertions.assertThat(metadata.getTables()).hasSize(1);
+			Assertions.assertThat(metadata.getForests()).hasSize(1);
+			Assertions.assertThat(metadata.getCubes()).hasSize(1);
+		}
+
+		{
+			EndpointSchemaMetadata metadata =
+					schema.getMetadata(AdhocSchemaQuery.builder().cube(Optional.of("simpleCube")).build(), true);
+			Assertions.assertThat(metadata.getTables()).isEmpty();
+			Assertions.assertThat(metadata.getForests()).isEmpty();
+			Assertions.assertThat(metadata.getCubes()).hasSize(1);
+		}
+	}
+
+	@Test
+	public void testGetCoordinates() {
+		AdhocSchema schema = AdhocSchema.builder().build();
+
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		schema.registerTable(table);
+
+		table.add(Map.of("k", "v"));
+
+		CoordinatesSample sample = schema.getCoordinates(
+				ColumnIdentifier.builder().isCubeElseTable(false).column("k").holder("simpleTable").build(),
+				IValueMatcher.MATCH_ALL,
+				-1);
+		Assertions.assertThat(sample.getCoordinates()).containsExactly("v");
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1L);
+	}
+
 }

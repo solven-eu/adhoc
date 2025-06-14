@@ -170,62 +170,77 @@ public class AdhocSchema implements IAdhocSchema {
 	public EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty) {
 		EndpointSchemaMetadata.EndpointSchemaMetadataBuilder metadata = EndpointSchemaMetadata.builder();
 
-		nameToCube.entrySet().stream().filter(c -> isRequested(query.getCube(), allIfEmpty, c)).forEach(c -> {
-			String cubeName = c.getKey();
-			ICubeWrapper cube = c.getValue();
+		// A subset of the schema is requested: restrict ourselves to what's requested
+		// Typically, we do not want to return a single cube, and all tables
+		boolean hasAnyFilter =
+				query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent();
 
-			CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
+		nameToCube.entrySet()
+				.stream()
+				.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
+				.forEach(c -> {
+					String cubeName = c.getKey();
+					ICubeWrapper cube = c.getValue();
 
-			ColumnarMetadata columns;
-			try {
-				columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
-			} catch (RuntimeException e) {
-				if (AdhocUnsafe.isFailFast()) {
-					throw e;
-				} else {
-					log.warn("Issue fetching columns from cube={}", cubeName, e);
-					columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
-				}
-			}
-			cubeSchema.columns(columns);
-			cubeSchema.measures(cube.getNameToMeasure());
+					CubeSchemaMetadata.CubeSchemaMetadataBuilder cubeSchema = CubeSchemaMetadata.builder();
 
-			Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
-
-			nameToCustomMarker.stream()
-					.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
-					.forEach(customMarker -> {
-						String customMarkerName = customMarker.getKey().getName();
-						CustomMarkerMetadata customMarkerMetadata = customMarker.getValue().snapshot(customMarkerName);
-						CustomMarkerMetadata previous =
-								customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
-
-						if (previous != null) {
-							log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
-									cubeName,
-									customMarkerName,
-									customMarkerMetadata,
-									previous);
+					ColumnarMetadata columns;
+					try {
+						columns = ColumnarMetadata.from(cacheCubeToColumnToType.getUnchecked(cubeName)).build();
+					} catch (RuntimeException e) {
+						if (AdhocUnsafe.isFailFast()) {
+							throw e;
+						} else {
+							log.warn("Issue fetching columns from cube={}", cubeName, e);
+							columns = ColumnarMetadata.from(Map.of("error", e.getClass())).build();
 						}
-					});
-			cubeSchema.customMarkers(customMarkerNameToMetadata);
+					}
+					cubeSchema.columns(columns);
+					cubeSchema.measures(cube.getNameToMeasure());
 
-			metadata.cube(cubeName, cubeSchema.build());
-		});
+					Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
 
-		nameToForest.entrySet().stream().filter(e -> isRequested(query.getForest(), allIfEmpty, e)).forEach(e -> {
-			String name = e.getKey();
-			IMeasureForest forest = e.getValue();
-			List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
-			metadata.forest(name, measures);
-		});
+					nameToCustomMarker.stream()
+							.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
+							.forEach(customMarker -> {
+								String customMarkerName = customMarker.getKey().getName();
+								CustomMarkerMetadata customMarkerMetadata =
+										customMarker.getValue().snapshot(customMarkerName);
+								CustomMarkerMetadata previous =
+										customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
 
-		nameToTable.entrySet().stream().filter(e -> isRequested(query.getTable(), allIfEmpty, e)).forEach(e -> {
-			String name = e.getKey();
-			ITableWrapper table = e.getValue();
-			// TODO Should we cache?
-			metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()).build());
-		});
+								if (previous != null) {
+									log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
+											cubeName,
+											customMarkerName,
+											customMarkerMetadata,
+											previous);
+								}
+							});
+					cubeSchema.customMarkers(customMarkerNameToMetadata);
+
+					metadata.cube(cubeName, cubeSchema.build());
+				});
+
+		nameToForest.entrySet()
+				.stream()
+				.filter(e -> isRequested(query.getForest(), allIfEmpty, hasAnyFilter, e))
+				.forEach(e -> {
+					String name = e.getKey();
+					IMeasureForest forest = e.getValue();
+					List<IMeasure> measures = ImmutableList.copyOf(forest.getNameToMeasure().values());
+					metadata.forest(name, measures);
+				});
+
+		nameToTable.entrySet()
+				.stream()
+				.filter(e -> isRequested(query.getTable(), allIfEmpty, hasAnyFilter, e))
+				.forEach(e -> {
+					String name = e.getKey();
+					ITableWrapper table = e.getValue();
+					// TODO Should we cache?
+					metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()).build());
+				});
 
 		// nameToQuery.forEach((name, query) -> {
 		// metadata.query(name, AdhocQuery.edit(query).build());
@@ -236,8 +251,9 @@ public class AdhocSchema implements IAdhocSchema {
 
 	protected boolean isRequested(Optional<String> optRequested,
 			boolean allIfEmpty,
+			boolean hasAnyFilter,
 			Map.Entry<String, ? extends IHasName> e) {
-		return allIfEmpty && optRequested.isEmpty()
+		return allIfEmpty && !hasAnyFilter && optRequested.isEmpty()
 				|| optRequested.isPresent() && optRequested.get().equals(e.getKey());
 	}
 

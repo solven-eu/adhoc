@@ -103,17 +103,6 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> queryBuilder.cube(Optional.of(id)));
 		IAdhocSchema.AdhocSchemaQuery query = queryBuilder.build();
 
-		boolean allIfEmptyPost;
-		if (allIfEmpty
-				&& (query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent())) {
-			// A subset of the schema is requested: restrict ourselves to what's requested
-			// Typically, we do not want to return a single cube, and all tables
-			allIfEmptyPost = false;
-		} else {
-			// the whole schema is request
-			allIfEmptyPost = true;
-		}
-
 		List<TargetedEndpointSchemaMetadata> schemas = endpoints.stream().map(endpoint -> {
 			if (!"http://localhost:self".equals(endpoint.getUrl())) {
 				throw new NotYetImplementedException("%s".formatted(PepperLogHelper.getObjectAndClass(endpoint)));
@@ -121,7 +110,7 @@ public class PivotableEndpointsHandler {
 
 			EndpointSchemaMetadata schemaMetadata;
 			try {
-				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmptyPost);
+				schemaMetadata = schemasRegistry.getSchema(endpoint.getId()).getMetadata(query, allIfEmpty);
 			} catch (Exception e) {
 				if (AdhocUnsafe.isFailFast()) {
 					throw new IllegalStateException("Issue loading schema for endpoint=%s".formatted(endpoint), e);
