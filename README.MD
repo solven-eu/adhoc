@@ -447,3 +447,5 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Enable selection of `tag` without browsing measures (important when there are many measures)
 - [Pivotable] Show selected options as tag, even when carousel is shrinked.
 - [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).
+- [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
+- [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.

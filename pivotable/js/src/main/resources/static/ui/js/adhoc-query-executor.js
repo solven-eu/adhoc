@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -114,9 +114,6 @@ export default {
 				customMarker: customMarkers,
 			};
 		});
-
-		// Used for manual input of a JSON
-		const queryJsonInput = ref("");
 
 		const latestSentQueryId = ref(-1);
 

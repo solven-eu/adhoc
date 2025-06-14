@@ -22,12 +22,14 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.Spliterator;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
@@ -39,5 +41,52 @@ public class TestTopologicalOrderSpliterator {
 		Stream<CubeQueryStep> spliterator = TopologicalOrderSpliterator.fromDAG(dag);
 
 		Assertions.assertThat(spliterator.isParallel()).isFalse();
+	}
+
+	@Test
+	public void testTopologicalOrderSpliterator_single() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag =
+				DirectedAcyclicGraph.<CubeQueryStep, DefaultEdge>createBuilder(DefaultEdge.class).build();
+
+		CubeQueryStep source = Mockito.mock(CubeQueryStep.class);
+
+		dag.addVertex(source);
+
+		Spliterator<CubeQueryStep> spliterator = TopologicalOrderSpliterator.makeSpliterator(dag);
+
+		Assertions.assertThat(spliterator.trySplit()).isNull();
+	}
+
+	@Test
+	public void testTopologicalOrderSpliterator_twoLinked() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag =
+				DirectedAcyclicGraph.<CubeQueryStep, DefaultEdge>createBuilder(DefaultEdge.class).build();
+
+		CubeQueryStep source = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep target = Mockito.mock(CubeQueryStep.class);
+
+		dag.addVertex(source);
+		dag.addVertex(target);
+		dag.addEdge(source, target);
+
+		Spliterator<CubeQueryStep> spliterator = TopologicalOrderSpliterator.makeSpliterator(dag);
+
+		Assertions.assertThat(spliterator.trySplit()).isNull();
+	}
+
+	@Test
+	public void testTopologicalOrderSpliterator_twoParallel() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag =
+				DirectedAcyclicGraph.<CubeQueryStep, DefaultEdge>createBuilder(DefaultEdge.class).build();
+
+		CubeQueryStep source = Mockito.mock(CubeQueryStep.class);
+		CubeQueryStep target = Mockito.mock(CubeQueryStep.class);
+
+		dag.addVertex(source);
+		dag.addVertex(target);
+
+		Spliterator<CubeQueryStep> spliterator = TopologicalOrderSpliterator.makeSpliterator(dag);
+
+		Assertions.assertThat(spliterator.trySplit()).isNotNull();
 	}
 }

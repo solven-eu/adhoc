@@ -41,6 +41,7 @@ import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
@@ -60,13 +61,18 @@ import lombok.Value;
 @Builder
 @EqualsAndHashCode(exclude = {
 		// cache is typically used for performance improvements: it should not impact any hashStructure
-		"cache" })
+		"cache",
+		// id is used to simplify logs: but 2 functionally equivalent querySteps may have different querySteps, and they
+		// should be equals in hash structures
+		"id" })
 @ToString(exclude = {
 		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
 public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
+	private final long id = AdhocUnsafe.nextQueryStepIndex();
+
 	@NonNull
 	IMeasure measure;
 	@NonNull

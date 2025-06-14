@@ -45,6 +45,7 @@ import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
@@ -68,6 +69,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
@@ -172,8 +174,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		// TODO We may be querying multiple times the same suppressedTableQuery
 		// e.g. if 2 tableQueries differs only by a suppressedColumn
-		TableQueryToActualTableQuery toSuppressed =
-				TableQueryToActualTableQuery.builder().dagQuery(dagQuery).suppressedQuery(suppressedQuery).build();
+		TableQueryToSuppressedTableQuery toSuppressed =
+				TableQueryToSuppressedTableQuery.builder().dagQuery(dagQuery).suppressedQuery(suppressedQuery).build();
 
 		IStopwatch stopWatchSinking;
 
@@ -298,12 +300,16 @@ public class TableQueryEngine implements ITableQueryEngine {
 						.debug(queryPod.isDebug())
 						.explain(queryPod.isExplain())
 						.source(this)
-						.messageT("Suppressing generatedColumns in groupBy from {} to {}",
+						.messageT("Suppressing generatedColumns={} in groupBy from {} to {}",
+								generatedColumnToSuppressFromGroupBy,
 								originalGroupby,
 								suppressedGroupby)
 						.build());
 			} else {
-				log.debug("Suppressing generatedColumns in groupBy from {} to {}", originalGroupby, suppressedGroupby);
+				log.debug("Suppressing generatedColumns={} in groupBy from {} to {}",
+						generatedColumnToSuppressFromGroupBy,
+						originalGroupby,
+						suppressedGroupby);
 			}
 			edited.groupBy(suppressedGroupby);
 		}
@@ -341,74 +347,89 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> aggregateStreamToAggregates(QueryPod queryPod,
-			TableQueryToActualTableQuery query,
+			TableQueryToSuppressedTableQuery queryAndSuppressed,
 			ITabularRecordStream stream) {
 
-		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates;
-		{
-			IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
+		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates =
+				mergeTableAggregates(queryPod, queryAndSuppressed, stream);
 
-			sliceToAggregates = mergeTableAggregates(queryPod, query.getSuppressedQuery(), stream);
+		Map<CubeQueryStep, ISliceToValue> immutableChunks =
+				splitTableGridToColumns(queryPod, queryAndSuppressed, sliceToAggregates);
+		return immutableChunks;
+	}
 
-			// BEWARE This timing is dependent of the table
-			Duration elapsed = stopWatch.elapsed();
+	protected Map<CubeQueryStep, ISliceToValue> splitTableGridToColumns(QueryPod queryPod,
+			TableQueryToSuppressedTableQuery queryAndSuppressed,
+			IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates) {
+		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
+
+		Map<CubeQueryStep, ISliceToValue> immutableChunks =
+				toSortedColumns(queryPod, queryAndSuppressed, sliceToAggregates);
+
+		// BEWARE This timing is independent of the table
+		Duration elapsed = singToAggregatedStarted.elapsed();
+		if (queryPod.isDebug() || queryPod.isExplain()) {
+			long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
+
 			if (queryPod.isDebug()) {
-				long totalSize = query.getDagQuery().getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
+				long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("time=%s size=%s for mergeTableAggregates on %s".formatted(PepperLogHelper
-								.humanDuration(elapsed.toMillis()), totalSize, query.getDagQuery()))
+						.message("time=%s sizes=%s total_size=%s for toSortedColumns on %s".formatted(
+								PepperLogHelper.humanDuration(elapsed.toMillis()),
+								Arrays.toString(sizes),
+								totalSize,
+								queryAndSuppressed.getDagQuery()))
 						.source(this)
 						.build());
 			} else if (queryPod.isExplain()) {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("time=%s for mergeTableAggregates on %s"
-								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), query.getDagQuery()))
+						.message("time=%s sizes=%s for toSortedColumns on %s".formatted(
+								PepperLogHelper.humanDuration(elapsed.toMillis()),
+								Arrays.toString(sizes),
+								queryAndSuppressed.getDagQuery()))
 						.source(this)
 						.build());
 			}
 		}
-
-		Map<CubeQueryStep, ISliceToValue> immutableChunks;
-		{
-			IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
-
-			immutableChunks = toSortedColumns(queryPod, query, sliceToAggregates);
-
-			// BEWARE This timing is independent of the table
-			Duration elapsed = singToAggregatedStarted.elapsed();
-			if (queryPod.isDebug() || queryPod.isExplain()) {
-				long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
-
-				if (queryPod.isDebug()) {
-					long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
-
-					eventBus.post(AdhocLogEvent.builder()
-							.debug(true)
-							.performance(true)
-							.message("time=%s sizes=%s total_size=%s for toSortedColumns on %s".formatted(
-									PepperLogHelper.humanDuration(elapsed.toMillis()),
-									Arrays.toString(sizes),
-									totalSize,
-									query.getDagQuery()))
-							.source(this)
-							.build());
-				} else if (queryPod.isExplain()) {
-					eventBus.post(AdhocLogEvent.builder()
-							.explain(true)
-							.performance(true)
-							.message("time=%s sizes=%s for toSortedColumns on %s".formatted(PepperLogHelper
-									.humanDuration(elapsed.toMillis()), Arrays.toString(sizes), query.getDagQuery()))
-							.source(this)
-							.build());
-				}
-			}
-		}
 		return immutableChunks;
+	}
+
+	protected IMultitypeMergeableGrid<SliceAsMap> mergeTableAggregates(QueryPod queryPod,
+			TableQueryToSuppressedTableQuery queryAndSuppressed,
+			ITabularRecordStream stream) {
+		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
+
+		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates =
+				mergeTableAggregates(queryPod, queryAndSuppressed.getSuppressedQuery(), stream);
+
+		// BEWARE This timing is dependent of the table
+		Duration elapsed = stopWatch.elapsed();
+		TableQueryV2 dagQuery = queryAndSuppressed.getDagQuery();
+		if (queryPod.isDebug()) {
+			long totalSize = dagQuery.getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
+
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(true)
+					.performance(true)
+					.message("time=%s size=%s for mergeTableAggregates on %s"
+							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), totalSize, dagQuery))
+					.source(this)
+					.build());
+		} else if (queryPod.isExplain()) {
+			eventBus.post(AdhocLogEvent.builder()
+					.explain(true)
+					.performance(true)
+					.message("time=%s for mergeTableAggregates on %s"
+							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), dagQuery))
+					.source(this)
+					.build());
+		}
+		return sliceToAggregates;
 	}
 
 	protected IMultitypeMergeableGrid<SliceAsMap> mergeTableAggregates(QueryPod queryPod,
@@ -444,7 +465,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
 	protected Map<CubeQueryStep, ISliceToValue> toSortedColumns(QueryPod queryPod,
-			TableQueryToActualTableQuery query,
+			TableQueryToSuppressedTableQuery query,
 			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
 		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 		TableQueryV2 dagTableQuery = query.getDagQuery();
@@ -497,7 +518,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * 
 	 * Current implementation restore the suppressedColumn by writing a single member. Another project may prefer
 	 * writing a constant member (e.g. `suppressed`), or duplicating the value for each possible members of the
-	 * suppressed column (through, beware it may lead to a large cartesian product in case of multiple suppressed
+	 * suppressed column (through, beware it may lead to a large Cartesian product in case of multiple suppressed
 	 * columns).
 	 * 
 	 * @param queryStep
@@ -509,7 +530,20 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Set<String> suppressedColumns,
 			IMultitypeColumnFastGet<SliceAsMap> column) {
 		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
-		return GroupByHelpers.addConstantColumns(column, constantValues);
+
+		boolean match = FilterMatcher.builder().filter(queryStep.getFilter()).onMissingColumn(cf -> {
+			// We test only suppressedColumns for now
+			// TODO We should actually test each slice individually. It would lead to issues on complex filters (e.g.
+			// with OR), and fails around `eu.solven.adhoc.engine.step.SliceAsMapWithStep.asFilter()`.
+			return true;
+		}).build().match(constantValues);
+
+		if (match) {
+			return GroupByHelpers.addConstantColumns(column, constantValues);
+		} else {
+			log.debug("suppressedColumns={} are filtered out by {}", constantValues, queryStep.getFilter());
+			return MultitypeHashColumn.empty();
+		}
 	}
 
 	/**

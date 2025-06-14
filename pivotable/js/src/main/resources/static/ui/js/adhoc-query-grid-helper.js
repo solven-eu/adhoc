@@ -1,8 +1,3 @@
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store-adhoc.js";
-
-import { useUserStore } from "./store-user.js";
-
 // Ordering of rows
 import _ from "lodashEs";
 
@@ -216,12 +211,12 @@ export default {
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
 				// Align measures to the right to make it easier to detect large number
-				cssClass: "text-end",
+				// `font-monospace` is useful to have numbers properly aligned through the column
+				cssClass: "text-end font-monospace",
 			};
 
-			// BEWARE For an unknwon reason, this does not apply.
-			// The css is added by SlickGrid, but the header is not aligned to the right
-			column.headerCssClass = "text-end";
+			// Override the style from `.slick-header-column`
+			column.headerCssClass = "text-end justify-content-end";
 
 			if (measureName.indexOf("%") >= 0) {
 				column["formatter"] = measureFormatters.percentFormatter;

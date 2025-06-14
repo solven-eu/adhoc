@@ -1,10 +1,7 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { ref, watch } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
-
-import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
-import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocQueryWizardColumnFilterModal from "./adhoc-query-wizard-column-filter-modal.js";
 
@@ -68,7 +65,6 @@ export default {
 	},
 	setup(props) {
 		const store = useAdhocStore();
-		const userStore = useUserStore();
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 

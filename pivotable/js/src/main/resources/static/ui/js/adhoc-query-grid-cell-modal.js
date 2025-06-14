@@ -1,10 +1,3 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
-
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store-adhoc.js";
-
-import { useUserStore } from "./store-user.js";
-
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {},
@@ -22,13 +15,8 @@ export default {
 			required: true,
 		},
 	},
-	computed: {
-		...mapState(useAdhocStore, ["nbSchemaFetching"]),
-	},
+	computed: {},
 	setup(props) {
-		const store = useAdhocStore();
-		const userStore = useUserStore();
-
 		const applyEqualsFilter = function (column, coordinate) {
 			// BEWARE This is poor design. We should send some event  managing the queryModel/filters
 			if (!props.queryModel.filter || !props.queryModel.filter.type) {

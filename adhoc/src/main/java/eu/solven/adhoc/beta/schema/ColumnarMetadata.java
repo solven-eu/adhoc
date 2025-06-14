@@ -25,13 +25,18 @@ package eu.solven.adhoc.beta.schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.jooq.impl.SQLDataType;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.ColumnMetadata;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -64,45 +69,77 @@ public class ColumnarMetadata {
 	static final Set<Map.Entry<String, Class<?>>> UNCLEAR_TYPE_WARNED = Sets.newConcurrentHashSet();
 
 	@Singular
-	Map<String, String> columnToTypes;
+	ImmutableMap<String, String> columnToTypes;
+
+	@Singular
+	ImmutableMap<String, Set<String>> columnToTags;
+
+	public Map<String, ? extends Map<String, ?>> getColumns() {
+		Map<String, Map<String, Object>> columnToProperties = new TreeMap<>();
+
+		columnToTypes.forEach(
+				(column, type) -> columnToProperties.computeIfAbsent(column, k -> new TreeMap<>()).put("type", type));
+		columnToTags.forEach((column, tags) -> columnToProperties.computeIfAbsent(column, k -> new TreeMap<>())
+				.put("tags", new TreeSet<>(tags)));
+
+		return columnToProperties;
+	}
 
 	public static void clearWarns() {
 		UNCLEAR_TYPE_WARNED.clear();
 	}
 
-	public static ColumnarMetadata from(Map<String, Class<?>> columns) {
+	@Deprecated
+	public static ColumnarMetadataBuilder from(Map<String, Class<?>> columnToType) {
 		ColumnarMetadataBuilder builder = ColumnarMetadata.builder();
 
-		columns.forEach((name, clazz) -> {
-			if (CharSequence.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, VARCHAR);
-			} else if (LocalDate.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, LOCALDATE);
-			} else if (Integer.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, INTEGER);
-			} else if (Long.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, LONG);
-			} else if (Double.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, DOUBLE);
-			} else if (Float.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, FLOAT);
-			} else if (BigDecimal.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, DOUBLE);
-			} else if (java.util.Date.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, DATE);
-			} else if (OffsetDateTime.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, OFFSETDATETIME);
-			} else if (Boolean.class.isAssignableFrom(clazz)) {
-				builder.columnToType(name, BOOLEAN);
-			} else {
-				if (UNCLEAR_TYPE_WARNED.add(Map.entry(name, clazz))) {
-					log.warn("Unclear type for name={} clazz={}", name, clazz);
-				}
-				builder.columnToType(name, BLOB);
-			}
+		columnToType.forEach((name, clazz) -> {
+			builder.columnToType(name, typeAsString(name, clazz));
 		});
 
-		return builder.build();
+		return builder;
+	}
+
+	public static ColumnarMetadataBuilder from(Collection<? extends ColumnMetadata> columns) {
+		ColumnarMetadataBuilder builder = ColumnarMetadata.builder();
+
+		columns.forEach(column -> {
+			builder.columnToType(column.getName(), typeAsString(column.getName(), column.getType()));
+
+			builder.columnToTag(column.getName(), column.getTags());
+		});
+
+		return builder;
+	}
+
+	protected static String typeAsString(String columnName, Class<?> clazz) {
+
+		if (CharSequence.class.isAssignableFrom(clazz)) {
+			return VARCHAR;
+		} else if (LocalDate.class.isAssignableFrom(clazz)) {
+			return LOCALDATE;
+		} else if (Integer.class.isAssignableFrom(clazz)) {
+			return INTEGER;
+		} else if (Long.class.isAssignableFrom(clazz)) {
+			return LONG;
+		} else if (Double.class.isAssignableFrom(clazz)) {
+			return DOUBLE;
+		} else if (Float.class.isAssignableFrom(clazz)) {
+			return FLOAT;
+		} else if (BigDecimal.class.isAssignableFrom(clazz)) {
+			return DOUBLE;
+		} else if (java.util.Date.class.isAssignableFrom(clazz)) {
+			return DATE;
+		} else if (OffsetDateTime.class.isAssignableFrom(clazz)) {
+			return OFFSETDATETIME;
+		} else if (Boolean.class.isAssignableFrom(clazz)) {
+			return BOOLEAN;
+		} else {
+			if (UNCLEAR_TYPE_WARNED.add(Map.entry(columnName, clazz))) {
+				log.warn("Unclear type for name={} clazz={}", columnName, clazz);
+			}
+			return BLOB;
+		}
 	}
 
 }

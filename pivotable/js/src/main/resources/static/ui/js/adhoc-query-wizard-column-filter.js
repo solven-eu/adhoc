@@ -1,9 +1,7 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
-
-import { useUserStore } from "./store-user.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -58,7 +56,6 @@ export default {
 	},
 	setup(props) {
 		const store = useAdhocStore();
-		const userStore = useUserStore();
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
@@ -95,7 +92,7 @@ export default {
 		});
 
 		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
-		function saveFilter(value) {
+		function saveFilter() {
 			//			{
 			//			  "type" : "and",
 			//			  "filters" : [ {

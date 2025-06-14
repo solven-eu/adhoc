@@ -1,18 +1,11 @@
 import { ref, watch, onMounted, reactive, inject } from "vue";
 
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store-adhoc.js";
-
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridFormat from "./adhoc-query-grid-format.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
-import { useUserStore } from "./store-user.js";
-
-import { SlickGrid, SlickDataView, Formatters, SlickHeaderButtons } from "slickgrid";
-
-// Ordering of rows
-import _ from "lodashEs";
+// Formatters
+import { SlickGrid, SlickDataView, SlickHeaderButtons } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
 

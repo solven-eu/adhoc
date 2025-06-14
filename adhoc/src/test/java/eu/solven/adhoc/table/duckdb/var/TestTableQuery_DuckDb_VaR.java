@@ -360,7 +360,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		});
 	}
 
-	// filter scenarioIndex on `count(*)`
+	// filter scenarioIndex on `count(*)`: the filter is suppressed
 	@Test
 	public void testFilterScenarioIndex_countAsterisk_standardCube() {
 		ITabularView result = wrapInCube(forest)
@@ -376,7 +376,7 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		Assertions.assertThat(measureToValue.get(countAsterisk.getName())).isEqualTo(2L);
 	}
 
-	// groupBy scenarioIndex on `count(*)`
+	// groupBy scenarioIndex on `count(*)`: groupBy on `generated`
 	@Test
 	public void testGroupByScenarioIndex_countAsterisk() {
 		ITabularView view = wrapInCube(forest)
@@ -394,6 +394,20 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 		Assertions.assertThat(measureToValue).hasSize(1).containsKeys(countAsterisk.getName());
 
 		Assertions.assertThat(measureToValue.get(countAsterisk.getName())).isEqualTo(2L);
+	}
+
+	// groupBy and filter scenarioIndex on `count(*)`: groupBy on `generated`
+	@Test
+	public void testGroupByAndFilterScenarioIndex_countAsterisk() {
+		ITabularView view = wrapInCube(forest).execute(CubeQuery.builder()
+				.measure(countAsterisk)
+				.groupByAlso(C_SCENARIOINDEX)
+				.andFilter(C_SCENARIOINDEX, 0)
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 	}
 
 	// filter scenarioIndex on empty measure

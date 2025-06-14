@@ -1,5 +1,3 @@
-import { ref, watch, onMounted, reactive } from "vue";
-
 export default {
 	components: {},
 	// https://vuejs.org/guide/components/props.html
@@ -9,7 +7,7 @@ export default {
 			required: true,
 		},
 	},
-	setup(props) {
+	setup() {
 		return {};
 	},
 	template: /* HTML */ `

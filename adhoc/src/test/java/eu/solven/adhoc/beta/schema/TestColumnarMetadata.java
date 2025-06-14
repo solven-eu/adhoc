@@ -25,11 +25,16 @@ package eu.solven.adhoc.beta.schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.column.ColumnMetadata;
 
 public class TestColumnarMetadata {
 	@BeforeEach
@@ -39,32 +44,29 @@ public class TestColumnarMetadata {
 
 	@Test
 	public void testKnownTypes() {
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", String.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "varchar"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", String.class))).isEqualTo(Map.of("someName", "varchar"));
 
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", Integer.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "integer"));
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", Long.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "bigint"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", Integer.class))).isEqualTo(Map.of("someName", "integer"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", Long.class))).isEqualTo(Map.of("someName", "bigint"));
 
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", Float.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "float"));
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", Double.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "double"));
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", BigDecimal.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "double"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", Float.class))).isEqualTo(Map.of("someName", "float"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", Double.class))).isEqualTo(Map.of("someName", "double"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", BigDecimal.class))).isEqualTo(Map.of("someName", "double"));
 
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", java.sql.Date.class)).getColumnToTypes())
+		Assertions.assertThat(toApiTypes(Map.of("someName", java.sql.Date.class)))
 				.isEqualTo(Map.of("someName", "date"));
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", java.util.Date.class)).getColumnToTypes())
+		Assertions.assertThat(toApiTypes(Map.of("someName", java.util.Date.class)))
 				.isEqualTo(Map.of("someName", "date"));
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", LocalDate.class)).getColumnToTypes())
-				.isEqualTo(Map.of("someName", "date"));
+		Assertions.assertThat(toApiTypes(Map.of("someName", LocalDate.class))).isEqualTo(Map.of("someName", "date"));
 
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", OffsetDateTime.class)).getColumnToTypes())
+		Assertions.assertThat(toApiTypes(Map.of("someName", OffsetDateTime.class)))
 				.isEqualTo(Map.of("someName", "timestamp with time zone"));
 
 		Assertions.assertThat(ColumnarMetadata.UNCLEAR_TYPE_WARNED).isEmpty();
+	}
+
+	private Map<String, String> toApiTypes(Map<String, Class<?>> nameToType) {
+		return ColumnarMetadata.from(nameToType).build().getColumnToTypes();
 	}
 
 	private static class SomeCustomClass {
@@ -73,10 +75,24 @@ public class TestColumnarMetadata {
 
 	@Test
 	public void testUnknownTypes() {
-		Assertions.assertThat(ColumnarMetadata.from(Map.of("someName", SomeCustomClass.class)).getColumnToTypes())
+		Assertions.assertThat(toApiTypes(Map.of("someName", SomeCustomClass.class)))
 				.isEqualTo(Map.of("someName", "blob"));
 
 		Assertions.assertThat(ColumnarMetadata.UNCLEAR_TYPE_WARNED)
 				.contains(Map.entry("someName", SomeCustomClass.class));
+	}
+
+	@Test
+	public void testGetColumns() {
+		ColumnarMetadata columnar =
+				ColumnarMetadata.from(List.of(ColumnMetadata.builder().name("c").tag("someTag").build())).build();
+
+		Assertions.assertThat(columnar.getColumns()).hasSize(1).hasEntrySatisfying("c", map -> {
+			Assertions.assertThat(map)
+					.asInstanceOf(InstanceOfAssertFactories.MAP)
+					.hasSize(2)
+					.containsEntry("type", "blob")
+					.containsEntry("tags", Set.of("someTag"));
+		});
 	}
 }

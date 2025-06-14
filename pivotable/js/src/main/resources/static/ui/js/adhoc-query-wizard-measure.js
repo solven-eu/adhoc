@@ -1,8 +1,9 @@
-import { ref, onMounted, inject } from "vue";
+import { ref, inject } from "vue";
 
 import { markMatchingWizard } from "./adhoc-query-wizard-search-helpers.js";
 
 import AdhocMeasuresDag from "./adhoc-measures-dag.js";
+import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
 
 import { Modal } from "bootstrap";
 
@@ -10,6 +11,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocMeasuresDag,
+		AdhocQueryWizardMeasureTag,
 	},
 	props: {
 		measure: {
@@ -28,19 +30,6 @@ export default {
 	setup(props) {
 		const mark = function (text) {
 			return markMatchingWizard(props.searchOptions, text);
-		};
-
-		const toggleTag = function (tag) {
-			console.log("Toggling", tag);
-
-			const tags = props.searchOptions.tags;
-			if (tags.includes(tag)) {
-				// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-				const tagIndex = tags.indexOf(tag);
-				tags.splice(tagIndex, 1);
-			} else {
-				tags.push(tag);
-			}
 		};
 
 		const refDagModal = ref(null);
@@ -69,20 +58,15 @@ export default {
 			return filteredCopy;
 		};
 
-		return { mark, toggleTag, toggleInfo, filteredEntry };
+		return { mark, toggleInfo, filteredEntry };
 	},
 	template: /* HTML */ `
         <span v-html="mark(measure.name)" />
-        <span :class="'badge text-bg-' + 'primary'" @click.prevent="toggleInfo()">
+        <span type="button" :class="'badge text-bg-' + 'primary'" @click.prevent="toggleInfo()">
             <span>?</span>
         </span>
-        <span
-            v-for="tag in measure.tags"
-            :class="'badge text-bg-' + (searchOptions.tags.includes(tag) ? 'primary' : 'secondary')"
-            @click.prevent="toggleTag(tag)"
-        >
-            {{tag}}
-        </span>
+        &nbsp;
+        <AdhocQueryWizardMeasureTag v-for="tag in measure.tags" :tag="tag" :searchOptions="searchOptions" />
         <div v-if="showDetails" class="text-muted">
             <span v-if="measure.type == '.Aggregator' ">
                 <small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />

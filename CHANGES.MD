@@ -3,9 +3,18 @@ This document is intended for Adhoc developers and users.
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.9]
+
+### Added
+- Columns can be tagged through `AdhocSchema`.
+- In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
+
 ### Changed
 - `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.
 - `Bucketor` is renamed `Partitionor`.
+- `StandardQueryOptions.CONCURRENT` is revamped for `CubeQuerySteps` by relying on a `RecursiveAction`.
+- `DefaultCustomTypeManager` is renamed `StandardCustomTypeManager`.
+- `DefaultMissingColumnManager` is renamed `StandardMissingColumnManager`.
+- `DefaultQueryPreparator` is renamed `StandardQueryPreparator`.
 
 ## [0.0.8]
 ### Added

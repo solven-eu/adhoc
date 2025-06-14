@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -53,8 +53,8 @@ public class TestDefaultQueryPreparator {
 	public void testSubQuery() {
 		forest.addMeasure(Aggregator.sum("m"));
 
-		DefaultQueryPreparator queryPreparator =
-				DefaultQueryPreparator.builder().implicitFilter(f -> ColumnFilter.isEqualTo("c", "v")).build();
+		StandardQueryPreparator queryPreparator =
+				StandardQueryPreparator.builder().implicitFilter(f -> ColumnFilter.isEqualTo("c", "v")).build();
 
 		ICubeQuery query = CubeQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =
@@ -68,7 +68,7 @@ public class TestDefaultQueryPreparator {
 
 	@Test
 	public void test_unknownMeasure() {
-		DefaultQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+		StandardQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
 
 		ICubeQuery query = CubeQuery.builder().measure("m").build();
 
@@ -79,7 +79,7 @@ public class TestDefaultQueryPreparator {
 
 	@Test
 	public void testCutIrrelevantMeasures() {
-		DefaultQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+		StandardQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
 
 		forest.addMeasure(Aggregator.sum("c1"));
 		forest.addMeasure(Aggregator.sum("c2"));
@@ -126,7 +126,7 @@ public class TestDefaultQueryPreparator {
 		forest.addMeasure(Combinator.builder().name("a").underlying("b").build());
 		forest.addMeasure(Combinator.builder().name("b").underlying("a").build());
 
-		DefaultQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+		StandardQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
 
 		ICubeQuery query = CubeQuery.builder().measure("a").build();
 

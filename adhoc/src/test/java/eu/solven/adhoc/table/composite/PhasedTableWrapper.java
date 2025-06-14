@@ -84,10 +84,19 @@ public class PhasedTableWrapper implements ITableWrapper {
 		@Default
 		Phaser closing = new Phaser(0);
 
-		public void bulkRegister(int parties) {
-			opening.bulkRegister(parties);
-			streaming.bulkRegister(parties);
-			closing.bulkRegister(parties);
+		public int bulkRegister(int parties) {
+			int openingPhase = opening.bulkRegister(parties);
+			int streamingPhase = streaming.bulkRegister(parties);
+			int closingPhase = closing.bulkRegister(parties);
+
+			if (openingPhase != streamingPhase) {
+				throw new IllegalStateException(
+						"opening != streaming (%s != %s)".formatted(openingPhase, streamingPhase));
+			} else if (openingPhase != closingPhase) {
+				throw new IllegalStateException("opening != closing (%s != %s)".formatted(openingPhase, closingPhase));
+			}
+
+			return openingPhase;
 		}
 
 	}
@@ -105,8 +114,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
-		phasers.opening.arriveAndAwaitAdvance();
-		log.info("opening advance {}", name);
+		int phase = phasers.opening.arriveAndAwaitAdvance();
+		log.info("opening advance {} phase={}", name, phase);
 
 		return new ITabularRecordStream() {
 
@@ -118,8 +127,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 			@Override
 			public Stream<ITabularRecord> records() {
 				log.info("streaming arriveAndAwaitAdvance() {} {}", name, phasers.streaming);
-				phasers.streaming.arriveAndAwaitAdvance();
-				log.info("streaming advance {}", name);
+				int phase = phasers.streaming.arriveAndAwaitAdvance();
+				log.info("streaming advance {} phase={}", name, phase);
 
 				Map<String, Object> slice = tableQuery.getGroupBy()
 						.getNameToColumn()
@@ -138,8 +147,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 			@Override
 			public void close() {
 				log.info("closing arriveAndAwaitAdvance() {} {}", name, phasers.closing);
-				phasers.closing.arriveAndAwaitAdvance();
-				log.info("closing advance {}", name);
+				int phase = phasers.closing.arriveAndAwaitAdvance();
+				log.info("closing advance {} phase={}", name, phase);
 			}
 		};
 	}

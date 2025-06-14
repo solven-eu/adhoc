@@ -68,9 +68,9 @@ import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
-import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
+import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -104,11 +104,11 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
-	final IMissingColumnManager missingColumnManager = new DefaultMissingColumnManager();
+	final IMissingColumnManager missingColumnManager = new StandardMissingColumnManager();
 
 	@NonNull
 	@Default
-	final ICustomTypeManager customTypeManager = new DefaultCustomTypeManager();
+	final ICustomTypeManager customTypeManager = new StandardCustomTypeManager();
 
 	@NonNull
 	@Singular

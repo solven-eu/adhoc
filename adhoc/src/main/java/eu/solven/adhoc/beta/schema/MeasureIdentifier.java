@@ -20,25 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.beta.schema;
 
-import eu.solven.adhoc.cube.ICubeWrapper;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
+ * Identify a measure, in the context of a cube or a table.
  * 
  * @author Benoit Lacelle
  */
-public class DefaultMissingColumnManager implements IMissingColumnManager {
+@Value
+@Builder(toBuilder = true)
+public class MeasureIdentifier {
+	// The name of the cube
+	@NonNull
+	String cube;
 
-	@Override
-	public Object onMissingColumn(ICubeWrapper cube, String column) {
-		return "%s".formatted(cube.getName());
-	}
-
-	@Override
-	public Object onMissingColumn(String column) {
-		return "NULL";
-	}
-
+	@NonNull
+	String measure;
 }

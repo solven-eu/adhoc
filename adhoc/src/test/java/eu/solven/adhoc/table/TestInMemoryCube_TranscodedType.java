@@ -35,7 +35,7 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.table.transcoder.value.DefaultCustomTypeManager;
+import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 
 /**
  * Test type transcoding by converting from a Date as String into a LocalDate
@@ -61,7 +61,7 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 	public void testColumns_withTranscoding() {
 		ColumnsManager originalColumnsManager = (ColumnsManager) ((CubeWrapper) cube()).getColumnsManager();
 		CubeWrapper cubeWithTranscoding = editCube()
-				.columnsManager(originalColumnsManager.toBuilder().customTypeManager(new DefaultCustomTypeManager() {
+				.columnsManager(originalColumnsManager.toBuilder().customTypeManager(new StandardCustomTypeManager() {
 					@Override
 					public Object fromTable(String column, Object coordinate) {
 						if (coordinate == null) {

@@ -25,6 +25,8 @@ package eu.solven.adhoc.beta.schema;
 import java.util.Set;
 import java.util.UUID;
 
+import com.google.common.collect.ImmutableSet;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -55,6 +57,10 @@ public class ColumnStatistics {
 
 	@NonNull
 	String type;
+
+	@NonNull
+	@Singular
+	ImmutableSet<String> tags;
 
 	// The number of different coordinates. This is contextual to a cube/table.
 	// -1 means the cardinality has not been estimated

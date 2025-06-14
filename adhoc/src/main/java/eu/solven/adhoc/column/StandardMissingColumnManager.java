@@ -20,44 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
+package eu.solven.adhoc.column;
 
-import java.util.Map;
-
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.core.PepperLogHelper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 
 /**
- * Default {@link ICustomTypeManager}.
+ * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
  * 
  * @author Benoit Lacelle
  */
-public class DefaultCustomTypeManager implements ICustomTypeManager {
+public class StandardMissingColumnManager implements IMissingColumnManager {
 
 	@Override
-	public boolean mayTranscode(String column) {
-		return false;
+	public Object onMissingColumn(ICubeWrapper cube, String column) {
+		return "%s".formatted(cube.getName());
 	}
 
 	@Override
-	public Object toTable(String column, Object coordinate) {
-		return coordinate;
+	public Object onMissingColumn(String column) {
+		return "NULL";
 	}
 
-	@Override
-	public Object fromTable(String column, Object coordinate) {
-		return coordinate;
-	}
-
-	@Override
-	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
-		throw new NotYetImplementedException(
-				"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
-	}
-
-	@Override
-	public Map<String, Class<?>> getColumnTypes() {
-		return Map.of();
-	}
 }

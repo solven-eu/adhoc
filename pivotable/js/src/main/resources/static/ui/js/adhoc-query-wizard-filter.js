@@ -1,18 +1,9 @@
-import { computed, reactive, ref, watch, onMounted, inject } from "vue";
-
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store-adhoc.js";
-
-import { useUserStore } from "./store-user.js";
-
-// import AdhocQueryWizardFilter from "./adhoc-query-wizard-filter.js";
+import { inject } from "vue";
 
 export default {
 	name: "AdhocQueryWizardFilter",
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {
-		// AdhocQueryWizardFilter,
-	},
+	components: {},
 	// https://vuejs.org/guide/components/props.html
 	props: {
 		filter: {
@@ -27,9 +18,6 @@ export default {
 	computed: {},
 	// emits: ['removeFilter'],
 	setup(props) {
-		const store = useAdhocStore();
-		const userStore = useUserStore();
-
 		const childrenPath = function (subComponent) {
 			let newArray = props.path.slice();
 

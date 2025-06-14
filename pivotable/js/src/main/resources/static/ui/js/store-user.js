@@ -237,7 +237,7 @@ export const useUserStore = defineStore("user", {
 
 		// @throws UserNeedsToLoginError if not logged-in
 		async ensureUser() {
-			return loadUserIfMissing().then((user) => {
+			return this.loadUserIfMissing().then((user) => {
 				if (user.error) {
 					// We are not logged-in
 					this.needsToLogin = true;

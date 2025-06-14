@@ -20,53 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.table.transcoder.value;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.Map;
 
-import com.google.common.collect.ImmutableSet;
-
-import eu.solven.adhoc.measure.model.IHasTags;
-import eu.solven.adhoc.util.IHasName;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * Holds static details about a column.
+ * Default {@link ICustomTypeManager}.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-public class ColumnMetadata implements IHasName, IHasTags {
+public class StandardCustomTypeManager implements ICustomTypeManager {
 
-	@NonNull
-	String name;
-
-	@Singular
-	@NonNull
-	ImmutableSet<String> tags;
-
-	@NonNull
-	@Default
-	Class<?> type = Object.class;
-
-	// Alternative names referring to this given (e.g. in SQL, a column may be qualified or not). The list may not be
-	// exhaustive.
-	@Singular
-	Set<String> aliases;
-
-	public static ColumnMetadata merge(Collection<? extends ColumnMetadata> columns) {
-		if (columns.isEmpty()) {
-			throw new IllegalArgumentException("Need at least one column");
-		}
-
-		// TODO Manage conflicts (e.g. same column but different types)
-		return columns.iterator().next();
+	@Override
+	public boolean mayTranscode(String column) {
+		return false;
 	}
 
+	@Override
+	public Object toTable(String column, Object coordinate) {
+		return coordinate;
+	}
+
+	@Override
+	public Object fromTable(String column, Object coordinate) {
+		return coordinate;
+	}
+
+	@Override
+	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
+		throw new NotYetImplementedException(
+				"valueMatcher typeTranscoding: %s".formatted(PepperLogHelper.getObjectAndClass(valueMatcher)));
+	}
+
+	@Override
+	public Map<String, Class<?>> getColumnTypes() {
+		return Map.of();
+	}
 }

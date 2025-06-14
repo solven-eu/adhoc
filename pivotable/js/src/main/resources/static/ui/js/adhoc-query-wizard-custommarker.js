@@ -11,7 +11,7 @@ export default {
 			required: true,
 		},
 	},
-	setup(props) {
+	setup() {
 		return {};
 	},
 	template: /* HTML */ `

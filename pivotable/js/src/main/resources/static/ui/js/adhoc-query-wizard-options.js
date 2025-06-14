@@ -1,4 +1,5 @@
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { mapState } from "pinia";
+import { useAdhocStore } from "./store-adhoc.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -10,7 +11,13 @@ export default {
 			required: true,
 		},
 	},
-	computed: {},
+	computed: {
+		...mapState(useAdhocStore, {
+			metadata(store) {
+				return store.metadata;
+			},
+		}),
+	},
 	setup(props) {
 		if (!props.queryModel.options) {
 			props.queryModel.options = {};
@@ -19,31 +26,13 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="explainQuery" v-model="queryModel.options.explain" />
-            <label class="form-check-label" for="explainQuery">explain</label>
-        </div>
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="debugQuery" v-model="queryModel.options.debug" />
-            <label class="form-check-label" for="debugQuery">debug</label>
-        </div>
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="concurrentQuery" v-model="queryModel.options.concurrent" />
-            <label class="form-check-label" for="concurrentQuery">concurrent</label>
-        </div>
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="no_cache" v-model="queryModel.options.no_cache" />
-            <label class="form-check-label" for="no_cache">no_cache</label>
-        </div>
-        <div class="form-check form-switch">
-            <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="UNKNOWN_MEASURES_ARE_EMPTYQuery"
-                v-model="queryModel.options.UNKNOWN_MEASURES_ARE_EMPTY"
-            />
-            <label class="form-check-label" for="UNKNOWN_MEASURES_ARE_EMPTYQuery">UNKNOWN_MEASURES_ARE_EMPTY</label>
-        </div>
+        <ul v-for="(option) in metadata.query_options" class="list-group list-group-flush">
+            <li class="list-group-item">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" :id="'option_' + option.name" v-model="queryModel.options[option.name]" />
+                    <label class="form-check-label text-wrap text-lowercase" :for="'option_' + option.name">{{option.name}}</label>
+                </div>
+            </li>
+        </ul>
     `,
 };

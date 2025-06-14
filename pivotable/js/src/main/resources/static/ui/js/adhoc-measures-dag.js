@@ -1,4 +1,4 @@
-import { inject, ref, watchEffect, watch } from "vue";
+import { inject, ref, watch } from "vue";
 import mermaid from "mermaid";
 
 export default {
@@ -51,12 +51,7 @@ export default {
 					safeArray(measure.underlying).push(oneMeasure);
 				} else if (measure.underlyings) {
 					for (const underlying of measure.underlyings) {
-						if (!measureToDependants[oneMeasure]) {
-							measureToDependants[oneMeasure] = [];
-						}
-						for (const underlying of measure.underlyings) {
-							safeArray(underlying).push(oneMeasure);
-						}
+						safeArray(underlying).push(oneMeasure);
 					}
 				}
 			}

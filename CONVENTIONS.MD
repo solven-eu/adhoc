@@ -14,3 +14,5 @@ When writing code, you MUST follow these principles:
 
 - Generally prefer data-structures maintaining order (e.g. `LinkedHashSet` vs `HashSet`). Typically, beware of `.collect(Collectors.toSet())` which does not maintain order.
 - Generally prefer Guava collections over JDK11 wrappers (e.g. `ImmutableList.of(...)` vs `List.of()`). Typically, `List.of().contains(null)` throws an `Exception`.
+
+- Default implementations for an interface named `ISomeThing` should be named `SomeThing` (e.g. `CubeQueryEngine`) when it is generally not customized and `StandardSomeThing` it is expected to be frequently customized (e.g. `StandardCustomTypeManager`).

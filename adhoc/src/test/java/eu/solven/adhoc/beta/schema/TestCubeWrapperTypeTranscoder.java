@@ -36,7 +36,7 @@ public class TestCubeWrapperTypeTranscoder {
 	@Test
 	public void testParseString() {
 		CubeWrapperTypeTranscoder typeTranscoder =
-				CubeWrapperTypeTranscoder.builder().cubeColumn("c", String.class).build();
+				CubeWrapperTypeTranscoder.builder().columnToType("c", String.class).build();
 
 		Assertions.assertThat(typeTranscoder.mayTranscode("c")).isTrue();
 		Assertions.assertThat(typeTranscoder.toTable("c", "someString")).isEqualTo("someString");
@@ -47,7 +47,7 @@ public class TestCubeWrapperTypeTranscoder {
 	@Test
 	public void testParseLocalDate() {
 		CubeWrapperTypeTranscoder typeTranscoder =
-				CubeWrapperTypeTranscoder.builder().cubeColumn("c", LocalDate.class).build();
+				CubeWrapperTypeTranscoder.builder().columnToType("c", LocalDate.class).build();
 
 		Assertions.assertThat(typeTranscoder.mayTranscode("c")).isTrue();
 		Assertions.assertThat(typeTranscoder.toTable("c", "2025-06-04")).isEqualTo(LocalDate.parse("2025-06-04"));
@@ -65,7 +65,7 @@ public class TestCubeWrapperTypeTranscoder {
 	@Test
 	public void testParseCustomClass() {
 		CubeWrapperTypeTranscoder typeTranscoder =
-				CubeWrapperTypeTranscoder.builder().cubeColumn("c", CustomClass.class).build();
+				CubeWrapperTypeTranscoder.builder().columnToType("c", CustomClass.class).build();
 
 		Assertions.assertThat(typeTranscoder.mayTranscode("c")).isTrue();
 		Assertions.assertThat(typeTranscoder.toTable("c", "someStringForCustom"))

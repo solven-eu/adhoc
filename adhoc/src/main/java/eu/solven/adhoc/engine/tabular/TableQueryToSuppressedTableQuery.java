@@ -44,7 +44,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class TableQueryToActualTableQuery {
+public class TableQueryToSuppressedTableQuery {
 	// The TableQuery as queried by the DAG: it may still refer generated columns
 	TableQueryV2 dagQuery;
 	// The TableQuery after having suppressed generated columns
