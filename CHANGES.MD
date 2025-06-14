@@ -11,6 +11,10 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.
 - `Bucketor` is renamed `Partitionor`.
+- `StandardQueryOptions.CONCURRENT` is revamped for `CubeQuerySteps` by relying on a `RecursiveAction`.
+- `DefaultCustomTypeManager` is renamed `StandardCustomTypeManager`.
+- `DefaultMissingColumnManager` is renamed `StandardMissingColumnManager`.
+- `DefaultQueryPreparator` is renamed `StandardQueryPreparator`.
 
 ## [0.0.8]
 ### Added

@@ -46,8 +46,13 @@ import lombok.extern.slf4j.Slf4j;
  * A {@link Spliterator} similar to {@link TopologicalOrderIterator}. It enables {@link Stream}, including with
  * `.parallel()`.
  * 
+ * BEWARE This does not enable concurrency as `.trySplit()` can not be called on a per-task basis. Hence, if the graph
+ * has a single original queryStep (which is often the case, as a single `.Aggregator` step not doing much), then we
+ * have no later occasion to fork more threads when the graph of steps widens..
+ * 
  * @author Benoit Lacelle
  */
+@Deprecated(since = "Irrelevant as Spliterator.trySplit() are only called early")
 @Slf4j
 public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 	final EdgeReversedGraph<CubeQueryStep, DefaultEdge> fromAggregatesToQueried;
@@ -96,6 +101,8 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 				indexNext.incrementAndGet();
 			} else {
 				// This will close the spliterator: fine, as we typically needs to reduce our concurrency
+				// Happens typically on the last measure: its underlyings can be processed in parallel while itself can
+				// be processed by a single thread.
 				log.debug("Closing a forked spliterator due to diminished parallelism (stepIndex={})",
 						indexBeingProcessed);
 				return false;
@@ -124,7 +131,7 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 	@Override
 	public Spliterator<CubeQueryStep> trySplit() {
 		// Count how many split would be useful at current state
-		int maxSplit = 0;
+		int nbAvailableTasks = 0;
 
 		writeLock.lock();
 		try {
@@ -132,7 +139,7 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 			for (int indexBeingProcessed = nextToProcess; indexBeingProcessed < size; indexBeingProcessed++) {
 				CubeQueryStep next = topologicalOrderList.get(indexBeingProcessed);
 				if (canBeProcessed(next)) {
-					maxSplit++;
+					nbAvailableTasks++;
 				} else {
 					// Next steps can necessarily not be processed
 					break;
@@ -142,11 +149,12 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 			writeLock.unlock();
 		}
 
-		if (maxSplit > nbSplit.get()) {
+		// if `nbSplit==0`, it means we have a single (current) thread
+		if (nbAvailableTasks > nbSplit.get() + 1) {
 			// This Spliterator is stateless: we can return another reference of it
 			// This will lead to a second thread processing whatever next queryStep is available
 			int nextSplit = nbSplit.incrementAndGet();
-			log.debug("trySplit accepted, to nextSplit={} given maxSplit={}", nextSplit, maxSplit);
+			log.debug("trySplit accepted, to nextSplit={} given maxSplit={}", nextSplit, nbAvailableTasks);
 			return this;
 		}
 
@@ -168,11 +176,15 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 		return SIZED | DISTINCT | IMMUTABLE | NONNULL;
 	}
 
-	public static Stream<CubeQueryStep> fromDAG(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {
+	protected static Spliterator<CubeQueryStep> makeSpliterator(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<CubeQueryStep, DefaultEdge> fromAggregatesToQueried = new EdgeReversedGraph<>(dag);
 
-		Spliterator<CubeQueryStep> spliterator = new TopologicalOrderSpliterator(fromAggregatesToQueried);
+		return new TopologicalOrderSpliterator(fromAggregatesToQueried);
+	}
+
+	public static Stream<CubeQueryStep> fromDAG(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {
+		Spliterator<CubeQueryStep> spliterator = makeSpliterator(dag);
 
 		// By default, the engine is mono-threaded.
 		// `TopologicalOrderSpliterator` can be turned into an effective parallel Stream, but we do not want to fork
@@ -181,4 +193,5 @@ public class TopologicalOrderSpliterator implements Spliterator<CubeQueryStep> {
 
 		return StreamSupport.stream(spliterator, isParallel);
 	}
+
 }

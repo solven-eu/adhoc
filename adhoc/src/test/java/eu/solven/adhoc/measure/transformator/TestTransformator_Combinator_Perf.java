@@ -40,6 +40,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,7 +99,30 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 	}
 
 	@Test
-	public void testChainOfSums() {
+	public void testChainOfSums_multithreaded() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(timesN)
+				.groupByAlso("row_index")
+				.explain(true)
+				.option(StandardQueryOptions.CONCURRENT)
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(maxCardinality)
+				.containsEntry(Map.of("row_index", 0), Map.of(timesN, 0L))
+				.containsEntry(Map.of("row_index", 1), Map.of(timesN, 0L + (1L << height)))
+				.containsEntry(Map.of("row_index", maxCardinality - 1),
+						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+	}
+
+	@Test
+	public void testChainOfSums_monothreaded() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
 		ITabularView output =

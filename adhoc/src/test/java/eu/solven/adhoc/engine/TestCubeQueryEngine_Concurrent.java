@@ -44,7 +44,12 @@ import eu.solven.adhoc.table.composite.PhasedTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
-public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdhocTestConstants {
+@Slf4j
+public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdhocTestConstants {
+	// This can be increased to check given tests are valid even if run many times
+	// It is especially important as concurrency is prone to race-conditions, leading to bugs happening not
+	// deterministically.
+	int nbLoops = 4;
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -135,8 +140,10 @@ public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdh
 
 	@Test
 	public void testConcurrentQuerySteps() {
+		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
+
 		int nbConcurrentSteps = 2;
-		Phaser phaser = new Phaser(nbConcurrentSteps);
+		Phaser phaser = new Phaser(0);
 
 		forest.addMeasure(k1Sum);
 
@@ -155,30 +162,41 @@ public class TestCubeQueryEngine_Concurrency extends ARawDagTest implements IAdh
 						IntStream.range(0, nbConcurrentSteps).mapToObj(i -> k1Sum.getName() + "_phased_" + i).toList())
 				.build());
 
-		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
-
 		// We expect 1 queries: k1Sum grandTotal
-		phasedTable.getPhasers().bulkRegister(1);
+		int phaseTable = phasedTable.getPhasers().bulkRegister(1);
+		int stepPhase = phaser.bulkRegister(nbConcurrentSteps);
+		if (phaseTable != stepPhase) {
+			throw new IllegalStateException("opening != closing (%s != %s)".formatted(phaseTable, stepPhase));
+		} else {
+			log.info("query phase={}", phaseTable);
+		}
 
-		ITabularView view = cube()
-				.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
+		int loopIndex = -1;
+		while (loopIndex++ < nbLoops) {
+			int phaseBeforeStart = phaser.getPhase();
+			log.info("query phase={}", phaseBeforeStart);
+			Assertions.assertThat(phaseBeforeStart).isEqualTo(loopIndex);
 
-		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of("sum_phased", 0L + 2))
-				.hasSize(1);
+			ITabularView view = cube()
+					.execute(CubeQuery.builder().measure("sum_phased").option(StandardQueryOptions.CONCURRENT).build());
 
-		// Phaser opening = phasedTable.getPhasers().getOpening();
-		// Assertions.assertThat(opening.getPhase()).isEqualTo(1);
-		// Assertions.assertThat(opening.getArrivedParties()).isEqualTo(0);
-		//
-		// Phaser streaming = phasedTable.getPhasers().getStreaming();
-		// Assertions.assertThat(streaming.getPhase()).isEqualTo(1);
-		// Assertions.assertThat(streaming.getArrivedParties()).isEqualTo(0);
-		//
-		// Phaser closing = phasedTable.getPhasers().getClosing();
-		// Assertions.assertThat(closing.getPhase()).isEqualTo(1);
-		// Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
+			MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+			Assertions.assertThat(mapBased.getCoordinatesToValues())
+					.containsEntry(Map.of(), Map.of("sum_phased", 0L + 2))
+					.hasSize(1);
+
+			// Phaser opening = phasedTable.getPhasers().getOpening();
+			// Assertions.assertThat(opening.getPhase()).isEqualTo(1);
+			// Assertions.assertThat(opening.getArrivedParties()).isEqualTo(0);
+			//
+			// Phaser streaming = phasedTable.getPhasers().getStreaming();
+			// Assertions.assertThat(streaming.getPhase()).isEqualTo(1);
+			// Assertions.assertThat(streaming.getArrivedParties()).isEqualTo(0);
+			//
+			// Phaser closing = phasedTable.getPhasers().getClosing();
+			// Assertions.assertThat(closing.getPhase()).isEqualTo(1);
+			// Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
+		}
 	}
 
 }

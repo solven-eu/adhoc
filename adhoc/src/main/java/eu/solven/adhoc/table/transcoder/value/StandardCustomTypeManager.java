@@ -33,7 +33,7 @@ import eu.solven.pepper.core.PepperLogHelper;
  * 
  * @author Benoit Lacelle
  */
-public class DefaultCustomTypeManager implements ICustomTypeManager {
+public class StandardCustomTypeManager implements ICustomTypeManager {
 
 	@Override
 	public boolean mayTranscode(String column) {

@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -58,7 +58,7 @@ public interface ICubeQueryEngine {
 			IMeasureForest measures,
 			ITableWrapper table,
 			IColumnsManager columnsManager) {
-		IQueryPreparator queryPreparator = DefaultQueryPreparator.builder().build();
+		IQueryPreparator queryPreparator = StandardQueryPreparator.builder().build();
 
 		QueryPod queryPod = queryPreparator.prepareQuery(table, measures, columnsManager, query);
 		return execute(queryPod);

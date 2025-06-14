@@ -138,6 +138,7 @@ public class AdhocUnsafe {
 	public static boolean deterministicUUID = false;
 	private static final AtomicLong DETERMINISTIC_UUID_INDEX = new AtomicLong();
 	private static final AtomicLong DETERMINISTIC_QUERY_INDEX = new AtomicLong();
+	private static final AtomicLong DETERMINISTIC_QUERY_STEP_INDEX = new AtomicLong();
 
 	public static UUID randomUUID() {
 		if (deterministicUUID) {
@@ -155,10 +156,23 @@ public class AdhocUnsafe {
 		deterministicUUID = true;
 		DETERMINISTIC_UUID_INDEX.set(0);
 		DETERMINISTIC_QUERY_INDEX.set(0);
+		DETERMINISTIC_QUERY_STEP_INDEX.set(0);
 	}
 
+	/**
+	 * 
+	 * @return a long identifying in current ClassLoader the next query
+	 */
 	public static long nextQueryIndex() {
 		return DETERMINISTIC_QUERY_INDEX.getAndIncrement();
+	}
+
+	/**
+	 * 
+	 * @return a long identifying in current ClassLoader the next query step
+	 */
+	public static long nextQueryStepIndex() {
+		return DETERMINISTIC_QUERY_STEP_INDEX.getAndIncrement();
 	}
 
 	private static int defaultParallelism() {

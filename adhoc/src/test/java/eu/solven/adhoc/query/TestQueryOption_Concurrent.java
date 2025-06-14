@@ -35,7 +35,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -63,7 +63,7 @@ public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestCo
 	@Test
 	public void testGrandTotal() {
 		CubeWrapper cube = editCube().queryPreparator(
-				DefaultQueryPreparator.builder().implicitOptions(q -> Set.of(StandardQueryOptions.CONCURRENT)).build())
+				StandardQueryPreparator.builder().implicitOptions(q -> Set.of(StandardQueryOptions.CONCURRENT)).build())
 				.build();
 
 		ITabularView output = cube.execute(CubeQuery.builder().measure(countAsterisk.getName()).build());

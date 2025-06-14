@@ -29,7 +29,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
  * 
  * @author Benoit Lacelle
  */
-public class DefaultMissingColumnManager implements IMissingColumnManager {
+public class StandardMissingColumnManager implements IMissingColumnManager {
 
 	@Override
 	public Object onMissingColumn(ICubeWrapper cube, String column) {

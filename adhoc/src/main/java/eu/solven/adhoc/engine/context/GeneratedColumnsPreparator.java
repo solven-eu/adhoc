@@ -38,7 +38,7 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 @Deprecated(since = "Poor designs. Some IColumnGenerator should not come from measures")
-public class GeneratedColumnsPreparator extends DefaultQueryPreparator {
+public class GeneratedColumnsPreparator extends StandardQueryPreparator {
 
 	@Singular
 	Set<String> generatedColumnsMeasures;

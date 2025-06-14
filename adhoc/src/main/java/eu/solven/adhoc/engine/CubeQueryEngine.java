@@ -31,8 +31,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinTask;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -44,6 +49,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
@@ -322,50 +328,37 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void walkDagUpToQueriedMeasures(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
-
 		try {
 			queryPod.getExecutorService().submit(() -> {
-				Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
+
+				Consumer<? super CubeQueryStep> onQueryStep = queryStep -> {
+					onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
+				};
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-					topologicalOrder = topologicalOrder.parallel();
+					// multi-threaded
+					// topologicalOrder = topologicalOrder.parallel();
+
+					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
+
+					List<CubeQueryStep> roots =
+							dag.vertexSet().stream().filter(step -> dag.getAncestors(step).isEmpty()).toList();
+
+					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
+							.fromAggregatesToQueried(dag)
+							.queryStepToValues(queryStepToValues)
+							.onReadyStep(onQueryStep);
+					List<QueryStepRecursiveAction> actions =
+							roots.stream().map(step -> actionTemplate.step(step).build()).toList();
+
+					ForkJoinTask.invokeAll(actions);
+
+				} else {
+					// mono-threaded
+					Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
+					topologicalOrder.forEach(onQueryStep);
 				}
 
-				topologicalOrder.forEach(queryStep -> {
-					if (queryStepToValues.containsKey(queryStep)) {
-						// This typically happens on aggregator measures, as they are fed in a previous
-						// step. Here, we want to process a measure once its underlying steps are completed
-						return;
-					} else if (queryStep.getMeasure() instanceof Aggregator a) {
-						throw new IllegalStateException("Missing values for %s".formatted(a));
-					}
-
-					eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
-
-					IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
-
-					List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
-
-					IStopwatch stepWatch = factories.getStopwatchFactory().createStarted();
-
-					Optional<ISliceToValue> optOutputColumn =
-							processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
-
-					// Would be empty on table steps (leaves of the DAG)
-					optOutputColumn.ifPresent(outputColumn -> {
-						Duration elapsed = stepWatch.elapsed();
-						eventBus.post(QueryStepIsCompleted.builder()
-								.querystep(queryStep)
-								.nbCells(outputColumn.size())
-								.source(this)
-								.duration(elapsed)
-								.build());
-						queryStepsDag.registerExecutionFeedback(queryStep,
-								SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
-
-						queryStepToValues.put(queryStep, outputColumn);
-					});
-				});
 			}).get();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -373,6 +366,45 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		} catch (ExecutionException e) {
 			throw new IllegalStateException("Failed", e);
 		}
+	}
+
+	private void onQueryStep(QueryPod queryPod,
+			QueryStepsDag queryStepsDag,
+			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			CubeQueryStep queryStep) {
+		if (queryStepToValues.containsKey(queryStep)) {
+			// This typically happens on aggregator measures, as they are fed in a previous
+			// step. Here, we want to process a measure once its underlying steps are completed
+			return;
+		} else if (queryStep.getMeasure() instanceof Aggregator a) {
+			throw new IllegalStateException("Missing values for %s".formatted(a));
+		}
+
+		eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
+
+		IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
+
+		List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
+
+		IStopwatch stepWatch = factories.getStopwatchFactory().createStarted();
+
+		Optional<ISliceToValue> optOutputColumn =
+				processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+
+		// Would be empty on table steps (leaves of the DAG)
+		optOutputColumn.ifPresent(outputColumn -> {
+			Duration elapsed = stepWatch.elapsed();
+			eventBus.post(QueryStepIsCompleted.builder()
+					.querystep(queryStep)
+					.nbCells(outputColumn.size())
+					.source(this)
+					.duration(elapsed)
+					.build());
+			queryStepsDag.registerExecutionFeedback(queryStep,
+					SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
+
+			queryStepToValues.put(queryStep, outputColumn);
+		});
 	}
 
 	protected Optional<ISliceToValue> processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,

@@ -37,7 +37,7 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.engine.context.DefaultQueryPreparator;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
@@ -63,7 +63,7 @@ public class TestImplicitFilter_SpringSecurity {
 		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(eventBus::post).build();
 
 		IQueryPreparator queryPreparator =
-				DefaultQueryPreparator.builder().implicitFilter(new SpringSecurityAdhocImplicitFilter()).build();
+				StandardQueryPreparator.builder().implicitFilter(new SpringSecurityAdhocImplicitFilter()).build();
 		aqw = CubeWrapper.builder()
 				.table(rows)
 				.engine(aqe)

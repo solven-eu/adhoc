@@ -53,12 +53,14 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class QueryStepsDag implements ISinkExecutionFeedback {
-	// The DAG of a given IAdhocQuery, from queried to aggregators
+	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge
+	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag;
 
 	// The multigraph of a given IAdhocQuery, from queried to aggregators, accepting a queriedStep to query multiple
 	// times the same underlyingStep
+	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
 	DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph;
 

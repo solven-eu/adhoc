@@ -59,7 +59,7 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 @RequiredArgsConstructor
-public class DefaultQueryPreparator implements IQueryPreparator {
+public class StandardQueryPreparator implements IQueryPreparator {
 
 	// By default, the filters are not modified
 	@NonNull
@@ -97,7 +97,7 @@ public class DefaultQueryPreparator implements IQueryPreparator {
 				.executorService(getExecutorService(preparedQuery))
 				.build();
 
-		// Filtering the forst is useful for edge-cades like:
+		// Filtering the forest is useful for edge-cades like:
 		// - columnGenerator: we should consider only measures in the queryPlan
 		IMeasureForest relevantForest =
 				filterForest(fullQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();

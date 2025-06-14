@@ -294,11 +294,15 @@ public class TableQueryEngine implements ITableQueryEngine {
 			IAdhocGroupBy suppressedGroupby =
 					GroupByHelpers.suppressColumns(originalGroupby, generatedColumnToSuppressFromGroupBy);
 			if (queryPod.isDebugOrExplain()) {
+				Set<String> suppressedColumns =
+						Sets.difference(originalGroupby.getGroupedByColumns(), suppressedGroupby.getGroupedByColumns());
+
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(queryPod.isDebug())
 						.explain(queryPod.isExplain())
 						.source(this)
-						.messageT("Suppressing generatedColumns in groupBy from {} to {}",
+						.messageT("Suppressing generatedColumns={} in groupBy from {} to {}",
+								suppressedColumns,
 								originalGroupby,
 								suppressedGroupby)
 						.build());
