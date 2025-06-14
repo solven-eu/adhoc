@@ -184,6 +184,6 @@ public class TestQueryGrandTotalsThroughRouter {
 		Assertions.assertThat(nbColumns.get()).isGreaterThan(0);
 		// TODO Columns are not processed in the expected order. Hence, the last cube is not always the same. Why?
 		Assertions.assertThat(lastColumn.getColumn())
-				.isIn("gamma", "cubeSlicer", "film_rating", "rowIndex", "runt_time");
+				.isIn("gamma", "cubeSlicer", "film_rating", "rowIndex", "run_time");
 	}
 }

@@ -15,6 +15,8 @@ import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
 
 import AdhocAccordionItemColumns from "./adhoc-query-wizard-accordion-columns.js";
 
+import AdhocWizardTags from "./adhoc-query-wizard-tags.js";
+
 import { useUserStore } from "./store-user.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
@@ -30,6 +32,7 @@ export default {
 		AdhocQueryWizardOptions,
 		AdhocQueryWizardMeasureTag,
 		AdhocAccordionItemColumns,
+		AdhocWizardTags,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -100,32 +103,11 @@ export default {
 			return wizardHelper.clearFilters(searchOptions);
 		};
 
-		const availableTags = function () {
-			// https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Global_Objects/Set
-			const tags = new Set();
-
-			const cube = store.schemas[this.endpointId]?.cubes[this.cubeId];
-			for (const measure of Object.values(cube.measures)) {
-				for (const tag of measure.tags) {
-					tags.add(tag);
-				}
-			}
-			for (const column of Object.values(cube.columns.columns)) {
-				for (const tag of column.tags) {
-					tags.add(tag);
-				}
-			}
-
-			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
-			return Array.from(tags);
-		};
-
 		return {
 			searchOptions,
 			filtered,
 			removeTag,
 			clearFilters,
-			availableTags,
 		};
 	},
 	template: /* HTML */ `
@@ -145,20 +127,7 @@ export default {
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
                 <AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
-                <div>
-                    <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Tags
-                            <span v-if="searchOptions.tags.length == 0"> {{availableTags().length}} </span>
-                            <span v-else> {{searchOptions.tags.length}} / {{availableTags().length}} </span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item" v-for="tag in availableTags()">
-                                <AdhocQueryWizardMeasureTag :tag="tag" :searchOptions="searchOptions" />
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+				<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
                 <div class="accordion" id="accordionWizard">
                     <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
                     <div class="accordion-item">
