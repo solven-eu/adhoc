@@ -51,7 +51,7 @@ import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
-public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestConstants {
 
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 

@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.example.worldcup;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.jooq.AggregateFunction;
 import org.jooq.DSLContext;
@@ -35,6 +39,10 @@ import org.jooq.Name;
 import org.jooq.impl.DSL;
 import org.springframework.core.io.ClassPathResource;
 
+import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
+import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ConstantCombination;
@@ -49,10 +57,12 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
+import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
 /**
  * Holds the schema for WorldCupPlayers example.
@@ -126,24 +136,17 @@ public class WorldCupPlayersSchema {
 		DSLContext dslContext = dslSupplier.getDSLContext();
 
 		dslContext.connection(connection -> {
-			ClassPathResource resource = new ClassPathResource("/datasets/worldcup/WorldCupPlayers.parquet");
-
-			Path tmp = Files.createTempDirectory("adhoc-" + this.getClass().getSimpleName());
-
-			Path parquetAsPath = tmp.resolve(resource.getFilename());
-			Files.copy(resource.getInputStream(), parquetAsPath);
-
-			try (Statement s = connection.createStatement()) {
-				s.execute("CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(tableName,
-						parquetAsPath.toAbsolutePath().toString()));
-			}
-
-			// Delete the file as it is loaded in-memory in DuckDB
-			parquetAsPath.toFile().delete();
+			loadParquetToTable(connection, new ClassPathResource("/datasets/worldcup/WorldCupPlayers.parquet"));
+			loadParquetToTable(connection, new ClassPathResource("/datasets/worldcup/WorldCupMatches.parquet"));
 		});
 
-		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().table(DSL.table(tableName)).dslSupplier(dslSupplier).build();
+		JooqSnowflakeSchemaBuilder worldCupPlayers = snowflakeBuilder();
+
+		JooqTableWrapperParameters tableParameters = JooqTableWrapperParameters.builder()
+				.table(worldCupPlayers.getSnowflakeTable())
+				.dslSupplier(dslSupplier)
+				.build();
+
 		JooqTableWrapper table = new JooqTableWrapper(tableName, tableParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
@@ -169,5 +172,49 @@ public class WorldCupPlayersSchema {
 			}
 		};
 		return table;
+	}
+
+	private JooqSnowflakeSchemaBuilder snowflakeBuilder() {
+		JooqSnowflakeSchemaBuilder worldCupPlayers = JooqSnowflakeSchemaBuilder.builder()
+				.baseTable(DSL.table("WorldCupPlayers"))
+				.baseTableAlias("WorldCupPlayers")
+				.build()
+				.leftJoin(DSL.table("WorldCupMatches"), "WorldCupMatches", List.of(Map.entry("MatchId", "MatchId")));
+		return worldCupPlayers;
+	}
+
+	private void loadParquetToTable(Connection connection, ClassPathResource resource)
+			throws IOException, SQLException {
+		String fileName = resource.getFilename();
+		String simpleName = fileName.substring(0, fileName.lastIndexOf('.'));
+
+		Path tmp = Files.createTempDirectory("adhoc-" + this.getClass().getSimpleName());
+
+		Path parquetAsPath = tmp.resolve(fileName);
+		Files.copy(resource.getInputStream(), parquetAsPath);
+
+		try (Statement s = connection.createStatement()) {
+			s.execute("CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName,
+					parquetAsPath.toAbsolutePath().toString()));
+		}
+
+		// Delete the file as it is loaded in-memory in DuckDB
+		parquetAsPath.toFile().delete();
+	}
+
+	public CubeWrapperBuilder makeCube(AdhocSchema schema,
+			WorldCupPlayersSchema worldCupSchema,
+			ITableWrapper table,
+			IMeasureForest forest) {
+		return schema.openCubeWrapperBuilder()
+				.name(worldCupSchema.getName())
+				.forest(forest)
+				.table(table)
+				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
+				.columnsManager(ColumnsManager.builder()
+						.transcoder(MapTableTranscoder.builder()
+								.queriedToUnderlyings(snowflakeBuilder().getQueriedToUnderlying())
+								.build())
+						.build());
 	}
 }

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import com.google.common.eventbus.EventBus;
+
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
@@ -35,6 +37,7 @@ public abstract class ADuckDbJooqTest {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	protected CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	public final EventBus eventBus = AdhocTestHelper.eventBus();
+	protected CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(eventBus::post).build();
 	protected UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("duckdb").build();
 }

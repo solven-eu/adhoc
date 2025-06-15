@@ -25,14 +25,13 @@ package eu.solven.adhoc.engine;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
+import lombok.experimental.UtilityClass;
 
 /**
  * Commons patterns used in Adhoc unit-tests
  */
+@UtilityClass
 public class AdhocTestHelper {
-	protected AdhocTestHelper() {
-		// hidden
-	}
 
 	/**
 	 * @return an EventBus with a registered {@link AdhocEventsFromGuavaEventBusToSfl4j}

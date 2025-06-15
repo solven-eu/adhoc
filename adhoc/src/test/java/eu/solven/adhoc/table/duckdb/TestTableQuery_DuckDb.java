@@ -80,7 +80,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 
 	@Test
 	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> tableSupplier.get().streamSlices(qK1).toList())
+		Assertions.assertThatThrownBy(() -> table().streamSlices(qK1).toList())
 				.isInstanceOf(DataAccessException.class)
 				.hasStackTraceContaining(
 						"Caused by: java.sql.SQLException: Catalog Error: Table with name someTableName does not exist!");
@@ -90,7 +90,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 	public void testEmptyDb() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get().streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table().streamSlices(qK1).toList();
 
 		// It seems a legal SQL behavior: a groupBy with `null` is created even if there is not a single matching row
 		Assertions.assertThat(tableStream).contains(Map.of()).hasSize(1);
@@ -101,7 +101,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get().streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table().streamSlices(qK1).toList();
 
 		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
 	}
@@ -111,7 +111,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
 
-		Assertions.assertThatThrownBy(() -> tableSupplier.get().streamSlices(qK1).toList())
+		Assertions.assertThatThrownBy(() -> table().streamSlices(qK1).toList())
 				.isInstanceOf(DataAccessException.class)
 				.hasStackTraceContaining("java.sql.SQLException: Binder Error:"
 						+ " No function matches the given name and argument types 'sum(VARCHAR)'."
@@ -124,7 +124,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
 
 		Assertions
-				.assertThatThrownBy(() -> tableSupplier.get()
+				.assertThatThrownBy(() -> table()
 						.streamSlices(qK1.toBuilder().groupBy(GroupByColumns.named("unknownColumn")).build())
 						.toList())
 				.isInstanceOf(DataAccessException.class)
@@ -142,7 +142,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get().streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStream = table().streamSlices(qK1).toList();
 
 		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
@@ -158,9 +158,8 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get()
-				.streamSlices(TableQuery.builder().aggregators(Set.of(Aggregator.empty())).build())
-				.toList();
+		List<Map<String, ?>> tableStream =
+				table().streamSlices(TableQuery.builder().aggregators(Set.of(Aggregator.empty())).build()).toList();
 
 		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of());
 	}
@@ -181,7 +180,7 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 				.values("a1", "b2", 456)
 				.execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get()
+		List<Map<String, ?>> tableStream = table()
 				.streamSlices(
 						TableQuery.edit(qK1).filter(ColumnFilter.builder().column("a").matching("a1").build()).build())
 				.toList();
@@ -202,11 +201,9 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get()
-				.streamSlices(TableQuery.edit(qK1)
-						.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
-						.build())
-				.toList();
+		List<Map<String, ?>> tableStream = table().streamSlices(TableQuery.edit(qK1)
+				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
+				.build()).toList();
 
 		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
 	}
@@ -224,9 +221,8 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 				.values("a2", "b2", 345)
 				.execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get()
-				.streamSlices(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build())
-				.toList();
+		List<Map<String, ?>> tableStream =
+				table().streamSlices(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
 		Assertions.assertThat(tableStream)
 				.hasSize(3)
@@ -251,10 +247,8 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 				.values("a1", 123)
 				.execute();
 
-		List<Map<String, ?>> tableStream = tableSupplier.get()
-				.streamSlices(TableQuery.edit(qK1)
-						.filter(ColumnFilter.builder().column("with space").matching("a1").build())
-						.build())
+		List<Map<String, ?>> tableStream = table().streamSlices(
+				TableQuery.edit(qK1).filter(ColumnFilter.builder().column("with space").matching("a1").build()).build())
 				.toList();
 
 		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));

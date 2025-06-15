@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -71,53 +71,52 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 
 	@Override
 	public ICubeWrapper makeCube() {
-		return CubeWrapper.builder()
-				.name(worldCupSchema.getName())
-				.forest(forest)
-				.table(tableSupplier.get())
+		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine).build(), worldCupSchema, table(), forest)
 				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
 				.build();
 	}
 
+	// count rows
 	@Test
 	public void testGrandTotal() {
-		ITabularView result = cubeSupplier.get().execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(countAsterisk.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 37784L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 39_256L).hasSize(1);
 		});
 	}
 
+	// event_count relies on a Dispatchor
 	@Test
 	public void testFilterGoalsEventCount() {
-		ITabularView result = cubeSupplier.get()
-				.execute(CubeQuery.builder()
-						.measure("event_count")
-						.andFilter("event_code", "G")
-						.andFilter("minute", 13)
-						.build());
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.andFilter("event_code", "G")
+				.andFilter("minute", 13)
+				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry("event_count", 15L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry("event_count", 17L).hasSize(1);
 		});
 	}
 
+	// event_count relies on a Dispatchor, with a filter on a generated column
 	@Test
 	public void testFilterGoalsCount() {
-		ITabularView result =
-				cubeSupplier.get().execute(CubeQuery.builder().measure("goal_count").andFilter("minute", 13).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure("goal_count").andFilter("minute", 13).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry("goal_count", 15L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry("goal_count", 17L).hasSize(1);
 		});
 	}
 
+	// match_count relies on a Partitionor
 	@Test
 	public void testMatchCount() {
-		ITabularView result = cubeSupplier.get().execute(CubeQuery.builder().measure("match_count").build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure("match_count").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {

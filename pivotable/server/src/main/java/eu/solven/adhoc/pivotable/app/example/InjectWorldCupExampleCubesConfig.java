@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Profile;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -64,12 +63,7 @@ public class InjectWorldCupExampleCubesConfig {
 
 		IMeasureForest forest = worldCupSchema.getForest(worldCupSchema.getName());
 		schema.registerForest(forest);
-		CubeWrapper cube = schema.openCubeWrapperBuilder()
-				.name(worldCupSchema.getName())
-				.forest(forest)
-				.table(table)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
-				.build();
+		CubeWrapper cube = worldCupSchema.makeCube(schema, worldCupSchema, table, forest).build();
 		schema.registerCube(cube);
 
 	}

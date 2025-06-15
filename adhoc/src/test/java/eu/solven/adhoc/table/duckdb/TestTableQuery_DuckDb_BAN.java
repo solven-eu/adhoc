@@ -34,7 +34,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -59,13 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestConstants {
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
+public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	public static String PATH_TO_BAN = "/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet";
 
@@ -91,11 +84,6 @@ public class TestTableQuery_DuckDb_BAN extends ADagTest implements IAdhocTestCon
 		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
-	}
-
-	@Override
-	public void feedTable() {
-		// nothing to feed
 	}
 
 	@BeforeEach
