@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.example.worldcup;
 
-import com.google.common.eventbus.EventBus;
+import java.util.List;
 
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import lombok.experimental.UtilityClass;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
- * Commons patterns used in Adhoc unit-tests
+ * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
+ * disastrous.
+ * 
+ * @author Benoit Lacelle
  */
-@UtilityClass
-public class AdhocTestHelper {
+public class EventsScoreCombination implements ICombination {
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		Long nbGoals = (Long) underlyingValues.get(0);
+		if (nbGoals == null) {
+			nbGoals = 0L;
+		}
 
-	/**
-	 * @return an EventBus with a registered {@link AdhocEventsFromGuavaEventBusToSfl4j}
-	 */
-	public static EventBus eventBus() {
-		EventBus eventBus = new EventBus();
-
-		eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
-
-		return eventBus;
+		Long nbRedcards = (Long) underlyingValues.get(1);
+		if (nbRedcards == null) {
+			nbRedcards = 0L;
+		}
+		return nbGoals - nbRedcards * nbRedcards;
 	}
 }

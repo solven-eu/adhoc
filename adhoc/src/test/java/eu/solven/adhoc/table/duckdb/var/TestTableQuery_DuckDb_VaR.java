@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
@@ -58,6 +57,7 @@ import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -67,14 +67,7 @@ import eu.solven.pepper.memory.PepperMemoryHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestConstants, IExampleVaRConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
+public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhocTestConstants, IExampleVaRConstants {
 
 	static int maxCardinality = 10_000;
 	static int arrayLength = 20;
@@ -125,7 +118,6 @@ public class TestTableQuery_DuckDb_VaR extends ADagTest implements IAdhocTestCon
 	String mNames = "arrayNames";
 	String mVaR = "k1VaR";
 
-	@Override
 	@BeforeEach
 	public void feedTable() {
 

@@ -82,6 +82,7 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.top.AdhocTopClause;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -262,11 +263,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return field;
 	}
 
-	@Deprecated(since = "Useless?")
-	protected boolean isExpression(String columnName) {
-		return AdhocJooqHelper.isExpression(columnName);
-	}
-
 	/**
 	 *
 	 * @param name
@@ -311,7 +307,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return canGroupByAll || dslContext.dialect() == SQLDialect.DUCKDB;
 	}
 
-	private List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
+	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
 		AdhocTopClause topClause = tableQuery.getTopClause();
 		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
@@ -571,9 +567,16 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return Optional.ofNullable(condition);
 	}
 
+	/**
+	 * 
+	 * @param column
+	 * @param valueMatcher
+	 * @return By default, we return null so that this {@link IValueMatcher} is managed a post-filtering by Adhoc, over
+	 *         the {@link ITableWrapper} result.
+	 */
 	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher) {
 		// throw new UnsupportedOperationException(
-		// "Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(columnFilter)));
+		// "Not handled: %s matches %s".formatted(column, PepperLogHelper.getObjectAndClass(valueMatcher)));
 		return null;
 	}
 

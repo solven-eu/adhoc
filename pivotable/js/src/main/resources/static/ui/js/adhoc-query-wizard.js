@@ -127,7 +127,7 @@ export default {
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
                 <AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
-				<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+                <AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
                 <div class="accordion" id="accordionWizard">
                     <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
                     <div class="accordion-item">

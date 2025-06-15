@@ -58,13 +58,13 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.NonNull;
 
 /**
- * These unitTests are dedicated to check ManyToMany perforances in case of large problems. We can encounter millions of
- * elements/groups and groups of millions of elements in real-life.
+ * These unitTests are dedicated to check ManyToMany performances in case of large problems. We can encounter millions
+ * of elements/groups and groups of millions of elements in real-life.
  * <p>
  * Here, we consider groups with quadratic growth: n-th group contains n elements. It is useful to check performance
  * when we have many not very small groups
  */
-public class TestManyToManyCubeQuery_Large_Linear extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements IAdhocTestConstants {
 	// This could be adjusted so that tests takes a few seconds to execute. Can be increased a lot to test bigger cases
 	int maxCardinality = 0_100_000;
 

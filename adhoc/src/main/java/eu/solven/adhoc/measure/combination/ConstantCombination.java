@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.measure.combination;
 
-import com.google.common.eventbus.EventBus;
+import java.util.Map;
 
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import lombok.experimental.UtilityClass;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.pepper.mappath.MapPathGet;
 
 /**
- * Commons patterns used in Adhoc unit-tests
+ * A {@link ICombination} returning a constant value.
+ * 
+ * @author Benoit Lacelle
  */
-@UtilityClass
-public class AdhocTestHelper {
+public class ConstantCombination implements ICombination {
+	public static final String K_CONSTANT = "constant";
 
-	/**
-	 * @return an EventBus with a registered {@link AdhocEventsFromGuavaEventBusToSfl4j}
-	 */
-	public static EventBus eventBus() {
-		EventBus eventBus = new EventBus();
+	final IValueProvider constantProvider;
 
-		eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
+	public ConstantCombination(Map<String, ?> options) {
+		Object constant = MapPathGet.getRequiredAs(options, K_CONSTANT);
+		constantProvider = IValueProvider.setValue(constant);
+	}
 
-		return eventBus;
+	@Override
+	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		return constantProvider;
 	}
 }

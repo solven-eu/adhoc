@@ -121,21 +121,24 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (C_SCENARIOINDEX.equals(column)) {
-			return CoordinatesSample.builder()
+		return switch (column) {
+		case C_SCENARIOINDEX: {
+			yield CoordinatesSample.builder()
 					.coordinates(IntStream.range(0, nbScenarios).mapToObj(i -> i).toList())
 					.estimatedCardinality(nbScenarios)
 					.build();
-		} else if (C_SCENARIONAME.equals(column)) {
-			return CoordinatesSample.builder()
+		}
+		case C_SCENARIONAME: {
+			yield CoordinatesSample.builder()
 					.coordinates(IntStream.range(0, nbScenarios)
 							.mapToObj(i -> ExampleVaRScenarioNameCombination.indexToName(i))
 							.toList())
 					.estimatedCardinality(nbScenarios)
 					.build();
-		} else {
-			return CoordinatesSample.empty();
 		}
+		default:
+			yield CoordinatesSample.empty();
+		};
 	}
 
 }

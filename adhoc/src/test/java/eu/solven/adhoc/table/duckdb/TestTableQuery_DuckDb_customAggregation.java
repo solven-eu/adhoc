@@ -27,7 +27,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.*;
+import org.jooq.AggregateFunction;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Name;
+import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.BeforeEach;

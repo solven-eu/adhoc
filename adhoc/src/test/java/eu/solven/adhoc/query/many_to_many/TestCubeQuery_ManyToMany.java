@@ -51,7 +51,7 @@ import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
-public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestConstants {
 
 	ManyToMany1DInMemoryDefinition manyToManyDefinition = new ManyToMany1DInMemoryDefinition();
 
@@ -233,6 +233,7 @@ public class TestManyToManyCubeQuery extends ADagTest implements IAdhocTestConst
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
+				// If this FR is associated to 246, it means we did not deduplicated the FR contributions for G8 and G20
 				.containsEntry(Map.of(cElement, "FR"), Map.of(dispatchedMeasure, 0L + 123))
 				.containsEntry(Map.of(cElement, "CH"), Map.of(dispatchedMeasure, 0L + 234));
 	}

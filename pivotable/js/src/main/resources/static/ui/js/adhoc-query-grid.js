@@ -90,6 +90,8 @@ export default {
 
 		const data = reactive({ array: [] });
 
+		const currentSortCol = reactive({ sortId: undefined, sortAsc: true });
+
 		// https://github.com/6pac/SlickGrid/wiki/Providing-data-to-the-grid
 		let resyncData = function () {
 			const view = props.tabularView.view;
@@ -250,6 +252,9 @@ export default {
 			{
 				var headerButtonsPlugin = new SlickHeaderButtons();
 
+				const refDagModal = ref(null);
+				const measuresDagModel = inject("measuresDagModel");
+
 				headerButtonsPlugin.onCommand.subscribe(function (e, args) {
 					var column = args.column;
 					var button = args.button;
@@ -266,6 +271,16 @@ export default {
 
 						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
 						// grid.invalidate();
+					} else if (command == "info-measure") {
+						console.log("Info measure", column.name);
+
+						if (!refDagModal.value) {
+							let measureDagModal = new Modal(document.getElementById("measureDag"), {});
+							refDagModal.value = measureDagModal;
+						}
+
+						measuresDagModel.main = column.name;
+						refDagModal.value.show();
 					}
 				});
 
@@ -287,23 +302,40 @@ export default {
 
 			dataView.refresh();
 
-			// TODO comparer function is never called?
-			function comparer(a, b) {
-				let x = a[sortcol],
-					y = b[sortcol];
-				return x == y ? 0 : x > y ? 1 : -1;
+			// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
+			{
+				// TODO comparer function is never called?
+				const comparer = function (left, right) {
+					const x = left[currentSortCol.sortId];
+					const y = right[currentSortCol.sortId];
+
+					const xIsNullOrUndefined = x === null || typeof x === "undefined";
+					const yIsNullOrUndefined = y === null || typeof y === "undefined";
+
+					// nullOrUndefined are lower than notNullOrUndefined
+					if (xIsNullOrUndefined && yIsNullOrUndefined) {
+						return 0;
+					} else if (xIsNullOrUndefined) {
+						return -1;
+					} else if (yIsNullOrUndefined) {
+						return 1;
+					}
+
+					return x === y ? 0 : x > y ? 1 : -1;
+				};
+
+				grid.onSort.subscribe(function (e, args) {
+					currentSortCol.sortId = args.sortCol.field;
+					currentSortCol.sortAsc = args.sortAsc;
+
+					// using native sort with comparer
+					// preferred method but can be very slow in IE with huge datasets
+					dataView.sort(comparer, args.sortAsc);
+
+					grid.invalidateAllRows();
+					grid.render();
+				});
 			}
-
-			let sortdir = 1;
-			let sortcol = "unknown";
-			grid.onSort.subscribe(function (e, args) {
-				sortdir = args.sortAsc ? 1 : -1;
-				sortcol = args.sortCol.field;
-
-				// using native sort with comparer
-				// preferred method but can be very slow in IE with huge datasets
-				dataView.sort(comparer, args.sortAsc);
-			});
 
 			// https://stackoverflow.com/questions/8365139/slickgrid-how-to-get-the-grid-item-on-click-event
 			grid.onDblClick.subscribe(function (e, args) {
@@ -321,18 +353,6 @@ export default {
 			grid.onHeaderClick.subscribe(function (e, args) {
 				const column = args.column.id;
 				console.log("Header clicked", column);
-
-				if (Object.keys(props.cube.measures).includes(column)) {
-					if (!refDagModal.value) {
-						let measureDagModal = new Modal(document.getElementById("measureDag"), {});
-						refDagModal.value = measureDagModal;
-					}
-
-					measuresDagModel.main = column;
-					refDagModal.value.show();
-				} else {
-					console.debug("No behavior when clicking header of column");
-				}
 			});
 
 			// Register the watch once the grid is mounted and initialized

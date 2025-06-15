@@ -22,11 +22,9 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
@@ -131,31 +129,6 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		return MultitypeHashMergeableColumn.<SliceAsMap>builder().aggregation(agg).build();
 	}
 
-	@Getter
-	@RequiredArgsConstructor
-	protected static class DecompositionMergingContext {
-		final boolean isMultiGroupSlice;
-		final Set<Map<String, ?>> outputCoordinatesAlreadyContributed;
-
-		public static DecompositionMergingContext multiGroupSlice() {
-			return new DecompositionMergingContext(true, new HashSet<>());
-		}
-
-		public static DecompositionMergingContext monoGroupSlice() {
-			return new DecompositionMergingContext(false, Set.of());
-		}
-
-		public boolean addToSlice(Map<String, ?> outputCoordinate) {
-			if (!isMultiGroupSlice) {
-				// Not multiGroupSlice: the group is single and clearly stated
-				return true;
-			}
-
-			// multiGroupSlice: ensure current element has not already been contributed
-			return outputCoordinatesAlreadyContributed.add(outputCoordinate);
-		}
-	}
-
 	protected void onSlice(List<? extends ISliceToValue> underlyings,
 			SliceAndMeasures slice,
 			IDecomposition decomposition,
@@ -171,10 +144,20 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 		// This may actually be a mis-design, as `.decompose` should not have returned groups if groups are in
 		// filter.
-		DecompositionMergingContext mergingContext = makeMergingContext(slice, decomposed);
+		// IDecompositionMergingContext mergingContext = decomposition.makeMergingContext(slice);
 
 		decomposed.forEach(decompositionEntry -> {
 			Map<String, ?> fragmentCoordinate = decompositionEntry.getSlice();
+
+			if (!isRelevant(fragmentCoordinate)) {
+				if (isDebug()) {
+					log.info("[DEBUG] Rejected the filtered decomposedEntry slice={}", fragmentCoordinate);
+				} else {
+					log.debug("[DEBUG] Rejected the filtered decomposedEntry slice={}", fragmentCoordinate);
+				}
+				return;
+			}
+			// if (mergingContext.addInputToOutput(decompositionEntry)) {
 			IValueProvider fragmentValueProvider = decompositionEntry.getValue();
 
 			if (isDebug()) {
@@ -182,63 +165,29 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 				log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
 			}
 
+			// Build the actual fragment coordinate, given the groupedBy columns (as the decomposition may have
+			// returned
+			// finer entries).
 			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
 
-			if (!isRelevant(outputCoordinate)) {
-				log.debug("Rejected the improper decomposedEntry slice={}", outputCoordinate);
-				return;
-			}
+			SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
+			fragmentValueProvider.acceptReceiver(aggregatingView.merge(coordinateAsSlice));
 
-			if (mergingContext.addToSlice(outputCoordinate)) {
-				SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
-				fragmentValueProvider.acceptReceiver(aggregatingView.merge(coordinateAsSlice));
-
-				if (isDebug()) {
-					aggregatingView.onValue(coordinateAsSlice)
-							.acceptReceiver(o -> log.info("[DEBUG] slice={} has been merged into agg={}",
-									fragmentCoordinate,
-									AdhocDebug.toString(o)));
-				}
-			} else {
-				// Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
-				// times (for each contributed group). but the element should be counted only once.
-				// BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
-				// reason to keep. Though, a multi-filter on groups would be an unclear case.
-				// One weighted instead of another. But it is OK for many2many as all groups have the same weight.
-				log.debug("slice={} has already contributed into {}", slice, outputCoordinate);
+			if (isDebug()) {
+				aggregatingView.onValue(coordinateAsSlice)
+						.acceptReceiver(o -> log.info("[DEBUG] slice={} has been merged into agg={}",
+								fragmentCoordinate,
+								AdhocDebug.toString(o)));
 			}
+			// } else {
+			// // Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
+			// // times (for each contributed group). But the element should be contributed only once.
+			// // BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
+			// // reason to keep one weighted instead of the other. But it is OK for many2many as all groups have the
+			// // same weight. Though, a multi-filter on groups would be an unclear case.
+			// log.debug("slice={} has already contributed into {}", slice, decompositionEntry.getSlice());
+			// }
 		});
-	}
-
-	private DecompositionMergingContext makeMergingContext(SliceAndMeasures slice,
-			List<IDecompositionEntry> decomposed) {
-		DecompositionMergingContext mergingContext;
-		// If current slice is contributing to multiple groups (e.g. a filter with an IN), we should accept each element
-		// only once even if given element contributes to multiple matching groups. (e.g. if we look for `G8 or
-		// G20`, `FR` should contributes only once).
-		// NOTE This is a performance optimization, as we could rely on `outputCoordinatesAlreadyContributed`
-		boolean isMultiGroupSlice;
-
-		{
-			NavigableSet<String> groupByColumns = slice.getSlice().getQueryStep().getGroupBy().getGroupedByColumns();
-			if (decomposed.stream()
-					.map(IDecompositionEntry::getSlice)
-					.map(Map::keySet)
-					.allMatch(groupByColumns::containsAll)) {
-				// all decomposition columns are expressed in groupBy
-				isMultiGroupSlice = false;
-			} else {
-				// TODO We may also manage the case where we filter a single group
-				isMultiGroupSlice = true;
-			}
-		}
-
-		if (isMultiGroupSlice) {
-			mergingContext = DecompositionMergingContext.multiGroupSlice();
-		} else {
-			mergingContext = DecompositionMergingContext.monoGroupSlice();
-		}
-		return mergingContext;
 	}
 
 	protected Map<String, ?> queryGroupBy(@NonNull IAdhocGroupBy groupBy,

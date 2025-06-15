@@ -36,6 +36,7 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.app.example.InjectAdvancedExamplesCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectPixarExampleCubesConfig;
 import eu.solven.adhoc.pivotable.app.example.InjectSimpleExampleCubesConfig;
+import eu.solven.adhoc.pivotable.app.example.InjectWorldCupExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
@@ -58,6 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 		InjectSimpleExampleCubesConfig.class,
 		InjectAdvancedExamplesCubesConfig.class,
 		InjectPixarExampleCubesConfig.class,
+		InjectWorldCupExampleCubesConfig.class,
 
 })
 @Slf4j

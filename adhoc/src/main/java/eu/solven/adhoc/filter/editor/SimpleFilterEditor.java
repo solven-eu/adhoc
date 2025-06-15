@@ -33,6 +33,8 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -166,14 +168,21 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands()
+			List<IAdhocFilter> unfiltered = andFilter.getOperands()
 					.stream()
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
-			return AndFilter.and(unfilteredAnds);
+			return AndFilter.and(unfiltered);
+		} else if (filter instanceof IOrFilter orFilter) {
+			List<IAdhocFilter> unfiltered = orFilter.getOperands()
+					.stream()
+					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
+					.toList();
+
+			return OrFilter.or(unfiltered);
 		} else {
-			throw new NotYetImplementedException("filter=%s".formatted(filter));
+			throw new NotYetImplementedException("filter:%s".formatted(filter));
 		}
 	}
 

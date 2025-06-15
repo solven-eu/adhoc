@@ -27,6 +27,7 @@ import java.util.List;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 
 /**
@@ -40,13 +41,27 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
  */
 public interface IDecomposition extends IColumnGenerator {
 	/**
-	 *
+	 * BEWARE This may return entries at the requested granularity, or finer. (e.g. request for `countryGroup=*` may
+	 * returns as decomposedSlice `countryGroup=G8&country=FR`). {@link DispatchorQueryStep} will compute the proper
+	 * coordinates given the received (finer) contribution.
+	 * 
+	 * BEWARE This may return entries irrelevant according to the filter. These would be filtered by
+	 * {@link DispatchorQueryStep}. (e.g. request for `countryGroup=G8|country=FR` may return
+	 * `country_group=G8&country=UK`). In case filters is not strictly implemented by the {@link IDecomposition}, then
+	 * filtered columns must be returned by the decompositions (so that {@link DispatchorQueryStep} can apply proper
+	 * filtering (e.g. given complex filter combining decomposed columns and other columns)).
+	 * 
+	 * BEWARE This **must** returns columns requested as groupBy. Some simple implementations may always express all
+	 * decomposed/generated columns; but it is not reasonable in some case (e.g. DuplicatingDecomposition would prefer
+	 * not generating the whole Cartesian product if not necessary).
+	 * 
 	 * @param slice
 	 *            an element/underlying slice
 	 * @param value
 	 * @return the target/pillars/groups slices, each associated to a value (may be the input value, or a fraction of
 	 *         it, or anything else). Each entry must express all groupByColumns (in `slice.getStep()`). They may
 	 *         express additional columns if it is simpler for the implementation.
+	 * 
 	 */
 	List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value);
 
@@ -60,5 +75,4 @@ public interface IDecomposition extends IColumnGenerator {
 	 *         the decomposition).
 	 */
 	List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step);
-
 }

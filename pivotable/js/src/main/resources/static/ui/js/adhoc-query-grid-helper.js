@@ -9,7 +9,7 @@ window.Sortable = Sortable;
 // https://stackoverflow.com/questions/59605033/how-to-self-reference-nodejs-module
 const isSortable = function () {
 	// Do not allow sorting until it is compatible with rowSpans
-	return false;
+	return true;
 };
 
 const formatters = function (formatOptions) {
@@ -244,6 +244,24 @@ export default {
 								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
 								// do something
 								console.log("Requested removal of measure=" + args.column.name);
+							},
+						},
+						{
+							command: "info-measure",
+							tooltip: "DAG about measure",
+							cssClass: "bi bi-question-circle",
+							itemVisibilityOverride: function (args) {
+								// for example don't show the header button on column "E"
+								return args.column.name !== "E";
+							},
+							itemUsabilityOverride: function (args) {
+								// for example the button usable everywhere except on last column "J"
+								return args.column.name !== "J";
+							},
+							action: function (e, args) {
+								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
+								// do something
+								console.log("Requested DAG of measure=" + args.column.name);
 							},
 						},
 					],

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,8 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  */
 public class UnionListAggregation implements IAggregation {
 
+	// https://duckdb.org/docs/stable/sql/functions/aggregates#array_aggarg
+	// TODO Rename into ARRAY_AGG?
 	public static final String KEY = "UNION_LIST";
 
 	public boolean acceptAggregate(Object o) {
@@ -44,10 +47,24 @@ public class UnionListAggregation implements IAggregation {
 
 	@Override
 	public List<?> aggregate(Object l, Object r) {
-		List<?> lAsList = (List<?>) l;
-		List<?> rAsList = (List<?>) r;
+		List<?> lAsList = wrapAsList(l);
+		List<?> rAsList = wrapAsList(r);
 
 		return aggregateLists(lAsList, rAsList);
+	}
+
+	protected List<?> wrapAsList(Object l) {
+		if (l == null) {
+			return List.of();
+		} else if (l instanceof List<?> list) {
+			// TODO unesting should be an option
+			return list;
+		} else if (l instanceof Collection<?> collection) {
+			// TODO unesting should be an option
+			return ImmutableList.copyOf(collection);
+		} else {
+			return ImmutableList.of(l);
+		}
 	}
 
 	protected List<?> aggregateLists(List<?> l, List<?> r) {
@@ -62,7 +79,7 @@ public class UnionListAggregation implements IAggregation {
 	 * @param right
 	 * @return
 	 */
-	public static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
+	private static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
 		if (left == null || left.isEmpty()) {
 			return right;
 		} else if (right == null || right.isEmpty()) {

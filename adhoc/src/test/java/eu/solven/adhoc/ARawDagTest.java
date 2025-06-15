@@ -33,8 +33,8 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -49,8 +49,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  *
  */
 public abstract class ARawDagTest {
-	public final EventBus eventBus = new EventBus();
-	public final Object toSlf4j = new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel();
+	public final EventBus eventBus = AdhocTestHelper.eventBus();
 	public final UnsafeMeasureForest forest =
 			UnsafeMeasureForest.builder().name(this.getClass().getSimpleName()).build();
 
@@ -75,11 +74,13 @@ public abstract class ARawDagTest {
 
 	public final Supplier<ITableWrapper> tableSupplier = Suppliers.memoize(this::makeTable);
 
-	// public MapTableTranscoder transcoder = MapTableTranscoder.builder().build();
+	public ITableWrapper table() {
+		return tableSupplier.get();
+	}
 
 	public ICubeWrapper makeCube() {
 		return CubeWrapper.builder()
-				.table(tableSupplier.get())
+				.table(table())
 				.engine(engine)
 				.forest(forest)
 				.eventBus(eventBus::post)
@@ -95,7 +96,8 @@ public abstract class ARawDagTest {
 
 	@BeforeEach
 	public void wireEvents() {
-		eventBus.register(toSlf4j);
+		// AdhocTestHelper.eventBus registered an InfoLevel
+		// eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j_DebugLevel());
 	}
 
 	/**
@@ -109,7 +111,7 @@ public abstract class ARawDagTest {
 	 * Typically used to edit the operatorFactory
 	 */
 	public CubeWrapperBuilder editCube() {
-		return ((CubeWrapper) cubeSupplier.get()).toBuilder();
+		return ((CubeWrapper) cube()).toBuilder();
 	}
 
 }

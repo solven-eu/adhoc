@@ -39,4 +39,9 @@ public class DecompositionEntry implements IDecompositionEntry {
 	Map<String, ?> slice;
 
 	IValueProvider value;
+
+	@Override
+	public String toString() {
+		return "slice=" + slice + " value=" + IValueProvider.getValue(value);
+	}
 }

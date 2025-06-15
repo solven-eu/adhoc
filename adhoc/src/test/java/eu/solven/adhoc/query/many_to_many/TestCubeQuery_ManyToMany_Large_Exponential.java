@@ -66,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
  * when we have many not very small groups
  */
 @Slf4j
-public class TestManyToManyCubeQuery_Large_Exponential extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest implements IAdhocTestConstants {
 	// This could be adjusted so that tests takes a few seconds to execute. Can be increased a lot to test bigger cases
 	static int maxGroupCardinality = 18;
 	static int maxElementCardinality = groupToMaxElement(maxGroupCardinality);
