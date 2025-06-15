@@ -312,8 +312,8 @@ public class AdhocSchema implements IAdhocSchema {
 		nameToTable.put(table.getName(), table);
 	}
 
-	public void registerForest(IMeasureForest measureBag) {
-		nameToForest.put(measureBag.getName(), measureBag);
+	public void registerForest(IMeasureForest forest) {
+		nameToForest.put(forest.getName(), forest);
 	}
 
 	/**

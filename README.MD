@@ -449,3 +449,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).
 - [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
 - [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
+- [Pivotable] Enable column sorting.

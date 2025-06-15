@@ -20,28 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.decomposition;
+package eu.solven.adhoc.example.worldcup;
 
-import java.util.Map;
+import java.util.List;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
- * Standard {@link IDecompositionEntry}.
+ * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
+ * disastrous.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-public class DecompositionEntry implements IDecompositionEntry {
-	Map<String, ?> slice;
-
-	IValueProvider value;
-
+public class EventsScoreCombination implements ICombination {
 	@Override
-	public String toString() {
-		return "slice=" + slice + " value=" + IValueProvider.getValue(value);
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		Long nbGoals = (Long) underlyingValues.get(0);
+		if (nbGoals == null) {
+			nbGoals = 0L;
+		}
+
+		Long nbRedcards = (Long) underlyingValues.get(1);
+		if (nbRedcards == null) {
+			nbRedcards = 0L;
+		}
+		return nbGoals - nbRedcards * nbRedcards;
 	}
 }

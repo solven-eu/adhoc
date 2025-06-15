@@ -118,13 +118,13 @@ public class ColumnarMetadata {
 			return VARCHAR;
 		} else if (LocalDate.class.isAssignableFrom(clazz)) {
 			return LOCALDATE;
-		} else if (Integer.class.isAssignableFrom(clazz)) {
+		} else if (Integer.class.isAssignableFrom(clazz) || int.class.isAssignableFrom(clazz)) {
 			return INTEGER;
-		} else if (Long.class.isAssignableFrom(clazz)) {
+		} else if (Long.class.isAssignableFrom(clazz) || long.class.isAssignableFrom(clazz)) {
 			return LONG;
-		} else if (Double.class.isAssignableFrom(clazz)) {
+		} else if (Double.class.isAssignableFrom(clazz) || double.class.isAssignableFrom(clazz)) {
 			return DOUBLE;
-		} else if (Float.class.isAssignableFrom(clazz)) {
+		} else if (Float.class.isAssignableFrom(clazz) || float.class.isAssignableFrom(clazz)) {
 			return FLOAT;
 		} else if (BigDecimal.class.isAssignableFrom(clazz)) {
 			return DOUBLE;

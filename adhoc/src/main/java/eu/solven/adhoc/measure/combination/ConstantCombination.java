@@ -20,28 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.decomposition;
+package eu.solven.adhoc.measure.combination;
 
 import java.util.Map;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import lombok.Builder;
-import lombok.Value;
+import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.pepper.mappath.MapPathGet;
 
 /**
- * Standard {@link IDecompositionEntry}.
+ * A {@link ICombination} returning a constant value.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-public class DecompositionEntry implements IDecompositionEntry {
-	Map<String, ?> slice;
+public class ConstantCombination implements ICombination {
+	public static final String K_CONSTANT = "constant";
 
-	IValueProvider value;
+	final IValueProvider constantProvider;
+
+	public ConstantCombination(Map<String, ?> options) {
+		Object constant = MapPathGet.getRequiredAs(options, K_CONSTANT);
+		constantProvider = IValueProvider.setValue(constant);
+	}
 
 	@Override
-	public String toString() {
-		return "slice=" + slice + " value=" + IValueProvider.getValue(value);
+	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		return constantProvider;
 	}
 }
