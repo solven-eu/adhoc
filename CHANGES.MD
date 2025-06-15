@@ -7,7 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - Columns can be tagged through `AdhocSchema`.
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
-- Additional `WorkCup` example cube, with more complex measures.
+- Additional `WorldCup` example cube, with more complex measures.
 
 ### Changed
 - `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.

@@ -69,6 +69,7 @@ import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
  * 
  * @author Benoit Lacelle
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class WorldCupPlayersSchema {
 	public String getName() {
 		return "WorldCupPlayers";
