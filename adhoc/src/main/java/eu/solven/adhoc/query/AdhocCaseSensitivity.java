@@ -23,12 +23,14 @@
 package eu.solven.adhoc.query;
 
 import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 public class AdhocCaseSensitivity {
 	public static boolean isCaseSensitive() {
 		return AdhocUnsafe.isCaseSensitive();
