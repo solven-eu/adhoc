@@ -24,12 +24,13 @@ package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,6 +87,10 @@ public class InMemoryTable implements ITableWrapper {
 
 	@Default
 	boolean throwOnUnknownColumn = true;
+
+	// This is useful to collect in one go all columns expected by a forest
+	@Getter
+	final Set<String> unknownColumns = new ConcurrentSkipListSet<>();
 
 	public static InMemoryTable newInstance(Map<String, ?> options) {
 		return InMemoryTable.builder().build();
@@ -186,12 +191,7 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery) {
-		Set<String> tableColumns = getColumnTypes().keySet();
-
-		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
-		checkKnownColumns(groupByColumns, tableColumns, "groupedBy");
-
-		return groupByColumns;
+		return new TreeSet<>(tableQuery.getGroupBy().getGroupedByColumns());
 	}
 
 	/**
@@ -206,6 +206,8 @@ public class InMemoryTable implements ITableWrapper {
 	protected void checkKnownColumns(Set<String> tableColumns, Set<String> queriedColumns, String columnUse) {
 		Set<String> unknownQueriedColumns = Sets.difference(queriedColumns, tableColumns);
 		if (!unknownQueriedColumns.isEmpty()) {
+			unknownColumns.addAll(unknownQueriedColumns);
+
 			String msg = "Unknown %s columns: %s".formatted(columnUse, unknownQueriedColumns);
 			if (throwOnUnknownColumn) {
 				throw new IllegalArgumentException(msg);
