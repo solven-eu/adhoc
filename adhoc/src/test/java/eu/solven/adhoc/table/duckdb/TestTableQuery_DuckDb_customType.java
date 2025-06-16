@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.duckdb;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
@@ -33,19 +32,19 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IAdhocEventBus;
 
@@ -55,15 +54,14 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 	String tableName = "someTableName";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	}
 
-	DSLContext dsl = table.makeDsl();
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
+	@Override
+	public ICubeWrapper makeCube() {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
 		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
 
@@ -106,7 +104,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		return CubeWrapper.builder()
 				.engine(engine)
 				.forest(forest)
-				.table(table)
+				.table(table())
 				.engine(engine)
 				.columnsManager(columnsManager)
 				.build();
@@ -134,7 +132,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	public void testGetColumns() {
 		initAndInsert();
 
-		Assertions.assertThat(wrapInCube(forest).getColumnTypes())
+		Assertions.assertThat(cube().getColumnTypes())
 				.hasSize(2)
 				.containsEntry("letter", Letter.class)
 				.containsEntry("k1", Double.class);
@@ -147,7 +145,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(forest)
+		ITabularView result = cube()
 				.execute(CubeQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -171,11 +169,11 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		ColumnFilter customFilter = ColumnFilter.builder().column("letter").valueMatcher(customValueMatcher).build();
 
 		// Not distinct as we query a column which is later suppressed, for the sake of lateFiltering
-		Assertions.assertThat(table.streamSlices(TableQuery.builder().filter(customFilter).build()).isDistinctSlices())
+		Assertions
+				.assertThat(table().streamSlices(TableQuery.builder().filter(customFilter).build()).isDistinctSlices())
 				.isFalse();
 
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().filter(customFilter).measure(k1Sum).build());
+		ITabularView result = cube().execute(CubeQuery.builder().filter(customFilter).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -191,8 +189,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		forest.addMeasure(k1Sum);
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("letter").measure(k1Sum).build());
+		ITabularView result = cube().execute(CubeQuery.builder().groupByAlso("letter").measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

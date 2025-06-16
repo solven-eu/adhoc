@@ -123,7 +123,7 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
 		CubeWrapper cubeWithCache = CubeWrapper.builder()
-				.table(CachingTableWrapper.builder().decorated(tableSupplier.get()).build())
+				.table(CachingTableWrapper.builder().decorated(table()).build())
 				.engine(engine)
 				.forest(forest)
 				.eventBus(eventBus::post)

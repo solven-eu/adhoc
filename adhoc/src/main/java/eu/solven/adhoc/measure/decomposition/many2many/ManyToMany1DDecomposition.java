@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * For instance, given v=200 on element=FR, we write v=200 into group=G8 and group=G20.
  * 
- * It is 1D as it depends on a single input columns
+ * It is one-dimensional as it depends on a single input columns
  * 
  * @author Benoit Lacelle
  */
@@ -119,16 +119,42 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
-		return makeDecomposition(element, value, groupColumn, groups);
+		return makeDecomposition(element,
+				value,
+				groupColumn,
+				groups,
+				slice.getQueryStep().getGroupBy().getGroupedByColumns().contains(groupColumn));
 	}
 
+	/**
+	 * 
+	 * @param element
+	 *            the coordinate along the input column. e.g. `FR` if the input column were `country`.
+	 * @param value
+	 *            the value of the underlying measure for given element
+	 * @param groupColumn
+	 *            the name of the grouped column (e.g. `countryGroup`)
+	 * @param groups
+	 *            the groups in which given element are duplicated
+	 * @param isGroupedByGroup
+	 *            if true, the query is groupedBy the group column. Else, the received groups are present as filter but
+	 *            not groupedBy.
+	 * @return
+	 */
 	protected List<IDecompositionEntry> makeDecomposition(Object element,
 			Object value,
 			String groupColumn,
-			Set<Object> groups) {
-		return groups.stream()
-				.map(group -> IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)))
-				.toList();
+			Set<Object> groups,
+			boolean isGroupedByGroup) {
+		if (isGroupedByGroup) {
+			// One contribution per filtered groups
+			return groups.stream()
+					.map(group -> IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)))
+					.toList();
+		} else {
+			// A single contribution for the filtered groups
+			return List.of(IDecompositionEntry.of(Map.of(), scale(groups, value)));
+		}
 	}
 
 	protected Set<Object> getGroups(ISliceWithStep slice, Object element) {

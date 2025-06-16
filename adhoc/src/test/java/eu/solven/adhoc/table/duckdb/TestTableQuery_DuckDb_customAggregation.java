@@ -27,7 +27,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.*;
+import org.jooq.AggregateFunction;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Name;
+import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,25 +40,19 @@ import org.junit.jupiter.api.Test;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.ColumnsManager;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
 import lombok.Value;
 
@@ -65,8 +63,6 @@ import lombok.Value;
 public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
-
-	JooqTableWrapper table;
 
 	@Value
 	@Builder
@@ -173,12 +169,11 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		}
 	}
 
-	{
-		JooqTableWrapperParameters jooqTableWrapperParameters = JooqTableWrapperParameters.builder()
-				.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-				.tableName(tableName)
-				.build();
-		table = new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
+	@Override
+	public ITableWrapper makeTable() {
+		JooqTableWrapperParameters jooqTableWrapperParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build();
+		return new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorFactory(),
@@ -187,22 +182,6 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 						true);
 			}
 		};
-	}
-
-	DSLContext dsl = table.makeDsl();
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
-		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
-
-		ColumnsManager columnsManager = ColumnsManager.builder().eventBus(adhocEventBus).build();
-		return CubeWrapper.builder()
-				.engine(engine)
-				.forest(forest)
-				.table(table)
-				.engine(engine)
-				.columnsManager(columnsManager)
-				.build();
 	}
 
 	String m = "key:count";
@@ -229,7 +208,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 
 	@Test
 	public void testGetColumns() {
-		Assertions.assertThat(wrapInCube(forest).getColumnTypes())
+		Assertions.assertThat(cube().getColumnTypes())
 				.hasSize(2)
 				.containsEntry("key:count", String.class)
 				.containsEntry("color", String.class);
@@ -238,7 +217,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 	@Test
 	public void testGrandTotal() {
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(m, "count(*)").build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(m, "count(*)").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -259,8 +238,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 	@Test
 	public void testGroupBy() {
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("color").measure(m, "count(*)").build());
+		ITabularView result = cube().execute(CubeQuery.builder().groupByAlso("color").measure(m, "count(*)").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

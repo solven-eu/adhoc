@@ -71,6 +71,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -368,7 +369,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 	}
 
-	private void onQueryStep(QueryPod queryPod,
+	protected void onQueryStep(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			CubeQueryStep queryStep) {
@@ -495,10 +496,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				// Happens on a Columnator missing a required column
 				log.debug("No sliceToValue for step={}", step);
 			} else {
-				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg
-						&& EmptyAggregation.isEmpty(agg.getAggregationKey());
+				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg && EmptyAggregation.isEmpty(agg);
 
-				boolean hasCarrierMeasure = step.getMeasure() instanceof Aggregator agg
+				boolean hasCarrierMeasure = step.getMeasure() instanceof IHasAggregationKey agg
 						&& factories.getOperatorFactory()
 								.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);

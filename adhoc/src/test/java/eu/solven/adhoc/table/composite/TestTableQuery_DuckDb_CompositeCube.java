@@ -29,12 +29,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -50,24 +48,19 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
+public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
 
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-	DSLContext dsl = dslSupplier.getDSLContext();
+	@Override
+	public ITableWrapper makeTable() {
+		throw new UnsupportedOperationException("This test has multiple main tables");
+	}
 
 	String tableName1 = "someTableName1";
 	JooqTableWrapper table1 = new JooqTableWrapper(tableName1,
@@ -76,11 +69,6 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADagTest implements IAd
 	String tableName2 = "someTableName2";
 	JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
 			JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
-
-	@Override
-	public void feedTable() {
-		// no feeding by default
-	}
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
 		return CubeWrapper.builder().name(table.getName() + ".cube").engine(engine).forest(forest).table(table).build();

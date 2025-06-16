@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -34,20 +35,54 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * 
  * @author Benoit Lacelle
  */
-public class UnionListAggregation implements IAggregation {
+public class UnionListAggregation extends AUnionCollectionAggregation {
 
+	// https://duckdb.org/docs/stable/sql/functions/aggregates#array_aggarg
+	// TODO Rename into ARRAY_AGG? ARRAY_AGG Would also handles arrays and Collections
 	public static final String KEY = "UNION_LIST";
+
+	public UnionListAggregation() {
+		super();
+	}
+
+	public UnionListAggregation(Map<String, ?> options) {
+		super(options);
+	}
 
 	public boolean acceptAggregate(Object o) {
 		return o instanceof List || o == null;
 	}
 
 	@Override
-	public List<?> aggregate(Object l, Object r) {
-		List<?> lAsList = (List<?>) l;
-		List<?> rAsList = (List<?>) r;
+	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
+	protected List<?> onEmpty() {
+		return null;
+	}
 
-		return aggregateLists(lAsList, rAsList);
+	@Override
+	public List<?> aggregate(Object l, Object r) {
+		List<?> lAsList = wrapAsList(l);
+		List<?> rAsList = wrapAsList(r);
+
+		List<?> aggregated = aggregateLists(lAsList, rAsList);
+
+		if (aggregated.isEmpty()) {
+			return onEmpty();
+		}
+		return aggregated;
+	}
+
+	protected List<?> wrapAsList(Object l) {
+		if (l == null) {
+			return List.of();
+		} else if (unnest && l instanceof List<?> list) {
+			// TODO Should this copy be an unsafe option?
+			return ImmutableList.copyOf(list);
+		} else if (unnest && l instanceof Collection<?> collection) {
+			return ImmutableList.copyOf(collection);
+		} else {
+			return ImmutableList.of(l);
+		}
 	}
 
 	protected List<?> aggregateLists(List<?> l, List<?> r) {
@@ -62,7 +97,7 @@ public class UnionListAggregation implements IAggregation {
 	 * @param right
 	 * @return
 	 */
-	public static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
+	private static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
 		if (left == null || left.isEmpty()) {
 			return right;
 		} else if (right == null || right.isEmpty()) {

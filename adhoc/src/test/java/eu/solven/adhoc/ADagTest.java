@@ -41,7 +41,7 @@ public abstract class ADagTest extends ARawDagTest {
 
 	// `@BeforeEach` has to be duplicated on each implementation
 	// @BeforeEach
-	public abstract void feedTable();
+	public abstract void feedTable() throws Exception;
 
 	public InMemoryTable table = (InMemoryTable) tableSupplier.get();
 

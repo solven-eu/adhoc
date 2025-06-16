@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
@@ -38,22 +37,21 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	}
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = table.makeDsl();
 
 	@Test
 	public void testWholeQuery() {
@@ -66,15 +64,10 @@ public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest impl
 
 		forest.addMeasure(k1Sum);
 
-		ITabularView result =
-				engine.executeUnsafe(
-						CubeQuery.builder()
-								.measure(k1Sum.getName())
-								.groupBy(GroupByColumns
-										.of(ExpressionColumn.builder().name("first_letter").sql("word[1]").build()))
-								.build(),
-						forest,
-						table);
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum.getName())
+				.groupBy(GroupByColumns.of(ExpressionColumn.builder().name("first_letter").sql("word[1]").build()))
+				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

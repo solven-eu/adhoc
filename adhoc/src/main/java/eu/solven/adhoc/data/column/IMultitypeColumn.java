@@ -57,6 +57,10 @@ public interface IMultitypeColumn<T> {
 	 * {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
 	 * differentiated with a column holding longs).
 	 */
+	// TODO This design is broken: If the AVG is result is not returned to the compositeCube, but is underlying
+	// to another measure, it should be unWrapped (even in presence of AGGREGATION_CARRIERS_STAY_WRAPPED).
+	// BEWARE: What if given column if both used as underlying of a local measure, and returned to the composite
+	// cube? it should be both closed and not closed.
 	void purgeAggregationCarriers();
 
 	/**

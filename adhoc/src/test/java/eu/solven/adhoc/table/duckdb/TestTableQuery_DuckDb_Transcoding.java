@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.duckdb;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
@@ -39,10 +38,9 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
 
@@ -54,25 +52,19 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 	String tableName = "someTableName";
 
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-
 	{
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 	}
 
-	private CubeWrapper makecube(ITableTranscoder transcoder) {
-		JooqTableWrapper table = new JooqTableWrapper(tableName,
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	}
 
-		CubeWrapper cubeWrapper = CubeWrapper.builder()
-				.engine(engine)
-				.table(table)
-				.forest(forest)
-				.columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
-				.build();
-
-		return cubeWrapper;
+	private CubeWrapper cube(ITableTranscoder transcoder) {
+		return editCube().columnsManager(ColumnsManager.builder().transcoder(transcoder).build()).build();
 	}
 
 	@Test
@@ -81,8 +73,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
+		CubeWrapper cube = cube(transcoder);
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -108,9 +99,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
@@ -120,7 +108,8 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			forest.addMeasure(kSum);
 
 			// We request both k1 and k, which are the same in DB
-			ITabularView view = cube.execute(CubeQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
+			ITabularView view =
+					cube(transcoder).execute(CubeQuery.builder().measure(k1Sum.getName(), kSum.getName()).build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123, kSum.getName(), 0L + 123));
@@ -137,8 +126,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
+		CubeWrapper cube = cube(transcoder);
 
 		dsl.createTableIfNotExists(tableName)
 				.column("k1", SQLDataType.DOUBLE)
@@ -196,9 +184,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("k4", "k1")
 				.build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName)
 				.column("k1", SQLDataType.DOUBLE)
 				.column("k2", SQLDataType.DOUBLE)
@@ -215,7 +200,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			Aggregator k5Sum = Aggregator.builder().name("k5").aggregationKey(SumAggregation.KEY).build();
 			forest.addMeasure(k5Sum);
 
-			ITabularView view = cube
+			ITabularView view = cube(transcoder)
 					.execute(CubeQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
@@ -229,9 +214,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
@@ -240,7 +222,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 			forest.addMeasure(k1Sum);
 
-			ITabularView result = cube.execute(query);
+			ITabularView result = cube(transcoder).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -259,9 +241,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		ITableTranscoder transcoder =
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName)
 				.column("k", SQLDataType.DOUBLE)
 				.column("k1", SQLDataType.DOUBLE)
@@ -277,7 +256,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 			forest.addMeasure(k1Sum);
 
-			ITabularView result = cube.execute(query);
+			ITabularView result = cube(transcoder).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -292,9 +271,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
@@ -302,7 +278,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			CubeQuery query =
 					CubeQuery.builder().measure(k1Sum.getName()).andFilter("k1", 123).groupByAlso("k1").build();
 
-			ITabularView result = cube.execute(query);
+			ITabularView result = cube(transcoder).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -320,9 +296,6 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
 				.build();
 
-		CubeWrapper cube = makecube(transcoder);
-		DSLContext dsl = dslSupplier.getDSLContext();
-
 		dsl.createTableIfNotExists(tableName)
 				.column("v", SQLDataType.DOUBLE)
 				.column("color", SQLDataType.VARCHAR)
@@ -339,7 +312,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		{
 			CubeQuery query = CubeQuery.builder().measure("v_RED").build();
 
-			ITabularView result = cube.execute(query);
+			ITabularView result = cube(transcoder).execute(query);
 			MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())

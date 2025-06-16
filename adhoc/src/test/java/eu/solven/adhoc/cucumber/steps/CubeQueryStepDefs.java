@@ -32,7 +32,6 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.CubeQuery.CubeQueryBuilder;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import io.cucumber.datatable.DataTable;

@@ -7,6 +7,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - Columns can be tagged through `AdhocSchema`.
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
+- Additional `WorldCup` example cube, with more complex measures.
+- In Pivotable, clicking a column header will sort rows based on given column.
 
 ### Changed
 - `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.
@@ -15,6 +17,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DefaultCustomTypeManager` is renamed `StandardCustomTypeManager`.
 - `DefaultMissingColumnManager` is renamed `StandardMissingColumnManager`.
 - `DefaultQueryPreparator` is renamed `StandardQueryPreparator`.
+- `DuplicatingDecomposition` is revamped regarding management of filtered-but-not-grouped-by columns.
 
 ## [0.0.8]
 ### Added

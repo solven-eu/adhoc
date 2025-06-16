@@ -62,7 +62,7 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		forest.addMeasure(k2Sum);
 		forest.addMeasure(sum_MaxK1K2ByA);
 
-		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
+		PhasedTableWrapper phasedTable = (PhasedTableWrapper) table();
 
 		// We expect 2 queries: one for grandTotal, and one groupedBy:A
 		phasedTable.getPhasers().bulkRegister(2);
@@ -93,7 +93,7 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(filterK1onA1);
 
-		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
+		PhasedTableWrapper phasedTable = (PhasedTableWrapper) table();
 
 		// We expect 1 query: one for grandTotal, and one filtered on A1, both in same SQL given FILTER
 		phasedTable.getPhasers().bulkRegister(1);
@@ -140,7 +140,7 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 
 	@Test
 	public void testConcurrentQuerySteps() {
-		PhasedTableWrapper phasedTable = (PhasedTableWrapper) tableSupplier.get();
+		PhasedTableWrapper phasedTable = (PhasedTableWrapper) table();
 
 		int nbConcurrentSteps = 2;
 		Phaser phaser = new Phaser(0);

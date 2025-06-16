@@ -53,7 +53,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
-public class TestManyToManyNDCubeQuery extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestConstants {
 
 	ManyToManyNDInMemoryDefinition manyToManyDefinition = new ManyToManyNDInMemoryDefinition();
 

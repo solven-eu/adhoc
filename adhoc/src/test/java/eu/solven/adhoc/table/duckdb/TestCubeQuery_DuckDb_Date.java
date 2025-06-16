@@ -26,36 +26,27 @@ import java.time.LocalDate;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
-
-	DSLContext dsl = table.makeDsl();
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		return CubeWrapper.builder().engine(engine).forest(forest).table(table).engine(engine).build();
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	LocalDate today = LocalDate.now();
@@ -74,7 +65,7 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testGetColumns() {
-		Assertions.assertThat(wrapInCube(forest).getColumns()).anySatisfy(c -> {
+		Assertions.assertThat(cube().getColumns()).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("k1");
 			Assertions.assertThat(c.getType()).isEqualTo(Double.class);
 		}).anySatisfy(c -> {
@@ -85,7 +76,7 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void test_GroupByDate() {
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(k1Sum).groupByAlso("d").build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(k1Sum).groupByAlso("d").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
