@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import com.google.common.eventbus.EventBus;
+import org.jooq.DSLContext;
 
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.ARawDagTest;
+import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public abstract class ADuckDbJooqTest {
+public abstract class ADuckDbJooqTest extends ARawDagTest {
 
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
@@ -37,7 +37,6 @@ public abstract class ADuckDbJooqTest {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	public final EventBus eventBus = AdhocTestHelper.eventBus();
-	protected CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(eventBus::post).build();
-	protected UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("duckdb").build();
+	protected final DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+	protected final DSLContext dsl = dslSupplier.getDSLContext();
 }

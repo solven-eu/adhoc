@@ -36,19 +36,15 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -73,17 +69,14 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 
 	String tableName = "addressesFrance";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.table(DSL.table(
-							"read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet')"))
-					.build());
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder()
+						.dslSupplier(dslSupplier)
+						.table(DSL.table(
+								"read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet')"))
+						.build());
 	}
 
 	@BeforeEach
@@ -94,8 +87,7 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 	// Sanity Check to ensure the dataset is large
 	@Test
 	public void testGrandTotal() {
-		ITabularView output =
-				wrapInCube(forest).execute(CubeQuery.builder().measure(Aggregator.countAsterisk().getName()).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(Aggregator.countAsterisk().getName()).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -106,12 +98,12 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testGetColumns() {
-		Assertions.assertThat(wrapInCube(forest).getColumnTypes()).hasSize(21);
+		Assertions.assertThat(cube().getColumnTypes()).hasSize(21);
 	}
 
 	@Test
 	public void testCoordinates_giganticCardinality() {
-		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("id", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = cube().getCoordinates("id", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality())
 				.isCloseTo(26_045_333, Percentage.withPercentage(10));
@@ -120,7 +112,7 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testCoordinates_blob() {
-		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("geom", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = cube().getCoordinates("geom", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality())
 				.isCloseTo(26_045_333, Percentage.withPercentage(20));
@@ -131,7 +123,7 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testCoordinates_ubigint() {
-		CoordinatesSample columnMeta = wrapInCube(forest).getCoordinates("h3_7", IValueMatcher.MATCH_ALL, 100);
+		CoordinatesSample columnMeta = cube().getCoordinates("h3_7", IValueMatcher.MATCH_ALL, 100);
 
 		Assertions.assertThat(columnMeta.getEstimatedCardinality()).isCloseTo(107_635, Percentage.withPercentage(10));
 		Assertions.assertThat(columnMeta.getCoordinates()).hasSize(100);
@@ -141,10 +133,9 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 	public void testCoordinates_allColumns_like() {
 		// Search through all columns for any coordinate matching `%abc%`
 		Map<String, IValueMatcher> columnsToAbc = new HashMap<>();
-		wrapInCube(forest).getColumnTypes()
-				.forEach((column, type) -> columnsToAbc.put(column, LikeMatcher.matching("%ab%")));
+		cube().getColumnTypes().forEach((column, type) -> columnsToAbc.put(column, LikeMatcher.matching("%ab%")));
 
-		Map<String, CoordinatesSample> columnsMeta = wrapInCube(forest).getCoordinates(columnsToAbc, 5);
+		Map<String, CoordinatesSample> columnsMeta = cube().getCoordinates(columnsToAbc, 5);
 
 		Assertions.assertThat(columnsMeta).hasSize(21).anySatisfy((c, columnMeta) -> {
 			Assertions.assertThat(c).isEqualTo("rep");

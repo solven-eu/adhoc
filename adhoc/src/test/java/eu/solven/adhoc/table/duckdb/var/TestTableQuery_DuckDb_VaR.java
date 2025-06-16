@@ -42,13 +42,11 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -57,11 +55,10 @@ import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.pepper.memory.IPepperMemoryConstants;
 import eu.solven.pepper.memory.PepperMemoryHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -80,34 +77,31 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 	String tableName = "someTableName";
 
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(dslSupplier)
-					// `generate_subscripts` is 1-based
-					.table(DSL
-							.table("""
-									(
-										PIVOT
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder()
+						.dslSupplier(dslSupplier)
+						// `generate_subscripts` is 1-based
+						.table(DSL
+								.table("""
 										(
-											SELECT color, index, SUM(doubles) AS doubles FROM (
-												SELECT color, unnest(doubles) AS doubles, generate_subscripts(doubles, 1) - 1 AS index
-												FROM someTableName
-											) GROUP BY color, index
-										) ON index USING SUM(doubles)
-									)
-									"""))
-					.build());
+											PIVOT
+											(
+												SELECT color, index, SUM(doubles) AS doubles FROM (
+													SELECT color, unnest(doubles) AS doubles, generate_subscripts(doubles, 1) - 1 AS index
+													FROM someTableName
+												) GROUP BY color, index
+											) ON index USING SUM(doubles)
+										)
+										"""))
+						.build());
+	}
 
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
-		return CubeWrapper.builder()
-				.engine(engine)
-				.forest(forest)
-				.table(table)
-				.queryPreparator(customQueryPreparator())
-				.build();
+	@Override
+	public ICubeWrapper cube() {
+		// Calling `.editCube` would lead to a cycle `.cube->.editCube->.cube`
+		return ((CubeWrapper) super.cube()).toBuilder().queryPreparator(customQueryPreparator()).build();
 	}
 
 	private IQueryPreparator customQueryPreparator() {
@@ -209,7 +203,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	@Test
 	public void testGrandTotal() {
 		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).build());
+				cube().execute(CubeQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -239,7 +233,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy standard column
 	@Test
 	public void testGroupByColor() {
-		ITabularView result = wrapInCube(forest).execute(
+		ITabularView result = cube().execute(
 				CubeQuery.builder().measure(countAsterisk.getName(), mArray, mVaR).groupByAlso("color").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -273,8 +267,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy scenarioIndex
 	@Test
 	public void testGroupByScenarioIndex_mArray() {
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIOINDEX).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -293,8 +286,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy scenarioName
 	@Test
 	public void testGroupByScenarioName_mArray() {
-		ITabularView result =
-				wrapInCube(forest).execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -315,8 +307,8 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// filter scenarioIndex
 	@Test
 	public void testFilterScenarioIndex_mArrayVaR() {
-		ITabularView result = wrapInCube(forest)
-				.execute(CubeQuery.builder().measure(mArray, mVaR).andFilter(C_SCENARIOINDEX, 0).build());
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure(mArray, mVaR).andFilter(C_SCENARIOINDEX, 0).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -334,7 +326,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// filter scenarioName
 	@Test
 	public void testFilterScenarioName_mArrayVaR() {
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
+		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure(mArray, mVaR)
 				.andFilter(C_SCENARIONAME, ExampleVaRScenarioNameCombination.indexToName(0))
 				.build());
@@ -355,8 +347,8 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// filter scenarioIndex on `count(*)`: the filter is suppressed
 	@Test
 	public void testFilterScenarioIndex_countAsterisk_standardCube() {
-		ITabularView result = wrapInCube(forest)
-				.execute(CubeQuery.builder().measure(countAsterisk).andFilter(C_SCENARIOINDEX, 0).build());
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure(countAsterisk).andFilter(C_SCENARIOINDEX, 0).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).containsKey(Map.of()).hasSize(1);
@@ -371,8 +363,8 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy scenarioIndex on `count(*)`: groupBy on `generated`
 	@Test
 	public void testGroupByScenarioIndex_countAsterisk() {
-		ITabularView view = wrapInCube(forest)
-				.execute(CubeQuery.builder().measure(countAsterisk).groupByAlso(C_SCENARIOINDEX).build());
+		ITabularView view =
+				cube().execute(CubeQuery.builder().measure(countAsterisk).groupByAlso(C_SCENARIOINDEX).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
@@ -391,7 +383,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy and filter scenarioIndex on `count(*)`: groupBy on `generated`
 	@Test
 	public void testGroupByAndFilterScenarioIndex_countAsterisk() {
-		ITabularView view = wrapInCube(forest).execute(CubeQuery.builder()
+		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure(countAsterisk)
 				.groupByAlso(C_SCENARIOINDEX)
 				.andFilter(C_SCENARIOINDEX, 0)
@@ -405,7 +397,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// filter scenarioIndex on empty measure
 	@Test
 	public void testGroupByScenario_emptyMeasure() {
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso(C_SCENARIOINDEX).build());
+		ITabularView result = cube().execute(CubeQuery.builder().groupByAlso(C_SCENARIOINDEX).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -418,9 +410,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testDescribe() {
-		CubeWrapper cube = wrapInCube(forest);
-
-		Assertions.assertThat(cube.getColumnTypes())
+		Assertions.assertThat(cube().getColumnTypes())
 				.containsEntry("color", String.class)
 				.containsEntry("0", Double.class)
 				.containsEntry(Integer.toString(arrayLength - 1), Double.class)
@@ -435,9 +425,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testColumnMeta_scenarioIndexes() {
-		CubeWrapper cube = wrapInCube(forest);
-
-		CoordinatesSample coordinates = cube.getCoordinates(C_SCENARIOINDEX, IValueMatcher.MATCH_ALL, arrayLength);
+		CoordinatesSample coordinates = cube().getCoordinates(C_SCENARIOINDEX, IValueMatcher.MATCH_ALL, arrayLength);
 
 		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(arrayLength);
 		Assertions.assertThat(coordinates.getCoordinates()).hasSize(arrayLength).contains(0, 1, arrayLength - 1);
@@ -445,9 +433,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 	@Test
 	public void testColumnMeta_scenarioNames() {
-		CubeWrapper cube = wrapInCube(forest);
-
-		CoordinatesSample coordinates = cube.getCoordinates(C_SCENARIONAME, IValueMatcher.MATCH_ALL, arrayLength);
+		CoordinatesSample coordinates = cube().getCoordinates(C_SCENARIONAME, IValueMatcher.MATCH_ALL, arrayLength);
 
 		Assertions.assertThat(coordinates.getEstimatedCardinality()).isEqualTo(arrayLength);
 		Assertions.assertThat(coordinates.getCoordinates())

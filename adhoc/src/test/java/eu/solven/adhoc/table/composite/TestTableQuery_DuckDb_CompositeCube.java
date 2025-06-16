@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
@@ -49,18 +48,19 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
 
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-	DSLContext dsl = dslSupplier.getDSLContext();
+	@Override
+	public ITableWrapper makeTable() {
+		throw new UnsupportedOperationException("This test has multiple main tables");
+	}
 
 	String tableName1 = "someTableName1";
 	JooqTableWrapper table1 = new JooqTableWrapper(tableName1,

@@ -180,7 +180,9 @@ public class WorldCupPlayersSchema {
 				.baseTable(DSL.table("WorldCupPlayers"))
 				.baseTableAlias("WorldCupPlayers")
 				.build()
-				.leftJoin(DSL.table("WorldCupMatches"), "WorldCupMatches", List.of(Map.entry("MatchId", "MatchId")));
+				.leftJoin(DSL.table("WorldCupMatches"),
+						"WorldCupMatches",
+						List.of(Map.entry("MatchId", "MatchID"), Map.entry("RoundId", "RoundID")));
 		return worldCupPlayers;
 	}
 
@@ -215,6 +217,9 @@ public class WorldCupPlayersSchema {
 				.columnsManager(ColumnsManager.builder()
 						.transcoder(MapTableTranscoder.builder()
 								.queriedToUnderlyings(snowflakeBuilder().getQueriedToUnderlying())
+								// TODO Need to progress on caseSensitivity
+								.queriedToUnderlying("MatchID", "WorldCupPlayers.MatchId")
+								.queriedToUnderlying("RoundID", "WorldCupPlayers.RoundId")
 								.build())
 						.build());
 	}
