@@ -115,4 +115,23 @@ public class TestInMemoryTable {
 
 		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
 	}
+
+	@Test
+	public void testAggregateUnknownColumn_noThrow() {
+		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder()
+				.name("count")
+				.measure(Aggregator.countAsterisk())
+				.measure(Aggregator.sum("unknownColumn"))
+				.build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().measure("unknownColumn").build());
+		cube.execute(CubeQuery.builder().measure(Aggregator.countAsterisk().getName(), "unknownColumn").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
+	}
 }

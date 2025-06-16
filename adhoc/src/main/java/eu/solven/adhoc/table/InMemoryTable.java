@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -49,6 +50,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -130,7 +132,14 @@ public class InMemoryTable implements ITableWrapper {
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
 				.collect(Collectors.toSet());
-		checkKnownColumns(tableColumns, filteredColumns, "aggregated");
+		{
+			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
+					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))
+					.filter(s -> !s.equals(ICountMeasuresConstants.ASTERISK))
+					.collect(ImmutableSet.toImmutableSet());
+
+			checkKnownColumns(tableColumns, aggregateColumnsFromTable, "aggregated");
+		}
 
 		boolean isEmptyAggregation =
 				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
