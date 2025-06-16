@@ -65,7 +65,7 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 	}
 
 	@Override
-	public IAggregationCarrier wrap(Object v) {
+	public SimpleAggregationCarrier wrap(Object v) {
 		if (v instanceof String s) {
 			Map<String, AtomicLongMap<Integer>> typeToMinuteToCount = new TreeMap<>();
 
@@ -104,32 +104,21 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 	protected void splitAndCount(String s, Map<String, AtomicLongMap<Integer>> typeToMinuteToCount) {
 		// e.g. `G11' G18' Y84' O88'`
 		for (String eventAsString : s.split(" ")) {
-			if (eventAsString.isEmpty()) {
-				continue;
-			}
-
-			int eventLength;
-
 			int lastCodeCharIndex = CharMatcher.inRange('A', 'Z').lastIndexIn(eventAsString);
-			eventLength = lastCodeCharIndex + 1;
+			int eventLength = lastCodeCharIndex + 1;
 
 			String eventType = eventAsString.substring(0, eventLength);
 
 			// Skip the trailing `'`
 			String minute = eventAsString.substring(eventLength, eventAsString.length() - 1);
 
-			if (minute.isEmpty()) {
-				typeToMinuteToCount.computeIfAbsent(eventType, k -> AtomicLongMap.create()).incrementAndGet(1);
-			} else {
-				int minuteAsInt = Integer.parseInt(minute);
+			int minuteAsInt = Integer.parseInt(minute);
 
-				if (minuteAsInt > MAX_MINUTES.get()) {
-					MAX_MINUTES.set(minuteAsInt);
-				}
-
-				typeToMinuteToCount.computeIfAbsent(eventType, k -> AtomicLongMap.create())
-						.incrementAndGet(minuteAsInt);
+			if (minuteAsInt > MAX_MINUTES.get()) {
+				MAX_MINUTES.set(minuteAsInt);
 			}
+
+			typeToMinuteToCount.computeIfAbsent(eventType, k -> AtomicLongMap.create()).incrementAndGet(minuteAsInt);
 		}
 	}
 
