@@ -22,17 +22,27 @@
  */
 package eu.solven.adhoc.query;
 
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.experimental.UtilityClass;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Value;
 
 /**
  * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
  * 
  * @author Benoit Lacelle
  */
-@UtilityClass
+@Value
+@Builder
 public class AdhocCaseSensitivity {
-	public static boolean isCaseSensitive() {
-		return AdhocUnsafe.isCaseSensitive();
-	}
+
+	// Adhoc is currently case-sensitive
+	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive
+	// https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html#case-sensitivity-of-identifiers
+	// Some of them can be turned caseSensitive (RedShift)
+	// https://docs.aws.amazon.com/redshift/latest/dg/r_enable_case_sensitive_identifier.html
+	private static final boolean D_CASESENSITIVE = true;
+
+	@Default
+	boolean caseSensitive = D_CASESENSITIVE;
+
 }

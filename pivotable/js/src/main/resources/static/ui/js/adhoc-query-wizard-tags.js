@@ -46,7 +46,9 @@ export default {
 			}
 
 			// https://stackoverflow.com/questions/20069828/how-to-convert-set-to-array
-			return Array.from(tags);
+			const asArray = Array.from(tags);
+			asArray.sort();
+			return asArray;
 		};
 
 		return {

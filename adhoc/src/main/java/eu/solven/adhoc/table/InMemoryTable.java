@@ -118,15 +118,20 @@ public class InMemoryTable implements ITableWrapper {
 			throw new IllegalArgumentException("InMemoryTable can not filter a measure");
 		}
 
+		Set<String> tableColumns = getColumnTypes().keySet();
+		checkKnownColumns(tableColumns, filteredColumns, "filtered");
+
 		Set<String> aggregateColumns = tableQuery.getAggregators()
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
 				.collect(Collectors.toSet());
+		checkKnownColumns(tableColumns, filteredColumns, "aggregated");
 
 		boolean isEmptyAggregation =
 				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
 
-		Set<String> groupByColumns = getGroupByColumns(tableQuery, filteredColumns);
+		Set<String> groupByColumns = getGroupByColumns(tableQuery);
+		checkKnownColumns(tableColumns, groupByColumns, "aggregated");
 
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
@@ -180,32 +185,34 @@ public class InMemoryTable implements ITableWrapper {
 		});
 	}
 
-	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery, Set<String> filteredColumns) {
+	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery) {
+		Set<String> tableColumns = getColumnTypes().keySet();
+
 		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
+		checkKnownColumns(groupByColumns, tableColumns, "groupedBy");
 
-		{
-			Set<String> tableColumns = getColumnTypes().keySet();
-			Set<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
-			if (!unknownFilteredColumns.isEmpty()) {
-				if (throwOnUnknownColumn) {
-					throw new IllegalArgumentException(
-							"Unknown filtered columns: %s".formatted(unknownFilteredColumns));
-				} else {
-					log.warn("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
-				}
-			}
+		return groupByColumns;
+	}
 
-			Set<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
-			if (!unknownGroupedByColumns.isEmpty()) {
-				if (throwOnUnknownColumn) {
-					throw new IllegalArgumentException(
-							"Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
-				} else {
-					log.warn("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
-				}
+	/**
+	 * 
+	 * @param tableColumns
+	 *            all columns known by this table, given rows
+	 * @param queriedColumns
+	 *            columns requested the the {@link TableQueryV2}
+	 * @param columnUse
+	 *            some type to be referred in logs
+	 */
+	protected void checkKnownColumns(Set<String> tableColumns, Set<String> queriedColumns, String columnUse) {
+		Set<String> unknownQueriedColumns = Sets.difference(queriedColumns, tableColumns);
+		if (!unknownQueriedColumns.isEmpty()) {
+			String msg = "Unknown %s columns: %s".formatted(columnUse, unknownQueriedColumns);
+			if (throwOnUnknownColumn) {
+				throw new IllegalArgumentException(msg);
+			} else {
+				log.warn(msg);
 			}
 		}
-		return groupByColumns;
 	}
 
 	protected ITabularRecord toRecord(TableQueryV2 tableQuery,

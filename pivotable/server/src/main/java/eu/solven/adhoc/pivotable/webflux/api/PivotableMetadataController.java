@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.pepper.mappath.MapPathGet;
 
 /**
  * Holds various details/metadata/enrichment about the application.
@@ -83,6 +84,16 @@ public class PivotableMetadataController {
 					.put(K_DESC,
 							"Force disabling any caching (if any are configured). Toggle-off does not add any cache by itself.")
 					.build());
+
+			for (StandardQueryOptions option : StandardQueryOptions.values()) {
+				if (queryOptions.stream()
+						.noneMatch(m -> MapPathGet.getRequiredString(m, K_NAME).equalsIgnoreCase(option.toString()))) {
+					queryOptions.add(ImmutableMap.<String, Object>builder()
+							.put(K_NAME, option.toString())
+							.put(K_DESC, "Missing description for " + option.toString())
+							.build());
+				}
+			}
 
 			metadata.put("query_options", queryOptions);
 		}

@@ -40,14 +40,19 @@ const formatters = function (formatOptions) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
 			rtn.text = numberFormat.format(value);
+			// toolTip show raw value
+			rtn.toolTip = value;
 		} else if (typeof value === "object") {
 			rtn.text = JSON.stringify(value);
+			// toolTip also shows the JSON
+			rtn.toolTip = rtn.text;
 		} else {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
 			// string, boolean, bigint, etc
 			rtn.text = value;
+			// toolTip also show the value
+			rtn.toolTip = value;
 		}
-		rtn.toolTip = value;
 
 		return rtn;
 	}
