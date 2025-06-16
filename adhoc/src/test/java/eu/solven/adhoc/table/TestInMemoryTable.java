@@ -100,4 +100,19 @@ public class TestInMemoryTable {
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
+
+	@Test
+	public void testGroupByUnknownColumn_noThrow() {
+		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder().name("count").measure(Aggregator.countAsterisk()).build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().groupByAlso("unknownColumn").build());
+		cube.execute(CubeQuery.builder().groupByAlso("k", "unknownColumn").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
+	}
 }
