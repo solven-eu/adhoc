@@ -63,12 +63,14 @@ import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Holds the schema for WorldCupPlayers example.
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class WorldCupPlayersSchema {
 	public String getName() {
@@ -191,9 +193,9 @@ public class WorldCupPlayersSchema {
 		String fileName = resource.getFilename();
 		String simpleName = fileName.substring(0, fileName.lastIndexOf('.'));
 
-		Path tmp = Files.createTempDirectory("adhoc-" + this.getClass().getSimpleName());
+		Path tmpPath = Files.createTempDirectory("adhoc-" + this.getClass().getSimpleName());
 
-		Path parquetAsPath = tmp.resolve(fileName);
+		Path parquetAsPath = tmpPath.resolve(fileName);
 		Files.copy(resource.getInputStream(), parquetAsPath);
 
 		try (Statement s = connection.createStatement()) {
@@ -202,7 +204,8 @@ public class WorldCupPlayersSchema {
 		}
 
 		// Delete the file as it is loaded in-memory in DuckDB
-		parquetAsPath.toFile().delete();
+		boolean deleted = parquetAsPath.toFile().delete();
+		log.debug("deleted={} for path={}", deleted, tmpPath);
 	}
 
 	public CubeWrapperBuilder makeCube(AdhocSchema schema,

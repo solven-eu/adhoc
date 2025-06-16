@@ -35,14 +35,28 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * 
  * @author Benoit Lacelle
  */
-public class UnionListAggregation implements IAggregation {
+public class UnionListAggregation extends AUnionCollectionAggregation {
 
 	// https://duckdb.org/docs/stable/sql/functions/aggregates#array_aggarg
-	// TODO Rename into ARRAY_AGG?
+	// TODO Rename into ARRAY_AGG? ARRAY_AGG Would also handles arrays and Collections
 	public static final String KEY = "UNION_LIST";
+
+	public UnionListAggregation() {
+		super();
+	}
+
+	public UnionListAggregation(Map<String, ?> options) {
+		super(options);
+	}
 
 	public boolean acceptAggregate(Object o) {
 		return o instanceof List || o == null;
+	}
+
+	@Override
+	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
+	protected List<?> onEmpty() {
+		return null;
 	}
 
 	@Override
@@ -50,17 +64,21 @@ public class UnionListAggregation implements IAggregation {
 		List<?> lAsList = wrapAsList(l);
 		List<?> rAsList = wrapAsList(r);
 
-		return aggregateLists(lAsList, rAsList);
+		List<?> aggregated = aggregateLists(lAsList, rAsList);
+
+		if (aggregated.isEmpty()) {
+			return onEmpty();
+		}
+		return aggregated;
 	}
 
 	protected List<?> wrapAsList(Object l) {
 		if (l == null) {
 			return List.of();
-		} else if (l instanceof List<?> list) {
-			// TODO unesting should be an option
-			return list;
-		} else if (l instanceof Collection<?> collection) {
-			// TODO unesting should be an option
+		} else if (unnest && l instanceof List<?> list) {
+			// TODO Should this copy be an unsafe option?
+			return ImmutableList.copyOf(list);
+		} else if (unnest && l instanceof Collection<?> collection) {
 			return ImmutableList.copyOf(collection);
 		} else {
 			return ImmutableList.of(l);

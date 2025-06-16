@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -33,12 +34,29 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * 
  * @author Benoit Lacelle
  */
-public class UnionSetAggregation implements IAggregation {
+public class UnionSetAggregation extends AUnionCollectionAggregation {
 
 	public static final String KEY = "UNION_SET";
 
+	// https://duckdb.org/docs/stable/sql/query_syntax/unnest.html
+	public static final String K_UNNEST = "unnest";
+
+	public UnionSetAggregation() {
+		super();
+	}
+
+	public UnionSetAggregation(Map<String, ?> options) {
+		super(options);
+	}
+
 	public boolean acceptAggregate(Object o) {
 		return o instanceof Set || o == null;
+	}
+
+	@Override
+	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
+	protected Set<?> onEmpty() {
+		return null;
 	}
 
 	@Override
@@ -49,24 +67,19 @@ public class UnionSetAggregation implements IAggregation {
 		Set<?> aggregated = aggregateSets(lAsSet, rAsSet);
 
 		if (aggregated.isEmpty()) {
-			// We prefer returning null, the materializing unnecessarily a slice.
 			return onEmpty();
 		}
 		return aggregated;
-	}
-
-	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
-	protected Set<?> onEmpty() {
-		return null;
 	}
 
 	protected Set<?> wrapAsSet(Object l) {
 		Set<?> asSet;
 		if (l == null) {
 			asSet = onEmpty();
-		} else if (l instanceof Set<?> lAsSet) {
-			asSet = lAsSet;
-		} else if (l instanceof Iterable<?> lAsIterable) {
+		} else if (unnest && l instanceof Set<?> lAsSet) {
+			// TODO Should this copy be an unsafe option?
+			asSet = ImmutableSet.copyOf(lAsSet);
+		} else if (unnest && l instanceof Iterable<?> lAsIterable) {
 			asSet = ImmutableSet.copyOf(lAsIterable);
 		} else {
 			asSet = Set.of(l);

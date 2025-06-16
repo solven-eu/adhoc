@@ -72,7 +72,7 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 			splitAndCount(s, typeToMinuteToCount);
 
 			return SimpleAggregationCarrier.builder()
-					.t(PlayersEvents.builder().typeToMinuteToCount(typeToMinuteToCount).build())
+					.t(PlayersEvents.builder().typeToMinuteToCounts(typeToMinuteToCount).build())
 					.build();
 		} else if (v instanceof java.sql.Array array) {
 			try {
@@ -90,7 +90,7 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 				}
 
 				return SimpleAggregationCarrier.builder()
-						.t(PlayersEvents.builder().typeToMinuteToCount(typeToMinuteToCount).build())
+						.t(PlayersEvents.builder().typeToMinuteToCounts(typeToMinuteToCount).build())
 						.build();
 			} catch (SQLException e) {
 				throw new IllegalStateException("Issue with v=%s".formatted(PepperLogHelper.getObjectAndClass(v)), e);

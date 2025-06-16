@@ -49,10 +49,7 @@ public class TestMapBasedTabularView {
 
 	// To be removed by `PepperJacksonTestHelper` in Pepper 5.2
 	public static <T> String verifyJackson(Class<T> clazz, T object) throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
-
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		om.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper om = objectMapper();
 
 		String asString = om.writeValueAsString(object);
 
@@ -68,5 +65,13 @@ public class TestMapBasedTabularView {
 		Assertions.assertThat(fromString).isEqualTo(object);
 
 		return asString;
+	}
+
+	public static ObjectMapper objectMapper() {
+		ObjectMapper om = new ObjectMapper();
+
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		om.enable(SerializationFeature.INDENT_OUTPUT);
+		return om;
 	}
 }

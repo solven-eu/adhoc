@@ -77,7 +77,7 @@ public class DispatchedEvents implements IDecomposition {
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
 
 		playerEvents.getTypeToMinuteToCount().forEach((eventCode, minuteToCount) -> {
-			minuteToCount.asMap().forEach((minute, count) -> {
+			minuteToCount.forEach((minute, count) -> {
 				decompositions.add(IDecompositionEntry.of(Map.of("minute", minute, "event_code", eventCode),
 						vr -> vr.onLong(count)));
 			});

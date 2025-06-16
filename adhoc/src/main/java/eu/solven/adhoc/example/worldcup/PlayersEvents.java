@@ -24,15 +24,15 @@ package eu.solven.adhoc.example.worldcup;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -44,29 +44,29 @@ import lombok.Value;
 @Builder
 public class PlayersEvents {
 	@JsonIgnore
+	@Singular
 	@NonNull
-	@Default
-	Map<String, AtomicLongMap<Integer>> typeToMinuteToCount = Map.of();
+	ImmutableMap<String, AtomicLongMap<Integer>> typeToMinuteToCounts;
 
 	public static PlayersEvents merge(PlayersEvents left, PlayersEvents right) {
 		Map<String, AtomicLongMap<Integer>> typeToMinuteToCount = new TreeMap<>();
 
-		left.getTypeToMinuteToCount().forEach((key, values) -> {
+		left.getTypeToMinuteToCounts().forEach((key, values) -> {
 			typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create()).putAll(values.asMap());
 		});
 
-		right.getTypeToMinuteToCount().forEach((key, values) -> {
+		right.getTypeToMinuteToCounts().forEach((key, values) -> {
 			typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create()).putAll(values.asMap());
 		});
 
-		return PlayersEvents.builder().typeToMinuteToCount(typeToMinuteToCount).build();
+		return PlayersEvents.builder().typeToMinuteToCounts(typeToMinuteToCount).build();
 	}
 
 	// For Jackson representation, so such aggregates can be printed in Pivotable
 	@JsonValue
-	public Map<String, Map<Integer, Long>> getTypeToMinuteToCount2() {
-		return getTypeToMinuteToCount().entrySet()
+	public Map<String, Map<Integer, Long>> getTypeToMinuteToCount() {
+		return getTypeToMinuteToCounts().entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().asMap()));
+				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> e.getValue().asMap()));
 	}
 }
