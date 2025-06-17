@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
@@ -143,6 +144,10 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			// Typically converts a CountHolder into the count as a `long`
 			// May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
 			notFinalColumn.purgeAggregationCarriers();
+		}
+
+		if (notFinalColumn instanceof ICompactable compactable) {
+			compactable.compact();
 		}
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;

@@ -9,6 +9,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
 - Additional `WorldCup` example cube, with more complex measures.
 - In Pivotable, clicking a column header will sort rows based on given column.
+- Introduces `ICompactable`
 
 ### Changed
 - `IColumnMatcher.toString()` has specialized implementations, depending on the matcher type (e.g. `c==v` for `EqualsMatcher`).

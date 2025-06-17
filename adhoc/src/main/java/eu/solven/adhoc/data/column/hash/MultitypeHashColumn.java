@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
@@ -66,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
+public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, ICompactable {
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
@@ -394,5 +395,18 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 		// Remove in a later pass, as it is generally unsafe to remove while iterating
 		measureToAggregateO.values().removeIf(e -> e instanceof IAggregationCarrier);
+	}
+
+	@Override
+	public void compact() {
+		if (measureToAggregateL instanceof Object2LongOpenHashMap hashMap) {
+			hashMap.trim();
+		}
+		if (measureToAggregateD instanceof Object2DoubleOpenHashMap hashMap) {
+			hashMap.trim();
+		}
+		if (measureToAggregateO instanceof Object2ObjectOpenHashMap hashMap) {
+			hashMap.trim();
+		}
 	}
 }

@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 
 import org.roaringbitmap.RoaringBitmap;
 
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.tabular.primitives.Int2LongBiConsumer;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.longs.AbstractLongList;
@@ -44,7 +45,7 @@ import lombok.NonNull;
  */
 @Deprecated(since = "Not-Ready")
 @Builder
-public class NullableLongArray extends AbstractLongList implements INullableLongArray {
+public class NullableLongArray extends AbstractLongList implements INullableLongArray, ICompactable {
 
 	// Use to register the bits to skip, as not all indexes may be written in LongList
 	@Default
@@ -150,6 +151,14 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 
 	public static INullableLongArray empty() {
 		return NullableLongArray.builder().list(LongLists.emptyList()).build();
+	}
+
+	@Override
+	public void compact() {
+		if (list instanceof LongArrayList arrayList) {
+			arrayList.trim();
+		}
+		nullBitmap.runOptimize();
 	}
 
 }

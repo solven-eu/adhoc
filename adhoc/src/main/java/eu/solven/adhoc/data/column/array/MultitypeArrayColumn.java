@@ -34,6 +34,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
@@ -59,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T> {
+public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T>, ICompactable {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
@@ -398,5 +399,18 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 		// TODO Typically on CountAggregation, we turned all Carriers into a long. So `measureToAggregateO` holds only
 		// `null`, and it could be cleared.
+	}
+
+	@Override
+	public void compact() {
+		if (measureToAggregateL instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (measureToAggregateD instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (measureToAggregateO instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 }

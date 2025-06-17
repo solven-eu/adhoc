@@ -29,6 +29,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.StreamStrategy;
@@ -53,7 +54,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 @ToString
-public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T> {
+public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
+		implements IMultitypeColumnFastGet<T>, ICompactable {
 	@Default
 	@NonNull
 	final MultitypeNavigableColumn<T> navigable = MultitypeNavigableColumn.<T>builder().build();
@@ -164,5 +166,15 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> implement
 	@Override
 	public IValueReceiver set(T key) {
 		throw new NotYetImplementedException(".set({})".formatted(key));
+	}
+
+	@Override
+	public void compact() {
+		if (navigable instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (hash instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 }
