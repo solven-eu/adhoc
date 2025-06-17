@@ -94,6 +94,9 @@ export default {
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(searchOptions, arrayOrObject);
 		};
+		const queried = function (arrayOrObject) {
+			return wizardHelper.queried(arrayOrObject);
+		};
 
 		const removeTag = function (tag) {
 			return wizardHelper.removeTag(searchOptions, tag);
@@ -106,6 +109,7 @@ export default {
 		return {
 			searchOptions,
 			filtered,
+			queried,
 			removeTag,
 			clearFilters,
 		};
@@ -123,7 +127,7 @@ export default {
         </div>
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
-            <form>
+            <form class="text-break">
                 <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
                 <AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
@@ -136,18 +140,19 @@ export default {
                                 class="accordion-button collapsed"
                                 type="button"
                                 data-bs-toggle="collapse"
-                                data-bs-target="#wizardCustoms"
+                                data-bs-target="#wizardMeasures"
                                 aria-expanded="false"
-                                aria-controls="wizardCustoms"
+                                aria-controls="wizardMeasures"
                             >
                                 <span v-if="searchOptions.text || searchOptions.tags.length > 0">
                                     <span class="text-decoration-line-through"> {{ Object.keys(cube.measures).length}} </span>&nbsp;
                                     <span> {{ Object.keys(filtered(cube.measures)).length}} </span> measures
                                 </span>
-                                <span v-else> {{ Object.keys(cube.measures).length}} measures </span>
+                                <span v-else> {{ Object.keys(cube.measures).length}} measures </span>&nbsp;
+                                <small class="badge text-bg-primary">{{queried(queryModel.selectedMeasures).length}}</small>
                             </button>
                         </h2>
-                        <div id="wizardCustoms" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                        <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll px-0">
                                 <ul v-for="(measure) in filtered(cube.measures)" class="list-group list-group-flush">
                                     <li class="list-group-item">
@@ -178,16 +183,16 @@ export default {
                                 class="accordion-button collapsed"
                                 type="button"
                                 data-bs-toggle="collapse"
-                                data-bs-target="#wizardMeasures"
+                                data-bs-target="#wizardCustoms"
                                 aria-expanded="false"
-                                aria-controls="wizardMeasures"
+                                aria-controls="wizardCustoms"
                             >
                                 {{ Object.keys(cube.customMarkers).length}} custom markers
                             </button>
                         </h2>
-                        <div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                        <div id="wizardCustoms" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
                             <div class="accordion-body vh-50 overflow-scroll px-0">
-                                <ul v-for="(customMarker) in cube.customMarkers" class="list-group list-group-flush">
+                                <ul v-for="customMarker in cube.customMarkers" class="list-group list-group-flush">
                                     <li class="list-group-item">
                                         <AdhocQueryWizardCustomMarker :queryModel="queryModel" :customMarker="customMarker" />
                                     </li>
@@ -205,7 +210,8 @@ export default {
                                 aria-expanded="false"
                                 aria-controls="wizardOptions"
                             >
-                                {{ Object.keys(metadata.query_options).length}} options <small>({{filtered(queryModel.options).length}})</small>
+                                {{ Object.keys(metadata.query_options).length}} options &nbsp;
+                                <small class="badge text-bg-primary">{{filtered(queryModel.options).length}}</small>
                             </button>
                         </h2>
                         <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">

@@ -41,6 +41,9 @@ export default {
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(props.searchOptions, arrayOrObject);
 		};
+		const queried = function (arrayOrObject) {
+			return wizardHelper.queried(arrayOrObject);
+		};
 
 		const clearFilters = function () {
 			return wizardHelper.clearFilters(props.searchOptions);
@@ -50,6 +53,7 @@ export default {
 
 		return {
 			filtered,
+			queried,
 			clearFilters,
 			queryModel,
 		};
@@ -69,7 +73,8 @@ export default {
                         <span class="text-decoration-line-through"> {{ Object.keys(columns).length}} </span>&nbsp;
                         <span> {{ Object.keys(filtered(columns)).length}} </span> columns
                     </span>
-                    <span v-else> {{ Object.keys(columns).length}} columns </span>
+                    <span v-else> {{ Object.keys(columns).length}} columns </span> &nbsp;
+                    <small class="badge text-bg-primary">{{queried(queryModel.selectedColumns).length}}</small>
                 </button>
 
                 <div v-if="nbColumnFetching > 0">

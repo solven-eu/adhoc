@@ -29,7 +29,10 @@ import javax.sql.DataSource;
 
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
+
+import eu.solven.adhoc.query.AdhocCaseSensitivity;
 
 /**
  * Helps building a proper {@link DSLContext}, typically for {@link JooqTableWrapper}.
@@ -51,8 +54,9 @@ public interface DSLSupplier {
 	@Deprecated(
 			since = "Make sure you do close properly each generated DSLContext. Or use a DSLSupplier.fromDatasource(DataSource)")
 	static DSLSupplier fromConnection(Supplier<Connection> connectionSupplier) {
+		Settings settings = AdhocCaseSensitivity.jooqSettings();
 		// TODO Should rely on Connection provider
-		return () -> DSL.using(connectionSupplier.get());
+		return () -> DSL.using(connectionSupplier.get(), settings);
 	}
 
 	/**
@@ -62,10 +66,12 @@ public interface DSLSupplier {
 	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
 	 */
 	static DSLSupplier fromDialect(SQLDialect sqlDialect) {
-		return () -> DSL.using(sqlDialect);
+		Settings settings = AdhocCaseSensitivity.jooqSettings();
+		return () -> DSL.using(sqlDialect, settings);
 	}
 
 	static DSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
-		return () -> DSL.using(datasource, sqlDialect);
+		Settings settings = AdhocCaseSensitivity.jooqSettings();
+		return () -> DSL.using(datasource, sqlDialect, settings);
 	}
 }

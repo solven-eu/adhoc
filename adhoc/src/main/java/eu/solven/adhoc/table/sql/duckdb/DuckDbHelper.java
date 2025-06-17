@@ -100,18 +100,18 @@ public class DuckDbHelper {
 	 * @param duckDbConnection
 	 * @return
 	 */
-	@Deprecated(
-			since = "Inefficient to duplicate the connection for each query, as it should be duplicated once per thread")
 	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
-		return () -> {
+		ThreadLocal<Connection> threadLocal = ThreadLocal.withInitial(() -> {
 			Connection duplicated;
 			try {
 				duplicated = duckDbConnection.duplicate();
 			} catch (SQLException e) {
 				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
 			}
-			return DSLSupplier.fromConnection(() -> duplicated).getDSLContext();
-		};
+			return duplicated;
+		});
+
+		return () -> DSLSupplier.fromConnection(threadLocal::get).getDSLContext();
 	}
 
 	public static CoordinatesSample getCoordinates(JooqTableWrapper table,

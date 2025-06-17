@@ -178,7 +178,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		} else {
 			tableName = "someTableName";
 		}
-
+		
 		JooqTableWrapperParameters parameters = parametersBuilder.build();
 		return new JooqTableWrapper(tableName, parameters);
 	}

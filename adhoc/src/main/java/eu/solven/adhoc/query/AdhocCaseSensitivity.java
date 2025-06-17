@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.query;
 
+import org.jooq.conf.ParseNameCase;
+import org.jooq.conf.Settings;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Value;
@@ -44,5 +47,14 @@ public class AdhocCaseSensitivity {
 
 	@Default
 	boolean caseSensitive = D_CASESENSITIVE;
+
+	public static Settings jooqSettings() {
+		Settings settings = new Settings();
+
+		// Adhoc being caseSensitive by default, we prefer to keep the case of encountered identifiers
+		settings.setParseNameCase(ParseNameCase.AS_IS);
+
+		return settings;
+	}
 
 }

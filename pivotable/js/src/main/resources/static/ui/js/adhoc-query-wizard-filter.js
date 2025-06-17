@@ -79,8 +79,8 @@ export default {
                 <li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
             </ul>
         </div>
-        <span v-else-if="filter.type==='column'" class="text-nowrap">
-            <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button> {{filter.column}}={{filter.valueMatcher}}
+        <span v-else-if="filter.type==='column'">
+            {{filter.column}}={{filter.valueMatcher}} <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
         </span>
         <div v-else>{{filter}}</div>
     `,

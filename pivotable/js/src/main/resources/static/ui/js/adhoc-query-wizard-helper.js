@@ -17,6 +17,12 @@ export default {
 		searchOptions.tags.length = 0;
 	},
 
+	queried: function (keyToBoolean) {
+		return Object.entries(keyToBoolean)
+			.filter((e) => e[1])
+			.map((e) => e[0]);
+	},
+
 	filtered: function (searchOptions, inputsAsObjectOrArray) {
 		const filtereditems = [];
 
