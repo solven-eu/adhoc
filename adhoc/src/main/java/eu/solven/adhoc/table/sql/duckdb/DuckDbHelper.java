@@ -94,13 +94,14 @@ public class DuckDbHelper {
 	}
 
 	/**
-	 * One should prefer relying on a pooling mecanisms, like HikariCP, to avoid the overhead of creating/duplicating a
+	 * One should prefer relying on a connection-pool, like HikariCP, to avoid the overhead of creating/duplicating a
 	 * new connection each time.
 	 *
 	 * @param duckDbConnection
 	 * @return
 	 */
-	@Deprecated(since = "Inefficient to duplicate the connection for each query")
+	@Deprecated(
+			since = "Inefficient to duplicate the connection for each query, as it should be duplicated once per thread")
 	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
 		return () -> {
 			Connection duplicated;

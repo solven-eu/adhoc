@@ -35,8 +35,8 @@ export default {
 			let filterSubObject = queryModel.filter;
 
 			const pathLength = props.path.length;
-			
-			if(pathLength == 0) {
+
+			if (pathLength == 0) {
 				console.log("Clearing the whole filter");
 				queryModel.filter = {};
 			} else {
@@ -47,9 +47,9 @@ export default {
 					} else if (filterSubObject.type === "and" || filterSubObject.type === "or") {
 						filterSubObject = filterSubObject.filters;
 					}
-	
+
 					const pathComponent = props.path[pathIndex];
-	
+
 					if (pathIndex == pathLength - 1) {
 						console.log("Removing", pathComponent, "from", filterSubObject);
 						// delete filterSubObject[pathComponent];

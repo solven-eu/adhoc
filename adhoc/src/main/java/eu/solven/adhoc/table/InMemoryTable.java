@@ -122,7 +122,8 @@ public class InMemoryTable implements ITableWrapper {
 				.anyMatch(a -> filteredColumns.contains(a.getName()))) {
 			// This may be lifted when InMemoryTable aggregates slices instead of returning rows
 			// e.g. `SELECT c, SUM(k) AS k WHERE k >= 100`
-			throw new IllegalArgumentException("InMemoryTable can not filter a measure");
+			throw new IllegalArgumentException(
+					"InMemoryTable can not filter a measure. query=%s".formatted(tableQuery));
 		}
 
 		Set<String> tableColumns = getColumnTypes().keySet();
@@ -131,11 +132,12 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> aggregateColumns = tableQuery.getAggregators()
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
+				.map(this::clearColumnName)
 				.collect(Collectors.toSet());
 		{
 			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
 					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))
-					.filter(s -> !s.equals(ICountMeasuresConstants.ASTERISK))
+					.filter(s -> !ICountMeasuresConstants.ASTERISK.equals(s))
 					.collect(ImmutableSet.toImmutableSet());
 
 			checkKnownColumns(tableColumns, aggregateColumnsFromTable, "aggregated");
@@ -199,8 +201,28 @@ public class InMemoryTable implements ITableWrapper {
 		});
 	}
 
+	/**
+	 * 
+	 * @param column
+	 *            a column name, potentially wrapped with `"`.
+	 * @return a clear columnName
+	 */
+	protected String clearColumnName(String column) {
+		if (column.matches("\"[^\"]+\"")) {
+			// columns is wrapped in double quotes, typically due to having a dot
+			// e.g. `"some.column"` is not a joined column but a base column with a `.` in its name.
+			return column.substring(1, column.length() - 1);
+		} else {
+			return column;
+		}
+	}
+
 	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery) {
-		return new TreeSet<>(tableQuery.getGroupBy().getGroupedByColumns());
+		return tableQuery.getGroupBy()
+				.getGroupedByColumns()
+				.stream()
+				.map(this::clearColumnName)
+				.collect(Collectors.toCollection(TreeSet::new));
 	}
 
 	/**

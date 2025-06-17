@@ -100,15 +100,15 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof Object2LongOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof Object2DoubleOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof Object2ObjectOpenHashMap<?, ?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
 			}
 		}
 	}

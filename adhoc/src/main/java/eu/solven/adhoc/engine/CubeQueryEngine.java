@@ -423,14 +423,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
 						return SliceToValue.empty();
 					} else {
-						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+						throw new IllegalStateException(
+								"queryStep=%s is missing underlyingStep=%s".formatted(queryStep, underlyingStep));
 					}
 				}
 
 				return values;
 			}).toList();
 
-			// BEWARE It looks weird we have to call again `.wrapNode`
+			// BEWARE The need to call again `.wrapNode` looks weird
 			ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
 
 			ISliceToValue coordinatesToValues;

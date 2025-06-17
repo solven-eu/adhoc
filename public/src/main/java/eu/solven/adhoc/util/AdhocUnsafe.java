@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.base.Strings;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -130,6 +131,10 @@ public class AdhocUnsafe {
 
 	private static int parallelism;
 
+	/**
+	 * Used as default capacity when allocating chunks of data.
+	 */
+	@Setter
 	private static int defaultColumnCapacity;
 
 	/**
@@ -197,7 +202,7 @@ public class AdhocUnsafe {
 	 * 
 	 * @return the default capacity for structured.
 	 */
-	public static int defaultCapacity() {
+	public static int defaultColumnCapacity() {
 		if (defaultColumnCapacity >= 0) {
 			// the default capacity is capped by the limit over columnLength
 			return Math.min(limitColumnSize, defaultColumnCapacity);

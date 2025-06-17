@@ -117,6 +117,25 @@ public class TestInMemoryTable {
 	}
 
 	@Test
+	public void testGroupByUnknownColumn_quoted() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		String rawColumn = "k.1";
+		String wrappedColumn = "\"%s\"".formatted(rawColumn);
+		table.add(Map.of(rawColumn, "v"));
+
+		IMeasureForest forest = MeasureForest.builder()
+				.name("count")
+				.measure(Aggregator.sum(wrappedColumn).toBuilder().name("someMeasure").build())
+				.build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().groupByAlso(wrappedColumn).measure("someMeasure").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).isEmpty();
+	}
+
+	@Test
 	public void testAggregateUnknownColumn_noThrow() {
 		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
 
