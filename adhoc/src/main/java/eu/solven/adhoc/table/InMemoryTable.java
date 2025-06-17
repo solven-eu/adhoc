@@ -147,7 +147,7 @@ public class InMemoryTable implements ITableWrapper {
 				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
 
 		Set<String> groupByColumns = getGroupByColumns(tableQuery);
-		checkKnownColumns(tableColumns, groupByColumns, "aggregated");
+		checkKnownColumns(tableColumns, groupByColumns, "groupBy");
 
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
