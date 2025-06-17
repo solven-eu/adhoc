@@ -404,7 +404,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			queryStepsDag.registerExecutionFeedback(queryStep,
 					SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-			queryStepToValues.put(queryStep, outputColumn);
+			if (null != queryStepToValues.put(queryStep, outputColumn)) {
+				throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
+			}
 		});
 	}
 
@@ -414,7 +416,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
 			// This may happen on a Columnator which is missing a required column
-			return Optional.empty();
+			return Optional.of(SliceToValue.empty());
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
 				ISliceToValue values = queryStepToValues.get(underlyingStep);

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.transformator;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -33,8 +34,12 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
+import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestTransformator_Columnator extends ADagTest implements IAdhocTestConstants {
@@ -60,6 +65,13 @@ public class TestTransformator_Columnator extends ADagTest implements IAdhocTest
 		table.add(Map.of("c", "c2", "d", "d2", "k1", 345F, "k2", 456F));
 	}
 
+	public static class Times2Combination implements ICombination {
+		@Override
+		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+			return AdhocPrimitiveHelpers.asDouble(underlyingValues.getFirst()) * 2D;
+		};
+	};
+
 	@BeforeEach
 	public void feedForest() {
 		forest.addMeasure(k1Sum);
@@ -67,6 +79,11 @@ public class TestTransformator_Columnator extends ADagTest implements IAdhocTest
 
 		forest.addMeasure(requireC);
 		forest.addMeasure(requireCandD);
+		forest.addMeasure(Combinator.builder()
+				.name("times2IfC")
+				.underlying(requireC.getName())
+				.combinationKey(Times2Combination.class.getName())
+				.build());
 	}
 
 	@Test
@@ -119,5 +136,12 @@ public class TestTransformator_Columnator extends ADagTest implements IAdhocTest
 				.containsEntry(Map.of("c", "c1", "d", "d1"), Map.of("requireCandD", 0D + 123))
 				.containsEntry(Map.of("c", "c2", "d", "d1"), Map.of("requireCandD", 0D + 234))
 				.containsEntry(Map.of("c", "c2", "d", "d2"), Map.of("requireCandD", 0D + 345 + 456));
+	}
+
+	@Test
+	public void testGrandTotal_combinatorOverMissing() {
+		ITabularView output = cube().execute(CubeQuery.builder().measure("times2IfC").build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues()).isEmpty();
 	}
 }
