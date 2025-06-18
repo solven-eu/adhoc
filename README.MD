@@ -448,3 +448,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
 - [Pivotable] Columns filters should be written by default like `c==v` and not `{'type': 'column', ...}`
 - [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
+- [Pivotable] Enable browser-back to restore previous query.

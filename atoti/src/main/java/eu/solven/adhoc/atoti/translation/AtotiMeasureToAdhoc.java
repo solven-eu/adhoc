@@ -66,12 +66,12 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
@@ -82,6 +82,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -100,6 +101,7 @@ import lombok.extern.slf4j.Slf4j;
 // Add constructor to facilitate custom overloads
 @AllArgsConstructor
 @SuppressWarnings("PMD.GodClass")
+@Getter(AccessLevel.PROTECTED)
 public class AtotiMeasureToAdhoc {
 	/**
 	 * Hints the target table model queried by Adhoc measures as migrated from ActivePivot.
@@ -120,7 +122,6 @@ public class AtotiMeasureToAdhoc {
 
 	@Builder.Default
 	@NonNull
-	@Getter
 	final AtotiConditionCubeToAdhoc apConditionToAdhoc = new AtotiConditionCubeToAdhoc();
 
 	@Builder.Default
@@ -294,7 +295,8 @@ public class AtotiMeasureToAdhoc {
 			return onDynamicPostProcessor(measure, builder -> {
 				// no default customization
 			});
-		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass) || AFilteringPostProcessor.class.isAssignableFrom(implementationClass)) {
+		} else if (AFilteringPostProcessorV2.class.isAssignableFrom(implementationClass)
+				|| AFilteringPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onFilteringPostProcessor(measure, builder -> {
 				// no default customization
 			});
@@ -380,7 +382,8 @@ public class AtotiMeasureToAdhoc {
 		return transcoder.underlyingNonNull(level);
 	}
 
-	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure, Consumer<Filtrator.FiltratorBuilder> onBuilder) {
+	protected List<IMeasure> onFilteringPostProcessor(IPostProcessorDescription measure,
+			Consumer<Filtrator.FiltratorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
@@ -441,7 +444,7 @@ public class AtotiMeasureToAdhoc {
 		unfiltratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
 		List<String> parentHierarchies = getPropertyList(properties, DrillupPostProcessor.PARENT_HIERARCHIES);
-		unfiltratorBuilder.columns(parentHierarchies);
+		unfiltratorBuilder.columns(parentHierarchies.stream().map(this::levelToColumn).toList());
 
 		return List.of(unfiltratorBuilder.build());
 	}
@@ -505,7 +508,7 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected IAdhocGroupBy makeGroupBy(List<String> leafLevels) {
-		return GroupByColumns.named(leafLevels);
+		return GroupByColumns.named(leafLevels.stream().map(this::levelToColumn).toList());
 	}
 
 	// TODO Some formula may be more complex than a simple Combinator

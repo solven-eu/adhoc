@@ -326,7 +326,7 @@ public class TestAtotiMeasureToAdhoc {
 							.withPluginKey(LeafIdentityPostProcessor.TYPE)
 							.withUnderlyingMeasures("someAggregatedMeasure")
 							.withProperty(LeafIdentityPostProcessor.AGGREGATION_FUNCTION, "MAX")
-							.withProperty(LeafIdentityPostProcessor.LEAF_LEVELS, "lvl0,lvl1")
+							.withProperty(LeafIdentityPostProcessor.LEAF_LEVELS, "lvl0,lvl1@h1")
 							.withProperty("customKey", "customValue");
 				}).withSingleLevelDimension("someL").build();
 
@@ -346,7 +346,8 @@ public class TestAtotiMeasureToAdhoc {
 								.combinationOptions(ImmutableMap.<String, Object>builder()
 										// leafLevels keep the original ordering
 										.put("customKey", "customValue")
-										.put(ADynamicAggregationPostProcessorV2.LEAF_LEVELS, "lvl0,lvl1")
+										// raw leafLevels are not transcoded
+										.put(ADynamicAggregationPostProcessorV2.LEAF_LEVELS, "lvl0,lvl1@h1")
 										.build())
 								// groupBy may be re-ordered
 								.groupBy(GroupByColumns.named("lvl1", "lvl0"))
@@ -366,7 +367,7 @@ public class TestAtotiMeasureToAdhoc {
 							.withPostProcessor("someDrilledUpMeasure")
 							.withPluginKey(DrillupPostProcessor.PLUGIN_KEY)
 							.withUnderlyingMeasures("someAggregatedMeasure")
-							.withProperty(DrillupPostProcessor.PARENT_HIERARCHIES, "level1,level2")
+							.withProperty(DrillupPostProcessor.PARENT_HIERARCHIES, "level1,level2@h2")
 							.withProperty("customKey", "customValue");
 				}).withSingleLevelDimension("someL").build();
 

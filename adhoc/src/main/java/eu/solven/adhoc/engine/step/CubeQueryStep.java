@@ -91,6 +91,9 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	ImmutableSet<IQueryOption> options;
 
 	// Used to store transient information, like slow-to-evaluate information
+	// Should be a threadSafe implementation
+	@NonNull
+	@Default
 	Map<Object, Object> cache = new ConcurrentHashMap<>();
 
 	/**
