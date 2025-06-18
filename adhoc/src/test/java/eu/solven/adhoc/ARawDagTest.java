@@ -78,17 +78,13 @@ public abstract class ARawDagTest {
 		return tableSupplier.get();
 	}
 
-	public ICubeWrapper makeCube() {
-		return CubeWrapper.builder()
-				.table(table())
-				.engine(engine)
-				.forest(forest)
-				.eventBus(eventBus::post)
-				// .columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
-				.build();
+	public CubeWrapper.CubeWrapperBuilder makeCube() {
+		return CubeWrapper.builder().table(table()).engine(engine).forest(forest).eventBus(eventBus::post)
+		// .columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
+		;
 	}
 
-	public final Supplier<ICubeWrapper> cubeSupplier = Suppliers.memoize(this::makeCube);
+	public final Supplier<ICubeWrapper> cubeSupplier = Suppliers.memoize(() -> makeCube().build());
 
 	public ICubeWrapper cube() {
 		return cubeSupplier.get();

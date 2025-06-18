@@ -38,8 +38,10 @@ export default {
 		...mapState(useAdhocStore, {}),
 	},
 	setup(props) {
+		const queryModel = inject("queryModel");
+	
 		const filtered = function (arrayOrObject) {
-			return wizardHelper.filtered(props.searchOptions, arrayOrObject);
+			return wizardHelper.filtered(props.searchOptions, arrayOrObject, queryModel);
 		};
 		const queried = function (arrayOrObject) {
 			return wizardHelper.queried(arrayOrObject);
@@ -49,7 +51,6 @@ export default {
 			return wizardHelper.clearFilters(props.searchOptions);
 		};
 
-		const queryModel = inject("queryModel");
 
 		return {
 			filtered,

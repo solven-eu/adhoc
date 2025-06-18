@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
@@ -70,10 +70,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 	}
 
 	@Override
-	public ICubeWrapper makeCube() {
+	public CubeWrapperBuilder makeCube() {
 		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine).build(), worldCupSchema, table(), forest)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
-				.build();
+				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build());
 	}
 
 	// count rows

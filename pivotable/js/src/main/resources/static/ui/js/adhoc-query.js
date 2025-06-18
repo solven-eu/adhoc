@@ -16,6 +16,8 @@ import { useRouter } from "vue-router";
 
 import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 
+import wizardHelper from "./adhoc-query-wizard-helper.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -73,30 +75,72 @@ export default {
 
 			onColumnToggled: function (column) {
 				const array = queryModel.selectedColumnsOrdered;
-				const index = array.indexOf(column);
+				
+				if (!column) {
+					// We lack knowledge about which columns has been toggled
+					for (const column of Object.keys(queryModel.selectedColumns)) {
+						const index = array.indexOf(column);
+						
+						let isChanged = false;
 
-				// May be missing on first toggle
-				const toggledIn = !!queryModel.selectedColumns[column];
-				if (toggledIn) {
-					if (index < 0) {
-						// Append the column
-						array.push(column);
-					} else {
-						console.warn("Adding a column already here?", column);
+						// May be missing on first toggle
+						const toggledIn = !!queryModel.selectedColumns[column];
+						if (toggledIn) {
+							if (index < 0) {
+								// Append the column
+								array.push(column);
+								isChanged = true;
+							}
+						} else {
+							// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+							// only splice array when item is found
+							if (index >= 0) {
+								// 2nd parameter means remove one item only
+								array.splice(index, 1);
+								isChanged = true;
+							}
+						}
+						if (isChanged) {
+							console.log(`groupBy: ${column} is now ${toggledIn}`);	
+						} else {
+							console.debug(`groupBy: ${column} is kept ${toggledIn}`);	
+						}
 					}
 				} else {
-					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-					// only splice array when item is found
-					if (index >= 0) {
-						// 2nd parameter means remove one item only
-						array.splice(index, 1);
+					const index = array.indexOf(column);
+	
+					// May be missing on first toggle
+					const toggledIn = !!queryModel.selectedColumns[column];
+					if (toggledIn) {
+						if (index < 0) {
+							// Append the column
+							array.push(column);
+						} else {
+							console.warn("Adding a column already here?", column);
+						}
 					} else {
-						console.warn("Removing a column already absent?", column);
+						// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+						// only splice array when item is found
+						if (index >= 0) {
+							// 2nd parameter means remove one item only
+							array.splice(index, 1);
+						} else {
+							console.warn("Removing a column already absent?", column);
+						}
 					}
+					console.log(`groupBy: ${column} is now ${toggledIn}`);
 				}
-				console.log(`groupBy: ${column} is now ${toggledIn}`);
 			},
 		});
+
+		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
+		watch(
+			() => queryModel.selectedColumns,
+			(newX) => {
+				queryModel.onColumnToggled();
+			},
+			{ deep: true },
+		);
 
 		const measuresDagModel = reactive({
 			main: "",
@@ -109,6 +153,11 @@ export default {
 		provide("measuresDagModel", measuresDagModel);
 
 		const tabularView = reactive({});
+		
+
+		const queried = function (arrayOrObject) {
+			return wizardHelper.queried(arrayOrObject);
+		};
 
 		const router = useRouter();
 		{
@@ -152,10 +201,10 @@ export default {
 				}
 				currentHashObject.query = {};
 				currentHashObject.query.columns = Object.values(newQueryModel.selectedColumnsOrdered);
-				currentHashObject.query.measures = Object.keys(newQueryModel.selectedMeasures).filter((measure) => newQueryModel.selectedMeasures[measure] === true);
+				currentHashObject.query.measures = queried(newQueryModel.selectedMeasures);
 				currentHashObject.query.filter = newQueryModel.filter || {};
 				currentHashObject.query.customMarkers = newQueryModel.customMarkers || {};
-				currentHashObject.query.options = newQueryModel.options || {};
+				currentHashObject.query.options = queried(newQueryModel.options) || {};
 
 				console.debug("Saving queryModel to hash", JSON.stringify(newQueryModel));
 

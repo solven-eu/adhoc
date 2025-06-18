@@ -80,7 +80,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = makeCube().execute(CubeQuery.builder().measure(dispatchedMeasure).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -92,7 +92,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 	@Test
 	public void testGrandTotal_filterSingleGroup() {
 		ITabularView output =
-				makeCube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d1", "a1").build());
+				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d1", "a1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -104,7 +104,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 	@Test
 	public void testGrandTotal_filterUnknownGroup() {
 		ITabularView output =
-				makeCube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d1", "unknown").build());
+				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d1", "unknown").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -113,7 +113,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 
 	@Test
 	public void testGrandTotal_filterTwoGroups() {
-		ITabularView output = makeCube()
+		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d1", Set.of("a1", "a2")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -125,7 +125,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 
 	@Test
 	public void testGrandTotal_filterTwoGroups_groupByOtherDuplicated() {
-		ITabularView output = makeCube().execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.andFilter("d1", Set.of("a1", "a2"))
 				.groupByAlso("d2")
@@ -142,7 +142,7 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 
 	@Test
 	public void testGrandTotal_filtercomplexOr() {
-		ITabularView output = makeCube().execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				// `l=A&d1=a1|l=B&d2=a2`
 				.filter(OrFilter.or(AndFilter.and(Map.of("l", "A", "d1", "a1")),

@@ -23,13 +23,20 @@ export default {
 			.map((e) => e[0]);
 	},
 
-	filtered: function (searchOptions, inputsAsObjectOrArray) {
+	filtered: function (searchOptions, inputsAsObjectOrArray, queryModel) {
 		const filtereditems = [];
 
 		const searchedValue = searchOptions.text;
 		const searchedValueLowerCase = searchedValue.toLowerCase();
 
 		for (const inputKey in inputsAsObjectOrArray) {
+			if (searchOptions.filterQueried && queryModel) {
+				// Show only if part if the query
+				if (JSON.stringify(queryModel).indexOf(inputKey) < 0) {
+					continue;
+				}
+			}
+			
 			let matchAllTags = true;
 			const inputElement = inputsAsObjectOrArray[inputKey];
 

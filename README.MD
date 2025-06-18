@@ -1,6 +1,6 @@
 # AdHoc - InMemory Indicators Pipeline
 
-[![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
+[![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
@@ -449,3 +449,9 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Columns filters should be written by default like `c==v` and not `{'type': 'column', ...}`
 - [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
 - [Pivotable] Enable browser-back to restore previous query.
+
+# Sponsors
+
+## Profilers
+
+Thanks [![EJ Technologies for kindly providing a JProfiler (their Java Profiler) OpenSource license](https://www.ej-technologies.com/images/product_banners/jprofiler_small.png)](https://www.ej-technologies.com/jprofiler).

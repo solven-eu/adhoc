@@ -38,6 +38,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
@@ -143,6 +146,16 @@ public class AdhocSchema implements IAdhocSchema {
 		return builder.build();
 	}
 
+	protected IMeasure enrichMeasure(String cube, IMeasure value) {
+		Set<String> additionalTags =
+				measureToTags.get(MeasureIdentifier.builder().cube(cube).measure(value.getName()).build());
+
+		if (additionalTags == null) {
+			return value;
+		}
+		return value.withTags(ImmutableSet.copyOf(Sets.union(value.getTags(), additionalTags)));
+	}
+
 	public void invalidateAll() {
 		cacheCubeToColumnToType.invalidateAll();
 	}
@@ -196,7 +209,11 @@ public class AdhocSchema implements IAdhocSchema {
 						}
 					}
 					cubeSchema.columns(columns);
-					cubeSchema.measures(cube.getNameToMeasure());
+					cubeSchema.measures(cube.getNameToMeasure()
+							.entrySet()
+							.stream()
+							.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
+									e -> enrichMeasure(cube.getName(), e.getValue()))));
 
 					Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
 

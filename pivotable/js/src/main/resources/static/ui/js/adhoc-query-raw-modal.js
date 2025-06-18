@@ -110,7 +110,7 @@ export default {
 
         <!-- Modal -->
         <div class="modal fade" id="queryJsonRaw" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-xl">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="exampleModalLabel">Query as JSON</h5>
@@ -118,13 +118,13 @@ export default {
                     </div>
                     <!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
                     <div class="modal-body">
-                        <div>
+                        <div class="vh-50">
                             <pre
-                                style="height: 10pc; overflow-y: scroll;"
-                                class="border text-start"
+                                class="border text-start h-100 w-100"
+                                style=" overflow-y: scroll;"
                                 v-if="isEditing"
-                            ><textarea style="width: 100%; height: 100%; box-sizing: border-box;" v-model="editedJson">ss</textarea></pre>
-                            <pre style="height: 10pc; overflow-y: scroll;" class="border text-start" v-else>{{queryJson}}</pre>
+                            ><textarea class="h-100 w-100 px-0 py-0 border-0" style="box-sizing: content-box;" v-model="editedJson">irrelevant</textarea></pre>
+                            <pre class="border text-start h-100 w-100" style="overflow-y: scroll;" v-else>{{queryJson}}</pre>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -134,7 +134,7 @@ export default {
                             <div v-if="errorWithJson.length >= 1">{{errorWithJson}}</div>
                         </span>
                         <span v-else>
-                            <button type="button" class="btn btn-primary" @click="toggleEdit">Edit</button>
+                            <button type="button" class="btn btn-primary" @click="toggleEdit">Edit JSON</button>
                         </span>
 
                         <button type="button" class="btn btn-light" @click="copyToClipboard"><i class="bi bi-clipboard"></i>{{copyToClipboardStatus}}</button>

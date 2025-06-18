@@ -213,7 +213,7 @@ export default {
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
 			// Do not allow re-ordering until it is compatible with rowSpans
-			enableColumnReorder: false,
+			enableColumnReorder: true,
 			enableAutoSizeColumns: true,
 			// https://github.com/6pac/SlickGrid/wiki/Auto-Column-Sizing
 			// autosizeColsMode: "?"
@@ -332,6 +332,35 @@ export default {
 					// preferred method but can be very slow in IE with huge datasets
 					dataView.sort(comparer, args.sortAsc);
 
+					// Drop the rowSpans until we know how to compute them properly given sortOrders
+					// BEWARE It is ugly, but it shows correct figures.
+					const metadata = {};
+					dataView.getItemMetadata = (row) => {
+						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+					};
+
+					// https://github.com/6pac/SlickGrid/issues/1114
+					grid.remapAllColumnsRowSpan();
+
+					grid.invalidateAllRows();
+					grid.render();
+				});
+			}
+			
+			{
+				grid.onColumnsReordered.subscribe(function(e, args) {
+					console.log("reOrdered columns:", grid.getColumns());
+					
+					// Drop the rowSpans until we know how to compute them properly given reorderedColumns
+					// BEWARE It is ugly, but it shows correct figures.
+					const metadata = {};
+					dataView.getItemMetadata = (row) => {
+						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+					};
+
+					// https://github.com/6pac/SlickGrid/issues/1114
+					grid.remapAllColumnsRowSpan();
+					
 					grid.invalidateAllRows();
 					grid.render();
 				});
