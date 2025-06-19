@@ -41,7 +41,7 @@ import lombok.Value;
 public class ShiftedValueMatcher implements IValueMatcher {
 
 	IValueMatcher originalMatcher;
-	Function<Object, ?> shift;
+	Function<Object, ?> shifter;
 
 	@Override
 	public boolean match(Object value) {
@@ -54,7 +54,7 @@ public class ShiftedValueMatcher implements IValueMatcher {
 		if (originalMatcher instanceof EqualsMatcher equalsMatcher) {
 			return EqualsMatcher.isEqualTo(shift.apply(equalsMatcher.getOperand()));
 		} else {
-			return ShiftedValueMatcher.builder().originalMatcher(originalMatcher).shift(shift).build();
+			return ShiftedValueMatcher.builder().originalMatcher(originalMatcher).shifter(shift).build();
 		}
 	}
 }

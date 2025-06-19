@@ -36,19 +36,19 @@ public class TestEventScoreCombination {
 
 	@Test
 	public void testScore() {
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 1L)))
-				.isEqualTo(4L);
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 2L)))
-				.isEqualTo(1L);
+		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 1L, 1L)))
+				.isEqualTo(4.0D);
+		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 2L, 1L)))
+				.isEqualTo(1.0D);
 
 	}
 
 	@Test
 	public void testScore_null() {
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, null)))
-				.isEqualTo(5L);
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(null, 2L)))
-				.isEqualTo(-4L);
+		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, null, 1L)))
+				.isEqualTo(5.0D);
+		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(null, 2L, 1L)))
+				.isEqualTo(-4.0D);
 
 	}
 }

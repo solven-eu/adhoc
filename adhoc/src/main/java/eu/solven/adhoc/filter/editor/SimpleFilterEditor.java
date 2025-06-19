@@ -65,7 +65,8 @@ public class SimpleFilterEditor implements IFilterEditor {
 		return edited.get();
 	}
 
-	private static enum FilterMode {
+	@SuppressWarnings("PMD.FieldNamingConventions")
+	private enum FilterMode {
 		// Impact column filter on the considered column, else do nothing.
 		// Accept a `Function`, as there is always a value to shift
 		shiftIfPresent,

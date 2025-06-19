@@ -137,14 +137,17 @@ public class WorldCupPlayersSchema {
 			measures.add(Shiftor.builder()
 					.name(measure + ".Y-1")
 					.editorKey(SimpleFilterEditor.KEY)
-					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED,
-							Map.of("year",
-									(Function<Object, Object>) t -> t instanceof Number n ? n.longValue() - 4 : t)))
+					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("year", shitYearFunction())))
 					.underlying(measure)
 					.build());
 		});
 
 		return MeasureForest.fromMeasures(forestName, measures);
+	}
+
+	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals", "checkstyle:MagicNumber" })
+	protected Function<Object, Object> shitYearFunction() {
+		return t -> t instanceof Number n ? n.longValue() - 4 : t;
 	}
 
 	public ITableWrapper getTable(String tableName) {

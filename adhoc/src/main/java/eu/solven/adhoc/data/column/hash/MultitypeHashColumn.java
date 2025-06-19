@@ -207,23 +207,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public void onValue(T key, IValueReceiver consumer) {
-		if (measureToAggregateL.containsKey(key)) {
-			consumer.onLong(measureToAggregateL.getLong(key));
-		} else if (measureToAggregateD.containsKey(key)) {
-			consumer.onDouble(measureToAggregateD.getDouble(key));
-		} else {
-			// BEWARE if the key is unknown, the call is done with null
-			Object value = measureToAggregateO.get(key);
-			// if (value == null) {
-			// consumer.onNull();
-			// } else {
-			consumer.onObject(value);
-			// }
-		}
-	}
-
-	@Override
 	public IValueProvider onValue(T key) {
 		if (measureToAggregateL.containsKey(key)) {
 			return vc -> vc.onLong(measureToAggregateL.getLong(key));
@@ -337,7 +320,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		AtomicInteger index = new AtomicInteger();
 		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
-			onValue(key, o -> {
+			onValue(key).acceptReceiver(o -> {
 				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
 			});
 		});

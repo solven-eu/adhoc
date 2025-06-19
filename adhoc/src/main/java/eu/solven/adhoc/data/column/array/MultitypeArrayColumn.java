@@ -199,20 +199,6 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	}
 
 	@Override
-	public void onValue(T key, IValueReceiver consumer) {
-		int keyAsInt = key.intValue();
-		if (measureToAggregateL.containsIndex(keyAsInt)) {
-			consumer.onLong(measureToAggregateL.getLong(keyAsInt));
-		} else if (measureToAggregateD.containsIndex(keyAsInt)) {
-			consumer.onDouble(measureToAggregateD.getDouble(keyAsInt));
-		} else {
-			// BEWARE if the key is unknown, the call is done with null
-			Object value = measureToAggregateO.get(keyAsInt);
-			consumer.onObject(value);
-		}
-	}
-
-	@Override
 	public IValueProvider onValue(T key) {
 		int keyAsInt = key.intValue();
 		if (measureToAggregateL.containsIndex(keyAsInt)) {
@@ -338,9 +324,8 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		AtomicInteger index = new AtomicInteger();
 		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
-			onValue(key, o -> {
-				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
-			});
+			onValue(key).acceptReceiver(o -> toStringHelper.add("#" + index.getAndIncrement() + "-" + key,
+					PepperLogHelper.getObjectAndClass(o)));
 		});
 
 		return toStringHelper.toString();

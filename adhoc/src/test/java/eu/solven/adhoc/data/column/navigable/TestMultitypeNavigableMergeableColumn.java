@@ -60,7 +60,7 @@ public class TestMultitypeNavigableMergeableColumn {
 
 			combination.forEach(consumer -> consumer.accept(column));
 
-			column.onValue("k1", o -> {
+			column.onValue("k1").acceptReceiver(o -> {
 				Assertions.assertThat((Double) o)
 						.isCloseTo(123 + 234 + 12.34D + 23.45D, Percentage.withPercentage(0.001));
 			});

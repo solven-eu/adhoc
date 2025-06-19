@@ -54,6 +54,7 @@ public class EventsScoreCombination implements ICombination {
 		}
 
 		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN);
+				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN)
+				.doubleValue();
 	}
 }
