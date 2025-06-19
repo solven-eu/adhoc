@@ -213,7 +213,7 @@ export default {
 		// https://github.com/6pac/SlickGrid/wiki/Grid-Options
 		let options = {
 			// Do not allow re-ordering until it is compatible with rowSpans
-			enableColumnReorder: false,
+			enableColumnReorder: true,
 			enableAutoSizeColumns: true,
 			// https://github.com/6pac/SlickGrid/wiki/Auto-Column-Sizing
 			// autosizeColsMode: "?"
@@ -331,6 +331,35 @@ export default {
 					// using native sort with comparer
 					// preferred method but can be very slow in IE with huge datasets
 					dataView.sort(comparer, args.sortAsc);
+
+					// Drop the rowSpans until we know how to compute them properly given sortOrders
+					// BEWARE It is ugly, but it shows correct figures.
+					const metadata = {};
+					dataView.getItemMetadata = (row) => {
+						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+					};
+
+					// https://github.com/6pac/SlickGrid/issues/1114
+					grid.remapAllColumnsRowSpan();
+
+					grid.invalidateAllRows();
+					grid.render();
+				});
+			}
+
+			{
+				grid.onColumnsReordered.subscribe(function (e, args) {
+					console.log("reOrdered columns:", grid.getColumns());
+
+					// Drop the rowSpans until we know how to compute them properly given reorderedColumns
+					// BEWARE It is ugly, but it shows correct figures.
+					const metadata = {};
+					dataView.getItemMetadata = (row) => {
+						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+					};
+
+					// https://github.com/6pac/SlickGrid/issues/1114
+					grid.remapAllColumnsRowSpan();
 
 					grid.invalidateAllRows();
 					grid.render();
@@ -456,18 +485,25 @@ export default {
             <div>
                 <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
             </div>
-            <div :id="domId" style="width:100%;" class="vh-75"></div>
-            <div
-                class="progress"
-                role="progressbar"
-                aria-label="Animated striped example"
-                :aria-valuenow="loadingPercent()"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                v-if="isLoading()"
-            >
-                <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">{{loadingMessage()}}</div>
-            </div>
+            <span style="width:100%;" class="position-relative">
+                <div :id="domId" class="vh-75"></div>
+
+                <div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
+                    <div
+                        class="progress"
+                        role="progressbar"
+                        aria-label="Animated striped example"
+                        :aria-valuenow="loadingPercent()"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        v-if="isLoading()"
+                    >
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
+                            {{loadingMessage()}}
+                        </div>
+                    </div>
+                </div>
+            </span>
             <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
             <div>props.tabularView.timing={{tabularView.timing}}</div>
             <AdhocGridExportCsv :array="data.array" />

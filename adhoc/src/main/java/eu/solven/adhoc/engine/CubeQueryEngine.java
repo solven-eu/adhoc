@@ -404,7 +404,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			queryStepsDag.registerExecutionFeedback(queryStep,
 					SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-			queryStepToValues.put(queryStep, outputColumn);
+			if (null != queryStepToValues.put(queryStep, outputColumn)) {
+				throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
+			}
 		});
 	}
 
@@ -414,7 +416,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
 			// This may happen on a Columnator which is missing a required column
-			return Optional.empty();
+			return Optional.of(SliceToValue.empty());
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
 				ISliceToValue values = queryStepToValues.get(underlyingStep);
@@ -423,14 +425,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
 						return SliceToValue.empty();
 					} else {
-						throw new IllegalStateException("The DAG missed values for step=%s".formatted(underlyingStep));
+						throw new IllegalStateException(
+								"queryStep=%s is missing underlyingStep=%s".formatted(queryStep, underlyingStep));
 					}
 				}
 
 				return values;
 			}).toList();
 
-			// BEWARE It looks weird we have to call again `.wrapNode`
+			// BEWARE The need to call again `.wrapNode` looks weird
 			ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
 
 			ISliceToValue coordinatesToValues;

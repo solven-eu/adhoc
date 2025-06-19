@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,14 +44,14 @@ public class CoalesceAggregation implements IAggregation {
 	/**
 	 * If true, equality is based on the reference, not on `.equals`. Default is false.
 	 */
-	boolean equalIfSame;
+	boolean matchReferences;
 	/**
 	 * If true, `.aggregate` would fail if receiving different objects.
 	 */
 	boolean failIfDifferent;
 
 	public CoalesceAggregation(Map<String, ?> options) {
-		equalIfSame = MapPathGet.<Boolean>getOptionalAs(options, "equalIfSame").orElse(false);
+		matchReferences = MapPathGet.<Boolean>getOptionalAs(options, "matchReferences").orElse(false);
 		failIfDifferent = MapPathGet.<Boolean>getOptionalAs(options, "failIfDifferent").orElse(false);
 	}
 
@@ -60,15 +61,16 @@ public class CoalesceAggregation implements IAggregation {
 			return r;
 		} else if (r == null) {
 			return l;
-		} else if (areSame(l, r)) {
+		} else if (areSimilar(l, r)) {
 			return l;
 		} else if (failIfDifferent) {
-			if (Objects.equals(l, r) && equalIfSame) {
+			if (Objects.equals(l, r) && matchReferences) {
 				// Show identityHashCode if equals but rejected for different ref
 				throw new IllegalArgumentException(
-						"%s != %s (%s)".formatted(System.identityHashCode(l), System.identityHashCode(r), l));
+						"%s != %s (%s)".formatted(Objects.toIdentityString(l), Objects.toIdentityString(r), l));
 			} else {
-				throw new IllegalArgumentException("%s != %s".formatted(l, r));
+				throw new IllegalArgumentException("%s != %s".formatted(PepperLogHelper.getObjectAndClass(l),
+						PepperLogHelper.getObjectAndClass(r)));
 			}
 		} else {
 			// Give priority to left/first object
@@ -77,8 +79,8 @@ public class CoalesceAggregation implements IAggregation {
 	}
 
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected boolean areSame(Object l, Object r) {
-		if (equalIfSame) {
+	protected boolean areSimilar(Object l, Object r) {
+		if (matchReferences) {
 			return l == r;
 		} else {
 			return Objects.equals(l, r);

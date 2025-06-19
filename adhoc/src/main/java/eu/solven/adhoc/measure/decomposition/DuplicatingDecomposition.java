@@ -58,6 +58,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class DuplicatingDecomposition implements IDecomposition {
+	public static final String K_COLUMN_TO_COORDINATES = "columnToCoordinates";
+
 	@Singular
 	@NonNull
 	Map<String, Collection<?>> columnToCoordinates;
@@ -74,7 +76,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	});
 
 	public DuplicatingDecomposition(Map<String, ?> options) {
-		columnToCoordinates = MapPathGet.getRequiredMap(options, "columnToCoordinates");
+		columnToCoordinates = MapPathGet.getRequiredMap(options, K_COLUMN_TO_COORDINATES);
 	}
 
 	protected Set<String> getDuplicatedColumns() {

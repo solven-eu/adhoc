@@ -45,11 +45,13 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class AggregationCombination implements ICombination {
+	public static final String K_AGGREGATION_KEY = "aggregationKey";
+	public static final String K_AGGREGATION_OPTIONS = "aggregationOptions";
 
 	static final boolean DEFAULT_CUSTOM_IF_ANY_NULL = false;
 
 	@Deprecated(
-			since = "Unclear API. Should we rather on an IAggregation with a special behavior on null? (Which looks very bad)")
+			since = "Unclear API. Should we rather use an IAggregation with a special behavior on null? (Which looks very bad)")
 	public static final String K_CUSTOM_IF_ANY_NULL_OPERAND = "customIfAnyNullOperand";
 
 	final IAggregation agg;
@@ -59,11 +61,12 @@ public class AggregationCombination implements ICombination {
 	final boolean customIfAnyNullOperand;
 
 	public AggregationCombination(Map<String, ?> options) {
-		IOperatorFactory operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, "aggregationKey")
-				.orElseGet(() -> new StandardOperatorFactory());
+		IOperatorFactory operatorFactory =
+				MapPathGet.<IOperatorFactory>getOptionalAs(options, StandardOperatorFactory.K_OPERATOR_FACTORY)
+						.orElseGet(() -> new StandardOperatorFactory());
 
-		Optional<Map<String, ?>> optAggregationOptions = MapPathGet.getOptionalAs(options, "aggregationOptions");
-		String aggregationKey = MapPathGet.getRequiredString(options, "aggregationKey");
+		Optional<Map<String, ?>> optAggregationOptions = MapPathGet.getOptionalAs(options, K_AGGREGATION_OPTIONS);
+		String aggregationKey = MapPathGet.getRequiredString(options, K_AGGREGATION_KEY);
 		agg = operatorFactory.makeAggregation(aggregationKey, optAggregationOptions.orElse(Map.of()));
 
 		customIfAnyNullOperand = MapPathGet.<Boolean>getOptionalAs(options, K_CUSTOM_IF_ANY_NULL_OPERAND)

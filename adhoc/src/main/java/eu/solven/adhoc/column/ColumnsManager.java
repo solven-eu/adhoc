@@ -119,11 +119,6 @@ public class ColumnsManager implements IColumnsManager {
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
-	public String transcodeToTable(String cubeColumn) {
-		return transcoder.underlyingNonNull(cubeColumn);
-	}
-
-	@Override
 	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
@@ -305,7 +300,8 @@ public class ColumnsManager implements IColumnsManager {
 		return row.transcode(valueTranscoder);
 	}
 
-	protected TranscodingContext openTranscodingContext() {
+	@Override
+	public TranscodingContext openTranscodingContext() {
 		return TranscodingContext.builder().transcoder(getTranscoder()).build();
 	}
 

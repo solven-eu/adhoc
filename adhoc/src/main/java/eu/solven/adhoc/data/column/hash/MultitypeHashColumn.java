@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
@@ -66,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
+public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, ICompactable {
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
 	// We do not try aggregating same type together, for a final cross-type aggregation. This could be done in a
@@ -100,15 +101,15 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof Object2LongOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof Object2DoubleOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof Object2ObjectOpenHashMap<?, ?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		}
 	}
@@ -203,23 +204,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		measureToAggregateL.removeLong(key);
 		measureToAggregateD.removeDouble(key);
 		measureToAggregateO.remove(key);
-	}
-
-	@Override
-	public void onValue(T key, IValueReceiver consumer) {
-		if (measureToAggregateL.containsKey(key)) {
-			consumer.onLong(measureToAggregateL.getLong(key));
-		} else if (measureToAggregateD.containsKey(key)) {
-			consumer.onDouble(measureToAggregateD.getDouble(key));
-		} else {
-			// BEWARE if the key is unknown, the call is done with null
-			Object value = measureToAggregateO.get(key);
-			// if (value == null) {
-			// consumer.onNull();
-			// } else {
-			consumer.onObject(value);
-			// }
-		}
 	}
 
 	@Override
@@ -336,7 +320,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 		AtomicInteger index = new AtomicInteger();
 		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
-			onValue(key, o -> {
+			onValue(key).acceptReceiver(o -> {
 				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
 			});
 		});
@@ -394,5 +378,19 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T> {
 
 		// Remove in a later pass, as it is generally unsafe to remove while iterating
 		measureToAggregateO.values().removeIf(e -> e instanceof IAggregationCarrier);
+	}
+
+	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
+	public void compact() {
+		if (measureToAggregateL instanceof Object2LongOpenHashMap hashMap) {
+			hashMap.trim();
+		}
+		if (measureToAggregateD instanceof Object2DoubleOpenHashMap hashMap) {
+			hashMap.trim();
+		}
+		if (measureToAggregateO instanceof Object2ObjectOpenHashMap hashMap) {
+			hashMap.trim();
+		}
 	}
 }

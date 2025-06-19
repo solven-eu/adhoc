@@ -80,9 +80,14 @@ export default {
             <span v-else-if="measure.type == '.Dispatchor'">
                 <small v-html="'dispatching by ' + mark(measure.decompositionKey + '(' + measure.underlying + ')')" />
             </span>
-            <span v-else-if="measure.type == '.Filtrator'">
-                <small v-html="'filtering ' + mark(measure.filter + '(' + measure.underlying + ')')" />
-            </span>
+            <small v-else-if="measure.type == '.Filtrator'">
+                <ul>
+                    <li>underlying: <span v-html="mark(measure.underlying)"></span></li>
+                    <li>key: <span v-html="mark(measure.key)"></span></li>
+                    <li>tags: <span v-html="mark(measure.tags)"></span></li>
+                    <li>filter: <span v-html="mark(measure.filter)"></span></li>
+                </ul>
+            </small>
             <small v-else>
                 <ul>
                     <li v-for="(value, key) in filteredEntry(measure)">{{key}}: <span v-html="mark(value)"></span></li>

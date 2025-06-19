@@ -56,7 +56,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 		return new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
-				onValue(key, new IValueReceiver() {
+				onValue(key).acceptReceiver(new IValueReceiver() {
 					@Override
 					public void onLong(long existingAggregate) {
 						if (aggregation instanceof ILongAggregation longAggregation) {
@@ -115,7 +115,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 
 			@Override
 			public void onDouble(double v) {
-				onValue(key, new IValueReceiver() {
+				onValue(key).acceptReceiver(new IValueReceiver() {
 					@Override
 					public void onDouble(double existingAggregate) {
 						if (aggregation instanceof IDoubleAggregation doubleAggregation) {

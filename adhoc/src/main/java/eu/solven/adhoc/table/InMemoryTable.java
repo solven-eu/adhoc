@@ -24,12 +24,13 @@ package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -48,6 +50,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -87,6 +90,10 @@ public class InMemoryTable implements ITableWrapper {
 	@Default
 	boolean throwOnUnknownColumn = true;
 
+	// This is useful to collect in one go all columns expected by a forest
+	@Getter
+	final Set<String> unknownColumns = new ConcurrentSkipListSet<>();
+
 	public static InMemoryTable newInstance(Map<String, ?> options) {
 		return InMemoryTable.builder().build();
 	}
@@ -115,18 +122,32 @@ public class InMemoryTable implements ITableWrapper {
 				.anyMatch(a -> filteredColumns.contains(a.getName()))) {
 			// This may be lifted when InMemoryTable aggregates slices instead of returning rows
 			// e.g. `SELECT c, SUM(k) AS k WHERE k >= 100`
-			throw new IllegalArgumentException("InMemoryTable can not filter a measure");
+			throw new IllegalArgumentException(
+					"InMemoryTable can not filter a measure. query=%s".formatted(tableQuery));
 		}
+
+		Set<String> tableColumns = getColumnTypes().keySet();
+		checkKnownColumns(tableColumns, filteredColumns, "filtered");
 
 		Set<String> aggregateColumns = tableQuery.getAggregators()
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
+				.map(this::clearColumnName)
 				.collect(Collectors.toSet());
+		{
+			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
+					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))
+					.filter(s -> !ICountMeasuresConstants.ASTERISK.equals(s))
+					.collect(ImmutableSet.toImmutableSet());
+
+			checkKnownColumns(tableColumns, aggregateColumnsFromTable, "aggregated");
+		}
 
 		boolean isEmptyAggregation =
 				tableQuery.getAggregators().isEmpty() || EmptyAggregation.isEmpty(tableQuery.getAggregators());
 
-		Set<String> groupByColumns = getGroupByColumns(tableQuery, filteredColumns);
+		Set<String> groupByColumns = getGroupByColumns(tableQuery);
+		checkKnownColumns(tableColumns, groupByColumns, "groupBy");
 
 		int nbKeys =
 				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
@@ -180,32 +201,51 @@ public class InMemoryTable implements ITableWrapper {
 		});
 	}
 
-	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery, Set<String> filteredColumns) {
-		Set<String> groupByColumns = new HashSet<>(tableQuery.getGroupBy().getGroupedByColumns());
+	/**
+	 * 
+	 * @param column
+	 *            a column name, potentially wrapped with `"`.
+	 * @return a clear columnName
+	 */
+	protected String clearColumnName(String column) {
+		if (column.matches("\"[^\"]+\"")) {
+			// columns is wrapped in double quotes, typically due to having a dot
+			// e.g. `"some.column"` is not a joined column but a base column with a `.` in its name.
+			return column.substring(1, column.length() - 1);
+		} else {
+			return column;
+		}
+	}
 
-		{
-			Set<String> tableColumns = getColumnTypes().keySet();
-			Set<String> unknownFilteredColumns = Sets.difference(filteredColumns, tableColumns);
-			if (!unknownFilteredColumns.isEmpty()) {
-				if (throwOnUnknownColumn) {
-					throw new IllegalArgumentException(
-							"Unknown filtered columns: %s".formatted(unknownFilteredColumns));
-				} else {
-					log.warn("Unknown filtered columns: %s".formatted(unknownFilteredColumns));
-				}
-			}
+	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery) {
+		return tableQuery.getGroupBy()
+				.getGroupedByColumns()
+				.stream()
+				.map(this::clearColumnName)
+				.collect(Collectors.toCollection(TreeSet::new));
+	}
 
-			Set<String> unknownGroupedByColumns = Sets.difference(groupByColumns, tableColumns);
-			if (!unknownGroupedByColumns.isEmpty()) {
-				if (throwOnUnknownColumn) {
-					throw new IllegalArgumentException(
-							"Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
-				} else {
-					log.warn("Unknown groupedBy columns: %s".formatted(unknownGroupedByColumns));
-				}
+	/**
+	 * 
+	 * @param tableColumns
+	 *            all columns known by this table, given rows
+	 * @param queriedColumns
+	 *            columns requested the the {@link TableQueryV2}
+	 * @param columnUse
+	 *            some type to be referred in logs
+	 */
+	protected void checkKnownColumns(Set<String> tableColumns, Set<String> queriedColumns, String columnUse) {
+		Set<String> unknownQueriedColumns = Sets.difference(queriedColumns, tableColumns);
+		if (!unknownQueriedColumns.isEmpty()) {
+			unknownColumns.addAll(unknownQueriedColumns);
+
+			String msg = "Unknown %s columns: %s".formatted(columnUse, unknownQueriedColumns);
+			if (throwOnUnknownColumn) {
+				throw new IllegalArgumentException(msg);
+			} else {
+				log.warn(msg);
 			}
 		}
-		return groupByColumns;
 	}
 
 	protected ITabularRecord toRecord(TableQueryV2 tableQuery,

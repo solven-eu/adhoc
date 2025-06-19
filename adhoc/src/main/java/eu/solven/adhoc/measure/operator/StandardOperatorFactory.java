@@ -65,6 +65,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StandardOperatorFactory implements IOperatorFactory {
 
+	public static final String K_OPERATOR_FACTORY = "operatorFactory";
+
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
 		return switch (key) {
@@ -141,7 +143,7 @@ public class StandardOperatorFactory implements IOperatorFactory {
 		Map<String, Object> enriched = new LinkedHashMap<>(options);
 
 		// Some operators needs to create more operators (e.g. ReversePolishCombination)
-		enriched.put("operatorFactory", this);
+		enriched.put(K_OPERATOR_FACTORY, this);
 
 		return enriched;
 	}

@@ -20,41 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.example.worldcup;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
-
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
+package eu.solven.adhoc.data.column;
 
 /**
- * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
- * disastrous.
+ * Used for data structure which can be compacted. Typically useful when all write operations are done, and we want to
+ * minimize memory consumption.
  * 
  * @author Benoit Lacelle
  */
-public class EventsScoreCombination implements ICombination {
-	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Long nbGoals = (Long) underlyingValues.get(0);
-		if (nbGoals == null) {
-			nbGoals = 0L;
-		}
-
-		Long nbRedcards = (Long) underlyingValues.get(1);
-		if (nbRedcards == null) {
-			nbRedcards = 0L;
-		}
-
-		Long nbMatch = (Long) underlyingValues.get(2);
-		if (nbMatch == null) {
-			throw new IllegalStateException("Can not have a goal or redcard event without a match");
-		}
-
-		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN)
-				.doubleValue();
-	}
+@FunctionalInterface
+public interface ICompactable {
+	void compact();
 }

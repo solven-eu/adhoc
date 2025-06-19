@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.base.Strings;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -130,14 +131,11 @@ public class AdhocUnsafe {
 
 	private static int parallelism;
 
+	/**
+	 * Used as default capacity when allocating chunks of data.
+	 */
+	@Setter
 	private static int defaultColumnCapacity;
-
-	// Adhoc is currently case-sensitive
-	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive
-	// https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html#case-sensitivity-of-identifiers
-	// Some of them can be turned caseSensitive (RedShift)
-	// https://docs.aws.amazon.com/redshift/latest/dg/r_enable_case_sensitive_identifier.html
-	private static boolean caseSensitive = true;
 
 	/**
 	 * Used for unitTests
@@ -204,7 +202,7 @@ public class AdhocUnsafe {
 	 * 
 	 * @return the default capacity for structured.
 	 */
-	public static int defaultCapacity() {
+	public static int getDefaultColumnCapacity() {
 		if (defaultColumnCapacity >= 0) {
 			// the default capacity is capped by the limit over columnLength
 			return Math.min(limitColumnSize, defaultColumnCapacity);
@@ -227,10 +225,5 @@ public class AdhocUnsafe {
 			log.info("Switching failfast=false");
 			failFast = false;
 		}
-	}
-
-	@Deprecated(since = "Unclear API")
-	public static boolean isCaseSensitive() {
-		return caseSensitive;
 	}
 }

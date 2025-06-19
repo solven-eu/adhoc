@@ -56,16 +56,19 @@ public class TestCubeQuery_InMemory extends ADagTest implements IAdhocTestConsta
 	// TODO This is a case for SQL `USING`
 	@Test
 	public void testFilterOnAggregates_measureNameIsNotColumnName() {
-		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
-				.measure("k1.sum")
-				.andFilter("k1.sum",
-						ComparingMatcher.builder()
-								.greaterThan(true)
-								.matchIfEqual(false)
-								.matchIfNull(false)
-								.operand(10)
-								.build())
-				.build())).hasRootCauseMessage("InMemoryTable can not filter a measure");
+		Assertions
+				.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
+						.measure("k1.sum")
+						.andFilter("k1.sum",
+								ComparingMatcher.builder()
+										.greaterThan(true)
+										.matchIfEqual(false)
+										.matchIfNull(false)
+										.operand(10)
+										.build())
+						.build()))
+				.hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("InMemoryTable can not filter a measure");
 	}
 
 	@Test

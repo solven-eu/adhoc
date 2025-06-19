@@ -173,4 +173,17 @@ public class TestMultitypeArrayColumn {
 
 		Assertions.assertThat(column.stream(i -> o -> o).toList()).containsExactly(123L, "foo");
 	}
+
+	@Test
+	public void testCompact() {
+		// Compact while empty
+		column.compact();
+
+		column.append(1).onObject("foo");
+		column.append(2).onLong(123);
+		column.append(3).onDouble(12.34D);
+
+		// Compact while non-empty
+		column.compact();
+	}
 }

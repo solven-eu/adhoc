@@ -94,23 +94,24 @@ public class DuckDbHelper {
 	}
 
 	/**
-	 * One should prefer relying on a pooling mecanisms, like HikariCP, to avoid the overhead of creating/duplicating a
+	 * One should prefer relying on a connection-pool, like HikariCP, to avoid the overhead of creating/duplicating a
 	 * new connection each time.
 	 *
 	 * @param duckDbConnection
 	 * @return
 	 */
-	@Deprecated(since = "Inefficient to duplicate the connection for each query")
 	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
-		return () -> {
+		ThreadLocal<Connection> threadLocal = ThreadLocal.withInitial(() -> {
 			Connection duplicated;
 			try {
 				duplicated = duckDbConnection.duplicate();
 			} catch (SQLException e) {
 				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
 			}
-			return DSLSupplier.fromConnection(() -> duplicated).getDSLContext();
-		};
+			return duplicated;
+		});
+
+		return () -> DSLSupplier.fromConnection(threadLocal::get).getDSLContext();
 	}
 
 	public static CoordinatesSample getCoordinates(JooqTableWrapper table,

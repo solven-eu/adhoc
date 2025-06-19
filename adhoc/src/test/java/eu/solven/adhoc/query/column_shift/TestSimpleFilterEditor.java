@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.column_shift;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,8 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.MoreFilterHelpers;
+import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestSimpleFilterEditor {
 	@Test
@@ -59,9 +62,38 @@ public class TestSimpleFilterEditor {
 	}
 
 	@Test
-	public void testShiftAnd() {
+	public void testShift_And() {
 		IAdhocFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "c2"))
 				.isEqualTo(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c2")));
+	}
+
+	@Test
+	public void testShift_Or() {
+		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "b", "b2"))
+				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b2")), AndFilter.and(Map.of("b", "b2"))));
+	}
+
+	@Test
+	public void testShiftIfPresent_Or() {
+		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "b", "b2"))
+				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b2"))));
+	}
+
+	@Test
+	public void testShiftIfPresent_Or_function() {
+		Function<Object, Object> shiftPreviousYear =
+				rawYear -> rawYear instanceof Number year ? year.longValue() - 1 : rawYear;
+
+		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", 123));
+		IAdhocFilter shiftedFilter = SimpleFilterEditor.shiftIfPresent(filter, "b", shiftPreviousYear);
+		Assertions.assertThat(shiftedFilter).isInstanceOf(OrFilter.class);
+
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("a", "a1"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 123))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 122))).isTrue();
 	}
 }

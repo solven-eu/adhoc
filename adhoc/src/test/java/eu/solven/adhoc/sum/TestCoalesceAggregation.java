@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
-public class TestCoalesce {
+public class TestCoalesceAggregation {
 
 	@Test
 	public void testSimple() {
@@ -58,6 +58,49 @@ public class TestCoalesce {
 		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
 
 		Assertions.assertThatThrownBy(() -> a.aggregate(123, 234)).isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> a.aggregate("foo", 234)).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testByRef() {
+		CoalesceAggregation a = new CoalesceAggregation(Map.of("matchReferences", true));
+
+		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
+		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
+		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+
+		// Small integers objects are cached
+		Assertions.assertThat(a.aggregate(123, 123)).isEqualTo(123);
+		// But not large ones
+		Assertions.assertThat(a.aggregate(Integer.MAX_VALUE, Integer.MAX_VALUE)).isEqualTo(Integer.MAX_VALUE);
+
+		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
+
+		Assertions.assertThat(a.aggregate(123, 234)).isEqualTo(123);
+		Assertions.assertThat(a.aggregate("foo", 234)).isEqualTo("foo");
+	}
+
+	@Test
+	public void testByRef_failIfDifferent() {
+		CoalesceAggregation a = new CoalesceAggregation(Map.of("matchReferences", true, "failIfDifferent", true));
+
+		Assertions.assertThat(a.aggregate((Object) null, null)).isEqualTo(null);
+		Assertions.assertThat(a.aggregate(null, 1.2D)).isEqualTo(1.2D);
+		Assertions.assertThat(a.aggregate(1.2D, null)).isEqualTo(1.2D);
+
+		// Small integers objects are cached
+		Assertions.assertThat(a.aggregate(123, 123)).isEqualTo(123);
+		// But not large ones
+		Assertions.assertThatThrownBy(() -> a.aggregate(Integer.MAX_VALUE, Integer.MAX_VALUE))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasStackTraceContaining("java.lang.Integer@");
+
+		// Did the compiler ensured these 2 strings have same ref?
+		Assertions.assertThat(a.aggregate("foo", "foo")).isEqualTo("foo");
+
+		Assertions.assertThatThrownBy(() -> a.aggregate(123, 234))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("123(java.lang.Integer) != 234(java.lang.Integer)");
 		Assertions.assertThatThrownBy(() -> a.aggregate("foo", 234)).isInstanceOf(IllegalArgumentException.class);
 	}
 }

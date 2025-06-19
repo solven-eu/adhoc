@@ -1,6 +1,6 @@
 # AdHoc - InMemory Indicators Pipeline
 
-[![Maven Central](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)](https://maven-badges.sml.io/sonatype-central/eu.solven.adhoc/adhoc/badge.svg)
+![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
@@ -439,13 +439,19 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
-- [Feature] Improve connection pooling in JooQ examples.
 - [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
 - [Feature] Record statistics about used measures in storage, for easier re-use.
 - [Feature] Ability in `GroupBy` to add an `ALL` coordinate, referring to the grandTotal. It would help emulating pivot-tables.
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
-- [Pivotable] Enable selection of `tag` without browsing measures (important when there are many measures)
-- [Pivotable] Show selected options as tag, even when carousel is shrinked.
 - [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).
 - [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
 - [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
+- [Pivotable] Columns filters should be written by default like `c==v` and not `{'type': 'column', ...}`
+- [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
+- [Pivotable] Enable browser-back to restore previous query.
+
+# Sponsors
+
+## Profilers
+
+Thanks [![EJ Technologies for kindly providing a JProfiler (their Java Profiler) OpenSource license](https://www.ej-technologies.com/images/product_banners/jprofiler_small.png)](https://www.ej-technologies.com/jprofiler).

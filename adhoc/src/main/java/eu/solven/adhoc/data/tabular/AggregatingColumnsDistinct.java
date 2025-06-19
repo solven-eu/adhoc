@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -65,14 +64,11 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// aggregators).
 	@NonNull
 	@Default
-	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.defaultCapacity());
+	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.getDefaultColumnCapacity());
 
 	@NonNull
 	@Default
 	Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
-
-	// Compute only was the sorted version of slicesToIndex. This is re-used by each column
-	private final AtomicReference<List<Object2IntMap.Entry<T>>> refSortedSliceToIndex = new AtomicReference<>();
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice

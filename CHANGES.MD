@@ -9,15 +9,19 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
 - Additional `WorldCup` example cube, with more complex measures.
 - In Pivotable, clicking a column header will sort rows based on given column.
+- Introduces `ICompactable`
+- Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 
 ### Changed
-- `toString()` of `IColumnMatcher` has multiple specialized implementations, depending on the matcher type.
+- `IColumnMatcher.toString()` has specialized implementations, depending on the matcher type (e.g. `c==v` for `EqualsMatcher`).
 - `Bucketor` is renamed `Partitionor`.
 - `StandardQueryOptions.CONCURRENT` is revamped for `CubeQuerySteps` by relying on a `RecursiveAction`.
 - `DefaultCustomTypeManager` is renamed `StandardCustomTypeManager`.
 - `DefaultMissingColumnManager` is renamed `StandardMissingColumnManager`.
 - `DefaultQueryPreparator` is renamed `StandardQueryPreparator`.
 - `DuplicatingDecomposition` is revamped regarding management of filtered-but-not-grouped-by columns.
+- Update `DuckDB` to `1.3.1.0` (from `1.3.0.0`)
+- `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
 
 ## [0.0.8]
 ### Added

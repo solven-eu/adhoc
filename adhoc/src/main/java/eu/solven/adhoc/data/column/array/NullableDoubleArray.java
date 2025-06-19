@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 
 import org.roaringbitmap.RoaringBitmap;
 
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
@@ -44,7 +45,7 @@ import lombok.NonNull;
  */
 @Deprecated(since = "Not-Ready")
 @Builder
-public class NullableDoubleArray extends AbstractDoubleList implements INullableDoubleArray {
+public class NullableDoubleArray extends AbstractDoubleList implements INullableDoubleArray, ICompactable {
 
 	// Use to register the bits to skip, as not all indexes may be written in LongList
 	@Default
@@ -155,5 +156,14 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 
 	public static INullableDoubleArray empty() {
 		return NullableDoubleArray.builder().list(DoubleLists.emptyList()).build();
+	}
+
+	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
+	public void compact() {
+		if (list instanceof DoubleArrayList arrayList) {
+			arrayList.trim();
+		}
+		nullBitmap.runOptimize();
 	}
 }

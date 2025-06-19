@@ -1,4 +1,4 @@
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -100,14 +100,6 @@ export default {
 				return false;
 			}
 		}
-
-		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
-		watch(
-			() => props.queryModel.selectedColumns[props.column],
-			(newX) => {
-				props.queryModel.onColumnToggled(props.column);
-			},
-		);
 
 		const mark = function (text) {
 			return markMatchingWizard(props.searchOptions, text);

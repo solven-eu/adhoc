@@ -47,7 +47,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class MultitypeArray implements IMultitypeArray {
 	// Indicate the single type of values stored in this column
-	// For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not constant
+	// For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not only-long
+	// or only-double.
 	@Default
 	byte valuesType = 0;
 

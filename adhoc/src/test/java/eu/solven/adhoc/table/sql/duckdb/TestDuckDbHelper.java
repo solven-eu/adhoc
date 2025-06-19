@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
@@ -140,6 +141,7 @@ public class TestDuckDbHelper {
 		// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#rocket-initialization
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(DuckDbHelper.getInMemoryJdbcUrl());
+		config.setConnectionTimeout(TimeUnit.SECONDS.toMillis(5));
 
 		HikariDataSource ds = new HikariDataSource(config);
 

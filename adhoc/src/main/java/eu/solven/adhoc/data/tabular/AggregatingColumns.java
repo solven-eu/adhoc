@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
@@ -80,7 +81,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@SuppressWarnings("PMD.LooseCoupling")
 	private static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.defaultCapacity());
+		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.getDefaultColumnCapacity());
 
 		// If we request an unknown slice, we must not map to an existing index
 		map.defaultReturnValue(-1);
@@ -143,6 +144,10 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			// Typically converts a CountHolder into the count as a `long`
 			// May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
 			notFinalColumn.purgeAggregationCarriers();
+		}
+
+		if (notFinalColumn instanceof ICompactable compactable) {
+			compactable.compact();
 		}
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;

@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -146,6 +147,39 @@ public class TestAdhocSchema {
 				-1);
 		Assertions.assertThat(sample.getCoordinates()).containsExactly("v");
 		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1L);
+	}
+
+	@Test
+	public void testAdditionalTags() {
+		AdhocSchema schema = AdhocSchema.builder().build();
+
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		schema.registerTable(table);
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.fromMeasures("simpleForest",
+				Arrays.asList(Aggregator.countAsterisk(), Aggregator.sum("k")));
+		schema.registerForest(forest);
+
+		CubeWrapper cube = CubeWrapper.builder().name("simpleCube").forest(forest).table(table).build();
+		schema.registerCube(cube);
+
+		schema.tagMeasure(MeasureIdentifier.builder().cube("simpleCube").measure("k").build(), Set.of("customTag_m"));
+		schema.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simpleCube").column("k").build(),
+				Set.of("customTag_c"));
+
+		EndpointSchemaMetadata schemaAll = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+		Assertions.assertThat(schemaAll.getTables()).containsKey("simpleTable");
+		Assertions.assertThat(schemaAll.getCubes()).hasEntrySatisfying("simpleCube", m -> {
+			Assertions.assertThat(m.getColumns().getColumns()).hasEntrySatisfying("k", c -> {
+				Assertions.assertThat((Set) c.get("tags")).containsExactly("customTag_c");
+			});
+
+			Assertions.assertThat(m.getMeasures()).hasEntrySatisfying("k", c -> {
+				Assertions.assertThat(c.getTags()).containsExactly("customTag_m");
+			});
+		});
 	}
 
 }

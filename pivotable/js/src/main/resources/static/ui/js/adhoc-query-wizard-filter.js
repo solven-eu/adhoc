@@ -35,24 +35,30 @@ export default {
 			let filterSubObject = queryModel.filter;
 
 			const pathLength = props.path.length;
-			for (let pathIndex = 0; pathIndex < pathLength; pathIndex++) {
-				if (!filterSubObject) {
-					console.log("Drilled filter is empty");
-					break;
-				} else if (filterSubObject.type === "and" || filterSubObject.type === "or") {
-					filterSubObject = filterSubObject.filters;
-				}
 
-				const pathComponent = props.path[pathIndex];
+			if (pathLength == 0) {
+				console.log("Clearing the whole filter");
+				queryModel.filter = {};
+			} else {
+				for (let pathIndex = 0; pathIndex < pathLength; pathIndex++) {
+					if (!filterSubObject) {
+						console.log("Drilled filter is empty");
+						break;
+					} else if (filterSubObject.type === "and" || filterSubObject.type === "or") {
+						filterSubObject = filterSubObject.filters;
+					}
 
-				if (pathIndex == pathLength - 1) {
-					console.log("Removing", pathComponent, "from", filterSubObject);
-					// delete filterSubObject[pathComponent];
-					filterSubObject.splice(pathComponent, 1);
-				} else {
-					const drilledFilterSubObject = filterSubObject[pathComponent];
-					console.log("Drilling for filter removal. ", pathComponent, filterSubObject, drilledFilterSubObject);
-					filterSubObject = drilledFilterSubObject;
+					const pathComponent = props.path[pathIndex];
+
+					if (pathIndex == pathLength - 1) {
+						console.log("Removing", pathComponent, "from", filterSubObject);
+						// delete filterSubObject[pathComponent];
+						filterSubObject.splice(pathComponent, 1);
+					} else {
+						const drilledFilterSubObject = filterSubObject[pathComponent];
+						console.log("Drilling for filter removal. ", pathComponent, filterSubObject, drilledFilterSubObject);
+						filterSubObject = drilledFilterSubObject;
+					}
 				}
 			}
 		};
@@ -73,7 +79,7 @@ export default {
                 <li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
             </ul>
         </div>
-        <span v-else-if="filter.type==='column'" class="text-nowrap">
+        <span v-else-if="filter.type==='column'">
             {{filter.column}}={{filter.valueMatcher}} <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
         </span>
         <div v-else>{{filter}}</div>

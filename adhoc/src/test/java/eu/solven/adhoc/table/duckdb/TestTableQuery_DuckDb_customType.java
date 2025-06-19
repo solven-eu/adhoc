@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
@@ -61,7 +61,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	}
 
 	@Override
-	public ICubeWrapper makeCube() {
+	public CubeWrapperBuilder makeCube() {
 		IAdhocEventBus adhocEventBus = AdhocTestHelper.eventBus()::post;
 		CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(adhocEventBus).build();
 
@@ -106,8 +106,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 				.forest(forest)
 				.table(table())
 				.engine(engine)
-				.columnsManager(columnsManager)
-				.build();
+				.columnsManager(columnsManager);
 	}
 
 	enum Letter {

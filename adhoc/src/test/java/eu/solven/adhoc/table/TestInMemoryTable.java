@@ -100,4 +100,57 @@ public class TestInMemoryTable {
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
+
+	@Test
+	public void testGroupByUnknownColumn_noThrow() {
+		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder().name("count").measure(Aggregator.countAsterisk()).build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().groupByAlso("unknownColumn").build());
+		cube.execute(CubeQuery.builder().groupByAlso("k", "unknownColumn").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
+	}
+
+	@Test
+	public void testGroupByUnknownColumn_quoted() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		String rawColumn = "k.1";
+		String wrappedColumn = "\"%s\"".formatted(rawColumn);
+		table.add(Map.of(rawColumn, "v"));
+
+		IMeasureForest forest = MeasureForest.builder()
+				.name("count")
+				.measure(Aggregator.sum(wrappedColumn).toBuilder().name("someMeasure").build())
+				.build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().groupByAlso(wrappedColumn).measure("someMeasure").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).isEmpty();
+	}
+
+	@Test
+	public void testAggregateUnknownColumn_noThrow() {
+		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
+
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.builder()
+				.name("count")
+				.measure(Aggregator.countAsterisk())
+				.measure(Aggregator.sum("unknownColumn"))
+				.build();
+		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
+
+		cube.execute(CubeQuery.builder().measure("unknownColumn").build());
+		cube.execute(CubeQuery.builder().measure(Aggregator.countAsterisk().getName(), "unknownColumn").build());
+
+		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
+	}
 }

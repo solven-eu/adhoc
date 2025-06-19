@@ -180,7 +180,7 @@ export default {
 	template: /* HTML */ `
         <!-- Modal -->
         <div class="modal fade" id="measureDag" tabindex="-1" aria-labelledby="measuresDagModalLabel" aria-hidden="true">
-            <div class="modal-dialog  modal-xl">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="measuresDagModalLabel">Measure Info</h5>

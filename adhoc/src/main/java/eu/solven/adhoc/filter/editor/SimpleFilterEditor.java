@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -52,7 +54,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	public static final String P_SHIFTED = "shifted";
 
 	@Singular
-	Map<String, ?> columnToValues;
+	ImmutableMap<String, ?> columnToValues;
 
 	@Override
 	public IAdhocFilter editFilter(IAdhocFilter input) {
@@ -61,6 +63,16 @@ public class SimpleFilterEditor implements IFilterEditor {
 		columnToValues.forEach((column, value) -> edited.set(shiftIfPresent(edited.get(), column, value)));
 
 		return edited.get();
+	}
+
+	@SuppressWarnings("PMD.FieldNamingConventions")
+	private enum FilterMode {
+		// Impact column filter on the considered column, else do nothing.
+		// Accept a `Function`, as there is always a value to shift
+		shiftIfPresent,
+		// This is equivalent to `AND(suppressColumn(filter),column==value)`
+		alwaysShift,
+
 	}
 
 	/**
@@ -73,28 +85,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 * @return a filter equivalent to input filter, except the column is filtered on given value
 	 */
 	public static IAdhocFilter shift(IAdhocFilter filter, String column, Object value) {
-		if (filter.isMatchNone()) {
-			return filter;
-		} else if (filter.isMatchAll()) {
-			return ColumnFilter.isEqualTo(column, value);
-		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			ColumnFilter shiftColumn = ColumnFilter.isEqualTo(column, value);
-			if (columnFilter.getColumn().equals(column)) {
-				// Replace the valueMatcher by the shift
-				return shiftColumn;
-			} else {
-				// Combine both columns
-				return AndFilter.and(columnFilter, shiftColumn);
-			}
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IAdhocFilter> operands = andFilter.getOperands();
-
-			List<IAdhocFilter> shiftedOperands = operands.stream().map(f -> shift(f, column, value)).toList();
-
-			return AndFilter.and(shiftedOperands);
-		} else {
-			throw new NotYetImplementedException("filter=%s".formatted(filter));
-		}
+		return shift(filter, column, value, FilterMode.alwaysShift);
 	}
 
 	/**
@@ -102,18 +93,61 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 * @param filter
 	 *            the original filter
 	 * @param column
-	 *            the column to filter. If it is not already expressed, the filter is not shited.
+	 *            the column to filter. If it is not already expressed, the filter is not shifted.
 	 * @param value
+	 *            if value is a {@link Function}, it is applied to IValueMatcher operands.
 	 * @return like {@link #shift(String, Object, IAdhocFilter)} but only if the column is expressed
 	 */
 	public static IAdhocFilter shiftIfPresent(IAdhocFilter filter, String column, Object value) {
-		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
+		return shift(filter, column, value, FilterMode.shiftIfPresent);
+	}
 
-		if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-			// Do not shift if there is no filter
+	protected static IAdhocFilter shift(IAdhocFilter filter, String column, Object value, FilterMode filterMode) {
+		if (filter.isMatchNone()) {
 			return filter;
+		} else if (filter.isMatchAll()) {
+			if (filterMode == FilterMode.alwaysShift) {
+				return ColumnFilter.isEqualTo(column, value);
+			} else {
+				return filter;
+			}
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			IAdhocFilter shiftColumn = toFilter(columnFilter, column, value);
+			if (columnFilter.getColumn().equals(column)) {
+				// Replace the valueMatcher by the shift
+				return shiftColumn;
+			} else if (filterMode == FilterMode.alwaysShift) {
+				// Combine both columns
+				return AndFilter.and(columnFilter, shiftColumn);
+			} else {
+				return filter;
+			}
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			Set<IAdhocFilter> operands = andFilter.getOperands();
+
+			List<IAdhocFilter> shiftedOperands =
+					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+
+			return AndFilter.and(shiftedOperands);
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			Set<IAdhocFilter> operands = orFilter.getOperands();
+
+			List<IAdhocFilter> shiftedOperands =
+					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+
+			return OrFilter.or(shiftedOperands);
 		} else {
-			return shift(filter, column, value);
+			throw new NotYetImplementedException("filter=%s".formatted(filter));
+		}
+	}
+
+	private static IAdhocFilter toFilter(IColumnFilter columnFilter, String column, Object value) {
+		if (value instanceof Function valueShifter) {
+			IValueMatcher shiftedValueMatcher = ShiftedValueMatcher.shift(columnFilter.getValueMatcher(), valueShifter);
+			return ColumnFilter.builder().column(column).valueMatcher(shiftedValueMatcher).build();
+		} else {
+			// Replace the valueMatcher by the shift
+			return ColumnFilter.isEqualTo(column, value);
 		}
 	}
 

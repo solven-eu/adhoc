@@ -34,6 +34,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
@@ -59,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T> {
+public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T>, ICompactable {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single
 	// type
@@ -94,15 +95,15 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof LongArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		}
 	}
@@ -195,20 +196,6 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		measureToAggregateL.removeLong(key);
 		measureToAggregateD.removeDouble(key);
 		measureToAggregateO.remove(key);
-	}
-
-	@Override
-	public void onValue(T key, IValueReceiver consumer) {
-		int keyAsInt = key.intValue();
-		if (measureToAggregateL.containsIndex(keyAsInt)) {
-			consumer.onLong(measureToAggregateL.getLong(keyAsInt));
-		} else if (measureToAggregateD.containsIndex(keyAsInt)) {
-			consumer.onDouble(measureToAggregateD.getDouble(keyAsInt));
-		} else {
-			// BEWARE if the key is unknown, the call is done with null
-			Object value = measureToAggregateO.get(keyAsInt);
-			consumer.onObject(value);
-		}
 	}
 
 	@Override
@@ -337,9 +324,8 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		AtomicInteger index = new AtomicInteger();
 		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
 
-			onValue(key, o -> {
-				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
-			});
+			onValue(key).acceptReceiver(o -> toStringHelper.add("#" + index.getAndIncrement() + "-" + key,
+					PepperLogHelper.getObjectAndClass(o)));
 		});
 
 		return toStringHelper.toString();
@@ -398,5 +384,18 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 		// TODO Typically on CountAggregation, we turned all Carriers into a long. So `measureToAggregateO` holds only
 		// `null`, and it could be cleared.
+	}
+
+	@Override
+	public void compact() {
+		if (measureToAggregateL instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (measureToAggregateD instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (measureToAggregateO instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 }

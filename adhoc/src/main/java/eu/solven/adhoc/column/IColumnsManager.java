@@ -34,6 +34,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IHasColumnTypes;
 
@@ -55,12 +56,8 @@ public interface IColumnsManager extends IHasColumnTypes {
 
 	/**
 	 * This is typically important when the table has JOINs, as a columnName may be ambiguous through the JOINs.
-	 * 
-	 * @param cubeColumn
-	 *            some cube column
-	 * @return the equivalent table column
 	 */
-	String transcodeToTable(String cubeColumn);
+	TranscodingContext openTranscodingContext();
 
 	/**
 	 * 

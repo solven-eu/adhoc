@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
@@ -70,10 +70,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 	}
 
 	@Override
-	public ICubeWrapper makeCube() {
+	public CubeWrapperBuilder makeCube() {
 		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine).build(), worldCupSchema, table(), forest)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
-				.build();
+				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build());
 	}
 
 	// count rows
@@ -122,6 +121,32 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
 			Assertions.assertThat((Map) v).containsEntry("match_count", 836L).hasSize(1);
 		});
+	}
+
+	@Test
+	public void testMatchCount_YearMinus1() {
+		ITabularView result = cube().execute(CubeQuery.builder().measure("match_count.Y-1").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v).containsEntry("match_count.Y-1", 836L).hasSize(1);
+		});
+	}
+
+	@Test
+	public void testMatchCount_YearMinus1_groupByYear() {
+		ITabularView result = cube()
+				.execute(CubeQuery.builder().measure("match_count", "match_count.Y-1").groupByAlso("year").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(20)
+				.hasEntrySatisfying(Map.of("year", 1998L), v -> {
+					Assertions.assertThat((Map) v)
+							.containsEntry("match_count", 64L)
+							.containsEntry("match_count.Y-1", 52L)
+							.hasSize(2);
+				});
 	}
 
 }

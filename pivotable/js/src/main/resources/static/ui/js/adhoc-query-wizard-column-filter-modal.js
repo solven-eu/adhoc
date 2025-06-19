@@ -66,7 +66,7 @@ export default {
 	},
 	template: /* HTML */ `
         <div class="modal fade" :id="'columnFilterModal_' + column" tabindex="-1" aria-labelledby="columnFilterModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="columnFilterModalLabel">Filtering column={{column}}</h5>

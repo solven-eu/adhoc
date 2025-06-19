@@ -20,41 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.example.worldcup;
+package eu.solven.adhoc.engine.step;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
+import java.time.LocalDate;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
- * disastrous.
- * 
- * @author Benoit Lacelle
- */
-public class EventsScoreCombination implements ICombination {
-	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Long nbGoals = (Long) underlyingValues.get(0);
-		if (nbGoals == null) {
-			nbGoals = 0L;
-		}
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
-		Long nbRedcards = (Long) underlyingValues.get(1);
-		if (nbRedcards == null) {
-			nbRedcards = 0L;
-		}
+import eu.solven.adhoc.measure.model.Aggregator;
 
-		Long nbMatch = (Long) underlyingValues.get(2);
-		if (nbMatch == null) {
-			throw new IllegalStateException("Can not have a goal or redcard event without a match");
-		}
+public class TestCubeQueryStep {
+	@Test
+	public void testGuavaCacheAsCache() {
+		Cache<Object, Object> cache = CacheBuilder.newBuilder().build();
+		CubeQueryStep step = CubeQueryStep.builder().cache(cache.asMap()).measure(Aggregator.countAsterisk()).build();
 
-		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN)
-				.doubleValue();
+		step.getCache().put("k", "v");
+		LocalDate today = LocalDate.now();
+		step.getCache().put(today, 12.34D);
+		Assertions.assertThat(step.getCache()).containsEntry("k", "v").containsEntry(today, 12.34D);
 	}
 }

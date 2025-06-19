@@ -65,6 +65,15 @@ public class FilterHelpers {
 		return getValueMatcherLax(filter, column, true);
 	}
 
+	/**
+	 * 
+	 * @param filter
+	 * @param column
+	 * @return a lax matching {@link IValueMatcher}. By lax, we mean the received filter may be actually applied from
+	 *         diverse {@link OrFilter}. In other words, `AND` over the lax {@link IValueMatcher} may not recompose the
+	 *         original {@link IAdhocFilter} (especially it is is not a simple {@link AndFilter} over
+	 *         {@link ColumnFilter}).
+	 */
 	public static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column) {
 		return getValueMatcherLax(filter, column, false);
 	}
