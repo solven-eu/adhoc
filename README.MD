@@ -1,6 +1,6 @@
 # AdHoc - InMemory Indicators Pipeline
 
-![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)
+[![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
@@ -454,4 +454,4 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 
 ## Profilers
 
-Thanks [![EJ Technologies for kindly providing a JProfiler (their Java Profiler) OpenSource license](https://www.ej-technologies.com/images/product_banners/jprofiler_small.png)](https://www.ej-technologies.com/jprofiler).
+Thanks [EJ Technologies for kindly providing an OpenSource license for JProfiler (their Java Profiler)](https://www.ej-technologies.com/jprofiler).
