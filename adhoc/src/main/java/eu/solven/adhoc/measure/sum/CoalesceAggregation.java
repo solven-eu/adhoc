@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,7 +69,8 @@ public class CoalesceAggregation implements IAggregation {
 				throw new IllegalArgumentException(
 						"%s != %s (%s)".formatted(Objects.toIdentityString(l), Objects.toIdentityString(r), l));
 			} else {
-				throw new IllegalArgumentException("%s != %s".formatted(l, r));
+				throw new IllegalArgumentException("%s != %s".formatted(PepperLogHelper.getObjectAndClass(l),
+						PepperLogHelper.getObjectAndClass(r)));
 			}
 		} else {
 			// Give priority to left/first object

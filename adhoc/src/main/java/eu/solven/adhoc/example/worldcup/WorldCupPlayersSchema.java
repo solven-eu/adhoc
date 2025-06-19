@@ -31,6 +31,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.jooq.AggregateFunction;
 import org.jooq.DSLContext;
@@ -43,6 +45,7 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ConstantCombination;
@@ -51,6 +54,7 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -114,21 +118,31 @@ public class WorldCupPlayersSchema {
 				.combinationOption(ConstantCombination.K_CONSTANT, 1)
 				.underlying("events")
 				.build());
-
 		measures.add(Partitionor.builder()
 				.name("player_score")
 				.combinationKey(EventsScoreCombination.class.getName())
 				.groupBy(GroupByColumns.named("Player name"))
-				.underlyings(List.of("goal_count", "redcard_count"))
+				.underlyings(List.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
 		measures.add(Partitionor.builder()
 				.name("coach_score")
 				.combinationKey(EventsScoreCombination.class.getName())
 				.groupBy(GroupByColumns.named("Coach name"))
-				.underlyings(List.of("goal_count", "redcard_count"))
+				.underlyings(List.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
+
+		Stream.of("match_count", "player_score", "coach_score").forEach(measure -> {
+			measures.add(Shiftor.builder()
+					.name(measure + ".Y-1")
+					.editorKey(SimpleFilterEditor.KEY)
+					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED,
+							Map.of("year",
+									(Function<Object, Object>) t -> t instanceof Number n ? n.longValue() - 4 : t)))
+					.underlying(measure)
+					.build());
+		});
 
 		return MeasureForest.fromMeasures(forestName, measures);
 	}

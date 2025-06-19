@@ -20,40 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.example.worldcup;
+package eu.solven.adhoc.measure.aggregation;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
+import java.util.Arrays;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.combination.CoalesceCombination;
 
-/**
- * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
- * disastrous.
- * 
- * @author Benoit Lacelle
- */
-public class EventsScoreCombination implements ICombination {
-	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Long nbGoals = (Long) underlyingValues.get(0);
-		if (nbGoals == null) {
-			nbGoals = 0L;
-		}
+public class TestCoalesceCombination {
+	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
-		Long nbRedcards = (Long) underlyingValues.get(1);
-		if (nbRedcards == null) {
-			nbRedcards = 0L;
-		}
+	CoalesceCombination combination = new CoalesceCombination();
 
-		Long nbMatch = (Long) underlyingValues.get(2);
-		if (nbMatch == null) {
-			throw new IllegalStateException("Can not have a goal or redcard event without a match");
-		}
+	@Test
+	public void testEmpty() {
+		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(new Object[] { null }))).isNull();
+	}
 
-		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN);
+	@Test
+	public void testNotEmpty() {
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(123, 234))).isEqualTo(123);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 123))).isEqualTo(123);
 	}
 }

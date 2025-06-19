@@ -20,40 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.example.worldcup;
+package eu.solven.adhoc.filter.editor;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
+import java.util.function.Function;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.pepper.core.PepperLogHelper;
+import lombok.Builder;
+import lombok.Value;
 
 /**
- * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
- * disastrous.
+ * An {@link IValueMatcher} useful to implement complex {@link IFilterEditor}.
  * 
  * @author Benoit Lacelle
  */
-public class EventsScoreCombination implements ICombination {
+@Builder
+@Value
+public class ShiftedValueMatcher implements IValueMatcher {
+
+	IValueMatcher originalMatcher;
+	Function<Object, ?> shift;
+
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		Long nbGoals = (Long) underlyingValues.get(0);
-		if (nbGoals == null) {
-			nbGoals = 0L;
-		}
+	public boolean match(Object value) {
+		// TODO The shifted matcher should be built once and for all
+		throw new NotYetImplementedException(
+				"matcher=%s".formatted(PepperLogHelper.getObjectAndClass(originalMatcher)));
+	}
 
-		Long nbRedcards = (Long) underlyingValues.get(1);
-		if (nbRedcards == null) {
-			nbRedcards = 0L;
+	public static IValueMatcher shift(IValueMatcher originalMatcher, Function<Object, ?> shift) {
+		if (originalMatcher instanceof EqualsMatcher equalsMatcher) {
+			return EqualsMatcher.isEqualTo(shift.apply(equalsMatcher.getOperand()));
+		} else {
+			return ShiftedValueMatcher.builder().originalMatcher(originalMatcher).shift(shift).build();
 		}
-
-		Long nbMatch = (Long) underlyingValues.get(2);
-		if (nbMatch == null) {
-			throw new IllegalStateException("Can not have a goal or redcard event without a match");
-		}
-
-		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN);
 	}
 }

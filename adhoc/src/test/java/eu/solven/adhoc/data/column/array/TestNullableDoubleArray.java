@@ -25,6 +25,8 @@ package eu.solven.adhoc.data.column.array;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+
 public class TestNullableDoubleArray {
 	@Test
 	public void testRemove() {
@@ -68,6 +70,19 @@ public class TestNullableDoubleArray {
 
 		Assertions.assertThat(array.get(-1)).isEqualTo(Double.MIN_VALUE);
 		Assertions.assertThat(array.get(3)).isEqualTo(Double.MIN_VALUE);
+	}
 
+	@Test
+	public void testCompact() {
+		NullableDoubleArray array = NullableDoubleArray.builder().build();
+
+		array.add(12.34D);
+		array.add(23.45D);
+
+		Assertions.assertThat(((DoubleArrayList) array.list).elements()).hasSize(10);
+
+		array.compact();
+
+		Assertions.assertThat(((DoubleArrayList) array.list).elements()).hasSize(2);
 	}
 }

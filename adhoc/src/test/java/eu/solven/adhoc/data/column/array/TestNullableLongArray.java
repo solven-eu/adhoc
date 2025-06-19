@@ -25,6 +25,8 @@ package eu.solven.adhoc.data.column.array;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 public class TestNullableLongArray {
 	@Test
 	public void testRemove() {
@@ -68,6 +70,19 @@ public class TestNullableLongArray {
 
 		Assertions.assertThat(array.get(-1)).isEqualTo(Long.MIN_VALUE);
 		Assertions.assertThat(array.get(3)).isEqualTo(Long.MIN_VALUE);
+	}
 
+	@Test
+	public void testCompact() {
+		NullableLongArray array = NullableLongArray.builder().build();
+
+		array.add(123);
+		array.add(234);
+
+		Assertions.assertThat(((LongArrayList) array.list).elements()).hasSize(10);
+
+		array.compact();
+
+		Assertions.assertThat(((LongArrayList) array.list).elements()).hasSize(2);
 	}
 }

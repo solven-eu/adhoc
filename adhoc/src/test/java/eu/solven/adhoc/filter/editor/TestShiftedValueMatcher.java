@@ -20,32 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation;
+package eu.solven.adhoc.filter.editor;
 
-import java.util.Arrays;
+import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.CoalesceCombination;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-public class TestFindFirstCombination {
-	ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
-
-	CoalesceCombination combination = new CoalesceCombination();
-
+public class TestShiftedValueMatcher {
 	@Test
-	public void testEmpty() {
-		Assertions.assertThat(combination.combine(slice, Arrays.asList())).isNull();
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(new Object[] { null }))).isNull();
-	}
+	public void testShiftEquals() {
+		Function shiftFunction = (Function) l -> (((Number) l).longValue() + 1);
+		IValueMatcher shifted = ShiftedValueMatcher.shift(EqualsMatcher.isEqualTo(123), shiftFunction);
 
-	@Test
-	public void testNotEmpty() {
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(123))).isEqualTo(123);
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(123, 234))).isEqualTo(123);
-		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 123))).isEqualTo(123);
+		Assertions.assertThat(shifted)
+				.isInstanceOfSatisfying(EqualsMatcher.class,
+						m -> Assertions.assertThat(m.getOperand()).isEqualTo(124L));
 	}
 }
