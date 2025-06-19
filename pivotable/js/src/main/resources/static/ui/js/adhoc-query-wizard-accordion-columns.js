@@ -39,7 +39,7 @@ export default {
 	},
 	setup(props) {
 		const queryModel = inject("queryModel");
-	
+
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(props.searchOptions, arrayOrObject, queryModel);
 		};
@@ -50,7 +50,6 @@ export default {
 		const clearFilters = function () {
 			return wizardHelper.clearFilters(props.searchOptions);
 		};
-
 
 		return {
 			filtered,

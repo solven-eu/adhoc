@@ -32,11 +32,10 @@ export default {
 			required: true,
 		},
 	},
-	computed: {
-	},
+	computed: {},
 	setup(props) {
 		const queryModel = inject("queryModel");
-	
+
 		const filtered = function (arrayOrObject) {
 			return wizardHelper.filtered(props.searchOptions, arrayOrObject, queryModel);
 		};

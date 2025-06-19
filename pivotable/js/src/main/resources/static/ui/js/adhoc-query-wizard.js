@@ -27,12 +27,12 @@ export default {
 		AdhocQueryWizardColumn,
 		AdhocQueryWizardFilter,
 		AdhocQueryWizardMeasureTag,
-		
+
 		AdhocAccordionItemColumns,
 		AdhocAccordionItemMeasures,
 		AdhocAccordionItemCustoms,
 		AdhocAccordionItemOptions,
-		
+
 		AdhocWizardTags,
 	},
 	// https://vuejs.org/guide/components/props.html

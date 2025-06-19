@@ -101,15 +101,15 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof Object2LongOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof Object2DoubleOpenHashMap<?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof Object2ObjectOpenHashMap<?, ?> openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		}
 	}
@@ -398,6 +398,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
 	public void compact() {
 		if (measureToAggregateL instanceof Object2LongOpenHashMap hashMap) {
 			hashMap.trim();

@@ -40,7 +40,7 @@ public class TestAdhocUnsafe {
 		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(5);
 		Assertions.assertThat(AdhocUnsafe.limitCoordinates).isEqualTo(100);
 		Assertions.assertThat(AdhocUnsafe.isFailFast()).isEqualTo(true);
-		Assertions.assertThat(AdhocUnsafe.defaultColumnCapacity()).isEqualTo(1_000_000);
+		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(1_000_000);
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class TestAdhocUnsafe {
 		AdhocUnsafe.reloadProperties();
 
 		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(123);
-		Assertions.assertThat(AdhocUnsafe.defaultColumnCapacity()).isEqualTo(123);
+		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
 	}
 
 	@Test
@@ -74,16 +74,15 @@ public class TestAdhocUnsafe {
 		AdhocUnsafe.reloadProperties();
 
 		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(1_000_000);
-		Assertions.assertThat(AdhocUnsafe.defaultColumnCapacity()).isEqualTo(123);
+		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
 	}
-
 
 	@Test
 	public void testDefaultCapacity_programmatic() {
 		AdhocUnsafe.setDefaultColumnCapacity(123);
 
 		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(1_000_000);
-		Assertions.assertThat(AdhocUnsafe.defaultColumnCapacity()).isEqualTo(123);
+		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
 	}
 
 	@Test

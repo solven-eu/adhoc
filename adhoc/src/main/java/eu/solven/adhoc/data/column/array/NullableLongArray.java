@@ -154,6 +154,7 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	}
 
 	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
 	public void compact() {
 		if (list instanceof LongArrayList arrayList) {
 			arrayList.trim();

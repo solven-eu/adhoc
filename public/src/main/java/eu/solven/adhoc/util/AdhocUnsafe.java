@@ -202,7 +202,7 @@ public class AdhocUnsafe {
 	 * 
 	 * @return the default capacity for structured.
 	 */
-	public static int defaultColumnCapacity() {
+	public static int getDefaultColumnCapacity() {
 		if (defaultColumnCapacity >= 0) {
 			// the default capacity is capped by the limit over columnLength
 			return Math.min(limitColumnSize, defaultColumnCapacity);

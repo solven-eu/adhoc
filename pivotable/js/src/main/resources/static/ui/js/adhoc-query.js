@@ -75,12 +75,12 @@ export default {
 
 			onColumnToggled: function (column) {
 				const array = queryModel.selectedColumnsOrdered;
-				
+
 				if (!column) {
 					// We lack knowledge about which columns has been toggled
 					for (const column of Object.keys(queryModel.selectedColumns)) {
 						const index = array.indexOf(column);
-						
+
 						let isChanged = false;
 
 						// May be missing on first toggle
@@ -101,14 +101,14 @@ export default {
 							}
 						}
 						if (isChanged) {
-							console.log(`groupBy: ${column} is now ${toggledIn}`);	
+							console.log(`groupBy: ${column} is now ${toggledIn}`);
 						} else {
-							console.debug(`groupBy: ${column} is kept ${toggledIn}`);	
+							console.debug(`groupBy: ${column} is kept ${toggledIn}`);
 						}
 					}
 				} else {
 					const index = array.indexOf(column);
-	
+
 					// May be missing on first toggle
 					const toggledIn = !!queryModel.selectedColumns[column];
 					if (toggledIn) {
@@ -153,7 +153,6 @@ export default {
 		provide("measuresDagModel", measuresDagModel);
 
 		const tabularView = reactive({});
-		
 
 		const queried = function (arrayOrObject) {
 			return wizardHelper.queried(arrayOrObject);

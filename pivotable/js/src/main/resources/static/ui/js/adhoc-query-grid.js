@@ -346,11 +346,11 @@ export default {
 					grid.render();
 				});
 			}
-			
+
 			{
-				grid.onColumnsReordered.subscribe(function(e, args) {
+				grid.onColumnsReordered.subscribe(function (e, args) {
 					console.log("reOrdered columns:", grid.getColumns());
-					
+
 					// Drop the rowSpans until we know how to compute them properly given reorderedColumns
 					// BEWARE It is ugly, but it shows correct figures.
 					const metadata = {};
@@ -360,7 +360,7 @@ export default {
 
 					// https://github.com/6pac/SlickGrid/issues/1114
 					grid.remapAllColumnsRowSpan();
-					
+
 					grid.invalidateAllRows();
 					grid.render();
 				});

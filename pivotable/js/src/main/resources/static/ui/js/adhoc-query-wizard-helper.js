@@ -36,7 +36,7 @@ export default {
 					continue;
 				}
 			}
-			
+
 			let matchAllTags = true;
 			const inputElement = inputsAsObjectOrArray[inputKey];
 

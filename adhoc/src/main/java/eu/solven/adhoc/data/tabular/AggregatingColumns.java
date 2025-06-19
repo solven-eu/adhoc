@@ -81,7 +81,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@SuppressWarnings("PMD.LooseCoupling")
 	private static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.defaultColumnCapacity());
+		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.getDefaultColumnCapacity());
 
 		// If we request an unknown slice, we must not map to an existing index
 		map.defaultReturnValue(-1);

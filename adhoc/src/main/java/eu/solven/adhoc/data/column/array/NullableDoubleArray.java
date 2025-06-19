@@ -159,6 +159,7 @@ public class NullableDoubleArray extends AbstractDoubleList implements INullable
 	}
 
 	@Override
+	@SuppressWarnings("PMD.LooseCoupling")
 	public void compact() {
 		if (list instanceof DoubleArrayList arrayList) {
 			arrayList.trim();

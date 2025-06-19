@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -65,7 +64,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// aggregators).
 	@NonNull
 	@Default
-	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.defaultColumnCapacity());
+	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.getDefaultColumnCapacity());
 
 	@NonNull
 	@Default

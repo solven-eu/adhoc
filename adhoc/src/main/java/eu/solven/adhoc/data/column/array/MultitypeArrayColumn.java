@@ -95,15 +95,15 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	protected void ensureCapacity(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof LongArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.defaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
 			}
 		}
 	}
