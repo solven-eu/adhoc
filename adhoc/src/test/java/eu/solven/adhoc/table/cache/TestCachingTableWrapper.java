@@ -45,13 +45,13 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 
 	CachingTableWrapper caching = CachingTableWrapper.builder().decorated(tableSupplier.get()).build();
 	ICubeWrapper cachingCube =
-			CubeWrapper.builder().table(caching).engine(engine).forest(forest).eventBus(eventBus::post).build();
+			CubeWrapper.builder().table(caching).engine(engine()).forest(forest).eventBus(eventBus::post).build();
 
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("c", "c1", "d", "d1", "k1", 123));
-		table.add(Map.of("c", "c2", "d", "d2", "k1", 234, "k2", 345));
+		table().add(Map.of("c", "c1", "d", "d1", "k1", 123));
+		table().add(Map.of("c", "c2", "d", "d2", "k1", 234, "k2", 345));
 
 		forest.addMeasure(Aggregator.countAsterisk());
 		forest.addMeasure(k1Sum);

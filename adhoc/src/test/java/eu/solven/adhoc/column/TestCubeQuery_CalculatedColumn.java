@@ -43,10 +43,10 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("a", "a1", "k1", 123));
-		table.add(Map.of("a", "a1", "k1", 345, "k2", 456));
-		table.add(Map.of("a", "a2", "b", "b1", "k2", 234));
-		table.add(Map.of("a", "a2", "b", "b2", "k1", 567));
+		table().add(Map.of("a", "a1", "k1", 123));
+		table().add(Map.of("a", "a1", "k1", 345, "k2", 456));
+		table().add(Map.of("a", "a2", "b", "b1", "k2", 234));
+		table().add(Map.of("a", "a2", "b", "b2", "k1", 567));
 
 		// This first `k1` overlaps with the columnName
 		forest.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());

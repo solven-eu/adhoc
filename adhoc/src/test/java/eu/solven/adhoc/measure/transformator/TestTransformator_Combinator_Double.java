@@ -45,9 +45,9 @@ public class TestTransformator_Combinator_Double extends ADagTest implements IAd
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("k1", 123D));
-		table.add(Map.of("k2", 234D));
-		table.add(Map.of("k1", 345F, "k2", 456F));
+		table().add(Map.of("k1", 123D));
+		table().add(Map.of("k2", 234D));
+		table().add(Map.of("k1", 345F, "k2", 456F));
 	}
 
 	@Test

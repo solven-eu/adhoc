@@ -84,7 +84,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
 			for (int d = 0; d < nbDays; d++) {
-				table.add(ImmutableMap.<String, Object>builder()
+				table().add(ImmutableMap.<String, Object>builder()
 						.put("l", "A")
 						.put("row_index", i)
 						.put("d", today.minusDays(d))

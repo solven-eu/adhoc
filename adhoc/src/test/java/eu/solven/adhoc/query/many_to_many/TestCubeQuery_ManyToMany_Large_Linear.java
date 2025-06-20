@@ -41,11 +41,9 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
 import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition;
@@ -130,10 +128,10 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 		}
 	}
 
-	public final CubeQueryEngine engine = editEngine()
-			.factories(AdhocFactories.builder().operatorFactory(makeOperatorsFactory(manyToManyDefinition)).build())
-			.build();
-	public final CubeWrapper cube = CubeWrapper.builder().table(table).engine(engine).forest(forest).build();
+	@Override
+	public AdhocFactories makeFactories() {
+		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(manyToManyDefinition)).build();
+	}
 
 	private @NonNull IOperatorFactory makeOperatorsFactory(IManyToMany1DDefinition manyToManyDefinition) {
 
@@ -161,7 +159,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	@BeforeEach
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
-			table.add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
+			table().add(Map.of("l", "A", cElement, i, "k1", elementValue(i)));
 		}
 	}
 
@@ -197,11 +195,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	public void testGrandTotal() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(dispatchedMeasure).build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dispatchedMeasure).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -217,11 +211,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallValue).build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cElement, smallValue).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -236,11 +226,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallValue).build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
+				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, smallValue).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -253,7 +239,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	public void test_GroupByElement_FilterOneGroup() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, smallValue)
@@ -271,7 +257,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	public void test_GroupByElement_FilterMultipleGroups() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of(smallValue, largeValue))
@@ -292,7 +278,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	public void test_GroupByGroup_FilterOneElement() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder()
+		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallValue)
@@ -316,7 +302,7 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 		prepareMeasures();
 
 		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeValue).build());
+				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, largeValue).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

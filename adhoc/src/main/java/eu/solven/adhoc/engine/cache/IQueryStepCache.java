@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc;
+package eu.solven.adhoc.engine.cache;
 
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.table.InMemoryTable;
+import java.util.Map;
+import java.util.Optional;
+
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- * Helps testing anything related with a {@link MeasureForest} or a {@link CubeQueryEngine}
+ * Enables caching of {@link CubeQueryStep} results.
  * 
  * @author Benoit Lacelle
- *
  */
-public abstract class ADagTest extends ARawDagTest {
+public interface IQueryStepCache {
 
-	@Override
-	public InMemoryTable makeTable() {
-		return InMemoryTable.builder().build();
+	static IQueryStepCache noCache() {
+		return new EmptyQueryStepCache();
 	}
 
-	// `@BeforeEach` has to be duplicated on each implementation
-	// @BeforeEach
-	public abstract void feedTable() throws Exception;
+	Optional<ISliceToValue> getValue(CubeQueryStep step);
 
-	@Override
-	public InMemoryTable table() {
-		return (InMemoryTable) super.table();
-	}
+	void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues);
 
 }

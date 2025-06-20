@@ -49,12 +49,12 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
-		table.add(Map.of("color", "red", "ccy", "USD", "k1", 234));
-		table.add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
-		table.add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
+		table().add(Map.of("color", "red", "ccy", "EUR", "k1", 123));
+		table().add(Map.of("color", "red", "ccy", "USD", "k1", 234));
+		table().add(Map.of("color", "blue", "ccy", "EUR", "k1", 345));
+		table().add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
 		// Lack measure: should not materialize coordinates on shift
-		table.add(Map.of("color", "yellow", "ccy", "CHN"));
+		table().add(Map.of("color", "yellow", "ccy", "CHN"));
 	}
 
 	// Default is EUR

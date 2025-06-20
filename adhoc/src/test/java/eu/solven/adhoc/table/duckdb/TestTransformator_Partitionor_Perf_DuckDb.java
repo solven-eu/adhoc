@@ -156,7 +156,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ARawDagTest imple
 
 		CubeWrapper cubeWithCache = CubeWrapper.builder()
 				.table(CachingTableWrapper.builder().decorated(table()).build())
-				.engine(engine)
+				.engine(engine())
 				.forest(forest)
 				.eventBus(eventBus::post)
 				.build();

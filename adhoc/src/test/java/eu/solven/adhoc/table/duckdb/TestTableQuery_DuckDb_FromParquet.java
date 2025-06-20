@@ -138,7 +138,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = engine.executeUnsafe(CubeQuery.builder().measure(k1SumSquared).build(), forest, table());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(k1SumSquared).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

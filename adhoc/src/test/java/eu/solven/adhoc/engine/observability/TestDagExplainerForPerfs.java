@@ -37,6 +37,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -53,8 +54,10 @@ public class TestDagExplainerForPerfs {
 	public void testPerfLog() {
 		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
-		QueryStepsDagBuilder queryStepsDagBuilder =
-				new QueryStepsDagBuilder(AdhocFactories.builder().build(), "someCube", CubeQuery.builder().build());
+		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
+				"someCube",
+				CubeQuery.builder().build(),
+				IQueryStepCache.noCache());
 
 		Map<String, IMeasure> refToMeasure = new HashMap<>();
 

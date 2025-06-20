@@ -40,7 +40,7 @@ public interface IValueProvider {
 	/**
 	 * Constant {@link IValueProvider} always providing `null`.
 	 */
-	IValueProvider NULL = vc -> vc.onObject(null);
+	IValueProvider NULL = vr -> vr.onObject(null);
 
 	/**
 	 * Will transmit this value into the provider {@link IValueReceiver}

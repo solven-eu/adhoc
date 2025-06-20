@@ -57,9 +57,9 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("k", "a"));
-		table.add(Map.of("k", "b"));
-		table.add(Map.of("k", "c"));
+		table().add(Map.of("k", "a"));
+		table().add(Map.of("k", "b"));
+		table().add(Map.of("k", "c"));
 
 		forest.addMeasure(countAsterisk);
 

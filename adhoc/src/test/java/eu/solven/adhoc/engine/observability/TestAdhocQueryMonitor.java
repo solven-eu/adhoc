@@ -73,7 +73,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table.add(Map.of("color", "blue"));
+		table().add(Map.of("color", "blue"));
 	}
 
 	public static class LatchingCombination implements ICombination {

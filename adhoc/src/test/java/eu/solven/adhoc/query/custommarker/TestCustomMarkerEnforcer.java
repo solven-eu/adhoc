@@ -37,11 +37,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -67,10 +65,10 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 
 	LocalDate today = LocalDate.now();
 
-	public final CubeQueryEngine aqe =
-			editEngine().factories(AdhocFactories.builder().operatorFactory(makeOperatorsFactory(fxStorage)).build())
-					.build();
-	public final CubeWrapper aqw = CubeWrapper.builder().table(table).engine(aqe).forest(forest).build();
+	@Override
+	public AdhocFactories makeFactories() {
+		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build();
+	}
 
 	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -91,8 +89,8 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
-		table.add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
+		table().add(Map.of("l", "A", "ccyFrom", "USD", "k1", 123));
+		table().add(Map.of("l", "A", "ccyFrom", "EUR", "k1", 234));
 	}
 
 	// Default is EUR
@@ -166,7 +164,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -185,7 +183,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqw.execute(CubeQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName, mNameEUR, mNameUSD).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -208,7 +206,7 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = aqw.execute(
+		ITabularView output = cube().execute(
 				CubeQuery.builder().measure(mName, mNameEUR, mNameUSD).customMarker(Optional.of("JPY")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

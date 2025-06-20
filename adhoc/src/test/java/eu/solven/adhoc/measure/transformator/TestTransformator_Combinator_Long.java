@@ -45,9 +45,9 @@ public class TestTransformator_Combinator_Long extends ADagTest implements IAdho
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table.add(Map.of("k1", 123));
-		table.add(Map.of("k2", 234));
-		table.add(Map.of("k1", 345, "k2", 456));
+		table().add(Map.of("k1", 123));
+		table().add(Map.of("k2", 234));
+		table().add(Map.of("k1", 345, "k2", 456));
 	}
 
 	@Test

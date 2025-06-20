@@ -71,7 +71,7 @@ public class CubeQueryStepDefs {
 	public void appendRows(DataTable data) {
 		List<Map<String, String>> maps = data.asMaps();
 
-		maps.forEach(aDagTest.table::add);
+		maps.forEach(aDagTest.table()::add);
 	}
 
 	@Given("Register aggregator name={word} column={word} key={word}")
@@ -90,7 +90,7 @@ public class CubeQueryStepDefs {
 		CubeQuery query = queryBuilder.build();
 
 		try {
-			tabularView = aDagTest.engine.executeUnsafe(query, aDagTest.forest, aDagTest.table);
+			tabularView = aDagTest.cube().execute(query);
 		} catch (Throwable t) {
 			log.trace("A step thrown an exception (which may be expected by the scenario)", t);
 			this.t = t;

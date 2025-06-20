@@ -49,10 +49,10 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 	public void feedTable() {
 		LocalDate now = LocalDate.of(2025, 4, 14);
 
-		table.add(Map.of("c", "today", "date_as_string", now.toString(), "k", 123));
-		table.add(Map.of("c", "yesterday", "date_as_string", now.minusDays(1).toString(), "k", 234));
-		table.add(Map.of("c", "month_ago", "date_as_string", now.minusMonths(1).toString(), "k", 345));
-		table.add(Map.of("c", "year_ago", "date_as_string", now.minusYears(1).toString(), "k", 456));
+		table().add(Map.of("c", "today", "date_as_string", now.toString(), "k", 123));
+		table().add(Map.of("c", "yesterday", "date_as_string", now.minusDays(1).toString(), "k", 234));
+		table().add(Map.of("c", "month_ago", "date_as_string", now.minusMonths(1).toString(), "k", 345));
+		table().add(Map.of("c", "year_ago", "date_as_string", now.minusYears(1).toString(), "k", 456));
 
 		forest.addMeasure(Aggregator.builder().name("k1").columnName("k1").aggregationKey(SumAggregation.KEY).build());
 	}

@@ -33,6 +33,9 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -40,6 +43,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +76,10 @@ public class QueryStepsDag implements ISinkExecutionFeedback {
 	@NonNull
 	@Default
 	Map<CubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
+
+	@NonNull
+	@Singular
+	ImmutableMap<CubeQueryStep, ISliceToValue> stepToValues;
 
 	public List<CubeQueryStep> underlyingSteps(CubeQueryStep queryStep) {
 		if (queryStep.getMeasure() instanceof ReferencedMeasure refMeasure) {

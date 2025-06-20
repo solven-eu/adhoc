@@ -77,7 +77,7 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 	@Override
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
-			table.add(Map.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
+			table().add(Map.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
 		}
 	}
 
@@ -124,7 +124,7 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 
 		CubeWrapper cubeWithCache = CubeWrapper.builder()
 				.table(CachingTableWrapper.builder().decorated(table()).build())
-				.engine(engine)
+				.engine(engine())
 				.forest(forest)
 				.eventBus(eventBus::post)
 				.build();
