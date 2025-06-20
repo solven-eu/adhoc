@@ -46,9 +46,9 @@ public class TestQueryOption_Concurrent extends ADagTest implements IAdhocTestCo
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("k", "a"));
-		table.add(Map.of("k", "b"));
-		table.add(Map.of("k", "c"));
+		table().add(Map.of("k", "a"));
+		table().add(Map.of("k", "b"));
+		table().add(Map.of("k", "c"));
 
 		forest.addMeasure(countAsterisk);
 

@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -40,9 +39,9 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table.add(Map.of("k1", 123));
-		table.add(Map.of("k2", 234));
-		table.add(Map.of("k1", 345, "k2", 456));
+		table().add(Map.of("k1", 123));
+		table().add(Map.of("k2", 234));
+		table().add(Map.of("k1", 345, "k2", 456));
 	}
 
 	@Test
@@ -52,14 +51,10 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		CubeQuery query = CubeQuery.builder().measure("k2").build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
-				.isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> cube().execute(query)).isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = engine.executeUnsafe(
-				CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
-				forest,
-				table,
-				ColumnsManager.builder().build());
+		ITabularView output =
+				cube().execute(CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build());
 
 		Assertions.assertThat(output.isEmpty()).isTrue();
 	}
@@ -72,14 +67,11 @@ public class TestQueryOptions extends ADagTest implements IAdhocTestConstants {
 		CubeQuery query = CubeQuery.builder().measure(k1PlusK2AsExpr).build();
 
 		// By default, an exception is thrown
-		Assertions.assertThatThrownBy(() -> engine.executeUnsafe(query, forest, table))
+		Assertions.assertThatThrownBy(() -> engine().executeUnsafe(query, forest, table()))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		ITabularView output = engine.executeUnsafe(
-				CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build(),
-				forest,
-				table,
-				ColumnsManager.builder().build());
+		ITabularView output =
+				cube().execute(CubeQuery.edit(query).option(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY).build());
 
 		MapBasedTabularView mapBasedView = MapBasedTabularView.load(output);
 

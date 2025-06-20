@@ -35,6 +35,8 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -67,8 +69,9 @@ public abstract class ARawDagTest {
 		return AdhocFactories.builder().stopwatchFactory(stopwatchFactory).build();
 	}
 
-	public final CubeQueryEngine engine =
-			CubeQueryEngine.builder().eventBus(eventBus::post).factories(makeFactories()).build();
+	public CubeQueryEngine engine() {
+		return CubeQueryEngine.builder().eventBus(eventBus::post).factories(makeFactories()).build();
+	}
 
 	public abstract ITableWrapper makeTable();
 
@@ -79,9 +82,18 @@ public abstract class ARawDagTest {
 	}
 
 	public CubeWrapper.CubeWrapperBuilder makeCube() {
-		return CubeWrapper.builder().table(table()).engine(engine).forest(forest).eventBus(eventBus::post)
+		return CubeWrapper.builder()
+				.table(table())
+				.engine(engine())
+				.forest(forest)
+				.eventBus(eventBus::post)
+				.queryPreparator(queryPreparator())
 		// .columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
 		;
+	}
+
+	protected IQueryPreparator queryPreparator() {
+		return StandardQueryPreparator.builder().build();
 	}
 
 	public final Supplier<ICubeWrapper> cubeSupplier = Suppliers.memoize(() -> makeCube().build());
@@ -100,7 +112,7 @@ public abstract class ARawDagTest {
 	 * Typically used to edit the operatorFactory
 	 */
 	public CubeQueryEngine.CubeQueryEngineBuilder editEngine() {
-		return engine.toBuilder();
+		return engine().toBuilder();
 	}
 
 	/**

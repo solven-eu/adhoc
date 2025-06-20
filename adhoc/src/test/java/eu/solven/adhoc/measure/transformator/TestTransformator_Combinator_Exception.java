@@ -43,9 +43,9 @@ public class TestTransformator_Combinator_Exception extends ADagTest implements 
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table.add(Map.of("k1", 123));
-		table.add(Map.of("k2", 234));
-		table.add(Map.of("k1", 345, "k2", 456));
+		table().add(Map.of("k1", 123));
+		table().add(Map.of("k2", 234));
+		table().add(Map.of("k1", 345, "k2", 456));
 
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);

@@ -106,10 +106,10 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 				cElementAge,
 				EqualsMatcher.builder().operand("old").build()), Set.of("red"));
 
-		table.add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
-		table.add(Map.of("l", "A", cElementGender, "male", cElementAge, "old", "k1", 234));
-		table.add(Map.of("l", "A", cElementGender, "female", cElementAge, "young", "k1", 345));
-		table.add(Map.of("l", "A", cElementGender, "female", cElementAge, "old", "k1", 456));
+		table().add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
+		table().add(Map.of("l", "A", cElementGender, "male", cElementAge, "old", "k1", 234));
+		table().add(Map.of("l", "A", cElementGender, "female", cElementAge, "young", "k1", 345));
+		table().add(Map.of("l", "A", cElementGender, "female", cElementAge, "old", "k1", 456));
 	}
 
 	void prepareMeasures() {

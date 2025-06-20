@@ -71,7 +71,12 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 			JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName2).build());
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
-		return CubeWrapper.builder().name(table.getName() + ".cube").engine(engine).forest(forest).table(table).build();
+		return CubeWrapper.builder()
+				.name(table.getName() + ".cube")
+				.engine(engine())
+				.forest(forest)
+				.table(table)
+				.build();
 	}
 
 	private CubeWrapper makeAndFeedCompositeCube() {
@@ -138,7 +143,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		IMeasureForest measureBagWithUnderlyings = compositeCubesTable.injectUnderlyingMeasures(forestWithoutSubs);
 
 		CubeWrapper cube3 = CubeWrapper.builder()
-				.engine(engine)
+				.engine(engine())
 				.forest(measureBagWithUnderlyings)
 				.table(compositeCubesTable)
 				.build();

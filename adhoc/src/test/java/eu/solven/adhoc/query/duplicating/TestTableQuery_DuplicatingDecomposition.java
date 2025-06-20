@@ -52,9 +52,9 @@ public class TestTableQuery_DuplicatingDecomposition extends ADagTest implements
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("l", "A", cElement, "FR", "k1", 123));
-		table.add(Map.of("l", "B", cElement, "FR", "k1", 234));
-		table.add(Map.of("l", "C", cElement, "FR", "k1", 345));
+		table().add(Map.of("l", "A", cElement, "FR", "k1", 123));
+		table().add(Map.of("l", "B", cElement, "FR", "k1", 234));
+		table().add(Map.of("l", "C", cElement, "FR", "k1", 345));
 	}
 
 	protected String getDecompositionKey() {

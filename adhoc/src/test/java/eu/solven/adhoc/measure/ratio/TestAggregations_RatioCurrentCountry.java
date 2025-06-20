@@ -46,11 +46,11 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
-		table.add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
-		table.add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
-		table.add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
-		table.add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
+		table().add(Map.of("country", "FR", "city", "Paris", "d", 123, "color", "blue"));
+		table().add(Map.of("country", "FR", "city", "Lyon", "d", 234, "color", "green"));
+		table().add(Map.of("country", "DE", "city", "Berlin", "d", 345, "color", "red"));
+		table().add(Map.of("country", "US", "city", "Paris", "d", 456, "color", "blue"));
+		table().add(Map.of("country", "US", "city", "New-York", "d", 567, "color", "green"));
 	}
 
 	@BeforeEach

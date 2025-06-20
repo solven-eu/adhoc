@@ -23,9 +23,12 @@
 package eu.solven.adhoc.engine;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
@@ -33,6 +36,9 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.jgrapht.graph.GraphCycleProhibitedException;
 
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -56,6 +62,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final AdhocFactories factories;
 	final String table;
 	final ICubeQuery query;
+	final IQueryStepCache queryStepCache;
 
 	final Set<CubeQueryStep> roots = new HashSet<>();
 
@@ -71,29 +78,66 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	// Holds the querySteps which underlying steps are processed
 	final Set<CubeQueryStep> processed = new HashSet<>();
 
-	public QueryStepsDagBuilder(AdhocFactories factories, String cube, ICubeQuery query) {
+	// From cache
+	final Map<CubeQueryStep, ISliceToValue> stepToValue = new HashMap<>();
+
+	public QueryStepsDagBuilder(AdhocFactories factories,
+			String cube,
+			ICubeQuery query,
+			IQueryStepCache queryStepCache) {
 		this.factories = factories;
 		this.table = cube;
 		this.query = query;
+		this.queryStepCache = queryStepCache;
 	}
 
 	protected void addRoot(IMeasure queriedMeasure) {
 		CubeQueryStep rootStep = CubeQueryStep.edit(query).measure(queriedMeasure).build();
 
 		roots.add(rootStep);
-		addVertex(rootStep);
-		pending.add(rootStep);
+		if (addVertex(rootStep)) {
+			pending.add(rootStep);
+		}
 	}
 
+	/**
+	 * 
+	 * @param step
+	 * @return `true` if the vertex underlyings step should be added. `false` if the vertex has already been
+	 *         encountered, or if the cache has hit.
+	 */
 	protected boolean addVertex(CubeQueryStep step) {
-		boolean added = dag.addVertex(step);
+		boolean hasCache;
+
+		if (stepToValue.containsKey(step)) {
+			hasCache = true;
+		} else {
+
+			Optional<ISliceToValue> optSliceToValue = queryStepCache.getValue(step);
+			if (optSliceToValue.isPresent()) {
+				stepToValue.put(step, optSliceToValue.get());
+
+				// The vertex must be added as even if we have a cacheHit, the DAG may need to refer to it for other
+				// measures.
+				hasCache = true;
+			} else {
+				hasCache = false;
+			}
+		}
+
+		boolean addedDag = dag.addVertex(step);
 		boolean addedMultigraph = multigraph.addVertex(step);
 
-		if (added != addedMultigraph) {
+		if (addedDag != addedMultigraph) {
 			throw new IllegalStateException("Inconsistent vertices around step=%s".formatted(step));
 		}
 
-		return added;
+		if (hasCache) {
+			// result from cache : no need to request for underlyings
+			return false;
+		}
+
+		return addedDag;
 	}
 
 	protected boolean hasLeftovers() {
@@ -171,7 +215,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	@Override
 	public QueryStepsDag getQueryDag() {
-		return QueryStepsDag.builder().dag(dag).multigraph(multigraph).queried(roots).build();
+		return QueryStepsDag.builder().dag(dag).multigraph(multigraph).queried(roots).stepToValues(stepToValue).build();
 	}
 
 	@Override
@@ -232,5 +276,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		}
 
 		return resolved;
+	}
+
+	public static IQueryStepsDagBuilder make(AdhocFactories factories, QueryPod queryPod) {
+		return new QueryStepsDagBuilder(factories,
+				queryPod.getTable().getName(),
+				queryPod.getQuery(),
+				queryPod.getQueryStepCache());
 	}
 }

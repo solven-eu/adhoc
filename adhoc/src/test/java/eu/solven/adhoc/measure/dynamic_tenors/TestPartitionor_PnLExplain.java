@@ -65,20 +65,20 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table.add(Map.of("color",
+		table().add(Map.of("color",
 				"blue",
 				"sensitivities",
 				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 12.34D)));
-		table.add(Map.of("color",
+		table().add(Map.of("color",
 				"red",
 				"sensitivities",
 				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 23.45D)));
 
-		table.add(Map.of("color",
+		table().add(Map.of("color",
 				"blue",
 				"sensitivities",
 				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "1Y"), 34.56D)));
-		table.add(Map.of("color",
+		table().add(Map.of("color",
 				"red",
 				"sensitivities",
 				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "2Y"), 45.67D)));

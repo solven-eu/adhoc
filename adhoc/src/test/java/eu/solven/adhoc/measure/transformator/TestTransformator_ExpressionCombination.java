@@ -46,9 +46,9 @@ public class TestTransformator_ExpressionCombination extends ADagTest implements
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("k1", 123D));
-		table.add(Map.of("k2", 234D));
-		table.add(Map.of("k1", 345D, "k2", 456D));
+		table().add(Map.of("k1", 123D));
+		table().add(Map.of("k2", 234D));
+		table().add(Map.of("k1", 345D, "k2", 456D));
 	}
 
 	@Test

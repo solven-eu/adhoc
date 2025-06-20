@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
@@ -50,6 +51,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
@@ -91,6 +93,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
@@ -264,7 +267,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	protected IQueryStepsDagBuilder makeQueryStepsDagsBuilder(QueryPod queryPod) {
-		return new QueryStepsDagBuilder(factories, queryPod.getTable().getName(), queryPod.getQuery());
+		return QueryStepsDagBuilder.make(factories, queryPod);
 	}
 
 	protected ITabularView executeDag(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -273,13 +276,21 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("bootstrap").source(this).build());
 
 		// Execute the leaf aggregations, by tableWrappers
-		Map<CubeQueryStep, ISliceToValue> queryStepToValues = executeTableQueries(queryPod, queryStepsDag);
+		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new ConcurrentHashMap<>();
+
+		// Add values from cache
+		queryStepToValues.putAll(queryStepsDag.getStepToValues());
+
+		// Add values from table
+		queryStepToValues.putAll(executeTableQueries(queryPod, queryStepsDag));
 
 		// We're done with the input stream: the DB can be shutdown, we can answer the
 		// rest of the query independently of external tables.
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
 
 		walkDagUpToQueriedMeasures(queryPod, queryStepsDag, queryStepToValues);
+
+		registerResultsToCache(queryPod.getQueryStepCache(), queryStepsDag, queryStepToValues);
 
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
 
@@ -288,6 +299,24 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
 
 		return tabularView;
+	}
+
+	protected void registerResultsToCache(IQueryStepCache queryStepCache,
+			QueryStepsDag queryStepsDag,
+			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+		// TODO Improve policy to detect which node should be put in cache
+		// Typically, we may prefer high-level measure not to go through large chunk of steps. We may also keep in cache
+		// steps which were slow to be computed.
+		// BEWARE This mono-threaded iteration helps pushing into cache with a specific order, given the `stepToValues`
+		// is typically a ConcurrenthashMap, hence with indeterministic order.
+		queryStepsDag.fromAggregatesToQueried().forEach(step -> {
+			if (queryStepsDag.getStepToValues().containsKey(step)) {
+				log.debug("Do not add an entry already in cache");
+				// Else it may force keeping the entry
+			} else {
+				queryStepCache.pushValues(Map.of(step, queryStepToValues.get(step)));
+			}
+		});
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -332,14 +361,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		try {
 			queryPod.getExecutorService().submit(() -> {
 
-				Consumer<? super CubeQueryStep> onQueryStep = queryStep -> {
+				Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
 					onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
 				};
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					// multi-threaded
-					// topologicalOrder = topologicalOrder.parallel();
-
 					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
 
 					List<CubeQueryStep> roots =
@@ -348,16 +375,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
 							.fromAggregatesToQueried(dag)
 							.queryStepToValues(queryStepToValues)
-							.onReadyStep(onQueryStep);
+							.onReadyStep(queryStepConsumer);
 					List<QueryStepRecursiveAction> actions =
 							roots.stream().map(step -> actionTemplate.step(step).build()).toList();
 
 					ForkJoinTask.invokeAll(actions);
-
 				} else {
 					// mono-threaded
 					Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
-					topologicalOrder.forEach(onQueryStep);
+					topologicalOrder.forEach(queryStepConsumer);
 				}
 
 			}).get();
@@ -385,38 +411,36 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 		IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
 
-		List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
-
-		IStopwatch stepWatch = factories.getStopwatchFactory().createStarted();
-
-		Optional<ISliceToValue> optOutputColumn =
-				processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
-
-		// Would be empty on table steps (leaves of the DAG)
-		optOutputColumn.ifPresent(outputColumn -> {
-			Duration elapsed = stepWatch.elapsed();
-			eventBus.post(QueryStepIsCompleted.builder()
-					.querystep(queryStep)
-					.nbCells(outputColumn.size())
-					.source(this)
-					.duration(elapsed)
-					.build());
-			queryStepsDag.registerExecutionFeedback(queryStep,
-					SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
-
-			if (null != queryStepToValues.put(queryStep, outputColumn)) {
-				throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
-			}
+		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
+		Optional<ISliceToValue> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(queryStep));
+		ISliceToValue outputColumn = optFromCache.orElseGet(() -> {
+			List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
+			return processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
 		});
+
+		Duration elapsed = stopWatch.elapsed();
+		eventBus.post(QueryStepIsCompleted.builder()
+				.querystep(queryStep)
+				.nbCells(outputColumn.size())
+				.source(this)
+				.duration(elapsed)
+				.build());
+		queryStepsDag.registerExecutionFeedback(queryStep,
+				SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
+
+		if (null != queryStepToValues.put(queryStep, outputColumn)) {
+			throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
+		}
 	}
 
-	protected Optional<ISliceToValue> processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+	protected ISliceToValue processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			CubeQueryStep queryStep,
 			List<CubeQueryStep> underlyingSteps,
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
 			// This may happen on a Columnator which is missing a required column
-			return Optional.of(SliceToValue.empty());
+			// TODO This prevent an IMeasure to generate slices from an empty list of underlyings
+			return SliceToValue.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
 				ISliceToValue values = queryStepToValues.get(underlyingStep);
@@ -443,7 +467,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				throw rethrowWithDetails(queryStep, underlyingSteps, e);
 			}
 
-			return Optional.of(coordinatesToValues);
+			return coordinatesToValues;
 		} else {
 			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}

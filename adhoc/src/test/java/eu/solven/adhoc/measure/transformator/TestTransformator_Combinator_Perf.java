@@ -59,7 +59,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 	@Override
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
-			table.add(Map.of("l", "A", "row_index", i, "k1", i));
+			table().add(Map.of("l", "A", "row_index", i, "k1", i));
 		}
 	}
 

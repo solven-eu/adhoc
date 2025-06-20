@@ -34,6 +34,8 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -86,6 +88,10 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 	@NonNull
 	@Default
 	ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+
+	@NonNull
+	@Default
+	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
 
 	/**
 	 * Once turned to nut-null, can not be nulled again.
@@ -159,6 +165,9 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 		// executorService is problematic as it has @Default
 		ExecutorService executorService;
 
+		// executorService is problematic as it has @Default
+		IQueryStepCache queryStepCache;
+
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
 			this.columnsManager = columnsManager;
 
@@ -167,6 +176,12 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 
 		public QueryPodBuilder executorService(ExecutorService executorService) {
 			this.executorService = executorService;
+
+			return this;
+		}
+
+		public QueryPodBuilder queryStepCache(IQueryStepCache queryStepCache) {
+			this.queryStepCache = queryStepCache;
 
 			return this;
 		}
@@ -186,8 +201,11 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 			if (executorService == null) {
 				executorService = MoreExecutors.newDirectExecutorService();
 			}
+			if (queryStepCache == null) {
+				queryStepCache = GuavaQueryStepCache.withSize(1);
+			}
 
-			return new QueryPod(query, queryId, forest, table, columnsManager, executorService);
+			return new QueryPod(query, queryId, forest, table, columnsManager, executorService, queryStepCache);
 		}
 	}
 

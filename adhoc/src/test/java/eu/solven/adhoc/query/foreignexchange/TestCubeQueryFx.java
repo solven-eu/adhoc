@@ -37,10 +37,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -62,10 +61,10 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	LocalDate today = LocalDate.now();
 
-	public final CubeQueryEngine engine =
-			editEngine().factories(makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build())
-					.build();
-	public final CubeWrapper cube = editCube().engine(engine).build();
+	@Override
+	public AdhocFactories makeFactories() {
+		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build();
+	}
 
 	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
@@ -86,8 +85,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("color", "red", "letter", "a", "ccyFrom", "USD", "k1", 123));
-		table.add(Map.of("color", "red", "letter", "b", "ccyFrom", "EUR", "k1", 234));
+		table().add(Map.of("color", "red", "letter", "a", "ccyFrom", "USD", "k1", 123));
+		table().add(Map.of("color", "red", "letter", "b", "ccyFrom", "EUR", "k1", 234));
 	}
 
 	String mName = "k1.CCY";
@@ -109,7 +108,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testNoFx() {
 		prepareMeasures();
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).build());
 
 		// List<Map<String, ?>> keySet =
 		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
@@ -127,9 +126,9 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 	public void testHasUnknownFromCcy() {
 		prepareMeasures();
 
-		table.add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
+		table().add(Map.of("color", "red", "ccyFrom", "unknownCcy", "k1", 234));
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -148,7 +147,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output = cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
+		ITabularView output =
+				cube().execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("XYZ")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -169,8 +169,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		// Need a bit more than 1 USD for 1 EUR
 		fxStorage.addFx(IForeignExchangeStorage.FXKey.builder().fromCcy("USD").toCcy("EUR").build(), 0.95D);
 
-		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		ITabularView output = cube()
+				.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -194,7 +194,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 		Assertions.setMaxStackTraceElementsDisplayed(128);
 
-		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().measure(mName).build()))
+		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("ccyFrom is not a sliced column");
@@ -207,7 +207,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
+		cube().execute(CubeQuery.builder().measure(mName).customMarker(Optional.of("JPY")).explain(true).build());
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
@@ -226,7 +226,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(CubeQuery.builder()
+		cube().execute(CubeQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")
@@ -251,7 +251,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		prepareMeasures();
 
 		// ITabularView output =
-		cube.execute(CubeQuery.builder()
+		cube().execute(CubeQuery.builder()
 				.measure(mName)
 				.customMarker(Optional.of("JPY"))
 				.groupByAlso("letter")

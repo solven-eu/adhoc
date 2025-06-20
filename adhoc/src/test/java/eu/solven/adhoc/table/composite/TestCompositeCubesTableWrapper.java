@@ -72,11 +72,16 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	}
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, ITableWrapper table) {
-		return CubeWrapper.builder().name(table.getName() + ".cube").engine(engine).forest(forest).table(table).build();
+		return CubeWrapper.builder()
+				.name(table.getName() + ".cube")
+				.engine(engine())
+				.forest(forest)
+				.table(table)
+				.build();
 	}
 
 	private CubeWrapper makeComposite(CompositeCubesTableWrapper compositeTable, IMeasureForest forest) {
-		return CubeWrapper.builder().name("composite").table(compositeTable).forest(forest).engine(engine).build();
+		return CubeWrapper.builder().name("composite").table(compositeTable).forest(forest).engine(engine()).build();
 	}
 
 	// `k1` is both an underdlyingCube measure, and an explicit cube measure.

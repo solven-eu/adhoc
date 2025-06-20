@@ -34,7 +34,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -45,15 +45,18 @@ import eu.solven.adhoc.table.transcoder.PrefixTranscoder;
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
 	IColumnsManager columnsManager =
 			ColumnsManager.builder().transcoder(PrefixTranscoder.builder().prefix("p_").build()).build();
-	CubeWrapper aqw =
-			CubeWrapper.builder().table(table).engine(engine).forest(forest).columnsManager(columnsManager).build();
+
+	@Override
+	public CubeWrapperBuilder makeCube() {
+		return super.makeCube().columnsManager(columnsManager);
+	}
 
 	@Override
 	@BeforeEach
 	public void feedTable() {
 		// As assume the data in DB is already prefixed with `_p`
-		table.add(Map.of("p_c", "v1", "p_k1", 123D));
-		table.add(Map.of("p_c", "v2", "p_k2", 234D));
+		table().add(Map.of("p_c", "v1", "p_k1", 123D));
+		table().add(Map.of("p_c", "v2", "p_k2", 234D));
 
 		forest.addMeasure(Combinator.builder()
 				.name("sumK1K2")
@@ -67,7 +70,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testGrandTotal() {
-		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -78,7 +81,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testFilter() {
-		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -89,7 +92,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 
 	@Test
 	public void testGroupBy() {
-		ITabularView output = aqw.execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("c").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("c").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -102,7 +105,7 @@ public class TestTransformator_Transcoding extends ADagTest implements IAdhocTes
 	@Test
 	public void testFilterGroupBy() {
 		ITabularView output =
-				aqw.execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").build());
+				cube().execute(CubeQuery.builder().measure("sumK1K2").andFilter("c", "v1").groupByAlso("c").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

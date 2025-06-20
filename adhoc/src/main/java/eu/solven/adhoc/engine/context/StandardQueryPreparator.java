@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
@@ -80,6 +81,10 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	@Default
 	final ExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();
 
+	@NonNull
+	@Default
+	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
+
 	@Override
 	public QueryPod prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
@@ -95,6 +100,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.table(table)
 				.columnsManager(columnsManager)
 				.executorService(getExecutorService(preparedQuery))
+				.queryStepCache(getQueryStepCache(preparedQuery))
 				.build();
 
 		// Filtering the forest is useful for edge-cades like:
@@ -103,6 +109,14 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				filterForest(fullQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();
 
 		return fullQueryPod.toBuilder().forest(relevantForest).build();
+	}
+
+	protected IQueryStepCache getQueryStepCache(ICubeQuery preparedQuery) {
+		if (preparedQuery.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
+			return IQueryStepCache.noCache();
+		} else {
+			return queryStepCache;
+		}
 	}
 
 	/**

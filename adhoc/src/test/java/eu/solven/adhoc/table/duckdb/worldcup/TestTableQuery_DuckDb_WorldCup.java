@@ -71,7 +71,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 
 	@Override
 	public CubeWrapperBuilder makeCube() {
-		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine).build(), worldCupSchema, table(), forest)
+		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine()).build(), worldCupSchema, table(), forest)
 				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build());
 	}
 

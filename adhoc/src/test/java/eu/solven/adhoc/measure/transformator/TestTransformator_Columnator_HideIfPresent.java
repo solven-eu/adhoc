@@ -59,9 +59,9 @@ public class TestTransformator_Columnator_HideIfPresent extends ADagTest impleme
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		table.add(Map.of("c", "c1", "d", "d1", "k1", 123D));
-		table.add(Map.of("c", "c2", "d", "d1", "k2", 234D));
-		table.add(Map.of("c", "c2", "d", "d2", "k1", 345F, "k2", 456F));
+		table().add(Map.of("c", "c1", "d", "d1", "k1", 123D));
+		table().add(Map.of("c", "c2", "d", "d1", "k2", 234D));
+		table().add(Map.of("c", "c2", "d", "d2", "k1", 345F, "k2", 456F));
 	}
 
 	@BeforeEach
