@@ -48,6 +48,12 @@ public class StringMatcher implements IValueMatcher {
 		}
 	}
 
+	/**
+	 * 
+	 * @param hasToString
+	 *            an Object from which we'll get {@link Object#toString()} as matching {@link String}.
+	 * @return
+	 */
 	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher hasToString(Object hasToString) {
 		String string = String.valueOf(hasToString);

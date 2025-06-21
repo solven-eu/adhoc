@@ -126,11 +126,17 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
+	protected void onSlice(
+			// ICombinationBinding binded,
+			SliceAndMeasures slice,
+			ICombination combination,
+			ISliceAndValueConsumer output) {
 		ISlicedRecord slicedRecord = slice.getMeasures();
 		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getAdhocSliceAsMap());
 		try {
-			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
+			IValueProvider valueProvider = combine(slice.getSlice()
+			// , binded
+					, combination, slicedRecord);
 
 			valueProvider.acceptReceiver(outputSlice);
 		} catch (RuntimeException e) {
@@ -144,7 +150,10 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 		}
 	}
 
-	protected IValueProvider combine(ISliceWithStep slice, ICombination combination, ISlicedRecord slicedRecord) {
+	protected IValueProvider combine(ISliceWithStep slice,
+			// ICombinationBinding binded,
+			ICombination combination,
+			ISlicedRecord slicedRecord) {
 		IValueProvider valueProvider = combination.combine(slice, slicedRecord);
 
 		if (isDebug()) {

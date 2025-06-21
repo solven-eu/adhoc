@@ -26,10 +26,12 @@ import java.util.List;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
+import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -49,6 +51,112 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 
 	public static boolean isSubstraction(String operator) {
 		return "-".equals(operator) || KEY.equals(operator) || operator.equals(SubstractionCombination.class.getName());
+	}
+
+	@Override
+	public ICombinationBinding bind(List<? extends ISliceToValue> underlyings) {
+		if (underlyings.isEmpty()) {
+			return ICombinationBinding.NULL;
+		} else if (underlyings.size() == 1) {
+			return ICombinationBinding.return0();
+		}
+
+		return ICombinationBinding.on2((valueReceiver, left, right) -> {
+
+			ICombinationBinding.IRowState state = new ICombinationBinding.IRowState() {
+				long l = 0;
+				double d = 0;
+				Object o;
+
+				@Override
+				public IValueReceiver receive(int index) {
+					if (index == 0) {
+
+					}
+					return null;
+				}
+
+				@Override
+				public void receive(int index, IValueProvider valueProvider) {
+					// valueProvider.
+				}
+			};
+
+			left.acceptReceiver(state.receive(0));
+			right.acceptReceiver(state.receive(1));
+
+			// LongBinaryOperator onLongLong = (l1, l2) -> {
+			// return l1-l2;
+			// };
+
+			// IValueReceiver rightIsLongReceiver = new IValueReceiver() {
+			//
+			// @Override
+			// public void onLong(long rightValue) {
+			// valueReceiver.onLong(onLongLong.applyAsLong(left, rightValue) leftValue - rightValue);
+			// }
+			//
+			// @Override
+			// public void onDouble(double rightValue) {
+			// valueReceiver.onDouble(leftValue - rightValue);
+			// }
+			//
+			// @Override
+			// public void onObject(Object rightValue) {
+			// if (rightValue == null) {
+			// valueReceiver.onLong(leftValue);
+			// } else {
+			// valueReceiver.onObject(substract(leftValue, rightValue));
+			// }
+			// }
+			// };
+			//
+			// IValueReceiver leftReceiver = new IValueReceiver() {
+			//
+			// @Override
+			// public void onLong(long leftValue) {
+			// right.acceptReceiver(rightIsLongReceiver);
+			// }
+			//
+			// @Override
+			// public void onDouble(double leftValue) {
+			// right.acceptReceiver(new IValueReceiver() {
+			//
+			// @Override
+			// public void onLong(long rightValue) {
+			// valueReceiver.onDouble(leftValue - rightValue);
+			// }
+			//
+			// @Override
+			// public void onDouble(double rightValue) {
+			// valueReceiver.onDouble(leftValue - rightValue);
+			// }
+			//
+			// @Override
+			// public void onObject(Object rightValue) {
+			// if (rightValue == null) {
+			// valueReceiver.onDouble(leftValue);
+			// } else {
+			// valueReceiver.onObject(substract(leftValue, rightValue));
+			// }
+			// }
+			// });
+			// }
+			//
+			// @Override
+			// public void onObject(Object leftValue) {
+			// right.acceptReceiver(rightValue -> {
+			// if (rightValue == null) {
+			// valueReceiver.onObject(leftValue);
+			// } else {
+			// valueReceiver.onObject(substract(leftValue, rightValue));
+			// }
+			// });
+			// }
+			// };
+			//
+			// left.acceptReceiver();
+		});
 	}
 
 	@Override

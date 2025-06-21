@@ -64,7 +64,14 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
-		forEachDistinctSlice(underlyings, slice -> onSlice(slice, combination, output));
+		// ICombinationBinding binded = combination.bind(underlyings);
+
+		forEachDistinctSlice(underlyings,
+				slice -> onSlice(
+						// binded,
+						slice,
+						combination,
+						output));
 	}
 
 	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
@@ -94,5 +101,9 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 		return getFactories().getColumnsFactory().distinctSlices(getStep(), underlyings);
 	}
 
-	protected abstract void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output);
+	protected abstract void onSlice(
+			// ICombinationBinding binded,
+			SliceAndMeasures slice,
+			ICombination combination,
+			ISliceAndValueConsumer output);
 }

@@ -25,9 +25,11 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
 
 /**
@@ -57,6 +59,10 @@ public interface ICombination {
 		IValueProvider valueProvider = combine(slice, slicedRecord);
 
 		return IValueProvider.getValue(valueProvider);
+	}
+
+	default ICombinationBinding bind(List<? extends ISliceToValue> underlyings) {
+		return ICombinationBinding.NULL;
 	}
 
 }

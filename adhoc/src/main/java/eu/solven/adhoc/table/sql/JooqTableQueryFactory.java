@@ -63,6 +63,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
@@ -70,12 +71,14 @@ import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -151,7 +154,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
 
 		// `WHERE ...`
-
 		SelectConnectByStep<Record> selectFromWhere;
 		if (conditionAndLeftover.getCondition() instanceof True) {
 			selectFromWhere = selectFrom;
@@ -542,6 +544,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getPattern()));
 		case StringMatcher stringMatcher -> condition =
 				DSL.condition(field.cast(String.class).eq(stringMatcher.getString()));
+
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();
 
@@ -560,6 +563,31 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				}
 			}
 			condition = DSL.condition(jooqCondition);
+		}
+
+		case AndMatcher andMatcher -> {
+			List<Optional<Condition>> optConditions = andMatcher.getOperands().stream().map(subValueMatcher -> {
+				return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
+			}).toList();
+
+			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
+				return Optional.empty();
+			}
+
+			List<Condition> conditions = optConditions.stream().map(Optional::get).toList();
+			condition = DSL.and(conditions);
+		}
+		case OrMatcher andMatcher -> {
+			List<Optional<Condition>> optConditions = andMatcher.getOperands().stream().map(subValueMatcher -> {
+				return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
+			}).toList();
+
+			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
+				return Optional.empty();
+			}
+
+			List<Condition> conditions = optConditions.stream().map(Optional::get).toList();
+			condition = DSL.or(conditions);
 		}
 		default -> condition = onCustomCondition(column, valueMatcher);
 		}
