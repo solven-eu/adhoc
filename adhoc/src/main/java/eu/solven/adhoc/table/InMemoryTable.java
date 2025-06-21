@@ -129,6 +129,13 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> tableColumns = getColumnTypes().keySet();
 		checkKnownColumns(tableColumns, filteredColumns, "filtered");
 
+		Set<String> aggregateFilteredColumns = tableQuery.getAggregators()
+				.stream()
+				.map(FilteredAggregator::getFilter)
+				.flatMap(f -> FilterHelpers.getFilteredColumns(f).stream())
+				.collect(ImmutableSet.toImmutableSet());
+		checkKnownColumns(tableColumns, aggregateFilteredColumns, "aggregateFiltered");
+
 		Set<String> aggregateColumns = tableQuery.getAggregators()
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())

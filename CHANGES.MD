@@ -23,6 +23,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Update `DuckDB` to `1.3.1.0` (from `1.3.0.0`)
 - `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
 
+### Fixed
+- `JooqTableQueryFactory` now supports `OrMatcher` and `AndMatcher`.
+
 ## [0.0.8]
 ### Added
 - `CompositeTableTranscoder` is introduced.
