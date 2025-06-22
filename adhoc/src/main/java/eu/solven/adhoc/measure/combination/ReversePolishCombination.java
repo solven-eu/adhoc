@@ -29,14 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.common.base.CharMatcher;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ReversePolishCombination implements ICombination, IHasSanityChecks {
 
+	public static final String K_OPERATOR_FACTORY = "operatorFactory";
 	public static final String K_NOTATION = "notation";
 
 	final String notation;
@@ -77,7 +76,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		parseUnderlyingMeasures(notation).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 				underlyingMeasuresToIndex.size()));
 
-		operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, "operatorFactory")
+		operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, K_OPERATOR_FACTORY)
 				.orElseGet(StandardOperatorFactory::new);
 	}
 
@@ -122,25 +121,31 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
 		String replacedFormula = notation;
 
+		Map<String, Object> placeholders = new LinkedHashMap<>();
+
 		while (true) {
 			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
-				Object evaluatedSubFormula =
-						evaluateReversePolish(subFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
+				Object evaluatedSubFormula = evaluateReversePolish(placeholders,
+						subFormula,
+						slice,
+						underlyingValues,
+						oneUnderlyingIsNotNull);
 				log.debug("subFormula={} evaluated into {}", subFormula, evaluatedSubFormula);
 
 				if (evaluatedSubFormula == null) {
 					return "null";
+				} else if (evaluatedSubFormula instanceof String) {
+					return evaluatedSubFormula.toString();
+				} else {
+					String placeholder = "$%s".formatted(placeholders.size());
+
+					// Custom objects may have `(`, `)`, `,` which would interfere with formula parsing
+					// Anyway, we prefer not writing `.toString()` as we would parse it back right away
+					placeholders.put(placeholder, evaluatedSubFormula);
+
+					return Matcher.quoteReplacement(placeholder);
 				}
-
-				String evaluatedToString = evaluatedSubFormula.toString();
-
-				if (CharMatcher.anyOf("()").matchesAnyOf(evaluatedToString)) {
-					// TODO For now, we forbid such case which could lead to infinite loops
-					throw new NotYetImplementedException("Evaluated subFormula must not generate parenthesis");
-				}
-
-				return evaluatedToString;
 			});
 
 			if (nextFormula.equals(replacedFormula)) {
@@ -152,11 +157,12 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 			}
 		}
 
-		return evaluateReversePolish(replacedFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
+		return evaluateReversePolish(placeholders, replacedFormula, slice, underlyingValues, oneUnderlyingIsNotNull);
 	}
 
 	@SuppressWarnings("PMD.NullAssignment")
-	protected Object evaluateReversePolish(String formula,
+	protected Object evaluateReversePolish(Map<String, ?> placeholders,
+			String formula,
 			ISliceWithStep slice,
 			List<?> underlyingValues,
 			AtomicBoolean oneUnderlyingIsNotNull) {
@@ -191,6 +197,8 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 				operandToAppend = Integer.parseInt(underlyingMeasure);
 			} else if ("null".equals(s)) {
 				operandToAppend = null;
+			} else if (s.startsWith("$")) {
+				operandToAppend = placeholders.get(s);
 			} else if (s.matches("-?[0-9]+")) {
 				operandToAppend = Long.parseLong(s);
 			} else if (s.matches("-?[0-9]+\\.[0-9]+(?:[Ee][+-]?[0-9]+)?")) {

@@ -26,6 +26,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Fixed
 - `JooqTableQueryFactory` now supports `OrMatcher` and `AndMatcher`.
+- `ReversePolishCombination` now supports complex objects are subFormula results. More generally, subFormula results are are `.toString()` anymore.
 
 ## [0.0.8]
 ### Added

@@ -101,7 +101,13 @@ public class ComparingMatcher implements IValueMatcher, IColumnToString {
 		return sb.toString();
 	}
 
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	public static class ComparingMatcherBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		boolean greaterThan;
 
 		public ComparingMatcherBuilder greaterThan(boolean greaterElseLower) {
