@@ -38,9 +38,9 @@ import lombok.extern.jackson.Jacksonized;
  *
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
-public class ComparingMatcher implements IValueMatcher {
+public class ComparingMatcher implements IValueMatcher, IColumnToString {
 	// Can not be an IValueMatcher
 	@NonNull
 	Object operand;
@@ -48,10 +48,9 @@ public class ComparingMatcher implements IValueMatcher {
 	// else lowerThan
 	boolean greaterThan;
 
-	// else lowerThan
+	// else matchIfStrictlyLower|Greater
 	boolean matchIfEqual;
 
-	// else lowerThan
 	boolean matchIfNull;
 
 	/**
@@ -78,6 +77,62 @@ public class ComparingMatcher implements IValueMatcher {
 			} else {
 				return compare < 0;
 			}
+		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		if (greaterThan) {
+			sb.append('>');
+		} else {
+			sb.append('<');
+		}
+		if (matchIfEqual) {
+			sb.append('=');
+		}
+		sb.append(operand);
+
+		if (matchIfNull) {
+			sb.append("|null");
+		}
+
+		return sb.toString();
+	}
+
+	public static class ComparingMatcherBuilder {
+		boolean greaterThan;
+
+		public ComparingMatcherBuilder greaterThan(boolean greaterElseLower) {
+			this.greaterThan = greaterElseLower;
+
+			return this;
+		}
+
+		public ComparingMatcherBuilder greaterThan() {
+			return this.greaterThan(true);
+		}
+
+		public ComparingMatcherBuilder lowerThan() {
+			return this.lowerThan(true);
+		}
+
+		public ComparingMatcherBuilder greaterThan(Comparable<?> comparable) {
+			return this.greaterThan(true).operand(comparable);
+		}
+
+		public ComparingMatcherBuilder lowerThan(Comparable<?> comparable) {
+			return this.greaterThan(false).operand(comparable);
+		}
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		if (negated) {
+			return column + this.toBuilder().greaterThan(!this.isGreaterThan()).build().toString();
+		} else {
+			return column + this.toString();
 		}
 	}
 }

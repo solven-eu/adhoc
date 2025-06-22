@@ -68,6 +68,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
@@ -566,33 +567,33 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		case AndMatcher andMatcher -> {
-			List<Optional<Condition>> optConditions = andMatcher.getOperands().stream().map(subValueMatcher -> {
-				return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
-			}).toList();
+			List<Optional<Condition>> optConditions = toConditions(column, andMatcher);
 
 			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
 				return Optional.empty();
 			}
 
-			List<Condition> conditions = optConditions.stream().map(Optional::get).toList();
-			condition = DSL.and(conditions);
+			condition = DSL.and(optConditions.stream().map(Optional::get).toList());
 		}
 		case OrMatcher andMatcher -> {
-			List<Optional<Condition>> optConditions = andMatcher.getOperands().stream().map(subValueMatcher -> {
-				return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
-			}).toList();
+			List<Optional<Condition>> optConditions = toConditions(column, andMatcher);
 
 			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
 				return Optional.empty();
 			}
 
-			List<Condition> conditions = optConditions.stream().map(Optional::get).toList();
-			condition = DSL.or(conditions);
+			condition = DSL.or(optConditions.stream().map(Optional::get).toList());
 		}
 		default -> condition = onCustomCondition(column, valueMatcher);
 		}
 
 		return Optional.ofNullable(condition);
+	}
+
+	protected List<Optional<Condition>> toConditions(String column, IHasOperands<IValueMatcher> hasOperands) {
+		return hasOperands.getOperands().stream().map(subValueMatcher -> {
+			return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
+		}).toList();
 	}
 
 	/**

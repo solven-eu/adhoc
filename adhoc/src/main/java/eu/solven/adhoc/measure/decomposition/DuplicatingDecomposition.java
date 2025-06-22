@@ -43,6 +43,8 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.mappath.MapPathGet;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.experimental.SuperBuilder;
@@ -62,6 +64,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 	@Singular
 	@NonNull
+	@Getter(AccessLevel.PROTECTED)
 	Map<String, Collection<?>> columnToCoordinates;
 
 	final Supplier<Map<String, Class<?>>> columnToTypeSupplier = Suppliers.memoize(() -> {
@@ -199,7 +202,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 		return decompositions;
 	}
 
-	private List<List<?>> indexToCoordinates(ISliceWithStep slice,
+	protected List<List<?>> indexToCoordinates(ISliceWithStep slice,
 			Object value,
 			List<String> duplicatedGroupedByColumns) {
 		List<List<?>> indexToGroupedByCoordinates = new ArrayList<>(duplicatedGroupedByColumns.size());
@@ -208,12 +211,16 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 			// Filter coordinates according to filters
 			// BEWARE This is a 1D filtering: some combinations may be filtered (e.g. with an OR).
-			IValueMatcher valueMatcher = FilterHelpers.getValueMatcherLax(slice.asFilter(), relevantColumn);
+			IValueMatcher valueMatcher = getValueMatcher(slice, relevantColumn);
 			indexToGroupedByCoordinates.add(unfilteredCoordinates.stream()
 					.filter(valueMatcher::match)
 					.collect(ImmutableList.toImmutableList()));
 		}
 		return indexToGroupedByCoordinates;
+	}
+
+	protected IValueMatcher getValueMatcher(ISliceWithStep slice, String relevantColumn) {
+		return FilterHelpers.getValueMatcherLax(slice.asFilter(), relevantColumn);
 	}
 
 	@Override

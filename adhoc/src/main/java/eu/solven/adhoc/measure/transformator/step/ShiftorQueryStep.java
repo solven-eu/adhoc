@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -48,6 +48,7 @@ import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,16 +110,16 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
-		Map<String, Object> editedAsMap = FilterHelpers.asMap(editedSlice);
 
 		AdhocMapBuilder builder = AdhocMap.builder(step.getGroupBy().getGroupedByColumns());
 
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
-			Object value = editedAsMap.get(column);
-			if (value == null) {
-				throw new IllegalStateException("Missing value for column=%s in %s".formatted(column, editedAsMap));
+			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
+
+			if (optOperand.isEmpty()) {
+				throw new IllegalStateException("Missing value for column=%s in %s".formatted(column, editedSlice));
 			}
-			builder.append(value);
+			builder.append(optOperand.get());
 		});
 
 		return SliceAsMap.fromMap(builder.build());

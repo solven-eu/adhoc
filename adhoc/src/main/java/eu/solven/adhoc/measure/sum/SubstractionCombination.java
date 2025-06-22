@@ -66,13 +66,15 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 			ICombinationBinding.IRowState state = new ICombinationBinding.IRowState() {
 				long l = 0;
 				double d = 0;
-				Object o;
+				// final Object o;
 
 				@Override
 				public IValueReceiver receive(int index) {
-					if (index == 0) {
-
-					}
+					// if (index == 0) {
+					//
+					// }
+					l = 1;
+					d = 2D;
 					return null;
 				}
 

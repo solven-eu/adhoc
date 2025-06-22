@@ -126,4 +126,23 @@ public class TestComparingMatcher {
 							.contains(InMatcher.isIn(Set.of(123)), comparing234);
 				});
 	}
+
+	@Test
+	public void testBuilder() {
+		Assertions.assertThat(ComparingMatcher.builder().greaterThan(123).build())
+				.isEqualTo(ComparingMatcher.builder().greaterThan(true).operand(123).build());
+
+		Assertions.assertThat(ComparingMatcher.builder().lowerThan("abc").build())
+				.isEqualTo(ComparingMatcher.builder().greaterThan(false).operand("abc").build());
+
+	}
+
+	@Test
+	public void testToString() {
+		Assertions.assertThat(ComparingMatcher.builder().greaterThan(123).build().toString()).isEqualTo(">123");
+
+		Assertions.assertThat(
+				ComparingMatcher.builder().lowerThan("abc").matchIfEqual(true).matchIfNull(true).build().toString())
+				.isEqualTo("<=abc|null");
+	}
 }

@@ -124,19 +124,19 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 	}
 
 	@Test
-	public void testMatchCount_YearMinus1() {
-		ITabularView result = cube().execute(CubeQuery.builder().measure("match_count.Y-1").build());
+	public void testMatchCount_previousWorldCup() {
+		ITabularView result = cube().execute(CubeQuery.builder().measure("match_count.previousWorldCup").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry("match_count.Y-1", 836L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry("match_count.previousWorldCup", 836L).hasSize(1);
 		});
 	}
 
 	@Test
-	public void testMatchCount_YearMinus1_groupByYear() {
-		ITabularView result = cube()
-				.execute(CubeQuery.builder().measure("match_count", "match_count.Y-1").groupByAlso("year").build());
+	public void testMatchCount_previousWorldCup_groupByYear() {
+		ITabularView result = cube().execute(
+				CubeQuery.builder().measure("match_count", "match_count.previousWorldCup").groupByAlso("year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -144,9 +144,53 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 				.hasEntrySatisfying(Map.of("year", 1998L), v -> {
 					Assertions.assertThat((Map) v)
 							.containsEntry("match_count", 64L)
-							.containsEntry("match_count.Y-1", 52L)
+							.containsEntry("match_count.previousWorldCup", 52L)
 							.hasSize(2);
 				});
+	}
+
+	@Test
+	public void testMatchCount_sinceInception_grandTotal() {
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure("match_count", "match_count.sinceInception2").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 836L)
+					.containsEntry("match_count.sinceInception2", 836L)
+					.hasSize(2);
+		});
+	}
+
+	@Test
+	public void testMatchCount_sinceInception_filterYear() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("match_count", "match_count.sinceInception2")
+				.andFilter("year", 1998L)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 64L)
+					.containsEntry("match_count.sinceInception2", 580L)
+					.hasSize(2);
+		});
+	}
+
+	@Test
+	public void testMatchCount_sinceInception_groupByYear() {
+		ITabularView result = cube().execute(
+				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("year").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 64L)
+					.containsEntry("match_count.sinceInception2", 580L)
+					.hasSize(2);
+		}).hasSize(20);
 	}
 
 }
