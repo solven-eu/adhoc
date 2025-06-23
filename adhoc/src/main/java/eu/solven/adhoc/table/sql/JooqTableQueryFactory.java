@@ -78,6 +78,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
@@ -575,14 +576,24 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			condition = DSL.and(optConditions.stream().map(Optional::get).toList());
 		}
-		case OrMatcher andMatcher -> {
-			List<Optional<Condition>> optConditions = toConditions(column, andMatcher);
+		case OrMatcher orMatcher -> {
+			List<Optional<Condition>> optConditions = toConditions(column, orMatcher);
 
 			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
 				return Optional.empty();
 			}
 
 			condition = DSL.or(optConditions.stream().map(Optional::get).toList());
+		}
+		case NotMatcher notMatcher -> {
+			Optional<Condition> optConditions =
+					toCondition(ColumnFilter.builder().column(column).valueMatcher(notMatcher.getNegated()).build());
+
+			if (optConditions.isEmpty()) {
+				return Optional.empty();
+			}
+
+			condition = DSL.not(optConditions.get());
 		}
 		default -> condition = onCustomCondition(column, valueMatcher);
 		}

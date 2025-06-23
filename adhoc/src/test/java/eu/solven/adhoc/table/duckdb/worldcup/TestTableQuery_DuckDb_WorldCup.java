@@ -193,4 +193,18 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 		}).hasSize(20);
 	}
 
+	@Test
+	public void testCoachScore_sinceInception_groupByYear() {
+		ITabularView result = cube().execute(
+				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("year").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("coach_score", 64L)
+					.containsEntry("coach_score.sinceInception2", 580L)
+					.hasSize(2);
+		}).hasSize(20);
+	}
+
 }

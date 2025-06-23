@@ -41,6 +41,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -286,6 +287,20 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.isEqualTo(
 						"""
 								select sum("k") filter (where (cast("c" as varchar) = 'c1' or cast("c" as varchar) = 'c2')) "k" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_NotStringMatcher() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").matching(NotMatcher.not(StringMatcher.hasToString("c1"))).build();
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") filter (where not (cast("c" as varchar) = 'c1')) "k" from "someTableName" group by ALL""");
 	}
 
 }
