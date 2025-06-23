@@ -593,16 +593,23 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected Map<String, Object> propertiesToOptions(Properties properties, String... excludedProperties) {
-		Map<String, Object> decompositionOptions = new LinkedHashMap<>();
+		Map<String, Object> options = new LinkedHashMap<>();
 
 		properties.stringPropertyNames()
 				.stream()
 				// Reject the properties which are implicitly available in Adhoc model
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
 				// There is not `real-time impacts` in Adhoc
-				.filter(k -> !"continuousQueryHandlerKeys".equals(k))
+				.filter(k -> !IPostProcessor.CONTINUOUS_QUERY_HANDLER_KEYS.equals(k))
 				.filter(k -> !Set.of(excludedProperties).contains(k))
-				.forEach(key -> decompositionOptions.put(key, properties.get(key)));
-		return decompositionOptions;
+				.forEach(key -> options.put(key, properties.get(key)));
+
+		properties.entrySet()
+				.stream()
+				.filter(e -> !(e.getKey() instanceof String && e.getValue() instanceof String))
+				.filter(k -> !Set.of(excludedProperties).contains(k.getKey()))
+				.forEach(entry -> options.put(String.valueOf(entry.getKey()), entry.getValue()));
+
+		return options;
 	}
 }

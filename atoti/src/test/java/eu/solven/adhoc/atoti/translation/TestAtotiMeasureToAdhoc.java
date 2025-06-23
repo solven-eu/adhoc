@@ -24,8 +24,10 @@ package eu.solven.adhoc.atoti.translation;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,6 +42,8 @@ import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.copper.pivot.pp.ShiftPostProcessor;
 import com.activeviam.copper.pivot.pp.StoreLookupPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
 import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
@@ -101,6 +105,37 @@ public class TestAtotiMeasureToAdhoc {
 
 		properties.setProperty("key", " a\t,\rb  ");
 		Assertions.assertThat(AtotiMeasureToAdhoc.getPropertyList(properties, "key")).containsExactly("a", "b");
+	}
+
+	@Test
+	public void testPropertiesToOptions() throws JsonProcessingException {
+		Properties properties = new Properties();
+
+		properties.put("stringK", "stringV");
+		properties.put("stringK_excluded", "stringV2");
+		properties.put("booleanK", true);
+		properties.put("intK", 123);
+
+		properties.put("lambdaK", (Function<Object, Object>) Object::toString);
+
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		Map<String, Object> options = converter.propertiesToOptions(properties, "stringK_excluded");
+
+		Assertions.assertThat(options)
+				.hasSize(4)
+				.containsEntry("stringK", "stringV")
+				.doesNotContainKey("stringK_excluded")
+				.containsEntry("stringK", "stringV")
+				.containsEntry("booleanK", true)
+				.containsEntry("intK", 123)
+				.containsKey("lambdaK");
+
+		// String asString = TestMapBasedTabularView.verifyJackson(Map.class, options);
+		String asString = new ObjectMapper().writeValueAsString(options);
+		Assertions.assertThat(asString).isEqualTo("""
+				{"stringK":"stringV","booleanK":true,"lambdaK":{},"intK":123}
+								""");
 	}
 
 	@Test

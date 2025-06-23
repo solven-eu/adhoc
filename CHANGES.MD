@@ -23,6 +23,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DuplicatingDecomposition` is revamped regarding management of filtered-but-not-grouped-by columns.
 - Update `DuckDB` to `1.3.1.0` (from `1.3.0.0`)
 - `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
+- `AtotiMeasureToAdhoc` now supports non-`String` properties.
 
 ### Fixed
 - `JooqTableQueryFactory` now supports `OrMatcher`, `AndMatcher` and `NotMatcher`.

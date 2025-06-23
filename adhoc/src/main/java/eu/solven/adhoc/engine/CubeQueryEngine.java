@@ -490,6 +490,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
 				underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
 
+		// TODO Add one path from a rootStep to this step
+
 		return new IllegalStateException(describeStep.toString(), e);
 	}
 
