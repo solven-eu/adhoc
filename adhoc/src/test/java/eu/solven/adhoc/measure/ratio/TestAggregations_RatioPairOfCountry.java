@@ -129,7 +129,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@Test
 	public void testParis() {
-		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").debug(true).build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("FRoverUS").andFilter("city", "Paris").build();
 		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

@@ -24,6 +24,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Update `DuckDB` to `1.3.1.0` (from `1.3.0.0`)
 - `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
 - `AtotiMeasureToAdhoc` now supports non-`String` properties.
+- `MultitypeHashColumn.purgeAggregationCarriers()` now returns a purged copy, instead of mutating current instance.
 
 ### Fixed
 - `JooqTableQueryFactory` now supports `OrMatcher`, `AndMatcher` and `NotMatcher`.

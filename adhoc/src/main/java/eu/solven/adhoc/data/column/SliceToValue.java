@@ -106,4 +106,9 @@ public class SliceToValue implements ISliceToValue {
 		return column.stream(strategy);
 	}
 
+	@Override
+	public ISliceToValue purgeCarriers() {
+		return SliceToValue.builder().column(column.purgeAggregationCarriers()).build();
+	}
+
 }

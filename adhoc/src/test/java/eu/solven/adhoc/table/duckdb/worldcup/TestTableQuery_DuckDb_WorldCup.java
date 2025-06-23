@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.duckdb.worldcup;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ARawDagTest;
@@ -200,10 +201,11 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
-			Assertions.assertThat((Map) v)
-					.containsEntry("coach_score", 64L)
-					.containsEntry("coach_score.sinceInception2", 580L)
-					.hasSize(2);
+			Assertions.assertThat((Map) v).hasEntrySatisfying("coach_score", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(0.71, 0.72);
+			}).hasEntrySatisfying("coach_score.sinceInception2", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(20.09, 20.10);
+			}).hasSize(2);
 		}).hasSize(20);
 	}
 

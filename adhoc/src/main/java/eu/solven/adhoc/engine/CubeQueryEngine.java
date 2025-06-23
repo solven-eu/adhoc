@@ -433,6 +433,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 	}
 
+	protected boolean mayHoldCarriers(CubeQueryStep step) {
+		return step.getMeasure() instanceof IHasAggregationKey agg
+				&& factories.getOperatorFactory().makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers;
+	}
+
 	protected ISliceToValue processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			CubeQueryStep queryStep,
 			List<CubeQueryStep> underlyingSteps,
@@ -443,9 +448,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			return SliceToValue.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-				ISliceToValue values = queryStepToValues.get(underlyingStep);
+				ISliceToValue underlyingValues = queryStepToValues.get(underlyingStep);
 
-				if (values == null) {
+				if (underlyingValues == null) {
 					if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
 						return SliceToValue.empty();
 					} else {
@@ -454,7 +459,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					}
 				}
 
-				return values;
+				if (mayHoldCarriers(underlyingStep)) {
+					return underlyingValues.purgeCarriers();
+				} else {
+					return underlyingValues;
+				}
 			}).toList();
 
 			// BEWARE The need to call again `.wrapNode` looks weird
@@ -527,9 +536,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			} else {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg && EmptyAggregation.isEmpty(agg);
 
-				boolean hasCarrierMeasure = step.getMeasure() instanceof IHasAggregationKey agg
-						&& factories.getOperatorFactory()
-								.makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers
+				boolean doClearCarriers = mayHoldCarriers(step)
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
 				IColumnScanner<SliceAsMap> baseRowScanner =
@@ -562,7 +569,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 							}
 						};
 					};
-				} else if (hasCarrierMeasure) {
+				} else if (doClearCarriers) {
 					rowScanner = slice -> {
 						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
 

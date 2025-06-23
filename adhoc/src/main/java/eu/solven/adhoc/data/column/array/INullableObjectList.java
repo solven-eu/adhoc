@@ -32,4 +32,6 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
  */
 public interface INullableObjectList<T> extends ObjectList<T>, INullableArray {
 	void forEach(Int2ObjectBiConsumer indexToValue);
+
+	INullableObjectList<T> duplicate();
 }

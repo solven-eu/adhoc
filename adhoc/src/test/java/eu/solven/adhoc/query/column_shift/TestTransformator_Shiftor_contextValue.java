@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  * This is useful to check advanced behaviors around customMarker. A legitimate case for customMarker is to force a
  * customMarker for a given measure, while other measure may be dynamic.
  *
- * This mostly duplicates {@link TestShiftor}, but requiring the shift to EUR to be provided as customMarker.
+ * This mostly duplicates {@link TestCubeQuery_Shiftor}, but requiring the shift to EUR to be provided as customMarker.
  */
 @Slf4j
 public class TestTransformator_Shiftor_contextValue extends ADagTest implements IAdhocTestConstants {

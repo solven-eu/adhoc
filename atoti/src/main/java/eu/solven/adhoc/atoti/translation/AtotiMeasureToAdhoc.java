@@ -303,7 +303,9 @@ public class AtotiMeasureToAdhoc {
 		} else if (DrillupPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDrillupPostProcessor(measure);
 		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
-			return onLocationShiftPosProcessor(measure);
+			return onLocationShiftPosProcessor(measure, builder -> {
+
+			});
 		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)
 				|| ABasicPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onBasicPostProcessor(measure);
@@ -359,14 +361,7 @@ public class AtotiMeasureToAdhoc {
 			combinatorBuilder.underlyings(underlyingNames);
 		}
 
-		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
-
-		Properties properties = measure.getProperties();
-		properties.stringPropertyNames()
-				.stream()
-				// Reject the properties which are implicitly available in Adhoc model
-				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
+		Map<String, Object> combinatorOptions = propertiesToOptions(measure.getProperties());
 
 		combinatorBuilder.combinationKey(measure.getPluginKey());
 		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
@@ -405,7 +400,8 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	// TODO ParentValuePostProcessor is not managed as it requires multi-level hierarchies
-	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure) {
+	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure,
+			Consumer<Shiftor.ShiftorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
@@ -415,13 +411,10 @@ public class AtotiMeasureToAdhoc {
 
 		shiftorBuilder.editorKey(measure.getPluginKey());
 
-		Map<String, Object> editorOptions = new LinkedHashMap<>();
-		properties.stringPropertyNames()
-				.stream()
-				// Reject the properties which are implicitly available in Adhoc model
-				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-				.forEach(key -> editorOptions.put(key, properties.get(key)));
+		Map<String, Object> editorOptions = propertiesToOptions(properties);
 		shiftorBuilder.editorOptions(editorOptions);
+
+		onBuilder.accept(shiftorBuilder);
 
 		return List.of(shiftorBuilder.build());
 	}

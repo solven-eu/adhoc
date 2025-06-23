@@ -25,12 +25,7 @@ package eu.solven.adhoc.data.tabular;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -39,7 +34,6 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
@@ -62,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
+
 	@NonNull
 	@Default
 	AdhocFactories factories = AdhocFactories.builder().build();
@@ -133,18 +128,21 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator, boolean purgeCarriers) {
+	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator
+	// , boolean purgeCarriers
+	) {
 		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator);
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying
 			// measure, and not a single aggregate was written
 			notFinalColumn = MultitypeHashColumn.empty();
-		} else if (purgeCarriers) {
-			// Typically converts a CountHolder into the count as a `long`
-			// May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
-			notFinalColumn.purgeAggregationCarriers();
 		}
+		// else if (purgeCarriers) {
+		// // Typically converts a CountHolder into the count as a `long`
+		// // May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
+		// notFinalColumn.purgeAggregationCarriers();
+		// }
 
 		if (notFinalColumn instanceof ICompactable compactable) {
 			compactable.compact();
@@ -163,66 +161,10 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column,
 			Object2IntFunction<T> sliceToIndex,
 			Int2ObjectFunction<T> indexToSlice) {
-		return new IMultitypeColumnFastGet<>() {
-
-			@Override
-			public long size() {
-				return column.size();
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return column.isEmpty();
-			}
-
-			@Override
-			public void purgeAggregationCarriers() {
-				column.purgeAggregationCarriers();
-			}
-
-			@Override
-			public IValueReceiver append(T slice) {
-				throw new UnsupportedOperationException("Read-Only");
-			}
-
-			@Override
-			public void scan(IColumnScanner<T> rowScanner) {
-				column.scan(rowIndex -> rowScanner.onKey(indexToSlice.apply(rowIndex)));
-			}
-
-			@Override
-			public <U> Stream<U> stream(IColumnValueConverter<T, U> converter) {
-				return column.stream(rowIndex -> converter.prepare(indexToSlice.apply(rowIndex)));
-			}
-
-			@Override
-			public Stream<SliceAndMeasure<T>> stream() {
-				return column.stream()
-						.map(sliceAndMeasure -> SliceAndMeasure.<T>builder()
-								.slice(indexToSlice.get(sliceAndMeasure.getSlice()))
-								.valueProvider(sliceAndMeasure.getValueProvider())
-								.build());
-			}
-
-			@Override
-			public Stream<T> keyStream() {
-				return column.keyStream().map(indexToSlice::apply);
-			}
-
-			@Override
-			public IValueProvider onValue(T key) {
-				return column.onValue(sliceToIndex.apply(key));
-			}
-
-			@Override
-			public IValueReceiver set(T key) {
-				throw new UnsupportedOperationException("Read-Only");
-			}
-
-			@Override
-			public String toString() {
-				return "column=" + column;
-			}
-		};
+		return UndictionarizedColumn.<T>builder()
+				.indexToSlice(indexToSlice)
+				.sliceToIndex(sliceToIndex)
+				.column(column)
+				.build();
 	}
 }

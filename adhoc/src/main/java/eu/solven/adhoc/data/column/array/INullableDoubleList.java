@@ -22,15 +22,16 @@
  */
 package eu.solven.adhoc.data.column.array;
 
-import eu.solven.adhoc.data.tabular.primitives.Int2LongBiConsumer;
-import it.unimi.dsi.fastutil.longs.LongList;
+import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
 
 /**
- * Adds `null` capabilities to a {@link LongList}.
+ * A {@link DoubleList} which enables some indexes to be associated to null
  * 
  * @author Benoit Lacelle
  */
-public interface INullableLongArray extends LongList, INullableArray {
+public interface INullableDoubleList extends DoubleList, INullableArray {
+	void forEach(Int2DoubleBiConsumer indexToValue);
 
-	void forEach(Int2LongBiConsumer indexToValue);
+	INullableDoubleList duplicate();
 }

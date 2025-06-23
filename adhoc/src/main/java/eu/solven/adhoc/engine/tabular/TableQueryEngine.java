@@ -58,7 +58,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -480,23 +479,24 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.measure(aggregator)
 					.build();
 
-			boolean doPurgeCarriers;
-			if (factories.getOperatorFactory()
-					.makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
-				if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
-					doPurgeCarriers = false;
-				} else {
-					doPurgeCarriers = true;
-				}
-			} else {
-				doPurgeCarriers = false;
-			}
+			// boolean doPurgeCarriers;
+			// if (factories.getOperatorFactory()
+			// .makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
+			// if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
+			// doPurgeCarriers = false;
+			// } else {
+			// doPurgeCarriers = true;
+			// }
+			// } else {
+			// doPurgeCarriers = false;
+			// }
 
 			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
 			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
 			// underlyings
-			IMultitypeColumnFastGet<SliceAsMap> column =
-					coordinatesToAggregates.closeColumn(filteredAggregator, doPurgeCarriers);
+			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(filteredAggregator
+			// , doPurgeCarriers
+			);
 
 			IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed;
 			if (suppressedGroupBys.isEmpty()) {

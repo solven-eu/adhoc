@@ -67,7 +67,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testGrandTotal() {
-		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").debug(true).build();
+		CubeQuery adhocQuery = CubeQuery.builder().measure("d_country=current_ratio").build();
 		ITabularView output = cube().execute(adhocQuery);
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

@@ -30,7 +30,7 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 public class TestNullableDoubleArray {
 	@Test
 	public void testRemove() {
-		NullableDoubleArray array = NullableDoubleArray.builder().build();
+		NullableDoubleList array = NullableDoubleList.builder().build();
 
 		array.add(12.34D);
 		array.add(23.45D);
@@ -52,7 +52,7 @@ public class TestNullableDoubleArray {
 
 	@Test
 	public void testAddNulThenNotNull() {
-		NullableDoubleArray array = NullableDoubleArray.builder().build();
+		NullableDoubleList array = NullableDoubleList.builder().build();
 
 		array.addNull();
 		array.add(23.45D);
@@ -63,7 +63,7 @@ public class TestNullableDoubleArray {
 
 	@Test
 	public void testOutOfBounds() {
-		NullableDoubleArray array = NullableDoubleArray.builder().build();
+		NullableDoubleList array = NullableDoubleList.builder().build();
 
 		array.add(12.34D);
 		array.add(23.45D);
@@ -74,7 +74,7 @@ public class TestNullableDoubleArray {
 
 	@Test
 	public void testCompact() {
-		NullableDoubleArray array = NullableDoubleArray.builder().build();
+		NullableDoubleList array = NullableDoubleList.builder().build();
 
 		array.add(12.34D);
 		array.add(23.45D);

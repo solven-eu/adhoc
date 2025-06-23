@@ -50,7 +50,6 @@ import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.StreamStrategy;
-import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -373,14 +372,14 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	@Override
-	public void purgeAggregationCarriers() {
-		values.replaceAllObjects(value -> {
-			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				return IValueProvider.getValue(aggregationCarrier::acceptValueReceiver);
-			} else {
-				return value;
-			}
-		});
+	public MultitypeNavigableColumn<T> purgeAggregationCarriers() {
+		doLock();
+
+		return MultitypeNavigableColumn.builder()
+				.keys((List) keys)
+				.locked(true)
+				.values(values.purgeAggregationCarriers())
+				.build();
 	}
 
 	@Override

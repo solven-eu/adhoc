@@ -134,8 +134,7 @@ public class TestAtotiMeasureToAdhoc {
 		// String asString = TestMapBasedTabularView.verifyJackson(Map.class, options);
 		String asString = new ObjectMapper().writeValueAsString(options);
 		Assertions.assertThat(asString).isEqualTo("""
-				{"stringK":"stringV","booleanK":true,"lambdaK":{},"intK":123}
-								""");
+				{"stringK":"stringV","booleanK":true,"lambdaK":{},"intK":123}""");
 	}
 
 	@Test

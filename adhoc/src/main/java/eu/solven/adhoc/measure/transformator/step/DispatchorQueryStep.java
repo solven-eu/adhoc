@@ -157,17 +157,19 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 				}
 				return;
 			}
-			// if (mergingContext.addInputToOutput(decompositionEntry)) {
 			IValueProvider fragmentValueProvider = decompositionEntry.getValue();
 
 			if (isDebug()) {
-				Object fragmentValue = IValueProvider.getValue(fragmentValueProvider);
-				log.info("[DEBUG] Contribute {} into {}", fragmentValue, fragmentCoordinate);
+				log.info("[DEBUG] Contribute {}={} ({} generated decomposition={}) in {}",
+						dispatchor.getName(),
+						IValueProvider.getValue(fragmentValueProvider),
+						dispatchor.getDecompositionKey(),
+						decompositionEntry.getSlice(),
+						slice);
 			}
 
 			// Build the actual fragment coordinate, given the groupedBy columns (as the decomposition may have
-			// returned
-			// finer entries).
+			// returned finer entries).
 			Map<String, ?> outputCoordinate = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
 
 			SliceAsMap coordinateAsSlice = SliceAsMap.fromMap(outputCoordinate);
@@ -179,14 +181,6 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 								fragmentCoordinate,
 								AdhocDebug.toString(o)));
 			}
-			// } else {
-			// // Typically happens on a multi-filter on the group hierarchy: a single element appears multiple
-			// // times (for each contributed group). But the element should be contributed only once.
-			// // BEWARE Full discard is probably not-satisfying with a weighted-decomposition, as we have no
-			// // reason to keep one weighted instead of the other. But it is OK for many2many as all groups have the
-			// // same weight. Though, a multi-filter on groups would be an unclear case.
-			// log.debug("slice={} has already contributed into {}", slice, decompositionEntry.getSlice());
-			// }
 		});
 	}
 

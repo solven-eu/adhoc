@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.Collections2;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
@@ -136,9 +137,9 @@ public class TestMultitypeNavigableMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
-		storage.onValue("k1", o -> {
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(3);
 		});
 	}
@@ -154,9 +155,9 @@ public class TestMultitypeNavigableMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.SingletonRankCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
-		storage.onValue("k1", o -> {
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isNull();
 		});
 	}
@@ -176,13 +177,13 @@ public class TestMultitypeNavigableMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
-		storage.onValue("k1", o -> {
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(1);
 		});
 
-		storage.onValue("k" + size, o -> {
+		purged.onValue("k" + size, o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
 	}

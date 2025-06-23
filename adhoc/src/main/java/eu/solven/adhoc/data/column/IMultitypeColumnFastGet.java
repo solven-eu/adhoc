@@ -73,4 +73,6 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	@Deprecated(since = "Should be removed from the API")
 	IValueReceiver set(T key);
 
+	@Override
+	IMultitypeColumnFastGet<T> purgeAggregationCarriers();
 }

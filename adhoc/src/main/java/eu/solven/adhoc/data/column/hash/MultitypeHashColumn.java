@@ -340,7 +340,22 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public void purgeAggregationCarriers() {
+	public MultitypeHashColumn<T> purgeAggregationCarriers() {
+		Object2LongMap<T> measureToAggregateL2 = new Object2LongOpenHashMap<>(measureToAggregateL);
+		Object2DoubleMap<T> measureToAggregateD2 = new Object2DoubleOpenHashMap<>(measureToAggregateD);
+		Object2ObjectMap<T, Object> measureToAggregateO2 = new Object2ObjectOpenHashMap<>(measureToAggregateO);
+
+		MultitypeHashColumn<T> duplicatedForPurge = MultitypeHashColumn.<T>builder()
+				.measureToAggregateL(measureToAggregateL2)
+				.measureToAggregateD(measureToAggregateD2)
+				.measureToAggregateO(measureToAggregateO2)
+				.build();
+
+		duplicatedForPurge.unsafePurge();
+		return duplicatedForPurge;
+	}
+
+	protected void unsafePurge() {
 		measureToAggregateO.forEach((key, value) -> {
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
 				aggregationCarrier.acceptValueReceiver(new IValueReceiver() {

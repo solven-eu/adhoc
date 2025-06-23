@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.column_shift;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,11 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.measure.IMeasureForestVisitor;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -44,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
  * Standard behavior of {@link Shiftor}.
  */
 @Slf4j
-public class TestShiftor extends ADagTest implements IAdhocTestConstants {
+public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Override
 	@BeforeEach
@@ -67,6 +72,7 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 		}
 	}
 
+	@BeforeEach
 	void prepareMeasures() {
 		forest.addMeasure(k1Sum);
 
@@ -79,8 +85,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testGrandTotal() {
-		prepareMeasures();
-
 		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -93,8 +97,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testGroupByCcy() {
-		prepareMeasures();
-
 		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -113,8 +115,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testGroupByCcyFilterCcy_notFiltered() {
-		prepareMeasures();
-
 		ITabularView output =
 				cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "USD").groupByAlso("ccy").build());
 
@@ -128,8 +128,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testGroupByCcyFilterCcy_filteredCcy() {
-		prepareMeasures();
-
 		ITabularView output =
 				cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "EUR").groupByAlso("ccy").build());
 
@@ -143,8 +141,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testUnknownCcy() {
-		prepareMeasures();
-
 		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -154,8 +150,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testUnknownCcy_groupByColor() {
-		prepareMeasures();
-
 		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(mName).andFilter("ccy", "unknown").groupByAlso("color").build());
 
@@ -166,8 +160,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testGroupByColor() {
-		prepareMeasures();
-
 		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("color").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -184,8 +176,6 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 	// This test is interesting to ensure Shiftor does not mix-up filters from slice and filters from queryStep
 	@Test
 	public void testFilterByComplexColor() {
-		prepareMeasures();
-
 		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(mName).andFilter(ColumnFilter.isLike("color", "bl%")).build());
 
@@ -196,4 +186,48 @@ public class TestShiftor extends ADagTest implements IAdhocTestConstants {
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
 		});
 	}
+
+	// Shiftor over an IHasCarrier may lead to issues. Most of them are not specific to Shiftor.
+	@Test
+	public void testGroupByColor_avg() {
+		toAvg();
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("color").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "red");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	@Test
+	public void testGrandTotal_avg() {
+		toAvg();
+		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + (123 + 345) / 2);
+		});
+	}
+
+	private void toAvg() {
+		forest.acceptVisitor(new IMeasureForestVisitor() {
+			@Override
+			public Set<IMeasure> mapMeasure(IMeasure measure) {
+				if (measure instanceof Aggregator aggregator) {
+					return Set.of(aggregator.toBuilder().aggregationKey(AvgAggregation.KEY).build());
+				} else {
+					return Set.of(measure);
+				}
+			}
+		});
+	}
+
 }

@@ -69,10 +69,10 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	// with a multiType object
 	@Default
 	@NonNull
-	final INullableLongArray measureToAggregateL = NullableLongArray.builder().list(new LongArrayList(0)).build();
+	final INullableLongList measureToAggregateL = NullableLongList.builder().list(new LongArrayList(0)).build();
 	@Default
 	@NonNull
-	final INullableDoubleArray measureToAggregateD = NullableDoubleArray.builder().list(new DoubleArrayList(0)).build();
+	final INullableDoubleList measureToAggregateD = NullableDoubleList.builder().list(new DoubleArrayList(0)).build();
 	@Default
 	@NonNull
 	final INullableObjectList<Object> measureToAggregateO =
@@ -118,7 +118,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	public IValueReceiver append(T key) {
 		int keyAsInt = key.intValue();
 		if (measureToAggregateL.containsIndex(keyAsInt) || measureToAggregateD.containsIndex(keyAsInt)
-				|| measureToAggregateO.containsIndex(keyAsInt)) {
+				|| keyAsInt < measureToAggregateO.size() && measureToAggregateO.get(keyAsInt) != null) {
 			return merge(key);
 		}
 
@@ -336,14 +336,29 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	 */
 	public static <T extends Integer> MultitypeArrayColumn<T> empty() {
 		return MultitypeArrayColumn.<T>builder()
-				.measureToAggregateL(NullableLongArray.empty())
-				.measureToAggregateD(NullableDoubleArray.empty())
+				.measureToAggregateL(NullableLongList.empty())
+				.measureToAggregateD(NullableDoubleList.empty())
 				.measureToAggregateO(NullableObjectList.empty())
 				.build();
 	}
 
 	@Override
-	public void purgeAggregationCarriers() {
+	public MultitypeArrayColumn<T> purgeAggregationCarriers() {
+		final INullableLongList measureToAggregateL2 = measureToAggregateL.duplicate();
+		final INullableDoubleList measureToAggregateD2 = measureToAggregateD.duplicate();
+		final INullableObjectList<Object> measureToAggregateO2 = measureToAggregateO.duplicate();
+
+		MultitypeArrayColumn<T> duplicatedForPurge = MultitypeArrayColumn.<T>builder()
+				.measureToAggregateL(measureToAggregateL2)
+				.measureToAggregateD(measureToAggregateD2)
+				.measureToAggregateO(measureToAggregateO2)
+				.build();
+
+		duplicatedForPurge.unsafePurge();
+		return duplicatedForPurge;
+	}
+
+	protected void unsafePurge() {
 		for (int keyNotFinal = 0; keyNotFinal < measureToAggregateO.size(); keyNotFinal++) {
 			int key = keyNotFinal;
 			Object value = measureToAggregateO.get(key);

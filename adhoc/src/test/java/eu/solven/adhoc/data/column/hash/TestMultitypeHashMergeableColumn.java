@@ -172,9 +172,13 @@ public class TestMultitypeHashMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
 		storage.onValue("k1", o -> {
+			Assertions.assertThat(o).isInstanceOf(RankAggregation.RankedElementsCarrier.class);
+		});
+
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(3);
 		});
 	}
@@ -190,9 +194,9 @@ public class TestMultitypeHashMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.IRankAggregationCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
-		storage.onValue("k1", o -> {
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isNull();
 		});
 	}
@@ -212,13 +216,13 @@ public class TestMultitypeHashMergeableColumn {
 			Assertions.assertThat(o).isInstanceOf(RankAggregation.IRankAggregationCarrier.class);
 		});
 
-		storage.purgeAggregationCarriers();
+		MultitypeHashColumn<String> purged = storage.purgeAggregationCarriers();
 
-		storage.onValue("k1", o -> {
+		purged.onValue("k1", o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(1);
 		});
 
-		storage.onValue("k" + size, o -> {
+		purged.onValue("k" + size, o -> {
 			Assertions.assertThat(o).isInstanceOf(Integer.class).isEqualTo(size);
 		});
 	}
