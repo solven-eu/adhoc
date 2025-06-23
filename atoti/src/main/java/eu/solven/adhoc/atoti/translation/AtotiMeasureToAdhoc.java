@@ -325,7 +325,11 @@ public class AtotiMeasureToAdhoc {
 		log.warn("Measure={} may not be properly converted as {} is an advancedPostProcessor",
 				measure.getName(),
 				measure.getPluginKey());
-		return onBasicPostProcessor(measure);
+
+		// Dispatchor is not most probable transformator for an advancedPostProcessor
+		return onDispatchor(measure, b -> {
+
+		});
 	}
 
 	/**

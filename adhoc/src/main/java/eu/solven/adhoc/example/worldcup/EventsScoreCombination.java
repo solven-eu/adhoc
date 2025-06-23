@@ -48,13 +48,13 @@ public class EventsScoreCombination implements ICombination {
 			nbRedcards = 0L;
 		}
 
-		Long nbMatch = (Long) underlyingValues.get(2);
+		Number nbMatch = (Number) underlyingValues.get(2);
 		if (nbMatch == null) {
 			throw new IllegalStateException("Can not have a goal or redcard event without a match");
 		}
 
 		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
-				.divide(BigDecimal.valueOf(nbMatch), RoundingMode.HALF_EVEN)
+				.divide(BigDecimal.valueOf(nbMatch.longValue()), RoundingMode.HALF_EVEN)
 				.doubleValue();
 	}
 }

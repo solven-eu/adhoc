@@ -71,7 +71,7 @@ export default {
 			selectedColumnsOrdered: [],
 			customMarkers: {},
 			// `optionName->boolean`
-			options: {},
+			selectedOptions: {},
 
 			onColumnToggled: function (column) {
 				const array = queryModel.selectedColumnsOrdered;
@@ -178,7 +178,10 @@ export default {
 						}
 						queryModel.filter = queryModelFromHash.filter || {};
 						queryModel.customMarkers = queryModelFromHash.customMarkers || {};
-						queryModel.options = queryModelFromHash.options || {};
+
+						for (const optionName of Object.values(queryModelFromHash.options)) {
+							queryModel.selectedOptions[optionName] = true;
+						}
 
 						console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
 					}
@@ -203,7 +206,7 @@ export default {
 				currentHashObject.query.measures = queried(newQueryModel.selectedMeasures);
 				currentHashObject.query.filter = newQueryModel.filter || {};
 				currentHashObject.query.customMarkers = newQueryModel.customMarkers || {};
-				currentHashObject.query.options = queried(newQueryModel.options) || {};
+				currentHashObject.query.options = queried(newQueryModel.selectedOptions) || {};
 
 				console.debug("Saving queryModel to hash", JSON.stringify(newQueryModel));
 

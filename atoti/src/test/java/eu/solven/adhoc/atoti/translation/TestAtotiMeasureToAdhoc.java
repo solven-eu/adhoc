@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import eu.solven.adhoc.measure.model.Partitionor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -59,8 +58,10 @@ import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -475,9 +476,6 @@ public class TestAtotiMeasureToAdhoc {
 		pp.setUnderlyingMeasures("m1,m2");
 		pp.setPluginKey("somePluginKey");
 
-		Properties properties = new Properties();
-		pp.setProperties(properties);
-
 		Columnator columnator = (Columnator) converter.onColumnator(pp, b -> {
 			b.columns(Set.of("l1", "l2"));
 		});
@@ -485,5 +483,24 @@ public class TestAtotiMeasureToAdhoc {
 		Assertions.assertThat(columnator.getName()).isEqualTo("someMeasureName");
 		Assertions.assertThat(columnator.getCombinationKey()).isEqualTo("somePluginKey");
 		Assertions.assertThat(columnator.getColumns()).isEqualTo(Set.of("l1", "l2"));
+	}
+
+	@Test
+	public void testOnAdvanced() {
+		CustomActivePivotMeasureToAdhoc converter =
+				CustomActivePivotMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		IPostProcessorDescription pp = new PostProcessorDescription();
+		pp.setName("someMeasureName");
+		pp.setUnderlyingMeasures("m1");
+		pp.setPluginKey("somePluginKey");
+
+		List<IMeasure> transformators = converter.onAdvancedPostProcessor(pp);
+
+		Assertions.assertThat(transformators).singleElement().isInstanceOfSatisfying(Dispatchor.class, m -> {
+			Assertions.assertThat(m.getName()).isEqualTo("someMeasureName");
+			Assertions.assertThat(m.getDecompositionKey()).isEqualTo("somePluginKey");
+			Assertions.assertThat(m.getUnderlying()).isEqualTo("m1");
+		});
 	}
 }
