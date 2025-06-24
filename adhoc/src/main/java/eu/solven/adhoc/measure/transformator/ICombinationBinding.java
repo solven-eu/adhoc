@@ -24,7 +24,11 @@ package eu.solven.adhoc.measure.transformator;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.MultitypeCell;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
+import eu.solven.adhoc.util.AdhocBlackHole;
 
 /**
  * Enables processing an {@link ICombination} along columns, without having to create {@link IValueReceiver} for each
@@ -35,35 +39,83 @@ import eu.solven.adhoc.measure.combination.ICombination;
 @Deprecated(since = "Not-Ready")
 public interface ICombinationBinding {
 
-	ICombinationBinding NULL = null;
+	static ICombinationBinding atIndex(int bindedIndex) {
 
-	static ICombinationBinding return0() {
-		// TODO Auto-generated method stub
-		return null;
+		/**
+		 * A ICombinationBinding which transmit the IValueProvider at given index.
+		 */
+		return new ICombinationBinding() {
+			MultitypeCell receiver = MultitypeCell.builder().aggregation(new CoalesceAggregation()).build();
+
+			IValueProvider consumer = new IValueProvider() {
+
+				@Override
+				public void acceptReceiver(IValueReceiver valueReceiver) {
+					receiver.acceptReceiver(valueReceiver);
+				}
+			};
+
+			@Override
+			public void reset(ISliceWithStep slice) {
+				receiver.clear();
+			}
+
+			@Override
+			public IValueReceiver readUnderlying(int underlyingIndex) {
+				if (underlyingIndex == bindedIndex) {
+					return receiver;
+				} else {
+					return AdhocBlackHole.getInstance();
+				}
+			}
+
+			@Override
+			public IValueProvider reduce() {
+				return consumer;
+			}
+
+		};
 	}
 
 	/**
+	 * Reset the state for given slice.
 	 * 
-	 * 
-	 * @author Benoit Lacelle
+	 * @param slice
 	 */
-	@FunctionalInterface
-	interface On2 {
-		void on3(IValueReceiver valueReceiver, IValueProvider left, IValueProvider right);
-	}
-
-	static ICombinationBinding on2(On2 on3) {
-		return null;
-	}
+	void reset(ISliceWithStep slice);
 
 	/**
 	 * 
-	 * @return
+	 * @param underlyingIndex
+	 * @return a {@link IValueReceiver} for given underlyingIndex.
 	 */
-	interface IRowState {
-		void receive(int index, IValueProvider valueProvider);
+	IValueReceiver readUnderlying(int underlyingIndex);
 
-		IValueReceiver receive(int index);
+	IValueProvider reduce();
+
+	/**
+	 * 
+	 * @return a {@link ICombinationBinding} which always returns null.
+	 */
+	static ICombinationBinding empty() {
+		return new ICombinationBinding() {
+
+			@Override
+			public void reset(ISliceWithStep slice) {
+				// nothing to do
+			}
+
+			@Override
+			public IValueReceiver readUnderlying(int underlyingIndex) {
+				return AdhocBlackHole.getInstance();
+			}
+
+			@Override
+			public IValueProvider reduce() {
+				return IValueProvider.NULL;
+			}
+
+		};
 	}
 
 }

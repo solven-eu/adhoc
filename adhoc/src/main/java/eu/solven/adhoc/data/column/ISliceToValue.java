@@ -39,7 +39,7 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
  * 
  * @author Benoit Lacelle
  */
-public interface ISliceToValue {
+public interface ISliceToValue extends ICompactable {
 	/**
 	 * 
 	 * @return true if `keySetStream` is already sorted

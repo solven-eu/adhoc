@@ -22,17 +22,26 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.List;
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants {
@@ -79,6 +88,26 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasStackTraceContaining("in cycle=");
+	}
+
+	@Test
+	public void testCompactColumns() {
+		CubeQueryEngine engine = engine();
+
+		Aggregator measure = Aggregator.countAsterisk();
+		CubeQueryStep step = CubeQueryStep.builder().measure(measure).build();
+
+		IHasUnderlyingMeasures hasUnderlyingMeasures = Mockito.mock(IHasUnderlyingMeasures.class);
+
+		ITransformatorQueryStep queryStep = Mockito.mock(ITransformatorQueryStep.class);
+		Mockito.when(hasUnderlyingMeasures.wrapNode(engine.factories, step)).thenReturn(queryStep);
+
+		SliceToValue sliceToValue = Mockito.spy(SliceToValue.empty());
+		Mockito.when(queryStep.produceOutputColumn(Mockito.anyList())).thenReturn(sliceToValue);
+
+		ISliceToValue column = engine.processDagStep(Map.of(), step, List.of(), hasUnderlyingMeasures);
+
+		Mockito.verify(column).compact();
 	}
 
 }

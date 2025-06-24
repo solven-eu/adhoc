@@ -77,6 +77,7 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -108,7 +109,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Default
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
-	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
+	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
 	@Override
 	public String toString() {
@@ -362,7 +363,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			queryPod.getExecutorService().submit(() -> {
 
 				Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
-					onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
+					try {
+						onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
+					} catch (RuntimeException e) {
+						throw AdhocExceptionHelpers.wrap(e, "Issue processing step=%s".formatted(queryStep));
+					}
 				};
 
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
@@ -447,39 +452,54 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// TODO This prevent an IMeasure to generate slices from an empty list of underlyings
 			return SliceToValue.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
-			List<ISliceToValue> underlyings = underlyingSteps.stream().map(underlyingStep -> {
-				ISliceToValue underlyingValues = queryStepToValues.get(underlyingStep);
-
-				if (underlyingValues == null) {
-					if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
-						return SliceToValue.empty();
-					} else {
-						throw new IllegalStateException(
-								"queryStep=%s is missing underlyingStep=%s".formatted(queryStep, underlyingStep));
-					}
-				}
-
-				if (mayHoldCarriers(underlyingStep)) {
-					return underlyingValues.purgeCarriers();
-				} else {
-					return underlyingValues;
-				}
-			}).toList();
-
-			// BEWARE The need to call again `.wrapNode` looks weird
-			ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
-
-			ISliceToValue coordinatesToValues;
-			try {
-				coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
-			} catch (RuntimeException e) {
-				throw rethrowWithDetails(queryStep, underlyingSteps, e);
-			}
-
-			return coordinatesToValues;
+			return processDagStep(queryStepToValues, queryStep, underlyingSteps, hasUnderlyingMeasures);
 		} else {
 			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}
+	}
+
+	protected ISliceToValue processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			CubeQueryStep queryStep,
+			List<CubeQueryStep> underlyingSteps,
+			IHasUnderlyingMeasures hasUnderlyingMeasures) {
+		List<ISliceToValue> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
+
+		// BEWARE The need to call again `.wrapNode` looks weird
+		ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
+
+		ISliceToValue coordinatesToValues;
+		try {
+			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
+		} catch (RuntimeException e) {
+			throw rethrowWithDetails(queryStep, underlyingSteps, e);
+		}
+
+		// It feels a bit weird to compact after hand: ISliceToValue may be compacted by construction. But it is
+		// unclear how to achieve that while guaranteed all IMeasureQueryStep implements it effectively.
+		coordinatesToValues.compact();
+
+		return coordinatesToValues;
+	}
+
+	private List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			List<CubeQueryStep> underlyingSteps) {
+		return underlyingSteps.stream().map(underlyingStep -> {
+			ISliceToValue underlyingValues = queryStepToValues.get(underlyingStep);
+
+			if (underlyingValues == null) {
+				if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
+					return SliceToValue.empty();
+				} else {
+					throw new IllegalStateException("missing underlyingStep=%s".formatted(underlyingStep));
+				}
+			}
+
+			if (mayHoldCarriers(underlyingStep)) {
+				return underlyingValues.purgeCarriers();
+			} else {
+				return underlyingValues;
+			}
+		}).toList();
 	}
 
 	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",

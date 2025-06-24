@@ -28,12 +28,12 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.decomposition.LinearDecomposition;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
+import eu.solven.adhoc.util.AdhocIdentity;
 
 public class TestCompositeOperatorFactory {
 	@Test

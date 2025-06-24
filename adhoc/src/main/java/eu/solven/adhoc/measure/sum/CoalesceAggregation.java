@@ -55,6 +55,10 @@ public class CoalesceAggregation implements IAggregation {
 		failIfDifferent = MapPathGet.<Boolean>getOptionalAs(options, "failIfDifferent").orElse(false);
 	}
 
+	public CoalesceAggregation() {
+		this(Map.of());
+	}
+
 	@Override
 	public Object aggregate(Object l, Object r) {
 		if (l == null) {

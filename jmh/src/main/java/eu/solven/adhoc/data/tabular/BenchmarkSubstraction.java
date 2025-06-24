@@ -43,6 +43,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 
 /**
@@ -68,6 +69,8 @@ public class BenchmarkSubstraction {
 
 	List<?> arrayLong = Arrays.asList(234, 123);
 
+	ICombinationBinding binding = substraction.bind(2);
+
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkSubstraction.class.getSimpleName()).forks(1).build();
 		new Runner(opt).run();
@@ -81,6 +84,11 @@ public class BenchmarkSubstraction {
 	@Benchmark
 	public Object combineArray_Long() {
 		return substraction.combine(null, arrayLong);
+	}
+
+	@Benchmark
+	public IValueProvider combineSlicedRecord_Long_binding() {
+		return substraction.combine(binding, null, tabularRecordLong);
 	}
 
 }

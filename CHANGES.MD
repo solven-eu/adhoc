@@ -9,7 +9,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
 - Additional `WorldCup` example cube, with more complex measures.
 - In Pivotable, clicking a column header will sort rows based on given column.
-- Introduces `ICompactable`
+- Introduces `ICompactable`. It is called on each queryStep of the DAG.
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 - Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
 

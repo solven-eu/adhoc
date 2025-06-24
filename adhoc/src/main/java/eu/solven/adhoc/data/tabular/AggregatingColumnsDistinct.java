@@ -113,9 +113,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator
-	// , boolean purgeCarriers
-	) {
+	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator) {
 		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator);
 
 		if (notFinalColumn == null) {
@@ -123,11 +121,6 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			// measure, and not a single aggregate was written
 			notFinalColumn = MultitypeHashColumn.empty();
 		}
-		// else if (purgeCarriers) {
-		// // Typically converts a CountHolder into the count as a `long`
-		// // May be skipped if the caller is a CompositeCube, requiring to receive the carriers to merge them itself
-		// notFinalColumn.purgeAggregationCarriers();
-		// }
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 

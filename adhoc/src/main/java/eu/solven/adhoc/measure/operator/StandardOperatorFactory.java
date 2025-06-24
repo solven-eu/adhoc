@@ -35,7 +35,6 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
-import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -53,6 +52,7 @@ import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
+import eu.solven.adhoc.util.AdhocIdentity;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 

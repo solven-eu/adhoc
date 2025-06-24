@@ -20,11 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
+package eu.solven.adhoc.util;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -43,6 +46,12 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
  */
 public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static final String KEY = "identity";
+
+	private static final Supplier<AdhocIdentity> MEMOIZED = Suppliers.memoize(() -> new AdhocIdentity());
+
+	public static AdhocIdentity getInstance() {
+		return MEMOIZED.get();
+	}
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {

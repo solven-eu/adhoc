@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 
@@ -40,11 +41,13 @@ import lombok.ToString;
  * @author Benoit Lacelle
  */
 // BEWARE What is the point of this given IMultitypeColumnFastGet? It forces the generic with SliceAsMap. And hides some
-// methods/processes like `.purgeAggregationCarriers()`. This is also immutable.
+// methods/processes like `.purgeAggregationCarriers()`. This is also immutable (by interface).
 @Builder
 @ToString
 public class SliceToValue implements ISliceToValue {
 	@NonNull
+	// Getter for testing
+	@Getter
 	final IMultitypeColumnFastGet<SliceAsMap> column;
 
 	public static SliceToValue empty() {
@@ -94,8 +97,6 @@ public class SliceToValue implements ISliceToValue {
 	@Override
 	public boolean isSorted() {
 		if (column instanceof IIsSorted) {
-			// TODO Introduce dedicated interface
-			// .keySetStream().spliterator().hasCharacteristics(Spliterator.SORTED)
 			return true;
 		}
 		return false;
@@ -109,6 +110,13 @@ public class SliceToValue implements ISliceToValue {
 	@Override
 	public ISliceToValue purgeCarriers() {
 		return SliceToValue.builder().column(column.purgeAggregationCarriers()).build();
+	}
+
+	@Override
+	public void compact() {
+		if (column instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 
 }

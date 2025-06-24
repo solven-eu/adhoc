@@ -75,6 +75,7 @@ import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -100,7 +101,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = IAdhocEventBus.BLACK_HOLE;
+	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
 	@Override
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
@@ -479,24 +480,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.measure(aggregator)
 					.build();
 
-			// boolean doPurgeCarriers;
-			// if (factories.getOperatorFactory()
-			// .makeAggregation(aggregator) instanceof IAggregationCarrier.IHasCarriers) {
-			// if (queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED)) {
-			// doPurgeCarriers = false;
-			// } else {
-			// doPurgeCarriers = true;
-			// }
-			// } else {
-			// doPurgeCarriers = false;
-			// }
-
-			// `.closeColumn` is an expensive operation. It induces a delay, e.g. by sorting slices.
-			// TODO Sorting is not needed if we do not compute a single transformator with at least 2 different
-			// underlyings
-			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(filteredAggregator
-			// , doPurgeCarriers
-			);
+			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
+			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(filteredAggregator);
 
 			IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed;
 			if (suppressedGroupBys.isEmpty()) {
