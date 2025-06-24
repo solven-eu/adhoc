@@ -40,7 +40,7 @@ import lombok.Value;
 public class AdhocFactories {
 	@NonNull
 	@Default
-	IOperatorFactory operatorFactory = new StandardOperatorFactory();
+	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	@NonNull
 	@Default

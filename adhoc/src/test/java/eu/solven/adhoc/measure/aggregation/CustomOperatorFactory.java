@@ -41,7 +41,7 @@ import lombok.Value;
 public class CustomOperatorFactory implements IOperatorFactory {
 	@Builder.Default
 	@NonNull
-	IOperatorFactory fallback = new StandardOperatorFactory();
+	IOperatorFactory fallback = StandardOperatorFactory.builder().build();
 
 	@Override
 	public ICombination makeCombination(String key, Map<String, ?> options) {
@@ -85,5 +85,10 @@ public class CustomOperatorFactory implements IOperatorFactory {
 		default:
 			yield fallback.makeEditor(key, editorOptions);
 		};
+	}
+
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return CustomOperatorFactory.builder().fallback(fallback.withRoot(rootOperatorFactory)).build();
 	}
 }

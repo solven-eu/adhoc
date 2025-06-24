@@ -54,6 +54,9 @@ import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
 import eu.solven.adhoc.util.AdhocIdentity;
 import eu.solven.pepper.mappath.MapPathGet;
+import lombok.Builder.Default;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -63,9 +66,23 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuperBuilder
+@NoArgsConstructor
 public class StandardOperatorFactory implements IOperatorFactory {
 
 	public static final String K_OPERATOR_FACTORY = "operatorFactory";
+
+	// If null, this is defaulted to `this`
+	@Default
+	IOperatorFactory rootOperatorFactory = null;
+
+	protected IOperatorFactory getRootOperatorFactory() {
+		if (rootOperatorFactory == null) {
+			return this;
+		} else {
+			return rootOperatorFactory;
+		}
+	}
 
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {
@@ -136,14 +153,13 @@ public class StandardOperatorFactory implements IOperatorFactory {
 
 			yield defaultCombination(key, enrichedOptions);
 		};
-
 	}
 
 	protected Map<String, Object> enrichOptions(Map<String, ?> options) {
 		Map<String, Object> enriched = new LinkedHashMap<>(options);
 
 		// Some operators needs to create more operators (e.g. ReversePolishCombination)
-		enriched.put(K_OPERATOR_FACTORY, this);
+		enriched.put(K_OPERATOR_FACTORY, getRootOperatorFactory());
 
 		return enriched;
 	}
@@ -221,6 +237,11 @@ public class StandardOperatorFactory implements IOperatorFactory {
 
 	protected IFilterEditor defaultEditor(String className, Map<String, ?> options) {
 		return makeWithMapOrEmpty(IFilterEditor.class, className, options);
+	}
+
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return StandardOperatorFactory.builder().rootOperatorFactory(rootOperatorFactory).build();
 	}
 
 }

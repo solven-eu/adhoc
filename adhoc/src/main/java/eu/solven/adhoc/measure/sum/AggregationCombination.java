@@ -63,7 +63,7 @@ public class AggregationCombination implements ICombination {
 	public AggregationCombination(Map<String, ?> options) {
 		IOperatorFactory operatorFactory =
 				MapPathGet.<IOperatorFactory>getOptionalAs(options, StandardOperatorFactory.K_OPERATOR_FACTORY)
-						.orElseGet(() -> new StandardOperatorFactory());
+						.orElseGet(() -> StandardOperatorFactory.builder().build());
 
 		Optional<Map<String, ?>> optAggregationOptions = MapPathGet.getOptionalAs(options, K_AGGREGATION_OPTIONS);
 		String aggregationKey = MapPathGet.getRequiredString(options, K_AGGREGATION_KEY);

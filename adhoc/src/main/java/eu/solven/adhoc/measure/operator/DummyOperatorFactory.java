@@ -77,4 +77,9 @@ public class DummyOperatorFactory implements IOperatorFactory {
 		return dummyEditor;
 	}
 
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return this;
+	}
+
 }

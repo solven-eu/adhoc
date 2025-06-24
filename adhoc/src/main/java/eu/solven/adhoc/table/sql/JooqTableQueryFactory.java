@@ -112,7 +112,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	@Builder.Default
-	IOperatorFactory operatorFactory = new StandardOperatorFactory();
+	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	@NonNull
 	final TableLike<?> table;

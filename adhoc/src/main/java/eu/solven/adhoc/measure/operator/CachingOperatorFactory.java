@@ -47,7 +47,7 @@ import lombok.Value;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 public class CachingOperatorFactory implements IOperatorFactory {
 
 	@NonNull
@@ -123,6 +123,11 @@ public class CachingOperatorFactory implements IOperatorFactory {
 		} catch (ExecutionException e) {
 			throw new RuntimeException("Issue making aggregation for key=%s options=%s".formatted(key, options), e);
 		}
+	}
+
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory operatorFactory) {
+		return this.toBuilder().operatorFactory(operatorFactory.withRoot(operatorFactory)).build();
 	}
 
 }
