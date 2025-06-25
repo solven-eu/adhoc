@@ -10,7 +10,7 @@
         "eslint-config-prettier": "10.1.5",
         "eslint-plugin-prettier": "5.5.1",
         "eslint-plugin-vue": "10.2.0",
-        "prettier": "3.6.0",
+        "prettier": "3.6.1",
         "vite": "7.0.0"
     },
     "name": "pivotable",
