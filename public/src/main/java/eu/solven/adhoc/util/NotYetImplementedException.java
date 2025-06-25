@@ -34,7 +34,8 @@ public class NotYetImplementedException extends UnsupportedOperationException {
 		super(message + ". Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case");
 	}
 
-	public NotYetImplementedException(String message, Throwable e) {
-		super(message + ". Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case");
+	public NotYetImplementedException(String message, Throwable throwable) {
+		super(message + ". Please file a ticket at https://github.com/solven-eu/adhoc/ to support this case",
+				throwable);
 	}
 }
