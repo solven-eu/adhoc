@@ -88,6 +88,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
@@ -518,6 +519,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(queryStep.getFilter(), groupedByColumn);
 				if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
 					errorCoordinate = equalsMatcher.getOperand();
+				} else if (valueMatcher instanceof StringMatcher stringMatcher) {
+					errorCoordinate = stringMatcher.getString();
 				} else {
 					throw new NotYetImplementedException(
 							"valueMatcher=%s in step=%s".formatted(valueMatcher, queryStep),

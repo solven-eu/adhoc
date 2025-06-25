@@ -36,8 +36,10 @@ import java.util.stream.Stream;
 
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
+import com.activeviam.pivot.postprocessing.impl.AAdvancedPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ABasicPostProcessorV2;
+import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
@@ -74,6 +76,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -330,7 +333,9 @@ public class AtotiMeasureToAdhoc {
 
 		// Dispatchor is not most probable transformator for an advancedPostProcessor
 		return onDispatchor(measure, b -> {
-
+			// We have no information about the Dispatchor: we prefer to return as-is the underlying measure
+			// Else SUM on complex objects would generate Strings
+			b.aggregationKey(CoalesceAggregation.KEY);
 		});
 	}
 
@@ -600,7 +605,10 @@ public class AtotiMeasureToAdhoc {
 		properties.entrySet()
 				.stream()
 				.filter(e -> !(e.getKey() instanceof String && e.getValue() instanceof String))
-				.filter(k -> !Set.of(excludedProperties).contains(k.getKey()))
+				.filter(e -> !Set.of(excludedProperties).contains(e.getKey()))
+				// No interest in these properties, mapped to an int value
+				.filter(e -> !AAdvancedPostProcessorV2.OUTPUT_TYPE.equals(e.getKey()))
+				.filter(e -> !ADynamicAggregationPostProcessorV2.LEAF_TYPE.equals(e.getKey()))
 				.forEach(entry -> options.put(String.valueOf(entry.getKey()), entry.getValue()));
 
 		return options;
