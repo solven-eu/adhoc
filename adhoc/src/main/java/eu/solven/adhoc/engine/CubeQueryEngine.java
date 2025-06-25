@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -579,7 +580,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				.stream()
 				.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
 				.filter(Objects::nonNull)
-				.findFirst()
+				// Return the shorted path, as it is the simpler to analyze by a human
+				.min(Comparator.comparing(gp -> gp.getVertexList().size()))
 				.ifPresent(shortestPath -> {
 					describeStep.append("Path from root:");
 
