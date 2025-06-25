@@ -11,7 +11,7 @@
         "eslint-plugin-prettier": "5.5.0",
         "eslint-plugin-vue": "10.2.0",
         "prettier": "3.6.0",
-        "vite": "6.3.5"
+        "vite": "7.0.0"
     },
     "name": "pivotable",
     "private": true,
