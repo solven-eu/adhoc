@@ -40,13 +40,16 @@ import java.util.stream.Stream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -77,9 +80,13 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -471,7 +478,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		try {
 			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
-			throw rethrowWithDetails(queryStep, underlyingSteps, e);
+			if (queryStep.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+				IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+
+				SliceAsMap errorSlice = makeErrorSlice(queryStep, e);
+				column.append(errorSlice).onObject(e);
+				coordinatesToValues = SliceToValue.builder().column(column).build();
+			} else {
+				throw rethrowWithDetails(queryStep, underlyingSteps, e);
+			}
 		}
 
 		// It feels a bit weird to compact after hand: ISliceToValue may be compacted by construction. But it is
@@ -479,6 +494,34 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		coordinatesToValues.compact();
 
 		return coordinatesToValues;
+	}
+
+	// TODO We should ensure this slice is valid given current filter
+	protected SliceAsMap makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
+		ImmutableMap.Builder<String, Object> errorSliceAsMapBuilder = ImmutableMap.builder();
+		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
+			String coordinateForError = e.getClass().getName();
+
+			Object errorCoordinate;
+			if (FilterHelpers.getValueMatcher(queryStep.getFilter(), groupedByColumn).match(coordinateForError)) {
+				errorCoordinate = coordinateForError;
+			} else {
+				IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(queryStep.getFilter(), groupedByColumn);
+				if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+					errorCoordinate = equalsMatcher.getOperand();
+				} else {
+					throw new NotYetImplementedException(
+							"valueMatcher=%s in step=%s".formatted(valueMatcher, queryStep),
+							e);
+				}
+			}
+
+			errorSliceAsMapBuilder.put(groupedByColumn, errorCoordinate);
+		});
+
+		Map<String, ?> errorSliceAsMap = errorSliceAsMapBuilder.build();
+		SliceAsMap errorSlice = SliceAsMap.fromMap(errorSliceAsMap);
+		return errorSlice;
 	}
 
 	private List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,

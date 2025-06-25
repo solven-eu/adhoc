@@ -37,6 +37,8 @@ export default {
 		// Some default credentials for a fake user
 		const username = ref("11111111-1111-1111-1111-000000000000");
 		const password = ref("no_password");
+		
+		const isExecutingBasic = ref(false);
 
 		const doLoginBasic = function () {
 			console.info("Login BASIC");
@@ -49,6 +51,7 @@ export default {
 				};
 
 				try {
+					isExecutingBasic.value = true;
 					const response = await fetch(url, {
 						method: "POST",
 						headers: headers,
@@ -76,6 +79,8 @@ export default {
 					}
 				} catch (e) {
 					console.error("Issue on Network: ", e);
+				} finally {
+					isExecutingBasic.value = false;
 				}
 			}
 
@@ -84,17 +89,21 @@ export default {
 			});
 		};
 
-		return { username, password, doLoginBasic };
+		return { username, password, doLoginBasic, isExecutingBasic };
 	},
 	template: /* HTML */ `
         <span v-if="isLoggedIn"> <Logout /><small>BASIC session lasts 1hour.</small> </span>
         <span v-else>
-            <div class="input-group mb-3">
+            <form class="input-group mb-3" :inert="isExecutingBasic ? true : null">
                 <input type="text" class="form-control" placeholder="Username" aria-label="Username" v-model="username" />
                 <span class="input-group-text">:</span>
                 <input type="text" class="form-control" placeholder="Password" aria-label="Password" v-model="password" />
                 <button type="button" @click="doLoginBasic" class="btn btn-primary">Login fakeUser</button>
-            </div>
+				
+				<div class="spinner-border" role="status" v-if="isExecutingBasic">
+				  <span class="visually-hidden">Loading...</span>
+				</div>
+            </form>
         </span>
     `,
 };
