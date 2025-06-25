@@ -34,7 +34,6 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
-import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;

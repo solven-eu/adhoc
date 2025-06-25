@@ -20,23 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
+package eu.solven.adhoc.util;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.transformator.ICombinationBinding;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Used for {@link ICombination} able to generate a {@link ICombinationBinding}. It may help achieving better CPU/Heap
- * performances.
- * 
- * @author Benoit Lacelle
- */
-public interface IBindableCombination {
-
-	ICombinationBinding bind(int nbUnderlyings);
-
-	IValueProvider combine(ICombinationBinding binding, ISliceWithStep slice, ISlicedRecord slicedRecord);
-
+public class TestNotYetImplementedException {
+	@Test
+	public void testWithCause() {
+		RuntimeException cause = new RuntimeException("someCause");
+		Assertions.assertThat(new NotYetImplementedException("someMessage", cause)).cause().isSameAs(cause);
+	}
 }

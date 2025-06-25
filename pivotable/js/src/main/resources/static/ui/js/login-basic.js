@@ -37,7 +37,7 @@ export default {
 		// Some default credentials for a fake user
 		const username = ref("11111111-1111-1111-1111-000000000000");
 		const password = ref("no_password");
-		
+
 		const isExecutingBasic = ref(false);
 
 		const doLoginBasic = function () {
