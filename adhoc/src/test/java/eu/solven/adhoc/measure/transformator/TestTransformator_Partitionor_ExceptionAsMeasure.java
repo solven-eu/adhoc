@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.transformator;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -34,8 +33,8 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.ThrowingCombination;
+import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -50,14 +49,6 @@ public class TestTransformator_Partitionor_ExceptionAsMeasure extends ADagTest i
 		table().add(Map.of("a", "a1", "k1", 345, "k2", 456));
 		table().add(Map.of("a", "a2", "b", "b1", "k2", 234));
 		table().add(Map.of("a", "a2", "b", "b2", "k1", 567));
-	}
-
-	public static class ThrowingCombination implements ICombination {
-		@Override
-		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-			throw new IllegalStateException(
-					"Simulate a failure slice=%s".formatted(slice.getAdhocSliceAsMap().getCoordinates()));
-		}
 	}
 
 	String mName = "partitionOnErrors";
@@ -84,7 +75,7 @@ public class TestTransformator_Partitionor_ExceptionAsMeasure extends ADagTest i
 				Assertions.assertThat(v)
 						.isInstanceOfSatisfying(IllegalArgumentException.class,
 								e -> Assertions.assertThat(e)
-										.hasRootCause(new IllegalStateException("Simulate a failure slice={}")));
+										.hasRootCause(ThrowingCombination.makeException(Map.of())));
 			});
 		});
 	}
@@ -112,7 +103,7 @@ public class TestTransformator_Partitionor_ExceptionAsMeasure extends ADagTest i
 				Assertions.assertThat(v)
 						.isInstanceOfSatisfying(IllegalArgumentException.class,
 								e -> Assertions.assertThat(e)
-										.hasRootCause(new IllegalStateException("Simulate a failure slice={a=a1}")));
+										.hasRootCause(ThrowingCombination.makeException(Map.of("a", "a1"))));
 			});
 		});
 	}
@@ -145,8 +136,7 @@ public class TestTransformator_Partitionor_ExceptionAsMeasure extends ADagTest i
 						Assertions.assertThat(v)
 								.isInstanceOfSatisfying(IllegalArgumentException.class,
 										e -> Assertions.assertThat(e)
-												.hasRootCause(
-														new IllegalStateException("Simulate a failure slice={a=a1}")));
+												.hasRootCause(ThrowingCombination.makeException(Map.of("a", "a1"))));
 					});
 				});
 	}
@@ -180,8 +170,7 @@ public class TestTransformator_Partitionor_ExceptionAsMeasure extends ADagTest i
 						Assertions.assertThat(v)
 								.isInstanceOfSatisfying(IllegalArgumentException.class,
 										e -> Assertions.assertThat(e)
-												.hasRootCause(
-														new IllegalStateException("Simulate a failure slice={a=a1}")));
+												.hasRootCause(ThrowingCombination.makeException(Map.of("a", "a1"))));
 					});
 				});
 	}

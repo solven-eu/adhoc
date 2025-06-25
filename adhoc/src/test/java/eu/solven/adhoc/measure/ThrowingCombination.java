@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure;
 
 import java.util.List;
+import java.util.Map;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -31,8 +32,29 @@ import eu.solven.adhoc.measure.combination.ICombination;
  * A {@link ICombination} which throws. Useful to check behaviors on exceptions.
  */
 public class ThrowingCombination implements ICombination {
+	/**
+	 * A custom {@link RuntimeException}, enabling finer unit-tests.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	public static class ThrowingCombinationException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		public ThrowingCombinationException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public ThrowingCombinationException(String message) {
+			super(message);
+		}
+	}
+
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		throw new IllegalStateException("Throwing");
+		throw makeException(slice.getAdhocSliceAsMap().getCoordinates());
+	}
+
+	public static ThrowingCombinationException makeException(Map<String, Object> sliceAsMap) {
+		return new ThrowingCombinationException("Throwing on slice=%s".formatted(sliceAsMap));
 	}
 }

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -35,8 +36,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
+import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -427,7 +431,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		Optional<ISliceToValue> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(queryStep));
 		ISliceToValue outputColumn = optFromCache.orElseGet(() -> {
 			List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
-			return processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+			try {
+				return processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+			} catch (RuntimeException e) {
+				throw rethrowWithDetails(queryStep, queryStepsDag, e);
+			}
 		});
 
 		Duration elapsed = stopWatch.elapsed();
@@ -461,7 +469,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			return processDagStep(queryStepToValues, queryStep, underlyingSteps, hasUnderlyingMeasures);
 		} else {
-			throw new UnsupportedOperationException("%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
+			throw new UnsupportedOperationException("m=%s".formatted(PepperLogHelper.getObjectAndClass(measure)));
 		}
 	}
 
@@ -485,7 +493,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				column.append(errorSlice).onObject(e);
 				coordinatesToValues = SliceToValue.builder().column(column).build();
 			} else {
-				throw rethrowWithDetails(queryStep, underlyingSteps, e);
+				throw AdhocExceptionHelpers.wrap(e, "Issue processing queryStep=%s".formatted(queryStep));
 			}
 		}
 
@@ -549,11 +557,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			"PMD.ConsecutiveAppendsShouldReuse",
 			"PMD.ConsecutiveLiteralAppends" })
 	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
-			List<CubeQueryStep> underlyingSteps,
+			QueryStepsDag queryStepsDag,
 			RuntimeException e) {
 		StringBuilder describeStep = new StringBuilder();
 
 		describeStep.append("Issue computing columns for:").append("\r\n");
+
+		List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 
 		// First, we print only measure as a simplistic shorthand of the step
 		describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
@@ -562,7 +572,24 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
 				underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
 
-		// TODO Add one path from a rootStep to this step
+		ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
+				new JohnsonShortestPaths<CubeQueryStep, DefaultEdge>(queryStepsDag.getDag());
+
+		queryStepsDag.getQueried()
+				.stream()
+				.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
+				.filter(Objects::nonNull)
+				.findFirst()
+				.ifPresent(shortestPath -> {
+					describeStep.append("Path from root:");
+
+					List<CubeQueryStep> vertexList = shortestPath.getVertexList();
+					for (int i = 0; i < vertexList.size(); i++) {
+						describeStep.append("\r\n");
+						IntStream.range(0, i).forEach(tabIndex -> describeStep.append("\t"));
+						describeStep.append("\\-").append(vertexList.get(i));
+					}
+				});
 
 		return new IllegalStateException(describeStep.toString(), e);
 	}

@@ -165,7 +165,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 		try {
 			dagEdge = dag.addEdge(queriedStep, underlyingStep);
-		} catch (GraphCycleProhibitedException e) {
+		} catch (IllegalArgumentException e) {
+			// GraphCycleProhibitedException is a subClass of IllegalArgumentException
+			// But we may receive IllegalArgumentException
 			throw new IllegalStateException(
 					"Issue adding `%s`->`%s` in cycle=`%s`".formatted(queriedStep, underlyingStep, dag),
 					e);
