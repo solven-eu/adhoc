@@ -86,7 +86,7 @@
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs -->
 		<spotbugs.version>4.9.3</spotbugs.version>
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-maven-plugin -->
-		<spotbugs-maven.version>4.9.3.0</spotbugs-maven.version>
+		<spotbugs-maven.version>4.9.3.1</spotbugs-maven.version>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
