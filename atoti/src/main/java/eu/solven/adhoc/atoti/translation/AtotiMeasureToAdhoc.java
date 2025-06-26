@@ -587,6 +587,8 @@ public class AtotiMeasureToAdhoc {
 
 		transferTagProperties(measure, dispatchorBuilder::tag);
 
+		dispatchorBuilderConsumer.accept(dispatchorBuilder);
+
 		return List.of(dispatchorBuilder.build());
 	}
 
@@ -599,6 +601,8 @@ public class AtotiMeasureToAdhoc {
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
 				// There is not `real-time impacts` in Adhoc
 				.filter(k -> !IPostProcessor.CONTINUOUS_QUERY_HANDLER_KEYS.equals(k))
+				// Analysis levels are useless in Adhoc (and generally opaque in ActivePivot)
+				.filter(k -> !AAdvancedPostProcessorV2.ANALYSIS_LEVELS_PROPERTY.equals(k))
 				.filter(k -> !Set.of(excludedProperties).contains(k))
 				.forEach(key -> options.put(key, properties.get(key)));
 

@@ -68,6 +68,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -534,6 +535,7 @@ public class TestAtotiMeasureToAdhoc {
 		Assertions.assertThat(transformators).singleElement().isInstanceOfSatisfying(Dispatchor.class, m -> {
 			Assertions.assertThat(m.getName()).isEqualTo("someMeasureName");
 			Assertions.assertThat(m.getDecompositionKey()).isEqualTo("somePluginKey");
+			Assertions.assertThat(m.getAggregationKey()).isEqualTo(CoalesceAggregation.KEY);
 			Assertions.assertThat(m.getUnderlying()).isEqualTo("m1");
 		});
 	}
