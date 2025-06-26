@@ -57,7 +57,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	public void onLong(long v) {
 		if (aggregation instanceof ILongAggregation longAggregation) {
 			types |= IMultitypeConstants.MASK_LONG;
-			MultitypeCell.this.asLong = longAggregation.aggregateLongs(asLong, v);
+			asLong = longAggregation.aggregateLongs(asLong, v);
 		} else {
 			onObject(v);
 		}
@@ -67,7 +67,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	public void onDouble(double v) {
 		if (aggregation instanceof IDoubleAggregation doubleAggregation) {
 			types |= IMultitypeConstants.MASK_DOUBLE;
-			MultitypeCell.this.asDouble = doubleAggregation.aggregateDoubles(asDouble, v);
+			asDouble = doubleAggregation.aggregateDoubles(asDouble, v);
 		} else {
 			onObject(v);
 		}
@@ -77,7 +77,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	public void onObject(Object object) {
 		if (object != null) {
 			types |= IMultitypeConstants.MASK_OBJECT;
-			MultitypeCell.this.asObject = aggregation.aggregate(asObject, object);
+			asObject = aggregation.aggregate(asObject, object);
 		}
 	}
 
@@ -120,6 +120,7 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 		return this;
 	}
 
+	@SuppressWarnings("PMD.NullAssignment")
 	public void clear() {
 		types = IMultitypeConstants.MASK_EMPTY;
 

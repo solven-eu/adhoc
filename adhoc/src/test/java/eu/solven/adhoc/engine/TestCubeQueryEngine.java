@@ -46,6 +46,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -152,6 +153,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 
 		table().add(Map.of("a", "a1"));
 
+		AdhocUnsafe.resetDeterministicQueryIds();
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
 				.isInstanceOf(IllegalStateException.class)
 				.extracting(s -> Throwables.getStackTrace(s))
@@ -163,10 +165,10 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 								    (measures) m=m_D given [count(*)]
 								    (steps) step=m=m_D filter=matchAll groupBy=grandTotal custom=null given [m=count(*) filter=matchAll groupBy=grandTotal custom=null]
 								Path from root:
-								\\-CubeQueryStep(id=6, measure=Combinator(name=m_A, tags=[], underlyings=[m_B], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-									\\-CubeQueryStep(id=8, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-										\\-CubeQueryStep(id=10, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-											\\-CubeQueryStep(id=12, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])""");
+								\\-CubeQueryStep(id=0, measure=Combinator(name=m_A, tags=[], underlyings=[m_B], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
+									\\-CubeQueryStep(id=2, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
+										\\-CubeQueryStep(id=4, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
+											\\-CubeQueryStep(id=6, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])""");
 	}
 
 }

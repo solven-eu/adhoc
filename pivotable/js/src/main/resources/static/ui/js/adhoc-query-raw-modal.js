@@ -17,7 +17,7 @@ export default {
 		const editedJson = ref(JSON.stringify(props.queryJson, null, 2));
 
 		const copyToClipboardStatus = ref("");
-		
+
 		watch(
 			() => props.queryJson,
 			(newQueryJson) => {

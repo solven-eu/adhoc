@@ -22,44 +22,45 @@
  */
 package eu.solven.adhoc.measure.sum;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableSet;
-
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
+import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A `SUM` {@link IAggregation}, managing not Number as error objects. As long as we encounter summable input, we do
- * sum. Else we aggregate `errors` into a Set.
+ * A `SUM` {@link IAggregation}. On any {@link Object} which is neither a {@link Long} or a {@link Double}, this will
+ * consider the {@link Object#toString()}.
  * 
  * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumElseSetAggregation extends SumAggregation {
-
-	public static final String KEY = "SUM_ELSE_SET";
-
-	@Override
-	protected Collection<?> aggregateCollections(Collection<?> left, Collection<?> right) {
-		int limitSize = checkCollectionsSizes(left, right);
-
-		return Stream.concat(left.stream(), right.stream()).limit(limitSize).collect(ImmutableSet.toImmutableSet());
-	}
+public class SumElseStringAggregation extends SumAggregation implements IDoubleAggregation, ILongAggregation {
 
 	@Override
 	protected Object wrapNotANumber(Object r) {
-		if (r instanceof Collection<?> asCollection) {
-			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+		if (r == null) {
+			return r;
 		} else {
-			// Wrap into a Set, so this aggregate function return either a long/double, or a Set of errors
-			return Set.of(r);
+			return r.toString();
 		}
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	@Override
+	protected Object aggregateObjects(Object l, Object r) {
+		// Fallback by concatenating Strings
+		String concatenated = l.toString() + r.toString();
+
+		if (concatenated.length() >= 16 * 1024) {
+			// If this were a real use-case, we should probably rely on a dedicated optimized IAggregation
+			throw new IllegalStateException("Aggregation led to a too-large (length=%s) String: %s"
+					.formatted(concatenated.length(), concatenated));
+		} else if (concatenated.length() >= 1024) {
+			log.warn("Aggregation led to a large String: {}", concatenated);
+		}
+
+		return concatenated;
 	}
 
 }

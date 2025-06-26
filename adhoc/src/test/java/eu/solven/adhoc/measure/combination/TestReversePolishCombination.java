@@ -227,4 +227,20 @@ public class TestReversePolishCombination {
 							.isEqualTo(0L + 123 + 234);
 				});
 	}
+
+	@Test
+	public void testExceptionAsMeasure() {
+		RuntimeException someE = new RuntimeException("someMessage");
+
+		Stream.of("underlyings[0],underlyings[1],+").forEach(notation -> {
+			Map<String, String> options = Map.of(ReversePolishCombination.K_NOTATION, notation);
+			ReversePolishCombination c = new ReversePolishCombination(options);
+			ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+			Assertions.assertThat(c.combine(slice, Arrays.asList(null, someE)))
+					.describedAs("notation=%s", notation)
+					.isInstanceOfSatisfying(Throwable.class, t -> {
+						Assertions.assertThat(t).hasSameClassAs(someE).hasMessage(someE.getMessage());
+					});
+		});
+	}
 }

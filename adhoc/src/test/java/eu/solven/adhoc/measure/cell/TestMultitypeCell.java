@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.cell;
 
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -56,7 +57,7 @@ public class TestMultitypeCell {
 
 			@Override
 			public void onObject(Object v) {
-				Assertions.assertThat(v).isEqualTo("Arg12323.45");
+				Assertions.assertThat(v).isEqualTo(List.of("Arg", 123L, 23.45D));
 			}
 		});
 	}

@@ -21,7 +21,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
+		...mapState(useUserStore, ["nbLoginLoading", "account", "isLoggedIn"]),
 		...mapState(useUserStore, {
 			user(store) {
 				return store.account;
@@ -94,13 +94,13 @@ export default {
 	template: /* HTML */ `
         <span v-if="isLoggedIn"> <Logout /><small>BASIC session lasts 1hour.</small> </span>
         <span v-else>
-            <form class="input-group mb-3" :inert="isExecutingBasic ? true : null">
+            <form class="input-group mb-3" :inert="isExecutingBasic || nbLoginLoading ? true : null">
                 <input type="text" class="form-control" placeholder="Username" aria-label="Username" v-model="username" />
                 <span class="input-group-text">:</span>
                 <input type="text" class="form-control" placeholder="Password" aria-label="Password" v-model="password" />
                 <button type="button" @click="doLoginBasic" class="btn btn-primary">Login fakeUser</button>
 				
-				<div class="spinner-border" role="status" v-if="isExecutingBasic">
+				<div class="spinner-border" role="status" v-if="isExecutingBasic || nbLoginLoading">
 				  <span class="visually-hidden">Loading...</span>
 				</div>
             </form>

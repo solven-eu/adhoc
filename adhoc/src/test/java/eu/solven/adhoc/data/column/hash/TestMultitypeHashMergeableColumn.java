@@ -85,7 +85,7 @@ public class TestMultitypeHashMergeableColumn {
 		column.merge("k1", 345);
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
+			Assertions.assertThat(o).isEqualTo(List.of(123L, "234", 345));
 		});
 	}
 
@@ -130,7 +130,7 @@ public class TestMultitypeHashMergeableColumn {
 		column.merge("k1", today);
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo("foo" + today);
+			Assertions.assertThat(o).isEqualTo(List.of("foo", today));
 		});
 	}
 
@@ -140,7 +140,7 @@ public class TestMultitypeHashMergeableColumn {
 		column.merge("k1", "234");
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo("123234");
+			Assertions.assertThat(o).isEqualTo(List.of("123", "234"));
 		});
 	}
 

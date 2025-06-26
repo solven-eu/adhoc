@@ -23,18 +23,24 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Object (by their `.toString`) depending on the
- * inputs.
+ * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Object depending on the inputs.
+ * 
+ * The {@link Object} case differs from usual implementations. As being an in-memory engine, it feels preferable to
+ * accumulate {@link Object} in a {@link List}, rather than concatenating their {@link Object#toString()}.
  * 
  * @author Benoit Lacelle
  */
@@ -44,8 +50,14 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 
 	public static final String KEY = "SUM";
 
+	private static final int MAX_COLLECTION_SIZE = 16 * 1024;
+
 	public static boolean isSum(String operator) {
 		return "+".equals(operator) || KEY.equals(operator) || operator.equals(SumAggregation.class.getName());
+	}
+
+	protected int limitSize() {
+		return MAX_COLLECTION_SIZE;
 	}
 
 	@Override
@@ -70,28 +82,65 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 			return asLong(r);
 		} else if (isDoubleLike(r)) {
 			return asDouble(r);
-		} else if (r instanceof Collection<?> asCollection) {
-			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
 		} else {
-			// Wrap into a Set, so this aggregate function return either a long/double, or a String, or Set
-			return r.toString();
+			return wrapNotANumber(r);
+		}
+	}
+
+	protected Object wrapNotANumber(Object r) {
+		if (r instanceof Throwable t) {
+			return t;
+		} else if (r instanceof Collection<?> asCollection) {
+			return asCollection.stream().filter(Objects::nonNull).collect(ImmutableList.toImmutableList());
+		} else if (r instanceof CharSequence charSequence) {
+			return charSequence.toString();
+		} else {
+			// Wrap into a List, so this aggregate function return either a long/double, or Set
+			return List.of(r);
 		}
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Object aggregateObjects(Object l, Object r) {
-		// Fallback by concatenating Strings
-		String concatenated = l.toString() + r.toString();
-
-		if (concatenated.length() >= 16 * 1024) {
-			// If this were a real use-case, we should probably rely on a dedicated optimized IAggregation
-			throw new IllegalStateException("Aggregation led to a too-large (length=%s) String: %s"
-					.formatted(concatenated.length(), concatenated));
-		} else if (concatenated.length() >= 1024) {
-			log.warn("Aggregation led to a large String: {}", concatenated);
+		if (l instanceof Throwable t) {
+			return l;
+		} else if (r instanceof Throwable t) {
+			return r;
 		}
+		return aggregateCollections(wrapAsCollection(l), wrapAsCollection(r));
+	}
 
-		return concatenated;
+	protected Collection<?> wrapAsCollection(Object o) {
+		if (o instanceof Collection<?> c) {
+			// Automated unnesting: if this behavior is not satisfying, you should probably rely on a custom
+			// IAggregation.
+			return ImmutableList.copyOf(c);
+		}
+		return ImmutableList.of(o);
+	}
+
+	protected Collection<?> aggregateCollections(Collection<?> left, Collection<?> right) {
+		int limitSize = checkCollectionsSizes(left, right);
+
+		return Stream.concat(left.stream(), right.stream()).limit(limitSize).collect(ImmutableList.toImmutableList());
+	}
+
+	protected int checkCollectionsSizes(Collection<?> left, Collection<?> right) {
+		int limitSize = limitSize();
+
+		int leftSize = left.size();
+		int rightSize = right.size();
+		if (leftSize + rightSize > limitSize) {
+			if (AdhocUnsafe.isFailFast()) {
+				throw new IllegalArgumentException("Can not aggregate more than %s elements".formatted(limitSize));
+			} else {
+				log.warn("left.size() + right.size() > limit ({} + {} > {}). Truncating the result",
+						leftSize,
+						rightSize,
+						limitSize);
+			}
+		}
+		return limitSize;
 	}
 
 	@Override

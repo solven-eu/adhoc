@@ -45,9 +45,9 @@ public interface ICombinationBinding {
 		 * A ICombinationBinding which transmit the IValueProvider at given index.
 		 */
 		return new ICombinationBinding() {
-			MultitypeCell receiver = MultitypeCell.builder().aggregation(new CoalesceAggregation()).build();
+			final MultitypeCell receiver = MultitypeCell.builder().aggregation(new CoalesceAggregation()).build();
 
-			IValueProvider consumer = new IValueProvider() {
+			final IValueProvider consumer = new IValueProvider() {
 
 				@Override
 				public void acceptReceiver(IValueReceiver valueReceiver) {

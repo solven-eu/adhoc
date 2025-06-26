@@ -52,6 +52,92 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 
 	public static final String KEY = "SUBSTRACTION";
 
+	/**
+	 * A {@link ICombinationBinding} specialized for {@link SubstractionCombination}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	protected final class SubstractionBinding implements ICombinationBinding {
+		final MultitypeCell receiver0 = MultitypeCell.builder().aggregation(new SumAggregation()).build();
+		final IValueReceiver receiver1 = new IValueReceiver() {
+			@Override
+			public void onLong(long v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+					receiver0.onLong(-v);
+					break;
+				case IMultitypeConstants.MASK_DOUBLE:
+					receiver0.onDouble(-v);
+					break;
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+
+			@Override
+			public void onDouble(double v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+				case IMultitypeConstants.MASK_DOUBLE:
+					receiver0.onDouble(-v);
+					break;
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+
+			@Override
+			public void onObject(Object v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+				case IMultitypeConstants.MASK_DOUBLE:
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+		};
+		final IValueProvider consumer = new IValueProvider() {
+
+			@Override
+			public void acceptReceiver(IValueReceiver valueReceiver) {
+				receiver0.acceptReceiver(valueReceiver);
+			}
+		};
+
+		@Override
+		public void reset(ISliceWithStep slice) {
+			receiver0.clear();
+		}
+
+		@Override
+		public IValueReceiver readUnderlying(int i) {
+			if (i == 0) {
+				return receiver0;
+			} else if (i == 1) {
+				return receiver1;
+			} else {
+				return AdhocBlackHole.getInstance();
+			}
+		}
+
+		@Override
+		public IValueProvider reduce() {
+			return consumer;
+		}
+	}
+
 	public static boolean isSubstraction(String operator) {
 		return "-".equals(operator) || KEY.equals(operator) || operator.equals(SubstractionCombination.class.getName());
 	}
@@ -65,89 +151,7 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 			return ICombinationBinding.atIndex(0);
 		}
 
-		return new ICombinationBinding() {
-			MultitypeCell receiver0 = MultitypeCell.builder().aggregation(new SumAggregation()).build();
-
-			IValueReceiver receiver1 = new IValueReceiver() {
-				@Override
-				public void onLong(long v) {
-					switch (receiver0.getType()) {
-					case IMultitypeConstants.MASK_EMPTY:
-					case IMultitypeConstants.MASK_LONG:
-						receiver0.onLong(-v);
-						break;
-					case IMultitypeConstants.MASK_DOUBLE:
-						receiver0.onDouble(-v);
-						break;
-					case IMultitypeConstants.MASK_OBJECT:
-						receiver0.onObject(negate(v));
-						break;
-					default:
-						throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
-					}
-				}
-
-				@Override
-				public void onDouble(double v) {
-					switch (receiver0.getType()) {
-					case IMultitypeConstants.MASK_EMPTY:
-					case IMultitypeConstants.MASK_LONG:
-					case IMultitypeConstants.MASK_DOUBLE:
-						receiver0.onDouble(-v);
-						break;
-					case IMultitypeConstants.MASK_OBJECT:
-						receiver0.onObject(negate(v));
-						break;
-					default:
-						throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
-					}
-				}
-
-				@Override
-				public void onObject(Object v) {
-					switch (receiver0.getType()) {
-					case IMultitypeConstants.MASK_EMPTY:
-					case IMultitypeConstants.MASK_LONG:
-					case IMultitypeConstants.MASK_DOUBLE:
-					case IMultitypeConstants.MASK_OBJECT:
-						receiver0.onObject(negate(v));
-						break;
-					default:
-						throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
-					}
-				}
-			};
-
-			IValueProvider consumer = new IValueProvider() {
-
-				@Override
-				public void acceptReceiver(IValueReceiver valueReceiver) {
-					receiver0.acceptReceiver(valueReceiver);
-				}
-			};
-
-			@Override
-			public void reset(ISliceWithStep slice) {
-				receiver0.clear();
-			}
-
-			@Override
-			public IValueReceiver readUnderlying(int i) {
-				if (i == 0) {
-					return receiver0;
-				} else if (i == 1) {
-					return receiver1;
-				} else {
-					return AdhocBlackHole.getInstance();
-				}
-			}
-
-			@Override
-			public IValueProvider reduce() {
-				return consumer;
-			}
-
-		};
+		return new SubstractionBinding();
 	}
 
 	@Override

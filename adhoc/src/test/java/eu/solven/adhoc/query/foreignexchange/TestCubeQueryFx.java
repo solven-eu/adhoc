@@ -119,7 +119,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(),
-						Map.of(mName, Set.of("Missing_FX_Rate-%s-USD-EUR".formatted(today))));
+						Map.of(mName, Set.of("Missing_FX_Rate-%s-USD-EUR".formatted(today), 234D)));
 	}
 
 	@Test
@@ -137,7 +137,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 				.containsEntry(Collections.emptyMap(),
 						Map.of(mName,
 								Set.of("Missing_FX_Rate-%s-unknownCcy-EUR".formatted(today),
-										"Missing_FX_Rate-%s-USD-EUR".formatted(today))));
+										"Missing_FX_Rate-%s-USD-EUR".formatted(today),
+										234D)));
 	}
 
 	@Test

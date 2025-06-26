@@ -107,7 +107,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
@@ -557,27 +557,25 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}).toList();
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
-			"PMD.ConsecutiveAppendsShouldReuse",
-			"PMD.ConsecutiveLiteralAppends" })
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
 	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
 			QueryStepsDag queryStepsDag,
 			RuntimeException e) {
 		StringBuilder describeStep = new StringBuilder();
 
-		describeStep.append("Issue computing columns for:").append("\r\n");
+		describeStep.append("Issue computing columns for:").append(System.lineSeparator());
 
 		List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 
 		// First, we print only measure as a simplistic shorthand of the step
 		describeStep.append("    (measures) m=%s given %s".formatted(simplistic(queryStep),
-				underlyingSteps.stream().map(this::simplistic).toList())).append("\r\n");
+				underlyingSteps.stream().map(this::simplistic).toList())).append(System.lineSeparator());
 		// Second, we print the underlying steps as something may be hidden in filters, groupBys, configuration
 		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
-				underlyingSteps.stream().map(this::dense).toList())).append("\r\n");
+				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
 		ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
-				new JohnsonShortestPaths<CubeQueryStep, DefaultEdge>(queryStepsDag.getDag());
+				new JohnsonShortestPaths<>(queryStepsDag.getDag());
 
 		queryStepsDag.getQueried()
 				.stream()
@@ -590,8 +588,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 					List<CubeQueryStep> vertexList = shortestPath.getVertexList();
 					for (int i = 0; i < vertexList.size(); i++) {
-						describeStep.append("\r\n");
-						IntStream.range(0, i).forEach(tabIndex -> describeStep.append("\t"));
+						describeStep.append(System.lineSeparator());
+						IntStream.range(0, i).forEach(tabIndex -> describeStep.append('\t'));
 						describeStep.append("\\-").append(vertexList.get(i));
 					}
 				});

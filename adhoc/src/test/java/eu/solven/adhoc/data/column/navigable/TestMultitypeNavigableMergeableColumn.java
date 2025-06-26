@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.column.navigable;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -95,7 +96,7 @@ public class TestMultitypeNavigableMergeableColumn {
 		column.merge("k1", 345);
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(123 + "234" + 345);
+			Assertions.assertThat(o).isEqualTo(List.of(123, "234", 345));
 		});
 	}
 
@@ -105,7 +106,7 @@ public class TestMultitypeNavigableMergeableColumn {
 		column.merge("k1", "234");
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo("123234");
+			Assertions.assertThat(o).isEqualTo(List.of("123", "234"));
 		});
 	}
 
