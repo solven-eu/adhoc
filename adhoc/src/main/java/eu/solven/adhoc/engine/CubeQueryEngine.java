@@ -45,6 +45,7 @@ import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -224,7 +225,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
-	protected QueryStepsDag makeQueryStepsDag(QueryPod queryPod) {
+	@VisibleForTesting
+	public QueryStepsDag makeQueryStepsDag(QueryPod queryPod) {
 		IQueryStepsDagBuilder queryStepsDagBuilder = makeQueryStepsDagsBuilder(queryPod);
 
 		// Add explicitly requested steps
@@ -338,7 +340,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
 	}
 
-	protected TableQueryEngine makeTableQueryEngine() {
+	@VisibleForTesting
+	public TableQueryEngine makeTableQueryEngine() {
 		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 

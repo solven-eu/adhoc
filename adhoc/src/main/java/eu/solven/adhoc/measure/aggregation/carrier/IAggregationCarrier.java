@@ -30,6 +30,13 @@ import eu.solven.adhoc.table.ITableWrapper;
  * This is used by {@link IAggregation} which need to differentiate clearly from inputs and a stateful-but-intermediate
  * aggregation.
  * 
+ * It is generally not useful for simple aggregations (e.g. SUM), which can be applied indifferently over inputs and its
+ * own outputs (e.g. `(1+2)+3==1+(2+3)`).
+ * 
+ * It is generally useful for complex aggregations (e.g. `AVG`), which can not be applied indifferently over inputs and
+ * its own outputs (e.g. `avg(1,2,3)!=avg(avg(1,2),3)!=avg(1,avg(2,3))`). More generally , if `agg(agg(x,y),
+ * z)!=agg(x,agg(y,z))`, an {@link IAggregationCarrier} is needed.
+ * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface

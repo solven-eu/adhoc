@@ -162,7 +162,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsDistinctFrom() {
-		ColumnFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
+		IAdhocFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();

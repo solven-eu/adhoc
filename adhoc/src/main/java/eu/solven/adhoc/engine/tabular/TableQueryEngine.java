@@ -25,7 +25,6 @@ package eu.solven.adhoc.engine.tabular;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -78,15 +77,26 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Default {@link ITableQueryEngine}
+ * Default {@link ITableQueryEngine}.
+ * 
+ * It implements optimizations of the queryPlans projected to the underlying table. Typically:
+ * 
+ * <ul>
+ * <li>Request for `m over c=c1&d=d1` and `m over c=c1&d=d2` should request `m(FILTER d=d1) and m(FILTER d=d2) over
+ * c=c1`</li>
+ * <li>Request for `m groupBy c` and `m groupBy c&d` should request `m groupBy c,c&d`</li>
+ * </ul>
  * 
  * @author Benoit Lacelle
  */
@@ -103,17 +113,49 @@ public class TableQueryEngine implements ITableQueryEngine {
 	@Default
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
+	@Value
+	@Builder
+	private static class SplitTableQueries {
+		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
+		@Singular
+		@NonNull
+		Set<TableQuery> underlyings;
+
+		// Holds the TableQuery which can be evaluated implicitly from underlyings
+		@Singular
+		@NonNull
+		Set<TableQuery> implicits;
+	}
+
 	@Override
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		Set<TableQuery> tableQueries = prepareForTable(queryPod, queryStepsDag);
 
-		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(tableQueries);
+		SplitTableQueries splitted = split(tableQueries);
+
+		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(splitted.getUnderlyings());
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
+
+		evaluateImplicit(stepToValues, splitted.getImplicits());
 
 		reportAfterTableQueries(queryPod, stepToValues);
 
 		return stepToValues;
+	}
+
+	protected void evaluateImplicit(Map<CubeQueryStep, ISliceToValue> stepToValues, Set<TableQuery> implicits) {
+		if (!implicits.isEmpty()) {
+			throw new NotYetImplementedException("Implicit TableQuery is not yet supported");
+		}
+	}
+
+	protected SplitTableQueries split(Set<TableQuery> tableQueries) {
+		return SplitTableQueries.builder().underlyings(tableQueries).build();
+	}
+
+	protected Set<TableQueryV2> groupByEnablingFilterPerMeasure(Set<TableQuery> tableQueries) {
+		return TableQueryV2.fromV1(tableQueries);
 	}
 
 	protected void reportAfterTableQueries(QueryPod queryPod,
@@ -230,31 +272,36 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	public Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	protected Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
 
 		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
-		dag.vertexSet().stream().filter(step -> dag.outgoingEdgesOf(step).isEmpty()).forEach(step -> {
-			IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
+		dag.vertexSet()
+				.stream()
+				// Consider only leaves steps.
+				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
+				// `Transformator` with no undelryingSteps
+				.filter(step -> dag.outgoingEdgesOf(step).isEmpty())
+				.forEach(step -> {
+					IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
 
-			if (leafMeasure instanceof Aggregator leafAggregator) {
-				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
+					if (leafMeasure instanceof Aggregator leafAggregator) {
+						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
 
-				// We could analyze filters, to swallow a query filtering `k=v` if another query
-				// filters `k=v|v2`. This is valid only if they were having the same groupBy, and groupBy includes `k`
-				measurelessToAggregators
-						.merge(measureless, Collections.singleton(leafAggregator), UnionSetAggregation::unionSet);
-			} else if (leafMeasure instanceof EmptyMeasure) {
-				log.trace("An EmptyMeasure has no underlying measures");
-			} else {
-				// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as having no
-				// underlying step)
-				log.debug("step={} has been planned having no underlying step", step);
-				// throw new IllegalStateException("Expected simple aggregators. Got %s".formatted(leafMeasure));
-			}
-		});
+						// Aggregator leaves are groupedBy context (groupBy+filter+customMarker)
+						// They may be later grouped by different granularities (e.g. to leverage `FILTER` per measure)
+						measurelessToAggregators
+								.merge(measureless, Set.of(leafAggregator), UnionSetAggregation::unionSet);
+					} else if (leafMeasure instanceof EmptyMeasure) {
+						log.trace("An EmptyMeasure has no underlying measures");
+					} else {
+						// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as
+						// having no underlying step (e.g. Filtrator with matchNone filter))
+						log.debug("step={} has been planned having no underlying step", step);
+					}
+				});
 
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery measurelessQuery = e.getKey();

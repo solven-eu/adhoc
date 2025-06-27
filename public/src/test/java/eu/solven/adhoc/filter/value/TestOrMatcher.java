@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,15 +39,38 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestOrMatcher {
 
-	@Disabled("TODO Implement this optimization")
 	@Test
-	public void testAndInEq() {
-		OrMatcher a_and_aandb =
-				OrMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
+	public void test_multipleEquals() {
+		IValueMatcher a_and_aandb = OrMatcher.or(EqualsMatcher.isEqualTo("a"), EqualsMatcher.isEqualTo("b"));
 
-		// TODO Improve this when relevant
-		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
-		Assertions.assertThat(a_and_aandb).isEqualTo(InMatcher.isIn("a", "b"));
+		Assertions.assertThat(a_and_aandb).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
+			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b");
+		});
+	}
+
+	@Test
+	public void testOr_InEq() {
+		IValueMatcher a_or_bc = OrMatcher.or(EqualsMatcher.isEqualTo("a"), InMatcher.isIn("b", "c"));
+
+		Assertions.assertThat(a_or_bc).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
+			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b", "c");
+		});
+	}
+
+	@Test
+	public void testOr_InEq_overlap() {
+		IValueMatcher a_or_ab = OrMatcher.or(EqualsMatcher.isEqualTo("a"), InMatcher.isIn("a", "b"));
+
+		Assertions.assertThat(a_or_ab).isEqualTo(InMatcher.isIn("a", "b"));
+	}
+
+	@Test
+	public void testOr_InIn() {
+		IValueMatcher a_or_bc = OrMatcher.or(InMatcher.isIn("a", "b"), InMatcher.isIn("b", "c"));
+
+		Assertions.assertThat(a_or_bc).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
+			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b", "c");
+		});
 	}
 
 	@Test
@@ -68,7 +92,7 @@ public class TestOrMatcher {
 		OrMatcher bThenA =
 				OrMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
 
-		Assertions.assertThat(aThenB).isEqualTo(bThenA);
+		Assertions.assertThat(aThenB).isEqualTo(bThenA).hasToString("LikeMatcher(pattern=a%)|LikeMatcher(pattern=%b)");
 	}
 
 	@Test
