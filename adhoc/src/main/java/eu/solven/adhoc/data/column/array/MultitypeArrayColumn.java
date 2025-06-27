@@ -60,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
+@Deprecated(since = "Seems not used")
 public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumnFastGet<T>, ICompactable {
 
 	// We allow different types per key. However, this data-structure requires a single key to be attached to a single

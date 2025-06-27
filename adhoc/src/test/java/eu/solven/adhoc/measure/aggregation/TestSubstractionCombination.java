@@ -33,10 +33,8 @@ import org.mockito.Mockito;
 import com.google.common.collect.Collections2;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
-import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
@@ -135,28 +133,13 @@ public class TestSubstractionCombination {
 			valueProviders.add(IValueProvider.NULL);
 
 			Collections2.permutations(valueProviders).stream().filter(l -> l.size() == 2).forEach(vps -> {
-				IValueProvider vp =
-						combination.combine(slice, SlicedRecordFromSlices.builder().valueProviders(vps).build());
+				IValueProvider vp = combination.combine(combination.bind(2),
+						slice,
+						SlicedRecordFromSlices.builder().valueProviders(vps).build());
 				Object o = IValueProvider.getValue(vp);
 
 				Assertions.assertThat(o).isNotNull();
 			});
 		}
-	}
-
-	SubstractionCombination substraction = new SubstractionCombination();
-
-	IValueProvider leftLong = IValueProvider.setValue(234L);
-	IValueProvider rightLong = IValueProvider.setValue(123L);
-	ISlicedRecord tabularRecordLong =
-			SlicedRecordFromSlices.builder().valueProvider(leftLong).valueProvider(rightLong).build();
-
-	List<?> arrayLong = Arrays.asList(234, 123);
-
-	ICombinationBinding binding = substraction.bind(2);
-
-	@Test
-	public void combineSlicedRecord_Long_binding() {
-		substraction.combine(binding, null, tabularRecordLong);
 	}
 }

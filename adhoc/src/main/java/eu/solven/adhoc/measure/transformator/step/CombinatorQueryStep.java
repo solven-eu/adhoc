@@ -102,13 +102,13 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
-			// The provided column is probably computed for `EmtpyAggregation`
+			// The provided column is probably computed for `EmptyAggregation`
 			log.trace("Received EmptyAggregation sliceToValue");
 		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
-			// BEWARE This would not allow a Combinator to return slices independently of underlyings
+			// BEWARE This prevents a Combinator to return slices independently of underlyings
 			return SliceToValue.empty();
 		}
 

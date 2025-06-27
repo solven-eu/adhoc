@@ -42,6 +42,9 @@ import lombok.extern.slf4j.Slf4j;
  * The {@link Object} case differs from usual implementations. As being an in-memory engine, it feels preferable to
  * accumulate {@link Object} in a {@link List}, rather than concatenating their {@link Object#toString()}.
  * 
+ * More specifically: it will aggregate as long if it encounters only long-like. It would switch to a double if it
+ * encounter any double-like. It would collect not double-like into a List, wrapping the whole into a XXX.
+ * 
  * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
