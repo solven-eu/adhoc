@@ -6,7 +6,7 @@
         "@playwright/test": "1.53.1",
         "@types/node": "22.15.33",
         "@vitejs/plugin-vue": "6.0.0",
-        "eslint": "9.29.0",
+        "eslint": "9.30.0",
         "eslint-config-prettier": "10.1.5",
         "eslint-plugin-prettier": "5.5.1",
         "eslint-plugin-vue": "10.2.0",
