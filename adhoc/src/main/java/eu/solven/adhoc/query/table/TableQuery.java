@@ -24,11 +24,13 @@ package eu.solven.adhoc.query.table;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.IQueryOption;
@@ -139,5 +141,17 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 				.columns(columns)
 				.lateColumns(lateColumns)
 				.build();
+	}
+
+	/**
+	 * 
+	 * @param aggregatorSteps
+	 *            {@link CubeQueryStep}, each associated to an {@link Aggregator}
+	 * @return an equivalent {@link Set} of {@link TableQuery}
+	 */
+	public static Set<TableQuery> fromSteps(Set<CubeQueryStep> aggregatorSteps) {
+		return aggregatorSteps.stream()
+				.map(step -> TableQuery.edit(step).aggregator((Aggregator) step.getMeasure()).build())
+				.collect(ImmutableSet.toImmutableSet());
 	}
 }
