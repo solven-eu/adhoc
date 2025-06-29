@@ -28,6 +28,7 @@ import java.util.List;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Some score logic: higher with more goals, lower with more redcards. Redcards are quadratric: 1 is OK, 2 is bad, 3 is
@@ -35,6 +36,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 public class EventsScoreCombination implements ICombination {
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
@@ -52,6 +54,8 @@ public class EventsScoreCombination implements ICombination {
 		if (nbMatch == null) {
 			throw new IllegalStateException("Can not have a goal or redcard event without a match");
 		}
+
+		log.trace("{} {} {} {}", slice.getAdhocSliceAsMap().getCoordinates(), nbGoals, nbRedcards, nbMatch);
 
 		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
 				.divide(BigDecimal.valueOf(nbMatch.longValue()), RoundingMode.HALF_EVEN)

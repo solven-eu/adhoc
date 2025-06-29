@@ -37,7 +37,6 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -183,11 +182,8 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 
 	@Test
 	public void testMatchCount_sinceInception_groupByYear() {
-		ITabularView result = cube().execute(CubeQuery.builder()
-				.measure("match_count", "match_count.sinceInception2")
-				.groupByAlso("year")
-				.explain(true)
-				.build());
+		ITabularView result = cube().execute(
+				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1930L), v -> {
@@ -215,12 +211,8 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 
 	@Test
 	public void testCoachScore_sinceInception_groupByYear() {
-		ITabularView result = cube().execute(CubeQuery.builder()
-				.measure("coach_score", "coach_score.sinceInception2")
-				.groupByAlso("year")
-				.explain(true)
-				.option(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)
-				.build());
+		ITabularView result = cube().execute(
+				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
@@ -238,8 +230,6 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 				.measure("coach_score", "coach_score.sinceInception2")
 				.groupByAlso("year")
 				.andFilter("year", 1998L)
-				.explain(true)
-				.option(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

@@ -83,4 +83,34 @@ public class TestPlayersEvents {
 				  }
 				}""");
 	}
+
+	@Test
+	public void testMerge_sameMinute() throws JsonProcessingException {
+		AtomicLongMap<Integer> goalEvents = AtomicLongMap.create();
+		goalEvents.put(12, 23);
+
+		AtomicLongMap<Integer> goalEvents2 = AtomicLongMap.create();
+		goalEvents2.put(12, 45);
+
+		AtomicLongMap<Integer> yellowEvents = AtomicLongMap.create();
+		yellowEvents.put(12, 67);
+
+		PlayersEvents merged = PlayersEvents.merge(PlayersEvents.builder().typeToMinuteToCount("G", goalEvents).build(),
+				PlayersEvents.builder()
+						.typeToMinuteToCount("G", goalEvents2)
+						.typeToMinuteToCount("Y", yellowEvents)
+						.build());
+
+		String toString = TestMapBasedTabularView.objectMapper().writeValueAsString(merged);
+
+		Assertions.assertThat(toString).isEqualTo("""
+				{
+				  "G" : {
+				    "12" : 68
+				  },
+				  "Y" : {
+				    "12" : 67
+				  }
+				}""");
+	}
 }

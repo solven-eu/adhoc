@@ -52,11 +52,13 @@ public class PlayersEvents {
 		Map<String, AtomicLongMap<Integer>> typeToMinuteToCount = new TreeMap<>();
 
 		left.getTypeToMinuteToCounts().forEach((key, values) -> {
-			typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create()).putAll(values.asMap());
+			AtomicLongMap<Integer> atomicMap = typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create());
+			values.asMap().forEach(atomicMap::addAndGet);
 		});
 
 		right.getTypeToMinuteToCounts().forEach((key, values) -> {
-			typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create()).putAll(values.asMap());
+			AtomicLongMap<Integer> atomicMap = typeToMinuteToCount.computeIfAbsent(key, k -> AtomicLongMap.create());
+			values.asMap().forEach(atomicMap::addAndGet);
 		});
 
 		return PlayersEvents.builder().typeToMinuteToCounts(typeToMinuteToCount).build();
