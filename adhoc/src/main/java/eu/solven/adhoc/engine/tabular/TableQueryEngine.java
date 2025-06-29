@@ -72,6 +72,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -112,6 +113,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
@@ -138,6 +140,14 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> tableQueriesDag;
+
+		public static SplitTableQueries empty() {
+			return SplitTableQueries.builder()
+					.induceds(Set.of())
+					.inducers(Set.of())
+					.tableQueriesDag(new DirectedAcyclicGraph<>(DefaultEdge.class))
+					.build();
+		}
 	}
 
 	@Override
@@ -175,8 +185,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 				// Happens typically for inducers steps
 				log.debug("step={} is already evaluated", induced);
 			} else {
-				List<CubeQueryStep> inducers =
-						dag.incomingEdgesOf(induced).stream().map(e -> dag.getEdgeSource(e)).toList();
+				List<CubeQueryStep> inducers = dag.incomingEdgesOf(induced).stream().map(dag::getEdgeSource).toList();
 				if (inducers.size() != 1) {
 					throw new IllegalStateException("Induced should have a single inducer. induced=%s inducers=%s"
 							.formatted(induced, inducers));
@@ -192,12 +201,15 @@ public class TableQueryEngine implements ITableQueryEngine {
 				inducerValues.forEachSlice(slice -> inducedValues
 						.merge(inducedGroupBy(induced.getGroupBy().getGroupedByColumns(), slice)));
 
-				stepToValues.put(induced, SliceToValue.builder().column(inducedValues).build());
+				stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
 
 				if (hasOptions.isDebugOrExplain()) {
-					log.info("[EXPLAIN] size={} induced size={} ({} induced {})",
+					Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
+							induced.getGroupBy().getGroupedByColumns());
+					log.info("[EXPLAIN] size={} induced size={} by removing groupBy={} ({} induced {})",
 							inducerValues.size(),
 							inducedValues.size(),
+							removedGroupBys,
 							inducer,
 							induced);
 				}
@@ -222,13 +234,14 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * @param tableQueries
 	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
 	 */
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
 		if (tableQueries.isEmpty()) {
-			return SplitTableQueries.builder().build();
+			return SplitTableQueries.empty();
 		}
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> tableQueriesDag =
-				DirectedAcyclicGraph.<CubeQueryStep, DefaultEdge>createBuilder(DefaultEdge.class).build();
+				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		// Inference in aggregator based: `k1` does not imply `k2`, `k1.SUM` does not imply `k1.MAX`
 		SetMultimap<Aggregator, CubeQueryStep> aggregatorToQueries =
@@ -242,6 +255,13 @@ public class TableQueryEngine implements ITableQueryEngine {
 				aggregatorToQueries.put(agg, step);
 			});
 		});
+
+		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+			return SplitTableQueries.builder()
+					.inducers(aggregatorToQueries.values())
+					.tableQueriesDag(tableQueriesDag)
+					.build();
+		}
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
@@ -689,18 +709,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.build();
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
-			IMultitypeColumnFastGet<SliceAsMap> column = coordinatesToAggregates.closeColumn(filteredAggregator);
+			IMultitypeColumnFastGet<SliceAsMap> values = coordinatesToAggregates.closeColumn(filteredAggregator);
 
-			IMultitypeColumnFastGet<SliceAsMap> columnWithSuppressed;
+			IMultitypeColumnFastGet<SliceAsMap> valuesWithSuppressed;
 			if (suppressedGroupBys.isEmpty()) {
-				columnWithSuppressed = column;
+				valuesWithSuppressed = values;
 			} else {
-				columnWithSuppressed = restoreSuppressedGroupBy(queryStep, suppressedGroupBys, column);
+				valuesWithSuppressed = restoreSuppressedGroupBy(queryStep, suppressedGroupBys, values);
 			}
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			queryStepToValues.put(queryStep, SliceToValue.builder().column(columnWithSuppressed).build());
+			queryStepToValues.put(queryStep, SliceToValue.forGroupBy(queryStep).values(valuesWithSuppressed).build());
 		});
 		return queryStepToValues;
 	}

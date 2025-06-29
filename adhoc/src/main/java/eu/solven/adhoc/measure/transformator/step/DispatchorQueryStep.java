@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -65,6 +66,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
+	public static final String P_UNDERLYINGS = "underlyings";
+
 	final Dispatchor dispatchor;
 	@Getter(AccessLevel.PROTECTED)
 	final AdhocFactories factories;
@@ -78,7 +81,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		IDecomposition decomposition = makeDecomposition();
+		IDecomposition decomposition = makeDecomposition(List.of());
 
 		List<IWhereGroupByQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
 
@@ -93,9 +96,13 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 	}
 
-	protected IDecomposition makeDecomposition() {
-		return factories.getOperatorFactory()
-				.makeDecomposition(dispatchor.getDecompositionKey(), dispatchor.getDecompositionOptions());
+	protected IDecomposition makeDecomposition(List<? extends ISliceToValue> underlyings) {
+		Map<String, Object> options = new LinkedHashMap<>();
+
+		options.putAll(dispatchor.getDecompositionOptions());
+		options.put(P_UNDERLYINGS, underlyings);
+
+		return factories.getOperatorFactory().makeDecomposition(dispatchor.getDecompositionKey(), options);
 	}
 
 	@Override
@@ -114,13 +121,13 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 		IAggregation agg = factories.getOperatorFactory().makeAggregation(dispatchor.getAggregationKey());
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg);
+		IMultitypeMergeableColumn<SliceAsMap> values = makeColumn(agg);
 
-		IDecomposition decomposition = makeDecomposition();
+		IDecomposition decomposition = makeDecomposition(underlyings);
 
-		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, aggregatingView));
+		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, values));
 
-		return SliceToValue.builder().column(aggregatingView).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg) {

@@ -26,13 +26,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.ToString;
 
 /**
@@ -42,61 +46,66 @@ import lombok.ToString;
  */
 // BEWARE What is the point of this given IMultitypeColumnFastGet? It forces the generic with SliceAsMap. And hides some
 // methods/processes like `.purgeAggregationCarriers()`. This is also immutable (by interface).
-@Builder
 @ToString
+@Builder
 public class SliceToValue implements ISliceToValue {
 	@NonNull
 	// Getter for testing
 	@Getter
-	final IMultitypeColumnFastGet<SliceAsMap> column;
+	final IMultitypeColumnFastGet<SliceAsMap> values;
+
+	@NonNull
+	@Singular
+	@Getter
+	final ImmutableSet<String> columns;
 
 	public static SliceToValue empty() {
-		return SliceToValue.builder().column(MultitypeHashColumn.empty()).build();
+		return SliceToValue.builder().values(MultitypeHashColumn.empty()).build();
 	}
 
 	@Override
 	public IValueProvider onValue(SliceAsMap slice) {
-		return column.onValue(slice);
+		return values.onValue(slice);
 	}
 
 	@Override
 	public Stream<SliceAsMap> slices() {
-		return column.keyStream();
+		return values.keyStream();
 	}
 
 	@Override
 	public Set<SliceAsMap> slicesSet() {
-		return column.keyStream().collect(Collectors.toSet());
+		return values.keyStream().collect(Collectors.toSet());
 	}
 
 	@Override
 	public void forEachSlice(IColumnScanner<SliceAsMap> rowScanner) {
-		column.scan(rowScanner);
+		values.scan(rowScanner);
 	}
 
 	@Override
 	public <U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowScanner) {
-		return column.stream(rowScanner);
+		return values.stream(rowScanner);
 	}
 
 	@Override
 	public Stream<SliceAndMeasure<SliceAsMap>> stream() {
-		return column.stream();
+		return values.stream();
 	}
 
 	@Override
 	public long size() {
-		return column.size();
+		return values.size();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return column.isEmpty();
+		return values.isEmpty();
 	}
 
 	@Override
 	public boolean isSorted() {
-		if (column instanceof IIsSorted) {
+		if (values instanceof IIsSorted) {
 			return true;
 		}
 		return false;
@@ -104,19 +113,23 @@ public class SliceToValue implements ISliceToValue {
 
 	@Override
 	public Stream<SliceAndMeasure<SliceAsMap>> stream(StreamStrategy strategy) {
-		return column.stream(strategy);
+		return values.stream(strategy);
 	}
 
 	@Override
 	public ISliceToValue purgeCarriers() {
-		return SliceToValue.builder().column(column.purgeAggregationCarriers()).build();
+		return SliceToValue.builder().values(values.purgeAggregationCarriers()).columns(columns).build();
 	}
 
 	@Override
 	public void compact() {
-		if (column instanceof ICompactable compactable) {
+		if (values instanceof ICompactable compactable) {
 			compactable.compact();
 		}
+	}
+
+	public static SliceToValueBuilder forGroupBy(IHasGroupBy hasGroupBy) {
+		return SliceToValue.builder().columns(hasGroupBy.getGroupBy().getGroupedByColumns());
 	}
 
 }

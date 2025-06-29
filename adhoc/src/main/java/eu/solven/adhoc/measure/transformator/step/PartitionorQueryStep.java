@@ -95,13 +95,13 @@ public class PartitionorQueryStep extends ATransformatorQueryStep implements ITr
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg, underlyings);
+		IMultitypeMergeableColumn<SliceAsMap> values = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
 
-		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
+		forEachDistinctSlice(underlyings, combinator, values::merge);
 
-		return SliceToValue.builder().column(aggregatingView).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg,

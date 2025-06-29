@@ -36,7 +36,6 @@ import java.util.stream.StreamSupport;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -82,26 +81,14 @@ public class UnderlyingQueryStepHelpersNavigable {
 			// TODO It is a pity to lose all sorted available information due to one (potentially very small) not
 			// sorted column.
 
-			// Typically from MultitypeColumnHash
-			List<ISliceToValue> notSorted = new ArrayList<>();
-
-			for (ISliceToValue sliceToValue : underlyings) {
-				if (sliceToValue.isEmpty()) {
-					// TODO Why don't we keep the original sliceToValue?
-					notSorted.add(SliceToValue.builder().column(MultitypeHashColumn.empty()).build());
-				} else {
-					notSorted.add(sliceToValue);
-				}
-			}
-
 			// Merge all SliceAsMap in a Set
 			Set<SliceAsMap> notSortedAsSet;
-			if (notSorted.isEmpty()) {
+			if (underlyings.isEmpty()) {
 				notSortedAsSet = Set.of();
-			} else if (notSorted.size() == 1) {
-				notSortedAsSet = notSorted.iterator().next().slicesSet();
+			} else if (underlyings.size() == 1) {
+				notSortedAsSet = underlyings.iterator().next().slicesSet();
 			} else {
-				notSortedAsSet = notSorted.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
+				notSortedAsSet = underlyings.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
 			}
 
 			int size = underlyings.size();
@@ -121,13 +108,13 @@ public class UnderlyingQueryStepHelpersNavigable {
 
 			for (ISliceToValue slices : underlyings) {
 				if (slices.isEmpty()) {
-					sorted.add(SliceToValue.builder().column(MultitypeNavigableColumn.empty()).build());
+					sorted.add(SliceToValue.empty());
 				} else {
 					sorted.add(slices);
 				}
 			}
 
-			Stream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, sorted);
+			Stream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, underlyings);
 
 			return sortedSlices;
 		}
@@ -141,7 +128,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 * @return a merged {@link Stream}, based on the input sorted ISliceToValue
 	 */
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
-			List<ISliceToValue> sorted) {
+			List<? extends ISliceToValue> sorted) {
 		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators = sorted.stream().peek(s -> {
 			if (!s.isSorted()) {
 				throw new IllegalArgumentException(

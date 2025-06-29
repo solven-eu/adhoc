@@ -51,6 +51,8 @@ public interface ISliceToValue extends ICompactable {
 
 	boolean isEmpty();
 
+	Set<String> getColumns();
+
 	Stream<SliceAsMap> slices();
 
 	Set<SliceAsMap> slicesSet();

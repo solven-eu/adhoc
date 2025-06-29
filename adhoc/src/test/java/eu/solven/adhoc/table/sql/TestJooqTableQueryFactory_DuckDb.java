@@ -105,9 +105,9 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
-				not (
-				  "k1" = 'v1'
-				  or "k2" = 'v2'
+				(
+				  not ("k1" = 'v1')
+				  and not ("k2" = 'v2')
 				)""");
 	}
 
@@ -215,13 +215,29 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_custom_NOT() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IAdhocFilter orFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		IAdhocFilter notFilter = NotFilter.not(customFilter);
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" group by ALL""");
+				select sum("k") "k", "c" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_custom_NotOr() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
+		IAdhocFilter notFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
+
+		// custom part is handled as leftover
+		Assertions.assertThat(condition.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l).isEqualTo(NotFilter.not(customFilter)));
+		// native part is managed by SQL: requesting `c` as groupBy to enable late filtering
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k", "c" from "someTableName" where not ("d" = 'someD') group by ALL""");
 	}
 
 	@Test

@@ -118,11 +118,11 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = factories.getColumnsFactory().makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
 
-		forEachDistinctSlice(underlyings, combination, storage::append);
+		forEachDistinctSlice(underlyings, combination, values::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	@Override

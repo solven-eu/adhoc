@@ -496,7 +496,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 				SliceAsMap errorSlice = makeErrorSlice(queryStep, e);
 				column.append(errorSlice).onObject(e);
-				coordinatesToValues = SliceToValue.builder().column(column).build();
+				coordinatesToValues = SliceToValue.forGroupBy(queryStep).values(column).build();
 			} else {
 				throw AdhocExceptionHelpers.wrap(e, "Issue processing queryStep=%s".formatted(queryStep));
 			}

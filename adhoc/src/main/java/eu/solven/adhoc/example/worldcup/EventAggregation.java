@@ -24,6 +24,7 @@ package eu.solven.adhoc.example.worldcup;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -128,11 +129,25 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 			return right;
 		} else if (right == null) {
 			return left;
-		} else if (left instanceof SimpleAggregationCarrier leftCarrier
-				&& right instanceof SimpleAggregationCarrier rightCarrier) {
-			return PlayersEvents.merge(leftCarrier.getT(), rightCarrier.getT());
 		} else {
-			throw new UnsupportedOperationException();
+			Optional<PlayersEvents> leftAsEvent = asEvents(left);
+			Optional<PlayersEvents> rightAsEvent = asEvents(right);
+
+			if (leftAsEvent.isPresent() && rightAsEvent.isPresent()) {
+				return PlayersEvents.merge(leftAsEvent.get(), rightAsEvent.get());
+			} else {
+				throw new UnsupportedOperationException("left=%s right=%s".formatted(left, right));
+			}
+		}
+	}
+
+	protected Optional<PlayersEvents> asEvents(Object o) {
+		if (o instanceof SimpleAggregationCarrier carrier) {
+			return Optional.of(carrier.getT());
+		} else if (o instanceof PlayersEvents events) {
+			return Optional.of(events);
+		} else {
+			return Optional.empty();
 		}
 	}
 

@@ -94,7 +94,8 @@ public class DuplicatingDecomposition implements IDecomposition {
 	 * 
 	 * @param relevantColumn
 	 * @param value
-	 *            the aggregate may help computing the coordinates along which the duplication should occur.
+	 *            the aggregate may help computing the coordinates along which the duplication should occur. Typically
+	 *            on aggregates being decomposed along generated columns.
 	 * @return the coordinates along which given value has to be duplicated.
 	 */
 	protected ImmutableList<?> getCoordinatesAlongColumn(String relevantColumn, Object value) {
@@ -159,30 +160,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 				projectedSlice.put(duplicatedGroupedByColumns.get(i), coordinates.get(i));
 			}
 
-			boolean matchFilter = Lists.cartesianProduct(indexToFilteredNotGroupedByCoordinates)
-					.stream()
-					.anyMatch(filteredNotGroupedByCoordinates -> {
-						Map<String, Object> fullSlice = new LinkedHashMap<>();
-
-						fullSlice.putAll(slice.getAdhocSliceAsMap().getCoordinates());
-						fullSlice.putAll(projectedSlice);
-
-						// Relates with DispatchorQueryStep.isRelevant
-						// This filtering is done in the decomposition, else we would have to send a IDecompositionEntry
-						// for
-						// each potential filter, which leads to more issues about de-duplicating the duplicates. (e.g.
-						// on
-						// `group=G8|G20`, we would send 2 decompositionEntry (one for G8 and one for G20), while only
-						// one of
-						// them should be kept).
-						boolean isRelevant = FilterMatcher.builder()
-								.filter(slice.getQueryStep().getFilter())
-								.onMissingColumn(DecompositionHelpers.onMissingColumn())
-								.build()
-								.match(fullSlice);
-
-						return isRelevant;
-					});
+			boolean matchFilter = doMatchFilter(slice, indexToFilteredNotGroupedByCoordinates, projectedSlice);
 
 			if (matchFilter) {
 				// Add a decompositionEntry per requested groupBy
@@ -202,11 +180,38 @@ public class DuplicatingDecomposition implements IDecomposition {
 		return decompositions;
 	}
 
-	protected List<List<?>> indexToCoordinates(ISliceWithStep slice,
-			Object value,
-			List<String> duplicatedGroupedByColumns) {
-		List<List<?>> indexToGroupedByCoordinates = new ArrayList<>(duplicatedGroupedByColumns.size());
-		for (String relevantColumn : duplicatedGroupedByColumns) {
+	protected boolean doMatchFilter(ISliceWithStep slice,
+			List<List<?>> indexToFilteredNotGroupedByCoordinates,
+			Map<String, Object> projectedSlice) {
+		List<List<Object>> cartesianProduct = Lists.cartesianProduct(indexToFilteredNotGroupedByCoordinates);
+
+		if (cartesianProduct.isEmpty()) {
+			return false;
+		} else {
+			Map<String, Object> fullSlice = new LinkedHashMap<>();
+
+			// TODO How should we add coordinates from filter?
+			fullSlice.putAll(slice.getAdhocSliceAsMap().getCoordinates());
+			fullSlice.putAll(projectedSlice);
+
+			// Relates with DispatchorQueryStep.isRelevant
+			// This filtering is done in the decomposition, else we would have to send a IDecompositionEntry
+			// for each potential filter, which leads to more issues about de-duplicating the duplicates.
+			// (e.g. on `group=G8|G20`, we would send 2 decompositionEntry (one for G8 and one for G20),
+			// while only one of them should be kept).
+			FilterMatcher decompositionMatcher = FilterMatcher.builder()
+					.filter(slice.getQueryStep().getFilter())
+					.onMissingColumn(DecompositionHelpers.onMissingColumn())
+					.build();
+			boolean isRelevant = decompositionMatcher.match(fullSlice);
+
+			return isRelevant;
+		}
+	}
+
+	protected List<List<?>> indexToCoordinates(ISliceWithStep slice, Object value, List<String> groupedByColumns) {
+		List<List<?>> indexToGroupedByCoordinates = new ArrayList<>(groupedByColumns.size());
+		for (String relevantColumn : groupedByColumns) {
 			ImmutableList<?> unfilteredCoordinates = getCoordinatesAlongColumn(relevantColumn, value);
 
 			// Filter coordinates according to filters

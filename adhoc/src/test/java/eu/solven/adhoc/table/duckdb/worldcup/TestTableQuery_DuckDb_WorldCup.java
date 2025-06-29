@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -182,22 +183,44 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 
 	@Test
 	public void testMatchCount_sinceInception_groupByYear() {
-		ITabularView result = cube().execute(
-				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("year").build());
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("match_count", "match_count.sinceInception2")
+				.groupByAlso("year")
+				.explain(true)
+				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1930L), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 18L)
+					.containsEntry("match_count.sinceInception2", 18L)
+					.hasSize(2);
+		}).hasEntrySatisfying(Map.of("year", 1934L), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 17L)
+					.containsEntry("match_count.sinceInception2", 18L + 17L)
+					.hasSize(2);
+		}).hasEntrySatisfying(Map.of("year", 1998L), v -> {
 			Assertions.assertThat((Map) v)
 					.containsEntry("match_count", 64L)
 					.containsEntry("match_count.sinceInception2", 580L)
+					.hasSize(2);
+		}).hasEntrySatisfying(Map.of("year", 2002L), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 64L)
+					.containsEntry("match_count.sinceInception2", 580L + 64L)
 					.hasSize(2);
 		}).hasSize(20);
 	}
 
 	@Test
 	public void testCoachScore_sinceInception_groupByYear() {
-		ITabularView result = cube().execute(
-				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("year").build());
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("coach_score", "coach_score.sinceInception2")
+				.groupByAlso("year")
+				.explain(true)
+				.option(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)
+				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
@@ -207,6 +230,26 @@ public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdho
 				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(20.09, 20.10);
 			}).hasSize(2);
 		}).hasSize(20);
+	}
+
+	@Test
+	public void testCoachScore_sinceInception_groupByYear_filterByYear() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("coach_score", "coach_score.sinceInception2")
+				.groupByAlso("year")
+				.andFilter("year", 1998L)
+				.explain(true)
+				.option(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+			Assertions.assertThat((Map) v).hasEntrySatisfying("coach_score", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(0.71, 0.72);
+			}).hasEntrySatisfying("coach_score.sinceInception2", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(20.09, 20.10);
+			}).hasSize(2);
+		}).hasSize(1);
 	}
 
 }

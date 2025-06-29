@@ -89,7 +89,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR"))).onLong(123);
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD"))).onLong(234);
 
-			ISliceToValue valuesFromTable = SliceToValue.builder().column(columnFromTable).build();
+			ISliceToValue valuesFromTable = SliceToValue.builder().values(columnFromTable).column("ccy").build();
 			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
 					valuesFromTable);
@@ -159,7 +159,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD", "country", "USA"))).onLong(345);
 
-			ISliceToValue valuesFromTable = SliceToValue.builder().column(columnFromTable).build();
+			ISliceToValue valuesFromTable =
+					SliceToValue.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
 			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery)
 					.groupBy(GroupByColumns.named("ccy", "country"))

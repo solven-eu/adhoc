@@ -192,11 +192,11 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyings.size() != 2");
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = makeColumn(underlyings);
 
-		forEachDistinctSlice1(underlyings, storage::append);
+		forEachDistinctSlice1(underlyings, values::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {

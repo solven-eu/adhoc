@@ -22,13 +22,21 @@
  */
 package eu.solven.adhoc.measure.decomposition;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -60,9 +68,41 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 	IFilterEditor filterEditor;
 
 	public CumulatingDecomposition(Map<String, ?> options) {
-		super(options);
+		super(prepare(options));
 
 		filterEditor = MapPathGet.getRequiredAs(options, K_FILTER_EDITOR);
+	}
+
+	protected static Map<String, Object> prepare(Map<String, ?> options) {
+		Map<String, Object> processedOptions = new LinkedHashMap<>(options);
+
+		// This will evaluate the relevant cumulated columns given the underlying slices
+		if (processedOptions.containsKey(DispatchorQueryStep.P_UNDERLYINGS)) {
+			List<ISliceToValue> underlyings =
+					MapPathGet.getRequiredAs(processedOptions, DispatchorQueryStep.P_UNDERLYINGS);
+
+			Map<String, ?> columnToCoordinates = MapPathGet.getRequiredAs(processedOptions, K_COLUMN_TO_COORDINATES);
+			Set<String> columns = columnToCoordinates.keySet();
+
+			Map<String, List<Object>> columnToCoordinatesFromUndelryings = new LinkedHashMap<>();
+			columns.forEach(column -> columnToCoordinatesFromUndelryings.put(column, new ArrayList<>()));
+
+			underlyings.forEach(sliceToValue -> {
+				Set<String> relevantColumns =
+						ImmutableSet.copyOf(Sets.intersection(columns, sliceToValue.getColumns()));
+
+				sliceToValue.slices().forEach(slice -> {
+					relevantColumns.forEach(column -> {
+						columnToCoordinatesFromUndelryings.computeIfAbsent(column, k -> new ArrayList<>())
+								.add(slice.getRawSliced(column));
+					});
+				});
+			});
+
+			processedOptions.put(K_COLUMN_TO_COORDINATES, columnToCoordinatesFromUndelryings);
+		}
+
+		return processedOptions;
 	}
 
 	@Override
@@ -73,11 +113,33 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 
 	@Override
 	protected IValueMatcher getValueMatcher(ISliceWithStep slice, String relevantColumn) {
-		IAdhocFilter filter = slice.asFilter();
+		// slice may refer to a slice out of current filter
+		// e.g. we may receive `year=1930` while filtering `year=2025`, as `year=1930` contributes into `year=2025`
+		// So we rely on the queryStep filter, and not on `slice.asFilter()` which would do `year=1930&year=2025 ->
+		// matchNone`
+		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
+		if (filter.isMatchAll()) {
+			filter = slice.getQueryStep().getFilter();
+		}
+
 		IValueMatcher current = FilterHelpers.getValueMatcherLax(filter, relevantColumn);
 		IValueMatcher previous = FilterHelpers.getValueMatcherLax(filterEditor.editFilter(filter), relevantColumn);
 		IValueMatcher nextSlices = NotMatcher.not(previous);
+
+		// TODO Enable not to include current position through an option
 		return OrMatcher.or(current, nextSlices);
+	}
+
+	@Override
+	protected boolean doMatchFilter(ISliceWithStep slice,
+			List<List<?>> indexToFilteredNotGroupedByCoordinates,
+			Map<String, Object> projectedSlice) {
+		// BEWARE This implementation is probably incorrect. Please provide a unitTest showing in which case it is
+		// invalid.
+		// The rational behind `true` is to consider the underlying value will be automatically filtered with the
+		// cumulated filter (e.g. `<= 1998`): whatever the actual filter on `year`, we should return the cumulated
+		// value.
+		return true;
 	}
 
 	@Override

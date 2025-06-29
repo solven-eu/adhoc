@@ -174,7 +174,6 @@ public class TestMultitypeArrayColumn {
 		Assertions.assertThat(column.stream(i -> o -> o).toList()).containsExactly(123L, "foo");
 	}
 
-
 	@Test
 	public void testEmpty() {
 		column = MultitypeArrayColumn.empty();
@@ -182,12 +181,12 @@ public class TestMultitypeArrayColumn {
 		Assertions.assertThat(column.size()).isEqualTo(0);
 		Assertions.assertThat(column.isEmpty()).isTrue();
 
-		column.append(1).onObject("foo");
-		column.append(2).onLong(123);
-		column.append(3).onDouble(12.34D);
-
-		// Compact while non-empty
-		column.compact();
+		Assertions.assertThatThrownBy(() -> column.append(1).onObject("foo"))
+				.isInstanceOf(UnsupportedOperationException.class);
+		Assertions.assertThatThrownBy(() -> column.append(2).onLong(123))
+				.isInstanceOf(UnsupportedOperationException.class);
+		Assertions.assertThatThrownBy(() -> column.append(3).onDouble(12.34D))
+				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test

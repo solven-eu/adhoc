@@ -64,17 +64,17 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyingNames.size() != 1 (was %s)".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> values = makeStorage();
 
 		ISliceToValue singleUnderlying = underlyings.getFirst();
 
 		singleUnderlying.forEachSlice(rawSlice -> {
 			SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
 
-			return v -> onSlice(slice, v, storage::append);
+			return v -> onSlice(slice, v, values::append);
 		});
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	private boolean isDebug() {

@@ -40,6 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 public class AtotiOperatorFactory extends StandardOperatorFactory {
 	@Override
 	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
-		return AtotiOperatorFactory.builder().rootOperatorFactory(rootOperatorFactory).build();
+		return builder().rootOperatorFactory(rootOperatorFactory).build();
 	}
 }

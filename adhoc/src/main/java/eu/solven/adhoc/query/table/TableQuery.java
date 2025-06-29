@@ -151,7 +151,7 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 	 */
 	public static Set<TableQuery> fromSteps(Set<CubeQueryStep> aggregatorSteps) {
 		return aggregatorSteps.stream()
-				.map(step -> TableQuery.edit(step).aggregator((Aggregator) step.getMeasure()).build())
+				.map(step -> edit(step).aggregator((Aggregator) step.getMeasure()).build())
 				.collect(ImmutableSet.toImmutableSet());
 	}
 }
