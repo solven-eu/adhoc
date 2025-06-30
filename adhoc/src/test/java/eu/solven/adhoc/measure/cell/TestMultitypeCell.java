@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.measure.cell;
 
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
@@ -55,7 +57,7 @@ public class TestMultitypeCell {
 
 			@Override
 			public void onObject(Object v) {
-				Assertions.assertThat(v).isEqualTo("Arg12323.45");
+				Assertions.assertThat(v).isEqualTo(List.of("Arg", 123L, 23.45D));
 			}
 		});
 	}
@@ -188,5 +190,13 @@ public class TestMultitypeCell {
 				Assertions.fail("Should call the Long aggregate");
 			}
 		});
+	}
+
+	@Test
+	public void testEmpty() {
+		MultitypeCell cell =
+				MultitypeCell.builder().aggregation(new ProductAggregation(Map.of())).asLong(1L).asDouble(1D).build();
+
+		Assertions.assertThat(IValueProvider.getValue(cell.reduce())).isNull();
 	}
 }

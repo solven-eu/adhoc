@@ -29,8 +29,5 @@ package eu.solven.adhoc.util;
  */
 @FunctionalInterface
 public interface IAdhocEventBus {
-	IAdhocEventBus BLACK_HOLE = event -> {
-	};
-
 	void post(Object event);
 }

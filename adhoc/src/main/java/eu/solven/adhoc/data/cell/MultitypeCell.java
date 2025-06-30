@@ -36,12 +36,12 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 @Builder
-public class MultitypeCell implements IMultitypeCell {
+public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProvider {
 	@NonNull
 	IAggregation aggregation;
 
 	@Default
-	byte types = 0;
+	byte types = IMultitypeConstants.MASK_EMPTY;
 
 	// TODO Should we init the default values based on the IAggregation (e.g. ILongAggregation.neutralLong())
 	// `0` is the natural default to most IAggregation
@@ -51,69 +51,85 @@ public class MultitypeCell implements IMultitypeCell {
 	@Default
 	double asDouble = 0D;
 	@Default
-	CharSequence asCharsequence = null;
-	@Default
 	Object asObject = null;
 
 	@Override
+	public void onLong(long v) {
+		if (aggregation instanceof ILongAggregation longAggregation) {
+			types |= IMultitypeConstants.MASK_LONG;
+			asLong = longAggregation.aggregateLongs(asLong, v);
+		} else {
+			onObject(v);
+		}
+	}
+
+	@Override
+	public void onDouble(double v) {
+		if (aggregation instanceof IDoubleAggregation doubleAggregation) {
+			types |= IMultitypeConstants.MASK_DOUBLE;
+			asDouble = doubleAggregation.aggregateDoubles(asDouble, v);
+		} else {
+			onObject(v);
+		}
+	}
+
+	@Override
+	public void onObject(Object object) {
+		if (object != null) {
+			types |= IMultitypeConstants.MASK_OBJECT;
+			asObject = aggregation.aggregate(asObject, object);
+		}
+	}
+
+	@Override
 	public IValueReceiver merge() {
-		return new IValueReceiver() {
+		return this;
+	}
 
-			@Override
-			public void onLong(long v) {
-				if (aggregation instanceof ILongAggregation longAggregation) {
-					types |= IMultitypeConstants.MASK_LONG;
-					MultitypeCell.this.asLong = longAggregation.aggregateLongs(asLong, v);
-				} else {
-					onObject(v);
-				}
+	@Override
+	public void acceptReceiver(IValueReceiver valueReceiver) {
+		if (types == IMultitypeConstants.MASK_LONG) {
+			// Only longs
+			valueReceiver.onLong(asLong);
+		} else if (types == IMultitypeConstants.MASK_DOUBLE) {
+			// Only doubles
+			valueReceiver.onDouble(asDouble);
+		} else if (types == IMultitypeConstants.MASK_EMPTY) {
+			// empty
+			valueReceiver.onObject(null);
+		} else {
+			// Object
+			Object crossTypeAggregate = asObject;
+
+			// TODO Would be prefer merging long and double first?
+			if ((types & IMultitypeConstants.MASK_LONG) == IMultitypeConstants.MASK_LONG) {
+				// There is a long fragment
+				crossTypeAggregate = aggregation.aggregate(crossTypeAggregate, asLong);
+			}
+			if ((types & IMultitypeConstants.MASK_DOUBLE) == IMultitypeConstants.MASK_DOUBLE) {
+				// There is a double fragment
+				crossTypeAggregate = aggregation.aggregate(crossTypeAggregate, asDouble);
 			}
 
-			@Override
-			public void onDouble(double v) {
-				if (aggregation instanceof IDoubleAggregation doubleAggregation) {
-					types |= IMultitypeConstants.MASK_DOUBLE;
-					MultitypeCell.this.asDouble = doubleAggregation.aggregateDoubles(asDouble, v);
-				} else {
-					onObject(v);
-				}
-			}
-
-			@Override
-			public void onObject(Object object) {
-				if (object != null) {
-					types |= IMultitypeConstants.MASK_OBJECT;
-					MultitypeCell.this.asObject = aggregation.aggregate(asObject, object);
-				}
-			}
-		};
+			valueReceiver.onObject(crossTypeAggregate);
+		}
 	}
 
 	@Override
 	public IValueProvider reduce() {
-		return vc -> {
-			if (types == IMultitypeConstants.MASK_LONG) {
-				// Only longs
-				vc.onLong(asLong);
-			} else if (types == IMultitypeConstants.MASK_DOUBLE) {
-				// Only doubles
-				vc.onDouble(asDouble);
-			} else {
-				// Object
-				Object crossTypeAggregate = asObject;
+		return this;
+	}
 
-				// TODO Would be prefer merging long and double first?
-				if ((types & 1) == 1) {
-					// There is a long fragment
-					crossTypeAggregate = aggregation.aggregate(crossTypeAggregate, asLong);
-				}
-				if ((types & 2) == 2) {
-					// There is a double fragment
-					crossTypeAggregate = aggregation.aggregate(crossTypeAggregate, asDouble);
-				}
+	@SuppressWarnings("PMD.NullAssignment")
+	public void clear() {
+		types = IMultitypeConstants.MASK_EMPTY;
 
-				vc.onObject(crossTypeAggregate);
-			}
-		};
+		asLong = 0;
+		asDouble = 0D;
+		asObject = null;
+	}
+
+	public int getType() {
+		return types;
 	}
 }

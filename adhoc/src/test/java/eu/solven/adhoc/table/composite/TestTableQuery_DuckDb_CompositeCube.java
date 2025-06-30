@@ -82,10 +82,16 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 	private CubeWrapper makeAndFeedCompositeCube() {
 		return makeAndFeedCompositeCube(forest -> {
 			// Stick to default behavior
+		}, forest -> {
+			// Stick to default behavior
+		}, forest -> {
+			// Stick to default behavior
 		});
 	}
 
-	private CubeWrapper makeAndFeedCompositeCube(Consumer<UnsafeMeasureForest> onForestWithoutSubs) {
+	private CubeWrapper makeAndFeedCompositeCube(Consumer<UnsafeMeasureForest> onForest1,
+			Consumer<UnsafeMeasureForest> onForest2,
+			Consumer<UnsafeMeasureForest> onCompositeForestWithoutSubs) {
 		CubeWrapper cube1;
 		{
 			dsl.createTableIfNotExists(tableName1)
@@ -106,11 +112,12 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 					tableName1), DSL.field("k1"), DSL.field("k2"), DSL.field("k4"), DSL.field("a"), DSL.field("b"))
 					.values(345, 456, 678, "a2", "b2")
 					.execute();
-			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
-			measureBag.addMeasure(k1Sum);
-			measureBag.addMeasure(k2Sum);
-			measureBag.addMeasure(Aggregator.countAsterisk());
-			cube1 = wrapInCube(measureBag, table1);
+			UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name(tableName1).build();
+			forest.addMeasure(k1Sum);
+			forest.addMeasure(k2Sum);
+			forest.addMeasure(Aggregator.countAsterisk());
+			onForest1.accept(forest);
+			cube1 = wrapInCube(forest, table1);
 		}
 		CubeWrapper cube2;
 		{
@@ -126,16 +133,17 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 					tableName2), DSL.field("k1"), DSL.field("k3"), DSL.field("k4"), DSL.field("a"), DSL.field("c"))
 					.values(1234, 2345, 3456, "a1", "c1")
 					.execute();
-			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
-			measureBag.addMeasure(k1Sum);
-			measureBag.addMeasure(k3Sum);
-			measureBag.addMeasure(Aggregator.countAsterisk());
-			cube2 = wrapInCube(measureBag, table2);
+			UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name(tableName2).build();
+			forest.addMeasure(k1Sum);
+			forest.addMeasure(k3Sum);
+			forest.addMeasure(Aggregator.countAsterisk());
+			onForest2.accept(forest);
+			cube2 = wrapInCube(forest, table2);
 		}
 
 		UnsafeMeasureForest forestWithoutSubs = UnsafeMeasureForest.builder().name("composite").build();
 		forestWithoutSubs.addMeasure(k1PlusK2AsExpr);
-		onForestWithoutSubs.accept(forestWithoutSubs);
+		onCompositeForestWithoutSubs.accept(forestWithoutSubs);
 
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
@@ -409,10 +417,6 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 						.build())
 				.build();
 
-		// Assertions
-		// .assertThatThrownBy(
-		// () -> cube3.execute(AdhocQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build()))
-		// .hasRootCauseInstanceOf(NotYetImplementedException.class);
 		ITabularView result = cube3.execute(CubeQuery.builder().measure("k1Rank1", "k1Rank2", "k1Rank3").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -425,7 +429,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 	public void testQuery_Avg() {
 		CubeWrapper initialCube3 = makeAndFeedCompositeCube();
 
-		// `k1` is a measure of both cubes: Doing the AVG will compute `k1` per cube and the the avg
+		// `k1` is a measure of both cubes: Doing the AVG will compute `k1` per cube and the avg
 		{
 			CubeWrapper cube3 = initialCube3.toBuilder()
 					.forest(MeasureForest.edit(initialCube3.getForest())
@@ -446,7 +450,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 					.hasSize(1);
 		}
 
-		// `k2` is a measure of only cube1: Doing the AVG will compute `k2` per cube and the the avg
+		// `k2` is a measure of only cube1: Doing the AVG will compute `k2` per cube and the avg
 		{
 			CubeWrapper cube3 = initialCube3.toBuilder()
 					.forest(MeasureForest.edit(initialCube3.getForest())
@@ -489,6 +493,30 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 					.containsEntry(Map.of(), Map.of("avg", (0D + (0D + 567 + 678) / 2 + 3456) / 2))
 					.hasSize(1);
 		}
+	}
+
+	// BEWARE This is a faulty behavior. We query an average from DuckDB, while we need to built a carrier, as it is
+	// necessary by the composite.
+	@Test
+	public void testQuery_AvgAggregator() {
+		String mAvg = "k1.avg";
+
+		CubeWrapper compositeCube = makeAndFeedCompositeCube(forest -> {
+			forest.addMeasure(
+					Aggregator.builder().name(mAvg).columnName("k1").aggregationKey(AvgAggregation.KEY).build());
+		}, forest -> {
+			forest.addMeasure(
+					Aggregator.builder().name(mAvg).columnName("k1").aggregationKey(AvgAggregation.KEY).build());
+		}, forest -> {
+			forest.addMeasure(Aggregator.builder().name(mAvg).aggregationKey(AvgAggregation.KEY).build());
+		});
+
+		ITabularView result = compositeCube.execute(CubeQuery.builder().measure(mAvg).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(mAvg, (0L + (123 + 345) / 2 + 1234) / 2))
+				.hasSize(1);
 	}
 
 	@Test
@@ -577,6 +605,8 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
 		CubeWrapper cube3 = makeAndFeedCompositeCube(forest -> {
+		}, forest -> {
+		}, forest -> {
 			// Register k1Max in composite with same name as underlying k1Sum
 			forest.addMeasure(k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build());
 		});

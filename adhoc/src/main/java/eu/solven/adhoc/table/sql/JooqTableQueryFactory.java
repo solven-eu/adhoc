@@ -63,19 +63,24 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -107,7 +112,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	@Builder.Default
-	IOperatorFactory operatorFactory = new StandardOperatorFactory();
+	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	@NonNull
 	final TableLike<?> table;
@@ -151,7 +156,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
 
 		// `WHERE ...`
-
 		SelectConnectByStep<Record> selectFromWhere;
 		if (conditionAndLeftover.getCondition() instanceof True) {
 			selectFromWhere = selectFrom;
@@ -542,6 +546,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getPattern()));
 		case StringMatcher stringMatcher -> condition =
 				DSL.condition(field.cast(String.class).eq(stringMatcher.getString()));
+
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();
 
@@ -561,10 +566,45 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			}
 			condition = DSL.condition(jooqCondition);
 		}
+
+		case AndMatcher andMatcher -> {
+			List<Optional<Condition>> optConditions = toConditions(column, andMatcher);
+
+			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
+				return Optional.empty();
+			}
+
+			condition = DSL.and(optConditions.stream().map(Optional::get).toList());
+		}
+		case OrMatcher orMatcher -> {
+			List<Optional<Condition>> optConditions = toConditions(column, orMatcher);
+
+			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
+				return Optional.empty();
+			}
+
+			condition = DSL.or(optConditions.stream().map(Optional::get).toList());
+		}
+		case NotMatcher notMatcher -> {
+			Optional<Condition> optConditions =
+					toCondition(ColumnFilter.builder().column(column).valueMatcher(notMatcher.getNegated()).build());
+
+			if (optConditions.isEmpty()) {
+				return Optional.empty();
+			}
+
+			condition = DSL.not(optConditions.get());
+		}
 		default -> condition = onCustomCondition(column, valueMatcher);
 		}
 
 		return Optional.ofNullable(condition);
+	}
+
+	protected List<Optional<Condition>> toConditions(String column, IHasOperands<IValueMatcher> hasOperands) {
+		return hasOperands.getOperands().stream().map(subValueMatcher -> {
+			return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
+		}).toList();
 	}
 
 	/**

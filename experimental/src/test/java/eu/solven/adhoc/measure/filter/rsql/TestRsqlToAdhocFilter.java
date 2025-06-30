@@ -34,17 +34,13 @@ public class TestRsqlToAdhocFilter {
 	@Test
 	public void testAnd() {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\";year=gt=2003");
-		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"name==Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
+		Assertions.assertThat(filter.toString()).isEqualTo("name==Kill Bill&year>2003");
 	}
 
 	@Test
 	public void testAnd_v2() {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\" and year>2003");
-		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"name==Kill Bill&year matches `ComparingMatcher(operand=2003, greaterThan=true, matchIfEqual=false, matchIfNull=false)`");
+		Assertions.assertThat(filter.toString()).isEqualTo("name==Kill Bill&year>2003");
 	}
 
 	@Test
@@ -52,8 +48,7 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action);(director=='Christopher Nolan',actor==*Bale);year=ge=2000");
 		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
+				.isEqualTo("genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year>=2000");
 	}
 
 	@Test
@@ -61,24 +56,19 @@ public class TestRsqlToAdhocFilter {
 		IAdhocFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action) and (director=='Christopher Nolan' or actor==*Bale) and year>=2000");
 		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`");
+				.isEqualTo("genres=in=(sci-fi,action)&director==Christopher Nolan|actor==*Bale&year>=2000");
 	}
 
 	@Test
 	public void testComparison() {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan;year=ge=2000;year=lt=2010");
-		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"director.lastName==Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
+		Assertions.assertThat(filter.toString()).isEqualTo("director.lastName==Nolan&year>=2000&year<2010");
 	}
 
 	@Test
 	public void testComparison_v2() {
 		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan and year>=2000 and year<2010");
-		Assertions.assertThat(filter.toString())
-				.isEqualTo(
-						"director.lastName==Nolan&year matches `ComparingMatcher(operand=2000, greaterThan=true, matchIfEqual=true, matchIfNull=false)`&year matches `ComparingMatcher(operand=2010, greaterThan=false, matchIfEqual=false, matchIfNull=false)`");
+		Assertions.assertThat(filter.toString()).isEqualTo("director.lastName==Nolan&year>=2000&year<2010");
 	}
 
 	@Test

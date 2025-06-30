@@ -30,7 +30,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 public class TestNullableLongArray {
 	@Test
 	public void testRemove() {
-		NullableLongArray array = NullableLongArray.builder().build();
+		NullableLongList array = NullableLongList.builder().build();
 
 		array.add(123);
 		array.add(234);
@@ -52,7 +52,7 @@ public class TestNullableLongArray {
 
 	@Test
 	public void testAddNulThenNotNull() {
-		NullableLongArray array = NullableLongArray.builder().build();
+		NullableLongList array = NullableLongList.builder().build();
 
 		array.addNull();
 		array.add(234);
@@ -63,7 +63,7 @@ public class TestNullableLongArray {
 
 	@Test
 	public void testOutOfBounds() {
-		NullableLongArray array = NullableLongArray.builder().build();
+		NullableLongList array = NullableLongList.builder().build();
 
 		array.add(123);
 		array.add(234);
@@ -74,7 +74,7 @@ public class TestNullableLongArray {
 
 	@Test
 	public void testCompact() {
-		NullableLongArray array = NullableLongArray.builder().build();
+		NullableLongList array = NullableLongList.builder().build();
 
 		array.add(123);
 		array.add(234);

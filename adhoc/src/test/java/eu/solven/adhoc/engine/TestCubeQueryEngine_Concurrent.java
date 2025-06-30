@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Phaser;
@@ -35,10 +36,13 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -60,19 +64,25 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 	public void testConcurrentTableQueries() {
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
-		forest.addMeasure(sum_MaxK1K2ByA);
+		Partitionor maxK2_ByA = Partitionor.builder()
+				.name("maxK2_ByA")
+				.underlyings(Arrays.asList("k2"))
+				.groupBy(GroupByColumns.named("a"))
+				.aggregationKey(MaxCombination.KEY)
+				.build();
+		forest.addMeasure(maxK2_ByA);
 
 		PhasedTableWrapper phasedTable = (PhasedTableWrapper) table();
 
 		// We expect 2 queries: one for grandTotal, and one groupedBy:A
 		phasedTable.getPhasers().bulkRegister(2);
 
-		ITabularView view = cube().execute(
-				CubeQuery.builder().measure(k1Sum, sum_MaxK1K2ByA).option(StandardQueryOptions.CONCURRENT).build());
+		ITabularView view = cube()
+				.execute(CubeQuery.builder().measure(k1Sum, maxK2_ByA).option(StandardQueryOptions.CONCURRENT).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 1, sum_MaxK1K2ByA.getName(), 0L + 1))
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 1, maxK2_ByA.getName(), 0L + 1))
 				.hasSize(1);
 
 		Phaser opening = phasedTable.getPhasers().getOpening();

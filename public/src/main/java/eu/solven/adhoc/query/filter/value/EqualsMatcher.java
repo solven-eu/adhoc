@@ -95,6 +95,11 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToStrin
 	}
 
 	@Override
+	public String toString() {
+		return "==%s".formatted(getWrapped());
+	}
+
+	@Override
 	public String toString(String column, boolean negated) {
 		// https://github.com/jirutka/rsql-parser?tab=readme-ov-file#grammar-and-semantic
 		if (negated) {

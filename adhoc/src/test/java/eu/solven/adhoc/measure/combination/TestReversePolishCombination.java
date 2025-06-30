@@ -25,7 +25,10 @@ package eu.solven.adhoc.measure.combination;
 import static org.assertj.core.api.Assertions.offset;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -199,5 +202,45 @@ public class TestReversePolishCombination {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MIN_NORMAL);
+	}
+
+	public static class ReducingCombination implements ICombination {
+		@Override
+		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+			int[] intArray = (int[]) underlyingValues.get(0);
+			return IntStream.of(intArray).mapToLong(i -> i).sum();
+		}
+	}
+
+	@Test
+	public void testCustomObject() {
+		Stream.of("underlyings[someMeasureName],%s",
+				"(underlyings[someMeasureName],%s)",
+				"((underlyings[someMeasureName]),%s)").forEach(notation -> {
+					Map<String, String> options = Map.of(ReversePolishCombination.K_NOTATION,
+							notation.formatted(ReducingCombination.class.getName()));
+					ReversePolishCombination c = new ReversePolishCombination(options);
+					ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+
+					Assertions.assertThat(c.combine(slice, Arrays.asList(new int[] { 123, 234 })))
+							.describedAs("notation=%s", notation)
+							.isEqualTo(0L + 123 + 234);
+				});
+	}
+
+	@Test
+	public void testExceptionAsMeasure() {
+		RuntimeException someE = new RuntimeException("someMessage");
+
+		Stream.of("underlyings[0],underlyings[1],+").forEach(notation -> {
+			Map<String, String> options = Map.of(ReversePolishCombination.K_NOTATION, notation);
+			ReversePolishCombination c = new ReversePolishCombination(options);
+			ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
+			Assertions.assertThat(c.combine(slice, Arrays.asList(null, someE)))
+					.describedAs("notation=%s", notation)
+					.isInstanceOfSatisfying(Throwable.class, t -> {
+						Assertions.assertThat(t).hasSameClassAs(someE).hasMessage(someE.getMessage());
+					});
+		});
 	}
 }

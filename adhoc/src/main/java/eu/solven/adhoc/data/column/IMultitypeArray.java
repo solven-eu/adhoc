@@ -73,4 +73,6 @@ public interface IMultitypeArray {
 	@Deprecated(since = "Generally slow. Use for uniTests or specific cases")
 	void remove(int index);
 
+	IMultitypeArray purgeAggregationCarriers();
+
 }

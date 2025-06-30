@@ -126,7 +126,13 @@ public class InMatcher implements IValueMatcher, IColumnToString {
 		}
 		orOperands.addAll(valueMatchers);
 		if (!unnestedNotNull.isEmpty()) {
-			orOperands.add(InMatcher.builder().operands(unnestedNotNull).build());
+			IValueMatcher matcher;
+			if (unnestedNotNull.size() == 1) {
+				matcher = EqualsMatcher.isEqualTo(unnestedNotNull.getFirst());
+			} else {
+				matcher = InMatcher.builder().operands(unnestedNotNull).build();
+			}
+			orOperands.add(matcher);
 		}
 
 		return OrMatcher.or(orOperands);

@@ -72,6 +72,7 @@ public class TestMapBasedTabularView {
 
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+
 		return om;
 	}
 }

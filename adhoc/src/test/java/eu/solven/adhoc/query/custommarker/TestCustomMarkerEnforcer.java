@@ -104,7 +104,6 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 				.underlyings(Arrays.asList(k1Sum.getName()))
 				.groupBy(GroupByColumns.named("ccyFrom"))
 				.combinationKey(ForeignExchangeCombination.KEY)
-				// This tests we can refer an aggregation key but its class
 				.aggregationKey(SumElseSetAggregation.class.getName())
 				.build());
 
@@ -172,7 +171,13 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 			Assertions.assertThat(coordinates).isEmpty();
 			Assertions.assertThat((Map) measures)
 					.hasSize(3)
-					.containsEntry(mName, Set.of("Missing_FX_Rate-%s-USD-EUR".formatted(today)));
+					.hasEntrySatisfying(mName,
+							l -> Assertions.assertThat((Set) l).contains("Missing_FX_Rate-%s-USD-EUR".formatted(today)))
+					.hasEntrySatisfying(mNameEUR,
+							l -> Assertions.assertThat((Set) l).contains("Missing_FX_Rate-%s-USD-EUR".formatted(today)))
+					.hasEntrySatisfying(mNameUSD,
+							l -> Assertions.assertThat((Set) l)
+									.contains("Missing_FX_Rate-%s-EUR-USD".formatted(today)));
 		});
 	}
 

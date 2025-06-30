@@ -43,7 +43,7 @@ public interface IHasOperatorFactory {
 		if (o instanceof IHasOperatorFactory hasOperatorFactory) {
 			return hasOperatorFactory.getOperatorFactory();
 		} else {
-			return new StandardOperatorFactory();
+			return StandardOperatorFactory.builder().build();
 		}
 	}
 }

@@ -85,7 +85,7 @@ public class CompositeOperatorFactory implements IOperatorFactory {
 	public ICombination makeCombination(String key, Map<String, ?> options) {
 		return operatorFactories.stream().map(of -> {
 			try {
-				return Optional.of(of.makeCombination(key, options));
+				return Optional.of(of.withRoot(this).makeCombination(key, options));
 			} catch (RuntimeException e) {
 				logOnException(".makeCombination", key, options, of, e);
 				return Optional.<ICombination>empty();
@@ -130,6 +130,13 @@ public class CompositeOperatorFactory implements IOperatorFactory {
 				.findFirst()
 				.orElseThrow(() -> new IllegalArgumentException(
 						"No filterEditor for key=%s options=%s".formatted(key, options)));
+	}
+
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return CompositeOperatorFactory.builder()
+				.operatorFactories(operatorFactories.stream().map(of -> of.withRoot(rootOperatorFactory)).toList())
+				.build();
 	}
 
 }

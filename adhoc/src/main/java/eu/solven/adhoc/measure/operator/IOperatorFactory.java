@@ -70,4 +70,12 @@ public interface IOperatorFactory {
 	IDecomposition makeDecomposition(String key, Map<String, ?> options);
 
 	IFilterEditor makeEditor(String key, Map<String, ?> options);
+
+	/**
+	 * Useful for {@link CompositeOperatorFactory} and {@link StandardOperatorFactory#enrichOptions(Map)}
+	 * 
+	 * @param rootOperatorFactory
+	 * @return
+	 */
+	IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory);
 }

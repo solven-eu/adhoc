@@ -78,11 +78,6 @@ public class TestSubstractionCombination {
 	public void testSimpleCases_fromSlicedRecord() {
 		SubstractionCombination combination = new SubstractionCombination();
 
-		List<IValueProvider> valueProviders = new ArrayList<>();
-		valueProviders.add(IValueProvider.setValue(123));
-		valueProviders.add(IValueProvider.setValue(12.34));
-		valueProviders.add(IValueProvider.NULL);
-
 		Assertions
 				.assertThat(IValueProvider.getValue(combination.combine(slice,
 						SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build())))
@@ -97,9 +92,50 @@ public class TestSubstractionCombination {
 
 		// Coverage
 		{
+			List<IValueProvider> valueProviders = new ArrayList<>();
+			valueProviders.add(IValueProvider.setValue(123));
+			valueProviders.add(IValueProvider.setValue(12.34));
+			valueProviders.add(IValueProvider.NULL);
+
 			Collections2.permutations(valueProviders).stream().filter(l -> l.size() == 2).forEach(vps -> {
 				IValueProvider vp =
 						combination.combine(slice, SlicedRecordFromSlices.builder().valueProviders(vps).build());
+				Object o = IValueProvider.getValue(vp);
+
+				Assertions.assertThat(o).isNotNull();
+			});
+		}
+	}
+
+	@Test
+	public void testSimpleCases_fromSlicedRecord_fromBinding() {
+		SubstractionCombination combination = new SubstractionCombination();
+
+		Assertions
+				.assertThat(IValueProvider.getValue(combination.combine(combination.bind(1),
+						slice,
+						SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build())))
+				.isEqualTo(123L);
+
+		Assertions.assertThat(IValueProvider.getValue(combination.combine(combination.bind(2),
+				slice,
+				SlicedRecordFromSlices.builder()
+						.valueProvider(IValueProvider.setValue(123))
+						.valueProvider(IValueProvider.NULL)
+						.build())))
+				.isEqualTo(123L);
+
+		// Coverage
+		{
+			List<IValueProvider> valueProviders = new ArrayList<>();
+			valueProviders.add(IValueProvider.setValue(123));
+			valueProviders.add(IValueProvider.setValue(12.34));
+			valueProviders.add(IValueProvider.NULL);
+
+			Collections2.permutations(valueProviders).stream().filter(l -> l.size() == 2).forEach(vps -> {
+				IValueProvider vp = combination.combine(combination.bind(2),
+						slice,
+						SlicedRecordFromSlices.builder().valueProviders(vps).build());
 				Object o = IValueProvider.getValue(vp);
 
 				Assertions.assertThat(o).isNotNull();

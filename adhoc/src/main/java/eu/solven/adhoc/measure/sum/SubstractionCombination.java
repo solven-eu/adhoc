@@ -26,11 +26,16 @@ import java.util.List;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.cell.MultitypeCell;
+import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.combination.IBindableCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
+import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -43,12 +48,121 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://dax.guide/op/subtraction/
 @Slf4j
-public class SubstractionCombination implements ICombination, IHasTwoOperands {
+public class SubstractionCombination implements ICombination, IHasTwoOperands, IBindableCombination {
 
 	public static final String KEY = "SUBSTRACTION";
 
+	/**
+	 * A {@link ICombinationBinding} specialized for {@link SubstractionCombination}.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	protected final class SubstractionBinding implements ICombinationBinding {
+		final MultitypeCell receiver0 = MultitypeCell.builder().aggregation(new SumAggregation()).build();
+		final IValueReceiver receiver1 = new IValueReceiver() {
+			@Override
+			public void onLong(long v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+					receiver0.onLong(-v);
+					break;
+				case IMultitypeConstants.MASK_DOUBLE:
+					receiver0.onDouble(-v);
+					break;
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+
+			@Override
+			public void onDouble(double v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+				case IMultitypeConstants.MASK_DOUBLE:
+					receiver0.onDouble(-v);
+					break;
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+
+			@Override
+			public void onObject(Object v) {
+				switch (receiver0.getType()) {
+				case IMultitypeConstants.MASK_EMPTY:
+				case IMultitypeConstants.MASK_LONG:
+				case IMultitypeConstants.MASK_DOUBLE:
+				case IMultitypeConstants.MASK_OBJECT:
+					receiver0.onObject(negate(v));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected value: " + receiver0.getType());
+				}
+			}
+		};
+		final IValueProvider consumer = new IValueProvider() {
+
+			@Override
+			public void acceptReceiver(IValueReceiver valueReceiver) {
+				receiver0.acceptReceiver(valueReceiver);
+			}
+		};
+
+		@Override
+		public void reset(ISliceWithStep slice) {
+			receiver0.clear();
+		}
+
+		@Override
+		public IValueReceiver readUnderlying(int i) {
+			if (i == 0) {
+				return receiver0;
+			} else if (i == 1) {
+				return receiver1;
+			} else {
+				return AdhocBlackHole.getInstance();
+			}
+		}
+
+		@Override
+		public IValueProvider reduce() {
+			return consumer;
+		}
+	}
+
 	public static boolean isSubstraction(String operator) {
 		return "-".equals(operator) || KEY.equals(operator) || operator.equals(SubstractionCombination.class.getName());
+	}
+
+	@Override
+	public ICombinationBinding bind(int nbUnderlyings) {
+		if (nbUnderlyings == 0) {
+			return ICombinationBinding.empty();
+		} else if (nbUnderlyings == 1) {
+			// If `b` is missing in `a-b` , they one can simply return `a`.
+			return ICombinationBinding.atIndex(0);
+		}
+
+		return new SubstractionBinding();
+	}
+
+	@Override
+	public IValueProvider combine(ICombinationBinding binding, ISliceWithStep slice, ISlicedRecord slicedRecord) {
+		binding.reset(slice);
+
+		for (int i = 0; i < slicedRecord.size(); i++) {
+			slicedRecord.read(i).acceptReceiver(binding.readUnderlying(i));
+		}
+
+		return binding.reduce();
 	}
 
 	@Override
@@ -185,4 +299,5 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands {
 			}
 		}
 	}
+
 }

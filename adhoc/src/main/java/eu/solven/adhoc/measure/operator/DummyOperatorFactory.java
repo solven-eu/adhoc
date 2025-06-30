@@ -26,11 +26,11 @@ import java.util.Map;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.util.AdhocIdentity;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +75,11 @@ public class DummyOperatorFactory implements IOperatorFactory {
 	@Override
 	public IFilterEditor makeEditor(String key, Map<String, ?> options) {
 		return dummyEditor;
+	}
+
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return this;
 	}
 
 }

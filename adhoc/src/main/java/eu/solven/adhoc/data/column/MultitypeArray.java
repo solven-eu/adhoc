@@ -29,6 +29,7 @@ import java.util.function.Function;
 import eu.solven.adhoc.data.cell.IValueFunction;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -253,6 +254,25 @@ public class MultitypeArray implements IMultitypeArray {
 		valuesL.clear();
 		valuesD.clear();
 		valuesO.clear();
+	}
+
+	@Override
+	public IMultitypeArray purgeAggregationCarriers() {
+		final List<Object> valuesOPurged = new ArrayList<>(valuesO);
+
+		for (int i = 0; i < valuesO.size(); i++) {
+			Object value = valuesOPurged.get(i);
+			if (value instanceof IAggregationCarrier aggregationCarrier) {
+				valuesO.set(i, IValueProvider.getValue(aggregationCarrier::acceptValueReceiver));
+			}
+		}
+
+		return MultitypeArray.builder()
+				.valuesType(valuesType)
+				.valuesL(valuesL)
+				.valuesD(valuesD)
+				.valuesO(valuesOPurged)
+				.build();
 	}
 
 }

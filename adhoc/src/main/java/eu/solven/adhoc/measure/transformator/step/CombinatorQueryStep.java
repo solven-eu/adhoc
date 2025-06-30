@@ -102,13 +102,13 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
-			// The provided column is probably computed for `EmtpyAggregation`
+			// The provided column is probably computed for `EmptyAggregation`
 			log.trace("Received EmptyAggregation sliceToValue");
 		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
-			// BEWARE This would not allow a Combinator to return slices independently of underlyings
+			// BEWARE This prevents a Combinator to return slices independently of underlyings
 			return SliceToValue.empty();
 		}
 
@@ -118,11 +118,11 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = factories.getColumnsFactory().makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
 
-		forEachDistinctSlice(underlyings, combination, storage::append);
+		forEachDistinctSlice(underlyings, combination, values::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	@Override
@@ -144,7 +144,10 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 		}
 	}
 
-	protected IValueProvider combine(ISliceWithStep slice, ICombination combination, ISlicedRecord slicedRecord) {
+	protected IValueProvider combine(ISliceWithStep slice,
+			// ICombinationBinding binded,
+			ICombination combination,
+			ISlicedRecord slicedRecord) {
 		IValueProvider valueProvider = combination.combine(slice, slicedRecord);
 
 		if (isDebug()) {

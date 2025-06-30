@@ -81,13 +81,13 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = makeStorage();
+		IMultitypeColumnFastGet<SliceAsMap> values = makeStorage();
 
 		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
-		forEachDistinctSlice(underlyings, transformation, storage::append);
+		forEachDistinctSlice(underlyings, transformation, values::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	@Override

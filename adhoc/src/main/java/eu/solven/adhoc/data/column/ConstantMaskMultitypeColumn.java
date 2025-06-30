@@ -69,8 +69,8 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 	}
 
 	@Override
-	public void purgeAggregationCarriers() {
-		masked.purgeAggregationCarriers();
+	public IMultitypeColumnFastGet<SliceAsMap> purgeAggregationCarriers() {
+		return ConstantMaskMultitypeColumn.builder().masked(masked.purgeAggregationCarriers()).masks(masks).build();
 	}
 
 	@Override

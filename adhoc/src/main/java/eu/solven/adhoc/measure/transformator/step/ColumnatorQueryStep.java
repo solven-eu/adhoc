@@ -107,13 +107,13 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			return SliceToValue.empty();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> outputColumn = factories.getColumnsFactory().makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
 
 		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
-		forEachDistinctSlice(underlyings, transformation, outputColumn::append);
+		forEachDistinctSlice(underlyings, transformation, values::append);
 
-		return SliceToValue.builder().column(outputColumn).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	@Override

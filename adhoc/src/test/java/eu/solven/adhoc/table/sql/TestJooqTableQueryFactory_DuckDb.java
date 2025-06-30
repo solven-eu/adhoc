@@ -41,6 +41,9 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -64,8 +67,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 		Condition condition = queryFactory.toCondition(ColumnFilter.isEqualTo("k1", "v1")).get();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
-				"k1" = 'v1'
-				""".trim());
+				"k1" = 'v1'""");
 	}
 
 	@Test
@@ -103,9 +105,9 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
-				not (
-				  "k1" = 'v1'
-				  or "k2" = 'v2'
+				(
+				  not ("k1" = 'v1')
+				  and not ("k2" = 'v2')
 				)""");
 	}
 
@@ -149,8 +151,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "a@b@c" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") "k", "a@b@c" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -162,8 +163,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "pre post" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") "k", "pre post" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -173,8 +173,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(*) "count(*)" from "someTableName" group by ALL
-				""".trim());
+				select count(*) "count(*)" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -184,8 +183,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select count(1) from "someTableName" group by ALL
-				""".trim());
+				select count(1) from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -197,8 +195,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") "k", "c" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -211,22 +208,36 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") "k", "c", "d" from "someTableName" group by ALL""");
 	}
 
 	@Test
 	public void testFilter_custom_NOT() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IAdhocFilter orFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		IAdhocFilter notFilter = NotFilter.not(customFilter);
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") "k", "c" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_custom_NotOr() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
+		IAdhocFilter notFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
+
+		// custom part is handled as leftover
+		Assertions.assertThat(condition.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l).isEqualTo(NotFilter.not(customFilter)));
+		// native part is managed by SQL: requesting `c` as groupBy to enable late filtering
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") "k", "c" from "someTableName" where not ("d" = 'someD') group by ALL""");
 	}
 
 	@Test
@@ -237,8 +248,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.build());
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" group by ALL
-				""".trim());
+				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -249,8 +259,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.build());
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" group by ALL
-				""".trim());
+				select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -265,8 +274,49 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.build());
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select arg_min("kRank", "kRank", 3) "kRank" from "someTableName" group by ALL
-				""".trim());
+				select arg_min("kRank", "kRank", 3) "kRank" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_StringMatcher() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").matching(StringMatcher.hasToString("c1")).build();
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select sum("k") filter (where cast("c" as varchar) = 'c1') "k" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_OrStringMatcher() {
+		ColumnFilter customFilter = ColumnFilter.builder()
+				.column("c")
+				.matching(OrMatcher.or(StringMatcher.hasToString("c1"), StringMatcher.hasToString("c2")))
+				.build();
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") filter (where (cast("c" as varchar) = 'c1' or cast("c" as varchar) = 'c2')) "k" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilter_NotStringMatcher() {
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").matching(NotMatcher.not(StringMatcher.hasToString("c1"))).build();
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") filter (where not (cast("c" as varchar) = 'c1')) "k" from "someTableName" group by ALL""");
 	}
 
 }

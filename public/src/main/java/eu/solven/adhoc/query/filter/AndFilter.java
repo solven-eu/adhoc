@@ -160,6 +160,10 @@ public class AndFilter implements IAndFilter {
 			return MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
 			return notMatchAll.getFirst();
+		} else if (notMatchAll.stream().allMatch(f -> f instanceof NotFilter)) {
+			// Prefer `!(c=c1|d=d1)` over `c!=c1&d!=d1)`
+			// BEWARE Should we handle `ColumnFilter` with a `NotMatcher`?
+			return OrFilter.builder().filters(notMatchAll).build();
 		} else {
 			return AndFilter.builder().filters(notMatchAll).build();
 		}

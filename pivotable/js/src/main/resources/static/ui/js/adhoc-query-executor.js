@@ -87,6 +87,9 @@ export default {
 		if (!props.queryModel.selectedMeasures) {
 			props.queryModel.selectedMeasures = {};
 		}
+		if (!props.queryModel.selectedOptions) {
+			props.queryModel.selectedOptions = {};
+		}
 
 		// This computed property snapshots of the query
 		const queryJson = computed(() => {
@@ -101,7 +104,7 @@ export default {
 			// `.slice` as we want an immutable snapshot
 			const orderedColumns = props.queryModel.selectedColumnsOrdered.slice(0);
 
-			const options = Object.keys(props.queryModel.options).filter((option) => props.queryModel.options[option] === true);
+			const options = Object.keys(props.queryModel.selectedOptions).filter((option) => props.queryModel.selectedOptions[option] === true);
 
 			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
 			const customMarkers = JSON.parse(JSON.stringify(props.queryModel.customMarkers || {}));

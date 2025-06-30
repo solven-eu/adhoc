@@ -30,11 +30,15 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 
 public class TestInMemoryTable {
 	@Test
@@ -151,6 +155,23 @@ public class TestInMemoryTable {
 		cube.execute(CubeQuery.builder().measure("unknownColumn").build());
 		cube.execute(CubeQuery.builder().measure(Aggregator.countAsterisk().getName(), "unknownColumn").build());
 
+		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
+	}
+
+	@Test
+	public void testAggregateFilterUnknownColumn_noThrow() {
+		InMemoryTable table = InMemoryTable.builder().throwOnUnknownColumn(false).build();
+
+		table.add(Map.of("k", "v"));
+
+		ITabularRecordStream output = table.streamSlices(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.countAsterisk())
+						.filter(ColumnFilter.isEqualTo("unknownColumn", "someValue"))
+						.build())
+				.build());
+
+		Assertions.assertThat(output.toList()).contains(Map.of());
 		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
 	}
 }

@@ -51,7 +51,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =
@@ -76,14 +76,14 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 		{
 			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(234);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =
@@ -113,7 +113,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(12);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(23);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(34);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 		// ordered
 		{
@@ -121,7 +121,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(78);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(89);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(90);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 		// unordered
 		{
@@ -129,7 +129,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(45);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(56);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(67);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 		// ordered
 		{
@@ -137,7 +137,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(21);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(32);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(43);
-			underlyings.add(SliceToValue.builder().column(column).build());
+			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =

@@ -38,7 +38,9 @@ public class TestAggregatingColumns {
 
 		aggregatingColumns.contribute("k", a).onLong(123);
 
-		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a, false);
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a
+		// , false
+		);
 
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();

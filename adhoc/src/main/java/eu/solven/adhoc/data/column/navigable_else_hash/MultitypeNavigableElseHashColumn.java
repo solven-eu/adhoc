@@ -81,9 +81,14 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public void purgeAggregationCarriers() {
+	public IMultitypeColumnFastGet<T> purgeAggregationCarriers() {
 		navigable.purgeAggregationCarriers();
 		hash.purgeAggregationCarriers();
+
+		return MultitypeNavigableElseHashColumn.<T>builder()
+				.navigable(navigable.purgeAggregationCarriers())
+				.hash(hash.purgeAggregationCarriers())
+				.build();
 	}
 
 	@Override

@@ -29,6 +29,7 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
@@ -38,7 +39,7 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
  * 
  * @author Benoit Lacelle
  */
-public interface ISliceToValue {
+public interface ISliceToValue extends ICompactable {
 	/**
 	 * 
 	 * @return true if `keySetStream` is already sorted
@@ -49,6 +50,8 @@ public interface ISliceToValue {
 	long size();
 
 	boolean isEmpty();
+
+	Set<String> getColumns();
 
 	Stream<SliceAsMap> slices();
 
@@ -89,5 +92,11 @@ public interface ISliceToValue {
 
 		return IValueProvider.getValue(storage.onValue(sliceAsMap));
 	}
+
+	/**
+	 * 
+	 * @return another {@link ISliceToValue} which has been purged from {@link IAggregationCarrier}.
+	 */
+	ISliceToValue purgeCarriers();
 
 }

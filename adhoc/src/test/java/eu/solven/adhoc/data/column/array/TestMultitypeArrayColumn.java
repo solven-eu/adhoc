@@ -175,6 +175,21 @@ public class TestMultitypeArrayColumn {
 	}
 
 	@Test
+	public void testEmpty() {
+		column = MultitypeArrayColumn.empty();
+
+		Assertions.assertThat(column.size()).isEqualTo(0);
+		Assertions.assertThat(column.isEmpty()).isTrue();
+
+		Assertions.assertThatThrownBy(() -> column.append(1).onObject("foo"))
+				.isInstanceOf(UnsupportedOperationException.class);
+		Assertions.assertThatThrownBy(() -> column.append(2).onLong(123))
+				.isInstanceOf(UnsupportedOperationException.class);
+		Assertions.assertThatThrownBy(() -> column.append(3).onDouble(12.34D))
+				.isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
 	public void testCompact() {
 		// Compact while empty
 		column.compact();

@@ -70,7 +70,7 @@ public class AdhocAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean(IOperatorFactory.class)
 	public IOperatorFactory adhocOperatorsFactory() {
-		return new StandardOperatorFactory();
+		return StandardOperatorFactory.builder().build();
 	}
 
 	@Bean

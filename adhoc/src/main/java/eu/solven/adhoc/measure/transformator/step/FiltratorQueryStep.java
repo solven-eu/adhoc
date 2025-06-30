@@ -80,11 +80,11 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> storage = factories.getColumnsFactory().makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
 
-		forEachDistinctSlice(underlyings, new CoalesceCombination(), storage::append);
+		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
 
-		return SliceToValue.builder().column(storage).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	@Override

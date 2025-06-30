@@ -35,6 +35,8 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -84,6 +86,23 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 				.containsEntry(Map.of("d", today), Map.of(k1Sum.getName(), 0L + 123 + 345))
 				.containsEntry(Map.of("d", today.minusYears(1)), Map.of(k1Sum.getName(), 0L + 234))
 				.hasSize(2);
+	}
+
+	@Test
+	public void test_filterToString() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum)
+				.filter(ColumnFilter.builder()
+						.column("d")
+						.matching(StringMatcher.hasToString(today.toString()))
+						.build())
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.hasSize(1);
 	}
 
 }

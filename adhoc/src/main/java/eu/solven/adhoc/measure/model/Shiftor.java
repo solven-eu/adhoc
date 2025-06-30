@@ -31,11 +31,11 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ShiftorQueryStep;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.util.AdhocIdentity;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

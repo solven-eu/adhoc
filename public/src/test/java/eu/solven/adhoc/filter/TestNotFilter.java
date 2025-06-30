@@ -25,14 +25,54 @@ package eu.solven.adhoc.filter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 
 public class TestNotFilter {
 	@Test
 	public void testNot() {
 		Assertions.assertThat(NotFilter.not(IAdhocFilter.MATCH_ALL)).isEqualTo(IAdhocFilter.MATCH_NONE);
 		Assertions.assertThat(NotFilter.not(IAdhocFilter.MATCH_NONE)).isEqualTo(IAdhocFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void testNotOr() {
+		IAdhocFilter orFilter =
+				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1")));
+
+		Assertions.assertThat(orFilter).isInstanceOfSatisfying(AndFilter.class, andMatcher -> {
+			Assertions.assertThat(andMatcher.getOperands())
+					.hasSize(2)
+					.contains(ColumnFilter.builder()
+							.column("c")
+							.valueMatcher(NotMatcher.not(EqualsMatcher.isEqualTo("c1")))
+							.build())
+					.contains(ColumnFilter.builder()
+							.column("d")
+							.valueMatcher(NotMatcher.not(EqualsMatcher.isEqualTo("d1")))
+							.build());
+		});
+	}
+
+	@Test
+	public void testNotNot_equals() {
+		IAdhocFilter notFilter = NotFilter.not(ColumnFilter.isEqualTo("c", "c1"));
+		IAdhocFilter notNotFilter = NotFilter.not(notFilter);
+
+		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.isEqualTo("c", "c1"));
+	}
+
+	@Test
+	public void testNotNot_like() {
+		IAdhocFilter notFilter = NotFilter.not(ColumnFilter.isLike("c", "a%"));
+		IAdhocFilter notNotFilter = NotFilter.not(notFilter);
+
+		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.isLike("c", "a%"));
 	}
 
 }

@@ -36,8 +36,10 @@ import java.util.stream.Stream;
 
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
+import com.activeviam.pivot.postprocessing.impl.AAdvancedPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ABaseDynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ABasicPostProcessorV2;
+import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
@@ -74,6 +76,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
@@ -303,7 +306,9 @@ public class AtotiMeasureToAdhoc {
 		} else if (DrillupPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onDrillupPostProcessor(measure);
 		} else if (ALocationShiftPostProcessor.class.isAssignableFrom(implementationClass)) {
-			return onLocationShiftPosProcessor(measure);
+			return onLocationShiftPosProcessor(measure, builder -> {
+
+			});
 		} else if (ABasicPostProcessorV2.class.isAssignableFrom(implementationClass)
 				|| ABasicPostProcessor.class.isAssignableFrom(implementationClass)) {
 			return onBasicPostProcessor(measure);
@@ -325,7 +330,13 @@ public class AtotiMeasureToAdhoc {
 		log.warn("Measure={} may not be properly converted as {} is an advancedPostProcessor",
 				measure.getName(),
 				measure.getPluginKey());
-		return onBasicPostProcessor(measure);
+
+		// Dispatchor is not most probable transformator for an advancedPostProcessor
+		return onDispatchor(measure, b -> {
+			// We have no information about the Dispatchor: we prefer to return as-is the underlying measure
+			// Else SUM on complex objects would generate Strings
+			b.aggregationKey(CoalesceAggregation.KEY);
+		});
 	}
 
 	/**
@@ -355,14 +366,7 @@ public class AtotiMeasureToAdhoc {
 			combinatorBuilder.underlyings(underlyingNames);
 		}
 
-		Map<String, Object> combinatorOptions = new LinkedHashMap<>();
-
-		Properties properties = measure.getProperties();
-		properties.stringPropertyNames()
-				.stream()
-				// Reject the properties which are implicitly available in Adhoc model
-				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-				.forEach(key -> combinatorOptions.put(key, properties.get(key)));
+		Map<String, Object> combinatorOptions = propertiesToOptions(measure.getProperties());
 
 		combinatorBuilder.combinationKey(measure.getPluginKey());
 		combinatorBuilder.combinationOptions(onOptions.apply(combinatorOptions));
@@ -401,7 +405,8 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	// TODO ParentValuePostProcessor is not managed as it requires multi-level hierarchies
-	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure) {
+	protected List<IMeasure> onLocationShiftPosProcessor(IPostProcessorDescription measure,
+			Consumer<Shiftor.ShiftorBuilder> onBuilder) {
 		Properties properties = measure.getProperties();
 		List<String> underlyingNames = getUnderlyingNames(measure);
 
@@ -411,13 +416,10 @@ public class AtotiMeasureToAdhoc {
 
 		shiftorBuilder.editorKey(measure.getPluginKey());
 
-		Map<String, Object> editorOptions = new LinkedHashMap<>();
-		properties.stringPropertyNames()
-				.stream()
-				// Reject the properties which are implicitly available in Adhoc model
-				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
-				.forEach(key -> editorOptions.put(key, properties.get(key)));
+		Map<String, Object> editorOptions = propertiesToOptions(properties);
 		shiftorBuilder.editorOptions(editorOptions);
+
+		onBuilder.accept(shiftorBuilder);
 
 		return List.of(shiftorBuilder.build());
 	}
@@ -585,20 +587,34 @@ public class AtotiMeasureToAdhoc {
 
 		transferTagProperties(measure, dispatchorBuilder::tag);
 
+		dispatchorBuilderConsumer.accept(dispatchorBuilder);
+
 		return List.of(dispatchorBuilder.build());
 	}
 
 	protected Map<String, Object> propertiesToOptions(Properties properties, String... excludedProperties) {
-		Map<String, Object> decompositionOptions = new LinkedHashMap<>();
+		Map<String, Object> options = new LinkedHashMap<>();
 
 		properties.stringPropertyNames()
 				.stream()
 				// Reject the properties which are implicitly available in Adhoc model
 				.filter(k -> !IPostProcessor.UNDERLYING_MEASURES.equals(k))
 				// There is not `real-time impacts` in Adhoc
-				.filter(k -> !"continuousQueryHandlerKeys".equals(k))
+				.filter(k -> !IPostProcessor.CONTINUOUS_QUERY_HANDLER_KEYS.equals(k))
+				// Analysis levels are useless in Adhoc (and generally opaque in ActivePivot)
+				.filter(k -> !AAdvancedPostProcessorV2.ANALYSIS_LEVELS_PROPERTY.equals(k))
 				.filter(k -> !Set.of(excludedProperties).contains(k))
-				.forEach(key -> decompositionOptions.put(key, properties.get(key)));
-		return decompositionOptions;
+				.forEach(key -> options.put(key, properties.get(key)));
+
+		properties.entrySet()
+				.stream()
+				.filter(e -> !(e.getKey() instanceof String && e.getValue() instanceof String))
+				.filter(e -> !Set.of(excludedProperties).contains(e.getKey()))
+				// No interest in these properties, mapped to an int value
+				.filter(e -> !AAdvancedPostProcessorV2.OUTPUT_TYPE.equals(e.getKey()))
+				.filter(e -> !ADynamicAggregationPostProcessorV2.LEAF_TYPE.equals(e.getKey()))
+				.forEach(entry -> options.put(String.valueOf(entry.getKey()), entry.getValue()));
+
+		return options;
 	}
 }

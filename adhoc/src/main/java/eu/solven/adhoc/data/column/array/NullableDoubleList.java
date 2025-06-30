@@ -27,25 +27,25 @@ import java.util.stream.IntStream;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.data.column.ICompactable;
-import eu.solven.adhoc.data.tabular.primitives.Int2LongBiConsumer;
+import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import it.unimi.dsi.fastutil.longs.AbstractLongList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.longs.LongLists;
-import it.unimi.dsi.fastutil.longs.LongSpliterator;
+import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
+import it.unimi.dsi.fastutil.doubles.DoubleLists;
+import it.unimi.dsi.fastutil.doubles.DoubleSpliterator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 
 /**
- * Adds `null` capabilities to a {@link LongList}.
+ * Adds `null` capabilities to a {@link DoubleList}.
  * 
  * @author Benoit Lacelle
  */
 @Deprecated(since = "Not-Ready")
 @Builder
-public class NullableLongArray extends AbstractLongList implements INullableLongArray, ICompactable {
+public class NullableDoubleList extends AbstractDoubleList implements INullableDoubleList, ICompactable {
 
 	// Use to register the bits to skip, as not all indexes may be written in LongList
 	@Default
@@ -54,7 +54,7 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 
 	@Default
 	@NonNull
-	final LongList list = new LongArrayList();
+	final DoubleList list = new DoubleArrayList();
 
 	@Override
 	public boolean isNull(int index) {
@@ -62,11 +62,13 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	}
 
 	@Override
-	public long getLong(int index) {
+	public double getDouble(int index) {
 		if (index < 0 || index >= size() || nullBitmap.contains(index)) {
-			return Long.MIN_VALUE;
+			// TODO Should we have a defaultValue?
+			// TODO Should we pick defaultValue from DoubleArrayList?
+			return Double.MIN_VALUE;
 		}
-		return list.getLong(index);
+		return list.getDouble(index);
 	}
 
 	@Override
@@ -80,7 +82,7 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	}
 
 	@Override
-	public boolean add(long k) {
+	public boolean add(double k) {
 		set(size(), k);
 
 		return true;
@@ -89,20 +91,22 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	@Override
 	public boolean addNull() {
 		nullBitmap.add(size());
-		list.add(0L);
+		list.add(0D);
 
 		return true;
 	}
 
 	@Override
-	public long set(int index, long k) {
+	public double set(int index, double k) {
 		// e.g. if `key==1` but `size==0`, we have to skip `key==0`
 
 		int size = list.size();
 		if (size <= index) {
 			// size is too small
 			if (size < index) {
-				list.addElements(size, new long[index - size]);
+				// Add 0D in the primitive array
+				list.addElements(size, new double[index - size]);
+				// Register the skipped indexes as null
 				nullBitmap.add(size, index - size);
 			}
 			list.add(k);
@@ -118,15 +122,15 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	 * Removing is setting to null.
 	 */
 	@Override
-	public long removeLong(int i) {
+	public double removeDouble(int i) {
 		if (i >= size()) {
 			return 0L;
 		}
 		if (nullBitmap.contains(i)) {
-			return 0L;
+			return 0D;
 		}
 		nullBitmap.add(i);
-		return list.getLong(i);
+		return list.getDouble(i);
 	}
 
 	@Override
@@ -140,26 +144,34 @@ public class NullableLongArray extends AbstractLongList implements INullableLong
 	}
 
 	@Override
-	public void forEach(Int2LongBiConsumer indexToValue) {
-		indexStream().forEach(index -> indexToValue.acceptInt2Long(index, list.getLong(index)));
+	public void forEach(Int2DoubleBiConsumer indexToValue) {
+		indexStream().forEach(index -> indexToValue.acceptInt2Double(index, list.getDouble(index)));
 	}
 
 	@Override
-	public LongSpliterator spliterator() {
+	public DoubleSpliterator spliterator() {
+		// How to convert null into a DoubleSpliterator?
 		throw new NotYetImplementedException("TODO");
 	}
 
-	public static INullableLongArray empty() {
-		return NullableLongArray.builder().list(LongLists.emptyList()).build();
+	public static INullableDoubleList empty() {
+		return NullableDoubleList.builder().list(DoubleLists.emptyList()).build();
 	}
 
 	@Override
 	@SuppressWarnings("PMD.LooseCoupling")
 	public void compact() {
-		if (list instanceof LongArrayList arrayList) {
+		if (list instanceof DoubleArrayList arrayList) {
 			arrayList.trim();
 		}
 		nullBitmap.runOptimize();
 	}
 
+	@Override
+	public INullableDoubleList duplicate() {
+		return NullableDoubleList.builder()
+				.list(new DoubleArrayList(list.toDoubleArray()))
+				.nullBitmap(nullBitmap.clone())
+				.build();
+	}
 }

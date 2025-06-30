@@ -16,10 +16,13 @@ export default {
 		const isEditing = ref(false);
 		const editedJson = ref(JSON.stringify(props.queryJson, null, 2));
 
+		const copyToClipboardStatus = ref("");
+
 		watch(
 			() => props.queryJson,
 			(newQueryJson) => {
 				editedJson.value = JSON.stringify(props.queryJson, null, 2);
+				copyToClipboardStatus.value = "";
 			},
 		);
 
@@ -76,9 +79,8 @@ export default {
 			}
 		};
 
-		const copyToClipboardStatus = ref("");
 		const copyToClipboard = function () {
-			const jsonValue = isEditing.value ? editedJson.value : JSON.stringify(props.queryJson);
+			const jsonValue = isEditing.value ? editedJson.value : JSON.stringify(props.queryJson, null, 2);
 			console.log("Writing to clipboard");
 			copyToClipboardStatus.value = "doing";
 			navigator.clipboard

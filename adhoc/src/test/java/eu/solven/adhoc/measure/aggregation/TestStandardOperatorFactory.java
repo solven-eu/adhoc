@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.measure.operator.CompositeOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import lombok.Getter;
@@ -69,7 +70,22 @@ public class TestStandardOperatorFactory {
 
 		Assertions.assertThat(combination).isInstanceOfSatisfying(WithOptionsCombination.class, withOptions -> {
 			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("k", "v");
-			Assertions.assertThat((Map) withOptions.getOptions()).containsEntry("operatorFactory", factory);
+			Assertions.assertThat((Map) withOptions.getOptions())
+					.containsEntry(StandardOperatorFactory.K_OPERATOR_FACTORY, factory);
 		});
 	}
+
+	@Test
+	public void testComposite_injectOperatorsFactory() {
+		CompositeOperatorFactory composite = CompositeOperatorFactory.builder().operatorFactory(factory).build();
+
+		ICombination combination = composite.makeCombination(WithOptionsCombination.class.getName(), Map.of());
+
+		Assertions.assertThat(combination).isInstanceOfSatisfying(WithOptionsCombination.class, c -> {
+			Assertions.assertThat(c.options)
+					.hasEntrySatisfying(StandardOperatorFactory.K_OPERATOR_FACTORY,
+							f -> Assertions.assertThat(f).isSameAs(composite));
+		});
+	}
+
 }

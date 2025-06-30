@@ -44,6 +44,7 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 // BEWARE What is the point of registering nulls in a bitmap as we record null in an Object[]?
+// One point of this class is to be resilient regarding null (e.g. is null for index greater than size)
 @Deprecated(since = "Not-Ready")
 @Builder
 public class NullableObjectList<T> extends AbstractObjectList<T> implements INullableObjectList<T> {
@@ -154,4 +155,8 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 		return NullableObjectList.<T>builder().list(ObjectLists.emptyList()).build();
 	}
 
+	@Override
+	public INullableObjectList<T> duplicate() {
+		return NullableObjectList.<T>builder().list(new ObjectArrayList<>(list)).nullBitmap(nullBitmap.clone()).build();
+	}
 }

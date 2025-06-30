@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.filter.editor;
 
+import java.util.Set;
 import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 
 public class TestShiftedValueMatcher {
 	@Test
@@ -39,5 +41,15 @@ public class TestShiftedValueMatcher {
 		Assertions.assertThat(shifted)
 				.isInstanceOfSatisfying(EqualsMatcher.class,
 						m -> Assertions.assertThat(m.getOperand()).isEqualTo(124L));
+	}
+
+	@Test
+	public void testShiftIn() {
+		Function shiftFunction = (Function) l -> (((Number) l).longValue() + 1);
+		IValueMatcher shifted = ShiftedValueMatcher.shift(InMatcher.isIn(123, 234), shiftFunction);
+
+		Assertions.assertThat(shifted)
+				.isInstanceOfSatisfying(InMatcher.class,
+						m -> Assertions.assertThat((Set) m.getOperands()).contains(124L, 235L));
 	}
 }

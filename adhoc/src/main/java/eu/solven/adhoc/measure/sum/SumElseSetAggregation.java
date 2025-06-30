@@ -23,13 +23,14 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,28 +46,15 @@ public class SumElseSetAggregation extends SumAggregation {
 	public static final String KEY = "SUM_ELSE_SET";
 
 	@Override
-	protected Object aggregateObjects(Object l, Object r) {
-		// BEWARE This Set of errors may grow very large
-		Set<Object> errors = new HashSet<>();
+	protected Collection<?> aggregateCollections(Collection<?> left, Collection<?> right) {
+		int limitSize = checkCollectionsSizes(left, right);
 
-		addErrorsToSet(l, errors);
-		addErrorsToSet(r, errors);
-
-		if (errors.isEmpty()) {
-			// This should never happen. Still, we if receive summable inputs, the errorsSet should be empty
-			return null;
-		}
-
-		return errors;
+		return Stream.concat(left.stream(), right.stream()).limit(limitSize).collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override
-	protected Object onlyOne(Object r) {
-		if (r == null) {
-			return null;
-		} else if (isDoubleLike(r)) {
-			return r;
-		} else if (r instanceof Collection<?> asCollection) {
+	protected Object wrapNotANumber(Object r) {
+		if (r instanceof Collection<?> asCollection) {
 			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
 		} else {
 			// Wrap into a Set, so this aggregate function return either a long/double, or a Set of errors
@@ -74,13 +62,4 @@ public class SumElseSetAggregation extends SumAggregation {
 		}
 	}
 
-	private static void addErrorsToSet(Object l, Set<Object> errors) {
-		if (l != null && !AdhocPrimitiveHelpers.isDoubleLike(l)) {
-			if (l instanceof Collection<?> lAsSet) {
-				errors.addAll(lAsSet);
-			} else {
-				errors.add(l);
-			}
-		}
-	}
 }

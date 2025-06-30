@@ -24,6 +24,7 @@ package eu.solven.adhoc.pivotable.core;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Logger;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -37,6 +38,7 @@ import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
+import eu.solven.adhoc.util.ThrowableAsStackSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -95,5 +97,14 @@ public class PivotableComponentsConfiguration {
 		eventBus.register(subscriber);
 
 		return null;
+	}
+
+	@Bean
+	public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
+		// https://www.baeldung.com/spring-boot-customize-jackson-objectmapper
+		return builder -> {
+			builder.serializers(new ThrowableAsStackSerializer());
+			// AdhocJackson.indentArrayWithEol(builder);
+		};
 	}
 }

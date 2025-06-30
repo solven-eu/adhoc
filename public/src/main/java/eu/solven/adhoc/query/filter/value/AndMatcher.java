@@ -172,7 +172,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	 * 
 	 * @param owner
 	 * @param owned
-	 * @return true an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
+	 * @return an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
 	 *         returning `owner AND owned`.
 	 */
 	@SuppressWarnings("PMD.CognitiveComplexity")
@@ -185,23 +185,26 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 			// Equals
 			if (owned instanceof EqualsMatcher ownedEquals) {
 				return Optional.of(mergeGivenEquals(ownedEquals, owner));
-			} else if (owner instanceof EqualsMatcher ownerEquals) {
+			}
+			if (owner instanceof EqualsMatcher ownerEquals) {
 				return Optional.of(mergeGivenEquals(ownerEquals, owned));
-			} else
+			}
 
 			// In
 			if (owned instanceof InMatcher ownedIn) {
 				return Optional.of(mergeGivenIn(ownedIn, owner));
-			} else if (owner instanceof InMatcher ownerIn) {
+			}
+			if (owner instanceof InMatcher ownerIn) {
 				return Optional.of(mergeGivenIn(ownerIn, owned));
-			} else
+			}
 
 			// Null
 			if (owned instanceof NullMatcher ownedNull) {
 				return Optional.of(mergeGivenNull(ownedNull, owner));
-			} else if (owner instanceof NullMatcher ownerNull) {
+			}
+			if (owner instanceof NullMatcher ownerNull) {
 				return Optional.of(mergeGivenNull(ownerNull, owned));
-			} else
+			}
 
 			// NotMatcher
 			if (owned instanceof NotMatcher ownedNot) {
@@ -209,12 +212,13 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 				if (optSimplifiedWithNot.isPresent()) {
 					return optSimplifiedWithNot;
 				}
-			} else if (owner instanceof NotMatcher ownerNot) {
+			}
+			if (owner instanceof NotMatcher ownerNot) {
 				Optional<IValueMatcher> optSimplifiedWithNot = mergeGivenNot(ownerNot, owned);
 				if (optSimplifiedWithNot.isPresent()) {
 					return optSimplifiedWithNot;
 				}
-			} else
+			}
 
 			// Comparing
 			if (owned instanceof ComparingMatcher ownedComparing && owner instanceof ComparingMatcher ownerComparing) {
@@ -317,6 +321,13 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		}
 	}
 
+	/**
+	 * 
+	 * @param notMatcher
+	 * @param other
+	 * @return an Optional {@link IValueMatcher} equivalent to `owner AND owned`. If empty, it is equivalent to
+	 *         returning `owner AND owned`.
+	 */
 	private static Optional<IValueMatcher> mergeGivenNot(NotMatcher notMatcher, IValueMatcher other) {
 		IValueMatcher negated = notMatcher.getNegated();
 
@@ -326,8 +337,33 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 				// So the `not` is embedded in `other`
 				return Optional.of(other);
 			}
+
+			if (other instanceof NotMatcher otherNot) {
+				if (otherNot.getNegated() instanceof EqualsMatcher otherNotNegated) {
+					// `!= x && != y`
+					return Optional.of(
+							NotMatcher.not(InMatcher.isIn(negatedEquals.getOperand(), otherNotNegated.getOperand())));
+				} else if (otherNot.getNegated() instanceof InMatcher otherNotNegated) {
+					// `!= x && =out= y`
+					return Optional.of(
+							NotMatcher.not(InMatcher.isIn(negatedEquals.getOperand(), otherNotNegated.getOperands())));
+				}
+			}
+
 		} else if (negated instanceof InMatcher negatedIn) {
 			Set<?> disallowedElements = negatedIn.getOperands();
+
+			if (other instanceof NotMatcher otherNot) {
+				if (otherNot.getNegated() instanceof EqualsMatcher otherNotNegated) {
+					// `=out= x && != y`
+					return Optional
+							.of(NotMatcher.not(InMatcher.isIn(disallowedElements, otherNotNegated.getOperand())));
+				} else if (otherNot.getNegated() instanceof InMatcher otherNotNegated) {
+					// `!= x && =out= y`
+					return Optional
+							.of(NotMatcher.not(InMatcher.isIn(disallowedElements, otherNotNegated.getOperands())));
+				}
+			}
 
 			List<?> disallowedButAllowedByOther = disallowedElements.stream().filter(other::match).toList();
 
@@ -336,12 +372,15 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 				return Optional.of(other);
 			}
 
-			AndMatcher simplerWithNotAndIn = AndMatcher.builder()
-					// Reject individually the elements not already rejected by other
-					.operand(NotMatcher.not(InMatcher.isIn(disallowedButAllowedByOther), false))
-					.operand(other)
-					.build();
-			return Optional.of(simplerWithNotAndIn);
+			if (disallowedButAllowedByOther.size() < disallowedElements.size()) {
+				AndMatcher simplerWithNotAndIn = AndMatcher.builder()
+						// Reject individually the elements not already rejected by other
+						.operand(NotMatcher.not(InMatcher.isIn(disallowedButAllowedByOther), false))
+						.operand(other)
+						.build();
+				return Optional.of(simplerWithNotAndIn);
+			}
+
 		}
 
 		return Optional.empty();

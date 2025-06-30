@@ -61,7 +61,7 @@ public interface IMultitypeColumn<T> {
 	// to another measure, it should be unWrapped (even in presence of AGGREGATION_CARRIERS_STAY_WRAPPED).
 	// BEWARE: What if given column if both used as underlying of a local measure, and returned to the composite
 	// cube? it should be both closed and not closed.
-	void purgeAggregationCarriers();
+	IMultitypeColumn<T> purgeAggregationCarriers();
 
 	/**
 	 * Append-else-merge.

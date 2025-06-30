@@ -23,6 +23,7 @@
 package eu.solven.adhoc.sum;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -46,36 +47,37 @@ public class TestSumAggregation {
 	@Test
 	public void testStrings() {
 		Assertions.assertThat(aggregator.aggregate("someLongString_0", "someLongString_1"))
-				.isEqualTo("someLongString_0someLongString_1");
+				.isEqualTo(List.of("someLongString_0", "someLongString_1"));
 	}
 
 	@Test
 	public void testBigString() {
-		String aggregated = "initial";
+		List<Object> aggregated = List.of("initial");
 
+		int size = 256;
 		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
-			for (int i = 0; i < 256; i++) {
-				aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
+			for (int i = 0; i < size; i++) {
+				aggregated = (List) aggregator.aggregate(aggregated, "someLongString_" + i);
 			}
 		}
 
 		Assertions.assertThat(aggregated)
-				.startsWith("initialsomeLongString_0someLongString_1someLongString_2some")
+				.startsWith("initial", "someLongString_0", "someLongString_1", "someLongString_2")
 				.endsWith("someLongString_255")
-				.hasSize(4505);
+				.hasSize(1 + size);
 	}
 
 	@Test
 	public void testHugeString() {
 		Assertions.assertThatThrownBy(() -> {
-			String aggregated = "initial";
+			List<Object> aggregated = List.of("initial");
 
 			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
 				for (int i = 0; i < 16 * 1024; i++) {
-					aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
+					aggregated = (List) aggregator.aggregate(aggregated, "someLongString_" + i);
 				}
 			}
-		}).isInstanceOf(IllegalStateException.class);
+		}).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -95,7 +97,7 @@ public class TestSumAggregation {
 
 	@Test
 	public void testIntAndString() {
-		Assertions.assertThat(aggregator.aggregate(123, "234")).isEqualTo("123234");
+		Assertions.assertThat(aggregator.aggregate(123, "234")).isEqualTo(List.of(123, "234"));
 	}
 
 	@Test
@@ -125,5 +127,14 @@ public class TestSumAggregation {
 	@Test
 	public void testSum_bigDecimal_singleDouble() {
 		Assertions.assertThat(aggregator.aggregate(null, BigDecimal.valueOf(12.34D))).isEqualTo(12.34D);
+	}
+
+	@Test
+	public void testException() {
+		RuntimeException e = new RuntimeException("someMessage");
+		Assertions.assertThat(aggregator.aggregate(null, e)).isEqualTo(e);
+
+		RuntimeException e2 = new IllegalArgumentException("someMessage");
+		Assertions.assertThat(aggregator.aggregate(e2, e)).isEqualTo(e2);
 	}
 }

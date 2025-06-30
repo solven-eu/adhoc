@@ -152,9 +152,9 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return true if the value is different, including if the value is null.
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
-	public static ColumnFilter isDistinctFrom(String column, Object matching) {
+	public static IAdhocFilter isDistinctFrom(String column, Object matching) {
 		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.builder().operand(matching).build()).build();
-		return ColumnFilter.builder().column(column).matching(not).build();
+		return isMatching(column, not);
 	}
 
 	/**
@@ -185,10 +185,14 @@ public class ColumnFilter implements IColumnFilter {
 	}
 
 	public static IAdhocFilter isLike(String column, String likeExpression) {
-		return ColumnFilter.builder().column(column).valueMatcher(LikeMatcher.matching(likeExpression)).build();
+		return isMatching(column, LikeMatcher.matching(likeExpression));
 	}
 
 	public static IAdhocFilter isMatching(String column, Pattern pattern) {
-		return ColumnFilter.builder().column(column).valueMatcher(RegexMatcher.matching(pattern)).build();
+		return isMatching(column, RegexMatcher.matching(pattern));
+	}
+
+	public static IAdhocFilter isMatching(String column, IValueMatcher matcher) {
+		return ColumnFilter.builder().column(column).valueMatcher(matcher).build();
 	}
 }

@@ -95,13 +95,13 @@ public class PartitionorQueryStep extends ATransformatorQueryStep implements ITr
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<SliceAsMap> aggregatingView = makeColumn(agg, underlyings);
+		IMultitypeMergeableColumn<SliceAsMap> values = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
 
-		forEachDistinctSlice(underlyings, combinator, aggregatingView::merge);
+		forEachDistinctSlice(underlyings, combinator, values::merge);
 
-		return SliceToValue.builder().column(aggregatingView).build();
+		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg,
@@ -110,34 +110,35 @@ public class PartitionorQueryStep extends ATransformatorQueryStep implements ITr
 	}
 
 	@Override
-	protected void onSlice(SliceAndMeasures bucketedSlice, ICombination combinator, ISliceAndValueConsumer output) {
+	protected void onSlice(SliceAndMeasures contributionSlice, ICombination combinator, ISliceAndValueConsumer output) {
 		try {
-			IValueProvider valueProvider = combinator.combine(bucketedSlice.getSlice(), bucketedSlice.getMeasures());
+			IValueProvider valueProvider =
+					combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
 						partitionor.getName(),
 						partitionor.getCombinationKey(),
-						bucketedSlice.getMeasures(),
+						contributionSlice.getMeasures(),
 						IValueProvider.getValue(valueProvider),
-						bucketedSlice);
+						contributionSlice);
 			}
 
-			SliceAsMap outputCoordinate = queriedSlice(step.getGroupBy(), bucketedSlice.getSlice());
+			SliceAsMap partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}",
 						partitionor.getName(),
 						IValueProvider.getValue(valueProvider),
-						outputCoordinate);
+						partitionSlice);
 			}
 
-			valueProvider.acceptReceiver(output.putSlice(outputCoordinate));
+			valueProvider.acceptReceiver(output.putSlice(partitionSlice));
 		} catch (RuntimeException e) {
-			List<?> underlyingVs = bucketedSlice.getMeasures().asList();
+			List<?> underlyingVs = contributionSlice.getMeasures().asList();
 			throw new IllegalArgumentException(
 					"Issue combining c=%s values=%s in bucketedSlice=%s"
-							.formatted(combinator.getClass(), underlyingVs, bucketedSlice),
+							.formatted(combinator.getClass(), underlyingVs, contributionSlice),
 					e);
 		}
 	}

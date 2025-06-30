@@ -41,7 +41,7 @@ export const useUserStore = defineStore("user", {
 
 		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
 		// Playing players are stores in contests
-		nbAccountLoading: 0,
+		nbLoginLoading: 0,
 	}),
 	getters: {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
@@ -135,12 +135,12 @@ export const useUserStore = defineStore("user", {
 				// The following block can fail if there is no network connection
 				// (Are we sure? Where are the unitTests?)
 				{
-					store.nbAccountLoading++;
+					store.nbLoginLoading++;
 					try {
 						// Rely on session for authentication
 						response = await fetch(url);
 					} finally {
-						store.nbAccountLoading--;
+						store.nbLoginLoading--;
 					}
 				}
 
@@ -250,7 +250,7 @@ export const useUserStore = defineStore("user", {
 			const store = this;
 
 			async function fetchFromUrl(url) {
-				store.nbAccountLoading++;
+				store.nbLoginLoading++;
 				try {
 					// Rely on session for authentication
 					const response = await fetch(url);
@@ -298,7 +298,7 @@ export const useUserStore = defineStore("user", {
 					store.onSwallowedError(e);
 					return { error: e };
 				} finally {
-					store.nbAccountLoading--;
+					store.nbLoginLoading--;
 				}
 			}
 

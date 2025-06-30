@@ -22,8 +22,10 @@
  */
 package eu.solven.adhoc.atoti.measure;
 
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -34,6 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 @Deprecated(since = "May be useless if no Atoti operators is specific enough")
+@SuperBuilder
 public class AtotiOperatorFactory extends StandardOperatorFactory {
-
+	@Override
+	public IOperatorFactory withRoot(IOperatorFactory rootOperatorFactory) {
+		return builder().rootOperatorFactory(rootOperatorFactory).build();
+	}
 }

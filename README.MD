@@ -449,6 +449,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Columns filters should be written by default like `c==v` and not `{'type': 'column', ...}`
 - [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
 - [Pivotable] Enable browser-back to restore previous query.
+- [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure.
 
 # Sponsors
 

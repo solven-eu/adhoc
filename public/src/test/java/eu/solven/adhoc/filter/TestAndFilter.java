@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
@@ -278,4 +279,49 @@ public class TestAndFilter {
 		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1", "c2", "v2")))
 				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")));
 	}
+
+	@Test
+	public void testAnd_allNotFilter() {
+		IAdhocFilter notA1AndNotA2 = AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "a1", "a2")),
+				NotFilter.not(ColumnFilter.isIn("b", "b1", "b2")));
+
+		// TODO Should we simplify the not?
+		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
+		// Assertions.assertThat(notFilter.getNegated())
+		// .isEqualTo(NotFilter
+		// .not(OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("b", "b1", "b2"))));
+		// });
+
+		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
+			Assertions.assertThat(andFilter.getOperands())
+					.contains(NotFilter.not(ColumnFilter.isIn("a", "a1", "a2")),
+							NotFilter.not(ColumnFilter.isIn("b", "b1", "b2")));
+		});
+	}
+
+	@Test
+	public void testAnd_allNotMatcher() {
+		IAdhocFilter notA1AndNotA2 =
+				AndFilter.and(ColumnFilter.isDistinctFrom("a", "a1"), ColumnFilter.isDistinctFrom("b", "b1"));
+
+		// TODO Should we simplify the nots?
+		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
+		// Assertions.assertThat(notFilter.getNegated())
+		// .isEqualTo(NotFilter
+		// .not(OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("b", "b1", "b2"))));
+		// });
+
+		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
+			Assertions.assertThat(andFilter.getOperands())
+					.contains(ColumnFilter.isDistinctFrom("a", "a1"), ColumnFilter.isDistinctFrom("b", "b1"));
+		});
+	}
+
+	@Test
+	public void testAnd_partialNot() {
+		IAdhocFilter notA1AndNotA2 =
+				AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "a1", "a2")), ColumnFilter.isIn("b", "b1", "b2"));
+		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
+	}
+
 }

@@ -44,7 +44,7 @@ public class JooqTableWrapperParameters {
 
 	@NonNull
 	@Default
-	IOperatorFactory operatorFactory = new StandardOperatorFactory();
+	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	@NonNull
 	DSLSupplier dslSupplier;

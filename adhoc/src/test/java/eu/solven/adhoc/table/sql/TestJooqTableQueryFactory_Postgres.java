@@ -103,9 +103,9 @@ public class TestJooqTableQueryFactory_Postgres {
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
-				not (
-				  "k1" = 'v1'
-				  or "k2" = 'v2'
+				(
+				  not ("k1" = 'v1')
+				  and not ("k2" = 'v2')
 				)""");
 	}
 
@@ -212,10 +212,11 @@ public class TestJooqTableQueryFactory_Postgres {
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
+		Assertions.assertThat(condition.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l).isEqualTo(NotFilter.not(customFilter)));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") as "k", "c", "d" from "someTableName" group by "c", "d"
-				""".trim());
+				select sum("k") as "k", "c" from "someTableName" where not ("d" = 'someD') group by "c"
+								""".trim());
 	}
 
 	@Test

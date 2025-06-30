@@ -29,9 +29,16 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.resource.AdhocJackson;
+import eu.solven.adhoc.util.ThrowableAsStackSerializer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestListBasedTabularView {
 
 	@Test
@@ -54,6 +61,7 @@ public class TestListBasedTabularView {
 
 		Assertions.assertThat(view.toString()).isEqualTo("""
 				ListBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}""");
+
 	}
 
 	@Test
@@ -90,6 +98,41 @@ public class TestListBasedTabularView {
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("Multiple slices")
 				.hasMessageContaining("c=c1");
+	}
+
+	@Test
+	public void testException() throws JsonProcessingException {
+		log.debug("Typically useful for {}", StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE);
+
+		ListBasedTabularView view = ListBasedTabularView.builder()
+				.coordinates(List.of(Map.of("c", "c1")))
+				.values(List.of(Map.of("m", new RuntimeException("someIssue"))))
+				.build();
+
+		ObjectMapper objectMapper = AdhocJackson.indentArrayWithEol(TestMapBasedTabularView.objectMapper());
+
+		SimpleModule adhocModule = new SimpleModule("Adhoc");
+		adhocModule.addSerializer(new ThrowableAsStackSerializer());
+		objectMapper.registerModule(adhocModule);
+
+		String asString = objectMapper.writeValueAsString(view);
+		Assertions.assertThat(asString.replaceAll("[\r\n]", "\n"))
+				.contains(
+						"""
+								{
+								  "coordinates" : [
+								    {
+								      "c" : "c1"
+								    }
+								  ],
+								  "values" : [
+								    {
+								      "m" : {
+								        "class_name" : "java.lang.RuntimeException",
+								        "message" : "someIssue",
+								        "stack_trace" : [
+								          "java.lang.RuntimeException: someIssue",
+								          "    at eu.solven.adhoc.data.tabular.TestListBasedTabularView.testException(TestListBasedTabularView.java:""");
 	}
 
 }

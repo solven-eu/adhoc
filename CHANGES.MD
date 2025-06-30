@@ -9,8 +9,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
 - Additional `WorldCup` example cube, with more complex measures.
 - In Pivotable, clicking a column header will sort rows based on given column.
-- Introduces `ICompactable`
+- Introduces `ICompactable`. It is called on each queryStep of the DAG.
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
+- Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
 
 ### Changed
 - `IColumnMatcher.toString()` has specialized implementations, depending on the matcher type (e.g. `c==v` for `EqualsMatcher`).
@@ -22,6 +23,13 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DuplicatingDecomposition` is revamped regarding management of filtered-but-not-grouped-by columns.
 - Update `DuckDB` to `1.3.1.0` (from `1.3.0.0`)
 - `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
+- `AtotiMeasureToAdhoc` now supports non-`String` properties.
+- `MultitypeHashColumn.purgeAggregationCarriers()` now returns a purged copy, instead of mutating current instance.
+
+### Fixed
+- `JooqTableQueryFactory` now supports `OrMatcher`, `AndMatcher` and `NotMatcher`.
+- `ReversePolishCombination` now supports complex objects are subFormula results. More generally, subFormula results are are `.toString()` anymore.
+- `StandardOperatorFactory.enrichOptions` now relies on some root `IOperatorsFactory`, especially relevant when using a `CompositeOperatorFactory`.
 
 ## [0.0.8]
 ### Added

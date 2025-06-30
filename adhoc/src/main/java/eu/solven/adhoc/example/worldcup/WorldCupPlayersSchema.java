@@ -45,10 +45,13 @@ import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ConstantCombination;
+import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;
+import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -57,6 +60,7 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
@@ -75,7 +79,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "checkstyle:MagicNumber" })
 public class WorldCupPlayersSchema {
 	public String getName() {
 		return "WorldCupPlayers";
@@ -135,9 +139,31 @@ public class WorldCupPlayersSchema {
 
 		Stream.of("match_count", "player_score", "coach_score").forEach(measure -> {
 			measures.add(Shiftor.builder()
-					.name(measure + ".Y-1")
+					.name(measure + ".previousWorldCup")
 					.editorKey(SimpleFilterEditor.KEY)
 					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("year", shitYearFunction())))
+					.underlying(measure)
+					.build());
+		});
+
+		Stream.of("match_count", "player_score", "coach_score").forEach(measure -> {
+			measures.add(Shiftor.builder()
+					.name(measure + ".sinceInception")
+					.editorKey(SimpleFilterEditor.KEY)
+					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("year", upToFunction())))
+					.underlying(measure)
+					.build());
+		});
+
+		// TODO Such an hardcoded list should not be necessary
+		List<Object> years = List.of(1990L, 1994L, 1998L, 2002L);
+
+		Stream.of("match_count", "player_score", "coach_score").forEach(measure -> {
+			measures.add(Dispatchor.builder()
+					.name(measure + ".sinceInception2")
+					.decompositionKey(CumulatingDecomposition.class.getName())
+					.decompositionOption(DuplicatingDecomposition.K_COLUMN_TO_COORDINATES, Map.of("year", years))
+					.decompositionOption(CumulatingDecomposition.K_FILTER_EDITOR, upToEditor())
 					.underlying(measure)
 					.build());
 		});
@@ -147,7 +173,19 @@ public class WorldCupPlayersSchema {
 
 	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals", "checkstyle:MagicNumber" })
 	protected Function<Object, Object> shitYearFunction() {
-		return t -> t instanceof Number n ? n.longValue() - 4 : t;
+		return t -> t instanceof Number n ? n.longValue() - 4L : t;
+	}
+
+	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals" })
+	protected Function<Object, Object> upToFunction() {
+		return t -> t instanceof Comparable<?> c
+				? ComparingMatcher.builder().greaterThan(false).matchIfEqual(true).operand(c).build()
+				: t;
+	}
+
+	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals" })
+	protected IFilterEditor upToEditor() {
+		return f -> SimpleFilterEditor.shiftIfPresent(f, "year", upToFunction());
 	}
 
 	public ITableWrapper getTable(String tableName) {

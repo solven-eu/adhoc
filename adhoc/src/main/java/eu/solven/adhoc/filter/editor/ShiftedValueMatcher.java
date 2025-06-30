@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -53,6 +54,8 @@ public class ShiftedValueMatcher implements IValueMatcher {
 	public static IValueMatcher shift(IValueMatcher originalMatcher, Function<Object, ?> shift) {
 		if (originalMatcher instanceof EqualsMatcher equalsMatcher) {
 			return EqualsMatcher.isEqualTo(shift.apply(equalsMatcher.getOperand()));
+		} else if (originalMatcher instanceof InMatcher inMatcher) {
+			return InMatcher.isIn(inMatcher.getOperands().stream().map(shift::apply).toList());
 		} else {
 			return ShiftedValueMatcher.builder().originalMatcher(originalMatcher).shifter(shift).build();
 		}

@@ -29,14 +29,21 @@ import eu.solven.adhoc.measure.combination.ICombination;
  * 
  * @author Benoit Lacelle
  */
-@Deprecated(since = "Use `AggregationCombination`", forRemoval = true)
 public class SumCombination extends AggregationCombination {
 	public static final String KEY = SumAggregation.KEY;
 
+	/**
+	 * 
+	 * @param nullOperandIsNull
+	 *            if an underlying is null, we return {@link AggregationCombination#oneUnderlyingIsNull()}
+	 */
 	public SumCombination(boolean nullOperandIsNull) {
 		super(new SumAggregation(), nullOperandIsNull);
 	}
 
+	/**
+	 * By default, null are ignored.
+	 */
 	public SumCombination() {
 		this(DEFAULT_CUSTOM_IF_ANY_NULL);
 	}

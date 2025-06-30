@@ -135,9 +135,9 @@ public class TestMultitypeNavigableColumn {
 
 		notSorted.append("a").onObject(agg.aggregate(123, 234));
 
-		notSorted.purgeAggregationCarriers();
+		IMultitypeColumnFastGet<String> purged = notSorted.purgeAggregationCarriers();
 
-		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(notSorted);
+		IMultitypeColumnFastGet<String> sortedCopy = MultitypeColumnHelpers.copyToNavigable(purged);
 
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).isEmpty();

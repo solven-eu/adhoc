@@ -30,11 +30,11 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.combination.AdhocIdentity;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.util.AdhocIdentity;
 
 public class TestCachingOperatorFactory {
 	IOperatorFactory notCaching = Mockito.mock(IOperatorFactory.class);

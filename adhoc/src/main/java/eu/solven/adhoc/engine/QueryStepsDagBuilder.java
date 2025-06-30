@@ -34,7 +34,6 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
-import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
@@ -165,7 +164,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 		try {
 			dagEdge = dag.addEdge(queriedStep, underlyingStep);
-		} catch (GraphCycleProhibitedException e) {
+		} catch (IllegalArgumentException e) {
+			// GraphCycleProhibitedException is a subClass of IllegalArgumentException
+			// But we may receive IllegalArgumentException
 			throw new IllegalStateException(
 					"Issue adding `%s`->`%s` in cycle=`%s`".formatted(queriedStep, underlyingStep, dag),
 					e);

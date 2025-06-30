@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
 
-public class TestSumElseSetAggregation {
+public class TestSumAggregation_ElseSet {
 	SumAggregation a = new SumElseSetAggregation();
 
 	@Test
@@ -52,12 +52,12 @@ public class TestSumElseSetAggregation {
 	public void testSum_String() {
 		Assertions.assertThat(a.aggregate(null, "someString")).isEqualTo(Set.of("someString"));
 		Assertions.assertThat(a.aggregate("otherString", "someString")).isEqualTo(Set.of("someString", "otherString"));
-		Assertions.assertThat(a.aggregate(123, "someString")).isEqualTo(Set.of("someString"));
+		Assertions.assertThat(a.aggregate(123, "someString")).isEqualTo(Set.of(123, "someString"));
 
 		Assertions.assertThat(a.aggregate(null, Set.of("someString"))).isEqualTo(Set.of("someString"));
 		Assertions.assertThat(a.aggregate("otherString", Set.of("someString")))
 				.isEqualTo(Set.of("someString", "otherString"));
-		Assertions.assertThat(a.aggregate(123, Set.of("someString"))).isEqualTo(Set.of("someString"));
+		Assertions.assertThat(a.aggregate(123, Set.of("someString"))).isEqualTo(Set.of(123, "someString"));
 
 		Assertions.assertThat(a.aggregate(Set.of("a", "b"), Set.of("b", "c"))).isEqualTo(Set.of("a", "b", "c"));
 
