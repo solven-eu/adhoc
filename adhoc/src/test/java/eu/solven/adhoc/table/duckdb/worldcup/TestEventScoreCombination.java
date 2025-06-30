@@ -23,32 +23,36 @@
 package eu.solven.adhoc.table.duckdb.worldcup;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.example.worldcup.EventsScoreCombination;
 
 public class TestEventScoreCombination {
 	EventsScoreCombination combination = new EventsScoreCombination();
 
+	SliceAsMapWithStep slice = SliceAsMapWithStep.builder()
+			.queryStep(Mockito.mock(CubeQueryStep.class))
+			.slice(SliceAsMap.fromMap(Map.of()))
+			.build();
+
 	@Test
 	public void testScore() {
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 1L, 1L)))
-				.isEqualTo(4.0D);
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, 2L, 1L)))
-				.isEqualTo(1.0D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(5L, 1L, 1L))).isEqualTo(4.0D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(5L, 2L, 1L))).isEqualTo(1.0D);
 
 	}
 
 	@Test
 	public void testScore_null() {
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(5L, null, 1L)))
-				.isEqualTo(5.0D);
-		Assertions.assertThat(combination.combine(Mockito.mock(ISliceWithStep.class), Arrays.asList(null, 2L, 1L)))
-				.isEqualTo(-4.0D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(5L, null, 1L))).isEqualTo(5.0D);
+		Assertions.assertThat(combination.combine(slice, Arrays.asList(null, 2L, 1L))).isEqualTo(-4.0D);
 
 	}
 }
