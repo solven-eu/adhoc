@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -75,6 +77,20 @@ public class TestAndMatcher {
 	public void testAndEqualsLike() {
 		Assertions.assertThat(AndMatcher.and(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%")))
 				.isEqualTo(IValueMatcher.MATCH_NONE);
+	}
+
+	@Test
+	public void testAndNotEquals_multiple() {
+		Assertions
+				.assertThat(AndMatcher.and(NotMatcher.not(EqualsMatcher.isEqualTo("foo")),
+						NotMatcher.not(EqualsMatcher.isEqualTo("bar"))))
+				.isInstanceOfSatisfying(NotMatcher.class, notMatcher -> {
+					Assertions.assertThat(notMatcher.getNegated())
+							.isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
+								Assertions.assertThat((Set) inMatcher.getOperands())
+										.containsExactlyInAnyOrder("foo", "bar");
+							});
+				});
 	}
 
 	@Test

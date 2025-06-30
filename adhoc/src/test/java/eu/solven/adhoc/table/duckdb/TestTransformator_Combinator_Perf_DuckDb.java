@@ -25,17 +25,14 @@ package eu.solven.adhoc.table.duckdb;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.math.LongMath;
 
-import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -44,7 +41,6 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -57,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TestTransformator_Combinator_Perf_DuckDb extends ARawDagTest implements IAdhocTestConstants {
+public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
 	int maxCardinality = 10_000;
 
 	// This will be edited by registerMeasures
@@ -67,23 +63,7 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ARawDagTest implem
 
 	final int height = 16;
 
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
 	String tableName = "someTableName";
-
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
-
-	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = table.makeDsl();
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -98,7 +78,11 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ARawDagTest implem
 				);
 								""".formatted(tableName, tableName, maxCardinality));
 
-		return table;
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder()
+						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+						.tableName(tableName)
+						.build());
 	}
 
 	@BeforeEach

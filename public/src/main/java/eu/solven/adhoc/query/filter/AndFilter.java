@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.lang.foreign.ValueLayout.OfBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -129,6 +131,13 @@ public class AndFilter implements IAndFilter {
 
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
 		IAdhocFilter flatten = andNotOptimized(filters);
+
+		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
+		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
+		if (flatten instanceof IAndFilter andFilter) {
+			flatten = optimizeAndOfOr(flatten, andFilter);
+		}
+
 		if (flatten instanceof IAndFilter andFilter) {
 			// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
 			Collection<? extends IAdhocFilter> packedColumns = packColumnFilters(andFilter.getOperands());
@@ -138,6 +147,62 @@ public class AndFilter implements IAndFilter {
 		} else {
 			return flatten;
 		}
+	}
+
+	// https://en.m.wikipedia.org/wiki/Logic_optimization
+	// https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
+	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
+	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
+	// One may contribute a finer implementation.
+	private static IAdhocFilter optimizeAndOfOr(IAdhocFilter flatten, IAndFilter andFilter) {
+		Set<IAdhocFilter> operands = andFilter.getOperands();
+
+		Map<Boolean, List<IAdhocFilter>> orNotOr =
+				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof OrFilter));
+
+		if (!orNotOr.get(true).isEmpty() && !orNotOr.get(false).isEmpty()) {
+			List<List<IAdhocFilter>> orFilters = orNotOr.get(true)
+					.stream()
+					.map(f -> (OrFilter) f)
+					.map(f -> f.getOperands().stream().toList())
+					.toList();
+
+			IAdhocFilter and = AndFilter.and(orNotOr.get(false));
+			Set<IAdhocFilter> ors = Lists.cartesianProduct(orFilters).stream().map(entry -> {
+				IAdhocFilter and2 = AndFilter.and(entry);
+				return AndFilter.and(and2, and);
+			})
+					// We hope a bunch of entry are filtered out
+					.filter(f -> !f.isMatchNone())
+					.collect(Collectors.toCollection(LinkedHashSet::new));
+
+			Map<IAdhocFilter, IAdhocFilter> inducedToInducer = new LinkedHashMap<>();
+
+			ors.stream().forEach(inducer -> {
+				ors.stream()
+						// filter is induced is stricter than inducer
+						.filter(induced -> induced != inducer && AndFilter.and(induced, inducer).equals(induced))
+						.forEach(induced -> {
+							// BEWARE an induced may have multiple inducer
+							inducedToInducer.put(induced, inducer);
+						});
+			});
+
+			inducedToInducer.forEach((induced, inducer) -> {
+				// Remove entry one by one, else we fear we may remove an inducer
+				// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
+				if (ors.contains(inducer)) {
+					ors.remove(induced);
+				}
+			});
+
+			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
+			// better/simpler/faster. Generally speaking, we prefer AND over OR.
+			if (ors.size() < operands.size()) {
+				flatten = OrFilter.or(ors);
+			}
+		}
+		return flatten;
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging

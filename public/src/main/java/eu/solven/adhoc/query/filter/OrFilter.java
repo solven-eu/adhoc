@@ -124,6 +124,7 @@ public class OrFilter implements IOrFilter {
 		} else if (notMatchNone.size() == 1) {
 			return notMatchNone.getFirst();
 		} else {
+			// TODO Rely on `Not` and `And` for optimizations
 			return OrFilter.builder().filters(notMatchNone).build();
 		}
 	}

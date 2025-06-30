@@ -324,4 +324,11 @@ public class TestAndFilter {
 		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
 	}
 
+	@Test
+	public void testAnd_orDifferentColumns_sameColumn() {
+		ColumnFilter left = ColumnFilter.isEqualTo("g", "c1");
+		IAdhocFilter leftOrRight = OrFilter.or(left, ColumnFilter.isEqualTo("h", "c1"));
+
+		Assertions.assertThat(AndFilter.and(leftOrRight, left)).isEqualTo(left);
+	}
 }
