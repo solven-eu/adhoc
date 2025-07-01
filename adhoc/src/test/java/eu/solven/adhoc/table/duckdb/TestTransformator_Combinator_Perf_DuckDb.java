@@ -44,7 +44,6 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -79,10 +78,7 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 								""".formatted(tableName, tableName, maxCardinality));
 
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-						.tableName(tableName)
-						.build());
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	@BeforeEach

@@ -27,19 +27,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.collect.Sets;
 
@@ -53,21 +51,26 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerNone;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -106,7 +109,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+// @SuppressWarnings("PMD.GodClass")
 public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
@@ -122,17 +125,25 @@ public class TableQueryEngine implements ITableQueryEngine {
 	@Default
 	final ITableQueryOptimizer tableQueryOptimizer = new TableQueryOptimizer();
 
+	protected ITableQueryOptimizer getTableQueryOptimizer(IHasQueryOptions hasOptions) {
+		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+			return new TableQueryOptimizerNone();
+		} else {
+			return tableQueryOptimizer;
+		}
+	}
+
 	@Override
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		Set<TableQuery> tableQueries = prepareForTable(queryPod, queryStepsDag);
 
-		SplitTableQueries inducerAndInduced = tableQueryOptimizer.splitInduced(queryPod, tableQueries);
+		SplitTableQueries inducerAndInduced = getTableQueryOptimizer(queryPod).splitInduced(queryPod, tableQueries);
 
 		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(inducerAndInduced.getInducers());
 
 		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
 
-		evaluateInduced(queryPod, stepToValues, inducerAndInduced);
+		walkUpInducedDag(queryPod, stepToValues, inducerAndInduced);
 
 		reportAfterTableQueries(queryPod, stepToValues);
 
@@ -141,33 +152,42 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	/**
 	 * 
-	 * @param hasOptions
+	 * @param queryPod
 	 * @param stepToValues
 	 *            a mutable {@link Map}. May need to be thread-safe.
 	 * @param inducerAndInduced
 	 */
-	protected void evaluateInduced(IHasQueryOptions hasOptions,
+	protected void walkUpInducedDag(QueryPod queryPod,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			SplitTableQueries inducerAndInduced) {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getTableQueriesDag();
-		var iterator = new TopologicalOrderIterator<>(dag);
-
-		iterator.forEachRemaining(induced -> {
-			if (stepToValues.containsKey(induced)) {
-				// Happens typically for inducers steps
-				log.debug("step={} is already evaluated", induced);
-			} else {
-				IMultitypeMergeableColumn<SliceAsMap> inducedValues = tableQueryOptimizer
-						.evaluateInduced(factories, hasOptions, inducerAndInduced, stepToValues, induced);
-
-				stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+		Consumer<? super CubeQueryStep> queryStepConsumer = induced -> {
+			try {
+				evaluateInduced(queryPod, stepToValues, inducerAndInduced, induced);
+			} catch (RuntimeException e) {
+				throw AdhocExceptionHelpers.wrap(e, "Issue inducing step=%s".formatted(induced));
 			}
-		});
+		};
 
+		CubeQueryEngine.walkUpDag(queryPod, inducerAndInduced, stepToValues, queryStepConsumer);
+	}
+
+	protected void evaluateInduced(IHasQueryOptions hasOptions,
+			Map<CubeQueryStep, ISliceToValue> stepToValues,
+			SplitTableQueries inducerAndInduced,
+			CubeQueryStep induced) {
+		if (stepToValues.containsKey(induced)) {
+			// Happens typically for inducers steps
+			log.debug("step={} is already evaluated", induced);
+		} else {
+			IMultitypeMergeableColumn<SliceAsMap> inducedValues = tableQueryOptimizer
+					.evaluateInduced(factories, hasOptions, inducerAndInduced, stepToValues, induced);
+
+			stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+		}
 	}
 
 	protected Set<TableQueryV2> groupByEnablingFilterPerMeasure(Set<CubeQueryStep> tableQueries) {
-		return TableQueryV2.fromV1(TableQuery.fromSteps(tableQueries));
+		return tableQueryOptimizer.groupByEnablingFilterPerMeasure(tableQueries);
 	}
 
 	protected void reportAfterTableQueries(QueryPod queryPod,

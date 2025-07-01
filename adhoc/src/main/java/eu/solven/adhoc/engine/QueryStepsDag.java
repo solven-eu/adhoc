@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -38,6 +37,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromQueriedToUnderlyings;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class QueryStepsDag implements ISinkExecutionFeedback {
+public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromQueriedToUnderlyings {
 	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge
 	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
@@ -93,12 +93,14 @@ public class QueryStepsDag implements ISinkExecutionFeedback {
 		return outgoingEdges.stream().map(edge -> Graphs.getOppositeVertex(dag, edge, queryStep)).toList();
 	}
 
-	public Stream<CubeQueryStep> fromAggregatesToQueried() {
-		return TopologicalOrderSpliterator.fromDAG(dag);
-	}
-
 	@Override
 	public void registerExecutionFeedback(CubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
 		stepToCost.put(queryStep, sizeAndDuration);
 	}
+
+	@Override
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getDagToDependancies() {
+		return dag;
+	}
+
 }

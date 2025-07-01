@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.table;
 
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -41,13 +39,8 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.IAndFilter;
-import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.value.AndMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -149,12 +142,13 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 			Set<IAdhocFilter> filters = filteredAggregators.stream()
 					.map(FilteredAggregator::getFilter)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
-			IAdhocFilter commonFilter = commonFilter(filters);
+			IAdhocFilter commonFilter = FilterHelpers.commonFilter(filters);
 
 			TableQueryV2Builder v2Builder = edit(groupBy).filter(commonFilter);
 
 			filteredAggregators.forEach(filteredAggregator -> {
-				IAdhocFilter strippedFromWhere = stripFilterFromWhere(commonFilter, filteredAggregator.getFilter());
+				IAdhocFilter strippedFromWhere =
+						FilterHelpers.stripFilterFromWhere(commonFilter, filteredAggregator.getFilter());
 				v2Builder.aggregator(filteredAggregator.toBuilder().filter(strippedFromWhere).build());
 			});
 
@@ -166,88 +160,5 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 
 	public static TableQueryV2 fromV1(TableQuery tableQuery) {
 		return Iterables.getOnlyElement(fromV1(Set.of(tableQuery)));
-	}
-
-	/**
-	 * 
-	 * @param where
-	 *            some `WHERE` clause
-	 * @param filter
-	 *            some `FILTER` clause
-	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause.
-	 */
-	public static IAdhocFilter stripFilterFromWhere(IAdhocFilter where, IAdhocFilter filter) {
-		if (where.isMatchAll()) {
-			// `WHERE` has no clause: `FILTER` has to keep all clauses
-			return filter;
-		} else if (AndFilter.and(where, filter).equals(where)) {
-			// Catch some edge-case like `where.equals(filter)`
-			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
-			return IAdhocFilter.MATCH_ALL;
-		}
-
-		// Split the FILTER in smaller parts
-		Set<? extends IAdhocFilter> andOperators = splitAnd(filter);
-
-		Set<IAdhocFilter> notInWhere = new LinkedHashSet<>();
-
-		// For each part of `FILTER`, reject those already filtered in `WHERE`
-		for (IAdhocFilter subFilter : andOperators) {
-			boolean whereCoversSubFilter = AndFilter.and(where, subFilter).equals(where);
-
-			if (!whereCoversSubFilter) {
-				notInWhere.add(subFilter);
-			}
-		}
-
-		return AndFilter.and(notInWhere);
-	}
-
-	/**
-	 * Split the filter in a Set of {@link IAdhocFilter}, equivalent by AND to the original filter.
-	 * 
-	 * @param filter
-	 * @return
-	 */
-	protected static Set<IAdhocFilter> splitAnd(IAdhocFilter filter) {
-		if (filter.isMatchAll() || filter.isMatchNone()) {
-			return Set.of(filter);
-		} else if (filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands();
-		} else if (filter instanceof IColumnFilter columnFilter) {
-			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
-
-			String column = columnFilter.getColumn();
-			if (valueMatcher instanceof AndMatcher andMatcher) {
-				return andMatcher.getOperands()
-						.stream()
-						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
-						.collect(Collectors.toCollection(LinkedHashSet::new));
-			}
-
-		}
-
-		// Not splittable
-		return Set.of(filter);
-	}
-
-	public static IAdhocFilter commonFilter(Set<? extends IAdhocFilter> filters) {
-		if (filters.isEmpty()) {
-			return IAdhocFilter.MATCH_ALL;
-		} else if (filters.size() == 1) {
-			return filters.iterator().next();
-		}
-
-		Iterator<? extends IAdhocFilter> iterator = filters.iterator();
-		// Common parts are initialized with all parts of the first filter
-		Set<IAdhocFilter> commonParts = new LinkedHashSet<>(splitAnd(iterator.next()));
-
-		while (iterator.hasNext()) {
-			Set<IAdhocFilter> nextFilterParts = new LinkedHashSet<>(splitAnd(iterator.next()));
-
-			commonParts = Sets.intersection(commonParts, nextFilterParts);
-		}
-
-		return AndFilter.and(commonParts);
 	}
 }

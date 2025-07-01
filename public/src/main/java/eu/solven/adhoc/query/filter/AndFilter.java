@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.lang.foreign.ValueLayout.OfBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +45,7 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -106,7 +106,13 @@ public class AndFilter implements IAndFilter {
 
 		int size = filters.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
-			return filters.stream().map(Object::toString).collect(Collectors.joining("&"));
+			return filters.stream().map(o -> {
+				if (o instanceof OrFilter orFilter) {
+					return "(%s)".formatted(orFilter);
+				} else {
+					return o.toString();
+				}
+			}).collect(Collectors.joining("&"));
 		} else {
 			ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
 
@@ -154,6 +160,7 @@ public class AndFilter implements IAndFilter {
 	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	private static IAdhocFilter optimizeAndOfOr(IAdhocFilter flatten, IAndFilter andFilter) {
 		Set<IAdhocFilter> operands = andFilter.getOperands();
 
@@ -167,10 +174,10 @@ public class AndFilter implements IAndFilter {
 					.map(f -> f.getOperands().stream().toList())
 					.toList();
 
-			IAdhocFilter and = AndFilter.and(orNotOr.get(false));
+			IAdhocFilter and = and(orNotOr.get(false));
 			Set<IAdhocFilter> ors = Lists.cartesianProduct(orFilters).stream().map(entry -> {
-				IAdhocFilter and2 = AndFilter.and(entry);
-				return AndFilter.and(and2, and);
+				IAdhocFilter and2 = and(entry);
+				return and(and2, and);
 			})
 					// We hope a bunch of entry are filtered out
 					.filter(f -> !f.isMatchNone())
@@ -181,7 +188,7 @@ public class AndFilter implements IAndFilter {
 			ors.stream().forEach(inducer -> {
 				ors.stream()
 						// filter is induced is stricter than inducer
-						.filter(induced -> induced != inducer && AndFilter.and(induced, inducer).equals(induced))
+						.filter(induced -> induced != inducer && and(induced, inducer).equals(induced))
 						.forEach(induced -> {
 							// BEWARE an induced may have multiple inducer
 							inducedToInducer.put(induced, inducer);
@@ -198,11 +205,32 @@ public class AndFilter implements IAndFilter {
 
 			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
-			if (ors.size() < operands.size()) {
-				flatten = OrFilter.or(ors);
+			IAdhocFilter orCandidate = OrFilter.or(ors);
+			if (costFunction(orCandidate) < costFunction(andFilter)) {
+				flatten = orCandidate;
 			}
 		}
 		return flatten;
+	}
+
+	static int costFunction(Set<IAdhocFilter> operands) {
+		return operands.stream().mapToInt(AndFilter::costFunction).sum();
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	static int costFunction(IAdhocFilter f) {
+		if (f instanceof IAndFilter andFilter) {
+			return costFunction(andFilter.getOperands());
+		} else if (f instanceof INotFilter notFilter) {
+			return 2 * costFunction(notFilter.getNegated());
+		} else if (f instanceof IColumnFilter columnFilter && columnFilter.getValueMatcher() instanceof NotMatcher) {
+			return 2;
+		} else if (f instanceof IOrFilter orFilter) {
+			return 3 * costFunction(orFilter.getOperands());
+		} else {
+			// ColumnFilter
+			return 1;
+		}
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
@@ -230,7 +258,7 @@ public class AndFilter implements IAndFilter {
 			// BEWARE Should we handle `ColumnFilter` with a `NotMatcher`?
 			return OrFilter.builder().filters(notMatchAll).build();
 		} else {
-			return AndFilter.builder().filters(notMatchAll).build();
+			return builder().filters(notMatchAll).build();
 		}
 	}
 
@@ -376,7 +404,7 @@ public class AndFilter implements IAndFilter {
 		if (columnFilters.size() == 1) {
 			return columnFilters.getFirst();
 		} else {
-			return AndFilter.builder().filters(columnFilters).build();
+			return builder().filters(columnFilters).build();
 		}
 	}
 

@@ -38,7 +38,6 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
@@ -69,6 +68,7 @@ import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromQueriedToUnderlyings;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
@@ -304,7 +304,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// rest of the query independently of external tables.
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
 
-		walkDagUpToQueriedMeasures(queryPod, queryStepsDag, queryStepToValues);
+		walkUpDag(queryPod, queryStepsDag, queryStepToValues);
 
 		registerResultsToCache(queryPod.getQueryStepCache(), queryStepsDag, queryStepToValues);
 
@@ -325,7 +325,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// steps which were slow to be computed.
 		// BEWARE This mono-threaded iteration helps pushing into cache with a specific order, given the `stepToValues`
 		// is typically a ConcurrenthashMap, hence with indeterministic order.
-		queryStepsDag.fromAggregatesToQueried().forEach(step -> {
+		queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(step -> {
 			if (queryStepsDag.getStepToValues().containsKey(step)) {
 				log.debug("Do not add an entry already in cache");
 				// Else it may force keeping the entry
@@ -372,29 +372,35 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				.toString();
 	}
 
-	protected void walkDagUpToQueriedMeasures(QueryPod queryPod,
+	protected void walkUpDag(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+		Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
+			try {
+				onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
+			} catch (RuntimeException e) {
+				throw AdhocExceptionHelpers.wrap(e, "Issue processing step=%s".formatted(queryStep));
+			}
+		};
+
+		walkUpDag(queryPod, queryStepsDag, queryStepToValues, queryStepConsumer);
+	}
+
+	public static void walkUpDag(QueryPod queryPod,
+			IHasDagFromQueriedToUnderlyings queryStepsDag,
+			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			Consumer<? super CubeQueryStep> queryStepConsumer) {
 		try {
 			queryPod.getExecutorService().submit(() -> {
-
-				Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
-					try {
-						onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
-					} catch (RuntimeException e) {
-						throw AdhocExceptionHelpers.wrap(e, "Issue processing step=%s".formatted(queryStep));
-					}
-				};
-
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					// multi-threaded
-					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDag();
+					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDagToDependancies();
 
 					List<CubeQueryStep> roots =
 							dag.vertexSet().stream().filter(step -> dag.getAncestors(step).isEmpty()).toList();
 
 					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
-							.fromAggregatesToQueried(dag)
+							.fromQueriedToDependancies(dag)
 							.queryStepToValues(queryStepToValues)
 							.onReadyStep(queryStepConsumer);
 					List<QueryStepRecursiveAction> actions =
@@ -403,8 +409,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					ForkJoinTask.invokeAll(actions);
 				} else {
 					// mono-threaded
-					Stream<CubeQueryStep> topologicalOrder = queryStepsDag.fromAggregatesToQueried();
-					topologicalOrder.forEach(queryStepConsumer);
+					queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(queryStepConsumer);
 				}
 
 			}).get();
@@ -503,7 +508,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 
 		// It feels a bit weird to compact after hand: ISliceToValue may be compacted by construction. But it is
-		// unclear how to achieve that while guaranteed all IMeasureQueryStep implements it effectively.
+		// unclear how to achieve that while guaranteed all ITransformatorQueryStep implements it effectively.
 		coordinatesToValues.compact();
 
 		return coordinatesToValues;
@@ -539,7 +544,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		return errorSlice;
 	}
 
-	private List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+	protected List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			List<CubeQueryStep> underlyingSteps) {
 		return underlyingSteps.stream().map(underlyingStep -> {
 			ISliceToValue underlyingValues = queryStepToValues.get(underlyingStep);

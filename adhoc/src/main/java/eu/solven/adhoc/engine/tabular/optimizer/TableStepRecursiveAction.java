@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.List;
 import java.util.Map;
@@ -34,13 +34,16 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 
+import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.model.Aggregator;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps a {@link QueryStepsDag} step into a {@link RecursiveAction}, to be submitted into a {@link ForkJoinPool}.
+ * Wraps a {@link Aggregator} {@link CubeQueryStep} step into a {@link RecursiveAction}, to be submitted into a
+ * {@link ForkJoinPool}.
  * 
  * @author Benoit Lacelle
  */
@@ -49,19 +52,19 @@ import lombok.extern.slf4j.Slf4j;
 // BEWARE Adhoc does not enable remote execution of such task. Please fill a ticket if you believe it would be
 // beneficial.
 @SuppressWarnings("PMD.NonSerializableClass")
-public class QueryStepRecursiveAction extends RecursiveAction {
-	private static final long serialVersionUID = -8742698545892380483L;
+public class TableStepRecursiveAction extends RecursiveAction {
+	private static final long serialVersionUID = -4622015207913446892L;
 
 	// BEWARE This should be immutable/not-mutated during the course of the related actions
 	@NonNull
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> fromQueriedToDependancies;
+	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> fromInducerToInduced;
 
 	@NonNull
 	CubeQueryStep step;
 
 	// BEWARE This should be a thread-safe Map!
 	@NonNull
-	Map<CubeQueryStep, ?> queryStepToValues;
+	Map<CubeQueryStep, ISliceToValue> queryStepToValues;
 
 	// Similar to `Spliterator`: the action is delegated to some Consumer
 	@NonNull
@@ -69,16 +72,16 @@ public class QueryStepRecursiveAction extends RecursiveAction {
 
 	@Override
 	protected void compute() {
-		Set<DefaultEdge> outgoingEdgesOf = fromQueriedToDependancies.outgoingEdgesOf(step);
+		Set<DefaultEdge> outgoingEdgesOf = fromInducerToInduced.outgoingEdgesOf(step);
 		List<CubeQueryStep> missingSteps = outgoingEdgesOf.stream()
-				.map(fromQueriedToDependancies::getEdgeTarget)
+				.map(fromInducerToInduced::getEdgeTarget)
 				.filter(s -> !queryStepToValues.containsKey(s))
 				.toList();
 
 		if (!missingSteps.isEmpty()) {
 			// In general, all underlyings are missing. But we may imagine some tasks to be already computed for any
 			// reason (e.g. cache).
-			List<QueryStepRecursiveAction> missingTasks =
+			List<TableStepRecursiveAction> missingTasks =
 					missingSteps.stream().map(missingStep -> this.toBuilder().step(missingStep).build()).toList();
 
 			// BEWARE This generates stacks as deep as the DAG: `-Xss4M`
@@ -93,7 +96,7 @@ public class QueryStepRecursiveAction extends RecursiveAction {
 
 	@Override
 	public String toString() {
-		int vertexSize = fromQueriedToDependancies.vertexSet().size();
+		int vertexSize = fromInducerToInduced.vertexSet().size();
 		int ready = queryStepToValues.size();
 		return MoreObjects.toStringHelper(this)
 				.add("step", step)

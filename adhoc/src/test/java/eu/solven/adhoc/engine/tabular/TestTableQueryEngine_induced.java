@@ -40,7 +40,8 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -94,7 +95,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
 					valuesFromTable);
-			tableQueryEngine.evaluateInduced(queryPod, fromTable, split);
+			tableQueryEngine.walkUpInducedDag(queryPod, fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer
@@ -167,7 +168,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 					.groupBy(GroupByColumns.named("ccy", "country"))
 					.measure(k1Sum)
 					.build(), valuesFromTable);
-			tableQueryEngine.evaluateInduced(queryPod, fromTable, split);
+			tableQueryEngine.walkUpInducedDag(queryPod, fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer

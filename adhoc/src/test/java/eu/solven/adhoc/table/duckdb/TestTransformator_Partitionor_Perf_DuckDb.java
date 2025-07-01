@@ -50,7 +50,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -93,10 +92,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 				);
 								""".formatted(tableName, tableName, maxCardinality));
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-						.tableName(tableName)
-						.build());
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	@Override

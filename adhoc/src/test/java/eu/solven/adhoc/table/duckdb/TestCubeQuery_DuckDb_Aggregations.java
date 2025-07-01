@@ -38,7 +38,6 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public class TestCubeQuery_DuckDb_Aggregations extends ADuckDbJooqTest implements IAdhocTestConstants {
 	String tableName = "someTableName";
@@ -46,10 +45,7 @@ public class TestCubeQuery_DuckDb_Aggregations extends ADuckDbJooqTest implement
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-						.tableName(tableName)
-						.build());
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	@Test

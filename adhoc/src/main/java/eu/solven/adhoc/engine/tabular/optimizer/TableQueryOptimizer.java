@@ -1,9 +1,29 @@
-package eu.solven.adhoc.engine.tabular;
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,25 +37,13 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.MoreFilterHelpers;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.TableQuery;
-import lombok.Builder;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,9 +52,8 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@Builder
 @Slf4j
-public class TableQueryOptimizer implements ITableQueryOptimizer {
+public class TableQueryOptimizer extends ATableQueryOptimizer {
 
 	/**
 	 * 
@@ -60,10 +67,11 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> tableQueriesDag =
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dagToDependancies =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		// Inference in aggregator based: `k1` does not imply `k2`, `k1.SUM` does not imply `k1.MAX`
+		// TODO The key should includes options and customMarker
 		SetMultimap<Aggregator, CubeQueryStep> aggregatorToQueries =
 				MultimapBuilder.hashKeys().linkedHashSetValues().build();
 
@@ -71,17 +79,10 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().stream().forEach(agg -> {
 				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
-				tableQueriesDag.addVertex(step);
+				dagToDependancies.addVertex(step);
 				aggregatorToQueries.put(agg, step);
 			});
 		});
-
-		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-			return SplitTableQueries.builder()
-					.inducers(aggregatorToQueries.values())
-					.tableQueriesDag(tableQueriesDag)
-					.build();
-		}
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
@@ -115,7 +116,7 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 							.findFirst()
 							.ifPresent(inducer -> {
 								// right can be used to compute left
-								tableQueriesDag.addEdge(inducer, induced);
+								dagToDependancies.addEdge(induced, inducer);
 								hasFoundInducer.set(true);
 
 								if (hasOptions.isDebugOrExplain()) {
@@ -131,17 +132,17 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 		});
 
 		// Collect the tableQueries which can not be induced by another tableQuery
-		Set<CubeQueryStep> notInduced = tableQueriesDag.vertexSet()
+		Set<CubeQueryStep> notInduced = dagToDependancies.vertexSet()
 				.stream()
-				.filter(tq -> tableQueriesDag.incomingEdgesOf(tq).isEmpty())
+				.filter(tq -> dagToDependancies.outgoingEdgesOf(tq).isEmpty())
 				.collect(ImmutableSet.toImmutableSet());
 		// Collect the tableQueries which can be induced
-		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(tableQueriesDag.vertexSet(), notInduced));
+		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(dagToDependancies.vertexSet(), notInduced));
 
 		return SplitTableQueries.builder()
 				.inducers(notInduced)
 				.induceds(induced)
-				.tableQueriesDag(tableQueriesDag)
+				.dagToDependancies(dagToDependancies)
 				.build();
 	}
 
@@ -150,7 +151,7 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
 			// Different measures: can not induce
 			return false;
-		} else if (!asMeasureless(inducer).equals(asMeasureless(induced))) {
+		} else if (!contextOnly(inducer).equals(contextOnly(induced))) {
 			// Different options/customMarker: can not induce
 			return false;
 		}
@@ -184,72 +185,6 @@ public class TableQueryOptimizer implements ITableQueryOptimizer {
 
 		// TODO This comparison should be done only on the filter in induced not present in inducer
 		return false;
-	}
-
-	/**
-	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
-	 * customMarker.
-	 * 
-	 * @param inducer
-	 * @return a CubeQueryStep which has been fleshed-out of what's not the query context.
-	 */
-	protected CubeQueryStep asMeasureless(CubeQueryStep inducer) {
-		return CubeQueryStep.edit(inducer)
-				.measure("noMeasure")
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.filter(IAdhocFilter.MATCH_ALL)
-				.build();
-	}
-
-	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> evaluateInduced(AdhocFactories factories,
-			IHasQueryOptions hasOptions,
-			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ISliceToValue> stepToValues,
-			CubeQueryStep induced) {
-		@NonNull
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getTableQueriesDag();
-
-		List<CubeQueryStep> inducers = dag.incomingEdgesOf(induced).stream().map(dag::getEdgeSource).toList();
-		if (inducers.size() != 1) {
-			throw new IllegalStateException(
-					"Induced should have a single inducer. induced=%s inducers=%s".formatted(induced, inducers));
-		}
-
-		CubeQueryStep inducer = inducers.getFirst();
-		ISliceToValue inducerValues = stepToValues.get(inducer);
-
-		Aggregator aggregator = (Aggregator) inducer.getMeasure();
-		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
-		IMultitypeMergeableColumn<SliceAsMap> inducedValues =
-				factories.getColumnsFactory().makeColumn(aggregation, List.of(inducerValues));
-
-		inducerValues.forEachSlice(
-				slice -> inducedValues.merge(inducedGroupBy(induced.getGroupBy().getGroupedByColumns(), slice)));
-
-		if (hasOptions.isDebugOrExplain()) {
-			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
-					induced.getGroupBy().getGroupedByColumns());
-			log.info("[EXPLAIN] size={} induced size={} by removing groupBy={} ({} induced {})",
-					inducerValues.size(),
-					inducedValues.size(),
-					removedGroupBys,
-					inducer,
-					induced);
-		}
-
-		return inducedValues;
-	}
-
-	protected SliceAsMap inducedGroupBy(NavigableSet<String> groupedByColumns, SliceAsMap inducer) {
-		Map<String, Object> induced = new LinkedHashMap<>();
-
-		groupedByColumns.forEach(inducedColumn -> {
-			induced.put(inducedColumn, inducer.getRawSliced(inducedColumn));
-		});
-
-		// TODO Rely on AdhocMap
-		return SliceAsMap.fromMap(induced);
 	}
 
 }

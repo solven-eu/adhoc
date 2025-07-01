@@ -58,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PartitionorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
+public class PartitionorQueryStep extends ATransformatorQueryStep {
 	final Partitionor partitionor;
 	@Getter(AccessLevel.PROTECTED)
 	final AdhocFactories factories;
