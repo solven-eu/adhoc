@@ -141,7 +141,7 @@ public class AndFilter implements IAndFilter {
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
 		if (flatten instanceof IAndFilter andFilter) {
-			flatten = optimizeAndOfOr(flatten, andFilter);
+			flatten = optimizeAndOfOr(andFilter);
 		}
 
 		if (flatten instanceof IAndFilter andFilter) {
@@ -161,9 +161,10 @@ public class AndFilter implements IAndFilter {
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	private static IAdhocFilter optimizeAndOfOr(IAdhocFilter flatten, IAndFilter andFilter) {
+	private static IAdhocFilter optimizeAndOfOr(IAndFilter andFilter) {
 		Set<IAdhocFilter> operands = andFilter.getOperands();
 
+		// TODO Manage `Not(Or(...))` and `Column(In(...))`
 		Map<Boolean, List<IAdhocFilter>> orNotOr =
 				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof OrFilter));
 
@@ -207,26 +208,29 @@ public class AndFilter implements IAndFilter {
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
 			IAdhocFilter orCandidate = OrFilter.or(ors);
 			if (costFunction(orCandidate) < costFunction(andFilter)) {
-				flatten = orCandidate;
+				return orCandidate;
 			}
 		}
-		return flatten;
+		return andFilter;
 	}
 
-	static int costFunction(Set<IAdhocFilter> operands) {
+	static int costFunction(Collection<? extends IAdhocFilter> operands) {
 		return operands.stream().mapToInt(AndFilter::costFunction).sum();
 	}
 
+	// factors are additive (hence not multiplicative) as we prefer a high `Not` (counting once) than multiple deep Not
 	@SuppressWarnings("checkstyle:MagicNumber")
 	static int costFunction(IAdhocFilter f) {
 		if (f instanceof IAndFilter andFilter) {
 			return costFunction(andFilter.getOperands());
 		} else if (f instanceof INotFilter notFilter) {
-			return 2 * costFunction(notFilter.getNegated());
+			// `Not` costs 3: we prefer one OR than one NOT
+			return 3 + costFunction(notFilter.getNegated());
 		} else if (f instanceof IColumnFilter columnFilter && columnFilter.getValueMatcher() instanceof NotMatcher) {
-			return 2;
+			// `Not` costs 3: we prefer one OR than one NOT
+			return 3;
 		} else if (f instanceof IOrFilter orFilter) {
-			return 3 * costFunction(orFilter.getOperands());
+			return 2 + costFunction(orFilter.getOperands());
 		} else {
 			// ColumnFilter
 			return 1;
@@ -253,13 +257,16 @@ public class AndFilter implements IAndFilter {
 			return MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
 			return notMatchAll.getFirst();
-		} else if (notMatchAll.stream().allMatch(f -> f instanceof NotFilter)) {
-			// Prefer `!(c=c1|d=d1)` over `c!=c1&d!=d1)`
-			// BEWARE Should we handle `ColumnFilter` with a `NotMatcher`?
-			return OrFilter.builder().filters(notMatchAll).build();
-		} else {
-			return builder().filters(notMatchAll).build();
 		}
+
+		IAdhocFilter orCandidate =
+				OrFilter.builder().filters(notMatchAll.stream().map(NotFilter::not).toList()).build();
+		IAdhocFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
+		if (costFunction(notOrCandidate) < costFunction(notMatchAll)) {
+			return notOrCandidate;
+		}
+
+		return builder().filters(notMatchAll).build();
 	}
 
 	/**
@@ -272,9 +279,10 @@ public class AndFilter implements IAndFilter {
 	private static Collection<? extends IAdhocFilter> packColumnFilters(Collection<? extends IAdhocFilter> filters) {
 		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<IAdhocFilter>> isColumnToFilters =
-				filters.stream().collect(Collectors.groupingBy(f -> f instanceof IColumnFilter));
+				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));
 
-		if (!isColumnToFilters.containsKey(true)) {
+		if (isColumnToFilters.get(true).isEmpty()) {
+			// Not a single columnFilter
 			return filters;
 		} else {
 			// isMatchNone is cross column as a single column not matching anything reject the whole filter
@@ -304,6 +312,7 @@ public class AndFilter implements IAndFilter {
 				// allowedValues is meaningful only if hadSomeAllowedValues is true
 				Set<Object> allowedValues = new HashSet<>();
 
+				// Do no collect IValueMatcher until managing `nullIfAbsent`
 				List<IColumnFilter> columnNotManaged = new ArrayList<>();
 
 				columnFilters.stream().forEach(columnFilter -> {
@@ -355,15 +364,16 @@ public class AndFilter implements IAndFilter {
 				});
 
 				if (hadSomeAllowedValues.get()) {
-					allowedValues.removeIf(allowedValue -> {
-						// If empty, return false, hence do not remove the allowed value
-						return columnNotManaged.stream().anyMatch(f -> !f.getValueMatcher().match(allowedValue));
-					});
+					if (!columnNotManaged.isEmpty()) {
+						allowedValues.removeIf(allowedValue -> {
+							// If empty, return false, hence do not remove the allowed value
+							return columnNotManaged.stream().noneMatch(f -> f.getValueMatcher().match(allowedValue));
+						});
+					}
 
 					if (allowedValues.isEmpty()) {
 						isMatchNone.set(true);
 					} else {
-
 						packedFiltersBuilder.add(ColumnFilter.isIn(column, allowedValues));
 					}
 				} else {

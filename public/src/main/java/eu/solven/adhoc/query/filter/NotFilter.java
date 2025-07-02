@@ -46,16 +46,24 @@ public class NotFilter implements INotFilter {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return "!(%s)".formatted(negated);
+	}
+
 	public static IAdhocFilter not(IAdhocFilter filter) {
 		if (filter.isMatchAll()) {
 			return MATCH_NONE;
 		} else if (filter.isMatchNone()) {
 			return MATCH_ALL;
+		} else if (filter.isNot() && filter instanceof NotFilter notFilter) {
+			return notFilter.getNegated();
 		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
 			// Prefer `c!=c1` over `!(c==c1)`
 			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
 		} else if (filter instanceof OrFilter orFilter) {
-			// Prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
+			// Plays optimizations given a And of Not.
+			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
 			return AndFilter.and(orFilter.getOperands().stream().map(NotFilter::not).toList());
 		}
 		return NotFilter.builder().negated(filter).build();

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -308,8 +309,46 @@ public class TestAndFilter {
 	}
 
 	@Test
+	public void testAnd_allNotFilter_like_2() {
+		List<IAdhocFilter> nots = Arrays.asList(NotFilter.not(ColumnFilter.isLike("a", "a%")),
+				NotFilter.not(ColumnFilter.isLike("b", "b%")));
+		IAdhocFilter notA1AndNotA2 = AndFilter.and(nots);
+
+		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
+			Assertions.assertThat(andFilter.getOperands()).containsAll(nots);
+		});
+	}
+
+	@Test
+	public void testAnd_allNotFilter_like_3() {
+		List<IAdhocFilter> likes =
+				List.of(ColumnFilter.isLike("a", "a%"), ColumnFilter.isLike("b", "b%"), ColumnFilter.isLike("c", "c%"));
+		List<IAdhocFilter> nots = likes.stream().map(NotFilter::not).toList();
+
+		// And over 3 Not
+		Assertions.assertThat(AndFilter.costFunction(AndFilter.builder().filters(nots).build())).isEqualTo(3 + 3 + 3);
+
+		// Not over Or over 3 simple: cost==8
+		Assertions
+				.assertThat(AndFilter
+						.costFunction(NotFilter.builder().negated(OrFilter.builder().filters(likes).build()).build()))
+				.isEqualTo(3 + 2 + 1 + 1 + 1);
+
+		IAdhocFilter notA1AndNotA2 = AndFilter.and(nots);
+
+		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
+			// cost==5, which is cheaper than 8
+			Assertions.assertThat(AndFilter.costFunction(notFilter)).isEqualTo(3 + 2 + 1 + 1 + 1);
+
+			Assertions.assertThat(notFilter.getNegated()).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
+				Assertions.assertThat(orFilter.getOperands()).containsAll(likes);
+			});
+		});
+	}
+
+	@Test
 	public void testAnd_allNotMatcher() {
-		IAdhocFilter notA1AndNotA2 =
+		IAdhocFilter notA1AndNotB1 =
 				AndFilter.and(ColumnFilter.isDistinctFrom("a", "a1"), ColumnFilter.isDistinctFrom("b", "b1"));
 
 		// TODO Should we simplify the nots?
@@ -319,7 +358,7 @@ public class TestAndFilter {
 		// .not(OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("b", "b1", "b2"))));
 		// });
 
-		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
+		Assertions.assertThat(notA1AndNotB1).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
 					.contains(ColumnFilter.isDistinctFrom("a", "a1"), ColumnFilter.isDistinctFrom("b", "b1"));
 		});
@@ -346,21 +385,27 @@ public class TestAndFilter {
 		Assertions.assertThat(AndFilter.costFunction(Set.of(AndFilter.and(Map.of("a", "a1"))))).isEqualTo(1);
 
 		Assertions
-				.assertThat(AndFilter.costFunction(
-						OrFilter.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1", "c", "c1")))))
-				.isEqualTo(3 * (1 + (1 + 1)));
+				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
+						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
+				.hasToString("a==a1|b==b1&c==c1")
+				.satisfies(f -> {
+					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
+				});
 
 		Assertions
-				.assertThat(AndFilter.costFunction(
-						AndFilter.and(AndFilter.and(Map.of("a", "a1")), OrFilter.or(Map.of("b", "b1", "c", "c1")))))
-				.isEqualTo(1 * (1 + 3 * (1 + 1)));
+				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
+						OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1"))))
+				.hasToString("a==a1&(b==b1|c==c1)")
+				.satisfies(f -> {
+					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 1 + 2 + 1);
+				});
 
 		Assertions
-				.assertThat(AndFilter.and(AndFilter.and(Map.of("a", "a1")),
+				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
 						OrFilter.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))))
 				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
 				.satisfies(f -> {
-					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 * (1 + 3 * (2 * 1 + 1)));
+					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 3 + 2 + 1);
 				});
 	}
 }
