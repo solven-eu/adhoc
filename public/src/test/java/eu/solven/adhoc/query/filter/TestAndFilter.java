@@ -369,6 +369,7 @@ public class TestAndFilter {
 		IAdhocFilter notA1AndNotA2 =
 				AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "a1", "a2")), ColumnFilter.isIn("b", "b1", "b2"));
 		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
+		Assertions.assertThat(AndFilter.and(notA1AndNotA2, notA1AndNotA2)).isInstanceOf(AndFilter.class);
 	}
 
 	@Test

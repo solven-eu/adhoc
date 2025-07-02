@@ -127,6 +127,9 @@ public class AndFilter implements IAndFilter {
 
 	// `first, second, more` syntax to push providing at least 2 arguments
 	public static IAdhocFilter and(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
+		if (more.length == 0 && first.equals(second)) {
+			return first;
+		}
 		return and(Lists.asList(first, second, more));
 	}
 

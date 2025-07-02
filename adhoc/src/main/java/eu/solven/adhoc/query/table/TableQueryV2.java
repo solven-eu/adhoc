@@ -33,7 +33,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -100,39 +99,27 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 
 		AtomicLongMap<List<?>> filteredAggregatorAliasIndex = AtomicLongMap.create();
 
+		// groupBy tableQueries by `GROUP BY`, as TableQueryV2 relies on a single `GROUP BY` and as many `FILTER` as
+		// possible.
 		tableQueries.forEach(tableQuery -> {
-			if (tableQuery.getAggregators().isEmpty()) {
+			tableQuery.getAggregators().forEach(aggregator -> {
+				// use as groupBy the tableQuery without aggregators and filters
+				// it enables keeping other options like customMarkers, which behave like groupBy in this phase
 				TableQuery groupBy = TableQuery.edit(tableQuery)
 						.clearAggregators()
 						// remove the filter from the `WHERE`
 						.filter(IAdhocFilter.MATCH_ALL)
 						.build();
 				FilteredAggregator filteredAggregator = FilteredAggregator.builder()
+						.aggregator(aggregator)
 						// transfer the whole filter as `FILTER`
 						.filter(tableQuery.getFilter())
-						.aggregator(Aggregator.empty())
+						// The index should be unique per groupBy+aggregator, but it is simpler and totally fine to
+						// increment more often
+						.index(filteredAggregatorAliasIndex.getAndIncrement(List.of(groupBy, aggregator.getName())))
 						.build();
 				groupByToFilteredAggregators.put(groupBy, filteredAggregator);
-			} else {
-				tableQuery.getAggregators().forEach(aggregator -> {
-					// use as groupBy the tableQuery without aggregators and filters
-					// it enables keeping other options like customMarkers, which behave like groupBy in this phase
-					TableQuery groupBy = TableQuery.edit(tableQuery)
-							.clearAggregators()
-							// remove the filter from the `WHERE`
-							.filter(IAdhocFilter.MATCH_ALL)
-							.build();
-					FilteredAggregator filteredAggregator = FilteredAggregator.builder()
-							.aggregator(aggregator)
-							// transfer the whole filter as `FILTER`
-							.filter(tableQuery.getFilter())
-							// The index should be unique per groupBy+aggregator, but it is simpler and totally fine to
-							// increment more often
-							.index(filteredAggregatorAliasIndex.getAndIncrement(List.of(groupBy, aggregator.getName())))
-							.build();
-					groupByToFilteredAggregators.put(groupBy, filteredAggregator);
-				});
-			}
+			});
 		});
 
 		Set<TableQueryV2> queriesV2 = new LinkedHashSet<>();
@@ -148,7 +135,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 
 			filteredAggregators.forEach(filteredAggregator -> {
 				IAdhocFilter strippedFromWhere =
-						FilterHelpers.stripFilterFromWhere(commonFilter, filteredAggregator.getFilter());
+						FilterHelpers.stripWhereFromFilter(commonFilter, filteredAggregator.getFilter());
 				v2Builder.aggregator(filteredAggregator.toBuilder().filter(strippedFromWhere).build());
 			});
 

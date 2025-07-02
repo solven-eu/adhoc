@@ -200,4 +200,27 @@ public class TestFilterHelpers {
 				.containsExactly(ColumnFilter.isIn("a", "a1", "a2"));
 	}
 
+	@Test
+	public void testStripFilterFromWhere() {
+		// filter is hold in where
+		Assertions
+				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
+						AndFilter.and(Map.of("a", "a1"))))
+				.isEqualTo(IAdhocFilter.MATCH_ALL);
+
+		// filter is unrelated with where
+		Assertions
+				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
+						AndFilter.and(Map.of("b", "b1"))))
+				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
+
+		// filter is laxer than where
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
+				AndFilter.and(Map.of("b", "b1")))).isEqualTo(IAdhocFilter.MATCH_ALL);
+
+		// filter is disjoint with non-empty-union than where
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
+				AndFilter.and(Map.of("b", "b1", "c", "c1")))).isEqualTo(AndFilter.and(Map.of("c", "c1")));
+	}
+
 }

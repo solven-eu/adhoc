@@ -93,14 +93,14 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			aggregators.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
-				IAdhocFilter strippedFromWhere = FilterHelpers.stripFilterFromWhere(commonFilter, tq.getFilter());
+				IAdhocFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
 				// We need these additional columns for proper filtering
 				inducerColumns.addAll(FilterHelpers.getFilteredColumns(strippedFromWhere));
 			});
 
 			// OR between each inducer own filter
 			Set<IAdhocFilter> eachInducedFilters = aggregators.stream()
-					.map(tq -> FilterHelpers.stripFilterFromWhere(commonFilter, tq.getFilter()))
+					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
 			IAdhocFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
@@ -112,7 +112,7 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 						.build();
 				split.inducer(inducerStep);
 
-				IAdhocFilter strippedFromWhere = FilterHelpers.stripFilterFromWhere(commonFilter, tq.getFilter());
+				IAdhocFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
 				CubeQueryStep inducedStep = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
 				split.induced(inducedStep);
 
