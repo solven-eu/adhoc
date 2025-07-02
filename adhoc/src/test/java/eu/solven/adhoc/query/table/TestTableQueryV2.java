@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -76,18 +75,6 @@ public class TestTableQueryV2 {
 
 	Aggregator sumK2 = Aggregator.sum("k2");
 	TableQuery groupByA_K2 = TableQuery.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK2).build();
-
-	@Test
-	public void testSplitAnd() {
-		Assertions.assertThat(TableQueryV2.splitAnd(IAdhocFilter.MATCH_ALL)).containsExactly(IAdhocFilter.MATCH_ALL);
-		Assertions.assertThat(TableQueryV2.splitAnd(IAdhocFilter.MATCH_NONE)).containsExactly(IAdhocFilter.MATCH_NONE);
-		Assertions.assertThat(TableQueryV2.splitAnd(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"))))
-				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
-
-		// IN is not an AND but an OR
-		Assertions.assertThat(TableQueryV2.splitAnd(ColumnFilter.isIn("a", "a1", "a2")))
-				.containsExactly(ColumnFilter.isIn("a", "a1", "a2"));
-	}
 
 	@Test
 	public void testGrandTotalAndFilterA1() {

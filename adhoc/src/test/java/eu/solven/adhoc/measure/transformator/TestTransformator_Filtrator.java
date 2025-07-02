@@ -119,10 +119,6 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 		CubeQuery adhocQuery = CubeQuery.builder().measure("Ratio_k1_k1witha1").build();
 		ITabularView output = cube().execute(adhocQuery);
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

@@ -25,6 +25,9 @@ package eu.solven.adhoc.engine.step;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -48,6 +51,9 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	@NonNull
 	final CubeQueryStep queryStep;
 
+	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns
+	final Supplier<IAdhocFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
+
 	@Override
 	public @NonNull CubeQueryStep getQueryStep() {
 		return queryStep;
@@ -60,6 +66,10 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 
 	@Override
 	public IAdhocFilter asFilter() {
+		return filterSupplier.get();
+	}
+
+	public IAdhocFilter asFilterNoCache() {
 		// AND the slice with the step as the step may express some filters which are not in the slice
 		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
 		IAdhocFilter filter = AndFilter.and(slice.asFilter(), queryStep.getFilter());

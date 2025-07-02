@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -185,7 +186,18 @@ public class TestFilterHelpers {
 
 		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(IAdhocFilter.MATCH_NONE))
 				.isInstanceOf(IllegalArgumentException.class);
+	}
 
+	@Test
+	public void testSplitAnd() {
+		Assertions.assertThat(FilterHelpers.splitAnd(IAdhocFilter.MATCH_ALL)).containsExactly(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitAnd(IAdhocFilter.MATCH_NONE)).containsExactly(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(FilterHelpers.splitAnd(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"))))
+				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		// IN is not an AND but an OR
+		Assertions.assertThat(FilterHelpers.splitAnd(ColumnFilter.isIn("a", "a1", "a2")))
+				.containsExactly(ColumnFilter.isIn("a", "a1", "a2"));
 	}
 
 }

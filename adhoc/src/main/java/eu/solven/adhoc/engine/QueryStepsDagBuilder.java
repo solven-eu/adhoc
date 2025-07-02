@@ -111,7 +111,6 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		if (stepToValue.containsKey(step)) {
 			hasCache = true;
 		} else {
-
 			Optional<ISliceToValue> optSliceToValue = queryStepCache.getValue(step);
 			if (optSliceToValue.isPresent()) {
 				stepToValue.put(step, optSliceToValue.get());

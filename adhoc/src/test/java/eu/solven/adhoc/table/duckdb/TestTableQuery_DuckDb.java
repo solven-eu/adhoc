@@ -30,13 +30,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -51,23 +49,12 @@ import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
+public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
-
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -76,7 +63,6 @@ public class TestTableQuery_DuckDb extends ARawDagTest implements IAdhocTestCons
 	}
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = dslSupplier.getDSLContext();
 
 	@Test
 	public void testTableDoesNotExists() {

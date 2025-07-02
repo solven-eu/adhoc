@@ -20,10 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.query.filter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,12 +34,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 
@@ -71,6 +68,17 @@ public class TestAndFilter {
 				.contains("#0=k0==0", "#1=k1==1")
 				.doesNotContain("7")
 				.hasSizeLessThan(512);
+	}
+
+	@Test
+	public void toString_andOr() {
+		Assertions
+				.assertThat(
+						AndFilter
+								.and(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1")),
+										OrFilter.or(ImmutableMap.of("c", "c1", "d", "d1")))
+								.toString())
+				.isEqualTo("(a==a1|b==b1)&(c==c1|d==d1)");
 	}
 
 	@Test
@@ -324,4 +332,35 @@ public class TestAndFilter {
 		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
 	}
 
+	@Test
+	public void testAnd_orDifferentColumns_sameColumn() {
+		ColumnFilter left = ColumnFilter.isEqualTo("g", "c1");
+		IAdhocFilter leftOrRight = OrFilter.or(left, ColumnFilter.isEqualTo("h", "c1"));
+
+		Assertions.assertThat(AndFilter.and(leftOrRight, left)).isEqualTo(left);
+	}
+
+	@Test
+	public void testCostFunction() {
+		Assertions.assertThat(AndFilter.costFunction(Set.of(OrFilter.or(Map.of("a", "a1"))))).isEqualTo(1);
+		Assertions.assertThat(AndFilter.costFunction(Set.of(AndFilter.and(Map.of("a", "a1"))))).isEqualTo(1);
+
+		Assertions
+				.assertThat(AndFilter.costFunction(
+						OrFilter.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1", "c", "c1")))))
+				.isEqualTo(3 * (1 + (1 + 1)));
+
+		Assertions
+				.assertThat(AndFilter.costFunction(
+						AndFilter.and(AndFilter.and(Map.of("a", "a1")), OrFilter.or(Map.of("b", "b1", "c", "c1")))))
+				.isEqualTo(1 * (1 + 3 * (1 + 1)));
+
+		Assertions
+				.assertThat(AndFilter.and(AndFilter.and(Map.of("a", "a1")),
+						OrFilter.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))))
+				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
+				.satisfies(f -> {
+					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 * (1 + 3 * (2 * 1 + 1)));
+				});
+	}
 }

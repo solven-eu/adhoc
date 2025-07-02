@@ -82,6 +82,18 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 	@Singular
 	ImmutableSet<IQueryOption> options;
 
+	/**
+	 * Never empty. If built on an empty {@link Set}, return the empty {@link Aggregator}.
+	 * 
+	 * @return
+	 */
+	public Set<Aggregator> getAggregators() {
+		if (aggregators.isEmpty()) {
+			return ImmutableSet.of(Aggregator.empty());
+		}
+		return aggregators;
+	}
+
 	public static TableQueryBuilder edit(TableQuery tableQuery) {
 		return edit((IWhereGroupByQuery) tableQuery).aggregators(tableQuery.getAggregators());
 	}

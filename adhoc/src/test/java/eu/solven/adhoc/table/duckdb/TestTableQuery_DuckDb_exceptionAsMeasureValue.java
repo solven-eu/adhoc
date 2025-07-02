@@ -27,62 +27,37 @@ import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestTableQuery_DuckDb_exceptionAsMeasureValue extends ADagTest implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
+public class TestTableQuery_DuckDb_exceptionAsMeasureValue extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
-
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-	DSLContext dsl = table.makeDsl();
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
-	}
 
 	@Override
-	public void feedTable() {
-		// No standard feeding in this class
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	@Test
 	public void testTableDoesNotExists() {
-		ITabularView result = wrapInCube(forest).execute(
+		ITabularView result = cube().execute(
 				CubeQuery.builder().measure(k1Sum).option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -103,7 +78,7 @@ public class TestTableQuery_DuckDb_exceptionAsMeasureValue extends ADagTest impl
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
 
-		ITabularView result = wrapInCube(forest).execute(
+		ITabularView result = cube().execute(
 				CubeQuery.builder().measure(k1Sum).option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -125,7 +100,7 @@ public class TestTableQuery_DuckDb_exceptionAsMeasureValue extends ADagTest impl
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
 
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder()
+		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure(k1Sum)
 				.groupBy(GroupByColumns.named("unknownColumn"))
 				.option(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)
@@ -146,4 +121,5 @@ public class TestTableQuery_DuckDb_exceptionAsMeasureValue extends ADagTest impl
 				.hasSize(1);
 
 	}
+
 }

@@ -160,7 +160,9 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		if (mask.isEmpty()) {
 			return this;
 		} else {
-			return fromMap(ImmutableMap.<String, Object>builder().putAll(asMap).putAll(mask).build());
+			ImmutableMap.Builder<String, Object> builder =
+					ImmutableMap.builderWithExpectedSize(asMap.size() + mask.size());
+			return fromMap(builder.putAll(asMap).putAll(mask).build());
 		}
 	}
 }

@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -235,5 +238,88 @@ public class FilterHelpers {
 		} else {
 			throw new UnsupportedOperationException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
+	}
+
+	public static IAdhocFilter commonFilter(Set<? extends IAdhocFilter> filters) {
+		if (filters.isEmpty()) {
+			return IAdhocFilter.MATCH_ALL;
+		} else if (filters.size() == 1) {
+			return filters.iterator().next();
+		}
+
+		Iterator<? extends IAdhocFilter> iterator = filters.iterator();
+		// Common parts are initialized with all parts of the first filter
+		Set<IAdhocFilter> commonParts = new LinkedHashSet<>(splitAnd(iterator.next()));
+
+		while (iterator.hasNext()) {
+			Set<IAdhocFilter> nextFilterParts = new LinkedHashSet<>(splitAnd(iterator.next()));
+
+			commonParts = Sets.intersection(commonParts, nextFilterParts);
+		}
+
+		return AndFilter.and(commonParts);
+	}
+
+	/**
+	 * Split the filter in a Set of {@link IAdhocFilter}, equivalent by AND to the original filter.
+	 * 
+	 * @param filter
+	 * @return
+	 */
+	public static Set<IAdhocFilter> splitAnd(IAdhocFilter filter) {
+		if (filter.isMatchAll() || filter.isMatchNone()) {
+			return Set.of(filter);
+		} else if (filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands();
+		} else if (filter instanceof IColumnFilter columnFilter) {
+			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+
+			String column = columnFilter.getColumn();
+			if (valueMatcher instanceof AndMatcher andMatcher) {
+				return andMatcher.getOperands()
+						.stream()
+						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
+						.collect(Collectors.toCollection(LinkedHashSet::new));
+			}
+
+		}
+
+		// Not splittable
+		return Set.of(filter);
+	}
+
+	/**
+	 * 
+	 * @param where
+	 *            some `WHERE` clause
+	 * @param filter
+	 *            some `FILTER` clause
+	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause.
+	 */
+	public static IAdhocFilter stripFilterFromWhere(IAdhocFilter where, IAdhocFilter filter) {
+		if (where.isMatchAll()) {
+			// `WHERE` has no clause: `FILTER` has to keep all clauses
+			return filter;
+		} else if (AndFilter.and(where, filter).equals(where)) {
+			// Catch some edge-case like `where.equals(filter)`
+			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
+			return IAdhocFilter.MATCH_ALL;
+		}
+
+		// Split the FILTER in smaller parts
+		Set<? extends IAdhocFilter> andOperators = splitAnd(filter);
+
+		Set<IAdhocFilter> notInWhere = new LinkedHashSet<>();
+
+		// For each part of `FILTER`, reject those already filtered in `WHERE`
+		for (IAdhocFilter subFilter : andOperators) {
+			boolean whereCoversSubFilter = AndFilter.and(where, subFilter).equals(where);
+
+			if (!whereCoversSubFilter) {
+				notInWhere.add(subFilter);
+			}
+		}
+
+		return AndFilter.and(notInWhere);
 	}
 }

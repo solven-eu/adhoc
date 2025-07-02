@@ -25,54 +25,27 @@ package eu.solven.adhoc.table.duckdb;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.AdhocTestHelper;
-import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestCubeQuery_DuckDb_Aggregations extends ADagTest implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
+public class TestCubeQuery_DuckDb_Aggregations extends ADuckDbJooqTest implements IAdhocTestConstants {
 	String tableName = "someTableName";
 
-	JooqTableWrapper table = new JooqTableWrapper(tableName,
-			JooqTableWrapperParameters.builder()
-					.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
-					.tableName(tableName)
-					.build());
-
-	DSLContext dsl = table.makeDsl();
-
-	private CubeWrapper wrapInCube(IMeasureForest forest) {
-		CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
-
-		return CubeWrapper.builder().engine(aqe).forest(forest).table(table).engine(aqe).build();
-	}
-
 	@Override
-	public void feedTable() {
-		// No standard feeding in this class
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
 	@Test
@@ -92,7 +65,7 @@ public class TestCubeQuery_DuckDb_Aggregations extends ADagTest implements IAdho
 				.build();
 		forest.addMeasure(k1Rank2);
 
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().measure(k1Rank2).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -117,7 +90,7 @@ public class TestCubeQuery_DuckDb_Aggregations extends ADagTest implements IAdho
 				.build();
 		forest.addMeasure(k1Rank2);
 
-		ITabularView result = wrapInCube(forest).execute(CubeQuery.builder().groupByAlso("a").measure(k1Rank2).build());
+		ITabularView result = cube().execute(CubeQuery.builder().groupByAlso("a").measure(k1Rank2).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

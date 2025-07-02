@@ -456,3 +456,9 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 ## Profilers
 
 Thanks [EJ Technologies for kindly providing an OpenSource license for JProfiler (their Java Profiler)](https://www.ej-technologies.com/jprofiler).
+
+# Research
+
+- Logic optimization https://en.m.wikipedia.org/wiki/Logic_optimization
+  - https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
+  - https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer

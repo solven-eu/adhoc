@@ -33,9 +33,12 @@ import eu.solven.adhoc.table.ITableWrapper;
  * It is generally not useful for simple aggregations (e.g. SUM), which can be applied indifferently over inputs and its
  * own outputs (e.g. `(1+2)+3==1+(2+3)`).
  * 
- * It is generally useful for complex aggregations (e.g. `AVG`), which can not be applied indifferently over inputs and
- * its own outputs (e.g. `avg(1,2,3)!=avg(avg(1,2),3)!=avg(1,avg(2,3))`). More generally , if `agg(agg(x,y),
+ * It is generally useful for non-linear aggregations (e.g. `AVG`), which can not be applied indifferently over inputs
+ * and its own outputs (e.g. `avg(1,2,3)!=avg(avg(1,2),3)!=avg(1,avg(2,3))`). More generally , if `agg(agg(x,y),
  * z)!=agg(x,agg(y,z))`, an {@link IAggregationCarrier} is needed.
+ * 
+ * A linear aggregation (https://stats.stackexchange.com/questions/169372/whats-a-linear-aggregate) satisfies
+ * `f(x+y)=f(x)+f(y)` and `f(a*x)=a*f(x)`.
  * 
  * @author Benoit Lacelle
  */

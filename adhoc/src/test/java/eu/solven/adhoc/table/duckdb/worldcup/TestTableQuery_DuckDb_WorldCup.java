@@ -28,7 +28,6 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
@@ -39,8 +38,7 @@ import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -50,16 +48,7 @@ import lombok.extern.slf4j.Slf4j;
  * @see InjectWorldCupExampleCubesConfig
  */
 @Slf4j
-public class TestTableQuery_DuckDb_WorldCup extends ARawDagTest implements IAdhocTestConstants {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema();
 

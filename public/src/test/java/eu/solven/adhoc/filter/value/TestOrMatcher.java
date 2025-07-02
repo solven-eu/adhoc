@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestOrMatcher {
@@ -93,6 +94,20 @@ public class TestOrMatcher {
 				OrMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
 
 		Assertions.assertThat(aThenB).isEqualTo(bThenA).hasToString("LikeMatcher(pattern=a%)|LikeMatcher(pattern=%b)");
+	}
+
+	@Test
+	public void testNotOrEquals_multiple() {
+		Assertions
+				.assertThat(
+						NotMatcher.not(OrMatcher.or(EqualsMatcher.isEqualTo("foo"), EqualsMatcher.isEqualTo("bar"))))
+				.isInstanceOfSatisfying(NotMatcher.class, notMatcher -> {
+					Assertions.assertThat(notMatcher.getNegated())
+							.isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
+								Assertions.assertThat((Set) inMatcher.getOperands())
+										.containsExactlyInAnyOrder("foo", "bar");
+							});
+				});
 	}
 
 	@Test
