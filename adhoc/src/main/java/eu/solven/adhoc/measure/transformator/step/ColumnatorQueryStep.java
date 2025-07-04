@@ -26,17 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -99,39 +92,4 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		return valueMatcher instanceof EqualsMatcher;
 	}
 
-	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
-		if (underlyings.size() != getUnderlyingNames().size()) {
-			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size()");
-		} else if (underlyings.isEmpty()) {
-			return SliceToValue.empty();
-		}
-
-		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
-
-		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
-
-		forEachDistinctSlice(underlyings, transformation, values::append);
-
-		return SliceToValue.forGroupBy(step).values(values).build();
-	}
-
-	@Override
-	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
-		List<?> underlyingVs = slice.getMeasures().asList();
-
-		Object value = combination.combine(slice.getSlice(), underlyingVs);
-
-		if (isDebug()) {
-			log.info("[DEBUG] Write {} (given {} over {}) in {}",
-					// IValueProvider.getValue(valueProvider),
-					value,
-					combinator.getName(),
-					// slicedRecord,
-					underlyingVs,
-					slice);
-		}
-
-		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
-	}
 }

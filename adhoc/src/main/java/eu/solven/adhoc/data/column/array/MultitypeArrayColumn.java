@@ -94,6 +94,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 
 	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
 	protected void ensureCapacity(int type) {
+		// TODO Capacity management does not follow the rest of the code (see MultitypeArray)
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof LongArrayList openHashMap) {
 				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,38 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.util;
 
-import java.util.Set;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.measure.model.Aggregator;
+public class TestAdhocCollectionHelpers {
+	LocalDate now = LocalDate.now();
 
-public class TestTableQuery implements IAdhocTestConstants {
 	@Test
-	public void testGrandTotal() {
-		TableQuery q = TableQuery.builder().aggregators(Set.of(k1Sum)).build();
-
-		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
-		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getAggregators()).hasSize(1).contains(k1Sum);
-
-		// Make sure the .toString returns actual values, and not the lambda toString
-		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
+	public void testUnnest_noNested() {
+		List<Object> noNested = Arrays.asList(123, 12.34, "foo", now);
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested)).isEqualTo(noNested);
 	}
 
 	@Test
-	public void testNoMeasure() {
-		TableQuery q = TableQuery.builder().build();
+	public void testUnnest_variousDepth() {
+		List<Object> noNested = Arrays.asList(123, Arrays.asList(12.34, Arrays.asList(Arrays.asList("foo"), now)));
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested))
+				.isEqualTo(Arrays.asList(123, 12.34D, "foo", now));
+	}
 
-		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
-		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
-		Assertions.assertThat(q.getAggregators()).hasSize(1).contains(Aggregator.empty());
-
-		// Make sure the .toString returns actual values, and not the lambda toString
-		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
+	@Test
+	public void testUnnest_null() {
+		List<Object> noNested = Arrays.asList(123, null, Arrays.asList(null, "foo"));
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested))
+				.isEqualTo(Arrays.asList(123, null, null, "foo"));
 	}
 }

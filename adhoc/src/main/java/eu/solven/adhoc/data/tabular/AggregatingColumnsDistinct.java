@@ -23,11 +23,11 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
@@ -77,7 +77,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnsFactory().makeColumn(Arrays.asList());
+		// No capacity strategy given `ITabularRecordStream` has no insights about the number of coming rows
+		return factories.getColumnsFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override

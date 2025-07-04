@@ -53,6 +53,15 @@ public interface IMultitypeColumn<T> {
 	boolean isEmpty();
 
 	/**
+	 * Ensures that this column can hold a certain number of keys without rehashing.
+	 *
+	 * @param capacity
+	 *            a number of keys; there will be no rehashing unless the column {@linkplain #size() size} exceeds this
+	 *            number.
+	 */
+	// void ensureCapacity(int capacity);
+
+	/**
 	 * Typically called by {@link CubeQueryEngine} once an {@link ITableWrapper} measure is fully received, to turn
 	 * {@link IAggregationCarrier} into the real aggregate (e.g. turning a CountCarrier, holding a long, to be
 	 * differentiated with a column holding longs).

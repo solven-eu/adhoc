@@ -131,16 +131,16 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			});
 		});
 
-		// Collect the tableQueries which can not be induced by another tableQuery
-		Set<CubeQueryStep> notInduced = dagToDependancies.vertexSet()
+		// Collect the steps which can not be induced by another tableQuery
+		Set<CubeQueryStep> inducers = dagToDependancies.vertexSet()
 				.stream()
 				.filter(tq -> dagToDependancies.outgoingEdgesOf(tq).isEmpty())
 				.collect(ImmutableSet.toImmutableSet());
-		// Collect the tableQueries which can be induced
-		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(dagToDependancies.vertexSet(), notInduced));
+		// induced is to complement to inducers
+		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(dagToDependancies.vertexSet(), inducers));
 
 		return SplitTableQueries.builder()
-				.inducers(notInduced)
+				.inducers(inducers)
 				.induceds(induced)
 				.dagToDependancies(dagToDependancies)
 				.build();

@@ -42,12 +42,12 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 public class DagBottomUpStrategyHash implements IDagBottomUpStrategy {
 
 	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumn() {
+	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
 		return MultitypeHashColumn.<T>builder().build();
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
 		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).build();
 	}
 

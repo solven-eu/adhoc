@@ -159,8 +159,8 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 	public void testGrandTotal_filterGroup() {
 		prepareMeasures();
 
-		ITabularView output =
-				cube.execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "yellow").build());
+		ITabularView output = cube.execute(
+				CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, "yellow").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

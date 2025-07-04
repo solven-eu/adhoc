@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
@@ -51,12 +53,15 @@ public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 
 	@SuppressWarnings("PMD.UnnecessaryCast")
 	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumn() {
-		return (MultitypeNavigableColumn) MultitypeNavigableColumn.builder().build();
+	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
+		return (MultitypeNavigableColumn) MultitypeNavigableColumn.builder()
+				.keys(new ArrayList<>(initialCapacity))
+				.values(MultitypeArray.builder().capacity(initialCapacity).build())
+				.build();
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
 		return (IMultitypeMergeableColumn) MultitypeNavigableMergeableColumn.builder().aggregation(agg).build();
 	}
 

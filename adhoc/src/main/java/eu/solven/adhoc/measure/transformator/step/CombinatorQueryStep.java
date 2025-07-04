@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
@@ -99,6 +101,10 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 				.toList();
 	}
 
+	public static int sumSizes(Collection<? extends ISliceToValue> underlyings) {
+		return Ints.saturatedCast(underlyings.stream().mapToLong(ISliceToValue::size).sum());
+	}
+
 	@Override
 	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
@@ -114,11 +120,11 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 
 		ICombination combination = combinationSupplier.get();
 		if (CoalesceCombination.isFindFirst(combination) && underlyings.size() == 1) {
-			// Shortcut given FindFirst specific semantic
+			// Shortcut given Coalesce specific semantic
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(underlyings);
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 

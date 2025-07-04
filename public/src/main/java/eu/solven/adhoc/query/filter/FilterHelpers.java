@@ -290,30 +290,43 @@ public class FilterHelpers {
 
 	/**
 	 * 
+	 * Typically true if `stricter:A=a1&B=b1` and `laxer:B=b1`.
+	 * 
+	 * @param stricter
+	 * @param laxer
+	 * @return true if all rows matched by `stricter` are matched by `laxer`.
+	 */
+	private static boolean isStricterThan(IAdhocFilter stricter, IAdhocFilter laxer) {
+		return AndFilter.and(stricter, laxer).equals(stricter);
+	}
+
+	/**
+	 * 
 	 * @param where
 	 *            some `WHERE` clause
 	 * @param filter
 	 *            some `FILTER` clause
-	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause.
+	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause, considering the WHERE and FILTER
+	 *         clauses are combined with`AND`.
 	 */
-	public static IAdhocFilter stripFilterFromWhere(IAdhocFilter where, IAdhocFilter filter) {
+	public static IAdhocFilter stripWhereFromFilter(IAdhocFilter where, IAdhocFilter filter) {
 		if (where.isMatchAll()) {
 			// `WHERE` has no clause: `FILTER` has to keep all clauses
 			return filter;
-		} else if (AndFilter.and(where, filter).equals(where)) {
+		} else if (isStricterThan(where, filter)) {
 			// Catch some edge-case like `where.equals(filter)`
 			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
 			return IAdhocFilter.MATCH_ALL;
 		}
 
-		// Split the FILTER in smaller parts
-		Set<? extends IAdhocFilter> andOperators = splitAnd(filter);
+		// Split the FILTER in parts
+		Set<? extends IAdhocFilter> andOperands = splitAnd(filter);
 
 		Set<IAdhocFilter> notInWhere = new LinkedHashSet<>();
 
 		// For each part of `FILTER`, reject those already filtered in `WHERE`
-		for (IAdhocFilter subFilter : andOperators) {
-			boolean whereCoversSubFilter = AndFilter.and(where, subFilter).equals(where);
+		for (IAdhocFilter subFilter : andOperands) {
+			boolean whereCoversSubFilter = isStricterThan(where, subFilter);
 
 			if (!whereCoversSubFilter) {
 				notInWhere.add(subFilter);

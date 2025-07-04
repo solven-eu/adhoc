@@ -28,6 +28,10 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -56,13 +60,23 @@ import eu.solven.adhoc.measure.model.Shiftor;
 public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrategy {
 
 	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumn() {
-		return (IMultitypeColumnFastGet) MultitypeNavigableElseHashColumn.builder().build();
+	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
+		MultitypeNavigableColumn navigable = MultitypeNavigableColumn.builder().capacity(initialCapacity).build();
+		return (IMultitypeColumnFastGet) MultitypeNavigableElseHashColumn.builder()
+				.navigable(navigable)
+				.hash(MultitypeHashColumn.builder().capacity(initialCapacity).build())
+				.build();
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg) {
-		return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.builder(agg).build();
+	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
+		return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.mergeable(agg)
+				.navigable((MultitypeNavigableMergeableColumn) MultitypeNavigableMergeableColumn.builder()
+						.aggregation(agg)
+						.capacity(initialCapacity)
+						.build())
+				.hash(MultitypeHashMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build())
+				.build();
 	}
 
 	@Override

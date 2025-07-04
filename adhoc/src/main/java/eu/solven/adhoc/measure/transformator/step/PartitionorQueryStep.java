@@ -106,7 +106,10 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 
 	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg,
 			List<? extends ISliceToValue> underlyings) {
-		return factories.getColumnsFactory().makeColumn(agg, underlyings);
+		// BEWARE The output capacity is at most the sum of input capacity. But it is generally much smaller. (e.g. We
+		// may receive 100 different CCYs, but output a single value cross CCYs).
+		int initialCapacity = CombinatorQueryStep.sumSizes(underlyings);
+		return factories.getColumnsFactory().makeColumn(agg, initialCapacity);
 	}
 
 	@Override
