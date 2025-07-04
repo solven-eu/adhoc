@@ -133,4 +133,9 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
 	}
 
+	// @Override
+	// public void ensureCapacity(int capacity) {
+	// masked.ensureCapacity(capacity);
+	// }
+
 }

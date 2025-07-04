@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
@@ -36,6 +35,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -100,22 +100,17 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	}
 
 	public static IValueMatcher or(Collection<? extends IValueMatcher> filters, boolean doSimplify) {
-		if (filters.stream().anyMatch(f -> f instanceof AndMatcher andMatcher && andMatcher.isMatchAll())) {
+		if (filters.contains(MATCH_ALL)) {
 			return MATCH_ALL;
 		}
 
-		// Skipping matchAll is useful on `.edit`
-		List<? extends IValueMatcher> notMatchNone = filters.stream()
-				.filter(f -> !(f instanceof OrMatcher orMatcher && orMatcher.isMatchNone()))
-				.flatMap(operand -> {
-					if (operand instanceof OrMatcher operandIsOr) {
-						// OR of ORs
-						return operandIsOr.getOperands().stream();
-					} else {
-						return Stream.of(operand);
-					}
-				})
-				.collect(Collectors.toList());
+		// OR of ORs
+		List<? extends IValueMatcher> notMatchNone = AdhocCollectionHelpers.unnestAsList(OrMatcher.class,
+				OrMatcher.builder().operands(filters).build(),
+				f -> f.getOperands().size(),
+				OrMatcher::getOperands,
+				// Skipping matchAll is useful on `.edit`
+				f -> !MATCH_NONE.equals(f));
 
 		if (doSimplify) {
 			return simplifiedOwned(notMatchNone);

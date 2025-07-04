@@ -30,13 +30,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -93,15 +93,7 @@ public class InMatcher implements IValueMatcher, IColumnToString {
 	 */
 	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher isIn(Collection<?> allowedValues) {
-		// TODO Unnest recursively
-		List<Object> unnested = allowedValues.stream().flatMap(allowed -> {
-			if (allowed instanceof Collection<?> asCollection) {
-				return asCollection.stream();
-			} else {
-				// `allowed` may be null
-				return Stream.of(allowed);
-			}
-		}).toList();
+		List<Object> unnested = AdhocCollectionHelpers.unnestAsList(allowedValues);
 
 		if (unnested.isEmpty()) {
 			return MATCH_NONE;

@@ -48,7 +48,7 @@ public class MultitypeNavigableElseHashMergeableColumn<T extends Comparable<T>>
 	@Getter
 	IAggregation aggregation;
 
-	public static <T extends Comparable<T>> MultitypeNavigableElseHashMergeableColumnBuilder<T, ?, ?> builder(
+	public static <T extends Comparable<T>> MultitypeNavigableElseHashMergeableColumnBuilder<T, ?, ?> mergeable(
 			IAggregation aggregation) {
 		return new MultitypeNavigableElseHashMergeableColumnBuilderImpl<T>().aggregation(aggregation)
 				.navigable(MultitypeNavigableMergeableColumn.<T>builder().aggregation(aggregation).build())

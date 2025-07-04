@@ -25,7 +25,6 @@ package eu.solven.adhoc.query.filter;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 
@@ -37,6 +36,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -169,13 +169,7 @@ public class ColumnFilter implements IColumnFilter {
 	public static IAdhocFilter isIn(String column, Object first, Object... more) {
 		List<Object> rawList = Lists.asList(first, more);
 
-		List<Object> expandedList = rawList.stream().flatMap(o -> {
-			if (o instanceof Collection<?> c) {
-				return c.stream();
-			} else {
-				return Stream.of(o);
-			}
-		}).toList();
+		List<Object> expandedList = AdhocCollectionHelpers.unnestAsList(rawList);
 
 		if (expandedList.isEmpty()) {
 			return MATCH_NONE;

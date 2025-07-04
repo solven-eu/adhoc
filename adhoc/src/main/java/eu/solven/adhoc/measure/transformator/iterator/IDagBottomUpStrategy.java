@@ -43,11 +43,21 @@ public interface IDagBottomUpStrategy {
 
 	/**
 	 * 
+	 * @param initialCapacity
+	 *            -1 is no estimation is available
 	 * @return the storage for a {@link ITransformatorQueryStep} output.
 	 */
-	<T> IMultitypeColumnFastGet<T> makeColumn();
+	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
 
-	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg);
+	/**
+	 * 
+	 * @param <T>
+	 * @param agg
+	 * @param initialCapacity
+	 *            -1 is no estimation is available
+	 * @return
+	 */
+	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
 
 	/**
 	 * 

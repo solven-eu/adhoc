@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -91,7 +91,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnsFactory().makeColumn(agg, Arrays.asList());
+		return factories.getColumnsFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override

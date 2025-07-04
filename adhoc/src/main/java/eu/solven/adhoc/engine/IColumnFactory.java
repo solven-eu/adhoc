@@ -43,19 +43,23 @@ public interface IColumnFactory {
 
 	/**
 	 *
-	 * @param underlyings
+	 * @param initialCapacity
+	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
+	 *            value.
 	 * @return a column which will hold result for the given underlyings
 	 */
-	<T> IMultitypeColumnFastGet<T> makeColumn(List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
 
 	/**
 	 * @param agg
-	 * @param underlyings
+	 * @param initialCapacity
+	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
+	 *            value.
 	 * @return a column which will hold result for the given underlyings, allowing multiple writing (through merge) for
 	 *         the same slice.
 	 *
 	 */
-	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, List<? extends ISliceToValue> underlyings);
+	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
 
 	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 }
