@@ -75,7 +75,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 		CubeWrapper cube = cube(transcoder);
 
-		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
+		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
@@ -99,7 +99,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
+		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
@@ -129,10 +129,10 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		CubeWrapper cube = cube(transcoder);
 
 		dsl.createTableIfNotExists(tableName)
-				.column("k1", SQLDataType.DOUBLE)
-				.column("k2", SQLDataType.DOUBLE)
-				.column("k3", SQLDataType.DOUBLE)
-				.column("k4", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
+				.column("k2", SQLDataType.INTEGER)
+				.column("k3", SQLDataType.INTEGER)
+				.column("k4", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2"), DSL.field("k3"), DSL.field("k4"))
 				.values(123, 234, 345, 456)
@@ -185,11 +185,11 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.build();
 
 		dsl.createTableIfNotExists(tableName)
-				.column("k1", SQLDataType.DOUBLE)
-				.column("k2", SQLDataType.DOUBLE)
-				.column("k3", SQLDataType.DOUBLE)
-				.column("k4", SQLDataType.DOUBLE)
-				.column("k5", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
+				.column("k2", SQLDataType.INTEGER)
+				.column("k3", SQLDataType.INTEGER)
+				.column("k4", SQLDataType.INTEGER)
+				.column("k5", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL
 				.table(tableName), DSL.field("k1"), DSL.field("k2"), DSL.field("k3"), DSL.field("k4"), DSL.field("k5"))
@@ -204,7 +204,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 					.execute(CubeQuery.builder().measure(k5Sum.getName()).groupByAlso("k1", "k2", "k3", "k4").build());
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
-					.containsEntry(Map.of("k1", 234D, "k2", 345D, "k3", 456D, "k4", 123D),
+					.containsEntry(Map.of("k1", 0L + 234, "k2", 0L + 345, "k3", 0L + 456, "k4", 0L + 123),
 							Map.of(k5Sum.getName(), 0L + 567));
 		}
 	}
@@ -214,7 +214,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
+		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
@@ -242,9 +242,9 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				MapTableTranscoder.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
 
 		dsl.createTableIfNotExists(tableName)
-				.column("k", SQLDataType.DOUBLE)
-				.column("k1", SQLDataType.DOUBLE)
-				.column("k2", SQLDataType.DOUBLE)
+				.column("k", SQLDataType.INTEGER)
+				.column("k1", SQLDataType.INTEGER)
+				.column("k2", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k"), DSL.field("k1"), DSL.field("k2"))
 				.values(123, 234, 345)
@@ -262,7 +262,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
 					// TODO It is unclear why we got Doubles or Longs
-					.containsEntry(Map.of("k2", 123.0D), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of("k2", 0L + 123), Map.of("k1", 0L + 123));
 		}
 	}
 
@@ -271,7 +271,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
 
-		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.DOUBLE).execute();
+		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
 
 		{
@@ -283,7 +283,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of("k1", 0L + 123), Map.of("k1", 0L + 123));
 		}
 	}
 
@@ -297,7 +297,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				.build();
 
 		dsl.createTableIfNotExists(tableName)
-				.column("v", SQLDataType.DOUBLE)
+				.column("v", SQLDataType.INTEGER)
 				.column("color", SQLDataType.VARCHAR)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("v"), DSL.field("color"))
@@ -317,7 +317,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of(), Map.of("v_RED", 0D + 345));
+					.containsEntry(Map.of(), Map.of("v_RED", 0L + 345));
 		}
 	}
 }

@@ -103,8 +103,7 @@ public class TestCubeQuery_CumulatingDecomposition extends ADagTest implements I
 
 	@Test
 	public void testGrandTotal_filterDate() {
-		ITabularView output =
-				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d", 1).debug(true).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d", 1).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

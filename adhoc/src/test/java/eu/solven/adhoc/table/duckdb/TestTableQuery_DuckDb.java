@@ -401,7 +401,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0D + 123 + 345));
 	}
 
 	@Test
@@ -461,7 +461,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0D + 123));
 		}
 	}
 
@@ -658,7 +658,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0D + 123 + 345))
 				.hasSize(1);
 	}
 }

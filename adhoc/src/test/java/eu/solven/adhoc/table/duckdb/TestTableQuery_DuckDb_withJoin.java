@@ -73,7 +73,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 	private void initTables() {
 		dsl.createTableIfNotExists(factTable)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.column("productId", SQLDataType.VARCHAR)
 				.execute();
 		dsl.createTableIfNotExists(joinedTable)
@@ -116,7 +116,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 				.containsEntry("countryName", String.class)
 				.containsEntry("productId", String.class)
 				.containsEntry("productName", String.class)
-				.containsEntry("k1", Double.class)
+				.containsEntry("k1", Integer.class)
 				.hasSize(5);
 	}
 

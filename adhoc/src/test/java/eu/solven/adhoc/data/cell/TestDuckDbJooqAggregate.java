@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.data.cell;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBConnection;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -37,12 +37,10 @@ import org.jooq.SQLDialect;
 import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 // https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
 public class TestDuckDbJooqAggregate {
-	@Disabled
 	@Test
 	public void testAggregate() throws SQLException {
 		DuckDBConnection c = (DuckDBConnection) DriverManager.getConnection("jdbc:duckdb:");
@@ -58,50 +56,21 @@ public class TestDuckDbJooqAggregate {
 			statement.execute("SELECT SUM(kI), SUM(kD) FROM someTable");
 			ResultSet resultSet = statement.getResultSet();
 			if (resultSet.next()) {
-				// Prints `class java.math.BigInteger`
-				System.out.println(resultSet.getObject(1).getClass());
-				// Prints `class Double`
-				System.out.println(resultSet.getObject(2).getClass());
+				Assertions.assertThat(resultSet.getObject(1).getClass()).isEqualTo(BigInteger.class);
+				Assertions.assertThat(resultSet.getObject(2).getClass()).isEqualTo(Double.class);
 			}
 		}
 
 		// We need to proceed over `kI` and `kD` without knowing their type before hand
 		onFieldName(dslContext, tableName, "kI");
 		onFieldName(dslContext, tableName, "kD");
-
-		onFieldNameCoerceBigInteger(dslContext, tableName, "kI");
-		onFieldNameCoerceBigInteger(dslContext, tableName, "kD");
-
-		// Fails with `Not supported by dialect : Type class java.lang.Number is not supported in dialect null`
-		onFieldNameCoerceNumber(dslContext, tableName, "kI");
-		onFieldNameCoerceNumber(dslContext, tableName, "kD");
 	}
 
 	private void onFieldName(DSLContext dslContext, String tableName, String fieldName) {
-		Field<Number> field = (Field) DSL.field(fieldName);
-		SelectJoinStep<Record1<BigDecimal>> queryInteger = dslContext.select(DSL.sum(field)).from(DSL.table(tableName));
-
-		queryInteger.stream().findAny().ifPresent(row -> {
-			// prints `class java.math.BigDecimal`
-			System.out.println(row.get(0).getClass());
-		});
-	}
-
-	private void onFieldNameCoerceBigInteger(DSLContext dslContext, String tableName, String fieldName) {
-		Field<Number> field = (Field) DSL.field(fieldName);
-		SelectJoinStep<Record1<BigInteger>> queryInteger =
-				dslContext.select(DSL.sum(field).coerce(BigInteger.class)).from(DSL.table(tableName));
-
-		queryInteger.stream().findAny().ifPresent(row -> {
-			// prints `class java.math.BigDecimal`
-			System.out.println(row.get(0).getClass());
-		});
-	}
-
-	private void onFieldNameCoerceNumber(DSLContext dslContext, String tableName, String fieldName) {
-		Field<Number> field = (Field) DSL.field(fieldName);
-		SelectJoinStep<Record1<Number>> queryInteger =
-				dslContext.select(DSL.sum(field).coerce(Number.class)).from(DSL.table(tableName));
+		Field<Object> field = DSL.field(fieldName);
+		SelectJoinStep<Record1<Object>> queryInteger =
+				dslContext.select(DSL.aggregate(DSL.systemName("SUM"), field.getDataType(), field))
+						.from(DSL.table(tableName));
 
 		queryInteger.stream().findAny().ifPresent(row -> {
 			// prints `class java.math.BigDecimal`

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.table.sql;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -341,9 +341,9 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	protected Object cleanAggregateValue(Object value) {
-		if (value instanceof BigDecimal bigDecimal) {
+		if (value instanceof BigInteger bigInteger) {
 			// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
-			return IValueProvider.getValue(ValueProviderHelpers.asLongIfExact(bigDecimal));
+			return IValueProvider.getValue(ValueProviderHelpers.asLongIfExact(bigInteger));
 		} else {
 			return value;
 		}

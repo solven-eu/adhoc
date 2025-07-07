@@ -197,9 +197,9 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of(), m -> {
 			Assertions.assertThat(m)
 					.isEqualTo(ImmutableMap.builder()
-							.put(k1Sum.getName(), 0L + 123)
-							.put(k1k2Sum.getName(), 0L + 234)
-							.put(k3Sum.getName(), 0L + 345)
+							.put(k1Sum.getName(), 0D + 123)
+							.put(k1k2Sum.getName(), 0D + 234)
+							.put(k3Sum.getName(), 0D + 345)
 							.build());
 		});
 	}

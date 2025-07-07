@@ -120,7 +120,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 	private void initAndInsert() {
 		dsl.createTableIfNotExists(tableName)
 				.column("letter", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("A", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("letter"), DSL.field("k1")).values("B", 234).execute();
@@ -134,7 +134,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 		Assertions.assertThat(cube().getColumnTypes())
 				.hasSize(2)
 				.containsEntry("letter", Letter.class)
-				.containsEntry("k1", Double.class);
+				.containsEntry("k1", Integer.class);
 	}
 
 	@Test

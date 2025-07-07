@@ -262,8 +262,6 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of(smallValue, largeValue))
-				// DEBUG is problematic as QueryStep are very large, due to very large InMatcher
-				// .debug(true)
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -283,7 +281,6 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallValue)
-				.debug(true)
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output,

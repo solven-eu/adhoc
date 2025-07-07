@@ -333,7 +333,6 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallElement)
-				.debug(true)
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
