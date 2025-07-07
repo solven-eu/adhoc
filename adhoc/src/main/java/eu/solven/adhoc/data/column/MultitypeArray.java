@@ -76,14 +76,6 @@ public class MultitypeArray implements IMultitypeArray {
 	@Default
 	final int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
 
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// this.capacity = capacity;
-	// if (valuesType == IMultitypeConstants.MASK_LONG) {
-	//
-	// }
-	// }
-
 	/**
 	 * To be called before a guaranteed `add` operation.
 	 */
@@ -97,11 +89,6 @@ public class MultitypeArray implements IMultitypeArray {
 			ensureCapacityForType(type);
 		}
 	}
-
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// this.capacity = capacity;
-	// }
 
 	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
 	protected void ensureCapacityForType(int type) {
@@ -146,7 +133,7 @@ public class MultitypeArray implements IMultitypeArray {
 			@Override
 			public void onLong(long v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
-
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
 					valuesType = IMultitypeConstants.MASK_LONG;
 					// ensure
 					valuesL.add(insertionIndex, v);
@@ -160,6 +147,7 @@ public class MultitypeArray implements IMultitypeArray {
 			@Override
 			public void onDouble(double v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_DOUBLE);
 					valuesType = IMultitypeConstants.MASK_DOUBLE;
 					valuesD.add(insertionIndex, v);
 				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
@@ -178,6 +166,8 @@ public class MultitypeArray implements IMultitypeArray {
 				}
 
 				ensureObject();
+
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				valuesO.add(insertionIndex, v);
 			}
 		};
@@ -187,6 +177,8 @@ public class MultitypeArray implements IMultitypeArray {
 		if (valuesType == IMultitypeConstants.MASK_OBJECT) {
 			log.trace("Already on proper type");
 		} else {
+			checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
+
 			if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 				log.trace("First value");
 			} else if (valuesType == IMultitypeConstants.MASK_LONG) {

@@ -35,7 +35,11 @@ public class TestValueProviderHelpers {
 	@Test
 	public void testLongExact() {
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(ValueProviderHelpers.asLongIfExact(123)))
-				.isEqualTo(123);
+				.isEqualTo(123L);
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(ValueProviderHelpers.asLongIfExact(123L)))
+				.isEqualTo(123L);
+		Assertions.assertThat(IValueProviderTestHelpers.getDouble(ValueProviderHelpers.asLongIfExact(123D)))
+				.isEqualTo(123D);
 
 		Assertions
 				.assertThat(IValueProviderTestHelpers
