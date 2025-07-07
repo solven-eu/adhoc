@@ -271,11 +271,12 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsKeys(Map.of(C_SCENARIOINDEX, 0), Map.of(C_SCENARIOINDEX, arrayLength - 1))
+				.containsKeys(Map.of(C_SCENARIOINDEX, 0L), Map.of(C_SCENARIOINDEX, 0L + arrayLength - 1))
 				.hasSize(arrayLength);
 
 		for (int scenarioIndex : IntStream.range(0, arrayLength).toArray()) {
-			Map<String, ?> measures = mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, scenarioIndex));
+			Map<String, ?> measures =
+					mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, 0L + scenarioIndex));
 			Assertions.assertThat(measures).hasSize(1);
 
 			Object array = measures.get(mArray);

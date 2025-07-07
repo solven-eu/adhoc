@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.AggregateFunction;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
@@ -115,6 +116,9 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 
 				try {
 					for (Object o : ((Object[]) array.getArray())) {
+						if (o == null) {
+							continue;
+						}
 						String s = o.toString();
 
 						splitToMap(s, map);
@@ -152,20 +156,23 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		public CustomAggregationJooqTableQueryFactory(IOperatorFactory operatorFactory,
 				TableLike<?> table,
 				DSLContext dslContext,
-				boolean canGroupByAll) {
-			super(operatorFactory, table, dslContext, canGroupByAll);
+				boolean canGroupByAll,
+				boolean canFilterAggregates) {
+			super(operatorFactory, table, dslContext, canGroupByAll, canFilterAggregates);
 		}
 
 		@Override
-		protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
+		protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator,
+				Name namedColumn,
+				Condition condition) {
 			if (aggregator.getAggregationKey().equals(CustomMapAggregation.class.getName())) {
 				Field<?> field = DSL.field(namedColumn);
 
 				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#array_aggarg
-				return DSL.aggregate("array_agg", Object.class, field);
+				return DSL.aggregate("array_agg", Object.class, asCase(condition.and(field.isNotNull()), field));
 			}
 
-			return super.onCustomAggregation(aggregator, namedColumn);
+			return super.onCustomAggregation(aggregator, namedColumn, condition);
 		}
 	}
 
@@ -176,10 +183,8 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		return new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorFactory(),
-						jooqTableWrapperParameters.getTable(),
-						dslContext,
-						true);
+				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters
+						.getOperatorFactory(), jooqTableWrapperParameters.getTable(), dslContext, true, true);
 			}
 		};
 	}
@@ -201,6 +206,9 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color"))
 				.values("k1=345;k3=456", "blue")
 				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.quotedName("key:count")), DSL.field("color"))
+				.values(null, "blue")
+				.execute();
 
 		forest.addMeasure(Aggregator.countAsterisk())
 				.addMeasure(Aggregator.builder().name(m).aggregationKey(CustomMapAggregation.class.getName()).build());
@@ -217,12 +225,12 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 	@Test
 	public void testGrandTotal() {
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
-		ITabularView result = cube().execute(CubeQuery.builder().measure(m, "count(*)").build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(m, "count(*)").explain(true).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of(), values -> {
-			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 3).hasEntrySatisfying(m, count -> {
+			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 4).hasEntrySatisfying(m, count -> {
 				Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
 					Map<?, Long> atomicLongMap = alm.asMap();
 					Assertions.assertThat((Map) atomicLongMap)
@@ -243,7 +251,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("color", "blue"), values -> {
-			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 2).hasEntrySatisfying(m, count -> {
+			Assertions.assertThat((Map) values).containsEntry("count(*)", 0L + 3).hasEntrySatisfying(m, count -> {
 				Assertions.assertThat(count).isInstanceOfSatisfying(AtomicLongMap.class, alm -> {
 					Map<?, Long> atomicLongMap = alm.asMap();
 					Assertions.assertThat((Map) atomicLongMap)

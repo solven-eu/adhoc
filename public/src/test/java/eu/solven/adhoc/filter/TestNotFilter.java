@@ -75,4 +75,19 @@ public class TestNotFilter {
 		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.isLike("c", "a%"));
 	}
 
+	@Test
+	public void testNotNot_and() {
+		IAdhocFilter and = AndFilter.builder()
+				.filter(ColumnFilter.isLike("a", "a%"))
+				.filter(ColumnFilter.isLike("b", "b%"))
+				.build();
+		Assertions.assertThat(and).isInstanceOf(AndFilter.class);
+
+		IAdhocFilter notAnd = NotFilter.not(and);
+		Assertions.assertThat(notAnd).isInstanceOf(NotFilter.class);
+
+		IAdhocFilter notNotAnd = NotFilter.not(notAnd);
+		Assertions.assertThat(notNotAnd).isEqualTo(and);
+	}
+
 }

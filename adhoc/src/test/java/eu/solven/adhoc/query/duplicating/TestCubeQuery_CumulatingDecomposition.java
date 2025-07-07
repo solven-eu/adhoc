@@ -103,8 +103,7 @@ public class TestCubeQuery_CumulatingDecomposition extends ADagTest implements I
 
 	@Test
 	public void testGrandTotal_filterDate() {
-		ITabularView output =
-				cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d", 1).debug(true).build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dispatchedMeasure).andFilter("d", 1).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -144,9 +143,9 @@ public class TestCubeQuery_CumulatingDecomposition extends ADagTest implements I
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(3)
-				.containsEntry(Map.of("d", 0), Map.of(dispatchedMeasure, 0L + 123))
-				.containsEntry(Map.of("d", 1), Map.of(dispatchedMeasure, 0L + 123 + 234))
-				.containsEntry(Map.of("d", 2), Map.of(dispatchedMeasure, 0L + 123 + 234 + 345));
+				.containsEntry(Map.of("d", 0L), Map.of(dispatchedMeasure, 0L + 123))
+				.containsEntry(Map.of("d", 1L), Map.of(dispatchedMeasure, 0L + 123 + 234))
+				.containsEntry(Map.of("d", 2L), Map.of(dispatchedMeasure, 0L + 123 + 234 + 345));
 	}
 
 	@Test
@@ -158,6 +157,6 @@ public class TestCubeQuery_CumulatingDecomposition extends ADagTest implements I
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of("d", 1), Map.of(dispatchedMeasure, 0L + 123 + 234));
+				.containsEntry(Map.of("d", 1L), Map.of(dispatchedMeasure, 0L + 123 + 234));
 	}
 }

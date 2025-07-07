@@ -30,10 +30,12 @@ import eu.solven.adhoc.data.cell.IValueFunction;
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -41,6 +43,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Standard {@link IMultitypeArray}.
+ * 
+ * It accept writing different types, but the storage is mono-type. Hence, it typically switch on {@link Object} when
+ * encountering different types.
  * 
  * @author Benoit Lacelle
  */
@@ -58,15 +63,49 @@ public class MultitypeArray implements IMultitypeArray {
 	// MergeableMultitypeStorage
 	@Default
 	@NonNull
-	final LongList valuesL = new LongArrayList();
+	final LongList valuesL = new LongArrayList(0);
 
 	@Default
 	@NonNull
-	final DoubleList valuesD = new DoubleArrayList();
+	final DoubleList valuesD = new DoubleArrayList(0);
 
 	@Default
 	@NonNull
-	final List<Object> valuesO = new ArrayList<>();
+	final List<Object> valuesO = new ArrayList<>(0);
+
+	@Default
+	final int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
+	/**
+	 * To be called before a guaranteed `add` operation.
+	 */
+	protected void checkSizeBeforeAdd(int type) {
+		long size = size();
+		if (size >= AdhocUnsafe.limitColumnSize) {
+			// TODO Log the first and last elements
+			throw new IllegalStateException(
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+		} else if (size == 0) {
+			ensureCapacityForType(type);
+		}
+	}
+
+	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
+	protected void ensureCapacityForType(int type) {
+		if (type == IMultitypeConstants.MASK_LONG) {
+			if (valuesL instanceof LongArrayList array) {
+				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
+			}
+		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
+			if (valuesD instanceof DoubleArrayList array) {
+				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
+			}
+		} else if (type == IMultitypeConstants.MASK_OBJECT) {
+			if (valuesO instanceof ObjectArrayList array) {
+				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
+			}
+		}
+	}
 
 	@Override
 	public int size() {
@@ -94,7 +133,9 @@ public class MultitypeArray implements IMultitypeArray {
 			@Override
 			public void onLong(long v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
 					valuesType = IMultitypeConstants.MASK_LONG;
+					// ensure
 					valuesL.add(insertionIndex, v);
 				} else if (valuesType == IMultitypeConstants.MASK_LONG) {
 					valuesL.add(insertionIndex, v);
@@ -106,6 +147,7 @@ public class MultitypeArray implements IMultitypeArray {
 			@Override
 			public void onDouble(double v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					checkSizeBeforeAdd(IMultitypeConstants.MASK_DOUBLE);
 					valuesType = IMultitypeConstants.MASK_DOUBLE;
 					valuesD.add(insertionIndex, v);
 				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
@@ -124,6 +166,8 @@ public class MultitypeArray implements IMultitypeArray {
 				}
 
 				ensureObject();
+
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				valuesO.add(insertionIndex, v);
 			}
 		};
@@ -133,6 +177,8 @@ public class MultitypeArray implements IMultitypeArray {
 		if (valuesType == IMultitypeConstants.MASK_OBJECT) {
 			log.trace("Already on proper type");
 		} else {
+			checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
+
 			if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 				log.trace("First value");
 			} else if (valuesType == IMultitypeConstants.MASK_LONG) {

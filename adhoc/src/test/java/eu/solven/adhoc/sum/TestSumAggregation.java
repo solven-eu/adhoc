@@ -23,6 +23,7 @@
 package eu.solven.adhoc.sum;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
@@ -116,12 +117,17 @@ public class TestSumAggregation {
 
 	@Test
 	public void testSum_bigDecimal() {
-		Assertions.assertThat(aggregator.aggregate(123, BigDecimal.valueOf(234L))).isEqualTo(0L + 123 + 234);
+		Assertions.assertThat(aggregator.aggregate(123, BigDecimal.valueOf(234L))).isEqualTo(0D + 123 + 234);
+	}
+
+	@Test
+	public void testSum_bigInteger() {
+		Assertions.assertThat(aggregator.aggregate(123, BigInteger.valueOf(234L))).isEqualTo(0L + 123 + 234);
 	}
 
 	@Test
 	public void testSum_bigDecimal_singleLong() {
-		Assertions.assertThat(aggregator.aggregate(null, BigDecimal.valueOf(234L))).isEqualTo(234L);
+		Assertions.assertThat(aggregator.aggregate(null, BigDecimal.valueOf(234L))).isEqualTo(0D + 234L);
 	}
 
 	@Test

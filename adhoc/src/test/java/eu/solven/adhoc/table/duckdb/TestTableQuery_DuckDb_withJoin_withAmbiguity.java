@@ -77,7 +77,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 	private void initTables() {
 		dsl.createTableIfNotExists(factTable)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.column("productId", SQLDataType.VARCHAR)
 				.column("name", SQLDataType.VARCHAR)
 				.execute();
@@ -130,7 +130,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 				.containsEntry("productName", String.class)
 				// `name` is very ambiguous, as it is provided by the base table and 2 JOINed tables
 				.containsEntry("name", String.class)
-				.containsEntry("k1", Double.class)
+				.containsEntry("k1", Integer.class)
 				.hasSize(6);
 	}
 

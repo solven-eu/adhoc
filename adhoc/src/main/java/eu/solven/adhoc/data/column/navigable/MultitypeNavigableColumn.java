@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -42,6 +43,7 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.IIsSorted;
@@ -53,6 +55,7 @@ import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -62,6 +65,8 @@ import lombok.extern.slf4j.Slf4j;
  * This {@link IMultitypeColumn} relies on {@link List} and {@link Arrays}.
  * <p>
  * The key has to be {@link Comparable}, so that `stream().sorted()` is a no-op, for performance reasons.
+ * <p>
+ * It can lead to good performance as it is used in context where input slices are inserted in sorted order.
  *
  * @param <T>
  * @author Benoit Lacelle
@@ -77,16 +82,22 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		}
 	};
 
+	@Default
+	final int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
 	// This List is ordered at all times
 	// This List has only distinct elements
 	@Default
 	@NonNull
-	// TODO Capacity strategy?
-	final List<T> keys = new ArrayList<>();
+	final List<T> keys = new ObjectArrayList<>(0);
 
 	@Default
 	@NonNull
 	final IMultitypeArray values = MultitypeArray.builder().build();
+
+	@Default
+	@NonNull
+	final IntFunction<IMultitypeArray> valuesGenerator = i -> MultitypeArray.builder().capacity(i).build();
 
 	// Once locked, this can not be written, hence not unlocked
 	@Default
@@ -137,12 +148,19 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	/**
 	 * To be called before a guaranteed `add` operation.
 	 */
+	@SuppressWarnings("PMD.LooseCoupling")
 	protected void checkSizeBeforeAdd() {
 		long size = size();
 		if (size >= AdhocUnsafe.limitColumnSize) {
 			// TODO Log the first and last elements
 			throw new IllegalStateException(
 					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+		} else if (size == 0) {
+			if (keys instanceof ArrayList<?> arrayList) {
+				arrayList.ensureCapacity(capacity);
+			} else if (keys instanceof ObjectArrayList<?> arrayList) {
+				arrayList.ensureCapacity(capacity);
+			}
 		}
 	}
 
@@ -414,4 +432,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			}
 		}
 	}
+
+	// @Override
+	// public void ensureCapacity(int capacity) {
+	// if (keys instanceof ArrayList<?> arrayList) {
+	// arrayList.ensureCapacity(capacity);
+	// } else if (keys instanceof ObjectArrayList<?> arrayList) {
+	// arrayList.ensureCapacity(capacity);
+	// }
+	// }
 }

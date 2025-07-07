@@ -39,6 +39,7 @@ import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -94,8 +95,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
-		IMultitypeMergeableColumn<SliceAsMap> inducedValues =
-				factories.getColumnsFactory().makeColumn(aggregation, List.of(inducerValues));
+		IMultitypeMergeableColumn<SliceAsMap> inducedValues = factories.getColumnsFactory()
+				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
 		FilterMatcher filterMatcher = FilterMatcher.builder()
 				.filter(induced.getFilter())

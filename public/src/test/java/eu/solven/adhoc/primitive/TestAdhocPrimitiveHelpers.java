@@ -23,6 +23,7 @@
 package eu.solven.adhoc.primitive;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 
 import org.assertj.core.api.Assertions;
@@ -45,8 +46,25 @@ public class TestAdhocPrimitiveHelpers {
 		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(123F)).isFalse();
 		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(123D)).isFalse();
 
-		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(BigDecimal.valueOf(123))).isTrue();
+		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(BigInteger.valueOf(123))).isTrue();
+		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(BigInteger.valueOf(Long.MAX_VALUE))).isTrue();
+
+		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(BigDecimal.valueOf(123))).isFalse();
 		Assertions.assertThat(AdhocPrimitiveHelpers.isLongLike(BigDecimal.valueOf(123.456))).isFalse();
+	}
+
+	@Test
+	public void isLongLike_bigInteger() {
+		Assertions.assertThat(AdhocPrimitiveHelpers.asLong(BigInteger.valueOf(123))).isEqualTo(123);
+		Assertions.assertThat(AdhocPrimitiveHelpers.asLong(BigInteger.valueOf(Long.MAX_VALUE)))
+				.isEqualTo(Long.MAX_VALUE);
+		Assertions.assertThat(AdhocPrimitiveHelpers.asLong(BigInteger.valueOf(-Long.MAX_VALUE)))
+				.isEqualTo(-Long.MAX_VALUE);
+
+		Assertions.assertThatThrownBy(
+				() -> AdhocPrimitiveHelpers.asLong(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(1))))
+				.isInstanceOf(ArithmeticException.class)
+				.hasMessage("BigInteger out of long range");
 	}
 
 	@Test
@@ -63,6 +81,9 @@ public class TestAdhocPrimitiveHelpers {
 		// Float without decimal
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(123F)).isTrue();
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(123D)).isTrue();
+
+		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigInteger.valueOf(123))).isTrue();
+		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigInteger.valueOf(Long.MAX_VALUE))).isTrue();
 
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();

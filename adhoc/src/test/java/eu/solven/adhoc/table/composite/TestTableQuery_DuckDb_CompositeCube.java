@@ -46,7 +46,6 @@ import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
-import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
@@ -55,7 +54,7 @@ import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest implements IAdhocTestConstants {
 
-	Aggregator k3Sum = Aggregator.builder().name("k3").aggregationKey(SumAggregation.KEY).build();
+	Aggregator k3Sum = Aggregator.sum("k3");
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -96,9 +95,9 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		{
 			dsl.createTableIfNotExists(tableName1)
 					// k1 is in both cubes
-					.column("k1", SQLDataType.DOUBLE)
+					.column("k1", SQLDataType.INTEGER)
 					// k2 is only in cube1
-					.column("k2", SQLDataType.DOUBLE)
+					.column("k2", SQLDataType.INTEGER)
 					// k4 is in both cubes, but there is no measure with the column name
 					.column("k4", SQLDataType.DOUBLE)
 					.column("a", SQLDataType.VARCHAR)
@@ -122,10 +121,10 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		CubeWrapper cube2;
 		{
 			dsl.createTableIfNotExists(tableName2)
-					.column("k1", SQLDataType.DOUBLE)
-					.column("k3", SQLDataType.DOUBLE)
+					.column("k1", SQLDataType.INTEGER)
+					.column("k3", SQLDataType.INTEGER)
 					// k4 is in both cubes, but there is no measure with the column name
-					.column("k4", SQLDataType.DOUBLE)
+					.column("k4", SQLDataType.INTEGER)
 					.column("a", SQLDataType.VARCHAR)
 					.column("c", SQLDataType.VARCHAR)
 					.execute();
@@ -166,9 +165,9 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.containsEntry("a", String.class)
 				.containsEntry("b", String.class)
 				.containsEntry("c", String.class)
-				.containsEntry(k1Sum.getColumnName(), Double.class)
-				.containsEntry(k2Sum.getColumnName(), Double.class)
-				.containsEntry(k3Sum.getColumnName(), Double.class)
+				.containsEntry(k1Sum.getColumnName(), Integer.class)
+				.containsEntry(k2Sum.getColumnName(), Integer.class)
+				.containsEntry(k3Sum.getColumnName(), Integer.class)
 				.containsEntry("k4", Double.class)
 				.containsEntry("cubeSlicer", String.class)
 				.hasSize(8);
@@ -515,7 +514,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(mAvg, (0L + (123 + 345) / 2 + 1234) / 2))
+				.containsEntry(Map.of(), Map.of(mAvg, (0D + (123 + 345) / 2 + 1234) / 2))
 				.hasSize(1);
 	}
 

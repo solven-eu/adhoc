@@ -156,12 +156,8 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void testGroupByDate_maxRow() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = cube().execute(CubeQuery.builder()
-				.measure(dToD)
-				.groupByAlso("d")
-				.andFilter("row_index", maxCardinality - 1)
-				.explain(true)
-				.build());
+		ITabularView output = cube().execute(
+				CubeQuery.builder().measure(dToD).groupByAlso("d").andFilter("row_index", maxCardinality - 1).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(nbDays)
@@ -185,16 +181,16 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public void testGroupByRow_Today() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
 
-		ITabularView output = cube().execute(
-				CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).explain(true).build());
+		ITabularView output = cube()
+				.execute(CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).build());
 
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(maxCardinality)
-				.containsEntry(Map.of("row_index", 0),
+				.containsEntry(Map.of("row_index", 0L),
 						Map.of(dToD,
 								0L + (maxCardinality + (nbDays) * (nbDays))
 										- (maxCardinality + (nbDays - 1) * (nbDays - 1))))
-				.containsEntry(Map.of("row_index", 1),
+				.containsEntry(Map.of("row_index", 1L),
 						Map.of(dToD,
 								0L + (maxCardinality - 1 + (nbDays) * (nbDays))
 										- (maxCardinality - 1 + (nbDays - 1) * (nbDays - 1))));

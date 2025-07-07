@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -137,15 +138,15 @@ public class TestTableQueryV2 {
 		Set<TableQueryV2> v2 = TableQueryV2.fromV1(ImmutableSet.of(filterAPrefix, filterAPrefixNotAzerty));
 		Assertions.assertThat(v2).singleElement().satisfies(q -> {
 			Assertions.assertThat(q.getGroupBy()).isEqualTo(GroupByColumns.named("a"));
+			Assertions.assertThat(q.getFilter()).isEqualTo(ColumnFilter.isLike("a", "a%"));
 			Assertions.assertThat(q.getAggregators())
 					.hasSize(2)
-					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
+					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(IAdhocFilter.MATCH_ALL).build())
 					.contains(FilteredAggregator.builder()
 							.aggregator(sumK1)
 							.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.isEqualTo("azerty")))))
 							.index(1)
 							.build());
-			Assertions.assertThat(q.getFilter()).isEqualTo(AndFilter.and(Map.of("a", LikeMatcher.matching("a%"))));
 		});
 	}
 

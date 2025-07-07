@@ -72,7 +72,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 								unsafePut(key, false).onLong(newAggregateAsLong);
 							} else {
 								// Clear long
-								measureToAggregateL.removeLong(key);
+								sliceToValueL.removeLong(key);
 								unsafePut(key, false).onObject(newAggregate);
 							}
 						}
@@ -93,7 +93,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 								unsafePut(key, false).onLong(newAggregateAsLong);
 							} else {
 								// Clear long
-								measureToAggregateL.removeLong(key);
+								sliceToValueL.removeLong(key);
 								unsafePut(key, false).onObject(newAggregate);
 							}
 						}
@@ -131,7 +131,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 								unsafePut(key, false).onDouble(newAggregateAsDouble);
 							} else {
 								// Clear double
-								measureToAggregateD.removeDouble(key);
+								sliceToValueD.removeDouble(key);
 								unsafePut(key, false).onObject(newAggregate);
 							}
 						}

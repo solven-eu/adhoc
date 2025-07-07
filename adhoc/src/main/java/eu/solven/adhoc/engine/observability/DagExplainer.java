@@ -41,6 +41,7 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
+import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -240,6 +241,10 @@ public class DagExplainer implements IDagExplainer {
 			return aggregator.getAggregationKey();
 		} else {
 			String string = step.getMeasure().getClass().getSimpleName();
+			if (step.getMeasure() instanceof IHasDecompositionKey hasDecomposition) {
+				string += "[%s]".formatted(hasDecomposition.getDecompositionKey());
+			}
+
 			if (step.getMeasure() instanceof IHasCombinationKey hasCombination) {
 				string += "[%s]".formatted(hasCombination.getCombinationKey());
 			}

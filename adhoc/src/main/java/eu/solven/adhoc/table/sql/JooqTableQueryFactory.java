@@ -47,7 +47,6 @@ import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.True;
 import org.jooq.impl.DSL;
-import org.jooq.impl.DefaultDataType;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -124,6 +123,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@Default
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	boolean canGroupByAll = false;
+
+	// Typically used for RedShift when it is queried with PostgreSQL dialect
+	@Default
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+	boolean canFilterAggregates = false;
 
 	/**
 	 * Holds a Set of SQL {@link Condition}s, given an {@link IAdhocFilter}. Some filters may not be convertible into
@@ -311,6 +315,14 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return canGroupByAll || dslContext.dialect() == SQLDialect.DUCKDB;
 	}
 
+	// https://modern-sql.com/feature/filter
+	@Deprecated(since = "Should we rather rely on JooQ Commercial versions?")
+	protected boolean canFilterAggregates() {
+		return canFilterAggregates || dslContext.dialect() == SQLDialect.DUCKDB
+				|| dslContext.dialect() == SQLDialect.POSTGRES
+				|| dslContext.dialect() == SQLDialect.SQLITE;
+	}
+
 	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
 		AdhocTopClause topClause = tableQuery.getTopClause();
 		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
@@ -329,6 +341,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return columns;
 	}
 
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(FilteredAggregator filteredAggregator) {
 		Aggregator a = filteredAggregator.getAggregator();
 
@@ -353,27 +366,46 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			} else {
 				Name namedColumn = name(columnName);
 
-				AggregateFunction<?> sqlAggFunction;
-				if (SumAggregation.KEY.equals(aggregationKey)) {
-					// DSL.field(namedColumn, Number.class); fails with `Type class java.lang.Number is not supported in
-					// dialect `DEFAULT`
-					Field<Double> field =
-							DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
+				ConditionWithFilter condition = toCondition(filteredAggregator.getFilter());
+				if (!condition.getPostFilter().isMatchAll()) {
+					throw new NotYetImplementedException("FILTER with a postFilter. filter="
+							+ PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
+				}
 
-					sqlAggFunction = DSL.sum(field);
+				boolean needCase = !filteredAggregator.getFilter().isMatchAll() && !canFilterAggregates();
+				Condition conditionInCase;
+				if (needCase) {
+					conditionInCase = condition.getCondition();
+				} else {
+					conditionInCase = DSL.trueCondition();
+				}
+
+				AggregateFunction<?> sqlAggFunction;
+
+				Field<Object> fieldWithoutCase = DSL.field(namedColumn);
+				Field<Object> fieldToAggregate = asCase(conditionInCase, fieldWithoutCase);
+
+				// TODO How not to define the output type from here (e.g. accept BigInteger or `double`, as would be
+				// outputed by DuckDB)
+				// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+				if (SumAggregation.KEY.equals(aggregationKey)) {
+					sqlAggFunction = aggregate("sum", fieldToAggregate);
 				} else if (MaxAggregation.KEY.equals(aggregationKey)) {
-					Field<?> field = DSL.field(namedColumn);
-					sqlAggFunction = DSL.max(field);
+					sqlAggFunction = DSL.max(fieldToAggregate);
 				} else if (MinAggregation.KEY.equals(aggregationKey)) {
-					Field<?> field = DSL.field(namedColumn);
-					sqlAggFunction = DSL.min(field);
+					sqlAggFunction = DSL.min(fieldToAggregate);
 				} else if (AvgAggregation.isAvg(aggregationKey)) {
-					Field<Double> field =
-							DSL.field(namedColumn, DefaultDataType.getDataType(dslContext.dialect(), double.class));
-					sqlAggFunction = DSL.avg(field);
+					sqlAggFunction = aggregate("avg", fieldToAggregate);
 				} else if (CountAggregation.isCount(aggregationKey)) {
-					Field<?> field = DSL.field(namedColumn);
-					sqlAggFunction = DSL.count(field);
+					if (fieldWithoutCase.equals(fieldToAggregate) || !DSL.name("*").equals(namedColumn)) {
+						// No case/filter
+						sqlAggFunction = DSL.count(fieldWithoutCase);
+					} else {
+						// Case: rewrap ensuring this is wrapped with `COUNT(CASE ... THEN 1)`
+						Field<?> fieldAs1 = DSL.field(DSL.value(1));
+						Field<?> caseOnFieldAs1 = asCase(conditionInCase, fieldAs1);
+						sqlAggFunction = DSL.count(caseOnFieldAs1);
+					}
 				} else if (RankAggregation.isRank(aggregationKey)) {
 					RankAggregation agg = (RankAggregation) operatorFactory.makeAggregation(a);
 
@@ -387,22 +419,21 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					}
 
 					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-					sqlAggFunction = DSL.aggregate(duckDbFunction, Object.class, field, field, DSL.val(agg.getRank()));
+					sqlAggFunction = DSL
+							.aggregate(duckDbFunction, Object.class, fieldToAggregate, field, DSL.val(agg.getRank()));
 				} else {
-					sqlAggFunction = onCustomAggregation(a, namedColumn);
+					sqlAggFunction = onCustomAggregation(a, namedColumn, conditionInCase);
 				}
 
 				if (filteredAggregator.getFilter().isMatchAll()) {
 					unaliasedField = sqlAggFunction;
 				} else {
-					ConditionWithFilter condition = toCondition(filteredAggregator.getFilter());
-
-					if (!condition.getPostFilter().isMatchAll()) {
-						throw new NotYetImplementedException("FILTER with a postFilter. filter="
-								+ PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
+					if (canFilterAggregates()) {
+						unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
+					} else {
+						// FILTER is already applied through a `CASE` as aggregated expression
+						unaliasedField = sqlAggFunction;
 					}
-
-					unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
 				}
 			}
 
@@ -410,7 +441,28 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 	}
 
-	protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
+	// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+	protected AggregateFunction<Object> aggregate(String aggregationFunction, Field<Object> field) {
+		return DSL.aggregate(DSL.systemName(aggregationFunction), field.getDataType(), field);
+	}
+
+	protected <T> Field<T> asCase(Condition condition, Field<T> field) {
+		if (condition instanceof True) {
+			return field;
+		} else {
+			return DSL.when(condition, field);
+		}
+	}
+
+	/**
+	 * 
+	 * @param aggregator
+	 * @param namedColumn
+	 * @param condition
+	 *            a condition to be applied
+	 * @return
+	 */
+	protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn, Condition condition) {
 		String aggregationKey = aggregator.getAggregationKey();
 
 		// TODO Could we prefer some generic aggregation? (e.g. `array_agg` in DuckDB)

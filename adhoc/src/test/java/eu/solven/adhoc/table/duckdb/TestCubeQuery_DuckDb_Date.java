@@ -55,7 +55,7 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 
 	@BeforeEach
 	public void initDataAndMeasures() {
-		dsl.createTableIfNotExists(tableName).column("d", SQLDataType.DATE).column("k1", SQLDataType.DOUBLE).execute();
+		dsl.createTableIfNotExists(tableName).column("d", SQLDataType.DATE).column("k1", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("d"), DSL.field("k1")).values(today, 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("d"), DSL.field("k1"))
 				.values(today.minusYears(1), 234)
@@ -69,7 +69,7 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 	public void testGetColumns() {
 		Assertions.assertThat(cube().getColumns()).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("k1");
-			Assertions.assertThat(c.getType()).isEqualTo(Double.class);
+			Assertions.assertThat(c.getType()).isEqualTo(Integer.class);
 		}).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("d");
 			Assertions.assertThat(c.getType()).isEqualTo(LocalDate.class);

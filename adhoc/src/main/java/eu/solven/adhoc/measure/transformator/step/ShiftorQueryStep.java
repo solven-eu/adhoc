@@ -189,7 +189,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		if (underlyings.size() == 1) {
 			log.debug("Happens when whereToRead matches whereToWrite");
 		} else if (underlyings.size() != 2) {
-			throw new IllegalArgumentException("underlyings.size() != 2");
+			throw new IllegalArgumentException("underlyings.size() == %s".formatted(underlyings.size()));
 		}
 
 		IMultitypeColumnFastGet<SliceAsMap> values = makeColumn(underlyings);
@@ -200,6 +200,6 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
-		return factories.getColumnsFactory().makeColumn(underlyings);
+		return factories.getColumnsFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

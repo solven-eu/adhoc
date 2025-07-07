@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.measure.model.Aggregator;
 
 public class TestTableQuery implements IAdhocTestConstants {
 	@Test
@@ -37,6 +38,18 @@ public class TestTableQuery implements IAdhocTestConstants {
 		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
 		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
 		Assertions.assertThat(q.getAggregators()).hasSize(1).contains(k1Sum);
+
+		// Make sure the .toString returns actual values, and not the lambda toString
+		Assertions.assertThat(q.toString()).doesNotContain("Lambda");
+	}
+
+	@Test
+	public void testNoMeasure() {
+		TableQuery q = TableQuery.builder().build();
+
+		Assertions.assertThat(q.getFilter().isMatchAll()).isTrue();
+		Assertions.assertThat(q.getGroupBy().isGrandTotal()).isTrue();
+		Assertions.assertThat(q.getAggregators()).hasSize(1).contains(Aggregator.empty());
 
 		// Make sure the .toString returns actual values, and not the lambda toString
 		Assertions.assertThat(q.toString()).doesNotContain("Lambda");

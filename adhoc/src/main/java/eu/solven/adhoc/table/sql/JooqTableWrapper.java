@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -47,6 +48,8 @@ import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.ValueProviderHelpers;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -293,6 +296,8 @@ public class JooqTableWrapper implements ITableWrapper {
 						value = string.intern();
 					}
 
+					value = cleanAggregateValue(value);
+
 					Object previousValue = aggregates.put(columnName, value);
 					if (previousValue != null) {
 						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
@@ -333,6 +338,15 @@ public class JooqTableWrapper implements ITableWrapper {
 		}
 
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+	}
+
+	protected Object cleanAggregateValue(Object value) {
+		if (value instanceof BigInteger bigInteger) {
+			// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+			return IValueProvider.getValue(ValueProviderHelpers.asLongIfExact(bigInteger));
+		} else {
+			return value;
+		}
 	}
 
 	@Override

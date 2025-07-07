@@ -24,7 +24,6 @@ package eu.solven.adhoc.table.duckdb;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -114,7 +113,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 
 		List<Map<String, ?>> dbStream = table().streamSlices(qK1).toList();
 
-		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(123)));
+		Assertions.assertThat(dbStream).hasSize(1).contains(Map.of("k1", 0L + 123));
 	}
 
 	@Test

@@ -50,6 +50,7 @@ import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -103,14 +104,14 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 	// element=N-1 -> group=N-1|N
 	// element=N -> group=N
 	IManyToMany1DDefinition manyToManyDefinition = ManyToMany1DDynamicDefinition.builder().elementToGroups(element -> {
-		if (element instanceof Integer asInt) {
+		if (AdhocPrimitiveHelpers.isLongLike(element)) {
+			long asInt = AdhocPrimitiveHelpers.asLong(element);
 			if (asInt < 0) {
 				return Set.of(-1);
 			} else if (asInt > maxCardinality) {
 				return Set.of(maxCardinality + 1);
 			}
-			return Collections.unmodifiableSet(
-					ContiguousSet.create(Range.closed(asInt, maxCardinality), DiscreteDomain.integers()));
+			return Collections.unmodifiableSet(ContiguousSet.closed(asInt, maxCardinality));
 		} else {
 			return Set.of(element);
 		}
@@ -249,8 +250,8 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(smallValue + 1)
-				.containsEntry(Map.of(cElement, 0), Map.of(dispatchedMeasure, elementValue(0)))
-				.containsEntry(Map.of(cElement, smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)));
+				.containsEntry(Map.of(cElement, 0L), Map.of(dispatchedMeasure, elementValue(0)))
+				.containsEntry(Map.of(cElement, 0L + smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)));
 	}
 
 	@Test
@@ -261,17 +262,15 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 				.measure(dispatchedMeasure)
 				.groupByAlso(cElement)
 				.andFilter(cGroup, Set.of(smallValue, largeValue))
-				// DEBUG is problematic as QueryStep are very large, due to very large InMatcher
-				// .debug(true)
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(largeValue + 1)
-				.containsEntry(Map.of(cElement, 0), Map.of(dispatchedMeasure, elementValue(0)))
-				.containsEntry(Map.of(cElement, smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)))
-				.containsEntry(Map.of(cElement, largeValue), Map.of(dispatchedMeasure, elementValue(largeValue)));
+				.containsEntry(Map.of(cElement, 0L), Map.of(dispatchedMeasure, elementValue(0)))
+				.containsEntry(Map.of(cElement, 0L + smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)))
+				.containsEntry(Map.of(cElement, 0L + largeValue), Map.of(dispatchedMeasure, elementValue(largeValue)));
 	}
 
 	@Test
@@ -287,14 +286,15 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output,
 				MapBasedTabularView.builder()
 						// HashMap as this is a performance test
-						.coordinatesToValues(new HashMap<>(Ints.checkedCast(output.size())))
+						.coordinatesToValues(HashMap.newHashMap(Ints.checkedCast(output.size())))
 						.build());
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				// We filtered 5, so we have groups from 5 to N
 				.hasSize(largeValue + 1)
-				.containsEntry(Map.of(cGroup, smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)))
-				.containsEntry(Map.of(cGroup, maxCardinality), Map.of(dispatchedMeasure, elementValue(smallValue)));
+				.containsEntry(Map.of(cGroup, 0L + smallValue), Map.of(dispatchedMeasure, elementValue(smallValue)))
+				.containsEntry(Map.of(cGroup, 0L + maxCardinality),
+						Map.of(dispatchedMeasure, elementValue(smallValue)));
 	}
 
 	@Test

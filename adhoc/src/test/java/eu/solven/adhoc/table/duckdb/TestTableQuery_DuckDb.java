@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -85,11 +84,11 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 	@Test
 	public void testReturnAll() {
 		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
 
 		List<Map<String, ?>> tableStream = table().streamSlices(qK1).toList();
 
-		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", 0D + 12.34));
 	}
 
 	@Test
@@ -122,15 +121,18 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 	public void testReturn_nullable() {
 		dsl.createTableIfNotExists(tableName)
 				.column("k1", SQLDataType.DOUBLE)
-				.column("k2", SQLDataType.DOUBLE)
+				.column("k2", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(345, 456).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k2")).values(123).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("k1"), DSL.field("k2")).values(23.45, 234).execute();
 
-		List<Map<String, ?>> tableStream = table().streamSlices(qK1).toList();
+		List<Map<String, ?>> tableStreamInt = table().streamSlices(qK1).toList();
+		Assertions.assertThat(tableStreamInt).contains(Map.of("k1", 0D + 12.34 + 23.45)).hasSize(1);
 
-		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
+		List<Map<String, ?>> tableStreamDouble =
+				table().streamSlices(TableQuery.builder().aggregators(Set.of(k2Sum)).build()).toList();
+		Assertions.assertThat(tableStreamDouble).contains(Map.of("k2", 0L + 123 + 234)).hasSize(1);
 	}
 
 	// Hits an edge as `select 1 from "someTableName" group by ALL` does NOT group by in DuckDB.
@@ -155,7 +157,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
@@ -171,7 +173,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 						TableQuery.edit(qK1).filter(ColumnFilter.builder().column("a").matching("a1").build()).build())
 				.toList();
 
-		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 456)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", 0L + 123 + 456));
 	}
 
 	@Test
@@ -179,7 +181,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
@@ -191,7 +193,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.filter(ColumnFilter.builder().column("a").matching(Set.of("a1", "a2")).build())
 				.build()).toList();
 
-		Assertions.assertThat(tableStream).contains(Map.of("k1", BigDecimal.valueOf(0D + 123 + 345))).hasSize(1);
+		Assertions.assertThat(tableStream).contains(Map.of("k1", 0L + 123 + 345)).hasSize(1);
 	}
 
 	@Test
@@ -199,7 +201,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		dsl.createTableIfNotExists(tableName)
 				.column("a", SQLDataType.VARCHAR)
 				.column("b", SQLDataType.VARCHAR)
-				.column("k1", SQLDataType.DOUBLE)
+				.column("k1", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("b"), DSL.field("k1")).values("b1", 234).execute();
@@ -212,15 +214,13 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 
 		Assertions.assertThat(tableStream)
 				.hasSize(3)
-				.anySatisfy(
-						m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", BigDecimal.valueOf(0D + 123))))
+				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", 0L + 123)))
 				.anySatisfy(m -> Assertions.assertThat((Map) m)
 						.hasSize(2)
 						// TODO We need an option to handle null with a default value
 						.containsEntry("a", null)
-						.containsEntry("k1", BigDecimal.valueOf(0D + 234)))
-				.anySatisfy(
-						m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", BigDecimal.valueOf(0D + 345))));
+						.containsEntry("k1", 0L + 234))
+				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", 0L + 345)));
 	}
 
 	@Test
@@ -230,14 +230,14 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field(DSL.name("with space")), DSL.field("k1"))
-				.values("a1", 123)
+				.values("a1", 12.34)
 				.execute();
 
 		List<Map<String, ?>> tableStream = table().streamSlices(
 				TableQuery.edit(qK1).filter(ColumnFilter.builder().column("with space").matching("a1").build()).build())
 				.toList();
 
-		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", BigDecimal.valueOf(0D + 123)));
+		Assertions.assertThat(tableStream).hasSize(1).contains(Map.of("k1", 0D + 12.34));
 	}
 
 	@Test
@@ -401,7 +401,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345));
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0D + 123 + 345));
 	}
 
 	@Test
@@ -461,7 +461,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.hasSize(1)
-					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0L + 123));
+					.containsEntry(Map.of("k1", 0D + 123), Map.of("k1", 0D + 123));
 		}
 	}
 
@@ -658,7 +658,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0D + 123 + 345))
 				.hasSize(1);
 	}
 }

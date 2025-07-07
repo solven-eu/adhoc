@@ -35,7 +35,7 @@ public interface IManyToManyGroupToElements {
 	/**
 	 * This is useful for performance considerations. Typically, to compute once all relevant groups, and not
 	 * re-checking relevant groups for each element returning a value.
-	 *
+	 * 
 	 * @param groupMatcher
 	 * @return
 	 */

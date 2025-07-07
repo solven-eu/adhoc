@@ -126,9 +126,9 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(maxCardinality)
-				.containsEntry(Map.of("row_index", 0), Map.of(timesN, 0L))
-				.containsEntry(Map.of("row_index", 1), Map.of(timesN, 0L + (1L << height)))
-				.containsEntry(Map.of("row_index", maxCardinality - 1),
+				.containsEntry(Map.of("row_index", 0L), Map.of(timesN, 0L))
+				.containsEntry(Map.of("row_index", 1L), Map.of(timesN, 0L + (1L << height)))
+				.containsEntry(Map.of("row_index", 0L + maxCardinality - 1),
 						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
 
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
@@ -145,9 +145,9 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(maxCardinality)
-				.containsEntry(Map.of("row_index", 0), Map.of())
-				.containsEntry(Map.of("row_index", 1), Map.of())
-				.containsEntry(Map.of("row_index", maxCardinality - 1), Map.of());
+				.containsEntry(Map.of("row_index", 0L), Map.of())
+				.containsEntry(Map.of("row_index", 1L), Map.of())
+				.containsEntry(Map.of("row_index", 0L + maxCardinality - 1), Map.of());
 
 		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
 	}

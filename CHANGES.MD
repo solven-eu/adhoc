@@ -12,6 +12,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduces `ICompactable`. It is called on each queryStep of the DAG.
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 - Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
+- Introduces `JooqTableQueryFactory.canFilterAggregates`, to generate `SUM(CASE y THEN x)` instead of `SUM(x) FILTER (y)`, as many Databases (like `RedShift` does not support `FILTER`).
 
 ### Changed
 - `IColumnMatcher.toString()` has specialized implementations, depending on the matcher type (e.g. `c==v` for `EqualsMatcher`).
@@ -25,6 +26,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `AdhocUnsafe.defaultCapacity()` is renamed `AdhocUnsage.defaultColumnCapacity()`
 - `AtotiMeasureToAdhoc` now supports non-`String` properties.
 - `MultitypeHashColumn.purgeAggregationCarriers()` now returns a purged copy, instead of mutating current instance.
+- `InMatcher` and `ComapringMatcher` now normalize `long-like` into `long` and `double-like` into `double`.
+- `AdhocPrimitiveHelpers.isLongLike` over `BigDecimal` should never returns true. `BigInteger` and `BigDecimal` are manage separately.
 
 ### Fixed
 - `JooqTableQueryFactory` now supports `OrMatcher`, `AndMatcher` and `NotMatcher`.

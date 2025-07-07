@@ -24,10 +24,10 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Map;
 
-import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
- * Anything which may require a configured {@link Combinator}
+ * Anything which may require a configured {@link IAggregation}
  * 
  * @author Benoit Lacelle
  */

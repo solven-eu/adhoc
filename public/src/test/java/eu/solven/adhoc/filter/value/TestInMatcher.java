@@ -149,4 +149,25 @@ public class TestInMatcher {
 						.operand(EqualsMatcher.isEqualTo("bar"))
 						.build());
 	}
+
+	@Test
+	public void testMultipleInts() {
+		IValueMatcher or123_234 = OrMatcher.or(EqualsMatcher.isEqualTo(123), EqualsMatcher.isEqualTo(234));
+		Assertions.assertThat(or123_234.match(123)).isTrue();
+	}
+
+	@Test
+	public void testInIntMatchLong() {
+		Assertions.assertThat(InMatcher.isIn(123, 234).match(123L)).isTrue();
+		Assertions.assertThat(InMatcher.isIn(123L, 234L).match(123)).isTrue();
+
+		Assertions.assertThat(InMatcher.isIn(12.34, 23.45).match(12.34D)).isTrue();
+		Assertions.assertThat(InMatcher.isIn(12.34D, 23.45D).match(12.34)).isTrue();
+	}
+
+	@Test
+	public void testInDoubleMatchLong() {
+		Assertions.assertThat(InMatcher.isIn(123D, 234D).match(123L)).isFalse();
+		Assertions.assertThat(InMatcher.isIn(123L, 234L).match(123D)).isFalse();
+	}
 }

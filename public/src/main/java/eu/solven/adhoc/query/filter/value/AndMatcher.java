@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.MoreObjects;
@@ -38,6 +37,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -102,22 +102,17 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	}
 
 	public static IValueMatcher and(Collection<? extends IValueMatcher> filters, boolean doSimplify) {
-		if (filters.stream().anyMatch(f -> f instanceof OrMatcher orMatcher && orMatcher.isMatchNone())) {
+		if (filters.contains(MATCH_NONE)) {
 			return MATCH_NONE;
 		}
 
-		// Skipping matchAll is useful on `.edit`
-		List<? extends IValueMatcher> notMatchAll = filters.stream()
-				.filter(f -> !(f instanceof AndMatcher andMatcher && andMatcher.isMatchAll()))
-				.flatMap(operand -> {
-					if (operand instanceof AndMatcher operandIsAnd) {
-						// AND of ANDs
-						return operandIsAnd.getOperands().stream();
-					} else {
-						return Stream.of(operand);
-					}
-				})
-				.collect(Collectors.toList());
+		// AND of ANDs
+		List<? extends IValueMatcher> notMatchAll = AdhocCollectionHelpers.unnestAsList(AndMatcher.class,
+				AndMatcher.builder().operands(filters).build(),
+				f -> f.getOperands().size(),
+				AndMatcher::getOperands,
+				// Skipping matchAll is useful on `.edit`
+				f -> !MATCH_ALL.equals(f));
 
 		if (doSimplify) {
 			notMatchAll = simplifiedOwned(notMatchAll);

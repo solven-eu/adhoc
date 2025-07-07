@@ -108,4 +108,9 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	public String toString() {
 		return "column=" + column;
 	}
+
+	// @Override
+	// public void ensureCapacity(int capacity) {
+	// throw new UnsupportedOperationException("Read-Only");
+	// }
 }

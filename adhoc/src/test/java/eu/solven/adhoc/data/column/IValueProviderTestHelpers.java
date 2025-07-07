@@ -30,14 +30,18 @@ import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.cell.IValueReceiver;
 
 public interface IValueProviderTestHelpers {
+	// Pick a seemingly random value. Long.MAX_VALUE may be referred for some edge-cases
+	long LONG_NOT_SUPPORTED = Long.MAX_VALUE / 7;
+	double DOUBLE_NOT_SUPPORTED = Double.MAX_VALUE / 7;
+
 	static long getLong(IValueProvider valueProvider) {
-		AtomicLong longRef = new AtomicLong(Long.MAX_VALUE);
+		AtomicLong longRef = new AtomicLong(LONG_NOT_SUPPORTED);
 
 		valueProvider.acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long v) {
-				if (v == Long.MAX_VALUE) {
+				if (v == LONG_NOT_SUPPORTED) {
 					throw new IllegalArgumentException("getLong does not handle Long.MAX_VALUE");
 				}
 
@@ -54,13 +58,13 @@ public interface IValueProviderTestHelpers {
 	}
 
 	static double getDouble(IValueProvider valueProvider) {
-		AtomicDouble doubleRef = new AtomicDouble(Double.MAX_VALUE);
+		AtomicDouble doubleRef = new AtomicDouble(DOUBLE_NOT_SUPPORTED);
 
 		valueProvider.acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onDouble(double v) {
-				if (v == Long.MAX_VALUE) {
+				if (v == DOUBLE_NOT_SUPPORTED) {
 					throw new IllegalArgumentException("getDouble does not handle Double.MAX_VALUE");
 				}
 
