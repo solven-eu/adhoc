@@ -24,16 +24,16 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Map;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import org.jgrapht.alg.decomposition.DulmageMendelsohnDecomposition.Decomposition;
 
 /**
- * Anything which may require a configured {@link IAggregation}
+ * Anything which may require a configured {@link Decomposition}
  * 
  * @author Benoit Lacelle
  */
-public interface IHasAggregationKey {
-	String getAggregationKey();
+public interface IHasDecompositionKey {
+	String getDecompositionKey();
 
-	Map<String, ?> getAggregationOptions();
+	Map<String, ?> getDecompositionOptions();
 
 }

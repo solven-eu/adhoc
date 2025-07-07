@@ -108,8 +108,8 @@ public class TestTransformator_Dispatchor extends ADagTest implements IAdhocTest
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("0_or_100", 0), Map.of("0or100", 0D + 123 * 0.01D + 345 * .1D + 567 * 0.5D))
-				.containsEntry(Map.of("0_or_100", 100), Map.of("0or100", 0D + 123 * 0.99D + 345 * 0.9D + 567 * 0.5D));
+				.containsEntry(Map.of("0_or_100", 0L), Map.of("0or100", 0D + 123 * 0.01D + 345 * .1D + 567 * 0.5D))
+				.containsEntry(Map.of("0_or_100", 100L), Map.of("0or100", 0D + 123 * 0.99D + 345 * 0.9D + 567 * 0.5D));
 	}
 
 }

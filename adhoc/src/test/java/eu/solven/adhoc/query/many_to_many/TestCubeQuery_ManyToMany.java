@@ -348,10 +348,12 @@ public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestCons
 			cube().execute(CubeQuery.builder().measure(dispatchedMeasure).groupByAlso(cGroup).explain(true).build());
 		}
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=k1.dispatched(Dispatchor[SUM]) filter=matchAll groupBy=(country_groups)
-				    \\-- #2 m=k1(SUM) filter=matchAll groupBy=(country)""");
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								\\-- #1 m=k1.dispatched(Dispatchor[eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition][SUM]) filter=matchAll groupBy=(country_groups)
+								    \\-- #2 m=k1(SUM) filter=matchAll groupBy=(country)""");
 
 		Assertions.assertThat(messages).hasSize(3);
 	}

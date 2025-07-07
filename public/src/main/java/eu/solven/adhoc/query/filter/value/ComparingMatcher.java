@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.filter.value;
 import java.util.Comparator;
 
 import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -32,15 +33,15 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * To be used with {@link ColumnFilter}, for comparison-based matchers. This works only on naturally comparable objects
+ * To be used with {@link ColumnFilter}, for comparison-based matchers. This works only on naturally comparable objects.
+ * 
+ * If objects have different types, the comparison always returns false.
  * 
  * @author Benoit Lacelle
  *
  */
 @Value
-@Builder(toBuilder = true)
-@Jacksonized
-public class ComparingMatcher implements IValueMatcher, IColumnToString {
+public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 	// Can not be an IValueMatcher
 	@NonNull
 	Object operand;
@@ -52,6 +53,15 @@ public class ComparingMatcher implements IValueMatcher, IColumnToString {
 	boolean matchIfEqual;
 
 	boolean matchIfNull;
+
+	@Builder(toBuilder = true)
+	@Jacksonized
+	private ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
+		this.operand = AdhocPrimitiveHelpers.normalizeValue(operand);
+		this.greaterThan = greaterThan;
+		this.matchIfEqual = matchIfEqual;
+		this.matchIfNull = matchIfNull;
+	}
 
 	/**
 	 * Return a {@link Comparable} adapter which accepts null values and sorts them higher than non-null values.
@@ -70,14 +80,27 @@ public class ComparingMatcher implements IValueMatcher, IColumnToString {
 			return matchIfNull;
 		} else if (matchIfEqual && value.equals(operand)) {
 			return true;
+		}
+
+		Object normalizedValue = AdhocPrimitiveHelpers.normalizeValue(value);
+
+		if (normalizedValue.getClass() != operand.getClass()) {
+			return false;
 		} else {
-			int compare = ComparableElseClassComparatorV2.doCompare(nullsHigh(), value, operand);
+			int compare = ComparableElseClassComparatorV2.doCompare(nullsHigh(), normalizedValue, operand);
+
+			if (matchIfEqual && compare == 0) {
+				// equal case may not be captured by previous branch if the value needed normalization
+				return true;
+			}
+
 			if (greaterThan) {
 				return compare > 0;
 			} else {
 				return compare < 0;
 			}
 		}
+
 	}
 
 	@Override
@@ -131,6 +154,7 @@ public class ComparingMatcher implements IValueMatcher, IColumnToString {
 		public ComparingMatcherBuilder lowerThan(Comparable<?> comparable) {
 			return this.greaterThan(false).operand(comparable);
 		}
+
 	}
 
 	@Override

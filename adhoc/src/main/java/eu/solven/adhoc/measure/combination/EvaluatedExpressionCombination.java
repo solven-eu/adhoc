@@ -32,9 +32,10 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
+import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.cell.ValueProviderHelpers;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -88,15 +89,12 @@ public class EvaluatedExpressionCombination implements ICombination, IHasSanityC
 			throw new IllegalArgumentException("Issue with expression=`%s`".formatted(expression), e);
 		}
 
-		// BEWARE In some cases, we may like to cast to long if the result is a perfect long
 		if (result.isNumberValue()) {
+			// https://ezylang.github.io/EvalEx/concepts/datatypes.html#number
 			BigDecimal bigDecimal = result.getNumberValue();
 
-			if (AdhocPrimitiveHelpers.isLongLike(bigDecimal)) {
-				return bigDecimal.longValueExact();
-			} else {
-				return bigDecimal.doubleValue();
-			}
+			// BEWARE In some cases, we may like to cast to long if the result is a perfect long
+			return IValueProvider.getValue(ValueProviderHelpers.asLongIfExact(bigDecimal));
 		} else {
 			return result.getValue();
 		}

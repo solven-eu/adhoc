@@ -20,24 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.many_to_many;
+package eu.solven.adhoc.data.cell;
 
-import java.util.Set;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Test;
 
-/**
- * Holds the group to elements leg of a many2many definition
- */
-public interface IManyToManyGroupToElements {
-	Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher);
+import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 
-	/**
-	 * This is useful for performance considerations. Typically, to compute once all relevant groups, and not
-	 * re-checking relevant groups for each element returning a value.
-	 * 
-	 * @param groupMatcher
-	 * @return
-	 */
-	Set<?> getMatchingGroups(IValueMatcher groupMatcher);
+public class TestValueProviderHelpers {
+	@Test
+	public void testLongExact() {
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(ValueProviderHelpers.asLongIfExact(123)))
+				.isEqualTo(123);
+
+		Assertions
+				.assertThat(IValueProviderTestHelpers
+						.getLong(ValueProviderHelpers.asLongIfExact(BigInteger.valueOf(Long.MAX_VALUE))))
+				.isEqualTo(Long.MAX_VALUE);
+		Assertions
+				.assertThat(IValueProviderTestHelpers.getDouble(ValueProviderHelpers
+						.asLongIfExact(BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2)))))
+				.isCloseTo(Double.parseDouble("1.8446744E19"), Percentage.withPercentage(0.0001));
+
+		Assertions
+				.assertThat(IValueProviderTestHelpers
+						.getDouble(ValueProviderHelpers.asLongIfExact(BigDecimal.valueOf(Double.MAX_VALUE))))
+				.isCloseTo(Double.parseDouble("1.797693E308"), Percentage.withPercentage(0.0001));
+	}
 }

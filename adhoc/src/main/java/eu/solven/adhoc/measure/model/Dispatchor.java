@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
+import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
@@ -66,7 +67,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Slf4j
 @Jacksonized
-public class Dispatchor implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey, IMayHaveColumnGenerator {
+public class Dispatchor
+		implements IMeasure, IHasUnderlyingMeasures, IHasAggregationKey, IHasDecompositionKey, IMayHaveColumnGenerator {
 	@NonNull
 	String name;
 

@@ -22,77 +22,29 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.base.Suppliers;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.resource.HasWrappedSerializer;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * To be used with {@link ColumnFilter}, for equality-based matchers.
  * 
+ * Equality in Adhoc is not a pure `hashcode/equals` equality. Typically, `(int) 3` is equal to `(long) 3` and `(float)
+ * 3` is equal to `(double) 3`.
+ * 
  * @author Benoit Lacelle
  *
  */
-@Value
-@Builder
-@Jacksonized
-@JsonSerialize(using = HasWrappedSerializer.class)
-@EqualsAndHashCode(exclude = { "operandIsLongLike", "operandIsDoubleLike" })
-@ToString(exclude = { "operandIsLongLike", "operandIsDoubleLike" })
 // BEWARE This is not a strict `equals`, as it has special rules around ints and longs
 // We may introduce a StrictEqualsMatcher
 // BEWARE Should we introduce a way to match primitive value without boxing?
-public class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToString {
-	@NonNull
-	// @JsonValue
-	Object operand;
+public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToString {
 
-	@JsonIgnore
-	@Getter(AccessLevel.PRIVATE)
-	Supplier<Boolean> operandIsLongLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isLongLike(getOperand()));
-	@JsonIgnore
-	@Getter(AccessLevel.PRIVATE)
-	Supplier<Boolean> operandIsDoubleLike = Suppliers.memoize(() -> AdhocPrimitiveHelpers.isDoubleLike(getOperand()));
-
-	@Override
-	public Object getWrapped() {
-		return operand;
-	}
-
-	@Override
-	public boolean match(Object value) {
-		if (operand.equals(value)) {
-			return true;
-		}
-
-		if (operandIsDoubleLike.get()) {
-			if (operandIsLongLike.get() && AdhocPrimitiveHelpers.isLongLike(value)) {
-				// We consider `int 3` and `long 3` to be equals
-				return AdhocPrimitiveHelpers.asLong(operand) == AdhocPrimitiveHelpers.asLong(value);
-			}
-
-			if (AdhocPrimitiveHelpers.isDoubleLike(value)) {
-				// We consider `float 1.2` and `double 1.2` to be equals
-				return AdhocPrimitiveHelpers.asDouble(operand) == AdhocPrimitiveHelpers.asDouble(value);
-			}
-		}
-
-		return false;
-	}
+	public abstract Object getOperand();
 
 	@Override
 	public String toString() {
@@ -109,48 +61,13 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToStrin
 		}
 	}
 
-	/**
-	 * Lombok builder.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	public static class EqualsMatcherBuilder {
-
-		public EqualsMatcherBuilder() {
-			// Empty constructors is required by Lombok @Builder
-		}
-
-		// Enable Jackson deserialization given a plain Object
-		// https://github.com/FasterXML/jackson-databind/issues/5030
-		// @JsonCreator
-		public EqualsMatcherBuilder(Object operand) {
-
-			this.operand(operand);
-		}
-
-		// https://github.com/FasterXML/jackson-databind/issues/5030
-		// Enable Jackson deserialization given a plain String
-		// TODO Does the need for an int constructor a Jackson bug?
-		public EqualsMatcherBuilder(String operand) {
-			this.operand(operand);
-		}
-
-		// https://github.com/FasterXML/jackson-databind/issues/5030
-		// Enable Jackson deserialization given a plain String
-		// TODO Does the need for a double constructor a Jackson bug?
-		public EqualsMatcherBuilder(int operand) {
-			this.operand(operand);
-		}
-
-		public EqualsMatcherBuilder(long operand) {
-			this.operand(operand);
-		}
-
-		// https://github.com/FasterXML/jackson-databind/issues/5030
-		// Enable Jackson deserialization given a plain String
-		// TODO Does the need for a String constructor a Jackson bug?
-		public EqualsMatcherBuilder(double operand) {
-			this.operand(operand);
+	@JsonCreator
+	public static IValueMatcher createWrapped(Object o) {
+		if (o instanceof Map<?, ?> map) {
+			// Workaround some Jackson issue/limitations
+			return isEqualTo(map.get("operand"));
+		} else {
+			return isEqualTo(o);
 		}
 	}
 
@@ -167,8 +84,12 @@ public class EqualsMatcher implements IValueMatcher, IHasWrapped, IColumnToStrin
 		} else if (operand instanceof IValueMatcher valueMatcher) {
 			// Typically used by CubeWrapperTypeTranscoder
 			return valueMatcher;
+		} else if (AdhocPrimitiveHelpers.isLongLike(operand)) {
+			return EqualsLongMatcher.builder().operand(AdhocPrimitiveHelpers.asLong(operand)).build();
+		} else if (AdhocPrimitiveHelpers.isDoubleLike(operand)) {
+			return EqualsDoubleMatcher.builder().operand(AdhocPrimitiveHelpers.asDouble(operand)).build();
 		} else {
-			return EqualsMatcher.builder().operand(operand).build();
+			return new EqualsObjectMatcher(operand);
 		}
 	}
 

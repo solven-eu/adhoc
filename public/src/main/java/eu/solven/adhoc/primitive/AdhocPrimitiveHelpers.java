@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.primitive;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
+// https://stackoverflow.com/questions/67841630/double-versus-long-for-large-numbers-in-java
 @UtilityClass
 @Slf4j
 public class AdhocPrimitiveHelpers {
@@ -39,24 +43,19 @@ public class AdhocPrimitiveHelpers {
 	public static boolean isLongLike(Object o) {
 		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
 			return true;
-		} else if (o instanceof BigDecimal bigDecimal) {
-			try {
-				long asLong = bigDecimal.longValueExact();
-				if (log.isTraceEnabled()) {
-					log.trace("This is a long: {} -> {}", bigDecimal, asLong);
-				}
-				return true;
-			} catch (ArithmeticException e) {
-				log.trace("This is not a long: {}", bigDecimal, e);
-			}
-			return false;
+		} else if (o instanceof BigInteger) {
+			return true;
 		} else {
 			return false;
 		}
 	}
 
 	public static long asLong(Object o) {
-		return ((Number) o).longValue();
+		if (o instanceof BigInteger bigInteger) {
+			return bigInteger.longValueExact();
+		} else {
+			return ((Number) o).longValue();
+		}
 	}
 
 	/**
@@ -71,4 +70,25 @@ public class AdhocPrimitiveHelpers {
 	public static double asDouble(Object o) {
 		return ((Number) o).doubleValue();
 	}
+
+	/**
+	 * 
+	 * @param o
+	 * @return a normalized version of the input. Typically as `long` for `long-like` and `double` for `double-like`.
+	 */
+	@Deprecated(since = "Unclear if this is legit")
+	public static Object normalizeValue(Object o) {
+		if (isLongLike(o)) {
+			return asLong(o);
+		} else if (isDoubleLike(o)) {
+			return asDouble(o);
+		} else {
+			return o;
+		}
+	}
+
+	public static Set<?> normalizeValues(Set<?> coordinates) {
+		return coordinates.stream().map(AdhocPrimitiveHelpers::normalizeValue).collect(ImmutableSet.toImmutableSet());
+	}
+
 }

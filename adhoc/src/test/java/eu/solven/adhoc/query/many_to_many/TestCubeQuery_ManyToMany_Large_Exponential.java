@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,10 +34,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Range;
 import com.google.common.math.LongMath;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -50,6 +49,7 @@ import eu.solven.adhoc.measure.decomposition.many2many.ManyToMany1DDecomposition
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -86,24 +86,27 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 	}
 
 	int smallElement = 5;
-	int largeElement = maxElementCardinality - smallElement;
+	int largeElement = Ints.checkedCast(maxElementCardinality - smallElement);
 
 	int smallGroup = elementToSmallestGroup(smallElement);
 	int largeGroup = elementToSmallestGroup(largeElement);
 
 	IManyToManyGroupToElements groupToElements = new IManyToManyGroupToElements() {
-		private IntStream streamMatchingGroups(IValueMatcher groupMatcher) {
-			return IntStream.rangeClosed(0, maxGroupCardinality).filter(groupMatcher::match);
+		private LongStream streamMatchingGroups(IValueMatcher groupMatcher) {
+			return LongStream.rangeClosed(0, maxGroupCardinality).filter(groupMatcher::match);
 		}
 
 		@Override
 		public Set<?> getElementsMatchingGroups(IValueMatcher groupMatcher) {
 			if (groupMatcher instanceof EqualsMatcher equalsMatcher
-					&& equalsMatcher.getOperand() instanceof Integer group) {
-				return groupToElements(group);
+					&& AdhocPrimitiveHelpers.isLongLike(equalsMatcher.getOperand())) {
+				long group = AdhocPrimitiveHelpers.asLong(equalsMatcher.getOperand());
+				return groupToElementsAsSet(group);
 			} else {
+
+				// Sets.union(null, null)
 				return streamMatchingGroups(groupMatcher).flatMap(group -> {
-					return groupToElements(group).stream().mapToInt(i -> i);
+					return groupToElements(group);
 				}).boxed().collect(Collectors.toSet());
 			}
 		}
@@ -128,23 +131,34 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 	// element=4 -> group=3|G
 	// element=5 -> group=3|G
 	// ...
-	IManyToMany1DDefinition manyToManyDefinition =
-			ManyToMany1DDynamicDefinition.builder().elementToGroups(rawElement -> {
-				if (rawElement instanceof Integer element) {
-					if (element < 0) {
-						return Set.of();
-					} else if (element > maxElementCardinality) {
-						return Set.of();
-					}
-					return Collections.unmodifiableSet(
-							ContiguousSet.create(Range.closed(elementToSmallestGroup(element), maxElementCardinality),
-									DiscreteDomain.integers()));
-				} else {
-					return Set.of();
-				}
-			}).groupToElements(groupToElements).build();
+	IManyToMany1DDefinition manyToManyDefinition = ManyToMany1DDynamicDefinition.builder().elementToGroups(element -> {
+		if (AdhocPrimitiveHelpers.isLongLike(element)) {
+			long asInt = AdhocPrimitiveHelpers.asLong(element);
+			if (asInt < 0) {
+				return Set.of(-1L);
+			} else if (asInt > maxElementCardinality) {
+				return Set.of(maxElementCardinality + 1L);
+			}
+			return Collections.unmodifiableSet(
+					ContiguousSet.closed(0L + elementToSmallestGroup(Ints.checkedCast(asInt)), maxElementCardinality));
+		} else {
+			return Set.of(element);
+		}
+	}).groupToElements(groupToElements).build();
 
-	private Set<Integer> groupToElements(int group) {
+	private LongStream groupToElements(long group) {
+		if (group < 0) {
+			// Beware, it means we do not list all negative integers as elements of -1
+			return LongStream.empty();
+		} else if (group > maxGroupCardinality) {
+			// Beware, it means we do not list all integers larger than maxCardinality as elements of maxCardinality
+			return LongStream.empty();
+		} else {
+			return LongStream.rangeClosed(0L, groupToMaxElement(Ints.checkedCast(group)));
+		}
+	}
+
+	private Set<Long> groupToElementsAsSet(long group) {
 		if (group < 0) {
 			// Beware, it means we do not list all negative integers as elements of -1
 			return Set.of();
@@ -152,7 +166,7 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 			// Beware, it means we do not list all integers larger than maxCardinality as elements of maxCardinality
 			return Set.of();
 		} else {
-			return ContiguousSet.create(Range.closed(0, groupToMaxElement(group)), DiscreteDomain.integers());
+			return Collections.unmodifiableSet(ContiguousSet.closed(0L, groupToMaxElement(Ints.saturatedCast(group))));
 		}
 	}
 
@@ -196,16 +210,16 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 		}
 	}
 
-	private long elementValue(int i) {
+	private long elementValue(long i) {
 		return LongMath.checkedMultiply(i, i);
 	}
 
-	private long elementAggregatedValue(IntStream elementStream) {
-		return elementStream.mapToLong(this::elementValue).sum();
+	private long elementAggregatedValue(LongStream elementStream) {
+		return elementStream.map(this::elementValue).sum();
 	}
 
 	private long groupAggregatedValue(int group) {
-		return elementAggregatedValue(groupToElements(group).stream().mapToInt(i -> i));
+		return elementAggregatedValue(groupToElements(group));
 	}
 
 	void prepareMeasures() {
@@ -233,7 +247,7 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		// +1 as we include
-		long total = elementAggregatedValue(IntStream.rangeClosed(0, maxElementInserted));
+		long total = elementAggregatedValue(LongStream.rangeClosed(0, maxElementInserted));
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
@@ -249,7 +263,7 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		long valueSingleElement = elementAggregatedValue(IntStream.of(smallElement));
+		long valueSingleElement = elementAggregatedValue(LongStream.of(smallElement));
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Collections.emptyMap(), Map.of(dispatchedMeasure, valueSingleElement));
@@ -283,8 +297,9 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(groupToMaxElement(smallGroup) + 1)
-				.containsEntry(Map.of(cElement, 0), Map.of(dispatchedMeasure, elementValue(0)))
-				.containsEntry(Map.of(cElement, smallElement), Map.of(dispatchedMeasure, elementValue(smallElement)));
+				.containsEntry(Map.of(cElement, 0L), Map.of(dispatchedMeasure, elementValue(0)))
+				.containsEntry(Map.of(cElement, 0L + smallElement),
+						Map.of(dispatchedMeasure, elementValue(smallElement)));
 	}
 
 	@Test
@@ -303,9 +318,11 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(groupToMaxElement(largeGroup) + 1)
-				.containsEntry(Map.of(cElement, 0), Map.of(dispatchedMeasure, elementValue(0)))
-				.containsEntry(Map.of(cElement, smallElement), Map.of(dispatchedMeasure, elementValue(smallElement)))
-				.containsEntry(Map.of(cElement, largeElement), Map.of(dispatchedMeasure, elementValue(largeElement)));
+				.containsEntry(Map.of(cElement, 0L), Map.of(dispatchedMeasure, elementValue(0)))
+				.containsEntry(Map.of(cElement, 0L + smallElement),
+						Map.of(dispatchedMeasure, elementValue(smallElement)))
+				.containsEntry(Map.of(cElement, 0L + largeElement),
+						Map.of(dispatchedMeasure, elementValue(largeElement)));
 	}
 
 	@Test
@@ -316,15 +333,16 @@ public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest impleme
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.andFilter(cElement, smallElement)
+				.debug(true)
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				// We filtered 5, so we have groups from 3 to G
+				// We filtered 5, so we have groups from 5 to max
 				.hasSize(maxGroupCardinality - elementToSmallestGroup(smallElement) + 1)
-				.containsEntry(Map.of(cGroup, smallElement), Map.of(dispatchedMeasure, elementValue(smallElement)))
-				.containsEntry(Map.of(cGroup, maxGroupCardinality),
+				.containsEntry(Map.of(cGroup, 0L + smallElement), Map.of(dispatchedMeasure, elementValue(smallElement)))
+				.containsEntry(Map.of(cGroup, 0L + maxGroupCardinality),
 						Map.of(dispatchedMeasure, elementValue(smallElement)));
 	}
 

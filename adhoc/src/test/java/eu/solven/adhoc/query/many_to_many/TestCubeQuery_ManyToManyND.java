@@ -88,23 +88,19 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 	@Override
 	@BeforeEach
 	public void feedTable() {
-		manyToManyDefinition.putElementToGroup(Map.of(cElementGender,
-				EqualsMatcher.builder().operand("male").build(),
-				cElementAge,
-				EqualsMatcher.builder().operand("young").build()), Set.of("blue", "yellow"));
-		manyToManyDefinition.putElementToGroup(Map.of(cElementGender,
-				EqualsMatcher.builder().operand("male").build(),
-				cElementAge,
-				EqualsMatcher.builder().operand("old").build()), Set.of("blue"));
+		manyToManyDefinition.putElementToGroup(
+				Map.of(cElementGender, EqualsMatcher.isEqualTo("male"), cElementAge, EqualsMatcher.isEqualTo("young")),
+				Set.of("blue", "yellow"));
+		manyToManyDefinition.putElementToGroup(
+				Map.of(cElementGender, EqualsMatcher.isEqualTo("male"), cElementAge, EqualsMatcher.isEqualTo("old")),
+				Set.of("blue"));
 
-		manyToManyDefinition.putElementToGroup(Map.of(cElementGender,
-				EqualsMatcher.builder().operand("female").build(),
-				cElementAge,
-				EqualsMatcher.builder().operand("young").build()), Set.of("red", "yellow"));
-		manyToManyDefinition.putElementToGroup(Map.of(cElementGender,
-				EqualsMatcher.builder().operand("female").build(),
-				cElementAge,
-				EqualsMatcher.builder().operand("old").build()), Set.of("red"));
+		manyToManyDefinition.putElementToGroup(Map
+				.of(cElementGender, EqualsMatcher.isEqualTo("female"), cElementAge, EqualsMatcher.isEqualTo("young")),
+				Set.of("red", "yellow"));
+		manyToManyDefinition.putElementToGroup(
+				Map.of(cElementGender, EqualsMatcher.isEqualTo("female"), cElementAge, EqualsMatcher.isEqualTo("old")),
+				Set.of("red"));
 
 		table().add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
 		table().add(Map.of("l", "A", cElementGender, "male", cElementAge, "old", "k1", 234));

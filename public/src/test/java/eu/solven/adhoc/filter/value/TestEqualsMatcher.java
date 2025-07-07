@@ -34,7 +34,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import eu.solven.adhoc.query.filter.value.EqualsDoubleMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsLongMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.EqualsObjectMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
@@ -44,9 +47,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestEqualsMatcher {
 	@Test
 	public void testEqualsHashcode() {
-		EqualsVerifier.forClass(EqualsMatcher.class)
-				.withIgnoredFields("operandIsLongLike", "operandIsDoubleLike")
-				.verify();
+		EqualsVerifier.forClass(EqualsLongMatcher.class).verify();
+		EqualsVerifier.forClass(EqualsDoubleMatcher.class).verify();
+		EqualsVerifier.forClass(EqualsObjectMatcher.class).verify();
 	}
 
 	@Test
@@ -61,7 +64,7 @@ public class TestEqualsMatcher {
 
 	@Test
 	public void testNull() {
-		Assertions.assertThatThrownBy(() -> EqualsMatcher.builder().operand(null).build())
+		Assertions.assertThatThrownBy(() -> EqualsObjectMatcher.builder().operand(null).build())
 				.isInstanceOf(IllegalArgumentException.class);
 
 		Assertions.assertThat(EqualsMatcher.isEqualTo(null)).isInstanceOf(NullMatcher.class);
@@ -250,5 +253,12 @@ public class TestEqualsMatcher {
 		IValueMatcher equalsMatcher = EqualsMatcher.isEqualTo(operandValueMatcher);
 
 		Assertions.assertThat(equalsMatcher).isEqualTo(operandValueMatcher);
+	}
+
+	@Test
+	public void testToString() {
+		Assertions.assertThat(EqualsMatcher.isEqualTo(123).toString()).isEqualTo("==123");
+		Assertions.assertThat(EqualsMatcher.isEqualTo(12.34).toString()).isEqualTo("==12.34");
+		Assertions.assertThat(EqualsMatcher.isEqualTo("foo").toString()).isEqualTo("==foo");
 	}
 }

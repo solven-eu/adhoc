@@ -273,6 +273,26 @@ An example for such a use-case is demonstrated in `TestTableQuery_DuckDb_VaR`.
 
 The ability to decompose along the scenarioIndex, or a scenarioName column, which are not defined in the table (which should provide one `double[]` per row) is achieved with a `Dispatchor`. Indeed, it can be seen as a `1-row-to-many-scenarioIndexes`.
 
+# Type Inference
+
+## Ints and Longs
+
+`int`s are generally treated as `long`s.
+
+- Aggregations (e.g. `SUM`) will automatically turns `int` into `long`
+- `EqualsMatcher`, `InMatcher` and `ComparingMatcher` will automatically turns `int` into `long`
+
+## Floats and Doubles
+
+`float`s are generally treated as `double`s.
+
+- `SUM` will automatically turns `float` into `double`
+- `EqualsMatcher`, `InMatcher` and `ComparingMatcher` will automatically turns `float` into `double`
+
+## Numbers
+
+- Aggregations should generally aggregates as `long`, else `double`.
+
 # Limitations
 
 ## Visual filters

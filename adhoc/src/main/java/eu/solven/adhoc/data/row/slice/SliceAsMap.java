@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -55,6 +56,11 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	public static SliceAsMap fromMap(Map<String, ?> asMap) {
+		asMap = asMap.entrySet()
+				.stream()
+				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
+						e -> AdhocPrimitiveHelpers.normalizeValue(e.getValue())));
+
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
 		Map<String, ?> safeMap = AdhocMap.immutableCopyOf(asMap);
 
@@ -131,6 +137,17 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 			return false;
 		}
 		SliceAsMap other = (SliceAsMap) obj;
+
+		// if (!Objects.equals(asMap.keySet(), other.asMap.keySet())) {
+		// return false;
+		// }
+		// for (String key : asMap.keySet()) {
+		// if (!Objects.equals(asMap.get(key), other.asMap.get(key))) {
+		// return false;
+		// }
+		// }
+		// return true;
+
 		return Objects.equals(asMap, other.asMap);
 	}
 

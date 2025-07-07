@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.jooq.AggregateFunction;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
@@ -208,22 +209,20 @@ public class WorldCupPlayersSchema {
 		JooqTableWrapper table = new JooqTableWrapper(tableName, tableParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new JooqTableQueryFactory(tableParameters.getOperatorFactory(),
-						tableParameters.getTable(),
-						dslContext,
-						false) {
+				return new JooqTableQueryFactory(tableParameters
+						.getOperatorFactory(), tableParameters.getTable(), dslContext, true, true) {
 					@Override
-					protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn) {
+					protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator,
+							Name namedColumn,
+							Condition condition) {
 						if (aggregator.getAggregationKey().equals(EventAggregation.class.getName())) {
 							Field<?> field = DSL.field(namedColumn);
 							// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-							return DSL.aggregate("array_agg", Object.class, field)
-							// TODO How to enable a filter? Knowing it would have to be merged with the
-							// FilteredAggregate condition
-							// .filterWhere(field.isNotNull())
-							;
+							return DSL.aggregate("array_agg",
+									Object.class,
+									asCase(condition.and(field.isNotNull()), field));
 						} else {
-							return super.onCustomAggregation(aggregator, namedColumn);
+							return super.onCustomAggregation(aggregator, namedColumn, condition);
 						}
 					}
 				};

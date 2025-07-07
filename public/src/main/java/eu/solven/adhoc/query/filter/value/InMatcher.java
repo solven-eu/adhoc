@@ -35,6 +35,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -53,20 +54,27 @@ import lombok.extern.jackson.Jacksonized;
  *
  */
 @Value
-@Builder
-@Jacksonized
-public class InMatcher implements IValueMatcher, IColumnToString {
+public final class InMatcher implements IValueMatcher, IColumnToString {
 	@NonNull
 	@Singular
 	ImmutableSet<?> operands;
 
+	@Builder
+	@Jacksonized
+	private InMatcher(Collection<?> operands) {
+		this.operands =
+				operands.stream().map(AdhocPrimitiveHelpers::normalizeValue).collect(ImmutableSet.toImmutableSet());
+	}
+
 	@Override
 	public boolean match(Object value) {
-		if (operands.contains(value)) {
+		Object normalizedValue = AdhocPrimitiveHelpers.normalizeValue(value);
+
+		if (operands.contains(normalizedValue)) {
 			return true;
 		}
 
-		if (operands.stream().anyMatch(operand -> operand instanceof IValueMatcher vm && vm.match(value))) {
+		if (operands.stream().anyMatch(operand -> operand instanceof IValueMatcher vm && vm.match(normalizedValue))) {
 			return true;
 		}
 

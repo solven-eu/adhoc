@@ -20,20 +20,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.query.filter.value;
 
-import java.util.Map;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.resource.HasWrappedSerializer;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * Anything which may require a configured {@link IAggregation}
+ * To be used with {@link ColumnFilter}, for equality-based matchers.
  * 
  * @author Benoit Lacelle
+ *
  */
-public interface IHasAggregationKey {
-	String getAggregationKey();
+@Value
+@EqualsAndHashCode(callSuper = false)
+@Builder
+@Jacksonized
+@JsonSerialize(using = HasWrappedSerializer.class)
+public class EqualsObjectMatcher extends EqualsMatcher {
+	@NonNull
+	// @JsonValue
+	Object operand;
 
-	Map<String, ?> getAggregationOptions();
+	@Override
+	public Object getWrapped() {
+		return operand;
+	}
 
+	@Override
+	public boolean match(Object value) {
+		if (operand.equals(value)) {
+			return true;
+		}
+		return false;
+	}
+
+	@SuppressWarnings("PMD.UselessOverridingMethod")
+	@Override
+	public String toString() {
+		// This override the `toString` from `@Value`
+		return super.toString();
+	}
 }

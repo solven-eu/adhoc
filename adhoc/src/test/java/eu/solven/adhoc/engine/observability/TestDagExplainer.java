@@ -59,7 +59,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				.isEqualTo("Partitionor[MAX][SUM]");
 
 		Assertions.assertThat(dagExplainer.toString(CubeQueryStep.builder().measure(dispatchFrom0To100).build()))
-				.isEqualTo("Dispatchor[SUM]");
+				.isEqualTo("Dispatchor[linear][SUM]");
 
 	}
 

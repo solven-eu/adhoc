@@ -115,4 +115,12 @@ public class TestSliceAsMap {
 
 		Assertions.assertThat(sliceDate).isGreaterThan(sliceString);
 	}
+
+	@Test
+	public void testIntAndLong() {
+		SliceAsMap sliceInt = SliceAsMap.fromMap(Map.of("k", 123));
+		SliceAsMap sliceLong = SliceAsMap.fromMap(Map.of("k", 123L));
+
+		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
+	}
 }

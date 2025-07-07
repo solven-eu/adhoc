@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -88,6 +89,27 @@ public class TestComparingMatcher {
 	}
 
 	@Test
+	public void testComparing_equalsInt_compareLong() {
+		// >= 123
+		IValueMatcher equals123 = EqualsMatcher.isEqualTo(123);
+		// >= 234
+		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
+
+		Assertions.assertThat(AndMatcher.and(equals123, comparing234)).isEqualTo(IValueMatcher.MATCH_NONE);
+	}
+
+	@Test
+	public void testComparing_equalsLocalDate_compareString() {
+		String someString = "foo";
+		ComparingMatcher comparingFoo = ComparingMatcher.builder().greaterThan(true).operand(someString).build();
+		LocalDate now = LocalDate.now();
+		ComparingMatcher comparingNow = ComparingMatcher.builder().greaterThan(true).operand(now).build();
+
+		Assertions.assertThat(comparingFoo.match(now)).isFalse();
+		Assertions.assertThat(comparingNow.match(someString)).isFalse();
+	}
+
+	@Test
 	public void testComparing_and_greaterThan_Equals_compatible() {
 		// >= 123
 		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
@@ -145,6 +167,29 @@ public class TestComparingMatcher {
 		Assertions.assertThat(
 				ComparingMatcher.builder().lowerThan("abc").matchIfEqual(true).matchIfNull(true).build().toString())
 				.isEqualTo("<=abc|null");
+	}
+
+	@Test
+	public void testNormalizeLong_noMatchIfEquals() {
+		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
+
+		Assertions.assertThat(comparing123.match(234)).isTrue();
+		Assertions.assertThat(comparing123.match(234L)).isTrue();
+
+		Assertions.assertThat(comparing123.match(123)).isFalse();
+		Assertions.assertThat(comparing123.match(123L)).isFalse();
+	}
+
+	@Test
+	public void testNormalizeLong_matchIfEquals() {
+		ComparingMatcher comparing123 =
+				ComparingMatcher.builder().greaterThan(true).matchIfEqual(true).operand(123).build();
+
+		Assertions.assertThat(comparing123.match(234)).isTrue();
+		Assertions.assertThat(comparing123.match(234L)).isTrue();
+
+		Assertions.assertThat(comparing123.match(123)).isTrue();
+		Assertions.assertThat(comparing123.match(123L)).isTrue();
 	}
 
 	@Disabled("TODO")

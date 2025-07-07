@@ -40,6 +40,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -176,9 +177,13 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
 		// want to filter all groups for each element
 		Object queryMatchingGroups = queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
-			return getQueryMatchingGroupsNoCache(slice);
+			return normalize(getQueryMatchingGroupsNoCache(slice));
 		});
 		return (Set<String>) queryMatchingGroups;
+	}
+
+	protected Set<?> normalize(Set<?> coordinates) {
+		return AdhocPrimitiveHelpers.normalizeValues(coordinates);
 	}
 
 	protected Set<?> getQueryMatchingGroupsNoCache(ISliceWithStep slice) {

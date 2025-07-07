@@ -118,7 +118,7 @@ public class ColumnFilter implements IColumnFilter {
 		}
 
 		public ColumnFilterBuilder matchEquals(Object o) {
-			this.valueMatcher = EqualsMatcher.builder().operand(o).build();
+			this.valueMatcher = EqualsMatcher.isEqualTo(o);
 			return this;
 		}
 
@@ -153,7 +153,7 @@ public class ColumnFilter implements IColumnFilter {
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
 	public static IAdhocFilter isDistinctFrom(String column, Object matching) {
-		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.builder().operand(matching).build()).build();
+		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.isEqualTo(matching)).build();
 		return isMatching(column, not);
 	}
 
