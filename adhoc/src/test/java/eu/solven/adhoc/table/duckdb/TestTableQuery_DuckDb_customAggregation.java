@@ -155,10 +155,8 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 
 		public CustomAggregationJooqTableQueryFactory(IOperatorFactory operatorFactory,
 				TableLike<?> table,
-				DSLContext dslContext,
-				boolean canGroupByAll,
-				boolean canFilterAggregates) {
-			super(operatorFactory, table, dslContext, canGroupByAll, canFilterAggregates);
+				DSLContext dslContext) {
+			super(operatorFactory, table, dslContext);
 		}
 
 		@Override
@@ -183,8 +181,9 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		return new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters
-						.getOperatorFactory(), jooqTableWrapperParameters.getTable(), dslContext, true, true);
+				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorFactory(),
+						jooqTableWrapperParameters.getTable(),
+						dslContext);
 			}
 		};
 	}

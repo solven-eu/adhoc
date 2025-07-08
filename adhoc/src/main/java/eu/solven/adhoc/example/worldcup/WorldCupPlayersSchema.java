@@ -35,10 +35,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.jooq.AggregateFunction;
-import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.Name;
 import org.jooq.impl.DSL;
 import org.springframework.core.io.ClassPathResource;
 
@@ -67,6 +65,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.JooqTableCapabilities;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -209,20 +208,19 @@ public class WorldCupPlayersSchema {
 		JooqTableWrapper table = new JooqTableWrapper(tableName, tableParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new JooqTableQueryFactory(tableParameters
-						.getOperatorFactory(), tableParameters.getTable(), dslContext, true, true) {
+				return new JooqTableQueryFactory(tableParameters.getOperatorFactory(),
+						tableParameters.getTable(),
+						dslContext,
+						JooqTableCapabilities.from(dslContext.dialect())) {
+
 					@Override
 					protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator,
-							Name namedColumn,
-							Condition condition) {
+							Field<Object> fieldToAggregate) {
 						if (aggregator.getAggregationKey().equals(EventAggregation.class.getName())) {
-							Field<?> field = DSL.field(namedColumn);
 							// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-							return DSL.aggregate("array_agg",
-									Object.class,
-									asCase(condition.and(field.isNotNull()), field));
+							return DSL.aggregate("array_agg", Object.class, fieldToAggregate);
 						} else {
-							return super.onCustomAggregation(aggregator, namedColumn, condition);
+							return super.onCustomAggregation(aggregator, fieldToAggregate);
 						}
 					}
 				};

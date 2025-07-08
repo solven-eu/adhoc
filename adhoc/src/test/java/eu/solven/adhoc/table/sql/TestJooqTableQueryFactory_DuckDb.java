@@ -63,6 +63,12 @@ public class TestJooqTableQueryFactory_DuckDb {
 			.build();
 
 	@Test
+	public void testBuilder() {
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isTrue();
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToFilterAggregates()).isTrue();
+	}
+
+	@Test
 	public void testToCondition_ColumnEquals() {
 		Condition condition = queryFactory.toCondition(ColumnFilter.isEqualTo("k1", "v1")).get();
 
@@ -249,6 +255,27 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") filter (where "c" = 'c1') "k" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilteredAggregator_rank() {
+		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.builder()
+								.name("rankM")
+								.columnName("rankC")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 2)
+								.build())
+						.filter(customFilter)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select arg_max("rankC", "rankC", 2) filter (where "c" = 'c1') "rankM" from "someTableName" group by ALL""");
 	}
 
 	@Test

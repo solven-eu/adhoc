@@ -254,6 +254,26 @@ public class TestJooqTableQueryFactory_MySql {
 	}
 
 	@Test
+	public void testFilteredAggregator_rank() {
+		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.builder()
+								.name("rankM")
+								.columnName("rankC")
+								.aggregationKey(RankAggregation.KEY)
+								.aggregationOption(RankAggregation.P_RANK, 2)
+								.build())
+						.filter(customFilter)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"select arg_max(case when `c` = 'c1' then `rankC` end, case when `c` = 'c1' then `rankC` end, 2) as `rankM` from `someTableName` group by (select 1)");
+	}
+
+	@Test
 	public void testFilteredAggregator_countStar() {
 		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
