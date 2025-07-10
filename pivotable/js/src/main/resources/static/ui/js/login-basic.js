@@ -99,10 +99,10 @@ export default {
                 <span class="input-group-text">:</span>
                 <input type="text" class="form-control" placeholder="Password" aria-label="Password" v-model="password" />
                 <button type="button" @click="doLoginBasic" class="btn btn-primary">Login fakeUser</button>
-				
-				<div class="spinner-border" role="status" v-if="isExecutingBasic || nbLoginLoading">
-				  <span class="visually-hidden">Loading...</span>
-				</div>
+
+                <div class="spinner-border" role="status" v-if="isExecutingBasic || nbLoginLoading">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </form>
         </span>
     `,

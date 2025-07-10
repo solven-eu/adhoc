@@ -30,13 +30,13 @@ export default {
 	},
 	template: /* HTML */ `
         <div v-if="loading">
-			<div class="spinner-grow" role="status">
-			    <span class="visually-hidden">Loading endpoint/cube information</span>
-			</div>
-			Loading id={{id}}
-		</div>
+            <div class="spinner-grow" role="status">
+                <span class="visually-hidden">Loading endpoint/cube information</span>
+            </div>
+            Loading id={{id}}
+        </div>
         <div v-else-if="error && !error.endsWith('not_loaded')">
-			<span>Issue loading id={{id}}. error={{error}}</span>
+            <span>Issue loading id={{id}}. error={{error}}</span>
         </div>
     `,
 };

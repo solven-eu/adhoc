@@ -58,28 +58,28 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-	<div class="accordion-item">
-	    <h2 class="accordion-header">
-	        <button
-	            class="accordion-button collapsed"
-	            type="button"
-	            data-bs-toggle="collapse"
-	            data-bs-target="#wizardCustoms"
-	            aria-expanded="false"
-	            aria-controls="wizardCustoms"
-	        >
-	            {{ Object.keys(customMarkers).length}} custom markers
-	        </button>
-	    </h2>
-	    <div id="wizardCustoms" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-	        <div class="accordion-body vh-50 overflow-scroll px-0">
-	            <ul v-for="customMarker in customMarkers" class="list-group list-group-flush">
-	                <li class="list-group-item">
-	                    <AdhocQueryWizardCustomMarker :queryModel="queryModel" :customMarker="customMarker" />
-	                </li>
-	            </ul>
-	        </div>
-	    </div>
-	</div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#wizardCustoms"
+                    aria-expanded="false"
+                    aria-controls="wizardCustoms"
+                >
+                    {{ Object.keys(customMarkers).length}} custom markers
+                </button>
+            </h2>
+            <div id="wizardCustoms" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+                <div class="accordion-body vh-50 overflow-scroll px-0">
+                    <ul v-for="customMarker in customMarkers" class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <AdhocQueryWizardCustomMarker :queryModel="queryModel" :customMarker="customMarker" />
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     `,
 };

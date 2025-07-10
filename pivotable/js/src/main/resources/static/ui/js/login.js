@@ -49,12 +49,8 @@ export default {
 
             <Whatnow />
 
-			<span v-if="hintLoginSuccess">
-				Login Success
-			</span>
-			<span v-if="hintLoggedOut">
-				Logout Success
-			</span>
+            <span v-if="hintLoginSuccess"> Login Success </span>
+            <span v-if="hintLoggedOut"> Logout Success </span>
         </div>
         <div v-else-if="isLoggedOut">
             <LoginOptions />
@@ -62,6 +58,5 @@ export default {
         <div v-else>
             <div v-if="nbLoginLoading > 0">Loading...</div>
             <div v-else>?</div>
-        </div>
-    `,
+        </div> `,
 };

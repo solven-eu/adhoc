@@ -17,9 +17,5 @@ export default {
 			resetQuery,
 		};
 	},
-	template: /* HTML */ `
-		<button type="button" class="btn btn-outline-warning  btn-sm" @click="resetQuery">
-			Reset query
-		</button>
-    `,
+	template: /* HTML */ ` <button type="button" class="btn btn-outline-warning  btn-sm" @click="resetQuery">Reset query</button> `,
 };

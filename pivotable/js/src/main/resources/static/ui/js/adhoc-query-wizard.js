@@ -128,13 +128,13 @@ export default {
                 <AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
                 <AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
-				
-                <div class="accordion" id="accordionWizard">
-                    <AdhocAccordionItemColumns  :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
-					<AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
 
-					<AdhocAccordionItemCustoms  :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
-					<AdhocAccordionItemOptions  :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
+                <div class="accordion" id="accordionWizard">
+                    <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
+                    <AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
+
+                    <AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
+                    <AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
                 </div>
             </form>
         </div>
