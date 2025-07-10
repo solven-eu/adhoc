@@ -5,8 +5,7 @@ import { useUserStore } from "./store-user.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {
-	},
+	components: {},
 	// https://vuejs.org/guide/components/props.html
 	props: {
 		id: {
@@ -27,7 +26,7 @@ export default {
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 	},
 	setup() {
-		return {  };
+		return {};
 	},
 	template: /* HTML */ `
         <div v-if="loading">

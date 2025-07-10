@@ -72,16 +72,12 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		}
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values()
-				.stream()
-				.noneMatch(o -> o instanceof Collection<?>) : "A simpleSlice can not hold value=Collection<?>. Were: %s"
-						.formatted(asMap);
+		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
+				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values()
-				.stream()
-				.noneMatch(o -> o instanceof IValueMatcher) : "A simpleSlice can not hold value=IValueMatcher. Were: %s"
-						.formatted(asMap);
+		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
+				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
 
 		return new SliceAsMap(safeMap);
 	}

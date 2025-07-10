@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
@@ -337,7 +336,7 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 				this.reordering = new int[size];
 
 				keyToIndex.forEach(e -> {
-					reordering[this.keys.size()] = e.getIntValue();
+					reordering[e.getIntValue()] = this.keys.size();
 					this.keys.add(e.getKey());
 				});
 			}

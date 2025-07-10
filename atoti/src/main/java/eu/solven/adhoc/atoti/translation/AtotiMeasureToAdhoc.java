@@ -603,6 +603,8 @@ public class AtotiMeasureToAdhoc {
 				.filter(k -> !IPostProcessor.CONTINUOUS_QUERY_HANDLER_KEYS.equals(k))
 				// Analysis levels are useless in Adhoc (and generally opaque in ActivePivot)
 				.filter(k -> !AAdvancedPostProcessorV2.ANALYSIS_LEVELS_PROPERTY.equals(k))
+				// leafLevels are not excluded as they hold some order which may be relied upon by some PostProcessors
+				// Adhoc groupByColumns may be sorted (e.g. may be re-ordered lexicographically)
 				.filter(k -> !Set.of(excludedProperties).contains(k))
 				.forEach(key -> options.put(key, properties.get(key)));
 

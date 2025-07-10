@@ -69,7 +69,7 @@ export default {
 						// load tokens for current user
 						userStore.loadUserTokens();
 					});
-					
+
 					if (props.modal) {
 						// Do not redirect as we're in a modal, and we want to stay on current location
 						// Though, some cookies has been update, enabling to get an access_token

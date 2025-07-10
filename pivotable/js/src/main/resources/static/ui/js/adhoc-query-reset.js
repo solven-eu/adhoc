@@ -9,11 +9,10 @@ export default {
 	},
 	computed: {},
 	setup(props) {
-		const resetQuery = function() {
+		const resetQuery = function () {
 			props.queryModel.reset();
 		};
-		
-		
+
 		return {
 			resetQuery,
 		};

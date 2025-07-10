@@ -36,12 +36,12 @@ export default {
 		const hintLoginSuccess = props.success;
 		const hintLoggedOut = props.logout;
 
-		userStore.initializeUser()		.then(() => {
-						// load tokens for current user
-						userStore.loadUserTokens();
-					});
+		userStore.initializeUser().then(() => {
+			// load tokens for current user
+			userStore.loadUserTokens();
+		});
 
-		return {userStore,hintLoginSuccess,hintLoggedOut};
+		return { userStore, hintLoginSuccess, hintLoggedOut };
 	},
 	template: /* HTML */ `isLoggedIn={{isLoggedIn}} userStore={{userStore.needsToLogin}} user={{user.details.username}}
         <div v-if="isLoggedIn">

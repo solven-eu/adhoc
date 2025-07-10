@@ -34,7 +34,7 @@ const formatters = function (formatOptions) {
 	}
 	let numberFormat;
 	try {
-		numberFormat = new Intl.NumberFormat(formatOptions.locale, numberFormatOptions);	
+		numberFormat = new Intl.NumberFormat(formatOptions.locale, numberFormatOptions);
 	} catch (e) {
 		// May happen on `minimumFractionDigits>maximumFractionDigits`
 		console.warn("Invalid formatting options", numberFormatOptions, e);

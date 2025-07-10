@@ -93,12 +93,42 @@ public class TestAdhocMap {
 	}
 
 	@Test
-	public void testReOrder() {
+	public void testReOrder_2() {
 		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
 		IAdhocMap desc = AdhocMap.builder(ImmutableSet.of("date", "a")).append(now).append("a1").build();
 
 		Assertions.assertThat(desc).isEqualTo(asc);
 		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "date", now));
+	}
+
+	@Test
+	public void testReOrder_3_mixed() {
+		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("a", "c", "b")).append("a1").append("c1").append("b1").build();
+		IAdhocMap desc =
+				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+
+		Assertions.assertThat(desc).isEqualTo(asc);
+		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+	}
+
+	@Test
+	public void testReOrder_3_mixed2() {
+		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("c", "a", "b")).append("c1").append("a1").append("b1").build();
+		IAdhocMap desc =
+				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+
+		Assertions.assertThat(desc).isEqualTo(asc);
+		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+	}
+
+	@Test
+	public void testReOrder_3_reverse() {
+		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("c", "b", "a")).append("c1").append("b1").append("a1").build();
+		IAdhocMap desc =
+				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+
+		Assertions.assertThat(desc).isEqualTo(asc);
+		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test

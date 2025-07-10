@@ -1,6 +1,5 @@
 export default {
-	computed: {
-	},
+	computed: {},
 	setup() {
 		return {};
 	},

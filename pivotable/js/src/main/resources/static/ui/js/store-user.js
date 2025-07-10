@@ -203,7 +203,8 @@ export const useUserStore = defineStore("user", {
 				.catch((e) => {
 					console.warn("Issue while checking login status", e);
 					store.needsToCheckLogin = true;
-				}).finally(() => {
+				})
+				.finally(() => {
 					console.info("reset initializeUserPromise");
 					this.initializeUserPromise = null;
 				});
