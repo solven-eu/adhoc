@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.kumite.account;
+package eu.solven.adhoc.pivotable.account;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -84,10 +84,4 @@ public enum StandardQueryOptions implements IQueryOption {
 	public static StandardQueryOptions forValue(String value) {
 		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
 	}
-
-	// https://github.com/FasterXML/jackson-databind/issues/5030
-	// @JsonValue
-	public String toValue() {
-		return this.name();
-	}
 }

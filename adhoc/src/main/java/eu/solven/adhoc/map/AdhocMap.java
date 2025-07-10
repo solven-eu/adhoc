@@ -390,20 +390,6 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	/**
 	 * 
 	 * @param map
-	 * @return an immutable copy of the input, which may or may not be an {@link AdhocMap}
-	 */
-	public static Map<String, Object> immutableCopyOf(Map<String, ?> map) {
-		if (map instanceof IAdhocMap adhocMap) {
-			// For performance, we expect to be generally in this branch
-			return adhocMap;
-		} else {
-			return ImmutableMap.copyOf(map);
-		}
-	}
-
-	/**
-	 * 
-	 * @param map
 	 * @return a copy of the input, as an {@link AdhocMap}
 	 */
 	public static IAdhocMap copyOf(Map<String, ?> map) {

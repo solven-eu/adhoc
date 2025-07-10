@@ -20,7 +20,7 @@ export default {
 		AdhocAccountRef,
 	},
 	computed: {
-		...mapState(useUserStore, ["account", "tokens", "nbAccountFetching"]),
+		...mapState(useUserStore, ["account", "tokens", "nbLoginLoading"]),
 	},
 	setup() {
 		const store = useAdhocStore();

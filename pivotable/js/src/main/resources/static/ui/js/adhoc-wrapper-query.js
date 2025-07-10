@@ -6,11 +6,13 @@ import { useAdhocStore } from "./store-adhoc.js";
 import { useUserStore } from "./store-user.js";
 
 import AdhocQuery from "./adhoc-query.js";
+import AdhocLoading from "./adhoc-loading.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocQuery,
+		AdhocLoading,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -24,7 +26,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useUserStore, ["needsToLogin"]),
+		...mapState(useUserStore, ["nbLoginLoading", "needsToLogin"]),
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
@@ -80,18 +82,11 @@ export default {
 	},
 	template: /* HTML */ `
         <div v-if="needsToLogin">Needs to login</div>
-        <div v-else-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
+        <div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
+			<AdhocLoading :id="cubeId" :loading="nbSchemaFetching > 0" :error="cube.error" />
+			<AdhocLoading :id="endpointId" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+			<AdhocLoading id="login" :loading="nbLoginLoading > 0" :error="needsToLogin ? 'needsToLogin' : null" />
         </div>
-        <div v-else-if="endpoint.error">Endpoint error: {{endpoint.error}}</div>
-        <div v-else-if="cube.error">Cube error: {{cube.error}}</div>
         <div v-else>
             <AdhocQuery :endpointId="endpointId" :cubeId="cubeId" :cube="cube" />
         </div>

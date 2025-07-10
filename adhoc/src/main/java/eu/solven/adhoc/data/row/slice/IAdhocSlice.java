@@ -36,6 +36,8 @@ import eu.solven.pepper.core.PepperLogHelper;
 /**
  * A slice expresses the axes along which a query is filtered.
  * 
+ * Coordinates (e.g. Map values) are normalized: e.g. `int` and `long` are considered equals.
+ * 
  * @author Benoit Lacelle
  */
 public interface IAdhocSlice {

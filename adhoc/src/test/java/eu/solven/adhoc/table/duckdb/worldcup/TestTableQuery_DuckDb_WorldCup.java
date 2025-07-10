@@ -170,6 +170,19 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	}
 
 	@Test
+	public void testCoachScore_byMinute() {
+		ITabularView result = cube().execute(CubeQuery.builder().measure("coach_score").groupByAlso("minute").build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 64L)
+					.containsEntry("match_count.sinceInception2", 580L)
+					.hasSize(2);
+		});
+	}
+
+	@Test
 	public void testMatchCount_sinceInception_groupByYear() {
 		ITabularView result = cube().execute(
 				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("year").build());

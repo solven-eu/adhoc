@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,6 +65,11 @@ public class SlicedRecordFromArray implements ISlicedRecord {
 				// Some measure may return an long[] or double[]
 				.map(AdhocDebug::toString)
 				.collect(Collectors.joining(", ", "[", "]"));
+	}
+
+	@Override
+	public List<?> asList() {
+		return Collections.unmodifiableList(measures);
 	}
 
 }

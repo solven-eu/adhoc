@@ -4,6 +4,7 @@ import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocQueryRawModal from "./adhoc-query-raw-modal.js";
+import AdhocQueryReset from "./adhoc-query-reset.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -37,6 +38,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocQueryRawModal,
+		AdhocQueryReset,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -251,7 +253,6 @@ export default {
         </div>
         <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
         <div v-else>
-            <!-- Move Submitter-->
             <span>
                 <div>
                     <button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
@@ -264,7 +265,8 @@ export default {
                 </div>
             </span>
 
-            <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
+			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
+			<AdhocQueryReset :queryModel="queryModel" />
         </div>
     `,
 };

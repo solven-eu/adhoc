@@ -71,7 +71,7 @@
             import Login from "./ui/js/login.js";
             import LoginBasic from "./ui/js/login-basic.js";
             import AboutView from "./ui/js/about.js";
-
+			
             // Some routes prefix are forbidden as they would match API
             // It includes `/ui`, `/api`
             const routes = [
@@ -91,6 +91,12 @@
                     component: Login,
                     // https://stackoverflow.com/questions/44783787/bind-query-to-props-with-vue-router
                     // props: route => Object.assign({}, route.query, route.params)
+					props: (route) => ({
+						// On loginSuccess, Spring redirects to `/login?success`
+						success: route.query.success === null ? true : false,
+						// On loginSuccess, Spring redirects to `/login?logout`
+						logout: route.query.logout === null ? true : false,
+					}),
                 },
                 {
                     path: "/html/login/basic",

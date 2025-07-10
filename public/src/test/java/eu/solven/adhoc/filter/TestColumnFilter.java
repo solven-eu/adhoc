@@ -52,7 +52,7 @@ public class TestColumnFilter {
 		Assertions.assertThat(asString).isEqualTo("""
 				{"type":"column","column":"k","valueMatcher":"v","nullIfAbsent":true}
 				""".strip());
-		ColumnFilter fromString = objectMapper.readValue(asString, ColumnFilter.class);
+		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(ksEqualsV);
 	}

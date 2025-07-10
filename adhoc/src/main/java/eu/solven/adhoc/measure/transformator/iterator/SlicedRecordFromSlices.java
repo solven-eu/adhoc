@@ -22,11 +22,13 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
@@ -66,6 +68,11 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 
 			return AdhocDebug.toString(v);
 		}).collect(Collectors.joining(", ", "[", "]"));
+	}
+
+	@Override
+	public List<?> asList() {
+		return Collections.unmodifiableList(Lists.transform(valueProviders, IValueProvider::getValue));
 	}
 
 }

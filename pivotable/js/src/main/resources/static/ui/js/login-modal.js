@@ -20,7 +20,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
+		...mapState(useUserStore, ["nbLoginLoading", "account", "isLoggedIn"]),
 		...mapState(useUserStore, {
 			user(store) {
 				return store.account;

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,5 +46,16 @@ public class TestStandardQueryOptions {
 		ObjectMapper om = new ObjectMapper();
 
 		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
+	}
+
+	@Disabled("TODO Custom options can not be (de)serialized properly for now")
+	@Test
+	public void testJackson_internalQueryOption() throws JsonProcessingException {
+		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class,
+				InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION);
+
+		Assertions.assertThat(option).isEqualTo("""
+				"DISABLE_AGGREGATOR_INDUCTION"
+				""".trim());
 	}
 }

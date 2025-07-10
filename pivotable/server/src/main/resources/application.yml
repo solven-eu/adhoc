@@ -13,7 +13,6 @@ spring:
                 - fakeuser
                 - inmemory
             default_server:
-                - inject_default_games
                 - self_endpoint
                 - simple_datasets
             prodmode:

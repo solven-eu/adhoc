@@ -40,7 +40,7 @@ jobs:
     # https://stackoverflow.com/questions/57498605/github-actions-share-workspace-artifacts-between-jobs
     #- uses: actions/upload-artifact@v4
     #  with:
-    #    name: kumite-server
+    #    name: pivotable-server
     #    path: server/target/*-exec.jar
 
     - name: Upload coverage reports to Codecov

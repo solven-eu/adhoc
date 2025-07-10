@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -41,7 +42,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}
+ * A simple {@link IAdhocSlice} based on a {@link Map}.
  * 
  * @author Benoit Lacelle
  */
@@ -62,7 +63,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 						e -> AdhocPrimitiveHelpers.normalizeValue(e.getValue())));
 
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
-		Map<String, ?> safeMap = AdhocMap.immutableCopyOf(asMap);
+		Map<String, ?> safeMap = AdhocMap.copyOf(asMap);
 
 		// This is very fast: keep the check as it is
 		if (safeMap.containsValue(null)) {
@@ -71,12 +72,16 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		}
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
-				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
+		assert safeMap.values()
+				.stream()
+				.noneMatch(o -> o instanceof Collection<?>) : "A simpleSlice can not hold value=Collection<?>. Were: %s"
+						.formatted(asMap);
 
 		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
-				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
+		assert safeMap.values()
+				.stream()
+				.noneMatch(o -> o instanceof IValueMatcher) : "A simpleSlice can not hold value=IValueMatcher. Were: %s"
+						.formatted(asMap);
 
 		return new SliceAsMap(safeMap);
 	}
@@ -93,7 +98,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 
 	@Override
 	public Map<String, Object> getCoordinates() {
-		return AdhocMap.immutableCopyOf(asMap);
+		return AdhocMapHelpers.immutableCopyOf(asMap);
 	}
 
 	@Override

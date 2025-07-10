@@ -1,19 +1,15 @@
-import { mapState } from "pinia";
-import { useAdhocStore } from "./store-adhoc.js";
-
 export default {
 	computed: {
-		...mapState(useAdhocStore, ["account", "nbAccountFetching"]),
 	},
 	setup() {
 		return {};
 	},
 	template: /* HTML */ `
         <h1>Adhoc</h1>
-        This is a plateform for bots/algorithms contests. Links
+        This is a query engine to build complex KPI, by defining a tree of KPIs. Links
         <ul>
             <li>
-                <a href="https://github.com/solven-eu/kumite/" target="_blank">Github project</a>
+                <a href="https://github.com/solven-eu/adhoc/" target="_blank">Github project</a>
             </li>
 
             <li>
@@ -21,6 +17,6 @@ export default {
             </li>
         </ul>
 
-        <a href="https://www.solven.eu/kumite/lexicon/" target="_blank">Lexicon</a>
+        <a href="https://www.solven.eu/adhoc/lexicon/" target="_blank">Lexicon</a>
     `,
 };

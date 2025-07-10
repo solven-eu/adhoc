@@ -72,6 +72,15 @@ export default {
 			customMarkers: {},
 			// `optionName->boolean`
 			selectedOptions: {},
+			
+			reset: function() {
+				queryModel.selectedMeasures = {};
+				queryModel.selectedColumns = {};
+				queryModel.selectedColumnsOrdered = [];
+				queryModel.selectedOptions = {};
+				queryModel.customMarkers = {};		
+				console.log('queryModel has been reset');		
+			},
 
 			onColumnToggled: function (column) {
 				const array = queryModel.selectedColumnsOrdered;

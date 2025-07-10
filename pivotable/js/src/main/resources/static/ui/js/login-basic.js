@@ -62,17 +62,17 @@ export default {
 
 					const json = await response.json();
 
-					console.info("Login BASIC", json);
+					console.info("Logged-in with BASIC", json);
 
+					// force loading updated user (given we have received a fresh session cookie)
+					userStore.loadUser().then(() => {
+						// load tokens for current user
+						userStore.loadUserTokens();
+					});
+					
 					if (props.modal) {
 						// Do not redirect as we're in a modal, and we want to stay on current location
 						// Though, some cookies has been update, enabling to get an access_token
-
-						// force loading updated user (givne we have received a fresh session cookie)
-						userStore.loadUser().then(() => {
-							// load tokens for current user
-							userStore.loadUserTokens();
-						});
 					} else {
 						const loginSuccessHtmlRoute = json.Location;
 						router.push(loginSuccessHtmlRoute);
