@@ -20,40 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.kumite.account;
+package eu.solven.adhoc.table.sql;
 
 import org.assertj.core.api.Assertions;
+import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.Table;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
-import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
-
-public class TestPivotableUser implements IPivotableTestConstants {
-	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
+public class TestJooqTableQueryFactory {
+	Table<Record> table = DSL.table(DSL.name("someTableName"));
 
 	@Test
-	public void testJackson() throws JsonMappingException, JsonProcessingException {
-		PivotableUser initial = PivotableUser.builder()
-				.accountId(someAccountId)
-				.rawRaw(IPivotableTestConstants.userRawRaw())
-				.details(IPivotableTestConstants.userDetails())
-				.build();
+	public void testBuilder_duckDb_implicitOptions() {
+		JooqTableQueryFactory queryFactory =
+				JooqTableQueryFactory.builder().table(table).dslContext(DSL.using(SQLDialect.DUCKDB)).build();
 
-		String asString = objectMapper.writeValueAsString(initial);
-
-		// Assertions.assertThat(asString).isEqualTo("");
-
-		// Assertions.assertThatThrownBy(() -> objectMapper.readValue(asString, KumiteUser.class))
-		// .isInstanceOf(InvalidDefinitionException.class);
-
-		PivotableUser fromString = objectMapper.readValue(asString, PivotableUser.class);
-
-		Assertions.assertThat(fromString).isEqualTo(initial);
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isTrue();
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToFilterAggregates()).isTrue();
 	}
 
+	@Test
+	public void testBuilder_duckDb_explicitOptions() {
+		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+				.table(table)
+				.dslContext(DSL.using(SQLDialect.DUCKDB))
+				.capabilities(
+						JooqTableCapabilities.builder().ableToFilterAggregates(false).ableToGroupByAll(false).build())
+				.build();
+
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isFalse();
+		Assertions.assertThat(queryFactory.getCapabilities().isAbleToFilterAggregates()).isFalse();
+	}
 }

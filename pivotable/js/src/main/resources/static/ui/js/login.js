@@ -13,37 +13,54 @@ export default {
 		Whatnow,
 	},
 	props: {
+		success: {
+			type: Boolean,
+			required: true,
+		},
 		logout: {
-			type: String,
-			required: false,
+			type: Boolean,
+			required: true,
 		},
 	},
 	computed: {
-		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn", "isLoggedOut"]),
+		...mapState(useUserStore, ["nbLoginLoading", "account", "isLoggedIn", "isLoggedOut"]),
 		...mapState(useUserStore, {
 			user(store) {
 				return store.account;
 			},
 		}),
 	},
-	setup() {
+	setup(props) {
 		const userStore = useUserStore();
 
-		userStore.initializeUser();
+		const hintLoginSuccess = props.success;
+		const hintLoggedOut = props.logout;
 
-		return {};
+		userStore.initializeUser().then(() => {
+			// load tokens for current user
+			userStore.loadUserTokens();
+		});
+
+		return { userStore, hintLoginSuccess, hintLoggedOut };
 	},
-	template: /* HTML */ `
+	template: /* HTML */ `isLoggedIn={{isLoggedIn}} userStore={{userStore.needsToLogin}} user={{user.details.username}}
         <div v-if="isLoggedIn">
             Welcome {{user.details.name}}. <Logout />
 
             <Whatnow />
+
+			<span v-if="hintLoginSuccess">
+				Login Success
+			</span>
+			<span v-if="hintLoggedOut">
+				Logout Success
+			</span>
         </div>
         <div v-else-if="isLoggedOut">
             <LoginOptions />
         </div>
         <div v-else>
-            <div v-if="nbAccountFetching > 0">Loading...</div>
+            <div v-if="nbLoginLoading > 0">Loading...</div>
             <div v-else>?</div>
         </div>
     `,

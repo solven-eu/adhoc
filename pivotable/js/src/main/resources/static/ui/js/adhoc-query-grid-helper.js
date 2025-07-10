@@ -32,7 +32,14 @@ const formatters = function (formatOptions) {
 		numberFormatOptions.style = "currency";
 		numberFormatOptions.currency = formatOptions.measureCcy;
 	}
-	const numberFormat = new Intl.NumberFormat(formatOptions.locale, numberFormatOptions);
+	let numberFormat;
+	try {
+		numberFormat = new Intl.NumberFormat(formatOptions.locale, numberFormatOptions);
+	} catch (e) {
+		// May happen on `minimumFractionDigits>maximumFractionDigits`
+		console.warn("Invalid formatting options", numberFormatOptions, e);
+		numberFormat = new Intl.NumberFormat(formatOptions.locale, {});
+	}
 
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};

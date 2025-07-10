@@ -482,9 +482,6 @@ export default {
 
             <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 
-            <div>
-                <label>SlickGrid rendering = {{rendering}} ({{gridMetadata}} rows)</label>
-            </div>
             <span style="width:100%;" class="position-relative">
                 <div :id="domId" class="vh-75"></div>
 

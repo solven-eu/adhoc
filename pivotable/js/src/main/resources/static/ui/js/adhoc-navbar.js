@@ -9,7 +9,7 @@ export default {
 		Logout,
 	},
 	computed: {
-		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbAccountFetching", "needsToLogin", "needsToRefreshAccessToken"]),
+		...mapState(useUserStore, ["isLoggedIn", "account", "tokens", "nbLoginLoading", "needsToLogin", "needsToRefreshAccessToken"]),
 	},
 	setup() {
 		const userStore = useUserStore();

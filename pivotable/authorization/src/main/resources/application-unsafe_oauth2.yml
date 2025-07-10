@@ -1,8 +1,8 @@
-# unsafe_oauth2: this is used by both kumite-server and kumite-player
+# unsafe_oauth2: this is used by pivotable-server
 
 adhoc.pivotable.oauth2:
     # This key is used to sign refresh_token and access_token
     # We hardcode the JWK in resource to make development easier
     # Else, on each reboot, all access_token would be invalid
     signing-key: '{"kty":"oct","kid":"d6ff447e-2a6e-4ef6-9e3d-792f2d23f11e","k":"bJpLdV8t1P_Pv9nay4zTVAU7C9VaBsR5pBtuAsAPkOU","alg":"HS256"}'
-    issuer-base-url: https://unsafe.oauth2.kumite
+    issuer-base-url: https://unsafe.oauth2.pivotable

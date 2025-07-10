@@ -20,42 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.pivotable.account;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
+import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
+import eu.solven.adhoc.pivottable.app.PivotableJackson;
 
-public class TestStandardQueryOptions {
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
-
-		Assertions.assertThat(option).isEqualTo("""
-				"EXPLAIN"
-				""".trim());
-	}
+public class TestPivotableUserRaw implements IPivotableTestConstants {
+	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
 
 	@Test
-	public void testJackson_readLowerCase() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+	public void testJackson() throws JsonMappingException, JsonProcessingException {
+		PivotableUserDetails userRaw = IPivotableTestConstants.userDetails();
+		PivotableUserRaw initial = PivotableUserRaw.builder().accountId(someAccountId).details(userRaw).build();
 
-		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
+		String asString = objectMapper.writeValueAsString(initial);
+
+		PivotableUserRaw fromString = objectMapper.readValue(asString, PivotableUserRaw.class);
+
+		Assertions.assertThat(fromString).isEqualTo(initial);
 	}
 
-	@Disabled("TODO Custom options can not be (de)serialized properly for now")
-	@Test
-	public void testJackson_internalQueryOption() throws JsonProcessingException {
-		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class,
-				InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION);
-
-		Assertions.assertThat(option).isEqualTo("""
-				"DISABLE_AGGREGATOR_INDUCTION"
-				""".trim());
-	}
 }

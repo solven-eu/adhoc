@@ -35,28 +35,27 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
  * @author Benoit Lacelle
  */
 // https://www.baeldung.com/jackson-custom-serialization
-public class SimpleEnumSerializer extends StdSerializer<StandardQueryOptions> {
+public class SimpleEnumSerializer extends StdSerializer<IQueryOption> {
 	private static final long serialVersionUID = 1L;
 
 	public SimpleEnumSerializer() {
 		this(null);
 	}
 
-	public SimpleEnumSerializer(Class<StandardQueryOptions> t) {
+	public SimpleEnumSerializer(Class<IQueryOption> t) {
 		super(t);
 	}
 
 	@Override
-	public void serializeWithType(StandardQueryOptions value,
+	public void serializeWithType(IQueryOption value,
 			JsonGenerator gen,
 			SerializerProvider serializers,
 			TypeSerializer typeSer) throws IOException {
-		gen.writeObject(value.toValue());
+		gen.writeObject(value.toString());
 	}
 
 	@Override
-	public void serialize(StandardQueryOptions value, JsonGenerator gen, SerializerProvider provider)
-			throws IOException {
+	public void serialize(IQueryOption value, JsonGenerator gen, SerializerProvider provider) throws IOException {
 		gen.writeObject(value.toString());
 	}
 

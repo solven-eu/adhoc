@@ -20,56 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator.iterator;
+package eu.solven.adhoc.map;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.measure.transformator.AdhocDebug;
-import lombok.Builder;
-import lombok.Singular;
+import com.google.common.collect.ImmutableMap;
+
+import lombok.experimental.UtilityClass;
 
 /**
- * A simple {@link ISlicedRecord} based on a {@link List}. It is sub-optimal for performance, but very useful for
- * unit-tests.
+ * Helper methods related to {@link Map} in the context of Adhoc.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class SlicedRecordFromArray implements ISlicedRecord {
-	// ImmutableList will not accept `null`. Should we introduce a placeholder for null?
-	@Singular
-	final List<?> measures;
+@UtilityClass
+public class AdhocMapHelpers {
 
-	@Override
-	public boolean isEmpty() {
-		return measures.isEmpty();
-	}
-
-	@Override
-	public int size() {
-		return measures.size();
-	}
-
-	@Override
-	public IValueProvider read(int index) {
-		return vc -> vc.onObject(measures.get(index));
-	}
-
-	@Override
-	public String toString() {
-		return measures.stream()
-				// Some measure may return an long[] or double[]
-				.map(AdhocDebug::toString)
-				.collect(Collectors.joining(", ", "[", "]"));
-	}
-
-	@Override
-	public List<?> asList() {
-		return Collections.unmodifiableList(measures);
+	/**
+	 * 
+	 * @param map
+	 * @return an immutable copy of the input, which may or may not be an {@link AdhocMap}
+	 */
+	public static Map<String, Object> immutableCopyOf(Map<String, ?> map) {
+		if (map instanceof IAdhocMap adhocMap) {
+			// For performance, we expect to be generally in this branch
+			return adhocMap;
+		} else {
+			return ImmutableMap.copyOf(map);
+		}
 	}
 
 }

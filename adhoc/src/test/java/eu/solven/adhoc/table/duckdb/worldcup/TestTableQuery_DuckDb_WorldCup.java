@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -37,6 +38,8 @@ import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import lombok.extern.slf4j.Slf4j;
@@ -158,6 +161,26 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure("match_count", "match_count.sinceInception2")
 				.andFilter("year", 1998L)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v)
+					.containsEntry("match_count", 64L)
+					.containsEntry("match_count.sinceInception2", 580L)
+					.hasSize(2);
+		});
+	}
+
+	@Disabled("coach_score fails as match_count is meaningless groupedBy minute")
+	@Test
+	public void testCoachScore_byMinute() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("coach_score")
+				.groupByAlso("minute")
+				.filter(AndFilter.and(ColumnFilter.isLike("Coach name", "LORENZO%"),
+						ColumnFilter.isEqualTo("minute", 4)))
+				.debug(true)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

@@ -26,7 +26,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
@@ -41,7 +40,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @author Benoit Lacelle
  *
  */
-@JsonSerialize(using = SimpleEnumSerializer.class)
+// @JsonSerialize(using = SimpleEnumSerializer.class)
 public enum InternalQueryOptions implements IQueryOption {
 	/**
 	 * Given the {@link Set} of {@link TableQuery}, {@link TableQueryEngine} generally prefers querying the
@@ -49,7 +48,9 @@ public enum InternalQueryOptions implements IQueryOption {
 	 * 
 	 * This option disables this behavior.
 	 */
-	DISABLE_AGGREGATOR_INDUCTION,;
+	DISABLE_AGGREGATOR_INDUCTION,
+
+	;
 
 	@JsonCreator
 	public static InternalQueryOptions forValue(String value) {

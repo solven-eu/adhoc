@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.kumite.account;
+package eu.solven.adhoc.pivotable.account;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,22 +29,29 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
-import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
+import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import eu.solven.adhoc.pivottable.app.PivotableJackson;
 
-public class TestPivotableUserRaw implements IPivotableTestConstants {
+public class TestPivotableUser implements IPivotableTestConstants {
 	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
 
 	@Test
 	public void testJackson() throws JsonMappingException, JsonProcessingException {
-		PivotableUserDetails userRaw = IPivotableTestConstants.userDetails();
-		PivotableUserRaw initial = PivotableUserRaw.builder().accountId(someAccountId).details(userRaw).build();
+		PivotableUser initial = PivotableUser.builder()
+				.accountId(someAccountId)
+				.rawRaw(IPivotableTestConstants.userRawRaw())
+				.details(IPivotableTestConstants.userDetails())
+				.build();
 
 		String asString = objectMapper.writeValueAsString(initial);
 
-		PivotableUserRaw fromString = objectMapper.readValue(asString, PivotableUserRaw.class);
+		// Assertions.assertThat(asString).isEqualTo("");
+
+		// Assertions.assertThatThrownBy(() -> objectMapper.readValue(asString, KumiteUser.class))
+		// .isInstanceOf(InvalidDefinitionException.class);
+
+		PivotableUser fromString = objectMapper.readValue(asString, PivotableUser.class);
 
 		Assertions.assertThat(fromString).isEqualTo(initial);
 	}

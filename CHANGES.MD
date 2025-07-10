@@ -13,6 +13,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 - Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
 - Introduces `JooqTableQueryFactory.canFilterAggregates`, to generate `SUM(CASE y THEN x)` instead of `SUM(x) FILTER (y)`, as many Databases (like `RedShift` does not support `FILTER`).
+- Introduced `JooqTableCapabilities` to configure the SQL capabilities on the underlying table.
 
 ### Changed
 - `IColumnMatcher.toString()` has specialized implementations, depending on the matcher type (e.g. `c==v` for `EqualsMatcher`).

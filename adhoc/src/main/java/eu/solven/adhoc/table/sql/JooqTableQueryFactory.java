@@ -36,9 +36,9 @@ import org.jooq.Field;
 import org.jooq.GroupField;
 import org.jooq.Name;
 import org.jooq.OrderField;
+import org.jooq.Param;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
-import org.jooq.SQLDialect;
 import org.jooq.SelectConnectByStep;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectHavingStep;
@@ -91,9 +91,9 @@ import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import eu.solven.adhoc.table.transcoder.TranscodingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -104,7 +104,6 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@AllArgsConstructor
 @Builder
 @Slf4j
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
@@ -119,15 +118,26 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@NonNull
 	DSLContext dslContext;
 
-	// Typically used for RedShift when it is queried with PostgreSQL dialect
-	@Default
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	boolean canGroupByAll = false;
+	@Getter(AccessLevel.PACKAGE)
+	JooqTableCapabilities capabilities;
 
-	// Typically used for RedShift when it is queried with PostgreSQL dialect
-	@Default
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	boolean canFilterAggregates = false;
+	public JooqTableQueryFactory(IOperatorFactory operatorFactory, TableLike<?> table, DSLContext dslContext) {
+		this(operatorFactory, table, dslContext, JooqTableCapabilities.from(dslContext.dialect()));
+	}
+
+	public JooqTableQueryFactory(IOperatorFactory operatorFactory,
+			TableLike<?> table,
+			DSLContext dslContext,
+			JooqTableCapabilities capabilities) {
+		this.operatorFactory = operatorFactory;
+		this.table = table;
+		this.dslContext = dslContext;
+		if (capabilities == null) {
+			this.capabilities = JooqTableCapabilities.from(dslContext.dialect());
+		} else {
+			this.capabilities = capabilities;
+		}
+	}
 
 	/**
 	 * Holds a Set of SQL {@link Condition}s, given an {@link IAdhocFilter}. Some filters may not be convertible into
@@ -312,15 +322,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected boolean canGroupByAll() {
-		return canGroupByAll || dslContext.dialect() == SQLDialect.DUCKDB;
+		return capabilities.isAbleToGroupByAll();
 	}
 
-	// https://modern-sql.com/feature/filter
-	@Deprecated(since = "Should we rather rely on JooQ Commercial versions?")
 	protected boolean canFilterAggregates() {
-		return canFilterAggregates || dslContext.dialect() == SQLDialect.DUCKDB
-				|| dslContext.dialect() == SQLDialect.POSTGRES
-				|| dslContext.dialect() == SQLDialect.SQLITE;
+		return capabilities.isAbleToFilterAggregates();
 	}
 
 	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
@@ -409,7 +415,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				} else if (RankAggregation.isRank(aggregationKey)) {
 					RankAggregation agg = (RankAggregation) operatorFactory.makeAggregation(a);
 
-					Field<?> field = DSL.field(namedColumn);
 					String duckDbFunction;
 
 					if (agg.isAscElseDesc()) {
@@ -419,8 +424,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					}
 
 					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-					sqlAggFunction = DSL
-							.aggregate(duckDbFunction, Object.class, fieldToAggregate, field, DSL.val(agg.getRank()));
+					Name functionName = DSL.systemName(duckDbFunction);
+					Param<Integer> rank = DSL.val(agg.getRank());
+					sqlAggFunction =
+							DSL.aggregate(functionName, Object.class, fieldToAggregate, fieldToAggregate, rank);
 				} else {
 					sqlAggFunction = onCustomAggregation(a, namedColumn, conditionInCase);
 				}
@@ -459,10 +466,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * @param aggregator
 	 * @param namedColumn
 	 * @param condition
-	 *            a condition to be applied
+	 *            a condition to be applied. May be a `TrueCondition` if there is no {@link Condition} to apply.
 	 * @return
 	 */
 	protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Name namedColumn, Condition condition) {
+		Field<Object> fieldWithoutCase = DSL.field(namedColumn);
+		Field<Object> fieldToAggregate = asCase(condition, fieldWithoutCase);
+
+		return onCustomAggregation(aggregator, fieldToAggregate);
+	}
+
+	protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Field<Object> fieldToAggregate) {
 		String aggregationKey = aggregator.getAggregationKey();
 
 		// TODO Could we prefer some generic aggregation? (e.g. `array_agg` in DuckDB)

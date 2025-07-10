@@ -16,7 +16,7 @@ export default {
 		Flag,
 	},
 	computed: {
-		...mapState(useUserStore, ["nbAccountFetching", "account", "isLoggedIn"]),
+		...mapState(useUserStore, ["nbLoginLoading", "account", "isLoggedIn"]),
 	},
 	setup() {
 		const userStore = useUserStore();

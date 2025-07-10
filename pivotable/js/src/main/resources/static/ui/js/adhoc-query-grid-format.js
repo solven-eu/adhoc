@@ -28,7 +28,7 @@ export default {
                     placeholder="Min fraction digits"
                     aria-label="Min fraction digits"
                     id="minimumFractionDigits"
-                    v-model="formatOptions.minimumFractionDigits"
+                    v-model.number="formatOptions.minimumFractionDigits"
                 />
             </div>
             <div>
@@ -39,7 +39,7 @@ export default {
                     placeholder="Max fraction digits"
                     aria-label="Max fraction digits"
                     id="maximumFractionDigits"
-                    v-model="formatOptions.maximumFractionDigits"
+                    v-model.number="formatOptions.maximumFractionDigits"
                 />
             </div>
             <div>
@@ -50,7 +50,7 @@ export default {
                     placeholder="Max significant digits"
                     aria-label="Max significant digits"
                     id="maximumSignificantDigits"
-                    v-model="formatOptions.maximumSignificantDigits"
+                    v-model.number="formatOptions.maximumSignificantDigits"
                 />
             </div>
             <div>
@@ -61,7 +61,7 @@ export default {
                     placeholder="roundingPriority"
                     aria-label="roundingPriority"
                     id="roundingPriority"
-                    v-model="formatOptions.roundingPriority"
+                    v-model.number="formatOptions.roundingPriority"
                 />
             </div>
         </form>

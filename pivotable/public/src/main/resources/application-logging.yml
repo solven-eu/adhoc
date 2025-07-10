@@ -6,7 +6,7 @@ logging:
         org.springframework.web.reactive: INFO
         org.springframework.web.socket: DEBUG
         org.springframework.messaging: DEBUG
-        eu.solven.kumite.app.webflux.KumiteWebExceptionHandler: DEBUG
+        eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler: DEBUG
 
 # https://stackoverflow.com/questions/30571319/spring-boot-logging-pattern
 # https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot/src/main/resources/org/springframework/boot/logging/logback/defaults.xml#L15C48-L15C67

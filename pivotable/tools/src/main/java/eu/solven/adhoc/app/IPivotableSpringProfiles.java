@@ -36,8 +36,6 @@ public interface IPivotableSpringProfiles {
 	String P_DEFAULT = "default";
 	// This will provide reasonable default for a fast+non_prod run
 	String P_DEFAULT_SERVER = "default_server";
-	// If true, we install at startup a small bunch of games
-	String P_INJECT_DEFAULT_GAMES = "inject_default_games";
 
 	// Activates the whole unsafe configuration
 	String P_UNSAFE = "unsafe";
@@ -72,7 +70,4 @@ public interface IPivotableSpringProfiles {
 	String P_INMEMORY = "inmemory";
 	// Redis will use some Redis persistence storage
 	String P_REDIS = "redis";
-
-	// Usable by the player-application
-	String P_UNSAFE_PLAYER = "unsafe_player";
 }

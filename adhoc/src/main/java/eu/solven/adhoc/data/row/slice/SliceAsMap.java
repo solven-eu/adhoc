@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -41,7 +42,7 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}
+ * A simple {@link IAdhocSlice} based on a {@link Map}.
  * 
  * @author Benoit Lacelle
  */
@@ -62,7 +63,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 						e -> AdhocPrimitiveHelpers.normalizeValue(e.getValue())));
 
 		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
-		Map<String, ?> safeMap = AdhocMap.immutableCopyOf(asMap);
+		Map<String, ?> safeMap = AdhocMap.copyOf(asMap);
 
 		// This is very fast: keep the check as it is
 		if (safeMap.containsValue(null)) {
@@ -93,7 +94,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 
 	@Override
 	public Map<String, Object> getCoordinates() {
-		return AdhocMap.immutableCopyOf(asMap);
+		return AdhocMapHelpers.immutableCopyOf(asMap);
 	}
 
 	@Override
