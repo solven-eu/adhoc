@@ -178,7 +178,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-enforcer-plugin</artifactId>
-					<version>3.5.0</version>
+					<version>3.6.1</version>
 					<dependencies>
 						<dependency>
 							<!-- https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
