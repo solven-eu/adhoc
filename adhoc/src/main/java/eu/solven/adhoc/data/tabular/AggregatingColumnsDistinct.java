@@ -78,7 +78,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
 		// No capacity strategy given `ITabularRecordStream` has no insights about the number of coming rows
-		return factories.getColumnsFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
+		return factories.getColumnFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override

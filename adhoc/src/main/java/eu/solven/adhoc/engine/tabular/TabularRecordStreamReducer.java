@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -38,8 +39,8 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.StandardQueryOptions;
@@ -63,6 +64,9 @@ import lombok.extern.slf4j.Slf4j;
 public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	IOperatorFactory operatorFactory;
+
+	@NonNull
+	ISliceFactory sliceFactory;
 
 	@NonNull
 	QueryPod queryPod;
@@ -161,7 +165,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		AdhocMap.AdhocMapBuilder coordinatesBuilder = AdhocMap.builder(groupedByColumns);
+		MapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
 
 		for (String groupedByColumn : groupedByColumns) {
 			Object value = tableRow.getGroupBy(groupedByColumn);
@@ -183,7 +187,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			coordinatesBuilder.append(value);
 		}
 
-		IAdhocMap asMap = coordinatesBuilder.build();
+		Map<String, ?> asMap = coordinatesBuilder.build();
 		return Optional.of(SliceAsMap.fromMap(asMap));
 	}
 

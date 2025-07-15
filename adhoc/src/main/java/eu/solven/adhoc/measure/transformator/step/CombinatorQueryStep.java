@@ -124,7 +124,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 

@@ -20,39 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.query.InternalQueryOptions;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 
 /**
- * Centralize the basic factories used through Adhoc.
+ * Standard implementation for {@link ITableQueryOptimizerFactory}.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
+	@Override
+	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
+		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+			return new TableQueryOptimizerNone(factories);
+		} else {
+			return new TableQueryOptimizer(factories);
+		}
+	}
 
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
-
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 }

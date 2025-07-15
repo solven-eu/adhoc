@@ -81,7 +81,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 		}
 
 		IMultitypeColumnFastGet<SliceAsMap> values =
-				factories.getColumnsFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+				factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
 

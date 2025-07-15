@@ -144,7 +144,7 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		List<Object> coordinates =
-				slices.stream().map(s -> s.getSlice().getAdhocSliceAsMap().getCoordinates().get("c")).toList();
+				slices.stream().<Object>map(s -> s.getSlice().getAdhocSliceAsMap().getCoordinates().get("c")).toList();
 
 		Assertions.assertThat(coordinates).startsWith("c1", "c2", "c3", "c4").contains("c5");
 

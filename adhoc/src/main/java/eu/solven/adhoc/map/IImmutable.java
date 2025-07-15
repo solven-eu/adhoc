@@ -20,39 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
-
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+package eu.solven.adhoc.map;
 
 /**
- * Centralize the basic factories used through Adhoc.
+ * Indicates the instances are immutable.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+public interface IImmutable {
 
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
-
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 }

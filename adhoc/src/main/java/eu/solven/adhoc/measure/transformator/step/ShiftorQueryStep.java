@@ -43,8 +43,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -111,7 +110,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		AdhocMapBuilder builder = AdhocMap.builder(step.getGroupBy().getGroupedByColumns());
+		MapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
 
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
@@ -200,6 +199,6 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
-		return factories.getColumnsFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

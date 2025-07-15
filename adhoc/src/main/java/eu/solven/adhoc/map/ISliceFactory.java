@@ -20,39 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.map;
 
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+import java.util.Collection;
+import java.util.Map;
+
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
+import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 
 /**
- * Centralize the basic factories used through Adhoc.
+ * Enable building {@link Map} and {@link IAdhocSlice} in Adhoc context.
+ * 
+ * In Adhoc, we generate tons of {@link Map}-like for a given {@link IAdhocGroupBy}. Which means a tons of
+ * {@link Map}-like for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see
+ * {@link IDagBottomUpStrategy}).
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+public interface ISliceFactory {
 
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
+	MapBuilderThroughKeys newMapBuilder();
 
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+	/**
+	 * 
+	 * @param keys
+	 * @return a {@link MapBuilderPreKeys} for given set of keys.
+	 */
+	MapBuilderPreKeys newMapBuilder(Collection<? extends String> keys);
 
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
 }

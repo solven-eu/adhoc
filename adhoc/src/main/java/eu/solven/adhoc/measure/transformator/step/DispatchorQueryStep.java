@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
@@ -195,7 +195,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			ISliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
-		AdhocMap.AdhocMapBuilder queryCoordinatesBuilder = AdhocMap.builder(groupByColumns);
+		MapBuilderPreKeys queryCoordinatesBuilder = factories.getSliceFactory().newMapBuilder(groupByColumns);
 
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate

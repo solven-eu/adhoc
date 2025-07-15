@@ -28,13 +28,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * A slice expresses the axes along which a query is filtered.
+ * A slice expresses the coordinates of an output row, given columns expressed by a a {@link IAdhocGroupBy}.
  * 
  * Coordinates (e.g. Map values) are normalized: e.g. `int` and `long` are considered equals.
  * 
@@ -42,14 +43,14 @@ import eu.solven.pepper.core.PepperLogHelper;
  */
 public interface IAdhocSlice {
 	/**
-	 * The columns for which a filter is expressed
+	 * The columns for which a coordinate is expressed
 	 */
 	Set<String> getColumns();
 
 	/**
 	 *
-	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is also a {@link AndFilter}
-	 *         of {@link EqualsMatcher}.
+	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
+	 *         {@link AndFilter} of {@link EqualsMatcher}.
 	 */
 	IAdhocFilter asFilter();
 
@@ -94,7 +95,7 @@ public interface IAdhocSlice {
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
-	default Map<String, Object> getCoordinates() {
+	default Map<String, ?> getCoordinates() {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		getColumns().forEach(column -> {

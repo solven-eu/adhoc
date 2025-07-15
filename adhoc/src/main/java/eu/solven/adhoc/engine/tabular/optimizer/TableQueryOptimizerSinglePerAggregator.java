@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
@@ -54,6 +55,10 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @author Benoit Lacelle
  */
 public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer {
+
+	public TableQueryOptimizerSinglePerAggregator(AdhocFactories factories) {
+		super(factories);
+	}
 
 	@Override
 	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {

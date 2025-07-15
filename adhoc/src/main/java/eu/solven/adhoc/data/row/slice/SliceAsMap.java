@@ -93,7 +93,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	@Override
-	public Map<String, Object> getCoordinates() {
+	public Map<String, ?> getCoordinates() {
 		return AdhocMapHelpers.immutableCopyOf(asMap);
 	}
 

@@ -55,7 +55,7 @@ public class TestTableQueryOptimizer_Perf {
 	int cardinalityIn = 1_000_000;
 	int cardinalityOut = 1000;
 
-	TableQueryOptimizer optimizer = new TableQueryOptimizer();
+	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
 
@@ -86,8 +86,8 @@ public class TestTableQueryOptimizer_Perf {
 		ISliceToValue inducerValues2 = SliceToValue.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
 		inducers.put(inducerStep, inducerValues2);
 
-		IMultitypeMergeableColumn<SliceAsMap> induced = optimizer
-				.evaluateInduced(AdhocFactories.builder().build(), () -> Set.of(), split, inducers, inducedStep);
+		IMultitypeMergeableColumn<SliceAsMap> induced =
+				optimizer.evaluateInduced(() -> Set.of(), split, inducers, inducedStep);
 
 		Assertions.assertThat(induced.size()).isEqualTo(cardinalityOut);
 

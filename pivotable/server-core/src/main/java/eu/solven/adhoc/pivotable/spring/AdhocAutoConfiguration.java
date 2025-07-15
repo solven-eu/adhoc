@@ -32,6 +32,8 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.StandardColumnFactory;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.IAdhocEventBus;
@@ -75,8 +77,14 @@ public class AdhocAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(IColumnFactory.class)
-	public IColumnFactory columnsFactory() {
+	public IColumnFactory columnFactory() {
 		return StandardColumnFactory.builder().build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(ISliceFactory.class)
+	public ISliceFactory sliceFactory() {
+		return StandardSliceFactory.builder().build();
 	}
 
 	@Bean
@@ -89,11 +97,13 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnMissingBean(AdhocFactories.class)
 	public AdhocFactories adhocFactories(IOperatorFactory operatorFactory,
 			IColumnFactory columnsFactory,
+			ISliceFactory sliceFactory,
 			IStopwatchFactory stopwatchFactory) {
 		return AdhocFactories.builder()
 				.operatorFactory(operatorFactory)
-				.columnsFactory(columnsFactory)
+				.columnFactory(columnsFactory)
 				.stopwatchFactory(stopwatchFactory)
+				.sliceFactory(sliceFactory)
 				.build();
 	}
 

@@ -37,6 +37,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -54,6 +55,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TableQueryOptimizer extends ATableQueryOptimizer {
+
+	public TableQueryOptimizer(AdhocFactories factories) {
+		super(factories);
+	}
 
 	/**
 	 * 

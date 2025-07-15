@@ -55,8 +55,9 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
  * @author Benoit Lacelle
  */
 // `extends AbstractMap` enables not duplicating `.toString`
+@Deprecated(since = "Superseeded by MapOverLists")
 @SuppressWarnings({ "PMD.GodClass", "PMD.LooseCoupling" })
-public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
+public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap, IImmutable {
 	private static final int[] PRE_ORDERED = new int[0];
 
 	// This is mandatory for fast `.get`

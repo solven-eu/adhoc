@@ -20,39 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+import java.util.Set;
+
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.query.table.TableQuery;
 
 /**
- * Centralize the basic factories used through Adhoc.
+ * {@link ITableQueryOptimizerFactory} will turn an input {@link Set} of {@link TableQuery} into a
+ * {@link SplitTableQueries}, telling which {@link TableQuery} will be executed and how to evaluate the other
+ * {@link TableQuery} from the results of the later.
+ * 
+ * The inducer may or may not be amongst the provided input {@link TableQuery}.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
-
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
-
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+@FunctionalInterface
+public interface ITableQueryOptimizerFactory {
+	ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions);
 }

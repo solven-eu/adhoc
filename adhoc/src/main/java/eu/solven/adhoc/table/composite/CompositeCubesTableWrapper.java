@@ -362,12 +362,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
 
 		// TODO ensureCapacity given missingColumns
-		Map<String, Object> groupBys;
+		Map<String, ?> groupBys;
 		if (missingColumns.isEmpty()) {
 			groupBys = slice.getAdhocSliceAsMap().getCoordinates();
 		} else {
-			groupBys = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
-			missingColumns.forEach(column -> groupBys.put(column, missingColumn(cube, column)));
+			Map<String, Object> groupBysTmp = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
+			groupBys = groupBysTmp;
+			missingColumns.forEach(column -> groupBysTmp.put(column, missingColumn(cube, column)));
 		}
 
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupBys).build();

@@ -54,7 +54,7 @@ public class ThrowingCombination implements ICombination {
 		throw makeException(slice.getAdhocSliceAsMap().getCoordinates());
 	}
 
-	public static ThrowingCombinationException makeException(Map<String, Object> sliceAsMap) {
+	public static ThrowingCombinationException makeException(Map<String, ?> sliceAsMap) {
 		return new ThrowingCombinationException("Throwing on slice=%s".formatted(sliceAsMap));
 	}
 }

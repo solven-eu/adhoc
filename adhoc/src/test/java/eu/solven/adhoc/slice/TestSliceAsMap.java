@@ -96,7 +96,10 @@ public class TestSliceAsMap {
 		SliceAsMap slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		SliceAsMap extended = slice.addColumns(Map.of("k2", "v2"));
-		Assertions.assertThat(extended.getCoordinates()).hasSize(2).containsEntry("k", "v").containsEntry("k2", "v2");
+		Assertions.assertThat((Map) extended.getCoordinates())
+				.hasSize(2)
+				.containsEntry("k", "v")
+				.containsEntry("k2", "v2");
 	}
 
 	@Test

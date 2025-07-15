@@ -108,7 +108,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.GodClass" })
 public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
@@ -117,6 +117,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@NonNull
 	@Default
+	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
+	@Getter
 	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
@@ -341,7 +343,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	@VisibleForTesting
-	public TableQueryEngine makeTableQueryEngine() {
+	public ITableQueryEngine makeTableQueryEngine() {
 		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 

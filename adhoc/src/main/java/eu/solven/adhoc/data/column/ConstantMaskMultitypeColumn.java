@@ -108,7 +108,7 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 
 	@Override
 	public IValueProvider onValue(SliceAsMap key) {
-		Map<String, Object> keyCoordinates = key.getAdhocSliceAsMap().getCoordinates();
+		Map<String, ?> keyCoordinates = key.getAdhocSliceAsMap().getCoordinates();
 		if (!keyCoordinates.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);

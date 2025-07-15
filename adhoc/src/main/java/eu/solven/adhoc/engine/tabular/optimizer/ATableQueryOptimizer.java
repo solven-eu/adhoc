@@ -34,8 +34,6 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -47,6 +45,7 @@ import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,7 +54,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@RequiredArgsConstructor
 public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
+	final AdhocFactories factories;
 
 	/**
 	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
@@ -79,8 +80,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> evaluateInduced(AdhocFactories factories,
-			IHasQueryOptions hasOptions,
+	public IMultitypeMergeableColumn<SliceAsMap> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced) {
@@ -95,7 +95,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
-		IMultitypeMergeableColumn<SliceAsMap> inducedValues = factories.getColumnsFactory()
+		IMultitypeMergeableColumn<SliceAsMap> inducedValues = factories.getColumnFactory()
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
 		FilterMatcher filterMatcher = FilterMatcher.builder()
@@ -129,7 +129,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	}
 
 	protected SliceAsMap inducedGroupBy(NavigableSet<String> groupedByColumns, SliceAsMap inducer) {
-		AdhocMapBuilder induced = AdhocMap.builder(groupedByColumns);
+		var induced = factories.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		groupedByColumns.forEach(inducedColumn -> {
 			induced.append(inducer.getRawSliced(inducedColumn));

@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
@@ -109,7 +109,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 		// BEWARE The output capacity is at most the sum of input capacity. But it is generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
 		int initialCapacity = CombinatorQueryStep.sumSizes(underlyings);
-		return factories.getColumnsFactory().makeColumn(agg, initialCapacity);
+		return factories.getColumnFactory().makeColumn(agg, initialCapacity);
 	}
 
 	@Override
@@ -149,7 +149,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 	protected SliceAsMap queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		AdhocMap.AdhocMapBuilder mapBuilder = AdhocMap.builder(groupedByColumns);
+		MapBuilderPreKeys mapBuilder = factories.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		groupedByColumns.forEach(groupBy -> {
 			Object value = bucketedSlice.getRawSliced(groupBy);
