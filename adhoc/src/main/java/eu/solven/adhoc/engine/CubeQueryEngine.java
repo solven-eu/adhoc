@@ -45,11 +45,9 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -75,6 +73,7 @@ import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -85,6 +84,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -518,7 +518,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	// TODO We should ensure this slice is valid given current filter
 	protected SliceAsMap makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
-		ImmutableMap.Builder<String, Object> errorSliceAsMapBuilder = ImmutableMap.builder();
+		MapBuilderPreKeys errorSliceAsMapBuilder =
+				factories.getSliceFactory().newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();
 
@@ -538,12 +539,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				}
 			}
 
-			errorSliceAsMapBuilder.put(groupedByColumn, errorCoordinate);
+			errorSliceAsMapBuilder.append(errorCoordinate);
 		});
 
-		Map<String, ?> errorSliceAsMap = errorSliceAsMapBuilder.build();
-		SliceAsMap errorSlice = SliceAsMap.fromMap(errorSliceAsMap);
-		return errorSlice;
+		return errorSliceAsMapBuilder.build().asSlice().asSliceAsMap();
 	}
 
 	protected List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,

@@ -35,12 +35,12 @@ import java.util.stream.StreamSupport;
 
 import com.google.common.primitives.Booleans;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -102,7 +102,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		// BEWARE: This will fill `sortedSlicesAsSet` lazily, while iterating along sortedSlices, before processing
 		// notSorted slices. This is broken if one`.parallel` the stream.
 		sortedSlices = sortedSlices.peek(s -> {
-			sortedSlicesAsSet.add(s.getSlice().getAdhocSliceAsMap());
+			sortedSlicesAsSet.add(s.getSlice().asSliceAsMap());
 		});
 
 		List<Stream<SliceAndMeasures>> unsortedStreams = unsortedStreams(queryStep, underlyings, sortedSlicesAsSet);

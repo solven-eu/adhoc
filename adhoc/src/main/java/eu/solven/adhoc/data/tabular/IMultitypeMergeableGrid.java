@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**

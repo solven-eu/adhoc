@@ -39,12 +39,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
@@ -71,10 +72,10 @@ public class StandardSliceFactory implements ISliceFactory {
 	final ConcurrentMap<List<String>, EnrichedNavigableSet> listToKeyset = new ConcurrentHashMap<>();
 
 	@Default
-	final Function<Object, Object> valueNormalizer = Function.identity();
+	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
-	public Object normalizeValue(Object raw) {
-		return valueNormalizer.apply(raw);
+	public Object normalizeCoordinate(Object raw) {
+		return valueNormalizer.normalizeCoordinate(raw);
 	}
 
 	/**
@@ -273,7 +274,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	@SuppressWarnings("PMD.LooseCoupling")
 	@Builder
 	public static class MapOverLists extends AbstractMap<String, Object>
-			implements IImmutable, Comparable<MapOverLists> {
+			implements Comparable<MapOverLists>, IAdhocMap {
 		private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
 
 		// Holds keys, in both sorted order, and unordered order ,with the information to map from one to the other
@@ -310,8 +311,12 @@ public class StandardSliceFactory implements ISliceFactory {
 				public Object get(int index) {
 					return unorderedValues.get(keys.unorderedIndex(index));
 				}
-
 			};
+		}
+
+		@Override
+		public IAdhocSlice asSlice() {
+			return SliceAsMap.fromMapUnsafe(this);
 		}
 
 		// Similar to HashMap
@@ -388,6 +393,9 @@ public class StandardSliceFactory implements ISliceFactory {
 				} else {
 					return true;
 				}
+			} else if (obj instanceof IAdhocMap adhocMap) {
+				// BEWARE This should not happen in production, as it can be very slow
+				return this.entrySet().equals(adhocMap.entrySet());
 			} else if (obj instanceof Map<?, ?>) {
 				// Rely on the other class .equals: BEWARE, this can lead to infinite recursive calls
 				return obj.equals(this);
@@ -539,14 +547,10 @@ public class StandardSliceFactory implements ISliceFactory {
 			if (values == null) {
 				values = ImmutableList.builderWithExpectedSize(keys.size());
 			}
-			Object v = factory.normalizeValue(value);
+			Object v = factory.normalizeCoordinate(value);
 			values.add(v);
 
 			return this;
-		}
-
-		public Map<String, ?> build() {
-			return factory.buildMap(this);
 		}
 
 		@Override
@@ -556,6 +560,10 @@ public class StandardSliceFactory implements ISliceFactory {
 			} else {
 				return values.build();
 			}
+		}
+
+		public IAdhocMap build() {
+			return factory.buildMap(this);
 		}
 	}
 
@@ -580,7 +588,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 		public MapBuilderThroughKeys put(String key, Object value) {
 			keys.add(key);
-			Object normalizedValue = factory.normalizeValue(value);
+			Object normalizedValue = factory.normalizeCoordinate(value);
 			values.add(normalizedValue);
 
 			return this;
@@ -596,7 +604,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			return values.build();
 		}
 
-		public Map<String, ?> build() {
+		public IAdhocMap build() {
 			return factory.buildMap(this);
 		}
 
@@ -607,7 +615,7 @@ public class StandardSliceFactory implements ISliceFactory {
 		return MapBuilderThroughKeys.builder().factory(this).build();
 	}
 
-	public Map<String, ?> buildMap(IHasEntries hasEntries) {
+	public IAdhocMap buildMap(IHasEntries hasEntries) {
 		Collection<? extends String> keys = hasEntries.getKeys();
 		Collection<?> values = hasEntries.getValues();
 
@@ -620,10 +628,10 @@ public class StandardSliceFactory implements ISliceFactory {
 	}
 
 	@Override
-	public MapBuilderPreKeys newMapBuilder(Collection<? extends String> keys) {
+	public MapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys) {
 		assert !isNotOrdered(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
 
-		return MapBuilderPreKeys.builder().factory(this).keys(keys).build();
+		return MapBuilderPreKeys.builder().factory(this).keys(ImmutableList.copyOf(keys)).build();
 	}
 
 	/**
@@ -635,7 +643,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	 * @param set
 	 * @return true if the input if an ordered {@link Set}
 	 */
-	protected boolean isNotOrdered(Collection<? extends String> set) {
+	protected boolean isNotOrdered(Iterable<? extends String> set) {
 		if (set.getClass().getName().equals(Set.of("a").getClass().getName())) {
 			return true;
 		}
@@ -680,4 +688,9 @@ public class StandardSliceFactory implements ISliceFactory {
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
 	}
+
+	// @Override
+	// public Object getNullPlaceholder() {
+	// return valueNormalizer.nullPlaceholder();
+	// }
 }

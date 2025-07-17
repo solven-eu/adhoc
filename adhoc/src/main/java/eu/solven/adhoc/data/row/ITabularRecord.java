@@ -25,7 +25,8 @@ package eu.solven.adhoc.data.row;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
@@ -61,7 +62,7 @@ public interface ITabularRecord {
 
 	boolean isEmpty();
 
-	Map<String, ?> getGroupBys();
+	SliceAsMap getGroupBys();
 
 	ITabularRecord transcode(ITableReverseTranscoder transcodingContext);
 

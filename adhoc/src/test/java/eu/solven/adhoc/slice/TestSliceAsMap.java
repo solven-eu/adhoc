@@ -140,6 +140,7 @@ public class TestSliceAsMap {
 	public void testKeepAdhocMap() {
 		SliceAsMap sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
 
-		Assertions.assertThat(sliceOverAdhocMap.getCoordinates()).isInstanceOf(AdhocMap.class);
+		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
+				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");
 	}
 }

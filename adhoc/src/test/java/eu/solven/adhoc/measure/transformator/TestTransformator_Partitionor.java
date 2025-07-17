@@ -97,9 +97,9 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	public void testSumOfMaxOfSum_groupByAandB() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
+				.combinationKey(MaxCombination.KEY)
 				.underlyings(Arrays.asList("k1", "k2"))
 				.groupBy(GroupByColumns.named("a", "b"))
-				.combinationKey(MaxCombination.KEY)
 				.aggregationKey(SumAggregation.KEY)
 				.build());
 
@@ -112,7 +112,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Collections.emptyMap(), Map.of("maxK1K2", 0L + 234 + 567));
+				.containsEntry(Collections.emptyMap(), Map.of("maxK1K2", 0L + Math.max(123 + 345, 456) + 234 + 567));
 	}
 
 	@Test

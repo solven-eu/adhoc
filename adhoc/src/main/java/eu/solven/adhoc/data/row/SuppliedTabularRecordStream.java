@@ -37,11 +37,16 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	final boolean isDistinct;
 	final Supplier<Stream<ITabularRecord>> streamSupplier;
 
+	// @Getter
+	// final Object nullPlaceholder;
+
 	public SuppliedTabularRecordStream(Object source,
 			boolean isDistinct,
+			// Object nullPlaceholder,
 			Supplier<Stream<ITabularRecord>> streamSupplier) {
 		this.source = source;
 		this.isDistinct = isDistinct;
+		// this.nullPlaceholder = nullPlaceholder;
 		// Memoize the stream to make sure it is open only once
 		this.streamSupplier = Suppliers.memoize(streamSupplier::get);
 	}

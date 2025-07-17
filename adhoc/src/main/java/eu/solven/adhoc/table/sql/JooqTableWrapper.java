@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.sql;
 
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -48,13 +47,15 @@ import org.jooq.exception.InvalidResultException;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.ValueProviderHelpers;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -65,6 +66,7 @@ import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperPara
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -89,6 +91,14 @@ public class JooqTableWrapper implements ITableWrapper {
 
 	@NonNull
 	final JooqTableWrapperParameters tableParameters;
+
+	@NonNull
+	@Default
+	protected ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+
+	public JooqTableWrapper(String name, JooqTableWrapperParameters tableParameters) {
+		this(name, tableParameters, StandardSliceFactory.builder().build());
+	}
 
 	@Override
 	public String getName() {
@@ -183,7 +193,7 @@ public class JooqTableWrapper implements ITableWrapper {
 		}
 
 		JooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new JooqTableWrapper(tableName, parameters);
+		return new JooqTableWrapper(tableName, parameters, StandardSliceFactory.builder().build());
 	}
 
 	public DSLContext makeDsl() {
@@ -220,7 +230,10 @@ public class JooqTableWrapper implements ITableWrapper {
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
-		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
+		return new SuppliedTabularRecordStream(tableQuery,
+				distinctSlices,
+				// sliceFactory.getNullPlaceholder(),
+				() -> modifiedStream);
 	}
 
 	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
@@ -305,20 +318,16 @@ public class JooqTableWrapper implements ITableWrapper {
 				}
 			}
 		}
-		Map<String, Object> slice;
+
+		MapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(fields.getAllColumns());
+
 		columnShift += fields.getAggregates().size();
 		{
 			List<String> groupByFields = fields.getColumns();
 			int size = groupByFields.size();
 
-			slice = LinkedHashMap.newLinkedHashMap(size);
 			for (int i = 0; i < size; i++) {
-				String columnName = groupByFields.get(i);
-
-				Object previousValue = slice.put(columnName, r.get(columnShift + i));
-				if (previousValue != null) {
-					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
-				}
+				sliceBuilder.append(r.get(columnShift + i));
 			}
 		}
 
@@ -328,25 +337,19 @@ public class JooqTableWrapper implements ITableWrapper {
 			int size = groupByFields.size();
 
 			for (int i = 0; i < size; i++) {
-				String columnName = groupByFields.get(i);
-
-				Object previousValue = slice.put(columnName, r.get(columnShift + i));
-				if (previousValue != null) {
-					throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
-				}
+				sliceBuilder.append(r.get(columnShift + i));
 			}
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				.slice(sliceBuilder.build().asSlice().asSliceAsMap())
+				.build();
 	}
 
 	protected Object cleanAggregateValue(Object value) {
-		if (value instanceof BigInteger bigInteger) {
-			// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
-			return IValueProvider.getValue(ValueProviderHelpers.asLongIfExact(bigInteger));
-		} else {
-			return value;
-		}
+		// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+		return AdhocPrimitiveHelpers.normalizeValue(value);
 	}
 
 	@Override

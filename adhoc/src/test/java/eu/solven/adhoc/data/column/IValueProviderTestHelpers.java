@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 public interface IValueProviderTestHelpers {
 	// Pick a seemingly random value. Long.MAX_VALUE may be referred for some edge-cases

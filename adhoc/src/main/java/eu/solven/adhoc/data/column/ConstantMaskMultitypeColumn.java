@@ -29,10 +29,10 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
@@ -108,7 +108,7 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 
 	@Override
 	public IValueProvider onValue(SliceAsMap key) {
-		Map<String, ?> keyCoordinates = key.getAdhocSliceAsMap().getCoordinates();
+		Map<String, ?> keyCoordinates = key.asSliceAsMap().getCoordinates();
 		if (!keyCoordinates.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);

@@ -2,6 +2,20 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.10]
+
+### Added
+- Introduced `ISliceFactory` to enable custom way of creating `Map` and `IAdhocSlice`.
+- Introduced `ICoordinateNormalizer` to centralize how coordinates should be normalized (e.g. `int` into `long`).
+- Introduced `NullMatcher.NULL_HOLDER` to represent `null` where a null-reference is forbidden.
+
+### Changed
+- Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
+- `ITabularRecord.getGroupBys()` now returns a `SliceAsMap`
+
+### Fixed
+- Various mis-behaviours related to `null` as `GROUP BY` coordinate.
+
 ## [0.0.9]
 
 ### Added

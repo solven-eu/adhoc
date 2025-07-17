@@ -26,11 +26,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestValueMatcher {
 	@Test
 	public void testMatchAll() {
 		Assertions.assertThat(IValueMatcher.MATCH_ALL.match("abc")).isTrue();
 		Assertions.assertThat(IValueMatcher.MATCH_NONE.match("abc")).isFalse();
+	}
+
+	@Test
+	public void testNull() {
+		Assertions.assertThat(IValueMatcher.matching(null)).isInstanceOf(NullMatcher.class);
+		Assertions.assertThat(IValueMatcher.matching(NullMatcher.NULL_HOLDER)).isInstanceOf(NullMatcher.class);
 	}
 }

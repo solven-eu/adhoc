@@ -28,10 +28,10 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
 import lombok.Getter;

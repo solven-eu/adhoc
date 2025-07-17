@@ -94,7 +94,7 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	}
 
 	@Override
-	public SliceAsMap getAdhocSliceAsMap() {
+	public SliceAsMap asSliceAsMap() {
 		// BEWARE Make sure we return an existing SliceAsMap, and not creating a new instance
 		// We want to minimize the number of different SliceAsMap through a query
 		return slice;

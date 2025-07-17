@@ -25,8 +25,6 @@ package eu.solven.adhoc.data.column.navigable_else_hash;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
@@ -37,6 +35,8 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder.Default;
 import lombok.NonNull;

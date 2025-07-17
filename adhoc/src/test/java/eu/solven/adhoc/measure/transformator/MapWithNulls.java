@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.measure.transformator;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
- * 
- * This can be seen as a proxy to **read** values.
+ * Unsafe as it accepts null values.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-@Deprecated(since = "How/Where is it useful?")
-public interface IValueFunction<T> {
+public class MapWithNulls {
 
-	/**
-	 * If this holds a long, override this optional method to receive the primitive long
-	 * 
-	 * @param value
-	 */
-	default T onLong(long value) {
-		return onObject(value);
+	public static Map<String, ?> of(String k, Object v) {
+		Map<String, Object> map = new LinkedHashMap<>();
+
+		map.put(k, v);
+
+		return map;
 	}
 
-	/**
-	 * If this holds a double, override this optional method to receive the primitive double
-	 * 
-	 * @param value
-	 */
-	default T onDouble(double value) {
-		return onObject(value);
+	public static Map<String, ?> of(String k, Object v, String k2, Object v2) {
+		Map<String, Object> map = new LinkedHashMap<>();
+
+		map.put(k, v);
+		map.put(k2, v2);
+
+		return map;
 	}
-
-	T onObject(Object object);
-
 }

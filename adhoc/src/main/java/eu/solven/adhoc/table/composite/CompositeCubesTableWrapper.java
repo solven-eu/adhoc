@@ -54,6 +54,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.IHasMeasures;
@@ -362,13 +363,13 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
 
 		// TODO ensureCapacity given missingColumns
-		Map<String, ?> groupBys;
+		SliceAsMap groupBys;
 		if (missingColumns.isEmpty()) {
-			groupBys = slice.getAdhocSliceAsMap().getCoordinates();
+			groupBys = slice.asSliceAsMap();
 		} else {
-			Map<String, Object> groupBysTmp = new LinkedHashMap<>(slice.getAdhocSliceAsMap().getCoordinates());
-			groupBys = groupBysTmp;
+			Map<String, Object> groupBysTmp = new LinkedHashMap<>(slice.asSliceAsMap().getCoordinates());
 			missingColumns.forEach(column -> groupBysTmp.put(column, missingColumn(cube, column)));
+			groupBys = SliceAsMap.fromMap(groupBysTmp);
 		}
 
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupBys).build();

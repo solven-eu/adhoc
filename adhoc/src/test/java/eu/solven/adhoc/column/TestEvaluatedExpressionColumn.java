@@ -30,7 +30,9 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestEvaluatedExpressionColumn {
@@ -60,14 +62,24 @@ public class TestEvaluatedExpressionColumn {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 		// not null
-		Assertions
-				.assertThat(column
-						.computeCoordinate(TabularRecordOverMaps.builder().slice(Map.of("a", "a1", "b", "b1")).build()))
+		Assertions.assertThat(column.computeCoordinate(
+				TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(Map.of("a", "a1", "b", "b1"))).build()))
 				.isEqualTo("a1-b1");
 
 		// one is null
+		Assertions.assertThat(column.computeCoordinate(TabularRecordOverMaps.builder()
+				.slice(SliceAsMap.fromMap(MapWithNulls.of("a", "a1", "b", null)))
+				.build())).isEqualTo("a1-null");
+	}
+
+	@Test
+	public void testEvaluate_missingGroupBy() throws JsonProcessingException {
+		EvaluatedExpressionColumn column =
+				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
+
 		Assertions
-				.assertThat(column.computeCoordinate(TabularRecordOverMaps.builder().slice(Map.of("a", "a1")).build()))
-				.isEqualTo("a1-null");
+				.assertThatThrownBy(() -> column.computeCoordinate(
+						TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(Map.of("a", "a1"))).build()))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

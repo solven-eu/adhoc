@@ -24,10 +24,10 @@ package eu.solven.adhoc.measure.dynamic_tenors;
 
 import java.util.Optional;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;

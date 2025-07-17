@@ -86,7 +86,7 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
 
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.asSliceAsMap(), value);
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {

@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -48,6 +46,8 @@ import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -134,7 +134,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		ISlicedRecord slicedRecord = slice.getMeasures();
-		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getAdhocSliceAsMap());
+		IValueReceiver outputSlice = output.putSlice(slice.getSlice().asSliceAsMap());
 		try {
 			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
 

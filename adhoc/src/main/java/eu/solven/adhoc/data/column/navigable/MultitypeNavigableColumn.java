@@ -41,8 +41,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
@@ -53,6 +51,8 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -165,7 +165,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	/**
-	 * 
+	 *
 	 * @param key
 	 * @param mergeElseSet
 	 *            if true and the key has already a value, we merge the input with the current value. Else we replace
@@ -225,11 +225,17 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return valueConsumer;
 	}
 
+	/**
+	 * Given writing is done lazily (by providing a {@link IValueReceiver}), we need to purge after-hand the latest
+	 * written value if it is null.
+	 */
 	// BEWARE This is a very awkward design. This is due to making sure we do not leave any `null` in the column.
 	protected void lazyClearLastWrite() {
-		if (lastInsertionIndex.get() >= 0 && IValueProvider.isNull(values.read(lastInsertionIndex.get()))) {
-			keys.remove(lastInsertionIndex.get());
-			values.remove(lastInsertionIndex.get());
+		if (lastInsertionIndex.get() >= 0) {
+			if (IValueProvider.isNull(values.read(lastInsertionIndex.get()))) {
+				keys.remove(lastInsertionIndex.get());
+				values.remove(lastInsertionIndex.get());
+			}
 
 			lastInsertionIndex.set(-1);
 		}

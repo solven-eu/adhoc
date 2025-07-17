@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -45,6 +44,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -106,7 +106,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 */
 	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
 		// BEWARE the filter from queryStep is meaningless here
-		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
+		IAdhocFilter filter = slice.asSliceAsMap().asFilter();
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 
@@ -121,7 +121,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			builder.append(optOperand.get());
 		});
 
-		return SliceAsMap.fromMap(builder.build());
+		return builder.build().asSlice().asSliceAsMap();
 	}
 
 	protected boolean isDebug() {
@@ -138,7 +138,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
 		IValueProvider shiftedValue = whereToReadShifted.onValue(shiftedSlice);
-		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
+		SliceAsMap sliceAsMap = slice.asSliceAsMap();
 		shiftedValue.acceptReceiver(output.putSlice(sliceAsMap));
 
 		if (isDebug()) {

@@ -51,7 +51,7 @@ public class ThrowingCombination implements ICombination {
 
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		throw makeException(slice.getAdhocSliceAsMap().getCoordinates());
+		throw makeException(slice.asSliceAsMap().getCoordinates());
 	}
 
 	public static ThrowingCombinationException makeException(Map<String, ?> sliceAsMap) {

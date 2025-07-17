@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
-
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.transformator.ICombinationBinding;
-import eu.solven.adhoc.primitive.IValueProvider;
+package eu.solven.adhoc.primitive;
 
 /**
- * Used for {@link ICombination} able to generate a {@link ICombinationBinding}. It may help achieving better CPU/Heap
- * performances.
+ * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
+ * 
+ * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
  * 
  * @author Benoit Lacelle
+ * @see IValueProvider
  */
-public interface IBindableCombination {
+@FunctionalInterface
+public interface IValueReceiver {
 
-	ICombinationBinding bind(int nbUnderlyings);
+	/**
+	 * If this holds a long, override this optional method to receive the primitive long
+	 * 
+	 * @param v
+	 */
+	default void onLong(long v) {
+		onObject(v);
+	}
 
-	IValueProvider combine(ICombinationBinding binding, ISliceWithStep slice, ISlicedRecord slicedRecord);
+	/**
+	 * If this holds a double, override this optional method to receive the primitive double
+	 * 
+	 * @param v
+	 */
+	default void onDouble(double v) {
+		onObject(v);
+	}
+
+	void onObject(Object v);
 
 }

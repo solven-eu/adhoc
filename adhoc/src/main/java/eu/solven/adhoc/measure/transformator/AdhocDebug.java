@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.Arrays;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.experimental.UtilityClass;
 
 /**

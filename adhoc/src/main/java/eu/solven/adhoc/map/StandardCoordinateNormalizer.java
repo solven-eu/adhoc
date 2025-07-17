@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.cell;
+package eu.solven.adhoc.map;
+
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 /**
- * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
- * 
- * Typically, a class would provide a {@link IValueReceiver} to receive data/to be written into.
+ * Default implementation of {@link ICoordinateNormalizer}.
  * 
  * @author Benoit Lacelle
- * @see IValueProvider
  */
-@FunctionalInterface
-public interface IValueReceiver {
+public class StandardCoordinateNormalizer implements ICoordinateNormalizer {
 
-	/**
-	 * If this holds a long, override this optional method to receive the primitive long
-	 * 
-	 * @param v
-	 */
-	default void onLong(long v) {
-		onObject(v);
+	@Override
+	public Object normalizeCoordinate(Object rawCoordinate) {
+		if (rawCoordinate == null) {
+			return NullMatcher.NULL_HOLDER;
+		}
+		return AdhocPrimitiveHelpers.normalizeValue(rawCoordinate);
 	}
-
-	/**
-	 * If this holds a double, override this optional method to receive the primitive double
-	 * 
-	 * @param v
-	 */
-	default void onDouble(double v) {
-		onObject(v);
-	}
-
-	void onObject(Object v);
 
 }

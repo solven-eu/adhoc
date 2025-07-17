@@ -58,11 +58,11 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(3).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		});
 	}
 
@@ -90,15 +90,15 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(5).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
 		});
 	}
 
@@ -144,20 +144,20 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		List<Object> coordinates =
-				slices.stream().<Object>map(s -> s.getSlice().getAdhocSliceAsMap().getCoordinates().get("c")).toList();
+				slices.stream().<Object>map(s -> s.getSlice().asSliceAsMap().getCoordinates().get("c")).toList();
 
 		Assertions.assertThat(coordinates).startsWith("c1", "c2", "c3", "c4").contains("c5");
 
 		Assertions.assertThat(slices).hasSize(5).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
+			Assertions.assertThat(slice.getSlice().asSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
 		});
 	}
 }

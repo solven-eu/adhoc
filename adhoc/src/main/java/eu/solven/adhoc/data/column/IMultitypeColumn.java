@@ -25,10 +25,10 @@ package eu.solven.adhoc.data.column;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**

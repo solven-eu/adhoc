@@ -53,7 +53,7 @@ public class AdhocTranscodingHelper {
 	public static Map<String, ?> transcodeColumns(ITableReverseTranscoder reverseTranscoder,
 			Map<String, ?> underlyingMap) {
 		int initialCapacity = reverseTranscoder.estimateQueriedSize(underlyingMap.keySet());
-		Map<String, Object> transcoded = new HashMap<>(initialCapacity);
+		Map<String, Object> transcoded = HashMap.newHashMap(initialCapacity);
 
 		underlyingMap.forEach((underlyingKey, v) -> {
 			Set<String> queriedKeys = reverseTranscoder.queried(underlyingKey);

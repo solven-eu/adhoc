@@ -89,16 +89,16 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
-		List<?> underlyingVs = slice.getMeasures().asList();
+	protected void onSlice(SliceAndMeasures input, ICombination combination, ISliceAndValueConsumer sink) {
+		List<?> underlyingVs = input.getMeasures().asList();
 
-		Object value = combination.combine(slice.getSlice(), underlyingVs);
+		Object value = combination.combine(input.getSlice(), underlyingVs);
 
-		SliceAsMap sliceAsMap = slice.getSlice().getAdhocSliceAsMap();
+		SliceAsMap output = input.getSlice().asSliceAsMap();
 		if (isDebug()) {
-			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, sliceAsMap);
+			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, output);
 		}
 
-		output.putSlice(sliceAsMap).onObject(value);
+		sink.putSlice(output).onObject(value);
 	}
 }

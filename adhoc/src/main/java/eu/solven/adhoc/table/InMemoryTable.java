@@ -42,14 +42,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -83,6 +86,10 @@ public class InMemoryTable implements ITableWrapper {
 	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
+
+	@NonNull
+	@Default
+	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
 	@Default
 	boolean distinctSlices = false;
@@ -156,9 +163,6 @@ public class InMemoryTable implements ITableWrapper {
 		Set<String> groupByColumns = getGroupByColumns(tableQuery);
 		checkKnownColumns(tableColumns, groupByColumns, "groupBy");
 
-		int nbKeys =
-				Ints.checkedCast(Stream.concat(aggregateColumns.stream(), groupByColumns.stream()).distinct().count());
-
 		if (queryPod.isExplain()) {
 			log.info("[EXPLAIN] tableQuery: {}", tableQuery);
 		}
@@ -168,14 +172,14 @@ public class InMemoryTable implements ITableWrapper {
 				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(tableQuery, aggregateColumns, groupByColumns, nbKeys, row);
+				return toRecord(tableQuery, aggregateColumns, groupByColumns, row);
 			});
 
 			if (isEmptyAggregation) {
 				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
 				// groupBy groupedByColumns
-				Map<Map<String, ?>, Optional<ITabularRecord>> groupedAggregatedRecord =
+				Map<SliceAsMap, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(ITabularRecord::getGroupBys,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
@@ -185,7 +189,7 @@ public class InMemoryTable implements ITableWrapper {
 						.filter(e -> e.getValue().isPresent())
 						.map(e -> TabularRecordOverMaps.builder()
 								.slice(e.getKey())
-								.aggregates(e.getValue().get().asMap())
+								.aggregates(e.getValue().get().aggregatesAsMap())
 								.build());
 				return distinctStream;
 			} else {
@@ -258,9 +262,8 @@ public class InMemoryTable implements ITableWrapper {
 	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
 			Set<String> aggregateColumns,
 			Set<String> groupByColumns,
-			int nbKeys,
 			Map<String, ?> row) {
-		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(nbKeys);
+		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(tableQuery.getAggregators().size());
 
 		aggregateColumns.forEach(aggregatedColumn -> {
 			Object aggregatorUnderlyingValue = row.get(aggregatedColumn);
@@ -301,30 +304,24 @@ public class InMemoryTable implements ITableWrapper {
 					});
 		});
 
-		ImmutableMap.Builder<Object, Object> groupByBuilder =
-				ImmutableMap.builderWithExpectedSize(groupByColumns.size());
+		MapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
+		ImmutableMap.builderWithExpectedSize(groupByColumns.size());
 		groupByColumns.forEach(groupByColumn -> {
 			Object value = row.get(groupByColumn);
-			if (value != null) {
-				groupByBuilder.put(groupByColumn, value);
-			}
+			groupByBuilder.append(value);
 		});
 
-		Map<String, Object> slice = row.entrySet()
-				.stream()
-				.filter(e -> groupByColumns.contains(e.getKey()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				.slice(groupByBuilder.build().asSlice().asSliceAsMap())
+				.build();
 	}
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
 		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
 
-		rows.stream().flatMap(row -> row.entrySet().stream()).forEach(e -> {
-			columnToClasses.put(e.getKey(), e.getValue().getClass());
-		});
+		rows.forEach(row -> row.forEach((k, v) -> columnToClasses.put(k, v.getClass())));
 
 		Map<String, Class<?>> columnToClass = new HashMap<>();
 

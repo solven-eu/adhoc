@@ -38,13 +38,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A `SUM` {@link IAggregation}. It will aggregate as longs, doubles or Object depending on the inputs.
- * 
+ * <p>
  * The {@link Object} case differs from usual implementations. As being an in-memory engine, it feels preferable to
  * accumulate {@link Object} in a {@link List}, rather than concatenating their {@link Object#toString()}.
- * 
+ * <p>
  * More specifically: it will aggregate as long if it encounters only long-like. It would switch to a double if it
  * encounter any double-like. It would collect not double-like into a List, wrapping the whole into a XXX.
- * 
+ *
  * @author Benoit Lacelle
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
@@ -82,8 +82,10 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		if (r == null) {
 			return null;
 		} else if (isLongLike(r)) {
+			// TODO Prevent auto-boxing again (Long -> long -> Long)
 			return asLong(r);
 		} else if (isDoubleLike(r)) {
+			// TODO Prevent auto-boxing again (Double -> double -> Double)
 			return asDouble(r);
 		} else {
 			return wrapNotANumber(r);

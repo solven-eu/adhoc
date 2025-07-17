@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -44,6 +43,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
@@ -162,6 +162,6 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 			mapBuilder.append(value);
 		});
 
-		return SliceAsMap.fromMap(mapBuilder.build());
+		return mapBuilder.build().asSlice().asSliceAsMap();
 	}
 }

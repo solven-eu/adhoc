@@ -20,23 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
-
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.measure.transformator.ICombinationBinding;
-import eu.solven.adhoc.primitive.IValueProvider;
+package eu.solven.adhoc.map;
 
 /**
- * Used for {@link ICombination} able to generate a {@link ICombinationBinding}. It may help achieving better CPU/Heap
- * performances.
+ * Turns Objects into the equivalent normalized Object to be considered as coordinates.
+ * 
+ * Typically, {@link Integer} may be turned into {@link Long} to prevent considering an {@link Integer} and a
+ * {@link Long} as different coordinates.
  * 
  * @author Benoit Lacelle
  */
-public interface IBindableCombination {
-
-	ICombinationBinding bind(int nbUnderlyings);
-
-	IValueProvider combine(ICombinationBinding binding, ISliceWithStep slice, ISlicedRecord slicedRecord);
-
+@FunctionalInterface
+public interface ICoordinateNormalizer {
+	/**
+	 * Should be idempotent (i.e. calling it one or more times should return the same value).
+	 * 
+	 * @param rawCoordinate
+	 * @return
+	 */
+	Object normalizeCoordinate(Object rawCoordinate);
 }

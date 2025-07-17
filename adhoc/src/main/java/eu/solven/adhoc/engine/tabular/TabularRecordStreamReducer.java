@@ -22,14 +22,10 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -43,6 +39,8 @@ import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -160,7 +158,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	protected Optional<SliceAsMap> makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
-			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));
+			return Optional.of(SliceAsMap.grandTotal());
 		}
 
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
@@ -171,7 +169,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			Object value = tableRow.getGroupBy(groupedByColumn);
 
 			if (value == null) {
-				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
+				if (tableRow.groupByKeySet().contains(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
 					value = valueOnNull(queryPod, groupedByColumn);
@@ -187,8 +185,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			coordinatesBuilder.append(value);
 		}
 
-		Map<String, ?> asMap = coordinatesBuilder.build();
-		return Optional.of(SliceAsMap.fromMap(asMap));
+		return Optional.of(coordinatesBuilder.build().asSlice().asSliceAsMap());
 	}
 
 	/**

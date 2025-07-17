@@ -39,6 +39,7 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -197,7 +198,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("p.productName", "Carotte"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("p.productName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("p.productName", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}
@@ -235,7 +236,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("p.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("p.productId", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("p.productId", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}
@@ -273,7 +274,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("c.countryName", "France"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("c.countryName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("c.countryName", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}

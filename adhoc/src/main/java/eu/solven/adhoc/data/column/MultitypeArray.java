@@ -26,10 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
+import eu.solven.adhoc.primitive.IValueFunction;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;

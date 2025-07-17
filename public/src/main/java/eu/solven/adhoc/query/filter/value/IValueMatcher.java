@@ -74,7 +74,7 @@ public interface IValueMatcher {
 	 * @return
 	 */
 	static IValueMatcher matching(Object matching) {
-		if (matching == null) {
+		if (matching == null || NullMatcher.NULL_HOLDER.equals(matching)) {
 			return NullMatcher.matchNull();
 		} else if (matching instanceof IValueMatcher vm) {
 			return vm;

@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdhocTestConstants {
@@ -64,9 +65,10 @@ public class TestAggregations_GroupBys_2Columns extends ADagTest implements IAdh
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
+				.containsEntry(MapWithNulls.of("a", "a1", "b", null), Map.of("sumK1K2", 0L + 123 + 345 + 456))
 				.containsEntry(Map.of("a", "a2", "b", "b1"), Map.of("sumK1K2", 0L + 234))
-				.containsEntry(Map.of("a", "a2", "b", "b2"), Map.of("sumK1K2", 0L + 567));
+				.containsEntry(Map.of("a", "a2", "b", "b2"), Map.of("sumK1K2", 0L + 567))
+				.hasSize(3);
 	}
 
 }

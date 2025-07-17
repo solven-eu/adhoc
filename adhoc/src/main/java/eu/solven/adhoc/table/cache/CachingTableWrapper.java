@@ -415,4 +415,5 @@ public class CachingTableWrapper implements ITableWrapper {
 	public CacheStats getCacheStats() {
 		return cache.stats();
 	}
+
 }

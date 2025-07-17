@@ -34,6 +34,8 @@ import eu.solven.adhoc.query.table.TableQuery;
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
+	// Object getNullPlaceholder();
+
 	/**
 	 * BEWARE We do not rely on Stream caracteristics as a {@link Stream} may be distinct (with `.distinct()`) due to
 	 * Aggregates but having equals slices.

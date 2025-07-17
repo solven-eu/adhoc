@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.transformator.iterator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestSlicedRecordFromMap {
 	@Test

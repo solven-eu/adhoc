@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -40,14 +38,11 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.measure.sum.SubstractionCombination;
-import eu.solven.adhoc.measure.transformator.ICombinationBinding;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
-import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.query.filter.AndFilter;
 
 /**
- * Benchmarks related with {@link SubstractionCombination}.
+ * Benchmarks related with {@link AndFilter}.
  * 
  * @author Benoit Lacelle
  */
@@ -58,37 +53,38 @@ import eu.solven.adhoc.primitive.IValueProvider;
 @Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @SuppressWarnings("checkstyle:MagicNumber")
-public class BenchmarkSubstraction {
+public class BenchmarkNormalizeValue {
 
-	SubstractionCombination substraction = new SubstractionCombination();
-
-	IValueProvider leftLong = IValueProvider.setValue(234L);
-	IValueProvider rightLong = IValueProvider.setValue(123L);
-	ISlicedRecord tabularRecordLong =
-			SlicedRecordFromSlices.builder().valueProvider(leftLong).valueProvider(rightLong).build();
-
-	List<?> arrayLong = Arrays.asList(234, 123);
-
-	ICombinationBinding binding = substraction.bind(2);
+	Object l = 123L;
 
 	public static void main(String[] args) throws RunnerException {
-		Options opt = new OptionsBuilder().include(BenchmarkSubstraction.class.getSimpleName()).forks(1).build();
+		Options opt = new OptionsBuilder().include(BenchmarkNormalizeValue.class.getSimpleName()).forks(1).build();
 		new Runner(opt).run();
 	}
 
 	@Benchmark
-	public IValueProvider combineSlicedRecord_Long() {
-		return substraction.combine(null, tabularRecordLong);
+	public boolean instanceOf() {
+		return l instanceof Long;
 	}
 
 	@Benchmark
-	public Object combineArray_Long() {
-		return substraction.combine(null, arrayLong);
+	public Long cast() {
+		return (Long) l;
 	}
 
 	@Benchmark
-	public IValueProvider combineSlicedRecord_Long_binding() {
-		return substraction.combine(binding, null, tabularRecordLong);
+	public boolean isLongLike() {
+		return AdhocPrimitiveHelpers.isLongLike(l);
+	}
+
+	@Benchmark
+	public long asLong() {
+		return AdhocPrimitiveHelpers.asLong(l);
+	}
+
+	@Benchmark
+	public Object normalizeValue() {
+		return AdhocPrimitiveHelpers.normalizeValue(l);
 	}
 
 }

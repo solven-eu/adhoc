@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map;
 
-import java.util.Collection;
 import java.util.Map;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -49,6 +48,8 @@ public interface ISliceFactory {
 	 * @param keys
 	 * @return a {@link MapBuilderPreKeys} for given set of keys.
 	 */
-	MapBuilderPreKeys newMapBuilder(Collection<? extends String> keys);
+	MapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
+
+	// Object getNullPlaceholder();
 
 }

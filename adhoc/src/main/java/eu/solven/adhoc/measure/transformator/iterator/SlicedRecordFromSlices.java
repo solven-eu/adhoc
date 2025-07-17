@@ -30,9 +30,9 @@ import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.measure.transformator.AdhocDebug;
+import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.Builder;
 import lombok.Singular;
 

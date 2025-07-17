@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.data.row.slice;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,16 +29,17 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}.
@@ -56,35 +56,36 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		this.asMap = asMap;
 	}
 
+	@Deprecated(since = "Should use a ISliceFactory")
 	public static SliceAsMap fromMap(Map<String, ?> asMap) {
-		asMap = asMap.entrySet()
-				.stream()
-				.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
-						e -> AdhocPrimitiveHelpers.normalizeValue(e.getValue())));
+		MapBuilderThroughKeys builder = StandardSliceFactory.builder().build().newMapBuilder();
 
-		// We make an immutable copy. It is even more necessary as `Map.of` would throw an NPE on `.contains(null)`
-		Map<String, ?> safeMap = AdhocMap.copyOf(asMap);
+		asMap.forEach(builder::put);
+		return builder.build().asSlice().asSliceAsMap();
+	}
 
-		// This is very fast: keep the check as it is
-		if (safeMap.containsValue(null)) {
-			// BEWARE Should this be a legit case, handling NULL specifically?
-			throw new IllegalArgumentException("A slice can not hold value=null. Were: %s".formatted(asMap));
-		}
-
-		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof Collection<?>)
-				: "A simpleSlice can not hold value=Collection<?>. Were: %s".formatted(asMap);
-
-		// This is a bit slow: it is an assertions
-		assert safeMap.values().stream().noneMatch(o -> o instanceof IValueMatcher)
-				: "A simpleSlice can not hold value=IValueMatcher. Were: %s".formatted(asMap);
-
-		return new SliceAsMap(safeMap);
+	/**
+	 * Assume the values are already normalized
+	 * 
+	 * @param adhocMap
+	 * @return
+	 */
+	public static SliceAsMap fromMapUnsafe(IAdhocMap adhocMap) {
+		return new SliceAsMap(adhocMap);
 	}
 
 	@Override
 	public Set<String> getColumns() {
 		return asMap.keySet();
+	}
+
+	@Override
+	public Object getRawSliced(String column) {
+		if (asMap.containsKey(column)) {
+			return explicitNull(asMap.get(column));
+		} else {
+			throw new IllegalArgumentException("%s is not a sliced column, amongst %s".formatted(column, getColumns()));
+		}
 	}
 
 	@Override
@@ -94,11 +95,19 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 
 	@Override
 	public Map<String, ?> getCoordinates() {
-		return AdhocMapHelpers.immutableCopyOf(asMap);
+		return Maps.transformValues(asMap, this::explicitNull);
+	}
+
+	private Object explicitNull(Object v) {
+		if (v == NullMatcher.NULL_HOLDER) {
+			return null;
+		} else {
+			return v;
+		}
 	}
 
 	@Override
-	public SliceAsMap getAdhocSliceAsMap() {
+	public SliceAsMap asSliceAsMap() {
 		return this;
 	}
 
@@ -108,7 +117,7 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		Map<String, Object> filters = new LinkedHashMap<>();
 
 		columns.forEach(column -> {
-			optSliced(column).ifPresent(filter -> filters.put(column, filter));
+			optSliced(column).ifPresent(v -> filters.put(column, explicitNull(v)));
 		});
 
 		return filters;
@@ -139,23 +148,13 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		}
 		SliceAsMap other = (SliceAsMap) obj;
 
-		// if (!Objects.equals(asMap.keySet(), other.asMap.keySet())) {
-		// return false;
-		// }
-		// for (String key : asMap.keySet()) {
-		// if (!Objects.equals(asMap.get(key), other.asMap.get(key))) {
-		// return false;
-		// }
-		// }
-		// return true;
-
 		return Objects.equals(asMap, other.asMap);
 	}
 
 	@Override
 	@SuppressWarnings("PMD.LooseCoupling")
 	public int compareTo(SliceAsMap o) {
-		if (this.asMap instanceof IAdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
+		if (this.asMap instanceof AdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
 			return adhocMap.compareTo(otherAdhocMap);
 		} else {
 			return MapComparators.mapComparator().compare(this.asMap, o.asMap);
@@ -182,5 +181,13 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 					ImmutableMap.builderWithExpectedSize(asMap.size() + mask.size());
 			return fromMap(builder.putAll(asMap).putAll(mask).build());
 		}
+	}
+
+	public static SliceAsMap grandTotal() {
+		return new SliceAsMap(ImmutableMap.of());
+	}
+
+	public boolean isEmpty() {
+		return asMap.isEmpty();
 	}
 }

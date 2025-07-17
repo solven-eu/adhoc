@@ -32,10 +32,10 @@ import org.mockito.Mockito;
 
 import com.google.common.collect.Collections2;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestSubstractionCombination {

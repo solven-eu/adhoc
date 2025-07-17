@@ -27,7 +27,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestDecompositionEntry {
 	@Test

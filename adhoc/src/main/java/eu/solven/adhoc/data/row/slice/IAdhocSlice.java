@@ -57,12 +57,12 @@ public interface IAdhocSlice {
 	/**
 	 *
 	 * @param column
-	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
+	 * @return the sliced coordinate, only if the column is actually sliced and not null. Can not be a
+	 *         {@link Collection} nor a {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
 	 */
 	default Object getRawSliced(String column) {
 		return optSliced(column).orElseThrow(() -> new IllegalArgumentException(
-				"%s is not a sliced column amongst %s".formatted(column, getColumns())));
+				"%s is either not a sliced column, or a null coordinate, amongst %s".formatted(column, getColumns())));
 	}
 
 	/**
@@ -109,6 +109,6 @@ public interface IAdhocSlice {
 	 * 
 	 * @return the simple (i.e. without the queryStep) slice, as a {@link SliceAsMap}
 	 */
-	SliceAsMap getAdhocSliceAsMap();
+	SliceAsMap asSliceAsMap();
 
 }

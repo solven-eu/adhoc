@@ -39,10 +39,10 @@ import org.jooq.impl.DSL;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;

@@ -135,7 +135,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 			induced.append(inducer.getRawSliced(inducedColumn));
 		});
 
-		return SliceAsMap.fromMap(induced.build());
+		return induced.build().asSlice().asSliceAsMap();
 	}
 
 }

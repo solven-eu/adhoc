@@ -100,7 +100,7 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
-		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
+		output.putSlice(slice.getSlice().asSliceAsMap()).onObject(value);
 	}
 
 	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {

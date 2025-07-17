@@ -97,5 +97,4 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 				.stream()
 				.collect(Collectors.toMap(Entry::getKey, e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
-
 }

@@ -64,7 +64,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 				NavigableSet<String> groupedByColumns = transcodedQuery.getGroupBy().getGroupedByColumns();
 				Map<String, ?> errorSlice = asMap(groupedByColumns);
 
-				errorRecordBuilder.slice(errorSlice);
+				errorRecordBuilder.slice(SliceAsMap.fromMap(errorSlice));
 				transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
 
 				ITabularRecord errorRecord = errorRecordBuilder.build();

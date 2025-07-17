@@ -25,13 +25,13 @@ package eu.solven.adhoc.data.column;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
@@ -88,7 +88,7 @@ public interface ISliceToValue extends ICompactable {
 	 * @return the value as {@link Object} on given slice
 	 */
 	static Object getValue(ISliceToValue storage, IAdhocSlice slice) {
-		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
+		SliceAsMap sliceAsMap = slice.asSliceAsMap();
 
 		return IValueProvider.getValue(storage.onValue(sliceAsMap));
 	}

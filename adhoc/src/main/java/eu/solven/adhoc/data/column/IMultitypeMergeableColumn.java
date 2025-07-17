@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.

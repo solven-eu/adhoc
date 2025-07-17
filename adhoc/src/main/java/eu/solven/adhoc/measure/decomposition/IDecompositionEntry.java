@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.decomposition;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
  * An entry amongst the multiple entries of a {@link IDecomposition}.

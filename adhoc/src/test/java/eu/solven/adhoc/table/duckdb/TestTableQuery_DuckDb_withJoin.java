@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -169,7 +170,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("p.productName", "Carotte"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("p.productName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("p.productName", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}
@@ -207,7 +208,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("p.productId", "carot"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("p.productId", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("p.productId", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}
@@ -245,7 +246,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("c.countryName", "France"), Map.of(k1Sum.getName(), 0L + 123))
-					.containsEntry(Map.of("c.countryName", "NULL"), Map.of(k1Sum.getName(), 0L + 234))
+					.containsEntry(MapWithNulls.of("c.countryName", null), Map.of(k1Sum.getName(), 0L + 234))
 					.hasSize(2);
 		}
 	}
@@ -283,7 +284,7 @@ public class TestTableQuery_DuckDb_withJoin extends ADuckDbJooqTest implements I
 
 			Assertions.assertThat(mapBased.getCoordinatesToValues())
 					.containsEntry(Map.of("c.countryName", "France"), Map.of(countAsterisk.getName(), 0L + 1L))
-					.containsEntry(Map.of("c.countryName", "NULL"), Map.of(countAsterisk.getName(), 0L + 1L))
+					.containsEntry(MapWithNulls.of("c.countryName", null), Map.of(countAsterisk.getName(), 0L + 1L))
 					.hasSize(2);
 		}
 	}

@@ -38,9 +38,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

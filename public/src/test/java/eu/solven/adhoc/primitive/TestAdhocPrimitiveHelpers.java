@@ -88,4 +88,28 @@ public class TestAdhocPrimitiveHelpers {
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigDecimal.valueOf(123))).isTrue();
 		Assertions.assertThat(AdhocPrimitiveHelpers.isDoubleLike(BigDecimal.valueOf(123.456))).isTrue();
 	}
+
+	@Test
+	public void normalizeValue() {
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(null)).isNull();
+
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(123)).isEqualTo(123L);
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(123L)).isEqualTo(123L);
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(BigInteger.valueOf(123))).isEqualTo(123L);
+
+		// TODO Why is 12.34F not exact as double?
+		// Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(12.34F)).isEqualTo(12.34D);
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(12.34D)).isEqualTo(12.34D);
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue(BigDecimal.valueOf(12.34))).isEqualTo(12.34D);
+
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValue("foo")).isEqualTo("foo");
+	}
+
+	@Test
+	public void normalizeValueAsProvider() {
+		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(null)).isSameAs(IValueProvider.NULL);
+
+		// TODO Test Double is wrapped as primitive double
+		// Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(12.34D)).isEqualTo(12.34D);
+	}
 }
