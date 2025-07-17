@@ -119,15 +119,15 @@ public class MapBasedTabularView implements ITabularView {
 				.map(e -> rowScanner.prepare(SliceAsMap.fromMap(e.getKey())).onMap(e.getValue()));
 	}
 
-	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {
+	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
 		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregation::aggregateMaps);
 	}
 
-	public void appendSlice(SliceAsMap slice, String measure, Object value) {
+	public void appendSlice(IAdhocSlice slice, String measure, Object value) {
 		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregation::aggregateMaps);
 	}
 
-	public IValueReceiver sliceFeeder(SliceAsMap slice, String measureName, boolean materializeNull) {
+	public IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull) {
 		return o -> {
 			if (o == null) {
 				// Materialize the slice. Especially useful with EmptyAggregation as defaultMeasure

@@ -179,10 +179,7 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 					ITabularView result = cube.execute(CubeQuery.edit(query).options(queryOptions).build());
 
 					resultIterator = result.stream(slice -> {
-						return v -> TabularRecordOverMaps.builder()
-								.slice(slice.asSliceAsMap())
-								.aggregates((Map<String, ?>) v)
-								.build();
+						return v -> TabularRecordOverMaps.builder().slice(slice).aggregates((Map<String, ?>) v).build();
 					}).iterator();
 				} catch (Exception e) {
 					throw new RuntimeException("While running Adhoc query " + query, e);

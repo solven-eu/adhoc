@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -106,7 +106,7 @@ public interface ITableQueryOptimizer {
 	 * @param induced
 	 * @return a {@link IMultitypeMergeableColumn} holding the result for given induced step
 	 */
-	IMultitypeMergeableColumn<SliceAsMap> evaluateInduced(IHasQueryOptions hasOptions,
+	IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced);

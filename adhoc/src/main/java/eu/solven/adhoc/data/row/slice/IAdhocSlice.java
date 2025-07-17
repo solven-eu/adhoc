@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -41,7 +43,9 @@ import eu.solven.pepper.core.PepperLogHelper;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice {
+public interface IAdhocSlice extends Comparable<IAdhocSlice> {
+	boolean isEmpty();
+
 	/**
 	 * The columns for which a coordinate is expressed
 	 */
@@ -57,13 +61,11 @@ public interface IAdhocSlice {
 	/**
 	 *
 	 * @param column
-	 * @return the sliced coordinate, only if the column is actually sliced and not null. Can not be a
-	 *         {@link Collection} nor a {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
+	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
+	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}. May be null.
 	 */
-	default Object getRawSliced(String column) {
-		return optSliced(column).orElseThrow(() -> new IllegalArgumentException(
-				"%s is either not a sliced column, or a null coordinate, amongst %s".formatted(column, getColumns())));
-	}
+	@Nullable
+	Object getRawSliced(String column);
 
 	/**
 	 *
@@ -105,10 +107,7 @@ public interface IAdhocSlice {
 		return asMap;
 	}
 
-	/**
-	 * 
-	 * @return the simple (i.e. without the queryStep) slice, as a {@link SliceAsMap}
-	 */
-	SliceAsMap asSliceAsMap();
+	@Deprecated(since = "Is this good design?")
+	IAdhocSlice addColumns(Map<String, ?> masks);
 
 }

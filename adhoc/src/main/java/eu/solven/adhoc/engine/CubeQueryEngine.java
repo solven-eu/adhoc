@@ -53,7 +53,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
@@ -499,9 +499,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
 			if (queryStep.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
-				IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-				SliceAsMap errorSlice = makeErrorSlice(queryStep, e);
+				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
 				column.append(errorSlice).onObject(e);
 				coordinatesToValues = SliceToValue.forGroupBy(queryStep).values(column).build();
 			} else {
@@ -517,7 +517,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	// TODO We should ensure this slice is valid given current filter
-	protected SliceAsMap makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
+	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		MapBuilderPreKeys errorSliceAsMapBuilder =
 				factories.getSliceFactory().newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
@@ -542,7 +542,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			errorSliceAsMapBuilder.append(errorCoordinate);
 		});
 
-		return errorSliceAsMapBuilder.build().asSlice().asSliceAsMap();
+		return errorSliceAsMapBuilder.build().asSlice();
 	}
 
 	protected List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
@@ -641,10 +641,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				boolean doClearCarriers = mayHoldCarriers(step)
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
-				IColumnScanner<SliceAsMap> baseRowScanner =
+				IColumnScanner<IAdhocSlice> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
-				IColumnScanner<SliceAsMap> rowScanner;
+				IColumnScanner<IAdhocSlice> rowScanner;
 				if (isEmptyMeasure) {
 					rowScanner = slice -> {
 						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);

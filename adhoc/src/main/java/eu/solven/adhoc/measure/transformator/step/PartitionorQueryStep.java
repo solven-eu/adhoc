@@ -33,7 +33,7 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -95,7 +95,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<SliceAsMap> values = makeColumn(agg, underlyings);
+		IMultitypeMergeableColumn<IAdhocSlice> values = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
 
@@ -104,7 +104,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeMergeableColumn<SliceAsMap> makeColumn(IAggregation agg,
+	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg,
 			List<? extends ISliceToValue> underlyings) {
 		// BEWARE The output capacity is at most the sum of input capacity. But it is generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
@@ -127,7 +127,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 						contributionSlice);
 			}
 
-			SliceAsMap partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
+			IAdhocSlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}",
@@ -146,13 +146,14 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 		}
 	}
 
-	protected SliceAsMap queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
+	protected IAdhocSlice queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
 		MapBuilderPreKeys mapBuilder = factories.getSliceFactory().newMapBuilder(groupedByColumns);
 
+		IAdhocSlice slice = bucketedSlice.getSlice();
 		groupedByColumns.forEach(groupBy -> {
-			Object value = bucketedSlice.getRawSliced(groupBy);
+			Object value = slice.getRawSliced(groupBy);
 
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
@@ -162,6 +163,6 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 			mapBuilder.append(value);
 		});
 
-		return mapBuilder.build().asSlice().asSliceAsMap();
+		return mapBuilder.build().asSlice();
 	}
 }

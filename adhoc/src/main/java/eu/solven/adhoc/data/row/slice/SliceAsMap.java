@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
-import eu.solven.adhoc.map.AdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.StandardSliceFactory;
@@ -46,7 +45,7 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
  * 
  * @author Benoit Lacelle
  */
-public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
+public final class SliceAsMap implements IAdhocSlice {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	// Implementations is generally a AdhocMap
@@ -57,11 +56,11 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	@Deprecated(since = "Should use a ISliceFactory")
-	public static SliceAsMap fromMap(Map<String, ?> asMap) {
+	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
 		MapBuilderThroughKeys builder = StandardSliceFactory.builder().build().newMapBuilder();
 
 		asMap.forEach(builder::put);
-		return builder.build().asSlice().asSliceAsMap();
+		return builder.build().asSlice();
 	}
 
 	/**
@@ -72,6 +71,11 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	 */
 	public static SliceAsMap fromMapUnsafe(IAdhocMap adhocMap) {
 		return new SliceAsMap(adhocMap);
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return asMap.isEmpty();
 	}
 
 	@Override
@@ -104,11 +108,6 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 		} else {
 			return v;
 		}
-	}
-
-	@Override
-	public SliceAsMap asSliceAsMap() {
-		return this;
 	}
 
 	@Override
@@ -152,13 +151,12 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	}
 
 	@Override
-	@SuppressWarnings("PMD.LooseCoupling")
-	public int compareTo(SliceAsMap o) {
-		if (this.asMap instanceof AdhocMap adhocMap && o.asMap instanceof AdhocMap otherAdhocMap) {
-			return adhocMap.compareTo(otherAdhocMap);
-		} else {
-			return MapComparators.mapComparator().compare(this.asMap, o.asMap);
+	public int compareTo(IAdhocSlice o) {
+		if (o instanceof SliceAsMap otherSlice && this.asMap instanceof IAdhocMap thisAdhocMap
+				&& otherSlice.asMap instanceof IAdhocMap otherAdhocMap) {
+			return thisAdhocMap.compareTo(otherAdhocMap);
 		}
+		return MapComparators.mapComparator().compare(this.getCoordinates(), o.getCoordinates());
 	}
 
 	@Override
@@ -172,11 +170,14 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 	 * @param mask
 	 *            must not overlap existing columns.
 	 */
-	// @Override
-	public SliceAsMap addColumns(Map<String, ?> mask) {
+	@Override
+	public IAdhocSlice addColumns(Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return this;
 		} else {
+			// TODO There should probably be a branch dedicated for IAdhocMap, as we would generate generate many Map
+			// with given mask.
+			// if (asMap instanceof IAdhocMap)
 			ImmutableMap.Builder<String, Object> builder =
 					ImmutableMap.builderWithExpectedSize(asMap.size() + mask.size());
 			return fromMap(builder.putAll(asMap).putAll(mask).build());
@@ -185,9 +186,5 @@ public final class SliceAsMap implements IAdhocSlice, Comparable<SliceAsMap> {
 
 	public static SliceAsMap grandTotal() {
 		return new SliceAsMap(ImmutableMap.of());
-	}
-
-	public boolean isEmpty() {
-		return asMap.isEmpty();
 	}
 }

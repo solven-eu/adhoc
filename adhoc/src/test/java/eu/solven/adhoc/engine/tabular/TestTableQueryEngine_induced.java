@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -88,7 +89,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				.hasSize(1);
 
 		{
-			IMultitypeColumnFastGet<SliceAsMap> columnFromTable = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR"))).onLong(123);
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD"))).onLong(234);
 
@@ -157,7 +158,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				.hasSize(2);
 
 		{
-			IMultitypeColumnFastGet<SliceAsMap> columnFromTable = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR", "country", "France"))).onLong(123);
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
 			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD", "country", "USA"))).onLong(345);

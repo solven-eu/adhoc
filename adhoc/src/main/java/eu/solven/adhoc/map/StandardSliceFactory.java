@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -273,8 +274,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	 */
 	@SuppressWarnings("PMD.LooseCoupling")
 	@Builder
-	public static class MapOverLists extends AbstractMap<String, Object>
-			implements Comparable<MapOverLists>, IAdhocMap {
+	public static class MapOverLists extends AbstractMap<String, Object> implements IAdhocMap {
 		private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
 
 		// Holds keys, in both sorted order, and unordered order ,with the information to map from one to the other
@@ -479,7 +479,11 @@ public class StandardSliceFactory implements ISliceFactory {
 		// Looks a lot like NavigableMapComparator. Duplication?
 		@SuppressWarnings("PMD.CompareObjectsWithEquals")
 		@Override
-		public int compareTo(MapOverLists other) {
+		public int compareTo(IAdhocMap otherI) {
+			if (!(otherI instanceof MapOverLists other)) {
+				throw new NotYetImplementedException("other=%s".formatted(PepperLogHelper.getObjectAndClass(otherI)));
+			}
+
 			if (this == other) {
 				// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to
 				// provide

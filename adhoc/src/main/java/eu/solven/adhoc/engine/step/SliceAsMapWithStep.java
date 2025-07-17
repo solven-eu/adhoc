@@ -23,17 +23,15 @@
 package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 
@@ -46,23 +44,15 @@ import lombok.ToString;
 @ToString
 public class SliceAsMapWithStep implements ISliceWithStep {
 	@NonNull
-	final SliceAsMap slice;
+	@Getter
+	final IAdhocSlice slice;
 
 	@NonNull
+	@Getter
 	final CubeQueryStep queryStep;
 
 	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns
 	final Supplier<IAdhocFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
-
-	@Override
-	public @NonNull CubeQueryStep getQueryStep() {
-		return queryStep;
-	}
-
-	@Override
-	public Set<String> getColumns() {
-		return slice.getColumns();
-	}
 
 	@Override
 	public IAdhocFilter asFilter() {
@@ -86,23 +76,6 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 
 		// BEWARE We should also check it is always an `AND` of `EQUALS`.
 		return filter;
-	}
-
-	@Override
-	public Optional<Object> optSliced(String column) {
-		return slice.optSliced(column);
-	}
-
-	@Override
-	public SliceAsMap asSliceAsMap() {
-		// BEWARE Make sure we return an existing SliceAsMap, and not creating a new instance
-		// We want to minimize the number of different SliceAsMap through a query
-		return slice;
-	}
-
-	@Override
-	public Map<String, ?> optSliced(Set<String> columns) {
-		return slice.optSliced(columns);
 	}
 
 }

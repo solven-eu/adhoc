@@ -40,6 +40,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.model.Aggregator;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -62,7 +63,7 @@ public class BenchmarkAggregatingColumns {
 
 	int size = 1_000_000;
 
-	Object2IntMap<SliceAsMap> sliceToIndex;
+	Object2IntMap<IAdhocSlice> sliceToIndex;
 
 	AggregatingColumns<String> columns = AggregatingColumns.<String>builder().build();
 
@@ -83,8 +84,8 @@ public class BenchmarkAggregatingColumns {
 	}
 
 	// @Benchmark
-	public ObjectArrayList<Object2IntMap.Entry<SliceAsMap>> sort() {
-		return AggregatingColumns.<SliceAsMap>doSort(c -> {
+	public ObjectArrayList<Object2IntMap.Entry<IAdhocSlice>> sort() {
+		return AggregatingColumns.<IAdhocSlice>doSort(c -> {
 			sliceToIndex.forEach((slice, index) -> c.acceptObject2Int(slice, index));
 		}, sliceToIndex.size());
 	}

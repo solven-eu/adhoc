@@ -48,7 +48,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
@@ -365,7 +365,7 @@ public class TableQueryEngineBootstrapped {
 			TableQueryToSuppressedTableQuery queryAndSuppressed,
 			ITabularRecordStream stream) {
 
-		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates =
+		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates =
 				mergeTableAggregates(queryPod, queryAndSuppressed, stream);
 
 		Map<CubeQueryStep, ISliceToValue> immutableChunks =
@@ -375,7 +375,7 @@ public class TableQueryEngineBootstrapped {
 
 	protected Map<CubeQueryStep, ISliceToValue> splitTableGridToColumns(QueryPod queryPod,
 			TableQueryToSuppressedTableQuery queryAndSuppressed,
-			IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates) {
+			IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates) {
 		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
 		Map<CubeQueryStep, ISliceToValue> immutableChunks =
@@ -414,12 +414,12 @@ public class TableQueryEngineBootstrapped {
 		return immutableChunks;
 	}
 
-	protected IMultitypeMergeableGrid<SliceAsMap> mergeTableAggregates(QueryPod queryPod,
+	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(QueryPod queryPod,
 			TableQueryToSuppressedTableQuery queryAndSuppressed,
 			ITabularRecordStream stream) {
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-		IMultitypeMergeableGrid<SliceAsMap> sliceToAggregates =
+		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates =
 				mergeTableAggregates(queryPod, queryAndSuppressed.getSuppressedQuery(), stream);
 
 		// BEWARE This timing is dependent of the table
@@ -447,7 +447,7 @@ public class TableQueryEngineBootstrapped {
 		return sliceToAggregates;
 	}
 
-	protected IMultitypeMergeableGrid<SliceAsMap> mergeTableAggregates(QueryPod queryPod,
+	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(QueryPod queryPod,
 			TableQueryV2 tableQuery,
 			ITabularRecordStream stream) {
 		ITabularRecordStreamReducer streamReducer = makeTabularRecordStreamReducer(queryPod, tableQuery);
@@ -482,7 +482,7 @@ public class TableQueryEngineBootstrapped {
 	 */
 	protected Map<CubeQueryStep, ISliceToValue> toSortedColumns(QueryPod queryPod,
 			TableQueryToSuppressedTableQuery query,
-			IMultitypeMergeableGrid<SliceAsMap> coordinatesToAggregates) {
+			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
 		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
 		TableQueryV2 dagTableQuery = query.getDagQuery();
 
@@ -497,9 +497,9 @@ public class TableQueryEngineBootstrapped {
 					.build();
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
-			IMultitypeColumnFastGet<SliceAsMap> values = coordinatesToAggregates.closeColumn(filteredAggregator);
+			IMultitypeColumnFastGet<IAdhocSlice> values = coordinatesToAggregates.closeColumn(filteredAggregator);
 
-			IMultitypeColumnFastGet<SliceAsMap> valuesWithSuppressed;
+			IMultitypeColumnFastGet<IAdhocSlice> valuesWithSuppressed;
 			if (suppressedGroupBys.isEmpty()) {
 				valuesWithSuppressed = values;
 			} else {
@@ -527,9 +527,9 @@ public class TableQueryEngineBootstrapped {
 	 * @param column
 	 * @return
 	 */
-	protected IMultitypeColumnFastGet<SliceAsMap> restoreSuppressedGroupBy(CubeQueryStep queryStep,
+	protected IMultitypeColumnFastGet<IAdhocSlice> restoreSuppressedGroupBy(CubeQueryStep queryStep,
 			Set<String> suppressedColumns,
-			IMultitypeColumnFastGet<SliceAsMap> column) {
+			IMultitypeColumnFastGet<IAdhocSlice> column) {
 		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
 
 		boolean match = FilterMatcher.builder().filter(queryStep.getFilter()).onMissingColumn(cf -> {
@@ -592,7 +592,7 @@ public class TableQueryEngineBootstrapped {
 			// Happens typically for inducers steps
 			log.debug("step={} is already evaluated", induced);
 		} else {
-			IMultitypeMergeableColumn<SliceAsMap> inducedValues =
+			IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
 					optimizer.evaluateInduced(hasOptions, inducerAndInduced, stepToValues, induced);
 
 			stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());

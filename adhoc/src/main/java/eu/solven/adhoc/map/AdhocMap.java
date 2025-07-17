@@ -44,6 +44,8 @@ import com.google.common.primitives.Ints;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.exception.NotSupportedAsImmutableException;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -59,7 +61,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 // `extends AbstractMap` enables not duplicating `.toString`
 @Deprecated(since = "Superseeded by MapOverLists")
 @SuppressWarnings({ "PMD.GodClass", "PMD.LooseCoupling" })
-public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap, IImmutable, Comparable<AdhocMap> {
+public final class AdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	private static final int[] PRE_ORDERED = new int[0];
 
 	// This is mandatory for fast `.get`
@@ -235,7 +237,11 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 	// Looks a lot like NavigableMapComparator. Duplication?
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	@Override
-	public int compareTo(AdhocMap other) {
+	public int compareTo(IAdhocMap otherI) {
+		if (!(otherI instanceof AdhocMap other)) {
+			throw new NotYetImplementedException("other=%s".formatted(PepperLogHelper.getObjectAndClass(otherI)));
+		}
+
 		if (this == other) {
 			// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to provide
 			// same sliceAsMap

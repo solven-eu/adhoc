@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +82,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			// sorted column.
 
 			// Merge all SliceAsMap in a Set
-			Set<SliceAsMap> notSortedAsSet;
+			Set<IAdhocSlice> notSortedAsSet;
 			if (underlyings.isEmpty()) {
 				notSortedAsSet = Set.of();
 			} else if (underlyings.size() == 1) {
@@ -129,7 +129,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 */
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> sorted) {
-		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators = sorted.stream().peek(s -> {
+		List<Iterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators = sorted.stream().peek(s -> {
 			if (!s.isSorted()) {
 				throw new IllegalArgumentException(
 						"This requires input Stream to be sorted. queryStep=%s".formatted(queryStep));

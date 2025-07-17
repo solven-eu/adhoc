@@ -157,10 +157,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 				throw new NotYetImplementedException("TODO");
 			}
 
-			return TabularRecordOverMaps.builder()
-					.aggregates(aggregates)
-					.slice(slice.build().asSlice().asSliceAsMap())
-					.build();
+			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
 		});
 	}
 

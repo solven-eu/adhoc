@@ -341,10 +341,7 @@ public class JooqTableWrapper implements ITableWrapper {
 			}
 		}
 
-		return TabularRecordOverMaps.builder()
-				.aggregates(aggregates)
-				.slice(sliceBuilder.build().asSlice().asSliceAsMap())
-				.build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(sliceBuilder.build().asSlice()).build();
 	}
 
 	protected Object cleanAggregateValue(Object value) {

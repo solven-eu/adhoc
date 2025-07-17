@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -124,7 +124,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<IAdhocSlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 
@@ -134,7 +134,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		ISlicedRecord slicedRecord = slice.getMeasures();
-		IValueReceiver outputSlice = output.putSlice(slice.getSlice().asSliceAsMap());
+		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getSlice());
 		try {
 			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
 

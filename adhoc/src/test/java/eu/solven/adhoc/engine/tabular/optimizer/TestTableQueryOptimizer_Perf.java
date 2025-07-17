@@ -42,6 +42,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -73,7 +74,7 @@ public class TestTableQueryOptimizer_Perf {
 		SplitTableQueries split =
 				SplitTableQueries.builder().inducer(inducerStep).induced(inducedStep).dagToDependancies(dag).build();
 
-		IMultitypeColumnFastGet<SliceAsMap> inducerValues = MultitypeHashColumn.<SliceAsMap>builder().build();
+		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 		NavigableSet<String> inColumns = new TreeSet<>(ImmutableSet.of("c0", "c1"));
 		IntStream.range(0, cardinalityIn).forEach(rowIndex -> {
@@ -86,7 +87,7 @@ public class TestTableQueryOptimizer_Perf {
 		ISliceToValue inducerValues2 = SliceToValue.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
 		inducers.put(inducerStep, inducerValues2);
 
-		IMultitypeMergeableColumn<SliceAsMap> induced =
+		IMultitypeMergeableColumn<IAdhocSlice> induced =
 				optimizer.evaluateInduced(() -> Set.of(), split, inducers, inducedStep);
 
 		Assertions.assertThat(induced.size()).isEqualTo(cardinalityOut);

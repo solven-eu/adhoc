@@ -11,7 +11,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Changed
 - Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
-- `ITabularRecord.getGroupBys()` now returns a `SliceAsMap`
+- `ITabularRecord.getGroupBys()` now returns a `IAdhocMap`
+- Most `SliceAsMap` usages are replaced by `IAdhocSlice`, and `IAdhocSliceWithStep` does not extends `IAdhocSlice` anymore.
 
 ### Fixed
 - Various mis-behaviours related to `null` as `GROUP BY` coordinate.

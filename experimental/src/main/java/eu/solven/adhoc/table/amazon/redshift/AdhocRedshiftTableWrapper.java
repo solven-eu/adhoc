@@ -163,10 +163,7 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 			throw new NotYetImplementedException("lateColumns=%s".formatted(sqlQuery.getFields().getLateColumns()));
 		}
 
-		return TabularRecordOverMaps.builder()
-				.aggregates(aggregates)
-				.slice(slice.build().asSlice().asSliceAsMap())
-				.build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
 	}
 
 	protected Object toObject(Field field) {

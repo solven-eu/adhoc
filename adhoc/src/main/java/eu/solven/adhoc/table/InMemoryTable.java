@@ -48,7 +48,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory;
@@ -179,7 +179,7 @@ public class InMemoryTable implements ITableWrapper {
 				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
 				// groupBy groupedByColumns
-				Map<SliceAsMap, Optional<ITabularRecord>> groupedAggregatedRecord =
+				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(ITabularRecord::getGroupBys,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
@@ -311,10 +311,7 @@ public class InMemoryTable implements ITableWrapper {
 			groupByBuilder.append(value);
 		});
 
-		return TabularRecordOverMaps.builder()
-				.aggregates(aggregates)
-				.slice(groupByBuilder.build().asSlice().asSliceAsMap())
-				.build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupByBuilder.build().asSlice()).build();
 	}
 
 	@Override

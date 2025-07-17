@@ -28,7 +28,7 @@ import java.util.function.BiConsumer;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -57,8 +57,8 @@ public class TabularRecordLogger {
 		};
 	}
 
-	public BiConsumer<ITabularRecord, Optional<SliceAsMap>> prepareStreamLogger(TableQueryV2 tableQuery) {
-		BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate = (input, optCoordinates) -> {
+	public BiConsumer<ITabularRecord, Optional<IAdhocSlice>> prepareStreamLogger(TableQueryV2 tableQuery) {
+		BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate = (input, optCoordinates) -> {
 			if (optCoordinates.isEmpty()) {
 				// Skip this input as it is incompatible with the groupBy
 				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.

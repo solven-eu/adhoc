@@ -85,7 +85,7 @@ public class TestAdhocMapFactory {
 
 			permutation.forEach(e -> builder.put(e.getKey(), e.getValue()));
 
-			Assertions.assertThat(builder.build()).isEqualTo(reference);
+			Assertions.assertThat((Map) builder.build()).isEqualTo(reference);
 		});
 	}
 

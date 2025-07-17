@@ -31,6 +31,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -50,7 +51,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 		return errorSliceAsMap;
 	}
 
-	public static SliceAsMap asSlice(NavigableSet<String> columns) {
+	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
 		return SliceAsMap.fromMap(asMap(columns));
 	}
 

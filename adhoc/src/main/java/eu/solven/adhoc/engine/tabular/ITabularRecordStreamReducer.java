@@ -23,7 +23,7 @@
 package eu.solven.adhoc.engine.tabular;
 
 import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 
 /**
@@ -34,6 +34,6 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 @FunctionalInterface
 public interface ITabularRecordStreamReducer {
 
-	IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream);
+	IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream);
 
 }

@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -47,12 +48,9 @@ import lombok.With;
  */
 @Builder
 public class TabularRecordOverMaps implements ITabularRecord {
-	// @NonNull
-	// Object nullPlaceHolder;
-
 	@NonNull
 	@With
-	final SliceAsMap slice;
+	final IAdhocSlice slice;
 	// BEWARE: ImmutableMap will forbid null value
 	@NonNull
 	@Singular
@@ -111,7 +109,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public SliceAsMap getGroupBys() {
+	public IAdhocSlice getGroupBys() {
 		return slice;
 	}
 

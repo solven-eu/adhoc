@@ -29,7 +29,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
@@ -80,7 +80,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values =
+		IMultitypeColumnFastGet<IAdhocSlice> values =
 				factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
@@ -94,7 +94,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 		Object value = combination.combine(input.getSlice(), underlyingVs);
 
-		SliceAsMap output = input.getSlice().asSliceAsMap();
+		IAdhocSlice output = input.getSlice().getSlice();
 		if (isDebug()) {
 			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, output);
 		}

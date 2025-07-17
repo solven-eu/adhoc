@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -80,7 +80,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<SliceAsMap> evaluateInduced(IHasQueryOptions hasOptions,
+	public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced) {
@@ -95,7 +95,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
-		IMultitypeMergeableColumn<SliceAsMap> inducedValues = factories.getColumnFactory()
+		IMultitypeMergeableColumn<IAdhocSlice> inducedValues = factories.getColumnFactory()
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
 		FilterMatcher filterMatcher = FilterMatcher.builder()
@@ -110,7 +110,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 			return filterMatcher.match(s.getSlice().getCoordinates());
 		}).forEach(slice -> {
 			// inducer have same or more columns than induced
-			SliceAsMap inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
+			IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
 			slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
 		});
 
@@ -128,14 +128,14 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		return inducedValues;
 	}
 
-	protected SliceAsMap inducedGroupBy(NavigableSet<String> groupedByColumns, SliceAsMap inducer) {
+	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
 		var induced = factories.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		groupedByColumns.forEach(inducedColumn -> {
 			induced.append(inducer.getRawSliced(inducedColumn));
 		});
 
-		return induced.build().asSlice().asSliceAsMap();
+		return induced.build().asSlice();
 	}
 
 }

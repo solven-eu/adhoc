@@ -26,7 +26,7 @@ import java.util.List;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -58,7 +58,7 @@ public class SliceAndMeasures {
 	 * @return
 	 */
 	public static SliceAndMeasures from(CubeQueryStep queryStep,
-			SliceAsMap slice,
+			IAdhocSlice slice,
 			List<IValueProvider> valueProviders) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
@@ -66,7 +66,7 @@ public class SliceAndMeasures {
 				.build();
 	}
 
-	public static SliceAndMeasures from(SliceAsMap slice, CubeQueryStep queryStep, List<?> underlyingVs) {
+	public static SliceAndMeasures from(IAdhocSlice slice, CubeQueryStep queryStep, List<?> underlyingVs) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromArray.builder().measures(underlyingVs).build())
