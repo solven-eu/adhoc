@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -67,6 +68,20 @@ import lombok.ToString;
  */
 @Builder
 public class StandardSliceFactory implements ISliceFactory {
+	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a", "b")).append("a1").append("b1")` as the order
+	// of the Set is not consistent with the input array
+	private static final Set<Class<?>> notOrderedClasses;
+
+	static {
+		ImmutableSet.Builder<Class<?>> builder = ImmutableSet.builder();
+
+		// java.util.ImmutableCollections.Set12.Set12(E)
+		builder.add(Set.of("a").getClass());
+		// java.util.ImmutableCollections.SetN.SetN(E...)
+		builder.add(Set.of("a", "b", "c").getClass());
+
+		notOrderedClasses = builder.build();
+	}
 
 	final ConcurrentMap<Integer, EnrichedKeySet> keySetDictionary = new ConcurrentHashMap<>();
 	final ConcurrentMap<EnrichedKeySet, Integer> keySetDictionaryReverse = new ConcurrentHashMap<>();
@@ -648,7 +663,11 @@ public class StandardSliceFactory implements ISliceFactory {
 	 * @return true if the input if an ordered {@link Set}
 	 */
 	protected boolean isNotOrdered(Iterable<? extends String> set) {
-		if (set.getClass().getName().equals(Set.of("a").getClass().getName())) {
+		if (set instanceof Collection<?> c && c.isEmpty()) {
+			return false;
+		}
+
+		if (notOrderedClasses.contains(set.getClass())) {
 			return true;
 		}
 
