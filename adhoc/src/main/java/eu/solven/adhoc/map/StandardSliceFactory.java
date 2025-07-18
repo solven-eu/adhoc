@@ -70,7 +70,7 @@ import lombok.ToString;
 public class StandardSliceFactory implements ISliceFactory {
 	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a", "b")).append("a1").append("b1")` as the order
 	// of the Set is not consistent with the input array
-	private static final Set<Class<?>> notOrderedClasses;
+	private static final Set<Class<?>> NOT_ORDERED_CLASSES;
 
 	static {
 		ImmutableSet.Builder<Class<?>> builder = ImmutableSet.builder();
@@ -80,7 +80,7 @@ public class StandardSliceFactory implements ISliceFactory {
 		// java.util.ImmutableCollections.SetN.SetN(E...)
 		builder.add(Set.of("a", "b", "c").getClass());
 
-		notOrderedClasses = builder.build();
+		NOT_ORDERED_CLASSES = builder.build();
 	}
 
 	final ConcurrentMap<Integer, EnrichedKeySet> keySetDictionary = new ConcurrentHashMap<>();
@@ -667,7 +667,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			return false;
 		}
 
-		if (notOrderedClasses.contains(set.getClass())) {
+		if (NOT_ORDERED_CLASSES.contains(set.getClass())) {
 			return true;
 		}
 
