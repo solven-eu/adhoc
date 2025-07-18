@@ -29,7 +29,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
@@ -80,8 +80,8 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values =
-				factories.getColumnsFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+		IMultitypeColumnFastGet<IAdhocSlice> values =
+				factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
 
@@ -89,16 +89,16 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
-		List<?> underlyingVs = slice.getMeasures().asList();
+	protected void onSlice(SliceAndMeasures input, ICombination combination, ISliceAndValueConsumer sink) {
+		List<?> underlyingVs = input.getMeasures().asList();
 
-		Object value = combination.combine(slice.getSlice(), underlyingVs);
+		Object value = combination.combine(input.getSlice(), underlyingVs);
 
-		SliceAsMap sliceAsMap = slice.getSlice().getAdhocSliceAsMap();
+		IAdhocSlice output = input.getSlice().getSlice();
 		if (isDebug()) {
-			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, sliceAsMap);
+			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, output);
 		}
 
-		output.putSlice(sliceAsMap).onObject(value);
+		sink.putSlice(output).onObject(value);
 	}
 }

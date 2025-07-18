@@ -31,21 +31,20 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -105,13 +104,13 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 * @param slice
 	 * @return
 	 */
-	protected SliceAsMap shiftSlice(ISliceWithStep slice) {
+	protected IAdhocSlice shiftSlice(ISliceWithStep slice) {
 		// BEWARE the filter from queryStep is meaningless here
-		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
+		IAdhocFilter filter = slice.getSlice().asFilter();
 
 		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		AdhocMapBuilder builder = AdhocMap.builder(step.getGroupBy().getGroupedByColumns());
+		MapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
 
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
@@ -122,7 +121,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			builder.append(optOperand.get());
 		});
 
-		return SliceAsMap.fromMap(builder.build());
+		return builder.build().asSlice();
 	}
 
 	protected boolean isDebug() {
@@ -135,18 +134,17 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			ISliceAndValueConsumer output) {
 		ISliceToValue whereToReadShifted = underlyings.getFirst();
 
-		SliceAsMap shiftedSlice = shiftSlice(slice);
+		IAdhocSlice shiftedSlice = shiftSlice(slice);
 
 		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
 		IValueProvider shiftedValue = whereToReadShifted.onValue(shiftedSlice);
-		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
-		shiftedValue.acceptReceiver(output.putSlice(sliceAsMap));
+		shiftedValue.acceptReceiver(output.putSlice(slice.getSlice()));
 
 		if (isDebug()) {
 			log.info("[DEBUG] Write {}={} at {} (shifted from {} by {} to {})",
 					shiftor.getName(),
 					IValueProvider.getValue(shiftedValue),
-					sliceAsMap,
+					slice,
 					shiftor.getUnderlying(),
 					shiftor.getEditorKey(),
 					shiftedSlice);
@@ -192,14 +190,14 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyings.size() == %s".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = makeColumn(underlyings);
+		IMultitypeColumnFastGet<IAdhocSlice> values = makeColumn(underlyings);
 
 		forEachDistinctSlice1(underlyings, values::append);
 
 		return SliceToValue.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeColumnFastGet<SliceAsMap> makeColumn(List<? extends ISliceToValue> underlyings) {
-		return factories.getColumnsFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+	protected IMultitypeColumnFastGet<IAdhocSlice> makeColumn(List<? extends ISliceToValue> underlyings) {
+		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

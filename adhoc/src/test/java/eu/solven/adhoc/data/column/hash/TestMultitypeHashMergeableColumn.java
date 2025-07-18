@@ -37,10 +37,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Collections2;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestMultitypeHashMergeableColumn {
 	IAggregation sum = new SumAggregation();

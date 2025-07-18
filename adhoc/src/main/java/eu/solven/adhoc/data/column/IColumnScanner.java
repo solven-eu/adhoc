@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Used with a {@link ITabularView} to iterate over its rows.

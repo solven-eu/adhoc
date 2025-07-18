@@ -28,28 +28,33 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
 /**
- * A slice expresses the axes along which a query is filtered.
+ * A slice expresses the coordinates of an output row, given columns expressed by a a {@link IAdhocGroupBy}.
  * 
  * Coordinates (e.g. Map values) are normalized: e.g. `int` and `long` are considered equals.
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice {
+public interface IAdhocSlice extends Comparable<IAdhocSlice> {
+	boolean isEmpty();
+
 	/**
-	 * The columns for which a filter is expressed
+	 * The columns for which a coordinate is expressed
 	 */
 	Set<String> getColumns();
 
 	/**
 	 *
-	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is also a {@link AndFilter}
-	 *         of {@link EqualsMatcher}.
+	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
+	 *         {@link AndFilter} of {@link EqualsMatcher}.
 	 */
 	IAdhocFilter asFilter();
 
@@ -57,12 +62,10 @@ public interface IAdhocSlice {
 	 *
 	 * @param column
 	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
+	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}. May be null.
 	 */
-	default Object getRawSliced(String column) {
-		return optSliced(column).orElseThrow(() -> new IllegalArgumentException(
-				"%s is not a sliced column amongst %s".formatted(column, getColumns())));
-	}
+	@Nullable
+	Object getRawSliced(String column);
 
 	/**
 	 *
@@ -94,7 +97,7 @@ public interface IAdhocSlice {
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
-	default Map<String, Object> getCoordinates() {
+	default Map<String, ?> getCoordinates() {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		getColumns().forEach(column -> {
@@ -104,10 +107,7 @@ public interface IAdhocSlice {
 		return asMap;
 	}
 
-	/**
-	 * 
-	 * @return the simple (i.e. without the queryStep) slice, as a {@link SliceAsMap}
-	 */
-	SliceAsMap getAdhocSliceAsMap();
+	@Deprecated(since = "Is this good design?")
+	IAdhocSlice addColumns(Map<String, ?> masks);
 
 }

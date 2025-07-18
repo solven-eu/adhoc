@@ -43,6 +43,7 @@ import com.google.cloud.bigquery.TableResult;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -133,10 +134,10 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 				}
 			}
 
-			Map<String, Object> slice = new LinkedHashMap<>();
+			List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
+			MapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
 
 			{
-				List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
 				for (int i = 0; i < aggregateGroupBys.size(); i++) {
 					Field field = schema.getFields().get(aggregateGroupBys.size() + i);
 
@@ -148,8 +149,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 						value = fieldValue.getValue();
 					}
 
-					String columnName = aggregateGroupBys.get(i);
-					aggregates.put(columnName, value);
+					slice.append(value);
 				}
 			}
 
@@ -157,7 +157,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 				throw new NotYetImplementedException("TODO");
 			}
 
-			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
 		});
 	}
 

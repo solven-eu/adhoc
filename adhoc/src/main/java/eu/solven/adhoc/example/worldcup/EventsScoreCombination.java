@@ -55,7 +55,7 @@ public class EventsScoreCombination implements ICombination {
 			throw new IllegalStateException("Can not have a goal or redcard event without a match");
 		}
 
-		log.trace("{} {} {} {}", slice.getAdhocSliceAsMap().getCoordinates(), nbGoals, nbRedcards, nbMatch);
+		log.trace("{} {} {} {}", slice.getSlice().getCoordinates(), nbGoals, nbRedcards, nbMatch);
 
 		return BigDecimal.valueOf(nbGoals - nbRedcards * nbRedcards)
 				.divide(BigDecimal.valueOf(nbMatch.longValue()), RoundingMode.HALF_EVEN)

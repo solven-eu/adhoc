@@ -30,7 +30,7 @@ import java.util.Set;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -72,7 +72,7 @@ public class GroupByHelpers {
 	 *            a mask as a {@link Map} of column to value to apply to each slice of the column
 	 * @return a {@link IMultitypeColumnFastGet}
 	 */
-	public static IMultitypeColumnFastGet<SliceAsMap> addConstantColumns(IMultitypeColumnFastGet<SliceAsMap> column,
+	public static IMultitypeColumnFastGet<IAdhocSlice> addConstantColumns(IMultitypeColumnFastGet<IAdhocSlice> column,
 			Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return column;

@@ -35,12 +35,12 @@ import java.util.stream.StreamSupport;
 
 import com.google.common.primitives.Booleans;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -97,12 +97,12 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		}
 
 		// This is expensive: collected all sorted slices, to skip them from notSorted legs
-		Set<SliceAsMap> sortedSlicesAsSet = new HashSet<>();
+		Set<IAdhocSlice> sortedSlicesAsSet = new HashSet<>();
 
 		// BEWARE: This will fill `sortedSlicesAsSet` lazily, while iterating along sortedSlices, before processing
 		// notSorted slices. This is broken if one`.parallel` the stream.
 		sortedSlices = sortedSlices.peek(s -> {
-			sortedSlicesAsSet.add(s.getSlice().getAdhocSliceAsMap());
+			sortedSlicesAsSet.add(s.getSlice().getSlice());
 		});
 
 		List<Stream<SliceAndMeasures>> unsortedStreams = unsortedStreams(queryStep, underlyings, sortedSlicesAsSet);
@@ -129,7 +129,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		// }
 
 		// Exclude the notSortedIterators: they will be processed in a later step
-		List<Iterator<SliceAndMeasure<SliceAsMap>>> sortedIterators = underlyings.stream().map(s -> {
+		List<Iterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators = underlyings.stream().map(s -> {
 			// if (s.isSorted()) {
 			// return s.stream().iterator();
 			// } else {
@@ -164,8 +164,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 */
 	private static List<Stream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings,
-			Set<SliceAsMap> sortedSlicesAsSet) {
-		Set<SliceAsMap> unsortedSlicesAsSet = new HashSet<>();
+			Set<IAdhocSlice> sortedSlicesAsSet) {
+		Set<IAdhocSlice> unsortedSlicesAsSet = new HashSet<>();
 
 		List<Stream<SliceAndMeasures>> unsortedStreams = new ArrayList<>();
 
@@ -179,7 +179,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 					// Skip the slices processed by unsorted iterators
 					.filter(s -> !unsortedSlicesAsSet.contains(s.getSlice()))
 					.map(s -> {
-						SliceAndMeasure<SliceAsMap> sliceAndMeasure = s;
+						SliceAndMeasure<IAdhocSlice> sliceAndMeasure = s;
 
 						List<IValueProvider> valueProviders = new ArrayList<>(size);
 

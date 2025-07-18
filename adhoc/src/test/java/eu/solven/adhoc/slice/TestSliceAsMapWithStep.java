@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -42,7 +43,7 @@ public class TestSliceAsMapWithStep implements IAdhocTestConstants {
 		IAdhocFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
 		CubeQueryStep step =
 				CubeQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
-		SliceAsMap parentSlice = SliceAsMap.fromMap(Map.of("c2", "v2"));
+		IAdhocSlice parentSlice = SliceAsMap.fromMap(Map.of("c2", "v2"));
 
 		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 

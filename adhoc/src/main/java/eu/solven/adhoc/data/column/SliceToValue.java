@@ -28,10 +28,11 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import lombok.Builder;
 import lombok.Getter;
@@ -52,7 +53,7 @@ public class SliceToValue implements ISliceToValue {
 	@NonNull
 	// Getter for testing
 	@Getter
-	final IMultitypeColumnFastGet<SliceAsMap> values;
+	final IMultitypeColumnFastGet<IAdhocSlice> values;
 
 	@NonNull
 	@Singular
@@ -64,32 +65,32 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public IValueProvider onValue(SliceAsMap slice) {
+	public IValueProvider onValue(IAdhocSlice slice) {
 		return values.onValue(slice);
 	}
 
 	@Override
-	public Stream<SliceAsMap> slices() {
+	public Stream<IAdhocSlice> slices() {
 		return values.keyStream();
 	}
 
 	@Override
-	public Set<SliceAsMap> slicesSet() {
+	public Set<IAdhocSlice> slicesSet() {
 		return values.keyStream().collect(Collectors.toSet());
 	}
 
 	@Override
-	public void forEachSlice(IColumnScanner<SliceAsMap> rowScanner) {
+	public void forEachSlice(IColumnScanner<IAdhocSlice> rowScanner) {
 		values.scan(rowScanner);
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowScanner) {
+	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
 		return values.stream(rowScanner);
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<SliceAsMap>> stream() {
+	public Stream<SliceAndMeasure<IAdhocSlice>> stream() {
 		return values.stream();
 	}
 
@@ -112,7 +113,7 @@ public class SliceToValue implements ISliceToValue {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<SliceAsMap>> stream(StreamStrategy strategy) {
+	public Stream<SliceAndMeasure<IAdhocSlice>> stream(StreamStrategy strategy) {
 		return values.stream(strategy);
 	}
 

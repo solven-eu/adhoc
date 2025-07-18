@@ -43,10 +43,10 @@ import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -54,6 +54,7 @@ import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -105,7 +106,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
-	final IMissingColumnManager missingColumnManager = new StandardMissingColumnManager();
+	final IMissingColumnManager missingColumnManager = StandardMissingColumnManager.builder().build();
 
 	@NonNull
 	@Default
@@ -266,14 +267,17 @@ public class ColumnsManager implements IColumnsManager {
 			return row;
 		}
 
-		Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys());
+		Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
 
 		columns.forEach((columnName, column) -> {
 			// TODO handle recursive formulas (e.g. a formula relying on another formula)
 			enrichedGroupBy.put(columnName, column.computeCoordinate(row));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(row.aggregatesAsMap()).slice(enrichedGroupBy).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(row.aggregatesAsMap())
+				.slice(SliceAsMap.fromMap(enrichedGroupBy))
+				.build();
 	}
 
 	protected IColumnValueTranscoder prepareTypeTranscoder(TranscodingContext transcodingContext) {
@@ -408,7 +412,7 @@ public class ColumnsManager implements IColumnsManager {
 		}
 
 		@Override
-		public Map<String, ?> getGroupBys() {
+		public SliceAsMap getGroupBys() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 

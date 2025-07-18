@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.engine;
 
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -44,7 +47,12 @@ public class AdhocFactories {
 
 	@NonNull
 	@Default
-	IColumnFactory columnsFactory = StandardColumnFactory.builder().build();
+	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
+
+	@NonNull
+	@Default
+	ISliceFactory sliceFactory =
+			StandardSliceFactory.builder().valueNormalizer(AdhocPrimitiveHelpers::normalizeValue).build();
 
 	@NonNull
 	@Default

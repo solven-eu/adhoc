@@ -191,7 +191,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 			Map<String, Object> fullSlice = new LinkedHashMap<>();
 
 			// TODO How should we add coordinates from filter?
-			fullSlice.putAll(slice.getAdhocSliceAsMap().getCoordinates());
+			fullSlice.putAll(slice.getSlice().getCoordinates());
 			fullSlice.putAll(projectedSlice);
 
 			// Relates with DispatchorQueryStep.isRelevant

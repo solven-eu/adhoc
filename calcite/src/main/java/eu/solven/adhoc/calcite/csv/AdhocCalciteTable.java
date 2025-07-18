@@ -166,26 +166,23 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 	 *            MongoDB connection
 	 * @param fields
 	 *            List of fields to project; or null to return map
-	 * @param adhocQuery
+	 * @param query
 	 *            One or more JSON strings
 	 * @return Enumerator of results
 	 */
-	private Enumerable<Object> aggregate(final List<Map.Entry<String, Class<?>>> fields, final ICubeQuery adhocQuery) {
+	private Enumerable<Object> aggregate(final List<Map.Entry<String, Class<?>>> fields, final ICubeQuery query) {
 		return new AbstractEnumerable<Object>() {
 			@Override
 			public Enumerator<Object> enumerator() {
 				final Iterator<? extends ITabularRecord> resultIterator;
 				try {
-					ITabularView result = cube.execute(CubeQuery.edit(adhocQuery).options(queryOptions).build());
+					ITabularView result = cube.execute(CubeQuery.edit(query).options(queryOptions).build());
 
 					resultIterator = result.stream(slice -> {
-						return v -> TabularRecordOverMaps.builder()
-								.slice(slice.getCoordinates())
-								.aggregates((Map<String, ?>) v)
-								.build();
+						return v -> TabularRecordOverMaps.builder().slice(slice).aggregates((Map<String, ?>) v).build();
 					}).iterator();
 				} catch (Exception e) {
-					throw new RuntimeException("While running Adhoc query " + adhocQuery, e);
+					throw new RuntimeException("While running Adhoc query " + query, e);
 				}
 				return new AdhocCalciteEnumerator(fields, resultIterator);
 			}

@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -40,7 +41,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 
 	CubeQueryStep step = CubeQueryStep.builder().measure(k1Sum).build();
 
-	TableQueryOptimizerSinglePerAggregator optimizer = new TableQueryOptimizerSinglePerAggregator();
+	TableQueryOptimizerSinglePerAggregator optimizer =
+			new TableQueryOptimizerSinglePerAggregator(AdhocFactories.builder().build());
 
 	@Test
 	public void testCanInduce_OrDifferentColumns() {

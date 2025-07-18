@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Centralizes all implementations doing nothing given input data.

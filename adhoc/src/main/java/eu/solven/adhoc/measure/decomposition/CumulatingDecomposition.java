@@ -117,7 +117,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 		// e.g. we may receive `year=1930` while filtering `year=2025`, as `year=1930` contributes into `year=2025`
 		// So we rely on the queryStep filter, and not on `slice.asFilter()` which would do `year=1930&year=2025 ->
 		// matchNone`
-		IAdhocFilter filter = slice.getAdhocSliceAsMap().asFilter();
+		IAdhocFilter filter = slice.getSlice().asFilter();
 		if (filter.isMatchAll()) {
 			filter = slice.getQueryStep().getFilter();
 		}

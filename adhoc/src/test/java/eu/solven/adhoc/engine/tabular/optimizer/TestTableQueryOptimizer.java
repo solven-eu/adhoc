@@ -27,6 +27,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -44,7 +45,7 @@ public class TestTableQueryOptimizer {
 			.filter(ColumnFilter.isEqualTo("c", "c1"))
 			.build();
 
-	TableQueryOptimizer optimizer = new TableQueryOptimizer();
+	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
 
 	@Test
 	public void testCanInduce_Trivial() {

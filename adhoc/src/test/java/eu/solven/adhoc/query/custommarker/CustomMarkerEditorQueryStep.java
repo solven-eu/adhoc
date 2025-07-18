@@ -29,7 +29,7 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -64,7 +64,7 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 			throw new IllegalArgumentException("underlyingNames.size() != 1 (was %s)".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = makeStorage();
+		IMultitypeColumnFastGet<IAdhocSlice> values = makeStorage();
 
 		ISliceToValue singleUnderlying = underlyings.getFirst();
 
@@ -86,10 +86,10 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 			log.info("[DEBUG] Write {} in {} for {}", value, slice, customMarkerEditor.getName());
 		}
 
-		output.putSlice(slice.getAdhocSliceAsMap(), value);
+		output.putSlice(slice.getSlice()).onObject(value);
 	}
 
-	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	protected IMultitypeColumnFastGet<IAdhocSlice> makeStorage() {
+		return MultitypeHashColumn.<IAdhocSlice>builder().build();
 	}
 }

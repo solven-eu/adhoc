@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.primitive;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Set;
 
@@ -78,12 +79,47 @@ public class AdhocPrimitiveHelpers {
 	 */
 	@Deprecated(since = "Unclear if this is legit")
 	public static Object normalizeValue(Object o) {
-		if (isLongLike(o)) {
-			return asLong(o);
-		} else if (isDoubleLike(o)) {
-			return asDouble(o);
-		} else {
+		if (o == null) {
+			return null;
+		}
+		switch (o) {
+		case Integer i:
+			return i.longValue();
+		case Long l:
+			return l;
+		case BigInteger bigI:
+			return bigI.longValueExact();
+		case Float f:
+			return f.doubleValue();
+		case Double d:
+			return d;
+		case BigDecimal bigD:
+			return bigD.doubleValue();
+		default:
 			return o;
+		}
+	}
+
+	@SuppressWarnings("PMD.UnnecessaryBoxing")
+	public static IValueProvider normalizeValueAsProvider(Object o) {
+		if (o == null) {
+			return IValueProvider.NULL;
+		}
+		switch (o) {
+		case Integer i:
+			return IValueProvider.setValue(i.longValue());
+		case Long l:
+			return IValueProvider.setValue(l.longValue());
+		case BigInteger bigI:
+			return IValueProvider.setValue(bigI.longValueExact());
+		case Float f:
+			return IValueProvider.setValue(f.doubleValue());
+		case Double d:
+			return IValueProvider.setValue(d.doubleValue());
+		case BigDecimal bigD:
+			return IValueProvider.setValue(bigD.doubleValue());
+		default:
+			return IValueProvider.setValue(o);
 		}
 	}
 

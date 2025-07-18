@@ -35,9 +35,9 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -73,7 +73,7 @@ public class LinearDecomposition implements IDecomposition {
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
 
-		Optional<?> optInput = slice.optSliced(inputColumn);
+		Optional<?> optInput = slice.getSlice().optSliced(inputColumn);
 		if (optInput.isEmpty()) {
 			return List.of(IDecompositionEntry.of(Map.of(), IValueProvider.setValue(value)));
 		}

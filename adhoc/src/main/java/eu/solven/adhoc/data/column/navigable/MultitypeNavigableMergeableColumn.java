@@ -25,11 +25,11 @@ package eu.solven.adhoc.data.column.navigable;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;

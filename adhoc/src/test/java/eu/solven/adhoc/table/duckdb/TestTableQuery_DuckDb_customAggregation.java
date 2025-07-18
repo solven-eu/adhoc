@@ -41,13 +41,13 @@ import org.junit.jupiter.api.Test;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;

@@ -23,6 +23,8 @@
 package eu.solven.adhoc.data.cell;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A single cell (i.e. single {@link IAdhocSlice} and single measure) value.

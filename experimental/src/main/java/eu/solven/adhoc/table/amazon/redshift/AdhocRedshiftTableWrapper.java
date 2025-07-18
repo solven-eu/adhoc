@@ -30,12 +30,16 @@ import java.util.stream.Stream;
 
 import org.jooq.conf.ParamType;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
 import software.amazon.awssdk.services.redshiftdata.model.ExecuteStatementRequest;
@@ -142,17 +146,16 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		Map<String, Object> slice = new LinkedHashMap<>();
+		@NonNull
+		ImmutableList<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
+		MapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
 
 		{
-			List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
 			for (int i = 0; i < aggregateGroupBys.size(); i++) {
 				Field field = row.get(aggregateGroupBys.size() + i);
 
 				Object value = toObject(field);
-
-				String columnName = aggregateGroupBys.get(i);
-				aggregates.put(columnName, value);
+				slice.append(value);
 			}
 		}
 
@@ -160,7 +163,7 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 			throw new NotYetImplementedException("lateColumns=%s".formatted(sqlQuery.getFields().getLateColumns()));
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice).build();
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
 	}
 
 	protected Object toObject(Field field) {

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
+import eu.solven.adhoc.primitive.IValueFunction;
 
 /**
  * Enables conversion from given types (including primitive types) into a uniform type.

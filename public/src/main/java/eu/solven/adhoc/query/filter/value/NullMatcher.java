@@ -38,6 +38,15 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 public class NullMatcher implements IValueMatcher, IColumnToString {
+	public static final Object NULL_HOLDER = new Object() {
+		@Override
+		public String toString() {
+			// https://stackoverflow.com/questions/22802078/how-does-the-group-by-clause-manage-the-null-values
+			// `NULL` is upperCase helps not being confused with `String.valueOf(null)`.
+			return "NULL";
+		}
+	};
+
 	public static @NonNull IValueMatcher matchNull() {
 		return NullMatcher.builder().build();
 	}

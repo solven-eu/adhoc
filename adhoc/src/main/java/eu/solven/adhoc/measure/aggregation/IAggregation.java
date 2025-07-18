@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * An {@link IAggregation} can turn a {@link List} of values (typically from {@link Combinator}) into a new value.

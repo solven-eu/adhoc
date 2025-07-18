@@ -30,7 +30,7 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -81,7 +81,7 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = makeStorage();
+		IMultitypeColumnFastGet<IAdhocSlice> values = makeStorage();
 
 		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
@@ -100,11 +100,11 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 			log.info("[DEBUG] Write {} (given {}) in {} for {}", value, underlyingVs, slice, combinator.getName());
 		}
 
-		output.putSlice(slice.getSlice().getAdhocSliceAsMap()).onObject(value);
+		output.putSlice(slice.getSlice().getSlice()).onObject(value);
 	}
 
-	protected IMultitypeColumnFastGet<SliceAsMap> makeStorage() {
-		return MultitypeHashColumn.<SliceAsMap>builder().build();
+	protected IMultitypeColumnFastGet<IAdhocSlice> makeStorage() {
+		return MultitypeHashColumn.<IAdhocSlice>builder().build();
 	}
 
 }

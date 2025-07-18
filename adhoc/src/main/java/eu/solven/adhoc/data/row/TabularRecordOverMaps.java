@@ -29,8 +29,10 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
@@ -48,7 +50,7 @@ import lombok.With;
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@With
-	final Map<String, ?> slice;
+	final IAdhocSlice slice;
 	// BEWARE: ImmutableMap will forbid null value
 	@NonNull
 	@Singular
@@ -73,23 +75,18 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	public IValueProvider onAggregate(String aggregateName) {
 		Object aggregate = getAggregate(aggregateName);
 
-		if (AdhocPrimitiveHelpers.isLongLike(aggregate)) {
-			return valueReceiver -> valueReceiver.onLong(AdhocPrimitiveHelpers.asLong(aggregate));
-		} else if (AdhocPrimitiveHelpers.isDoubleLike(aggregate)) {
-			return valueReceiver -> valueReceiver.onDouble(AdhocPrimitiveHelpers.asDouble(aggregate));
-		} else {
-			return valueReceiver -> valueReceiver.onObject(aggregate);
-		}
+		// TODO Should we normalize at construction?
+		return AdhocPrimitiveHelpers.normalizeValueAsProvider(aggregate);
 	}
 
 	@Override
 	public Set<String> groupByKeySet() {
-		return slice.keySet();
+		return slice.getColumns();
 	}
 
 	@Override
 	public Object getGroupBy(String columnName) {
-		return slice.get(columnName);
+		return slice.getRawSliced(columnName);
 	}
 
 	@Override
@@ -97,13 +94,13 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		asMap.putAll(aggregates);
-		asMap.putAll(slice);
+		asMap.putAll(slice.getCoordinates());
 
 		return asMap;
 	}
 
 	public static ITabularRecord empty() {
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(Map.of()).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceAsMap.grandTotal()).build();
 	}
 
 	@Override
@@ -112,22 +109,24 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public Map<String, ?> getGroupBys() {
+	public IAdhocSlice getGroupBys() {
 		return slice;
 	}
 
 	@Override
 	public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
-		Map<String, ?> transcodedSlice = AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice);
+		Map<String, ?> transcodedSlice =
+				AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice.getCoordinates());
 
-		return withSlice(transcodedSlice);
+		return withSlice(SliceAsMap.fromMap(transcodedSlice));
 	}
 
 	@Override
 	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
-		Map<String, ?> transcodedSlice = AdhocTranscodingHelper.transcodeValues(customValueTranscoder, slice);
+		Map<String, ?> transcodedSlice =
+				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, slice.getCoordinates());
 
-		return withSlice(transcodedSlice);
+		return withSlice(SliceAsMap.fromMap(transcodedSlice));
 	}
 
 	@Override

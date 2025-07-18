@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestConstants {
@@ -65,10 +66,6 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").build());
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(1).contains(Collections.emptyMap());
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -88,10 +85,6 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k2Sum);
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -114,16 +107,13 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("b").build());
 
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("b", "b1"));
-
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.hasSize(2)
 				.containsEntry(Map.of("b", "b1"), Map.of("sumK1K2", 0L + 234))
-				.containsEntry(Map.of("b", "b2"), Map.of("sumK1K2", 0L + 567));
+				.containsEntry(Map.of("b", "b2"), Map.of("sumK1K2", 0L + 567))
+				.containsEntry(MapWithNulls.of("b", null), Map.of("sumK1K2", 0L + 123 + 345 + 456))
+				.hasSize(3);
 	}
 
 	@Test
@@ -138,10 +128,6 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -163,10 +149,6 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k2Sum);
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").groupByAlso("a").build());
-
-		// List<Map<String, ?>> keySet =
-		// output.keySet().map(AdhocSliceAsMap::getCoordinates).collect(Collectors.toList());
-		// Assertions.assertThat(keySet).hasSize(2).contains(Map.of("a", "a1"), Map.of("a", "a2"));
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

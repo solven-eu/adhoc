@@ -44,7 +44,7 @@ public class TestAdhocMap {
 	public void testGet() {
 		IAdhocMap simpleMap = AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
 
-		Assertions.assertThat(simpleMap).containsEntry("a", "a1").containsEntry("b", now).hasSize(2);
+		Assertions.assertThat((Map) simpleMap).containsEntry("a", "a1").containsEntry("b", now).hasSize(2);
 
 		Assertions.assertThat(simpleMap.containsKey("a")).isTrue();
 		Assertions.assertThat(simpleMap.get("a")).isEqualTo("a1");
@@ -63,7 +63,7 @@ public class TestAdhocMap {
 		{
 			IAdhocMap simpleMap2 = AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
 
-			Assertions.assertThat(simpleMap).isEqualTo(simpleMap2);
+			Assertions.assertThat((Map) simpleMap).isEqualTo(simpleMap2);
 		}
 
 		// Same keys different values
@@ -71,20 +71,20 @@ public class TestAdhocMap {
 			IAdhocMap simpleMap2 =
 					AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now.plusDays(1)).build();
 
-			Assertions.assertThat(simpleMap).isNotEqualTo(simpleMap2);
+			Assertions.assertThat((Map) simpleMap).isNotEqualTo(simpleMap2);
 		}
 
 		// Same values different keys
 		{
 			IAdhocMap simpleMap2 = AdhocMap.builder(ImmutableSet.of("a", "c")).append("a1").append(now).build();
 
-			Assertions.assertThat(simpleMap).isNotEqualTo(simpleMap2);
+			Assertions.assertThat((Map) simpleMap).isNotEqualTo(simpleMap2);
 		}
 
 		// Equals with standard map
 		{
 			Map<String, Object> asStandardMap = Map.of("a", "a1", "b", now);
-			Assertions.assertThat(simpleMap).isEqualTo(asStandardMap);
+			Assertions.assertThat((Map) simpleMap).isEqualTo(asStandardMap);
 			Assertions.assertThat(asStandardMap).isEqualTo(simpleMap);
 			Assertions.assertThat(simpleMap.hashCode()).isEqualTo(asStandardMap.hashCode());
 
@@ -97,8 +97,7 @@ public class TestAdhocMap {
 		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
 		IAdhocMap desc = AdhocMap.builder(ImmutableSet.of("date", "a")).append(now).append("a1").build();
 
-		Assertions.assertThat(desc).isEqualTo(asc);
-		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "date", now));
+		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "date", now));
 	}
 
 	@Test
@@ -107,8 +106,7 @@ public class TestAdhocMap {
 		IAdhocMap desc =
 				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
-		Assertions.assertThat(desc).isEqualTo(asc);
-		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
@@ -117,8 +115,7 @@ public class TestAdhocMap {
 		IAdhocMap desc =
 				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
-		Assertions.assertThat(desc).isEqualTo(asc);
-		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
@@ -127,8 +124,7 @@ public class TestAdhocMap {
 		IAdhocMap desc =
 				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
-		Assertions.assertThat(desc).isEqualTo(asc);
-		Assertions.assertThat(desc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test

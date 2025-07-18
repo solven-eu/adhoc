@@ -24,8 +24,6 @@ package eu.solven.adhoc.measure.sum;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.data.row.ISlicedRecord;
@@ -35,6 +33,8 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;

@@ -23,6 +23,9 @@
 package eu.solven.adhoc.engine.step;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 /**
  * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more contact to
@@ -30,11 +33,20 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
  * 
  * @author Benoit Lacelle
  */
-public interface ISliceWithStep extends IAdhocSlice {
+public interface ISliceWithStep {
+	IAdhocSlice getSlice();
+
 	/**
 	 * 
 	 * @return the queryStep owning this slice. The slice should express only the groupBy in the queryStep.
 	 */
 	CubeQueryStep getQueryStep();
+
+	/**
+	 *
+	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
+	 *         {@link AndFilter} of {@link EqualsMatcher}.
+	 */
+	IAdhocFilter asFilter();
 
 }

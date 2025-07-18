@@ -32,6 +32,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -139,8 +140,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 				Map<String, Object> aggregates =
 						tableQuery.getAggregators().stream().collect(Collectors.toMap(a -> a.getAlias(), a -> 1L));
 
-				return Stream
-						.<ITabularRecord>of(TabularRecordOverMaps.builder().slice(slice).aggregates(aggregates).build())
+				return Stream.<ITabularRecord>of(
+						TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(slice)).aggregates(aggregates).build())
 						.onClose(() -> this.close());
 			}
 

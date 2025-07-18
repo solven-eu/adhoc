@@ -25,13 +25,13 @@ package eu.solven.adhoc.data.column;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A {@link ISliceToValue} is an immutable data-structure, expressing the mapping from slices to values, typically
@@ -53,13 +53,13 @@ public interface ISliceToValue extends ICompactable {
 
 	Set<String> getColumns();
 
-	Stream<SliceAsMap> slices();
+	Stream<IAdhocSlice> slices();
 
-	Set<SliceAsMap> slicesSet();
+	Set<IAdhocSlice> slicesSet();
 
-	IValueProvider onValue(SliceAsMap slice);
+	IValueProvider onValue(IAdhocSlice slice);
 
-	void forEachSlice(IColumnScanner<SliceAsMap> columnScanner);
+	void forEachSlice(IColumnScanner<IAdhocSlice> columnScanner);
 
 	/**
 	 * 
@@ -70,16 +70,16 @@ public interface ISliceToValue extends ICompactable {
 	 * @return a {@link Stream} of objects built by the rowConverter
 	 */
 	@Deprecated(since = "It seems useless", forRemoval = true)
-	<U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> rowConverter);
+	<U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowConverter);
 
-	Stream<SliceAndMeasure<SliceAsMap>> stream();
+	Stream<SliceAndMeasure<IAdhocSlice>> stream();
 
 	/**
 	 * 
 	 * @param strategy
 	 * @return a {@link Stream} with the requested strategy
 	 */
-	Stream<SliceAndMeasure<SliceAsMap>> stream(StreamStrategy strategy);
+	Stream<SliceAndMeasure<IAdhocSlice>> stream(StreamStrategy strategy);
 
 	/**
 	 * 
@@ -88,9 +88,7 @@ public interface ISliceToValue extends ICompactable {
 	 * @return the value as {@link Object} on given slice
 	 */
 	static Object getValue(ISliceToValue storage, IAdhocSlice slice) {
-		SliceAsMap sliceAsMap = slice.getAdhocSliceAsMap();
-
-		return IValueProvider.getValue(storage.onValue(sliceAsMap));
+		return IValueProvider.getValue(storage.onValue(slice));
 	}
 
 	/**

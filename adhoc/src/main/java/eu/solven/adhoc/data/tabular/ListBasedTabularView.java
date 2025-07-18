@@ -83,7 +83,7 @@ public class ListBasedTabularView implements ITabularView {
 		}
 
 		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
-			Map<String, Object> coordinatesAsMap = coordinates.getCoordinates();
+			Map<String, ?> coordinatesAsMap = coordinates.getCoordinates();
 
 			return o -> {
 				Map<String, ?> oAsMap = (Map<String, ?>) o;
@@ -154,7 +154,7 @@ public class ListBasedTabularView implements ITabularView {
 		return toStringHelper.toString();
 	}
 
-	public void appendSlice(SliceAsMap slice, Map<String, ?> mToValues) {
+	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
 		coordinates.add(slice.getCoordinates());
 		values.add(mToValues);
 	}

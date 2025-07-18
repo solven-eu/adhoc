@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * For data-structure in which we an associate a slice to a value.
@@ -42,5 +43,5 @@ public interface ISliceAndValueConsumer {
 	 * @param slice
 	 * @return a {@link IValueReceiver} into which the value to write has to be pushed.
 	 */
-	IValueReceiver putSlice(SliceAsMap slice);
+	IValueReceiver putSlice(IAdhocSlice slice);
 }

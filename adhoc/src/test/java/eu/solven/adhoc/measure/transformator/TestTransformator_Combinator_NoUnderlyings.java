@@ -82,6 +82,7 @@ public class TestTransformator_Combinator_NoUnderlyings extends ADagTest impleme
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of("k1", 123L), Map.of("constant", "someConstant"))
 				.containsEntry(Map.of("k1", 345L), Map.of("constant", "someConstant"))
-				.hasSize(2);
+				.containsEntry(MapWithNulls.of("k1", null), Map.of("constant", "someConstant"))
+				.hasSize(3);
 	}
 }

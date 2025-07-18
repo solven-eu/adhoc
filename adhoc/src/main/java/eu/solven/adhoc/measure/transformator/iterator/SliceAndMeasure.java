@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.Builder;
 import lombok.Value;
 

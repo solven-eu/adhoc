@@ -98,7 +98,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 	}
 
 	protected Stream<SliceAndMeasures> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return getFactories().getColumnsFactory().distinctSlices(getStep(), underlyings);
+		return getFactories().getColumnFactory().distinctSlices(getStep(), underlyings);
 	}
 
 	protected abstract void onSlice(

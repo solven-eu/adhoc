@@ -29,14 +29,12 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -48,6 +46,8 @@ import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -124,7 +124,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<SliceAsMap> values = factories.getColumnsFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<IAdhocSlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 
@@ -134,7 +134,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		ISlicedRecord slicedRecord = slice.getMeasures();
-		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getAdhocSliceAsMap());
+		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getSlice());
 		try {
 			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
 

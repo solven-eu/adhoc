@@ -41,10 +41,10 @@ public class AdhocMapHelpers {
 	 * @param map
 	 * @return an immutable copy of the input, which may or may not be an {@link AdhocMap}
 	 */
-	public static Map<String, Object> immutableCopyOf(Map<String, ?> map) {
-		if (map instanceof IAdhocMap adhocMap) {
+	public static Map<String, ?> immutableCopyOf(Map<String, ?> map) {
+		if (map instanceof IImmutable) {
 			// For performance, we expect to be generally in this branch
-			return adhocMap;
+			return map;
 		} else {
 			return ImmutableMap.copyOf(map);
 		}

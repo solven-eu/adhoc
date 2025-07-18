@@ -29,13 +29,14 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.table.transcoder.IdentityReversibleTranscoder;
 
 public class TestHideAggregatorsTabularRecord {
 	@Test
 	public void testNominalCase() {
 		TabularRecordOverMaps underlying = TabularRecordOverMaps.builder()
-				.slice(Map.of("c", "c1"))
+				.slice(SliceAsMap.fromMap(Map.of("c", "c1")))
 				.aggregate("k1", 123)
 				.aggregate("k2", 234)
 				.build();
@@ -55,7 +56,7 @@ public class TestHideAggregatorsTabularRecord {
 	@Test
 	public void testKeepNotPresent() {
 		TabularRecordOverMaps underlying = TabularRecordOverMaps.builder()
-				.slice(Map.of("c", "c1"))
+				.slice(SliceAsMap.fromMap(Map.of("c", "c1")))
 				.aggregate("k1", 123)
 				.aggregate("k2", 234)
 				.build();

@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.measure.combination;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
  * Used for {@link ICombination} able to generate a {@link ICombinationBinding}. It may help achieving better CPU/Heap

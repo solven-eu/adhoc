@@ -27,16 +27,17 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestConstantMaskMultitypeColumn {
 	@Test
 	public void testGetValue() {
 		Map<String, ?> mask = Map.of("k2", "v2");
 
-		MultitypeHashColumn<SliceAsMap> withoutMask = MultitypeHashColumn.<SliceAsMap>builder().build();
+		MultitypeHashColumn<IAdhocSlice> withoutMask = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 		withoutMask.set(SliceAsMap.fromMap(Map.of())).onLong(123);
 
@@ -52,7 +53,7 @@ public class TestConstantMaskMultitypeColumn {
 	public void testConflictingColumns() {
 		Map<String, ?> mask = Map.of("k", "v2");
 
-		MultitypeHashColumn<SliceAsMap> withoutMask = MultitypeHashColumn.<SliceAsMap>builder().build();
+		MultitypeHashColumn<IAdhocSlice> withoutMask = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 		withoutMask.set(SliceAsMap.fromMap(Map.of("k", "v1"))).onLong(123);
 

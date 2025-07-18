@@ -23,13 +23,24 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.map.ICoordinateNormalizer;
+import eu.solven.adhoc.map.StandardCoordinateNormalizer;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
  * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
  * 
  * @author Benoit Lacelle
  */
+@Builder
 public class StandardMissingColumnManager implements IMissingColumnManager {
+
+	@NonNull
+	@Default
+	ICoordinateNormalizer coordinateNormalizer = new StandardCoordinateNormalizer();
 
 	@Override
 	public Object onMissingColumn(ICubeWrapper cube, String column) {
@@ -38,7 +49,7 @@ public class StandardMissingColumnManager implements IMissingColumnManager {
 
 	@Override
 	public Object onMissingColumn(String column) {
-		return "NULL";
+		return NullMatcher.NULL_HOLDER;
 	}
 
 }

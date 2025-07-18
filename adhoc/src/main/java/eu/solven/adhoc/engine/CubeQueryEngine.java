@@ -45,17 +45,15 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
@@ -75,6 +73,7 @@ import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -85,6 +84,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -108,7 +108,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder(toBuilder = true)
 @Slf4j
-@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
+@SuppressWarnings({ "PMD.GodClass" })
 public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	private final UUID engineId = UUID.randomUUID();
 
@@ -117,6 +117,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@NonNull
 	@Default
+	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
+	@Getter
 	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
@@ -341,7 +343,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	@VisibleForTesting
-	public TableQueryEngine makeTableQueryEngine() {
+	public ITableQueryEngine makeTableQueryEngine() {
 		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 
@@ -497,9 +499,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
 			if (queryStep.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
-				IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-				SliceAsMap errorSlice = makeErrorSlice(queryStep, e);
+				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
 				column.append(errorSlice).onObject(e);
 				coordinatesToValues = SliceToValue.forGroupBy(queryStep).values(column).build();
 			} else {
@@ -515,8 +517,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	// TODO We should ensure this slice is valid given current filter
-	protected SliceAsMap makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
-		ImmutableMap.Builder<String, Object> errorSliceAsMapBuilder = ImmutableMap.builder();
+	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
+		MapBuilderPreKeys errorSliceAsMapBuilder =
+				factories.getSliceFactory().newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();
 
@@ -536,12 +539,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				}
 			}
 
-			errorSliceAsMapBuilder.put(groupedByColumn, errorCoordinate);
+			errorSliceAsMapBuilder.append(errorCoordinate);
 		});
 
-		Map<String, ?> errorSliceAsMap = errorSliceAsMapBuilder.build();
-		SliceAsMap errorSlice = SliceAsMap.fromMap(errorSliceAsMap);
-		return errorSlice;
+		return errorSliceAsMapBuilder.build().asSlice();
 	}
 
 	protected List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
@@ -640,10 +641,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				boolean doClearCarriers = mayHoldCarriers(step)
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
-				IColumnScanner<SliceAsMap> baseRowScanner =
+				IColumnScanner<IAdhocSlice> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
-				IColumnScanner<SliceAsMap> rowScanner;
+				IColumnScanner<IAdhocSlice> rowScanner;
 				if (isEmptyMeasure) {
 					rowScanner = slice -> {
 						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);

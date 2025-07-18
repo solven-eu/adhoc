@@ -22,15 +22,13 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
-import java.util.Collections;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.AggregatingColumns;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
@@ -38,10 +36,12 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -65,28 +65,31 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	IOperatorFactory operatorFactory;
 
 	@NonNull
+	ISliceFactory sliceFactory;
+
+	@NonNull
 	QueryPod queryPod;
 	@NonNull
 	TableQueryV2 tableQuery;
 
-	protected IMultitypeMergeableGrid<SliceAsMap> makeAggregatingMeasures(ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
 		if (stream.isDistinctSlices()) {
-			return AggregatingColumnsDistinct.<SliceAsMap>builder().operatorFactory(operatorFactory).build();
+			return AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
 		} else {
-			return AggregatingColumns.<SliceAsMap>builder().operatorFactory(operatorFactory).build();
+			return AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
 		}
 	}
 
 	@Override
-	public IMultitypeMergeableGrid<SliceAsMap> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<SliceAsMap> grid = makeAggregatingMeasures(stream);
+	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
+		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
 		TabularRecordLogger aggregatedRecordLogger =
 				TabularRecordLogger.builder().table(queryPod.getTable().getName()).build();
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed
-		BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate =
+		BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate =
 				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
@@ -102,7 +105,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 				NavigableSet<String> groupedByColumns = tableQuery.getGroupBy().getGroupedByColumns();
-				SliceAsMap errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
+				IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
 
 				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 			} else {
@@ -115,9 +118,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	}
 
 	protected void forEachRow(ITabularRecord tableRow,
-			BiConsumer<ITabularRecord, Optional<SliceAsMap>> peekOnCoordinate,
-			IMultitypeMergeableGrid<SliceAsMap> sliceToAgg) {
-		Optional<SliceAsMap> optCoordinates = makeCoordinate(queryPod, tableQuery, tableRow);
+			BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate,
+			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {
+		Optional<IAdhocSlice> optCoordinates = makeCoordinate(queryPod, tableQuery, tableRow);
 
 		peekOnCoordinate.accept(tableRow, optCoordinates);
 
@@ -125,7 +128,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			return;
 		}
 
-		SliceAsMap coordinates = optCoordinates.get();
+		IAdhocSlice coordinates = optCoordinates.get();
 
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(coordinates);
 
@@ -153,21 +156,21 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	 * @param tableRow
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<SliceAsMap> makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableRow) {
+	protected Optional<IAdhocSlice> makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableRow) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
-			return Optional.of(SliceAsMap.fromMap(Collections.emptyMap()));
+			return Optional.of(SliceAsMap.grandTotal());
 		}
 
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		AdhocMap.AdhocMapBuilder coordinatesBuilder = AdhocMap.builder(groupedByColumns);
+		MapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
 
 		for (String groupedByColumn : groupedByColumns) {
 			Object value = tableRow.getGroupBy(groupedByColumn);
 
 			if (value == null) {
-				if (tableRow.getGroupBys().containsKey(groupedByColumn)) {
+				if (tableRow.groupByKeySet().contains(groupedByColumn)) {
 					// We received an explicit null
 					// Typically happens on a failed LEFT JOIN
 					value = valueOnNull(queryPod, groupedByColumn);
@@ -183,8 +186,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			coordinatesBuilder.append(value);
 		}
 
-		IAdhocMap asMap = coordinatesBuilder.build();
-		return Optional.of(SliceAsMap.fromMap(asMap));
+		return Optional.of(coordinatesBuilder.build().asSlice());
 	}
 
 	/**

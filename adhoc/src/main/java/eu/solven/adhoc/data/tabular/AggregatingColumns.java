@@ -91,7 +91,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnsFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
+		return factories.getColumnFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override

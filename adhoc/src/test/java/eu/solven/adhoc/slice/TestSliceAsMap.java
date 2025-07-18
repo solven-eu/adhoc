@@ -93,15 +93,18 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testAddColumn() {
-		SliceAsMap slice = SliceAsMap.fromMap(Map.of("k", "v"));
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
-		SliceAsMap extended = slice.addColumns(Map.of("k2", "v2"));
-		Assertions.assertThat(extended.getCoordinates()).hasSize(2).containsEntry("k", "v").containsEntry("k2", "v2");
+		IAdhocSlice extended = slice.addColumns(Map.of("k2", "v2"));
+		Assertions.assertThat((Map) extended.getCoordinates())
+				.hasSize(2)
+				.containsEntry("k", "v")
+				.containsEntry("k2", "v2");
 	}
 
 	@Test
 	public void testAddColumn_overlap() {
-		SliceAsMap slice = SliceAsMap.fromMap(Map.of("k", "v"));
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -111,32 +114,33 @@ public class TestSliceAsMap {
 	// Typically happens with nullable columns
 	@Test
 	public void testCompare_differentType() {
-		SliceAsMap sliceDate = SliceAsMap.fromMap(Map.of("d", LocalDate.now()));
-		SliceAsMap sliceString = SliceAsMap.fromMap(Map.of("d", "NULL"));
+		IAdhocSlice sliceDate = SliceAsMap.fromMap(Map.of("d", LocalDate.now()));
+		IAdhocSlice sliceString = SliceAsMap.fromMap(Map.of("d", "NULL"));
 
 		Assertions.assertThat(sliceDate).isGreaterThan(sliceString);
 	}
 
 	@Test
 	public void testIntAndLong_notAdhocMap() {
-		SliceAsMap sliceInt = SliceAsMap.fromMap(Map.of("k", 123));
-		SliceAsMap sliceLong = SliceAsMap.fromMap(Map.of("k", 123L));
+		IAdhocSlice sliceInt = SliceAsMap.fromMap(Map.of("k", 123));
+		IAdhocSlice sliceLong = SliceAsMap.fromMap(Map.of("k", 123L));
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
 
 	@Test
 	public void testIntAndLong_adhocMap() {
-		SliceAsMap sliceInt = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
-		SliceAsMap sliceLong = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123L)));
+		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
+		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123L)));
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
 
 	@Test
 	public void testKeepAdhocMap() {
-		SliceAsMap sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
+		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
 
-		Assertions.assertThat(sliceOverAdhocMap.getCoordinates()).isInstanceOf(AdhocMap.class);
+		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
+				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");
 	}
 }

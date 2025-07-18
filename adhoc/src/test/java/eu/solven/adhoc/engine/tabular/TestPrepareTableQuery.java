@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -38,7 +39,9 @@ import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
-	TableQueryEngine tableQueryEngine = engine().makeTableQueryEngine();
+	TableQueryEngine engine = (TableQueryEngine) engine().makeTableQueryEngine();
+	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine.getFactories(), () -> Set.of());
+	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
 	@Override
 	public void feedTable() {
@@ -61,7 +64,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -87,7 +90,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -113,7 +116,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = tableQueryEngine.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

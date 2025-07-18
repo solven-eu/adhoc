@@ -24,9 +24,9 @@ package eu.solven.adhoc.data.column;
 
 import java.util.function.Function;
 
-import eu.solven.adhoc.data.cell.IValueFunction;
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.primitive.IValueFunction;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A Data-structure similar to an array, enable multitype.

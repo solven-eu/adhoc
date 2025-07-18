@@ -28,7 +28,8 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
@@ -107,7 +108,7 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public Map<String, ?> getGroupBys() {
+	public IAdhocSlice getGroupBys() {
 		return decorated.getGroupBys();
 	}
 

@@ -63,7 +63,7 @@ public class ColumnMetadataHelpers {
 				.map(r -> r.getGroupBy(column))
 				// TODO Should we return the information about null-ness?
 				.filter(Objects::nonNull)
-				// `.disinct()` is relevant only for InMemoryTable and related tables
+				// `.distinct()` is relevant for InMemoryTable and other non-aggregating tables
 				.distinct()
 				.filter(valueMatcher::match)
 				// Collect a subset of coordinates: we may collect N coordinates while counting M matching coordinates

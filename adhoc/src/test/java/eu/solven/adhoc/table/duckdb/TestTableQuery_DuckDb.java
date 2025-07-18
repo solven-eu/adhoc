@@ -217,7 +217,6 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", 0L + 123)))
 				.anySatisfy(m -> Assertions.assertThat((Map) m)
 						.hasSize(2)
-						// TODO We need an option to handle null with a default value
 						.containsEntry("a", null)
 						.containsEntry("k1", 0L + 234))
 				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", 0L + 345)));

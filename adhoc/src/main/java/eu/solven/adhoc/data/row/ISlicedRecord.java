@@ -25,9 +25,9 @@ package eu.solven.adhoc.data.row;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
  * Used to provide measure values/aggregates given a {@link List} of {@link ISliceToValue}. The scope is an

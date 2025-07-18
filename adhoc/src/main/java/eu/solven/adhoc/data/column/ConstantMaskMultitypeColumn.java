@@ -29,10 +29,11 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
@@ -50,10 +51,10 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<SliceAsMap> {
+public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdhocSlice> {
 
 	@NonNull
-	final IMultitypeColumnFastGet<SliceAsMap> masked;
+	final IMultitypeColumnFastGet<IAdhocSlice> masked;
 	@NonNull
 	@Singular
 	final ImmutableMap<String, ?> masks;
@@ -69,37 +70,36 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<SliceAsMap> purgeAggregationCarriers() {
+	public IMultitypeColumnFastGet<IAdhocSlice> purgeAggregationCarriers() {
 		return ConstantMaskMultitypeColumn.builder().masked(masked.purgeAggregationCarriers()).masks(masks).build();
 	}
 
 	@Override
-	public void scan(IColumnScanner<SliceAsMap> rowScanner) {
+	public void scan(IColumnScanner<IAdhocSlice> rowScanner) {
 		masked.scan(unmaskedSlice -> rowScanner.onKey(extendSlice(unmaskedSlice)));
 	}
 
-	protected SliceAsMap extendSlice(SliceAsMap unmaskedSlice) {
+	protected IAdhocSlice extendSlice(IAdhocSlice unmaskedSlice) {
 		return unmaskedSlice.addColumns(masks);
 	}
 
-	protected SliceAsMap getUnmaskedSlice(Map<String, ?> keyCoordinates) {
+	protected IAdhocSlice getUnmaskedSlice(Map<String, ?> keyCoordinates) {
 		// BEWARE This assumes the underlying IMultitypeColumnFastGet does not express columns in the mask
 		Map<String, Object> unmaskedKey = new LinkedHashMap<>(keyCoordinates);
 		unmaskedKey.keySet().removeAll(masks.keySet());
 
-		SliceAsMap unmaskedSlice = SliceAsMap.fromMap(unmaskedKey);
-		return unmaskedSlice;
+		return SliceAsMap.fromMap(unmaskedKey);
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<SliceAsMap, U> converter) {
+	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> converter) {
 		throw new NotYetImplementedException("TODO");
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<SliceAsMap>> stream() {
+	public Stream<SliceAndMeasure<IAdhocSlice>> stream() {
 		return masked.stream().map(maskedSliceAndMeasure -> {
-			return SliceAndMeasure.<SliceAsMap>builder()
+			return SliceAndMeasure.<IAdhocSlice>builder()
 					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
 					.valueProvider(maskedSliceAndMeasure.getValueProvider())
 					.build();
@@ -107,29 +107,29 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<Slic
 	}
 
 	@Override
-	public IValueProvider onValue(SliceAsMap key) {
-		Map<String, Object> keyCoordinates = key.getAdhocSliceAsMap().getCoordinates();
+	public IValueProvider onValue(IAdhocSlice key) {
+		Map<String, ?> keyCoordinates = key.getCoordinates();
 		if (!keyCoordinates.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);
 		}
 
-		SliceAsMap unmaskedSlice = getUnmaskedSlice(keyCoordinates);
+		IAdhocSlice unmaskedSlice = getUnmaskedSlice(keyCoordinates);
 		return masked.onValue(unmaskedSlice);
 	}
 
 	@Override
-	public Stream<SliceAsMap> keyStream() {
+	public Stream<IAdhocSlice> keyStream() {
 		return masked.keyStream().map(this::extendSlice);
 	}
 
 	@Override
-	public IValueReceiver append(SliceAsMap slice) {
+	public IValueReceiver append(IAdhocSlice slice) {
 		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
 	}
 
 	@Override
-	public IValueReceiver set(SliceAsMap key) {
+	public IValueReceiver set(IAdhocSlice key) {
 		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
 	}
 

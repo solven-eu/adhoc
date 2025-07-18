@@ -33,10 +33,10 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.UnmodifiableIterator;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
  * A merging {@link Iterator}, given a {@link List} of sorted {@link Iterator}s.
@@ -52,10 +52,10 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 
 	final CubeQueryStep queryStep;
 
-	final List<PeekingIterator<SliceAndMeasure<SliceAsMap>>> sortedIterators;
+	final List<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators;
 
 	// Used to get faster the next/minimum slice
-	final Queue<PeekingIterator<SliceAndMeasure<SliceAsMap>>> queue;
+	final Queue<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> queue;
 
 	// @SuppressWarnings("PMD.LinguisticNaming")
 	// final boolean[] isNotSorted;
@@ -63,13 +63,13 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 
 	// @SuppressWarnings("PMD.ArrayIsStoredDirectly")
 	public MergedSlicesIteratorNavigableElseHash(CubeQueryStep queryStep,
-			List<? extends Iterator<SliceAndMeasure<SliceAsMap>>> iterators,
+			List<? extends Iterator<SliceAndMeasure<IAdhocSlice>>> iterators,
 			// boolean[] isNotSorted,
 			List<? extends ISliceToValue> rawSlices) {
 		this.queryStep = queryStep;
 		sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();
 
-		Comparator<PeekingIterator<SliceAndMeasure<SliceAsMap>>> heapComparator =
+		Comparator<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> heapComparator =
 				Comparator.comparing(o -> o.peek().getSlice());
 
 		queue = new PriorityQueue<>(sortedIterators.size(), heapComparator);
@@ -91,13 +91,13 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 	@Override
 	public SliceAndMeasures next() {
 		// Peek the nextIterator, i.e. one of the iterator with the minimum slice
-		PeekingIterator<SliceAndMeasure<SliceAsMap>> nextIter = queue.peek();
+		PeekingIterator<SliceAndMeasure<IAdhocSlice>> nextIter = queue.peek();
 		if (nextIter == null) {
 			throw new IllegalStateException(
 					"`hasNext` should have returned false as only not-empty iterators are in the queue");
 		}
 
-		SliceAsMap slice = nextIter.peek().getSlice();
+		IAdhocSlice slice = nextIter.peek().getSlice();
 
 		int size = sortedIterators.size();
 
@@ -107,11 +107,11 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 		int nbMatchingSlice = 0;
 
 		for (int i = 0; i < size; i++) {
-			PeekingIterator<SliceAndMeasure<SliceAsMap>> iterator = sortedIterators.get(i);
+			PeekingIterator<SliceAndMeasure<IAdhocSlice>> iterator = sortedIterators.get(i);
 			if (iterator.hasNext() && iterator.peek().getSlice().equals(slice)) {
 				// Given peeked elements, this slice is confirmed in this column
 				// We could assert it is equal to `slice`
-				SliceAndMeasure<SliceAsMap> next = iterator.peek();
+				SliceAndMeasure<IAdhocSlice> next = iterator.peek();
 				valueProviders.add(next.getValueProvider());
 
 				nbMatchingSlice++;
@@ -128,11 +128,11 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 		// It is relevant as the queue may hold 2 iterators on same value: we do not want to insert the first iterator
 		// on next value while the second iterator
 		// is still present with previous value
-		List<PeekingIterator<SliceAndMeasure<SliceAsMap>>> insertBack = new ArrayList<>(nbMatchingSlice);
+		List<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> insertBack = new ArrayList<>(nbMatchingSlice);
 
 		for (int i = 0; i < nbMatchingSlice; i++) {
 			// The first removal is guaranteed as the queue head led to this iteration
-			PeekingIterator<SliceAndMeasure<SliceAsMap>> removed = queue.remove();
+			PeekingIterator<SliceAndMeasure<IAdhocSlice>> removed = queue.remove();
 			// Do the iteration (we only peeked up to now)
 			removed.next();
 

@@ -22,7 +22,11 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import lombok.Builder;
 import lombok.NonNull;
@@ -46,4 +50,11 @@ public class AggregatedRecordFields {
 	@NonNull
 	@Singular
 	ImmutableList<String> lateColumns;
+
+	private Supplier<ImmutableList<String>> allColumns =
+			Suppliers.memoize(() -> ImmutableList.copyOf(Iterables.concat(getColumns(), getLateColumns())));
+
+	public ImmutableList<String> getAllColumns() {
+		return allColumns.get();
+	}
 }

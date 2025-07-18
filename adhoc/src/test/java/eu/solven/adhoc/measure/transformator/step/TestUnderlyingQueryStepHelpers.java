@@ -34,6 +34,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -47,7 +48,7 @@ public class TestUnderlyingQueryStepHelpers {
 		List<ISliceToValue> underlyings = new ArrayList<>();
 
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
@@ -58,11 +59,11 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(3).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		});
 	}
 
@@ -72,14 +73,14 @@ public class TestUnderlyingQueryStepHelpers {
 		List<ISliceToValue> underlyings = new ArrayList<>();
 
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
 			underlyings.add(SliceToValue.builder().values(column).column("c").build());
 		}
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(234);
@@ -90,15 +91,15 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		Assertions.assertThat(slices).hasSize(5).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c4"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c5"));
 		});
 	}
 
@@ -109,7 +110,7 @@ public class TestUnderlyingQueryStepHelpers {
 
 		// unordered
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(12);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(23);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(34);
@@ -117,7 +118,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// ordered
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeNavigableColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeNavigableColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(78);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(89);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(90);
@@ -125,7 +126,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// unordered
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeHashColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(45);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(56);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(67);
@@ -133,7 +134,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// ordered
 		{
-			IMultitypeColumnFastGet<SliceAsMap> column = MultitypeNavigableColumn.<SliceAsMap>builder().build();
+			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeNavigableColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(21);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(32);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(43);
@@ -144,20 +145,20 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		List<Object> coordinates =
-				slices.stream().map(s -> s.getSlice().getAdhocSliceAsMap().getCoordinates().get("c")).toList();
+				slices.stream().<Object>map(s -> s.getSlice().getSlice().getCoordinates().get("c")).toList();
 
 		Assertions.assertThat(coordinates).startsWith("c1", "c2", "c3", "c4").contains("c5");
 
 		Assertions.assertThat(slices).hasSize(5).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c1"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c1"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c2"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c2"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c3"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c3"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c4"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c4"));
 		}).anySatisfy(slice -> {
-			Assertions.assertThat(slice.getSlice().getAdhocSliceAsMap().getCoordinates()).isEqualTo(Map.of("c", "c5"));
+			Assertions.assertThat(slice.getSlice().getSlice().getCoordinates()).isEqualTo(Map.of("c", "c5"));
 		});
 	}
 }

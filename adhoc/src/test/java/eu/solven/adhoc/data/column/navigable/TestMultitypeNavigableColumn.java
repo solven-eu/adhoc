@@ -32,13 +32,13 @@ import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.cell.IValueProvider;
-import eu.solven.adhoc.data.cell.IValueReceiver;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.MultitypeColumnHelpers;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -218,11 +218,15 @@ public class TestMultitypeNavigableColumn {
 
 	@Test
 	public void testNull() {
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(-1);
+
 		column.append("k1").onObject(null);
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(0);
 
 		column.onValue("k1", o -> {
 			Assertions.assertThat(o).isNull();
 		});
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(-1);
 
 		Assertions.assertThat(column.isEmpty()).isTrue();
 		Assertions.assertThat(column.toString()).isEqualTo("MultitypeNavigableColumn{size=0}");
@@ -230,9 +234,14 @@ public class TestMultitypeNavigableColumn {
 
 	@Test
 	public void testUnknown() {
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(-1);
+
 		column.append("k").onLong(123);
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(0);
 
 		Assertions.assertThat(IValueProvider.getValue(column.onValue("k"))).isEqualTo(123L);
+		Assertions.assertThat(column.lastInsertionIndex).hasValue(-1);
+
 		Assertions.assertThat(IValueProvider.getValue(column.onValue("unknownKey"))).isNull();
 	}
 
