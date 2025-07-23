@@ -24,7 +24,7 @@ package eu.solven.adhoc.primitive;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Set;
+import java.util.Collection;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helpers methods around primitive (int, long, float, double, etc).
- * 
+ *
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/67841630/double-versus-long-for-large-numbers-in-java
@@ -60,7 +60,6 @@ public class AdhocPrimitiveHelpers {
 	}
 
 	/**
-	 *
 	 * @param o
 	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
 	 */
@@ -73,7 +72,6 @@ public class AdhocPrimitiveHelpers {
 	}
 
 	/**
-	 * 
 	 * @param o
 	 * @return a normalized version of the input. Typically as `long` for `long-like` and `double` for `double-like`.
 	 */
@@ -123,8 +121,12 @@ public class AdhocPrimitiveHelpers {
 		}
 	}
 
-	public static Set<?> normalizeValues(Set<?> coordinates) {
-		return coordinates.stream().map(AdhocPrimitiveHelpers::normalizeValue).collect(ImmutableSet.toImmutableSet());
+	public static ImmutableSet<?> normalizeValues(Collection<?> coordinates) {
+		ImmutableSet.Builder<Object> builder = ImmutableSet.builderWithExpectedSize(coordinates.size());
+
+		coordinates.forEach(rawValue -> builder.add(normalizeValue(rawValue)));
+
+		return builder.build();
 	}
 
 }

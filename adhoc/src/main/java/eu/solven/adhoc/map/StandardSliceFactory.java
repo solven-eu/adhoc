@@ -63,7 +63,7 @@ import lombok.ToString;
 /**
  * In Adhoc context, we expect to build many {@link Map}-like objects, with same keySet. This is due to the fact we
  * process multiple rows with the same {@link IAdhocGroupBy}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
@@ -96,10 +96,10 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * Enable fast iteration and hashCode/equals.
-	 * 
+	 *
 	 * Its unicity contract is mostly based on {@link List} and not {@link Set} for performance reasons. Hence, we may
 	 * have multiple {@link EnrichedKeySet} with the same {@link Set}.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@Builder
@@ -162,7 +162,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * A {@link NavigableSet} with information to build the order in the original {@link Set}.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@ToString
@@ -284,7 +284,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * A {@link Map} based on {@link EnrichedNavigableSet} and values as a {@link List}.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@SuppressWarnings("PMD.LooseCoupling")
@@ -292,9 +292,15 @@ public class StandardSliceFactory implements ISliceFactory {
 	public static class MapOverLists extends AbstractMap<String, Object> implements IAdhocMap {
 		private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
 
+		@Getter
+		@NonNull
+		final ISliceFactory factory;
+
 		// Holds keys, in both sorted order, and unordered order ,with the information to map from one to the other
+		@NonNull
 		final EnrichedNavigableSet keys;
 
+		@NonNull
 		final ImmutableList<Object> unorderedValues;
 
 		/** Cache the hash code for the string */
@@ -534,7 +540,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	/**
 	 * Describe a {@link Map}-like structure by its keys and its values. The keySet and values can be zipped together
 	 * (i.e. iterated concurrently).
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	public interface IHasEntries {
@@ -546,9 +552,9 @@ public class StandardSliceFactory implements ISliceFactory {
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
 	 * order in the initial keySet.
-	 * 
+	 *
 	 * To be used when the keySet is known in advance.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@Builder
@@ -588,9 +594,9 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided with their value.
-	 * 
+	 *
 	 * To be used when the keySet is not known in advance.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@Builder
@@ -643,7 +649,11 @@ public class StandardSliceFactory implements ISliceFactory {
 					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
 		}
 
-		return MapOverLists.builder().keys(internKeyset(keys)).unorderedValues(ImmutableList.copyOf(values)).build();
+		return MapOverLists.builder()
+				.factory(this)
+				.keys(internKeyset(keys))
+				.unorderedValues(ImmutableList.copyOf(values))
+				.build();
 	}
 
 	@Override
@@ -656,9 +666,9 @@ public class StandardSliceFactory implements ISliceFactory {
 	/**
 	 * This method is useful to report miss-behaving {@link Set} given we expect proper ordering: the Set may not be
 	 * ordered, but one expect it to iterate consistently.
-	 * 
+	 *
 	 * BEWARE If false, it is not guaranteed the input is ordered .
-	 * 
+	 *
 	 * @param set
 	 * @return true if the input if an ordered {@link Set}
 	 */
@@ -690,14 +700,12 @@ public class StandardSliceFactory implements ISliceFactory {
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	protected EnrichedNavigableSet register(Collection<? extends String> keys) {
 		List<String> keysAsList = copyAsList(keys);
-		// NavigableSet<String> keysAsSet = copyAsSet(keys);
 
 		EnrichedNavigableSet navigableKeySet = listToKeyset.computeIfAbsent(keysAsList, k -> {
 			return EnrichedNavigableSet.fromCollection(keysAsList);
 		});
 
 		EnrichedKeySet keySet = navigableKeySet.keySet;
-		// setToKeyset.computeIfAbsent(keysAsSet, k -> EnrichedKeySet.fromSet(keysAsSet));
 
 		synchronized (this) {
 			int size = keySetDictionary.size();

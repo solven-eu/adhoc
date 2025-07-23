@@ -29,26 +29,35 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.base.Predicates;
+
 public class TestAdhocCollectionHelpers {
 	LocalDate now = LocalDate.now();
 
 	@Test
-	public void testUnnest_noNested() {
+	public void testUnnestCollection_noNested() {
 		List<Object> noNested = Arrays.asList(123, 12.34, "foo", now);
-		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested)).isEqualTo(noNested);
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(noNested)).isEqualTo(noNested);
 	}
 
 	@Test
-	public void testUnnest_variousDepth() {
+	public void testUnnestCollection_variousDepth() {
 		List<Object> noNested = Arrays.asList(123, Arrays.asList(12.34, Arrays.asList(Arrays.asList("foo"), now)));
-		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested))
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(noNested))
 				.isEqualTo(Arrays.asList(123, 12.34D, "foo", now));
 	}
 
 	@Test
-	public void testUnnest_null() {
+	public void testUnnestCollection_null() {
 		List<Object> noNested = Arrays.asList(123, null, Arrays.asList(null, "foo"));
-		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested))
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(noNested))
+				.isEqualTo(Arrays.asList(123, null, null, "foo"));
+	}
+
+	@Test
+	public void testUnnestList_null() {
+		List<Object> noNested = Arrays.asList(123, null, Arrays.asList(null, "foo"));
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested, Predicates.alwaysTrue()))
 				.isEqualTo(Arrays.asList(123, null, null, "foo"));
 	}
 }

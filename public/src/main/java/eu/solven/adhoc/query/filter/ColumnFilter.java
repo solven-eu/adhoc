@@ -169,7 +169,7 @@ public class ColumnFilter implements IColumnFilter {
 	public static IAdhocFilter isIn(String column, Object first, Object... more) {
 		List<Object> rawList = Lists.asList(first, more);
 
-		List<Object> expandedList = AdhocCollectionHelpers.unnestAsList(rawList);
+		Collection<?> expandedList = AdhocCollectionHelpers.unnestAsCollection(rawList);
 
 		if (expandedList.isEmpty()) {
 			return MATCH_NONE;

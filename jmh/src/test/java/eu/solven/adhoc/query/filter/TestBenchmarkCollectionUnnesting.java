@@ -20,33 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.query.filter;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+public class TestBenchmarkCollectionUnnesting extends BenchmarkCollectionUnnesting {
+	static final int loop = 100 * 1000 * 1000;
 
-/**
- * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a
- * {@link IAdhocGroupBy}.
- * 
- * It requires {@link String} keys and {@link Object} values, as columns are always referred by their {@link String}
- * name.
- * 
- * It is immutable as it is used as key in some {@link Map}, and it may cache the hashCode.
- * 
- * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
- * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn
- * 
- * @author Benoit Lacelle
- */
-// @SuppressWarnings("PMD.LooseCoupling")
-public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
-
-	IAdhocSlice asSlice();
-
-	ISliceFactory getFactory();
+	@Test
+	public void test_unnestAsList_noCollection() {
+		for (int i = 0; i < loop; i++) {
+			unnestAsList_noCollection();
+		}
+	}
 
 }

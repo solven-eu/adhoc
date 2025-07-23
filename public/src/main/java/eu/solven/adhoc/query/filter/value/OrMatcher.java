@@ -132,6 +132,13 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	 * @return
 	 */
 	private static IValueMatcher simplifiedOwned(List<? extends IValueMatcher> matchers) {
+		if (matchers.isEmpty()) {
+			return MATCH_NONE;
+		} else if (matchers.size() == 1) {
+			// InMatcher of simple operands would lead to OrMatchger with a single operand
+			return matchers.getFirst();
+		}
+
 		List<IValueMatcher> negated = new ArrayList<>();
 		matchers.forEach(matcher -> negated.add(NotMatcher.not(matcher)));
 

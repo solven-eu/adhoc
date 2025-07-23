@@ -25,6 +25,7 @@ package eu.solven.adhoc.util;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,6 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
 
 import lombok.experimental.UtilityClass;
 
@@ -50,46 +50,30 @@ public class AdhocCollectionHelpers {
 	 * @param collection
 	 * @return a {@link List} with no {@link Collection}, as input {@link Collection} element has been unnested.
 	 */
-	public static List<Object> unnestAsList(Collection<?> collection) {
-		return unnestAsList(collection, Predicates.alwaysTrue());
+	public static Collection<?> unnestAsCollection(Collection<?> collection) {
+		return unnestAsCollection(collection, Predicates.alwaysTrue());
 	}
 
-	public static List<Object> unnestAsList(Collection<?> collection, Predicate<Object> acceptElement) {
-		// Capacity 1 as we optimistically assume the input collection has no Collection
-		// The actual needed capacity is at most the depth of nesting
-		Deque<Iterator<?>> nested = new ArrayDeque<>(1);
-		nested.add(collection.iterator());
-
-		// In many case, there is nothing to unnest
-		// Make sure this implementation accepts null
-		List<Object> output = new ArrayList<>(collection.size());
-
-		outerLoop: while (!nested.isEmpty()) {
-			Iterator<?> iterator = nested.pollFirst();
-
-			while (iterator.hasNext()) {
-				Object element = iterator.next();
-
-				if (element instanceof Collection<?> c) {
-					// Add the nested iterator in priority
-					nested.addLast(c.iterator());
-
-					// Add back current iterator as next in loop
-					if (iterator.hasNext()) {
-						nested.addLast(iterator);
-					}
-					// Reset the loop given the updated queue of iterators
-					continue outerLoop;
-				} else if (acceptElement.test(element)) {
-					output.add(element);
+	public static Collection<?> unnestAsCollection(Collection<?> collection, Predicate<Object> acceptElement) {
+		// Optimistic path: in most cases, there is no nesting
+		{
+			boolean hasNested = false;
+			for (Object item : collection) {
+				if (item instanceof Collection<?>) {
+					hasNested = true;
+					break;
 				}
+			}
+
+			if (!hasNested) {
+				return collection;
 			}
 		}
 
-		return output;
+		return unnestAsList(collection, acceptElement);
 	}
 
-	public static <E> List<E> unnestAsList2(Collection<E> collection, Predicate<Object> acceptElement) {
+	public static <E> List<E> unnestAsList(Collection<? extends E> collection, Predicate<? super E> acceptElement) {
 		return unnestAsList(Collection.class, collection, Collection::size, c -> c, acceptElement);
 	}
 
@@ -97,14 +81,16 @@ public class AdhocCollectionHelpers {
 			C collection,
 			ToIntFunction<C> sizeFunction,
 			Function<C, Collection<? extends E>> flatMapper,
-			Predicate<Object> acceptElement) {
+			Predicate<? super E> acceptElement) {
 		// Capacity 1 as we optimistically assume the input collection has no Collection
 		// The actual needed capacity is at most the depth of nesting
 		Deque<Iterator<E>> nested = new ArrayDeque<>(1);
 		nested.add((Iterator<E>) flatMapper.apply(collection).iterator());
 
 		// In many case, there is nothing to unnest
-		ImmutableList.Builder<E> output = ImmutableList.builderWithExpectedSize(sizeFunction.applyAsInt(collection));
+		// ImmutableList.Builder<E> output = ImmutableList.builderWithExpectedSize(sizeFunction.applyAsInt(collection));
+		// Not ImmutableList as we may receive null
+		List<E> output = new ArrayList<>(sizeFunction.applyAsInt(collection));
 
 		outerLoop: while (!nested.isEmpty()) {
 			Iterator<E> iterator = nested.pollFirst();
@@ -128,6 +114,23 @@ public class AdhocCollectionHelpers {
 			}
 		}
 
-		return output.build();
+		// return output.build();
+		return Collections.unmodifiableList(output);
+	}
+
+	/**
+	 * 
+	 * @param c
+	 * @return the first item of input {@link Collection}
+	 */
+	public static Object getFirst(Collection<?> c) {
+		if (c.isEmpty()) {
+			throw new IllegalArgumentException("Can not .getFirst due to emptyness");
+		}
+		if (c instanceof List<?> list) {
+			return list.getFirst();
+		} else {
+			return c.iterator().next();
+		}
 	}
 }

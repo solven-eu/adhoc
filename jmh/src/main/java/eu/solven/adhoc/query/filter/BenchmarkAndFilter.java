@@ -20,14 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.query.filter;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -43,74 +41,42 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import com.google.common.base.Predicates;
-
-import eu.solven.adhoc.util.AdhocCollectionHelpers;
+import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.IAdhocMap;
 
 /**
- * Benchmarks different implementations unnesting a {@link Collection} into a {@link List}.
- * <p>
- * 2025-07-04: Curiously, it appears `unnestWithStream` is faster when there is many nested Collections
- *
+ * Benchmarks related with {@link AndFilter}.
+ * 
  * @author Benoit Lacelle
  */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
-@Warmup(iterations = 3, time = 5, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 3, time = 5, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @SuppressWarnings("checkstyle:MagicNumber")
-public class BenchmarkCollectionUnnesting {
+public class BenchmarkAndFilter {
 
-	final List<?> noCollection = Arrays.asList(123, 12.34, "foo", LocalDate.now());
+	Map<String, ?> asMap =
+			IntStream.range(0, 5).mapToObj(i -> i).collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
 
-	final List<?> someCollections =
-			Arrays.asList(123, Arrays.asList(12.34, Arrays.asList(Arrays.asList("foo"), LocalDate.now())));
+	IAdhocMap adhocMap = AdhocMap.copyOf(asMap);
 
 	public static void main(String[] args) throws RunnerException {
-		Options opt = new OptionsBuilder().include(BenchmarkCollectionUnnesting.class.getSimpleName()).forks(1).build();
+		Options opt = new OptionsBuilder().include(BenchmarkAndFilter.class.getSimpleName()).forks(1).build();
 		new Runner(opt).run();
 	}
 
-	private List<?> unnestWithStream(Collection<?> c) {
-		return c.stream().flatMap(e -> {
-			if (e instanceof Collection<?> nestedC) {
-				return nestedC.stream();
-			} else {
-				return Stream.of(e);
-			}
-		}).toList();
+	// This is called many times in ShiftorQueryStep.shitSlice
+	@Benchmark
+	public IAdhocFilter asMap_and() {
+		return AndFilter.and(asMap);
 	}
 
 	@Benchmark
-	public List<?> unnestAsList_noCollection() {
-		return AdhocCollectionHelpers.unnestAsList(noCollection);
-	}
-
-	@Benchmark
-	public List<?> unnestAsList_someCollections() {
-		return AdhocCollectionHelpers.unnestAsList(someCollections);
-	}
-
-	@Benchmark
-	public List<?> unnestAsList2_noCollection() {
-		return AdhocCollectionHelpers.unnestAsList2(noCollection, Predicates.alwaysTrue());
-	}
-
-	@Benchmark
-	public List<?> unnestAsList2_someCollections() {
-		return AdhocCollectionHelpers.unnestAsList2(someCollections, Predicates.alwaysTrue());
-	}
-
-	@Benchmark
-	public List<?> stream_noCollection() {
-		return unnestWithStream(noCollection);
-	}
-
-	@Benchmark
-	public List<?> stream_someCollections() {
-		return unnestWithStream(someCollections);
+	public IAdhocFilter adhocMap_and() {
+		return AndFilter.and(adhocMap);
 	}
 
 }

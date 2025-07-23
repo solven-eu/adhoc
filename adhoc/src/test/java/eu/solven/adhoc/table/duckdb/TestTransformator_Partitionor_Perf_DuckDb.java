@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000 / 10;
+	static final int maxCardinality = 1_000_000 / 1;
 
 	@BeforeAll
 	public static void setLimits() {

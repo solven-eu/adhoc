@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -169,5 +170,11 @@ public class TestInMatcher {
 	public void testInDoubleMatchLong() {
 		Assertions.assertThat(InMatcher.isIn(123D, 234D).match(123L)).isFalse();
 		Assertions.assertThat(InMatcher.isIn(123L, 234L).match(123D)).isFalse();
+	}
+
+	@Test
+	public void testIn_positive_hardcoded() {
+		Assertions.assertThat(InMatcher.isIn(ComparingMatcher.builder().greaterThan(123).build(), 234D))
+				.isInstanceOf(ComparingMatcher.class);
 	}
 }

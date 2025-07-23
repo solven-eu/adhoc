@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
@@ -110,4 +111,5 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice> {
 	@Deprecated(since = "Is this good design?")
 	IAdhocSlice addColumns(Map<String, ?> masks);
 
+	ISliceFactory getFactory();
 }

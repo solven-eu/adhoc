@@ -62,8 +62,7 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	@Builder
 	@Jacksonized
 	private InMatcher(Collection<?> operands) {
-		this.operands =
-				operands.stream().map(AdhocPrimitiveHelpers::normalizeValue).collect(ImmutableSet.toImmutableSet());
+		this.operands = AdhocPrimitiveHelpers.normalizeValues(operands);
 	}
 
 	@Override
@@ -101,28 +100,28 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	 */
 	@SuppressWarnings("PMD.LinguisticNaming")
 	public static IValueMatcher isIn(Collection<?> allowedValues) {
-		List<Object> unnested = AdhocCollectionHelpers.unnestAsList(allowedValues);
+		Collection<?> unnested = AdhocCollectionHelpers.unnestAsCollection(allowedValues);
 
 		if (unnested.isEmpty()) {
 			return MATCH_NONE;
 		} else if (unnested.size() == 1) {
-			Object singleValue = unnested.getFirst();
+			Object singleValue = AdhocCollectionHelpers.getFirst(unnested);
 			return EqualsMatcher.isEqualTo(singleValue);
 		}
 
-		boolean hasNull = unnested.contains(null);
-
-		Map<Boolean, List<Object>> byValueMatcher = unnested.stream()
-				.filter(Objects::nonNull)
-				.collect(Collectors.partitioningBy(operand -> operand instanceof IValueMatcher));
+		Map<Boolean, List<Object>> byValueMatcher =
+				unnested.stream().collect(Collectors.partitioningBy(operand -> operand instanceof IValueMatcher));
 
 		List<Object> unnestedNotNull = byValueMatcher.getOrDefault(Boolean.FALSE, List.of());
 		List<IValueMatcher> valueMatchers = (List) byValueMatcher.getOrDefault(Boolean.TRUE, List.of());
 
 		List<IValueMatcher> orOperands = new ArrayList<>();
 
+		boolean hasNull = unnestedNotNull.contains(null);
 		if (hasNull) {
 			orOperands.add(NullMatcher.matchNull());
+
+			unnestedNotNull = unnestedNotNull.stream().filter(Objects::nonNull).toList();
 		}
 		orOperands.addAll(valueMatchers);
 		if (!unnestedNotNull.isEmpty()) {
@@ -135,12 +134,13 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 			orOperands.add(matcher);
 		}
 
+		// TODO: Skip optimizations between the legs? No as we may consider IValueMatcher covering input values
 		return OrMatcher.or(orOperands);
 	}
 
 	/**
 	 * {@link Collection} will be unnested.
-	 * 
+	 *
 	 * @return
 	 */
 	@SuppressWarnings("PMD.LinguisticNaming")

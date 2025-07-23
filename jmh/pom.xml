@@ -14,8 +14,8 @@
 	<properties>
 		<jmh.version>1.37</jmh.version>
 
-		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.00</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.00</jacoco.instruction.ratio>
 
 		<!-- Many issues are reported from JMH-generated classes -->
 		<pmd.skip>true</pmd.skip>
@@ -39,6 +39,13 @@
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

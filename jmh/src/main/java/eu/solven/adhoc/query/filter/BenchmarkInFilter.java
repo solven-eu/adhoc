@@ -20,11 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.query.filter;
 
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -41,10 +40,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.map.AdhocMap;
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 
 /**
  * Benchmarks related with {@link AndFilter}.
@@ -58,27 +55,29 @@ import eu.solven.adhoc.query.filter.IAdhocFilter;
 @Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @SuppressWarnings("checkstyle:MagicNumber")
-public class BenchmarkAndFilter {
+public class BenchmarkInFilter {
 
-	Map<String, ?> asMap =
-			IntStream.range(0, 5).mapToObj(i -> i).collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
+	List<?> asList = IntStream.range(0, 5).mapToObj(i -> i).toList();
+	List<?> asList2 = IntStream.range(0 + 2, 5 + 2).mapToObj(i -> i).toList();
 
-	IAdhocMap adhocMap = AdhocMap.copyOf(asMap);
+	IValueMatcher matcher = InMatcher.isIn(asList);
+
+	List<?> nestedLists = List.of(asList, asList2);
 
 	public static void main(String[] args) throws RunnerException {
-		Options opt = new OptionsBuilder().include(BenchmarkAndFilter.class.getSimpleName()).forks(1).build();
+		Options opt = new OptionsBuilder().include(BenchmarkInFilter.class.getSimpleName()).forks(1).build();
 		new Runner(opt).run();
 	}
 
-	// This is called many times in ShiftorQueryStep.shitSlice
+	// This is called many times in Combinator for
 	@Benchmark
-	public IAdhocFilter asMap_and() {
-		return AndFilter.and(asMap);
+	public IValueMatcher isIn_fromList() {
+		return InMatcher.isIn(asList);
 	}
 
 	@Benchmark
-	public IAdhocFilter adhocMap_and() {
-		return AndFilter.and(adhocMap);
+	public IValueMatcher isIn_nestedLists() {
+		return InMatcher.isIn(nestedLists);
 	}
 
 }

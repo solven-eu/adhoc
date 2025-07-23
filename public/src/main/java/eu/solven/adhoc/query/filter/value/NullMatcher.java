@@ -64,4 +64,9 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 			return column + "===null";
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "===null";
+	}
 }

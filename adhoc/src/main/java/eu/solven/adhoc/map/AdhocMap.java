@@ -418,4 +418,9 @@ public final class AdhocMap extends AbstractMap<String, Object> implements IAdho
 		return SliceAsMap.fromMapUnsafe(this);
 	}
 
+	@Override
+	public ISliceFactory getFactory() {
+		throw new UnsupportedOperationException();
+	}
+
 }

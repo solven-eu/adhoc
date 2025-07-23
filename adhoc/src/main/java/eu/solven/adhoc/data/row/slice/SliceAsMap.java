@@ -33,31 +33,39 @@ import com.google.common.collect.Maps;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * A simple {@link IAdhocSlice} based on a {@link Map}.
  * 
  * @author Benoit Lacelle
  */
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public final class SliceAsMap implements IAdhocSlice {
+	@Getter
+	final ISliceFactory factory;
+
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	// Implementations is generally a AdhocMap
 	final Map<String, ?> asMap;
 
-	protected SliceAsMap(Map<String, ?> asMap) {
-		this.asMap = asMap;
-	}
-
 	@Deprecated(since = "Should use a ISliceFactory")
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		MapBuilderThroughKeys builder = StandardSliceFactory.builder().build().newMapBuilder();
+		return fromMap(StandardSliceFactory.builder().build(), asMap);
+	}
+
+	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {
+		MapBuilderThroughKeys builder = factory.newMapBuilder();
 
 		asMap.forEach(builder::put);
 		return builder.build().asSlice();
@@ -70,7 +78,7 @@ public final class SliceAsMap implements IAdhocSlice {
 	 * @return
 	 */
 	public static SliceAsMap fromMapUnsafe(IAdhocMap adhocMap) {
-		return new SliceAsMap(adhocMap);
+		return new SliceAsMap(adhocMap.getFactory(), adhocMap);
 	}
 
 	@Override
@@ -185,6 +193,6 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	public static SliceAsMap grandTotal() {
-		return new SliceAsMap(ImmutableMap.of());
+		return new SliceAsMap(StandardSliceFactory.builder().build(), ImmutableMap.of());
 	}
 }

@@ -118,7 +118,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, ?> transcodedSlice =
 				AdhocTranscodingHelper.transcodeColumns(transcodingContext, slice.getCoordinates());
 
-		return withSlice(SliceAsMap.fromMap(transcodedSlice));
+		return withSlice(SliceAsMap.fromMap(slice.getFactory(), transcodedSlice));
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, ?> transcodedSlice =
 				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, slice.getCoordinates());
 
-		return withSlice(SliceAsMap.fromMap(transcodedSlice));
+		return withSlice(SliceAsMap.fromMap(this.slice.getFactory(), transcodedSlice));
 	}
 
 	@Override

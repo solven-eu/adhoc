@@ -33,6 +33,7 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Booleans;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -181,7 +182,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 					.map(s -> {
 						SliceAndMeasure<IAdhocSlice> sliceAndMeasure = s;
 
-						List<IValueProvider> valueProviders = new ArrayList<>(size);
+						ImmutableList.Builder<IValueProvider> valueProviders =
+								ImmutableList.builderWithExpectedSize(size);
 
 						// No point is processing previous columns are their slices are already processed
 						for (int ii = 0; ii < i; ii++) {
@@ -206,7 +208,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 						// Prevent this slice to be considered by next unsorted sliceToValues
 						unsortedSlicesAsSet.add(s.getSlice());
 
-						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders);
+						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders.build());
 					});
 
 			unsortedStreams.add(unsortedStream);
