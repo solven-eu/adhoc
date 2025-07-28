@@ -39,8 +39,8 @@ import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.http.HttpTransportOptions;
 
-import eu.solven.adhoc.column.TableExpressionColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.column.TableExpressionColumn;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
