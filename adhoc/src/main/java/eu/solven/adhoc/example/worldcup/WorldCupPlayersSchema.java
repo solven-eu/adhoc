@@ -256,21 +256,26 @@ public class WorldCupPlayersSchema {
 		Files.copy(resource.getInputStream(), parquetAsPath);
 
 		try (Statement s = connection.createStatement()) {
-			if (CharMatcher.anyOf("' ").matchesAnyOf(simpleName)) {
-				throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
-			}
-
-			String parquetPathAsString = parquetAsPath.toAbsolutePath().toString();
-			if (CharMatcher.anyOf("'").matchesAnyOf(simpleName)) {
-				throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
-			}
-
-			s.execute("CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName, parquetPathAsString));
+			String sql = makeSanitizedSql(simpleName, parquetAsPath);
+			s.execute(sql);
 		}
 
 		// Delete the file as it is loaded in-memory in DuckDB
 		boolean deleted = parquetAsPath.toFile().delete();
 		log.debug("deleted={} for path={}", deleted, tmpPath);
+	}
+
+	protected String makeSanitizedSql(String simpleName, Path parquetAsPath) {
+		if (CharMatcher.anyOf("' ").matchesAnyOf(simpleName)) {
+			throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
+		}
+
+		String parquetPathAsString = parquetAsPath.toAbsolutePath().toString();
+		if (CharMatcher.anyOf("'").matchesAnyOf(simpleName)) {
+			throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
+		}
+
+		return "CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName, parquetPathAsString);
 	}
 
 	public CubeWrapperBuilder makeCube(AdhocSchema schema,
