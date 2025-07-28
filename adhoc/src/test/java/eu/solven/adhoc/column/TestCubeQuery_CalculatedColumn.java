@@ -59,7 +59,7 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	public void test_groupBy_definitionInQuery() {
 		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure("k1")
-				.groupByAlso(CalculatedColumn.builder()
+				.groupByAlso(FunctionCalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
 						.build())
@@ -74,7 +74,7 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	@Test
 	public void test_groupBy_definitionInCubeColumnManager() {
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.calculatedColumn(CalculatedColumn.builder()
+				.calculatedColumn(FunctionCalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
 						.build())
@@ -92,7 +92,7 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	public void test_groupBy_filter() {
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
 				.measure("k1")
-				.groupByAlso(CalculatedColumn.builder()
+				.groupByAlso(FunctionCalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
 						.build())
@@ -111,7 +111,7 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 
 		ITabularView view = cube.execute(CubeQuery.builder()
 				.measure("k1")
-				.groupByAlso(CalculatedColumn.builder()
+				.groupByAlso(FunctionCalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("proxy_a") + "-" + r.getGroupBy("proxy_b"))
 						.build())

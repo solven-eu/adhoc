@@ -40,6 +40,9 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.springframework.core.io.ClassPathResource;
 
+import com.google.common.base.CharMatcher;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
@@ -240,6 +243,8 @@ public class WorldCupPlayersSchema {
 		return worldCupPlayers;
 	}
 
+	// `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` as we can not use PreparedStatement on FROM clause.
+	@SuppressFBWarnings("SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE")
 	private void loadParquetToTable(Connection connection, ClassPathResource resource)
 			throws IOException, SQLException {
 		String fileName = resource.getFilename();
@@ -251,13 +256,26 @@ public class WorldCupPlayersSchema {
 		Files.copy(resource.getInputStream(), parquetAsPath);
 
 		try (Statement s = connection.createStatement()) {
-			s.execute("CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName,
-					parquetAsPath.toAbsolutePath().toString()));
+			String sql = makeSanitizedSql(simpleName, parquetAsPath);
+			s.execute(sql);
 		}
 
 		// Delete the file as it is loaded in-memory in DuckDB
 		boolean deleted = parquetAsPath.toFile().delete();
 		log.debug("deleted={} for path={}", deleted, tmpPath);
+	}
+
+	protected String makeSanitizedSql(String simpleName, Path parquetAsPath) {
+		if (CharMatcher.anyOf("' ").matchesAnyOf(simpleName)) {
+			throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
+		}
+
+		String parquetPathAsString = parquetAsPath.toAbsolutePath().toString();
+		if (CharMatcher.anyOf("'").matchesAnyOf(simpleName)) {
+			throw new IllegalArgumentException("Invalid tableName: %s".formatted(simpleName));
+		}
+
+		return "CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName, parquetPathAsString);
 	}
 
 	public CubeWrapperBuilder makeCube(AdhocSchema schema,

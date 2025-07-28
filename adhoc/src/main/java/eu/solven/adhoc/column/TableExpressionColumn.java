@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,29 @@
  */
 package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.query.groupby.IHasSqlExpression;
+import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+/**
+ * A {@link TableExpressionColumn} is a column which is not explicitly provided by the {@link ITableWrapper}, but
+ * computed from it. It is evaluated by the {@link ITableWrapper}, not by Adhoc.
+ * 
+ * @author Benoit Lacelle
+ *
+ */
+@Value
+@Builder
+@Jacksonized
+public class TableExpressionColumn implements IAdhocColumn, IHasSqlExpression {
+	// The name of the evaluated column
+	// BEWARE, as this is an IAdhocColumn, it is typically a queried column. Though, as it refers to the table (through
+	// SQL), it is also aware of the underlying columns
+	String name;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+	// The sql expression evaluating this column
+	String sql;
 
-public class TestExpressionColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(TableExpressionColumn.class).verify();
-	}
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
-				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".TableExpressionColumn",
-				  "name" : "someColumn",
-				  "sql" : "someSQL"
-				}""");
-	}
 }

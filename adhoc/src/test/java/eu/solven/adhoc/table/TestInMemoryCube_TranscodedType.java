@@ -30,8 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.column.CalculatedColumn;
 import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -85,15 +85,18 @@ public class TestInMemoryCube_TranscodedType extends ADagTest {
 	public void testColumns_withCalculatedColumn() {
 		ColumnsManager originalColumnsManager = (ColumnsManager) ((CubeWrapper) cube()).getColumnsManager();
 		CubeWrapper cubeWithCalculated = editCube().columnsManager(originalColumnsManager.toBuilder()
-				.calculatedColumn(
-						CalculatedColumn.builder().name("date").type(LocalDate.class).recordToCoordinate(record -> {
+				.calculatedColumn(FunctionCalculatedColumn.builder()
+						.name("date")
+						.type(LocalDate.class)
+						.recordToCoordinate(record -> {
 							Object dateAsString = record.getGroupBy("date_as_string");
 							if (dateAsString == null) {
 								return null;
 							} else {
 								return LocalDate.parse(dateAsString.toString());
 							}
-						}).build())
+						})
+						.build())
 				.build()).build();
 
 		Assertions.assertThat(cube().getColumnTypes()).containsEntry("date_as_string", String.class);

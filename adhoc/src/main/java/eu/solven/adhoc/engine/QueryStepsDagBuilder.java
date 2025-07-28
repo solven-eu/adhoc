@@ -22,12 +22,14 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,6 +37,12 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+
+import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -46,7 +54,12 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.query.MeasurelessQuery;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -91,12 +104,67 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	}
 
 	protected void addRoot(IMeasure queriedMeasure) {
-		CubeQueryStep rootStep = CubeQueryStep.edit(query).measure(queriedMeasure).build();
+		// TODO rootMeasureless(query) should be computed only once for all root measures
+		for (MeasurelessQuery rootMeasureless : rootMeasureless()) {
+			CubeQueryStep rootStep = CubeQueryStep.edit(rootMeasureless).measure(queriedMeasure).build();
 
-		roots.add(rootStep);
-		if (addVertex(rootStep)) {
-			pending.add(rootStep);
+			roots.add(rootStep);
+			if (addVertex(rootStep)) {
+				pending.add(rootStep);
+			}
 		}
+	}
+
+	protected Set<MeasurelessQuery> rootMeasureless() {
+		// May refer some calculatedCoordinates as groupBy
+		NavigableMap<String, IAdhocColumn> nameToColumns = query.getGroupBy().getNameToColumn();
+
+		// Each index is associated to a groupedBy column
+		// Each groupedBy column is associated to the list of column definitions
+		// Default case is to have a simple `groupBy`. We have an additional groupBy definition per calculated
+		// coordinate
+		// This is later used to do a cartesian product, between all columns, each column being associated to its
+		// calculated coordinates
+		List<List<Map.Entry<IAdhocColumn, IAdhocFilter>>> indexToGroupBys = new ArrayList<>();
+
+		nameToColumns.values().forEach(column -> {
+			if (column instanceof ColumnWithCalculatedCoordinates hasCalculated) {
+				List<Map.Entry<IAdhocColumn, IAdhocFilter>> subColumns = new ArrayList<>();
+
+				// Add the simple columns
+				subColumns.add(Map.entry(hasCalculated.getColumn(), IAdhocFilter.MATCH_ALL));
+
+				// Add each additional coordinate
+				List<Map.Entry<IAdhocColumn, IAdhocFilter>> list =
+						hasCalculated.getCalculatedCoordinates().stream().map(calculatedCoordinate -> {
+							IAdhocColumn staticValueColumn = FunctionCalculatedColumn.builder()
+									.name(column.getName())
+									.recordToCoordinate(r -> calculatedCoordinate.getCoordinate())
+									// `skipFiltering` feels like bad-design. It is used to prevent
+									// `ColumnsManager.openTableStream`
+									// rejecting a calculatedColumn being filtered, as these calculatedCoordinates
+									// should always be included. We may argue these calculatedColumns should not even
+									// be visible by `ColumnsManager.openTableStream`.
+									.skipFiltering(true)
+									.build();
+							return Map.entry(staticValueColumn, calculatedCoordinate.getFilter());
+						}).toList();
+				subColumns.addAll(list);
+
+				indexToGroupBys.add(subColumns);
+			} else {
+				indexToGroupBys.add(List.of(Map.entry(column, IAdhocFilter.MATCH_ALL)));
+			}
+		});
+
+		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
+			IAdhocGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
+			IAdhocFilter andFilter = AndFilter.and(columns.stream().map(Map.Entry::getValue).toList());
+			return MeasurelessQuery.edit(query)
+					.groupBy(groupBy)
+					.filter(AndFilter.and(query.getFilter(), andFilter))
+					.build();
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -226,6 +294,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			addRoot(queriedMeasure);
 		});
 
+		registerDescendants(canResolveMeasures);
+
+		sanityChecks();
+	}
+
+	private void registerDescendants(ICanResolveMeasure canResolveMeasures) {
 		// Add implicitly requested steps
 		while (hasLeftovers()) {
 			CubeQueryStep queryStep = pollLeftover();
@@ -255,8 +329,6 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 						.formatted(PepperLogHelper.getObjectAndClass(measure), queryStep.getMeasure()));
 			}
 		}
-
-		sanityChecks();
 	}
 
 	/**

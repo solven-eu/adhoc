@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -37,6 +37,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -161,8 +162,9 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return false;
 		}
 
-		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
-		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
+		// BEWARE a given name may refer to a ReferencedColumn, or to a StaticCoordinateColumn (or anything else)
+		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
+		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getNameToColumn().values();
 		if (!inducerColumns.containsAll(inducedColumns)) {
 			// Not expressing all needed columns: can not induce
 			// If right has all groupBy of left, it means right has same or more groupBy than left,
@@ -178,7 +180,10 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return false;
 		}
 
-		if (inducerColumns.containsAll(FilterHelpers.getFilteredColumns(inducedFilter))) {
+		if (inducerColumns.stream()
+				.map(IAdhocColumn::getName)
+				.toList()
+				.containsAll(FilterHelpers.getFilteredColumns(inducedFilter))) {
 			// Inducer has enough columns to apply induced filter
 			return true;
 		}

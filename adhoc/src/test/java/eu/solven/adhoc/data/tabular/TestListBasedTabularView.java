@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.resource.AdhocJackson;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -109,7 +109,7 @@ public class TestListBasedTabularView {
 				.values(List.of(Map.of("m", new RuntimeException("someIssue"))))
 				.build();
 
-		ObjectMapper objectMapper = AdhocJackson.indentArrayWithEol(TestMapBasedTabularView.objectMapper());
+		ObjectMapper objectMapper = AdhocPublicJackson.indentArrayWithEol(TestMapBasedTabularView.objectMapper());
 
 		SimpleModule adhocModule = new SimpleModule("Adhoc");
 		adhocModule.addSerializer(new ThrowableAsStackSerializer());

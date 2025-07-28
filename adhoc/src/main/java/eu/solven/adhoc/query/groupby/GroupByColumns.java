@@ -52,7 +52,7 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * TODO Should this superseed {@link GroupBySimpleColumns}?
+ * {@link IAdhocGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
  * 
  * @author Benoit Lacelle
  *

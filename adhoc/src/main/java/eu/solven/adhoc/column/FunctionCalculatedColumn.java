@@ -22,13 +22,7 @@
  */
 package eu.solven.adhoc.column;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import com.ezylang.evalex.EvaluationException;
-import com.ezylang.evalex.Expression;
-import com.ezylang.evalex.data.EvaluationValue;
-import com.ezylang.evalex.parser.ParseException;
+import java.util.function.Function;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -39,8 +33,10 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A {@link EvaluatedExpressionColumn} is a column which is calculated given an expression, by Adhoc engine, not by the
- * {@link ITableWrapper}.
+ * A {@link FunctionCalculatedColumn} is a column which is evaluated programmatically by Adhoc. As it is based on a
+ * {@link Function}, it can not be serialized into JSON.
+ * 
+ * It is evaluated on a per-row basis, given the rows provided by the {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  *
@@ -48,7 +44,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColumn {
+public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn {
 	// The name of the evaluated column
 	@NonNull
 	String name;
@@ -57,37 +53,17 @@ public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColum
 	@Default
 	Class<?> type = Object.class;
 
-	@NonNull
-	String expression;
+	// Compute a coordinate given current record
+	Function<ITabularRecord, Object> recordToCoordinate;
 
-	/**
-	 * BEWARE This must not be cached as {@link Expression} is a stateful object
-	 * (https://github.com/ezylang/EvalEx/issues/83).
-	 * 
-	 * @return an Expression object
-	 */
-	protected Expression makeExpression() {
-		return new Expression(expression);
-	}
+	// TODO Bad-design. Used for `*` calculated column, as given coordinate should not be filtered-out by
+	// IValueMatchers.
+	@Default
+	boolean skipFiltering = false;
 
 	@Override
 	public Object computeCoordinate(ITabularRecord record) {
-		Expression exp = makeExpression();
-
-		EvaluationValue result;
-		try {
-			Map<String, Object> nameToValue = new LinkedHashMap<>();
-
-			exp.getUsedVariables().forEach(variable -> {
-				exp.with(variable, record.getGroupBy(variable));
-			});
-
-			result = exp.withValues(nameToValue).evaluate();
-		} catch (EvaluationException | ParseException e) {
-			throw new IllegalArgumentException("Issue with expression=`%s`".formatted(expression), e);
-		}
-
-		return result.getValue();
+		return recordToCoordinate.apply(record);
 	}
 
 	@Override

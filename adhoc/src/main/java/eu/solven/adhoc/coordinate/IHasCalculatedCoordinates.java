@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,48 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.coordinate;
 
-import java.util.function.Function;
-
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.table.ITableWrapper;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.List;
 
 /**
- * A {@link CalculatedColumn} is a column which is not explicitly provided by the {@link ITableWrapper}, but computed
- * from it. It may be evaluated by the engine, or by Adhoc itself.
+ * A column whic has been added calculated members. The typical case is to all `*` as an additional member, which
+ * returns the value if current column was not grouped by.
+ * 
+ * Other example can be `WHERE someColumn LIKE 'a%'` to make a member evaluating the aggregate over the set of matching
+ * coordinates.
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-@Jacksonized
-public class CalculatedColumn implements IAdhocColumn, ICalculatedColumn {
-	// The name of the evaluated column
-	@NonNull
-	String name;
-
-	@NonNull
-	@Default
-	Class<?> type = Object.class;
-
-	// Compute a coordinate given current record
-	Function<ITabularRecord, Object> recordToCoordinate;
-
-	@Override
-	public Object computeCoordinate(ITabularRecord record) {
-		return recordToCoordinate.apply(record);
-	}
-
-	@Override
-	public Class<?> getType() {
-		return type;
-	}
-
+@FunctionalInterface
+public interface IHasCalculatedCoordinates {
+	List<ICalculatedCoordinate> getCalculatedCoordinates();
 }

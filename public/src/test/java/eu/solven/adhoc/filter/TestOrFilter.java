@@ -38,6 +38,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 public class TestOrFilter {
 	// A short toString not to prevail is composition .toString
@@ -92,7 +93,7 @@ public class TestOrFilter {
 	}
 
 	@Test
-	public void testAndFilters_oneGrandTotal_forced() {
+	public void testOr_oneGrandTotal_forced() {
 		IAdhocFilter filterAllAndA =
 				OrFilter.builder().filter(IAdhocFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).build();
 
@@ -102,14 +103,14 @@ public class TestOrFilter {
 	}
 
 	@Test
-	public void testAndFilters_oneMatchNone() {
+	public void testOr_oneMatchNone() {
 		IAdhocFilter filterAllAndA = OrFilter.or(IAdhocFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
-	public void testAndFilters_oneGrandTotal_TwoCustom() {
+	public void testOr_oneGrandTotal_TwoCustom() {
 		IAdhocFilter filterAllAndA = OrFilter
 				.or(IAdhocFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 
@@ -170,6 +171,23 @@ public class TestOrFilter {
 		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(filter);
+	}
+
+	@Test
+	public void testJackson_matchNone() throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		objectMapper.registerModule(AdhocPublicJackson.makeModule());
+
+		String asString = objectMapper.writeValueAsString(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(asString).isEqualTo("""
+				"matchNone"
+								""".trim());
+
+		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
+
+		Assertions.assertThat(fromString).isEqualTo(IAdhocFilter.MATCH_NONE);
 	}
 
 	@Test

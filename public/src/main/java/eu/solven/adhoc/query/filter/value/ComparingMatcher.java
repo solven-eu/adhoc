@@ -165,4 +165,20 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 			return column + this.toString();
 		}
 	}
+
+	public static IValueMatcher greaterThanOrEqual(Comparable<?> comparable) {
+		return ComparingMatcher.builder().greaterThan(comparable).matchIfEqual(true).build();
+	}
+
+	public static IValueMatcher strictlyGreaterThan(Comparable<?> comparable) {
+		return ComparingMatcher.builder().greaterThan(comparable).matchIfEqual(false).build();
+	}
+
+	public static IValueMatcher lowerThanOrEqual(Comparable<?> comparable) {
+		return ComparingMatcher.builder().lowerThan(comparable).matchIfEqual(true).build();
+	}
+
+	public static IValueMatcher strictlyLowerThan(Comparable<?> comparable) {
+		return ComparingMatcher.builder().lowerThan(comparable).matchIfEqual(false).build();
+	}
 }

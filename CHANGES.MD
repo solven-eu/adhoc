@@ -8,11 +8,14 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduced `ISliceFactory` to enable custom way of creating `Map` and `IAdhocSlice`.
 - Introduced `ICoordinateNormalizer` to centralize how coordinates should be normalized (e.g. `int` into `long`).
 - Introduced `NullMatcher.NULL_HOLDER` to represent `null` where a null-reference is forbidden.
+- Introduced `ICalculatedCoordinate` to enable adding coordinate into columns. Typical usecase is having an `*` coordinate aggregating all other coordinates, as a grandTotal of current column.
 
 ### Changed
 - Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
 - `ITabularRecord.getGroupBys()` now returns a `IAdhocMap`
 - Most `SliceAsMap` usages are replaced by `IAdhocSlice`, and `IAdhocSliceWithStep` does not extends `IAdhocSlice` anymore.
+- `IAdhocFilter.MATCH_ALL` is now serialized as `"matchAll"`
+- `IAdhocFilter.matchAll` is now serialized as `"matchNone"`
 
 ### Fixed
 - Various mis-behaviours related to `null` as `GROUP BY` coordinate.

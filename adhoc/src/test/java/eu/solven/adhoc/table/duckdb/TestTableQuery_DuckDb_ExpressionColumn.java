@@ -31,7 +31,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.column.ExpressionColumn;
+import eu.solven.adhoc.column.TableExpressionColumn;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -66,7 +66,7 @@ public class TestTableQuery_DuckDb_ExpressionColumn extends ADuckDbJooqTest impl
 
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure(k1Sum.getName())
-				.groupBy(GroupByColumns.of(ExpressionColumn.builder().name("first_letter").sql("word[1]").build()))
+				.groupBy(GroupByColumns.of(TableExpressionColumn.builder().name("first_letter").sql("word[1]").build()))
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

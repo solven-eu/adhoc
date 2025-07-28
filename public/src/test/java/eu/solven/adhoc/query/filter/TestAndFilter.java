@@ -35,10 +35,12 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 public class TestAndFilter {
 	// A short toString not to prevail is composition .toString
@@ -140,9 +142,10 @@ public class TestAndFilter {
 	public void testJackson() throws JsonProcessingException {
 		IAdhocFilter filter = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
 
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = JsonMapper.builder().build();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
 		String asString = objectMapper.writeValueAsString(filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
@@ -172,8 +175,26 @@ public class TestAndFilter {
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
 		IAdhocFilter fromString = objectMapper.readValue("{}", IAdhocFilter.class);
+
+		Assertions.assertThat(fromString).isEqualTo(IAdhocFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void testJackson_matchAll() throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		objectMapper.registerModule(AdhocPublicJackson.makeModule());
+
+		String asString = objectMapper.writeValueAsString(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(asString).isEqualTo("""
+				"matchAll"
+								""".trim());
+
+		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(IAdhocFilter.MATCH_ALL);
 	}

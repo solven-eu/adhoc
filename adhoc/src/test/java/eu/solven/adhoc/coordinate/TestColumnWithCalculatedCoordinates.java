@@ -20,32 +20,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.coordinate;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
+import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
 
-public class TestExpressionColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(TableExpressionColumn.class).verify();
-	}
+public class TestColumnWithCalculatedCoordinates {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
-				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
+				ColumnWithCalculatedCoordinates.builder()
+						.column("d")
+						.calculatedCoordinate(
+								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+						.build());
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
-				  "type" : ".TableExpressionColumn",
-				  "name" : "someColumn",
-				  "sql" : "someSQL"
+				  "type" : ".ColumnWithCalculatedCoordinates",
+				  "column" : "d",
+				  "calculatedCoordinates" : [ {
+				    "type" : ".CalculatedCoordinate",
+				    "coordinate" : "*",
+				    "filter" : {
+				      "type" : "and",
+				      "filters" : [ ]
+				    }
+				  } ]
 				}""");
+	}
+
+	@Test
+	public void testImplicitMatchAll() throws JsonMappingException, JsonProcessingException {
+		IAdhocColumn column = TestMapBasedTabularView.objectMapper().readValue("""
+				{
+				  "type" : ".ColumnWithCalculatedCoordinates",
+				  "column" : "d",
+				  "calculatedCoordinates" : [ {
+				    "type" : ".CalculatedCoordinate",
+				    "coordinate" : "*"
+				  } ]
+				}""", IAdhocColumn.class);
+
+		Assertions.assertThat(column)
+				.isEqualTo(ColumnWithCalculatedCoordinates.builder()
+						.column("d")
+						.calculatedCoordinate(
+								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+						.build());
 	}
 }

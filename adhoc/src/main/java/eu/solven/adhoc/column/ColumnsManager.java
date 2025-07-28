@@ -128,7 +128,7 @@ public class ColumnsManager implements IColumnsManager {
 		{
 			IAdhocFilter notTranscodedFilter = query.getFilter();
 
-			Set<String> calculatedColumns = getCalculatedColumns(query);
+			Set<String> calculatedColumns = getFiltrableCalculatedColumns(query);
 			Set<String> calculatedAndFiltered =
 					Sets.intersection(calculatedColumns, FilterHelpers.getFilteredColumns(notTranscodedFilter));
 			if (!calculatedAndFiltered.isEmpty()) {
@@ -185,23 +185,25 @@ public class ColumnsManager implements IColumnsManager {
 			}
 		}
 
-		return transcodeRows(transcodingContext, tabularRecordStream);
+		return transcodeRows(transcodingContext, tabularRecordStream, transcodedFilter);
 	}
 
-	protected Set<String> getCalculatedColumns(TableQueryV2 query) {
+	protected Set<String> getFiltrableCalculatedColumns(TableQueryV2 query) {
 		Set<String> calculatedColumns = new TreeSet<>();
 		this.calculatedColumns.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
 		query.getGroupBy()
 				.getNameToColumn()
 				.values()
 				.stream()
-				.filter(c -> c instanceof ICalculatedColumn)
+				.filter(c -> c instanceof ICalculatedColumn
+						&& !(c instanceof FunctionCalculatedColumn f && f.isSkipFiltering()))
 				.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
 		return calculatedColumns;
 	}
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
-			ITabularRecordStream tabularRecordStream) {
+			ITabularRecordStream tabularRecordStream,
+			IAdhocFilter transcodedFilter) {
 		return new ITabularRecordStream() {
 
 			@Override
@@ -233,7 +235,8 @@ public class ColumnsManager implements IColumnsManager {
 						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
 						// calculate columns after transcoding, as these expression are generally table-independant
 						.map(row -> evaluateCalculated(transcodingContext, row))
-				// TODO filter calculated
+				// TODO Filter
+				// .filter(row -> filterCalculatedColumns(transcodedFilter, row))
 				;
 			}
 
@@ -243,6 +246,10 @@ public class ColumnsManager implements IColumnsManager {
 			}
 		};
 	}
+
+	// protected boolean filterCalculatedColumns(IAdhocFilter transcodedFilter, ITabularRecord row) {
+	// return true;
+	// }
 
 	protected ITableReverseTranscoder prepareColumnTranscoder(TranscodingContext transcodingContext) {
 		int estimatedSize = transcodingContext.estimateQueriedSize(transcodingContext.underlyings());
@@ -261,7 +268,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected ITabularRecord evaluateCalculated(TranscodingContext transcodingContext, ITabularRecord row) {
-		Map<String, CalculatedColumn> columns = transcodingContext.getNameToCalculated();
+		Map<String, FunctionCalculatedColumn> columns = transcodingContext.getNameToCalculated();
 
 		if (columns.isEmpty()) {
 			return row;
@@ -337,14 +344,17 @@ public class ColumnsManager implements IColumnsManager {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
 						return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
-					} else if (c instanceof CalculatedColumn calculatedColumn) {
+						// } else if (c instanceof StaticCoordinateColumn staticCoordinateColumn) {
+						// String columnName = staticCoordinateColumn.getName();
+						// return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
+					} else if (c instanceof FunctionCalculatedColumn calculatedColumn) {
 						transcodingContext.addCalculatedColumn(calculatedColumn);
 
 						Collection<ReferencedColumn> operandColumns = getUnderlyingColumns(calculatedColumn);
 						return operandColumns.stream()
 								.map(operandColumn -> transcodingContext.underlying(operandColumn.getName()))
 								.map(ReferencedColumn::ref);
-					} else if (c instanceof ExpressionColumn expressionColumn) {
+					} else if (c instanceof TableExpressionColumn expressionColumn) {
 						transcodingContext.underlying(expressionColumn.getName());
 
 						// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
@@ -428,7 +438,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	}
 
-	private Collection<ReferencedColumn> getUnderlyingColumns(CalculatedColumn calculatedColumn) {
+	private Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
 		RecordingRecord recording = new RecordingRecord();
 
 		calculatedColumn.getRecordToCoordinate().apply(recording);
