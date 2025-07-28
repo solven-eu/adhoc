@@ -26,12 +26,13 @@ import java.beans.Customizer;
 import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
+import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
@@ -42,53 +43,59 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class AdhocFilterSerializer extends JsonSerializer<ISliceFilter> implements ResolvableSerializer {
-	private final JsonSerializer<Object> base;
+public class SliceFilterDeserializer extends JsonDeserializer<ISliceFilter> implements ResolvableDeserializer {
+	// private static final long serialVersionUID = 8174515895932210350L;
 
-	public AdhocFilterSerializer(JsonSerializer<Object> base) {
+	private final JsonDeserializer<?> base;
+
+	public SliceFilterDeserializer(JsonDeserializer<?> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
-	// Used before AdhocFilterSerializerModifier rewrap it
-	public AdhocFilterSerializer() {
+	// Used before AdhocFilterDeserializerModifier rewrap it
+	public SliceFilterDeserializer() {
 		this.base = null;
 	}
 
-	@Override
-	public void serializeWithType(ISliceFilter value,
-			JsonGenerator gen,
-			SerializerProvider serializers,
-			TypeSerializer typeSer) throws IOException {
-		if (ISliceFilter.MATCH_ALL.equals(value)) {
-			gen.writeString("matchAll");
-		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
-			gen.writeString("matchNone");
-		} else if (base == null) {
-			throw new IllegalStateException(
-					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+	protected ISliceFilter onText(JsonParser p) throws IOException {
+		if ("matchAll".equalsIgnoreCase(p.getText())) {
+			return ISliceFilter.MATCH_ALL;
+		} else if ("matchNone".equalsIgnoreCase(p.getText())) {
+			return ISliceFilter.MATCH_NONE;
 		} else {
-			base.serializeWithType(value, gen, serializers, typeSer);
+			throw new IllegalArgumentException("Not managed text: %s".formatted(p.getText()));
 		}
 	}
 
 	@Override
-	public void serialize(ISliceFilter value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		if (ISliceFilter.MATCH_ALL.equals(value)) {
-			gen.writeString("matchAll");
-		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
-			gen.writeString("matchNone");
+	public Object deserializeWithType(JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer)
+			throws IOException, JacksonException {
+		if (p.hasTextCharacters()) {
+			return onText(p);
 		} else if (base == null) {
 			throw new IllegalStateException(
 					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			base.serialize(value, gen, serializers);
+			return base.deserializeWithType(p, ctxt, typeDeserializer);
 		}
 	}
 
 	@Override
-	public void resolve(SerializerProvider provider) throws JsonMappingException {
-		if (base instanceof ResolvableSerializer resolvable) {
-			resolvable.resolve(provider);
+	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+		if (p.hasTextCharacters()) {
+			return onText(p);
+		} else if (base == null) {
+			throw new IllegalStateException(
+					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+		} else {
+			return (ISliceFilter) base.deserialize(p, ctxt);
+		}
+	}
+
+	@Override
+	public void resolve(DeserializationContext ctxt) throws JsonMappingException {
+		if (base instanceof ResolvableDeserializer resolvable) {
+			resolvable.resolve(ctxt);
 		}
 	}
 

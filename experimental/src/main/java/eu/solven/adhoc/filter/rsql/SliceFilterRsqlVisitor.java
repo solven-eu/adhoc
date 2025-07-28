@@ -43,7 +43,7 @@ import eu.solven.adhoc.query.filter.value.ComparingMatcher;
  * 
  * @author Benoit Lacelle
  */
-public class AdhocFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String> {
+public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String> {
 	@Override
 	public ISliceFilter visit(AndNode node, String param) {
 		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();

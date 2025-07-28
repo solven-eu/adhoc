@@ -36,6 +36,6 @@ public class RsqlToAdhocFilter {
 	public ISliceFilter rsql(String rsql) {
 		Node rootNode = new RSQLParser().parse(rsql);
 
-		return rootNode.accept(new AdhocFilterRsqlVisitor());
+		return rootNode.accept(new SliceFilterRsqlVisitor());
 	}
 }

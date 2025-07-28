@@ -35,8 +35,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.jackson.AdhocFilterDeserializer;
-import eu.solven.adhoc.query.filter.jackson.AdhocFilterSerializer;
+import eu.solven.adhoc.query.filter.jackson.SliceFilterDeserializer;
+import eu.solven.adhoc.query.filter.jackson.SliceFilterSerializer;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -47,7 +47,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AdhocPublicJackson {
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class AdhocFilterSerializerModifier extends BeanSerializerModifier {
+	protected static class SliceFilterSerializerModifier extends BeanSerializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
@@ -55,7 +55,7 @@ public class AdhocPublicJackson {
 				BeanDescription beanDesc,
 				JsonSerializer<?> serializer) {
 			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
-				return new AdhocFilterSerializer((JsonSerializer) serializer);
+				return new SliceFilterSerializer((JsonSerializer) serializer);
 			}
 
 			return serializer;
@@ -63,7 +63,7 @@ public class AdhocPublicJackson {
 	}
 
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class AdhocFilterDeserializerModifier extends BeanDeserializerModifier {
+	protected static class SliceFilterDeserializerModifier extends BeanDeserializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
@@ -72,7 +72,7 @@ public class AdhocPublicJackson {
 				JsonDeserializer<?> deserializer) {
 
 			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
-				return new AdhocFilterDeserializer(deserializer);
+				return new SliceFilterDeserializer(deserializer);
 			} else {
 				return super.modifyDeserializer(config, beanDesc, deserializer);
 			}
@@ -82,8 +82,8 @@ public class AdhocPublicJackson {
 	public static SimpleModule makeModule() {
 		SimpleModule adhocModule = new SimpleModule("AdhocModule");
 
-		adhocModule.setSerializerModifier(new AdhocFilterSerializerModifier());
-		adhocModule.setDeserializerModifier(new AdhocFilterDeserializerModifier());
+		adhocModule.setSerializerModifier(new SliceFilterSerializerModifier());
+		adhocModule.setDeserializerModifier(new SliceFilterDeserializerModifier());
 
 		return adhocModule;
 	}
