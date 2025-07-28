@@ -45,4 +45,13 @@ public class CalculatedCoordinate implements ICalculatedCoordinate {
 	@Default
 	protected IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 
+	/**
+	 * Useful grand members representing the grandTotal.
+	 * 
+	 * @return a {@link ICalculatedCoordinate} matching all available members.
+	 */
+	public static ICalculatedCoordinate star() {
+		return CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build();
+	}
+
 }

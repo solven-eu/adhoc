@@ -45,7 +45,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
-public class TestCubeQuery_DuckDb_WithStarMember extends ADuckDbJooqTest implements IAdhocTestConstants {
+public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	String tableName = "someTableName";
 
@@ -59,12 +59,20 @@ public class TestCubeQuery_DuckDb_WithStarMember extends ADuckDbJooqTest impleme
 
 	@BeforeEach
 	public void initDataAndMeasures() {
-		dsl.createTableIfNotExists(tableName).column("d", SQLDataType.DATE).column("k1", SQLDataType.INTEGER).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("d"), DSL.field("k1")).values(today, 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("d"), DSL.field("k1"))
-				.values(today.minusYears(1), 234)
+		dsl.createTableIfNotExists(tableName)
+				.column("color", SQLDataType.VARCHAR)
+				.column("d", SQLDataType.DATE)
+				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("d"), DSL.field("k1")).values(today, 345).execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("color"), DSL.field("d"), DSL.field("k1"))
+				.values("blue", today, 123)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("color"), DSL.field("d"), DSL.field("k1"))
+				.values("red", today.minusYears(1), 234)
+				.execute();
+		dsl.insertInto(DSL.table(tableName), DSL.field("color"), DSL.field("d"), DSL.field("k1"))
+				.values("green", today, 345)
+				.execute();
 
 		forest.addMeasure(k1Sum);
 	}
@@ -75,9 +83,12 @@ public class TestCubeQuery_DuckDb_WithStarMember extends ADuckDbJooqTest impleme
 			Assertions.assertThat(c.getName()).isEqualTo("k1");
 			Assertions.assertThat(c.getType()).isEqualTo(Integer.class);
 		}).anySatisfy(c -> {
+			Assertions.assertThat(c.getName()).isEqualTo("color");
+			Assertions.assertThat(c.getType()).isEqualTo(String.class);
+		}).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("d");
 			Assertions.assertThat(c.getType()).isEqualTo(LocalDate.class);
-		}).hasSize(2);
+		}).hasSize(3);
 	}
 
 	@Test
@@ -98,6 +109,36 @@ public class TestCubeQuery_DuckDb_WithStarMember extends ADuckDbJooqTest impleme
 				.containsEntry(Map.of("d", today), Map.of(k1Sum.getName(), 0L + 123 + 345))
 				.containsEntry(Map.of("d", today.minusYears(1)), Map.of(k1Sum.getName(), 0L + 234))
 				.hasSize(3);
+	}
+
+	@Test
+	public void test_GroupByDateAndColor() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum)
+				.groupBy(GroupByColumns.of(
+						ColumnWithCalculatedCoordinates.builder()
+								.column("d")
+								.calculatedCoordinate(CalculatedCoordinate.star())
+								.build(),
+						ColumnWithCalculatedCoordinates.builder()
+								.column("color")
+								.calculatedCoordinate(CalculatedCoordinate.star())
+								.build()))
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("color", "*", "d", "*"), Map.of(k1Sum.getName(), 0L + 123 + 234 + 345))
+				.containsEntry(Map.of("color", "*", "d", today), Map.of(k1Sum.getName(), 0L + 123 + 345))
+				.containsEntry(Map.of("color", "*", "d", today.minusYears(1)), Map.of(k1Sum.getName(), 0L + 234))
+				.containsEntry(Map.of("color", "blue", "d", "*"), Map.of(k1Sum.getName(), 0L + 123))
+				.containsEntry(Map.of("color", "red", "d", "*"), Map.of(k1Sum.getName(), 0L + 234))
+				.containsEntry(Map.of("color", "green", "d", "*"), Map.of(k1Sum.getName(), 0L + 345))
+				.containsEntry(Map.of("color", "blue", "d", today), Map.of(k1Sum.getName(), 0L + 123))
+				.containsEntry(Map.of("color", "red", "d", today.minusYears(1)), Map.of(k1Sum.getName(), 0L + 234))
+				.containsEntry(Map.of("color", "green", "d", today), Map.of(k1Sum.getName(), 0L + 345))
+				.hasSize(9);
 	}
 
 	@Test
