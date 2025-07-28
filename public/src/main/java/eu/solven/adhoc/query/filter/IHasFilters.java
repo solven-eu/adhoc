@@ -33,12 +33,12 @@ import java.util.Map;
  */
 @FunctionalInterface
 public interface IHasFilters {
-	IHasFilters MATCH_ALL = () -> IAdhocFilter.MATCH_ALL;
+	IHasFilters MATCH_ALL = () -> ISliceFilter.MATCH_ALL;
 
 	/**
 	 * An empty {@link Map} would match any rows.
 	 * 
 	 * @return the {@link List} of filters. To be interpreted as an OR over AND conditions.
 	 */
-	IAdhocFilter getFilter();
+	ISliceFilter getFilter();
 }

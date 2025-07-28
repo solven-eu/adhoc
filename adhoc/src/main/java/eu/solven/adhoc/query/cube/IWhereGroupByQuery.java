@@ -24,8 +24,8 @@ package eu.solven.adhoc.query.cube;
 
 import java.util.List;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IHasFilters;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 
 /**
@@ -42,7 +42,7 @@ public interface IWhereGroupByQuery extends IHasFilters, IHasGroupBy {
 	 * @return a list of filters (to be interpreted as an OR over AND simple conditions).
 	 */
 	@Override
-	IAdhocFilter getFilter();
+	ISliceFilter getFilter();
 
 	/**
 	 * The columns amongst which the result has to be ventilated/sliced.

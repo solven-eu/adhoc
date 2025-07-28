@@ -62,7 +62,7 @@ public class FilterMatcher {
 	ITableTranscoder transcoder = ITableTranscoder.identity();
 
 	@NonNull
-	IAdhocFilter filter;
+	ISliceFilter filter;
 
 	@Default
 	@NonNull

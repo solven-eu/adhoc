@@ -24,7 +24,6 @@ package eu.solven.adhoc.column;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,11 +53,10 @@ import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -124,9 +122,9 @@ public class ColumnsManager implements IColumnsManager {
 	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 query) {
 		TranscodingContext transcodingContext = openTranscodingContext();
 
-		IAdhocFilter transcodedFilter;
+		ISliceFilter transcodedFilter;
 		{
-			IAdhocFilter notTranscodedFilter = query.getFilter();
+			ISliceFilter notTranscodedFilter = query.getFilter();
 
 			Set<String> calculatedColumns = getFiltrableCalculatedColumns(query);
 			Set<String> calculatedAndFiltered =
@@ -203,7 +201,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	protected ITabularRecordStream transcodeRows(TranscodingContext transcodingContext,
 			ITabularRecordStream tabularRecordStream,
-			IAdhocFilter transcodedFilter) {
+			ISliceFilter transcodedFilter) {
 		return new ITabularRecordStream() {
 
 			@Override
@@ -317,7 +315,7 @@ public class ColumnsManager implements IColumnsManager {
 		return TranscodingContext.builder().transcoder(getTranscoder()).build();
 	}
 
-	protected IAdhocFilter transcodeFilter(ITableTranscoder tableTranscoder, IAdhocFilter filter) {
+	protected ISliceFilter transcodeFilter(ITableTranscoder tableTranscoder, ISliceFilter filter) {
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
@@ -344,13 +342,11 @@ public class ColumnsManager implements IColumnsManager {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
 						return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
-						// } else if (c instanceof StaticCoordinateColumn staticCoordinateColumn) {
-						// String columnName = staticCoordinateColumn.getName();
-						// return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
 					} else if (c instanceof FunctionCalculatedColumn calculatedColumn) {
 						transcodingContext.addCalculatedColumn(calculatedColumn);
 
-						Collection<ReferencedColumn> operandColumns = getUnderlyingColumns(calculatedColumn);
+						Collection<ReferencedColumn> operandColumns =
+								FunctionCalculatedColumn.getUnderlyingColumns(calculatedColumn);
 						return operandColumns.stream()
 								.map(operandColumn -> transcodingContext.underlying(operandColumn.getName()))
 								.map(ReferencedColumn::ref);
@@ -372,77 +368,6 @@ public class ColumnsManager implements IColumnsManager {
 				.toList();
 
 		return GroupByColumns.of(transcoded);
-	}
-
-	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
-	private static final class RecordingRecord implements ITabularRecord {
-		@Getter
-		final Set<String> usedColumn = new HashSet<>();
-
-		@Override
-		public Set<String> aggregateKeySet() {
-			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
-		}
-
-		@Override
-		public Object getAggregate(String aggregateName) {
-			throw new NotYetImplementedException("Calculated Column over aggregates");
-		}
-
-		@Override
-		public IValueProvider onAggregate(String aggregateName) {
-			throw new NotYetImplementedException("Calculated Column over aggregates");
-		}
-
-		@Override
-		public Map<String, ?> aggregatesAsMap() {
-			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
-		}
-
-		@Override
-		public Set<String> groupByKeySet() {
-			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
-		}
-
-		@Override
-		public Object getGroupBy(String columnName) {
-			usedColumn.add(columnName);
-			return null;
-		}
-
-		@Override
-		public Map<String, ?> asMap() {
-			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
-		}
-
-		@Override
-		public boolean isEmpty() {
-			// Indicates this is not empty to preventing short-cutting reading any field
-			return false;
-		}
-
-		@Override
-		public SliceAsMap getGroupBys() {
-			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
-		}
-
-		@Override
-		public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
-			throw new UnsupportedOperationException("Recording does not implement this");
-		}
-
-		@Override
-		public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
-			throw new UnsupportedOperationException("Recording does not implement this");
-		}
-
-	}
-
-	private Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
-		RecordingRecord recording = new RecordingRecord();
-
-		calculatedColumn.getRecordToCoordinate().apply(recording);
-		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 
 	protected Collection<? extends FilteredAggregator> transcodeAggregators(TranscodingContext transcodingContext,

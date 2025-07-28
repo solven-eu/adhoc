@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.step;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 /**
@@ -44,9 +44,9 @@ public interface ISliceWithStep {
 
 	/**
 	 *
-	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
+	 * @return an {@link ISliceFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
 	 *         {@link AndFilter} of {@link EqualsMatcher}.
 	 */
-	IAdhocFilter asFilter();
+	ISliceFilter asFilter();
 
 }

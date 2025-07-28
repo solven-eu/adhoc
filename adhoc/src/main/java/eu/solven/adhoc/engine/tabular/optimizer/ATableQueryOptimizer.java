@@ -42,7 +42,7 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +69,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		return CubeQueryStep.edit(inducer)
 				.measure("noMeasure")
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.build();
 	}
 

@@ -51,7 +51,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -218,7 +218,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 	/**
 	 * Some {@link IDecomposition} may provide irrelevant {@link IDecompositionEntry} given queryStep
-	 * {@link IAdhocFilter}.
+	 * {@link ISliceFilter}.
 	 * 
 	 * @param decomposedSlice
 	 * @return

@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
@@ -61,7 +61,7 @@ import lombok.Value;
 public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
@@ -127,7 +127,7 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, IAdhocFilter leftover) {
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, ISliceFilter leftover) {
 		List<String> aggregatorNames = tableQuery.getAggregators()
 				.stream()
 				.distinct()

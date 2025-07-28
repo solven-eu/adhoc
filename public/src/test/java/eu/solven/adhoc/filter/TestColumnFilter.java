@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
@@ -52,21 +52,21 @@ public class TestColumnFilter {
 		Assertions.assertThat(asString).isEqualTo("""
 				{"type":"column","column":"k","valueMatcher":"v","nullIfAbsent":true}
 				""".strip());
-		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
+		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(ksEqualsV);
 	}
 
 	@Test
 	public void testInEmpty() {
-		IAdhocFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
+		ISliceFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
 
-		Assertions.assertThat(ksEqualsV).isEqualTo(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(ksEqualsV).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testLikeMatcher() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				ColumnFilter.builder().column("a").matching(LikeMatcher.builder().pattern("prefix%").build()).build();
 
 		Assertions.assertThat(filter.isColumnFilter()).isTrue();
@@ -77,14 +77,14 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_equals() {
-		IAdhocFilter filter = ColumnFilter.isEqualTo("c", "v");
+		ISliceFilter filter = ColumnFilter.isEqualTo("c", "v");
 
 		Assertions.assertThat(filter).hasToString("c==v");
 	}
 
 	@Test
 	public void testToString_equals_not() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.isEqualTo("v"))).build();
 
 		Assertions.assertThat(filter).hasToString("c!=v");
@@ -92,7 +92,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_same() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				ColumnFilter.builder().column("c").matching(SameMatcher.builder().operand("v").build()).build();
 
 		Assertions.assertThat(filter).hasToString("c===v");
@@ -100,7 +100,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_same_not() {
-		IAdhocFilter filter = ColumnFilter.builder()
+		ISliceFilter filter = ColumnFilter.builder()
 				.column("c")
 				.matching(NotMatcher.not(SameMatcher.builder().operand("v").build()))
 				.build();
@@ -110,14 +110,14 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_null() {
-		IAdhocFilter filter = ColumnFilter.builder().column("c").matching(NullMatcher.matchNull()).build();
+		ISliceFilter filter = ColumnFilter.builder().column("c").matching(NullMatcher.matchNull()).build();
 
 		Assertions.assertThat(filter).hasToString("c===null");
 	}
 
 	@Test
 	public void testToString_null_not() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(NullMatcher.matchNull())).build();
 
 		Assertions.assertThat(filter).hasToString("c!==null");
@@ -125,14 +125,14 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_in() {
-		IAdhocFilter filter = ColumnFilter.isIn("c", ImmutableSet.of("v1", "v2"));
+		ISliceFilter filter = ColumnFilter.isIn("c", ImmutableSet.of("v1", "v2"));
 
 		Assertions.assertThat(filter).hasToString("c=in=(v1,v2)");
 	}
 
 	@Test
 	public void testToString_out() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(InMatcher.isIn("v1", "v2"))).build();
 
 		Assertions.assertThat(filter).hasToString("c=out=(v1,v2)");
@@ -140,14 +140,14 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_likes() {
-		IAdhocFilter ksEqualsV = ColumnFilter.builder().column("c").matching(LikeMatcher.matching("a%")).build();
+		ISliceFilter ksEqualsV = ColumnFilter.builder().column("c").matching(LikeMatcher.matching("a%")).build();
 
 		Assertions.assertThat(ksEqualsV).hasToString("c matches `LikeMatcher(pattern=a%)`");
 	}
 
 	@Test
 	public void testToString_not_likes() {
-		IAdhocFilter ksEqualsV =
+		ISliceFilter ksEqualsV =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(LikeMatcher.matching("a%"))).build();
 
 		Assertions.assertThat(ksEqualsV).hasToString("c does NOT match `LikeMatcher(pattern=a%)`");

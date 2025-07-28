@@ -31,7 +31,7 @@ import com.qfs.condition.ImplementationCode;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import lombok.extern.slf4j.Slf4j;
@@ -46,12 +46,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AtotiConditionDatastoreToAdhoc {
 
-	public IAdhocFilter convertToAdhoc(Object rawCondition) {
+	public ISliceFilter convertToAdhoc(Object rawCondition) {
 		if (rawCondition == null) {
-			return IAdhocFilter.MATCH_NONE;
+			return ISliceFilter.MATCH_NONE;
 		} else if (rawCondition instanceof com.quartetfs.fwk.filtering.ICondition apCondition) {
 			log.warn("We should not receive Cube conditions: {}", apCondition);
-			return IAdhocFilter.MATCH_NONE;
+			return ISliceFilter.MATCH_NONE;
 		} else if (rawCondition instanceof ICondition apCondition) {
 			if (rawCondition instanceof IConstantCondition constantCondition) {
 				ImplementationCode implementationCode = constantCondition.getImplementationCode();
@@ -69,23 +69,23 @@ public class AtotiConditionDatastoreToAdhoc {
 				} else if (implementationCode == ImplementationCode.OR) {
 					return OrFilter.or(Stream.of(subConditions).map(this::convertToAdhoc).toList());
 				} else if (implementationCode == ImplementationCode.TRUE) {
-					return IAdhocFilter.MATCH_ALL;
+					return ISliceFilter.MATCH_ALL;
 				} else if (implementationCode == ImplementationCode.FALSE) {
-					return IAdhocFilter.MATCH_NONE;
+					return ISliceFilter.MATCH_NONE;
 				} else {
 					log.warn("This case is not well handled: {}", constantCondition);
-					return IAdhocFilter.MATCH_NONE;
+					return ISliceFilter.MATCH_NONE;
 				}
 			} else if (rawCondition instanceof IDynamicCondition dynamicCondition) {
 				log.warn("This case is not well handled: {}", dynamicCondition);
-				return IAdhocFilter.MATCH_NONE;
+				return ISliceFilter.MATCH_NONE;
 			} else {
 				log.warn("This case is not well handled: {}", apCondition);
-				return IAdhocFilter.MATCH_NONE;
+				return ISliceFilter.MATCH_NONE;
 			}
 		} else {
 			// Assume we received a raw object
-			return IAdhocFilter.MATCH_NONE;
+			return ISliceFilter.MATCH_NONE;
 		}
 	}
 

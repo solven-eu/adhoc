@@ -42,14 +42,14 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 // Custom serialization is configured with `AdhocPublicJackson.makeAdhocModule()`
 // @JsonSerialize(using = AdhocFilterSerializer.class)
 // @JsonDeserialize(using = AdhocFilterDeserializer.class)
-public interface IAdhocFilter {
-	IAdhocFilter MATCH_ALL = AndFilter.builder().build();
-	IAdhocFilter MATCH_NONE = OrFilter.builder().build();
+public interface ISliceFilter {
+	ISliceFilter MATCH_ALL = AndFilter.builder().build();
+	ISliceFilter MATCH_NONE = OrFilter.builder().build();
 
 	/**
-	 * If true, this {@link IAdhocFilter} defines points to exclude.
+	 * If true, this {@link ISliceFilter} defines points to exclude.
 	 * <p>
-	 * If false, this {@link IAdhocFilter} defines points to include.
+	 * If false, this {@link ISliceFilter} defines points to include.
 	 *
 	 * @return true if this is a {@link NotFilter}
 	 */

@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -67,7 +67,7 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 
 	public static class ToEurShifter implements IFilterEditor {
 		@Override
-		public IAdhocFilter editFilter(IAdhocFilter input) {
+		public ISliceFilter editFilter(ISliceFilter input) {
 			return SimpleFilterEditor.shift(input, "ccy", "EUR");
 		}
 	}

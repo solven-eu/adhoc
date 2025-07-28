@@ -38,7 +38,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
@@ -92,7 +92,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testToCondition_OrColumnsEquals() {
-		IAdhocFilter filter = OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2"));
+		ISliceFilter filter = OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2"));
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -105,7 +105,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testToCondition_Not() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
@@ -208,7 +208,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IAdhocFilter orFilter = OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter);
+		ISliceFilter orFilter = OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter);
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
@@ -221,7 +221,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_custom_NOT() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IAdhocFilter notFilter = NotFilter.not(customFilter);
+		ISliceFilter notFilter = NotFilter.not(customFilter);
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
@@ -234,7 +234,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_custom_NotOr() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IAdhocFilter notFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		ISliceFilter notFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 

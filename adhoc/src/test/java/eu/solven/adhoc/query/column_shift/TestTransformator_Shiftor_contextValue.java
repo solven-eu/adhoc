@@ -37,7 +37,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -66,7 +66,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 	public static class ToCcyShifter implements IFilterEditor {
 
 		@Override
-		public IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {
+		public ISliceFilter editFilter(FilterEditorContext filterEditorContext) {
 			// For the sake of the unittest, we require the customMarker to be properly provided
 			String ccy = Optional.ofNullable(filterEditorContext.getCustomMarker()).map(customMarker -> {
 				String customMarkerAsString = customMarker.toString();
@@ -81,7 +81,7 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 		}
 
 		@Override
-		public IAdhocFilter editFilter(IAdhocFilter input) {
+		public ISliceFilter editFilter(ISliceFilter input) {
 			throw new UnsupportedOperationException("Where is FilterEditorContext?");
 		}
 	}

@@ -32,10 +32,10 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestDispatchorQueryStep {
-	private boolean isRelevant(Map<String, String> decompositionSLice, IAdhocFilter stepFilter) {
+	private boolean isRelevant(Map<String, String> decompositionSLice, ISliceFilter stepFilter) {
 		Dispatchor d = Dispatchor.builder().name("d").underlying("u").build();
 		CubeQueryStep cubeStep = CubeQueryStep.builder().measure("d").filter(stepFilter).build();
 		DispatchorQueryStep step = new DispatchorQueryStep(d, AdhocFactories.builder().build(), cubeStep);

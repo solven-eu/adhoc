@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -48,7 +48,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 /**
  * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
  * to compute all {@link TableQuery}, allowing to compute irrelevant aggregates. Typically, it will evaluate the union
- * of {@link IAdhocGroupBy} and an {@link OrFilter} amongst all {@link IAdhocFilter}.
+ * of {@link IAdhocGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
  * 
  * In short, it enables doing a single query per measure to the {@link ITableWrapper}.
  * 
@@ -91,24 +91,24 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 		contextToQuery.asMap().forEach((context, aggregators) -> {
 			Set<String> inducerColumns = new TreeSet<>();
 
-			Set<? extends IAdhocFilter> filters =
+			Set<? extends ISliceFilter> filters =
 					aggregators.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
-			IAdhocFilter commonFilter = FilterHelpers.commonFilter(filters);
+			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
 
 			aggregators.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
-				IAdhocFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
+				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
 				// We need these additional columns for proper filtering
 				inducerColumns.addAll(FilterHelpers.getFilteredColumns(strippedFromWhere));
 			});
 
 			// OR between each inducer own filter
-			Set<IAdhocFilter> eachInducedFilters = aggregators.stream()
+			Set<ISliceFilter> eachInducedFilters = aggregators.stream()
 					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
-			IAdhocFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
+			ISliceFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
 
 			aggregators.forEach(tq -> {
 				CubeQueryStep inducerStep = CubeQueryStep.edit(tq)
@@ -117,7 +117,7 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 						.build();
 				split.inducer(inducerStep);
 
-				IAdhocFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
+				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
 				CubeQueryStep inducedStep = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
 				split.induced(inducedStep);
 

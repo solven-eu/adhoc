@@ -36,7 +36,7 @@ import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestQueryStepsDag implements IAdhocTestConstants {
@@ -60,7 +60,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(k1Sum)
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).isEmpty();
 	}
@@ -81,7 +81,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(k1SumSquared)
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).hasSize(1);
 	}
@@ -120,13 +120,13 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(measures.getNameToMeasure().get(timesN))
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).hasSize(2);
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(measures.getNameToMeasure().get(timesNMinus1))
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).hasSize(2);
 	}
@@ -146,7 +146,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(k1SumSquared)
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).hasSize(1);
 	}
@@ -214,7 +214,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
 				.measure(measure)
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build())).hasSize(2);
 	}

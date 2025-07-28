@@ -34,7 +34,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ShiftorQueryStep;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocIdentity;
 import lombok.Builder;
 import lombok.NonNull;
@@ -47,9 +47,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A {@link Shiftor} is an {@link IMeasure} which is enables modifying the slice to which underlying are queried.
  * 
- * It relates with {@link Filtrator} (which AND with a hardcoded {@link IAdhocFilter}).
+ * It relates with {@link Filtrator} (which AND with a hardcoded {@link ISliceFilter}).
  * 
- * It relates with {@link Unfiltrator} (which remove some columns from the queryStep {@link IAdhocFilter}).
+ * It relates with {@link Unfiltrator} (which remove some columns from the queryStep {@link ISliceFilter}).
  *
  * @author Benoit Lacelle
  */

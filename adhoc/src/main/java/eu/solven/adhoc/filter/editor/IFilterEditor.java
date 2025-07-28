@@ -26,7 +26,7 @@ import eu.solven.adhoc.engine.context.IImplicitFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -49,7 +49,7 @@ public interface IFilterEditor {
 	@Builder
 	class FilterEditorContext implements IHasCustomMarker {
 		@NonNull
-		IAdhocFilter filter;
+		ISliceFilter filter;
 
 		// May be null
 		Object customMarker;
@@ -58,10 +58,10 @@ public interface IFilterEditor {
 	/**
 	 *
 	 * @param filter
-	 *            some input {@link IAdhocFilter}
-	 * @return a {@link IAdhocFilter}, typically computed from the input filter.
+	 *            some input {@link ISliceFilter}
+	 * @return a {@link ISliceFilter}, typically computed from the input filter.
 	 */
-	IAdhocFilter editFilter(IAdhocFilter filter);
+	ISliceFilter editFilter(ISliceFilter filter);
 
 	/**
 	 * Most {@link IFilterEditor} would not need to extend this more complex method.
@@ -69,7 +69,7 @@ public interface IFilterEditor {
 	 * @param filterEditorContext
 	 * @return
 	 */
-	default IAdhocFilter editFilter(FilterEditorContext filterEditorContext) {
+	default ISliceFilter editFilter(FilterEditorContext filterEditorContext) {
 		return editFilter(filterEditorContext.getFilter());
 	}
 }

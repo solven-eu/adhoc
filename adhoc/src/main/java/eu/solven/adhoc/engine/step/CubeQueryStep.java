@@ -40,7 +40,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -77,7 +77,7 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	IMeasure measure;
 	@NonNull
 	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;

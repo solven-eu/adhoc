@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestColumnWithCalculatedCoordinates {
 
@@ -41,7 +41,7 @@ public class TestColumnWithCalculatedCoordinates {
 				ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
 						.build());
 
 		Assertions.assertThat(asString).isEqualTo("""
@@ -75,7 +75,7 @@ public class TestColumnWithCalculatedCoordinates {
 				.isEqualTo(ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
 						.build());
 	}
 }

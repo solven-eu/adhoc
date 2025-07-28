@@ -27,12 +27,12 @@ import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * A aggregation query. It is configured by:
  * 
- * - a filtering condition as an {@link IAdhocFilter}
+ * - a filtering condition as an {@link ISliceFilter}
  * 
  * - columns along which the result is sliced as an {@link IAdhocGroupBy}
  * 

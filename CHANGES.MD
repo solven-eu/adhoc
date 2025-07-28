@@ -16,6 +16,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Most `SliceAsMap` usages are replaced by `IAdhocSlice`, and `IAdhocSliceWithStep` does not extends `IAdhocSlice` anymore.
 - `IAdhocFilter.MATCH_ALL` is now serialized as `"matchAll"`
 - `IAdhocFilter.matchAll` is now serialized as `"matchNone"`
+- `IAdhocFilter` is renamed `ISliceFilter`
 
 ### Fixed
 - Various mis-behaviours related to `null` as `GROUP BY` coordinate.

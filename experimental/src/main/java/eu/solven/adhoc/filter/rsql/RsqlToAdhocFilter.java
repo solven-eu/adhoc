@@ -24,16 +24,16 @@ package eu.solven.adhoc.filter.rsql;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
- * Demonstrate how to create {@link IAdhocFilter} given RSQL queries.
+ * Demonstrate how to create {@link ISliceFilter} given RSQL queries.
  * 
  * @author Benoit Lacelle
  */
 public class RsqlToAdhocFilter {
 
-	public IAdhocFilter rsql(String rsql) {
+	public ISliceFilter rsql(String rsql) {
 		Node rootNode = new RSQLParser().parse(rsql);
 
 		return rootNode.accept(new AdhocFilterRsqlVisitor());

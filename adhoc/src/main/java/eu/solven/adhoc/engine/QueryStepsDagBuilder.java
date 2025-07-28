@@ -58,7 +58,7 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -125,17 +125,17 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		// coordinate
 		// This is later used to do a cartesian product, between all columns, each column being associated to its
 		// calculated coordinates
-		List<List<Map.Entry<IAdhocColumn, IAdhocFilter>>> indexToGroupBys = new ArrayList<>();
+		List<List<Map.Entry<IAdhocColumn, ISliceFilter>>> indexToGroupBys = new ArrayList<>();
 
 		nameToColumns.values().forEach(column -> {
 			if (column instanceof ColumnWithCalculatedCoordinates hasCalculated) {
-				List<Map.Entry<IAdhocColumn, IAdhocFilter>> subColumns = new ArrayList<>();
+				List<Map.Entry<IAdhocColumn, ISliceFilter>> subColumns = new ArrayList<>();
 
 				// Add the simple columns
-				subColumns.add(Map.entry(hasCalculated.getColumn(), IAdhocFilter.MATCH_ALL));
+				subColumns.add(Map.entry(hasCalculated.getColumn(), ISliceFilter.MATCH_ALL));
 
 				// Add each additional coordinate
-				List<Map.Entry<IAdhocColumn, IAdhocFilter>> list =
+				List<Map.Entry<IAdhocColumn, ISliceFilter>> list =
 						hasCalculated.getCalculatedCoordinates().stream().map(calculatedCoordinate -> {
 							IAdhocColumn staticValueColumn = FunctionCalculatedColumn.builder()
 									.name(column.getName())
@@ -153,13 +153,13 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 				indexToGroupBys.add(subColumns);
 			} else {
-				indexToGroupBys.add(List.of(Map.entry(column, IAdhocFilter.MATCH_ALL)));
+				indexToGroupBys.add(List.of(Map.entry(column, ISliceFilter.MATCH_ALL)));
 			}
 		});
 
 		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
 			IAdhocGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
-			IAdhocFilter andFilter = AndFilter.and(columns.stream().map(Map.Entry::getValue).toList());
+			ISliceFilter andFilter = AndFilter.and(columns.stream().map(Map.Entry::getValue).toList());
 			return MeasurelessQuery.edit(query)
 					.groupBy(groupBy)
 					.filter(AndFilter.and(query.getFilter(), andFilter))

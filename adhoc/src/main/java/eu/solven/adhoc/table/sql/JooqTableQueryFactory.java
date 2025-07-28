@@ -64,12 +64,12 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
@@ -140,7 +140,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	/**
-	 * Holds a Set of SQL {@link Condition}s, given an {@link IAdhocFilter}. Some filters may not be convertible into
+	 * Holds a Set of SQL {@link Condition}s, given an {@link ISliceFilter}. Some filters may not be convertible into
 	 * SQL. In such case, we ensure the columns are in the groupBy for manual filtering.
 	 * 
 	 * Both conditions can be considered as being ANDed together.
@@ -155,7 +155,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// Holds the filter of the conditions which were not translated into SQL
 		@NonNull
 		@Builder.Default
-		IAdhocFilter postFilter = IAdhocFilter.MATCH_ALL;
+		ISliceFilter postFilter = ISliceFilter.MATCH_ALL;
 	}
 
 	@Override
@@ -200,11 +200,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	protected ConditionWithFilter toConditions(TableQueryV2 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
-		Collection<IAdhocFilter> leftoverFilters = new ArrayList<>();
+		Collection<ISliceFilter> leftoverFilters = new ArrayList<>();
 
 		// Conditions from filters
 		{
-			IAdhocFilter filter = tableQuery.getFilter();
+			ISliceFilter filter = tableQuery.getFilter();
 			ConditionWithFilter conditionWithFilter = toCondition(filter);
 
 			conditions.add(conditionWithFilter.getCondition());
@@ -250,7 +250,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	// @Override
-	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, IAdhocFilter leftover) {
+	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, ISliceFilter leftover) {
 		return TableQuery.makeSelectedColumns(tableQuery, leftover);
 	}
 
@@ -299,7 +299,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, IAdhocFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, ISliceFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
 		if (canGroupByAll()) {
 			// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
@@ -484,7 +484,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	@SuppressWarnings("PMD.CognitiveComplexity")
-	protected ConditionWithFilter toCondition(IAdhocFilter filter) {
+	protected ConditionWithFilter toCondition(ISliceFilter filter) {
 		if (filter.isMatchAll()) {
 			return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();
 		} else if (filter.isMatchNone()) {
@@ -505,9 +505,9 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			// `matchAll`.
 			boolean oneIsMatchAll = false;
 
-			IAdhocFilter negatedPostFilter;
+			ISliceFilter negatedPostFilter;
 			if (negated.getPostFilter().isMatchAll()) {
-				negatedPostFilter = IAdhocFilter.MATCH_ALL;
+				negatedPostFilter = ISliceFilter.MATCH_ALL;
 				oneIsMatchAll = true;
 			} else {
 				// There is no postFilter: keep it as matchAll
@@ -528,18 +528,18 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			return ConditionWithFilter.builder().postFilter(negatedPostFilter).condition(negatedCondition).build();
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IAdhocFilter> operands = andFilter.getOperands();
+			Set<ISliceFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column
 			// It would be the symptom of conflicting transcoding
 			List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
 
 			List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-			List<IAdhocFilter> leftoversConditions =
+			List<ISliceFilter> leftoversConditions =
 					conditions.stream().map(ConditionWithFilter::getPostFilter).toList();
 
 			return and(sqlConditions, leftoversConditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			Set<IAdhocFilter> operands = orFilter.getOperands();
+			Set<ISliceFilter> operands = orFilter.getOperands();
 
 			List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
 
@@ -555,7 +555,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				// There is no postFilter: table will handle the filter
 				return ConditionWithFilter.builder()
 						.condition(DSL.or(sqlConditions))
-						.postFilter(IAdhocFilter.MATCH_ALL)
+						.postFilter(ISliceFilter.MATCH_ALL)
 						.build();
 			}
 		} else {
@@ -565,7 +565,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected ConditionWithFilter and(Collection<Condition> sqlConditions,
-			Collection<IAdhocFilter> leftoversConditions) {
+			Collection<ISliceFilter> leftoversConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
 				.postFilter(AndFilter.and(leftoversConditions))

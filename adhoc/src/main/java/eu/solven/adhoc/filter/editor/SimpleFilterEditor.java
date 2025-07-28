@@ -32,10 +32,10 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -57,8 +57,8 @@ public class SimpleFilterEditor implements IFilterEditor {
 	ImmutableMap<String, ?> columnToValues;
 
 	@Override
-	public IAdhocFilter editFilter(IAdhocFilter input) {
-		AtomicReference<IAdhocFilter> edited = new AtomicReference<>(input);
+	public ISliceFilter editFilter(ISliceFilter input) {
+		AtomicReference<ISliceFilter> edited = new AtomicReference<>(input);
 
 		columnToValues.forEach((column, value) -> edited.set(shiftIfPresent(edited.get(), column, value)));
 
@@ -84,7 +84,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 * @param value
 	 * @return a filter equivalent to input filter, except the column is filtered on given value
 	 */
-	public static IAdhocFilter shift(IAdhocFilter filter, String column, Object value) {
+	public static ISliceFilter shift(ISliceFilter filter, String column, Object value) {
 		return shift(filter, column, value, FilterMode.alwaysShift);
 	}
 
@@ -96,13 +96,13 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 *            the column to filter. If it is not already expressed, the filter is not shifted.
 	 * @param value
 	 *            if value is a {@link Function}, it is applied to IValueMatcher operands.
-	 * @return like {@link #shift(String, Object, IAdhocFilter)} but only if the column is expressed
+	 * @return like {@link #shift(String, Object, ISliceFilter)} but only if the column is expressed
 	 */
-	public static IAdhocFilter shiftIfPresent(IAdhocFilter filter, String column, Object value) {
+	public static ISliceFilter shiftIfPresent(ISliceFilter filter, String column, Object value) {
 		return shift(filter, column, value, FilterMode.shiftIfPresent);
 	}
 
-	protected static IAdhocFilter shift(IAdhocFilter filter, String column, Object value, FilterMode filterMode) {
+	protected static ISliceFilter shift(ISliceFilter filter, String column, Object value, FilterMode filterMode) {
 		if (filter.isMatchNone()) {
 			return filter;
 		} else if (filter.isMatchAll()) {
@@ -112,7 +112,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			IAdhocFilter shiftColumn = toFilter(columnFilter, column, value);
+			ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 			if (columnFilter.getColumn().equals(column)) {
 				// Replace the valueMatcher by the shift
 				return shiftColumn;
@@ -123,16 +123,16 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IAdhocFilter> operands = andFilter.getOperands();
+			Set<ISliceFilter> operands = andFilter.getOperands();
 
-			List<IAdhocFilter> shiftedOperands =
+			List<ISliceFilter> shiftedOperands =
 					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
 
 			return AndFilter.and(shiftedOperands);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			Set<IAdhocFilter> operands = orFilter.getOperands();
+			Set<ISliceFilter> operands = orFilter.getOperands();
 
-			List<IAdhocFilter> shiftedOperands =
+			List<ISliceFilter> shiftedOperands =
 					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
 
 			return OrFilter.or(shiftedOperands);
@@ -141,7 +141,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 		}
 	}
 
-	private static IAdhocFilter toFilter(IColumnFilter columnFilter, String column, Object value) {
+	private static ISliceFilter toFilter(IColumnFilter columnFilter, String column, Object value) {
 		if (value instanceof Function valueShifter) {
 			IValueMatcher shiftedValueMatcher = ShiftedValueMatcher.shift(columnFilter.getValueMatcher(), valueShifter);
 			return ColumnFilter.builder().column(column).valueMatcher(shiftedValueMatcher).build();
@@ -157,17 +157,17 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 * @param retainedColumns
 	 * @return a filter where not retainedColumns columns are turned into `matchAll`
 	 */
-	public static IAdhocFilter retainsColumns(IAdhocFilter filter, Set<String> retainedColumns) {
+	public static ISliceFilter retainsColumns(ISliceFilter filter, Set<String> retainedColumns) {
 		if (filter instanceof IColumnFilter columnFilter) {
 			boolean isRetained = retainedColumns.contains(columnFilter.getColumn());
 
 			if (isRetained) {
 				return filter;
 			} else {
-				return IAdhocFilter.MATCH_ALL;
+				return ISliceFilter.MATCH_ALL;
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> unfilteredAnds = andFilter.getOperands()
+			List<ISliceFilter> unfilteredAnds = andFilter.getOperands()
 					.stream()
 					.map(subFilter -> retainsColumns(subFilter, retainedColumns))
 					.toList();
@@ -192,24 +192,24 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 * @param suppressedColumns
 	 * @return a filter where suppressedColumns columns are turned into `matchAll`
 	 */
-	public static IAdhocFilter suppressColumn(IAdhocFilter filter, Set<String> suppressedColumns) {
+	public static ISliceFilter suppressColumn(ISliceFilter filter, Set<String> suppressedColumns) {
 		if (filter instanceof IColumnFilter columnFilter) {
 			boolean isSuppressed = suppressedColumns.contains(columnFilter.getColumn());
 
 			if (isSuppressed) {
-				return IAdhocFilter.MATCH_ALL;
+				return ISliceFilter.MATCH_ALL;
 			} else {
 				return filter;
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> unfiltered = andFilter.getOperands()
+			List<ISliceFilter> unfiltered = andFilter.getOperands()
 					.stream()
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
 			return AndFilter.and(unfiltered);
 		} else if (filter instanceof IOrFilter orFilter) {
-			List<IAdhocFilter> unfiltered = orFilter.getOperands()
+			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();

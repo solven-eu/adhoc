@@ -35,7 +35,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.model.Unfiltrator.Mode;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -82,7 +82,7 @@ public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 		return Collections.singletonList(underlyingStep);
 	}
 
-	protected IAdhocFilter unfilter(IAdhocFilter filter) {
+	protected ISliceFilter unfilter(ISliceFilter filter) {
 		return filterEditor.get().editFilter(filter);
 	}
 

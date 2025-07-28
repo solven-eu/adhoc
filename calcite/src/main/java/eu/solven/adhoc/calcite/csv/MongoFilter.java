@@ -49,7 +49,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -79,7 +79,7 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 	public void implement(AdhocCalciteRelImplementor implementor) {
 		implementor.visitChild(0, getInput());
 		Translator translator = new Translator(implementor.rexBuilder, MongoRules.mongoFieldNames(getRowType()));
-		IAdhocFilter match = translator.translateMatch(condition);
+		ISliceFilter match = translator.translateMatch(condition);
 		// implementor.add(null, match);
 		implementor.cubeQueryBuilder.andFilter(match);
 	}
@@ -96,14 +96,14 @@ public class MongoFilter extends Filter implements AdhocCalciteRel {
 			this.fieldNames = fieldNames;
 		}
 
-		private IAdhocFilter translateMatch(RexNode condition) {
+		private ISliceFilter translateMatch(RexNode condition) {
 			return translateOr(condition);
 		}
 
-		private IAdhocFilter translateOr(RexNode condition) {
+		private ISliceFilter translateOr(RexNode condition) {
 			final RexNode condition2 = RexUtil.expandSearch(rexBuilder, null, condition);
 
-			List<IAdhocFilter> listToOr = new ArrayList<>();
+			List<ISliceFilter> listToOr = new ArrayList<>();
 			for (RexNode node : RelOptUtil.disjunctions(condition2)) {
 				listToOr.add(AndFilter.and(translateAnd(node)));
 			}

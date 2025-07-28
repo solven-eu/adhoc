@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 /**
@@ -42,7 +42,7 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class AdhocFilterSerializer extends JsonSerializer<IAdhocFilter> implements ResolvableSerializer {
+public class AdhocFilterSerializer extends JsonSerializer<ISliceFilter> implements ResolvableSerializer {
 	private final JsonSerializer<Object> base;
 
 	public AdhocFilterSerializer(JsonSerializer<Object> base) {
@@ -55,13 +55,13 @@ public class AdhocFilterSerializer extends JsonSerializer<IAdhocFilter> implemen
 	}
 
 	@Override
-	public void serializeWithType(IAdhocFilter value,
+	public void serializeWithType(ISliceFilter value,
 			JsonGenerator gen,
 			SerializerProvider serializers,
 			TypeSerializer typeSer) throws IOException {
-		if (IAdhocFilter.MATCH_ALL.equals(value)) {
+		if (ISliceFilter.MATCH_ALL.equals(value)) {
 			gen.writeString("matchAll");
-		} else if (IAdhocFilter.MATCH_NONE.equals(value)) {
+		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
 		} else if (base == null) {
 			throw new IllegalStateException(
@@ -72,10 +72,10 @@ public class AdhocFilterSerializer extends JsonSerializer<IAdhocFilter> implemen
 	}
 
 	@Override
-	public void serialize(IAdhocFilter value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		if (IAdhocFilter.MATCH_ALL.equals(value)) {
+	public void serialize(ISliceFilter value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+		if (ISliceFilter.MATCH_ALL.equals(value)) {
 			gen.writeString("matchAll");
-		} else if (IAdhocFilter.MATCH_NONE.equals(value)) {
+		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
 		} else if (base == null) {
 			throw new IllegalStateException(

@@ -44,8 +44,8 @@ import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -67,7 +67,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 
 	@NonNull
 	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
@@ -156,19 +156,19 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 
 		/**
-		 * `AND` existing {@link IAdhocFilter} with an {@link IColumnFilter}
+		 * `AND` existing {@link ISliceFilter} with an {@link IColumnFilter}
 		 *
 		 * @param filter
 		 * @return the builder
 		 */
-		public CubeQueryBuilder andFilter(IAdhocFilter filter) {
+		public CubeQueryBuilder andFilter(ISliceFilter filter) {
 			filter(AndFilter.and(build().getFilter(), filter));
 
 			return this;
 		}
 
 		/**
-		 * `AND` existing {@link IAdhocFilter} with an {@link IColumnFilter}
+		 * `AND` existing {@link ISliceFilter} with an {@link IColumnFilter}
 		 *
 		 * @param column
 		 * @param value

@@ -38,7 +38,7 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -131,7 +131,7 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public IAdhocFilter asFilter() {
+	public ISliceFilter asFilter() {
 		return AndFilter.and(asMap);
 	}
 

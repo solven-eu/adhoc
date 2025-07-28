@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.jackson.AdhocFilterDeserializer;
 import eu.solven.adhoc.query.filter.jackson.AdhocFilterSerializer;
 import lombok.experimental.UtilityClass;
@@ -54,7 +54,7 @@ public class AdhocPublicJackson {
 		public JsonSerializer<?> modifySerializer(SerializationConfig config,
 				BeanDescription beanDesc,
 				JsonSerializer<?> serializer) {
-			if (IAdhocFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
+			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
 				return new AdhocFilterSerializer((JsonSerializer) serializer);
 			}
 
@@ -71,7 +71,7 @@ public class AdhocPublicJackson {
 				BeanDescription beanDesc,
 				JsonDeserializer<?> deserializer) {
 
-			if (IAdhocFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
+			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
 				return new AdhocFilterDeserializer(deserializer);
 			} else {
 				return super.modifyDeserializer(config, beanDesc, deserializer);

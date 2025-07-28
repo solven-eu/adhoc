@@ -36,7 +36,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
@@ -64,7 +64,7 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	}
 
 	@Override
-	public IAdhocFilter editFilter(IAdhocFilter input) {
+	public ISliceFilter editFilter(ISliceFilter input) {
 		return input;
 	}
 

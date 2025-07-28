@@ -45,7 +45,7 @@ import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +65,7 @@ public class DagExplainer implements IDagExplainer {
 
 	static final CubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
 			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
-			.filter(IAdhocFilter.MATCH_ALL)
+			.filter(ISliceFilter.MATCH_ALL)
 			.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 			.build();
 

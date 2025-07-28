@@ -34,13 +34,13 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestSliceAsMapWithStep implements IAdhocTestConstants {
 	@Test
 	public void testAsFilter() {
-		IAdhocFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
+		ISliceFilter stepFilter = ColumnFilter.isEqualTo("c1", "v1");
 		CubeQueryStep step =
 				CubeQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
 		IAdhocSlice parentSlice = SliceAsMap.fromMap(Map.of("c2", "v2"));

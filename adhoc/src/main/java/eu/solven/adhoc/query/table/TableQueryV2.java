@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -64,7 +64,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 
 	// a filter shared through all aggregators
 	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
@@ -108,7 +108,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 				TableQuery groupBy = TableQuery.edit(tableQuery)
 						.clearAggregators()
 						// remove the filter from the `WHERE`
-						.filter(IAdhocFilter.MATCH_ALL)
+						.filter(ISliceFilter.MATCH_ALL)
 						.build();
 				FilteredAggregator filteredAggregator = FilteredAggregator.builder()
 						.aggregator(aggregator)
@@ -126,15 +126,15 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 
 		groupByToFilteredAggregators.asMap().forEach((groupBy, filteredAggregators) -> {
 			// This is the filter applicable to all aggregators: it will be applied in WHERE
-			Set<IAdhocFilter> filters = filteredAggregators.stream()
+			Set<ISliceFilter> filters = filteredAggregators.stream()
 					.map(FilteredAggregator::getFilter)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
-			IAdhocFilter commonFilter = FilterHelpers.commonFilter(filters);
+			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
 
 			TableQueryV2Builder v2Builder = edit(groupBy).filter(commonFilter);
 
 			filteredAggregators.forEach(filteredAggregator -> {
-				IAdhocFilter strippedFromWhere =
+				ISliceFilter strippedFromWhere =
 						FilterHelpers.stripWhereFromFilter(commonFilter, filteredAggregator.getFilter());
 				v2Builder.aggregator(filteredAggregator.toBuilder().filter(strippedFromWhere).build());
 			});

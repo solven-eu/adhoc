@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
@@ -65,7 +65,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	// By default, the filters are not modified
 	@NonNull
 	@Default
-	final IImplicitFilter implicitFilter = query -> IAdhocFilter.MATCH_ALL;
+	final IImplicitFilter implicitFilter = query -> ISliceFilter.MATCH_ALL;
 
 	@NonNull
 	@Default
@@ -164,7 +164,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	}
 
 	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {
-		IAdhocFilter preprocessedFilter =
+		ISliceFilter preprocessedFilter =
 				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
 
 		Set<IQueryOption> addedOptions = implicitOptions.getOptions(rawQuery);

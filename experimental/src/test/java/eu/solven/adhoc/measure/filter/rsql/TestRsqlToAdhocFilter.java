@@ -26,26 +26,26 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.rsql.RsqlToAdhocFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestRsqlToAdhocFilter {
 	RsqlToAdhocFilter rsqlToAdhocFilter = new RsqlToAdhocFilter();
 
 	@Test
 	public void testAnd() {
-		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\";year=gt=2003");
+		ISliceFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\";year=gt=2003");
 		Assertions.assertThat(filter.toString()).isEqualTo("name==Kill Bill&year>2003");
 	}
 
 	@Test
 	public void testAnd_v2() {
-		IAdhocFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\" and year>2003");
+		ISliceFilter filter = rsqlToAdhocFilter.rsql("name==\"Kill Bill\" and year>2003");
 		Assertions.assertThat(filter.toString()).isEqualTo("name==Kill Bill&year>2003");
 	}
 
 	@Test
 	public void testOr() {
-		IAdhocFilter filter = rsqlToAdhocFilter
+		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action);(director=='Christopher Nolan',actor==*Bale);year=ge=2000");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000");
@@ -53,7 +53,7 @@ public class TestRsqlToAdhocFilter {
 
 	@Test
 	public void testOr_v2() {
-		IAdhocFilter filter = rsqlToAdhocFilter
+		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action) and (director=='Christopher Nolan' or actor==*Bale) and year>=2000");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000");
@@ -61,19 +61,19 @@ public class TestRsqlToAdhocFilter {
 
 	@Test
 	public void testComparison() {
-		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan;year=ge=2000;year=lt=2010");
+		ISliceFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan;year=ge=2000;year=lt=2010");
 		Assertions.assertThat(filter.toString()).isEqualTo("director.lastName==Nolan&year>=2000&year<2010");
 	}
 
 	@Test
 	public void testComparison_v2() {
-		IAdhocFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan and year>=2000 and year<2010");
+		ISliceFilter filter = rsqlToAdhocFilter.rsql("director.lastName==Nolan and year>=2000 and year<2010");
 		Assertions.assertThat(filter.toString()).isEqualTo("director.lastName==Nolan&year>=2000&year<2010");
 	}
 
 	@Test
 	public void testComparison_v3() {
-		IAdhocFilter filter = rsqlToAdhocFilter
+		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action);genres2=out=(romance,animated,horror),director==Que*Tarantino");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo("genres=in=(sci-fi,action)&genres2=out=(romance,animated,horror)|director==Que*Tarantino");
@@ -81,7 +81,7 @@ public class TestRsqlToAdhocFilter {
 
 	@Test
 	public void testComparison_v4() {
-		IAdhocFilter filter = rsqlToAdhocFilter
+		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action) and genres2=out=(romance,animated,horror) or director==Que*Tarantino");
 		Assertions.assertThat(filter.toString())
 				.isEqualTo("genres=in=(sci-fi,action)&genres2=out=(romance,animated,horror)|director==Que*Tarantino");

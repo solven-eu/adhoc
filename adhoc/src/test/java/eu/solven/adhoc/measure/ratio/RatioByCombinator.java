@@ -34,7 +34,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -63,11 +63,11 @@ public class RatioByCombinator implements ICombinator {
 
 	@NonNull
 	@Builder.Default
-	IAdhocFilter numeratorFilter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter numeratorFilter = ISliceFilter.MATCH_ALL;
 
 	@NonNull
 	@Builder.Default
-	IAdhocFilter denominatorFilter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter denominatorFilter = ISliceFilter.MATCH_ALL;
 
 	/**
 	 * @see eu.solven.adhoc.measure.combination.ICombination

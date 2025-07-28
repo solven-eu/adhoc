@@ -31,7 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestColumnatorQueryStep {
 
@@ -49,10 +49,10 @@ public class TestColumnatorQueryStep {
 		ColumnatorQueryStep queryStep =
 				new ColumnatorQueryStep(measure, AdhocFactories.builder().build(), Mockito.mock(CubeQueryStep.class));
 
-		Assertions.assertThat(queryStep.isMonoSelected(IAdhocFilter.MATCH_ALL, "c")).isFalse();
+		Assertions.assertThat(queryStep.isMonoSelected(ISliceFilter.MATCH_ALL, "c")).isFalse();
 		// TODO should matchNone be considered mono-selected, as not multi-selected, which is generally the expected
 		// semantic?
-		Assertions.assertThat(queryStep.isMonoSelected(IAdhocFilter.MATCH_NONE, "c")).isFalse();
+		Assertions.assertThat(queryStep.isMonoSelected(ISliceFilter.MATCH_NONE, "c")).isFalse();
 
 		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.isEqualTo("c", "foo"), "c")).isTrue();
 		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.isEqualTo("d", "foo"), "c")).isFalse();

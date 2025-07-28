@@ -39,7 +39,7 @@ import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AtotiConditionCubeToAdhoc {
 
-	public IAdhocFilter convertToAdhoc(String level, Object rawCondition) {
+	public ISliceFilter convertToAdhoc(String level, Object rawCondition) {
 		if (rawCondition == null) {
 			return ColumnFilter.builder().column(level).matchNull().build();
 		} else if (rawCondition instanceof com.qfs.condition.ICondition apCondition) {
@@ -89,18 +89,18 @@ public class AtotiConditionCubeToAdhoc {
 		}
 	}
 
-	public IAdhocFilter toAdhoc(String level, ILogicalCondition logicalCondition) {
+	public ISliceFilter toAdhoc(String level, ILogicalCondition logicalCondition) {
 		if (logicalCondition instanceof FalseCondition) {
 			return ColumnFilter.MATCH_NONE;
 		} else if (logicalCondition instanceof TrueCondition) {
 			return ColumnFilter.MATCH_ALL;
 		} else if (logicalCondition instanceof OrCondition orCondition) {
-			List<IAdhocFilter> subAdhocConditions = Stream.of(orCondition.getConditions())
+			List<ISliceFilter> subAdhocConditions = Stream.of(orCondition.getConditions())
 					.map(subCondition -> convertToAdhoc(level, subCondition))
 					.toList();
 			return OrFilter.or(subAdhocConditions);
 		} else if (logicalCondition instanceof AndCondition andCondition) {
-			List<IAdhocFilter> subAdhocConditions = Stream.of(andCondition.getConditions())
+			List<ISliceFilter> subAdhocConditions = Stream.of(andCondition.getConditions())
 					.map(subCondition -> convertToAdhoc(level, subCondition))
 					.toList();
 			return AndFilter.and(subAdhocConditions);

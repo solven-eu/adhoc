@@ -31,7 +31,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -48,7 +48,7 @@ import lombok.Value;
 public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@NonNull
-	IAdhocFilter filter;
+	ISliceFilter filter;
 
 	@NonNull
 	IAdhocGroupBy groupBy;

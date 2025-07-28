@@ -25,7 +25,7 @@ package eu.solven.adhoc.beta.schema;
 import java.time.LocalDate;
 import java.util.NavigableMap;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A {@link ICustomTypeManagerSimple} typically used to transcode from raw String (e.g. from a JSON) to a proper
- * {@link IAdhocFilter}.
+ * {@link ISliceFilter}.
  * 
  * @author Benoit Lacelle
  */

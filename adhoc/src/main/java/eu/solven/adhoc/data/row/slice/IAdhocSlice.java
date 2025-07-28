@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
 
@@ -54,10 +54,10 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice> {
 
 	/**
 	 *
-	 * @return an {@link IAdhocFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
+	 * @return an {@link ISliceFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
 	 *         {@link AndFilter} of {@link EqualsMatcher}.
 	 */
-	IAdhocFilter asFilter();
+	ISliceFilter asFilter();
 
 	/**
 	 *

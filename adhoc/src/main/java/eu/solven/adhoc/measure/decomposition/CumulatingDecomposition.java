@@ -40,7 +40,7 @@ import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
@@ -107,7 +107,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		IAdhocFilter editedFilter = filterEditor.editFilter(step.getFilter());
+		ISliceFilter editedFilter = filterEditor.editFilter(step.getFilter());
 		return List.of(MeasurelessQuery.edit(step).filter(editedFilter).build());
 	}
 
@@ -117,7 +117,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 		// e.g. we may receive `year=1930` while filtering `year=2025`, as `year=1930` contributes into `year=2025`
 		// So we rely on the queryStep filter, and not on `slice.asFilter()` which would do `year=1930&year=2025 ->
 		// matchNone`
-		IAdhocFilter filter = slice.getSlice().asFilter();
+		ISliceFilter filter = slice.getSlice().asFilter();
 		if (filter.isMatchAll()) {
 			filter = slice.getQueryStep().getFilter();
 		}
