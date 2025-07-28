@@ -27,8 +27,6 @@ import java.lang.reflect.Method;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -41,7 +39,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class AdhocJackson {
-
 	/**
 	 * 
 	 * @param format
@@ -79,20 +76,7 @@ public class AdhocJackson {
 		// We prefer pretty-printing the output
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-		return objectMapper;
-	}
-
-	/**
-	 * This will change the output format, printing arrays with one element per row.
-	 * 
-	 * @param objectMapper
-	 * @return the input {@link ObjectMapper}, for convenience.
-	 */
-	public static ObjectMapper indentArrayWithEol(ObjectMapper objectMapper) {
-		// https://stackoverflow.com/questions/14938667/jackson-json-deserialization-array-elements-in-each-line
-		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
-		prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
-		objectMapper.setDefaultPrettyPrinter(prettyPrinter);
+		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
 		return objectMapper;
 	}

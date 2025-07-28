@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,29 +22,57 @@
  */
 package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.query.groupby.IHasSqlExpression;
-import eu.solven.adhoc.table.ITableWrapper;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.coordinate.ICalculatedCoordinate;
+import eu.solven.adhoc.coordinate.IHasCalculatedCoordinates;
 import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * A {@link ExpressionColumn} is a column which is not explicitly provided by the {@link ITableWrapper}, but computed
- * from it. It may be evaluated by the engine, or by Adhoc itself.
+ * An {@link IAdhocColumn} which is enriched with additional {@link ICalculatedCoordinate}.
  * 
  * @author Benoit Lacelle
- *
  */
 @Value
 @Builder
 @Jacksonized
-public class ExpressionColumn implements IAdhocColumn, IHasSqlExpression {
-	// The name of the evaluated column
-	// BEWARE, as this is an IAdhocColumn, it is typically a queried column. Though, as it refers to the table (through
-	// SQL), it is also aware of the underlying columns
-	String name;
+public class ColumnWithCalculatedCoordinates implements IAdhocColumn, IHasCalculatedCoordinates {
 
-	// The sql expression evaluating this column
-	String sql;
+	@NonNull
+	IAdhocColumn column;
+
+	@Singular
+	ImmutableList<ICalculatedCoordinate> calculatedCoordinates;
+
+	@Override
+	// JsonIgnore as we rely on the column which may not be a ReferencedColumn
+	@JsonIgnore
+	public String getName() {
+		return column.getName();
+	}
+
+	/**
+	 * Lombok Builder
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	public static class ColumnWithCalculatedCoordinatesBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+		IAdhocColumn column;
+
+		public ColumnWithCalculatedCoordinatesBuilder column(IAdhocColumn column) {
+			this.column = column;
+			return this;
+		}
+
+		public ColumnWithCalculatedCoordinatesBuilder column(String column) {
+			return column(ReferencedColumn.ref(column));
+		}
+	}
 
 }

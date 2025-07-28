@@ -39,6 +39,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = OrFilter.class, name = "or"),
 		@JsonSubTypes.Type(value = NotFilter.class, name = "not"),
 		@JsonSubTypes.Type(value = ColumnFilter.class, name = "column"), })
+// Custom serialization is configured with `AdhocPublicJackson.makeAdhocModule()`
+// @JsonSerialize(using = AdhocFilterSerializer.class)
+// @JsonDeserialize(using = AdhocFilterDeserializer.class)
 public interface IAdhocFilter {
 	IAdhocFilter MATCH_ALL = AndFilter.builder().build();
 	IAdhocFilter MATCH_NONE = OrFilter.builder().build();

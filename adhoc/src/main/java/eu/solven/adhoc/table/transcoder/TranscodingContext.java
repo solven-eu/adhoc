@@ -35,7 +35,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.column.CalculatedColumn;
+import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 			MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 	@Getter
-	final Map<String, CalculatedColumn> nameToCalculated = new LinkedHashMap<>();
+	final Map<String, FunctionCalculatedColumn> nameToCalculated = new LinkedHashMap<>();
 
 	@Builder.Default
 	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
@@ -108,7 +108,7 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 		}
 	}
 
-	public void addCalculatedColumn(CalculatedColumn calculatedColumn) {
+	public void addCalculatedColumn(FunctionCalculatedColumn calculatedColumn) {
 		nameToCalculated.put(calculatedColumn.getName(), calculatedColumn);
 	}
 

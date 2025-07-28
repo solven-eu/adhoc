@@ -42,11 +42,13 @@ public class TestColumnsManager {
 
 		TranscodingContext context = columnsManager.openTranscodingContext();
 
-		IAdhocGroupBy groupBy = GroupByColumns.of(ExpressionColumn.builder().name("underlying").sql("someSql").build());
+		IAdhocGroupBy groupBy =
+				GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build());
 		IAdhocGroupBy transcoded = columnsManager.transcodeGroupBy(context, groupBy);
 
 		Assertions.assertThat(transcoded)
-				.isEqualTo(GroupByColumns.of(ExpressionColumn.builder().name("underlying").sql("someSql").build()));
+				.isEqualTo(
+						GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build()));
 
 		ITableReverseTranscoder reversed = columnsManager.prepareColumnTranscoder(context);
 

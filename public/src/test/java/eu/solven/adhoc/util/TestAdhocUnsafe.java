@@ -30,6 +30,7 @@ public class TestAdhocUnsafe {
 	@BeforeEach
 	public void resetProperties() {
 		System.clearProperty("adhoc.limitColumnSize");
+		System.clearProperty("adhoc.defaultColumnCapacity");
 
 		AdhocUnsafe.reloadProperties();
 	}

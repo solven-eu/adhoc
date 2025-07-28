@@ -20,32 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.coordinate;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.query.filter.IAdhocFilter;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+/**
+ * Default implementation of {@link ICalculatedCoordinate}.
+ * 
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder
+@Jacksonized
+public class CalculatedCoordinate implements ICalculatedCoordinate {
+	@NonNull
+	protected Object coordinate;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+	@NonNull
+	@Default
+	protected IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
 
-public class TestExpressionColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(TableExpressionColumn.class).verify();
-	}
-
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
-				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
-
-		Assertions.assertThat(asString).isEqualTo("""
-				{
-				  "type" : ".TableExpressionColumn",
-				  "name" : "someColumn",
-				  "sql" : "someSQL"
-				}""");
-	}
 }

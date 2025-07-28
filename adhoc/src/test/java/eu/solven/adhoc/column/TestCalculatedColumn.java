@@ -34,14 +34,14 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestCalculatedColumn {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(CalculatedColumn.class).verify();
+		EqualsVerifier.forClass(FunctionCalculatedColumn.class).verify();
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(CalculatedColumn.class,
-						CalculatedColumn.builder()
+				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(FunctionCalculatedColumn.class,
+						FunctionCalculatedColumn.builder()
 								.name("someColumn")
 								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
 								.build()))
