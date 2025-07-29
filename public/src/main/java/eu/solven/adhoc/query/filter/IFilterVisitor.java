@@ -25,16 +25,16 @@ package eu.solven.adhoc.query.filter;
 import java.util.Set;
 
 /**
- * To be used with {@link FilterHelpers#visit(IAdhocFilter, IFilterVisitor)}.
+ * To be used with {@link FilterHelpers#visit(ISliceFilter, IFilterVisitor)}.
  * 
  * @author Benoit Lacelle
  */
 public interface IFilterVisitor {
-	boolean testAndOperands(Set<? extends IAdhocFilter> operands);
+	boolean testAndOperands(Set<? extends ISliceFilter> operands);
 
-	boolean testOrOperands(Set<? extends IAdhocFilter> operands);
+	boolean testOrOperands(Set<? extends ISliceFilter> operands);
 
 	boolean testColumnOperand(IColumnFilter columnFilter);
 
-	boolean testNegatedOperand(IAdhocFilter negated);
+	boolean testNegatedOperand(ISliceFilter negated);
 }

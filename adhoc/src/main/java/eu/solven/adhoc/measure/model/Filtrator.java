@@ -33,7 +33,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.FiltratorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -43,8 +43,8 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link IAdhocFilter}. The
- * input {@link IAdhocFilter} will be `AND`-ed with {@link CubeQueryStep} own {@link IAdhocFilter}.
+ * A Filtrator is an {@link IMeasure} which is filtering another {@link IMeasure} given a {@link ISliceFilter}. The
+ * input {@link ISliceFilter} will be `AND`-ed with {@link CubeQueryStep} own {@link ISliceFilter}.
  * 
  * @author Benoit Lacelle
  *
@@ -66,7 +66,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	String underlying;
 
 	@NonNull
-	IAdhocFilter filter;
+	ISliceFilter filter;
 
 	@JsonIgnore
 	@Override

@@ -25,7 +25,7 @@ package eu.solven.adhoc.table.sql;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
@@ -49,7 +49,7 @@ public interface IJooqTableQueryFactory {
 	class QueryWithLeftover {
 		ResultQuery<Record> query;
 
-		IAdhocFilter leftover;
+		ISliceFilter leftover;
 
 		AggregatedRecordFields fields;
 	}

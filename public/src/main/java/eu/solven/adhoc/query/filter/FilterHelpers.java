@@ -44,7 +44,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Utility method to help doing operations on {@link IAdhocFilter}.
+ * Utility method to help doing operations on {@link ISliceFilter}.
  * 
  * @author Benoit Lacelle
  * @see SimpleFilterEditor for write operations.
@@ -57,14 +57,14 @@ public class FilterHelpers {
 	/**
 	 *
 	 * @param filter
-	 *            some {@link IAdhocFilter}, potentially complex
+	 *            some {@link ISliceFilter}, potentially complex
 	 * @param column
 	 *            some specific column
 	 * @return a perfectly matching {@link IValueMatcher} for given column. By perfect, we mean the provided
-	 *         {@link IValueMatcher} covers exactly the {@link IAdhocFilter} along given column. This is typically false
+	 *         {@link IValueMatcher} covers exactly the {@link ISliceFilter} along given column. This is typically false
 	 *         for `OrFilter`.
 	 */
-	public static IValueMatcher getValueMatcher(IAdhocFilter filter, String column) {
+	public static IValueMatcher getValueMatcher(ISliceFilter filter, String column) {
 		return getValueMatcherLax(filter, column, true);
 	}
 
@@ -74,15 +74,15 @@ public class FilterHelpers {
 	 * @param column
 	 * @return a lax matching {@link IValueMatcher}. By lax, we mean the received filter may be actually applied from
 	 *         diverse {@link OrFilter}. In other words, `AND` over the lax {@link IValueMatcher} may not recompose the
-	 *         original {@link IAdhocFilter} (especially it is is not a simple {@link AndFilter} over
+	 *         original {@link ISliceFilter} (especially it is is not a simple {@link AndFilter} over
 	 *         {@link ColumnFilter}).
 	 */
-	public static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column) {
+	public static IValueMatcher getValueMatcherLax(ISliceFilter filter, String column) {
 		return getValueMatcherLax(filter, column, false);
 	}
 
 	@SuppressWarnings("PMD.CognitiveComplexity")
-	private static IValueMatcher getValueMatcherLax(IAdhocFilter filter, String column, boolean throwOnOr) {
+	private static IValueMatcher getValueMatcherLax(ISliceFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
 		} else if (filter.isMatchNone()) {
@@ -95,7 +95,7 @@ public class FilterHelpers {
 				return IValueMatcher.MATCH_ALL;
 			}
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			IAdhocFilter negated = notFilter.getNegated();
+			ISliceFilter negated = notFilter.getNegated();
 
 			// Some INotFilter may not be optimized into `matchAll` or `matchNone`
 			// We analyse these cases manually as we'll later keep `matchAll` if current column is unrelated to the
@@ -154,7 +154,7 @@ public class FilterHelpers {
 		}
 	}
 
-	public static Map<String, Object> asMap(IAdhocFilter slice) {
+	public static Map<String, Object> asMap(ISliceFilter slice) {
 		if (slice.isMatchAll()) {
 			return Map.of();
 		} else if (slice.isColumnFilter() && slice instanceof IColumnFilter columnFilter) {
@@ -186,7 +186,7 @@ public class FilterHelpers {
 		}
 	}
 
-	public static Set<String> getFilteredColumns(IAdhocFilter filter) {
+	public static Set<String> getFilteredColumns(ISliceFilter filter) {
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return Set.of();
 		} else {
@@ -226,7 +226,7 @@ public class FilterHelpers {
 		};
 	}
 
-	public static boolean visit(IAdhocFilter filter, IFilterVisitor filterVisitor) {
+	public static boolean visit(ISliceFilter filter, IFilterVisitor filterVisitor) {
 		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return filterVisitor.testAndOperands(andFilter.getOperands());
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
@@ -240,19 +240,19 @@ public class FilterHelpers {
 		}
 	}
 
-	public static IAdhocFilter commonFilter(Set<? extends IAdhocFilter> filters) {
+	public static ISliceFilter commonFilter(Set<? extends ISliceFilter> filters) {
 		if (filters.isEmpty()) {
-			return IAdhocFilter.MATCH_ALL;
+			return ISliceFilter.MATCH_ALL;
 		} else if (filters.size() == 1) {
 			return filters.iterator().next();
 		}
 
-		Iterator<? extends IAdhocFilter> iterator = filters.iterator();
+		Iterator<? extends ISliceFilter> iterator = filters.iterator();
 		// Common parts are initialized with all parts of the first filter
-		Set<IAdhocFilter> commonParts = new LinkedHashSet<>(splitAnd(iterator.next()));
+		Set<ISliceFilter> commonParts = new LinkedHashSet<>(splitAnd(iterator.next()));
 
 		while (iterator.hasNext()) {
-			Set<IAdhocFilter> nextFilterParts = new LinkedHashSet<>(splitAnd(iterator.next()));
+			Set<ISliceFilter> nextFilterParts = new LinkedHashSet<>(splitAnd(iterator.next()));
 
 			commonParts = Sets.intersection(commonParts, nextFilterParts);
 		}
@@ -261,12 +261,12 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * Split the filter in a Set of {@link IAdhocFilter}, equivalent by AND to the original filter.
+	 * Split the filter in a Set of {@link ISliceFilter}, equivalent by AND to the original filter.
 	 * 
 	 * @param filter
 	 * @return
 	 */
-	public static Set<IAdhocFilter> splitAnd(IAdhocFilter filter) {
+	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return Set.of(filter);
 		} else if (filter instanceof IAndFilter andFilter) {
@@ -296,7 +296,7 @@ public class FilterHelpers {
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
-	private static boolean isStricterThan(IAdhocFilter stricter, IAdhocFilter laxer) {
+	private static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		return AndFilter.and(stricter, laxer).equals(stricter);
 	}
 
@@ -309,23 +309,23 @@ public class FilterHelpers {
 	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause, considering the WHERE and FILTER
 	 *         clauses are combined with`AND`.
 	 */
-	public static IAdhocFilter stripWhereFromFilter(IAdhocFilter where, IAdhocFilter filter) {
+	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
 		if (where.isMatchAll()) {
 			// `WHERE` has no clause: `FILTER` has to keep all clauses
 			return filter;
 		} else if (isStricterThan(where, filter)) {
 			// Catch some edge-case like `where.equals(filter)`
 			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
-			return IAdhocFilter.MATCH_ALL;
+			return ISliceFilter.MATCH_ALL;
 		}
 
 		// Split the FILTER in parts
-		Set<? extends IAdhocFilter> andOperands = splitAnd(filter);
+		Set<? extends ISliceFilter> andOperands = splitAnd(filter);
 
-		Set<IAdhocFilter> notInWhere = new LinkedHashSet<>();
+		Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
 
 		// For each part of `FILTER`, reject those already filtered in `WHERE`
-		for (IAdhocFilter subFilter : andOperands) {
+		for (ISliceFilter subFilter : andOperands) {
 			boolean whereCoversSubFilter = isStricterThan(where, subFilter);
 
 			if (!whereCoversSubFilter) {

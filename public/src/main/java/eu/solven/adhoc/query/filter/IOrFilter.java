@@ -27,15 +27,15 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * `OR` over {@link IAdhocFilter}s.
+ * `OR` over {@link ISliceFilter}s.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IOrFilter extends IAdhocFilter, IHasOperands<IAdhocFilter> {
+public interface IOrFilter extends ISliceFilter, IHasOperands<ISliceFilter> {
 
 	@Override
 	// This is a logical field, but not a constraint at serialization as some IOrFilter may compute dynamically
 	@JsonIgnore
-	Set<IAdhocFilter> getOperands();
+	Set<ISliceFilter> getOperands();
 }

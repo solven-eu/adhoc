@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestFilteredAggregator {
@@ -40,7 +40,7 @@ public class TestFilteredAggregator {
 	@Test
 	public void testAliasIndexDefault() {
 		FilteredAggregator aggregator =
-				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).build();
+				FilteredAggregator.builder().aggregator(a).filter(ISliceFilter.MATCH_ALL).build();
 
 		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName());
 	}
@@ -48,7 +48,7 @@ public class TestFilteredAggregator {
 	@Test
 	public void testAliasIndex0() {
 		FilteredAggregator aggregator =
-				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).index(0).build();
+				FilteredAggregator.builder().aggregator(a).filter(ISliceFilter.MATCH_ALL).index(0).build();
 
 		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName());
 	}
@@ -56,7 +56,7 @@ public class TestFilteredAggregator {
 	@Test
 	public void testAliasIndex1() {
 		FilteredAggregator aggregator =
-				FilteredAggregator.builder().aggregator(a).filter(IAdhocFilter.MATCH_ALL).index(1).build();
+				FilteredAggregator.builder().aggregator(a).filter(ISliceFilter.MATCH_ALL).index(1).build();
 
 		Assertions.assertThat(aggregator.getAlias()).isEqualTo(a.getName() + "_1");
 	}

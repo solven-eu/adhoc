@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -101,7 +101,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	public static class PreviousDayFilterEditor implements IFilterEditor {
 
 		@Override
-		public IAdhocFilter editFilter(IAdhocFilter filter) {
+		public ISliceFilter editFilter(ISliceFilter filter) {
 			IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, "d");
 
 			if (IValueMatcher.MATCH_ALL.equals(valueMatcher) || IValueMatcher.MATCH_NONE.equals(valueMatcher)) {

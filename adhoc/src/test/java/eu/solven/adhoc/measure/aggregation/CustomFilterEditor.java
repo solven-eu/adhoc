@@ -25,14 +25,14 @@ package eu.solven.adhoc.measure.aggregation;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * A {@link IDecomposition} which is not known by {@link StandardOperatorFactory}
  */
 public class CustomFilterEditor implements IFilterEditor {
 	@Override
-	public IAdhocFilter editFilter(IAdhocFilter input) {
+	public ISliceFilter editFilter(ISliceFilter input) {
 		return input;
 	}
 }

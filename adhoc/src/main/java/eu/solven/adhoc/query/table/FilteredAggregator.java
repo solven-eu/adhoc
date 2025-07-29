@@ -23,14 +23,14 @@
 package eu.solven.adhoc.query.table;
 
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Couple an {@link Aggregator} with an {@link IAdhocFilter}, planning for a `FILTER` sql.
+ * Couple an {@link Aggregator} with an {@link ISliceFilter}, planning for a `FILTER` sql.
  * 
  * https://modern-sql.com/feature/filter
  * 
@@ -46,7 +46,7 @@ public class FilteredAggregator implements IAliasedAggregator {
 
 	@NonNull
 	@Default
-	IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
 	long index = DEFAULT_INDEX;

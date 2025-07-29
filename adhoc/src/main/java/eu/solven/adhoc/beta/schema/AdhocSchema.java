@@ -54,7 +54,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -304,7 +304,7 @@ public class AdhocSchema implements IAdhocSchema {
 		return CubeQuery.edit(query).filter(transcodeFilter(cubeWrapper, query.getFilter())).build();
 	}
 
-	protected IAdhocFilter transcodeFilter(ICubeWrapper cubeWrapper, IAdhocFilter filter) {
+	protected ISliceFilter transcodeFilter(ICubeWrapper cubeWrapper, ISliceFilter filter) {
 		ICustomTypeManagerSimple customTypeManager = makeTypeManager(cubeWrapper);
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, ITableTranscoder.identity(), filter);
 	}

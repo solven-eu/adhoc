@@ -70,12 +70,12 @@ public class BenchmarkAndFilter {
 
 	// This is called many times in ShiftorQueryStep.shitSlice
 	@Benchmark
-	public IAdhocFilter asMap_and() {
+	public ISliceFilter asMap_and() {
 		return AndFilter.and(asMap);
 	}
 
 	@Benchmark
-	public IAdhocFilter adhocMap_and() {
+	public ISliceFilter adhocMap_and() {
 		return AndFilter.and(adhocMap);
 	}
 

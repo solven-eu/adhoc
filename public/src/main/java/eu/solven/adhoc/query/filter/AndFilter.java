@@ -70,7 +70,7 @@ public class AndFilter implements IAndFilter {
 
 	@Singular
 	@NonNull
-	final ImmutableSet<IAdhocFilter> filters;
+	final ImmutableSet<ISliceFilter> filters;
 
 	@Override
 	public boolean isNot() {
@@ -85,7 +85,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public boolean isMatchNone() {
-		return filters.stream().anyMatch(IAdhocFilter::isMatchNone);
+		return filters.stream().anyMatch(ISliceFilter::isMatchNone);
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class AndFilter implements IAndFilter {
 	}
 
 	@Override
-	public Set<IAdhocFilter> getOperands() {
+	public Set<ISliceFilter> getOperands() {
 		return ImmutableSet.copyOf(filters);
 	}
 
@@ -126,20 +126,20 @@ public class AndFilter implements IAndFilter {
 	}
 
 	// `first, second, more` syntax to push providing at least 2 arguments
-	public static IAdhocFilter and(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
+	public static ISliceFilter and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
 		if (more.length == 0 && first.equals(second)) {
 			return first;
 		}
 		return and(Lists.asList(first, second, more));
 	}
 
-	public static IAdhocFilter and(Collection<? extends IAdhocFilter> filters) {
-		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
+	public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
+		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
 			return MATCH_NONE;
 		}
 
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
-		IAdhocFilter flatten = andNotOptimized(filters);
+		ISliceFilter flatten = andNotOptimized(filters);
 
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
@@ -149,7 +149,7 @@ public class AndFilter implements IAndFilter {
 
 		if (flatten instanceof IAndFilter andFilter) {
 			// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
-			Collection<? extends IAdhocFilter> packedColumns = packColumnFilters(andFilter.getOperands());
+			Collection<? extends ISliceFilter> packedColumns = packColumnFilters(andFilter.getOperands());
 
 			// Then simplify the AND (e.g. `AND(a=a1)` to `a=a1`)
 			return andNotOptimized(packedColumns);
@@ -164,30 +164,30 @@ public class AndFilter implements IAndFilter {
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	private static IAdhocFilter optimizeAndOfOr(IAndFilter andFilter) {
-		Set<IAdhocFilter> operands = andFilter.getOperands();
+	private static ISliceFilter optimizeAndOfOr(IAndFilter andFilter) {
+		Set<ISliceFilter> operands = andFilter.getOperands();
 
 		// TODO Manage `Not(Or(...))` and `Column(In(...))`
-		Map<Boolean, List<IAdhocFilter>> orNotOr =
+		Map<Boolean, List<ISliceFilter>> orNotOr =
 				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof OrFilter));
 
 		if (!orNotOr.get(true).isEmpty() && !orNotOr.get(false).isEmpty()) {
-			List<List<IAdhocFilter>> orFilters = orNotOr.get(true)
+			List<List<ISliceFilter>> orFilters = orNotOr.get(true)
 					.stream()
 					.map(f -> (OrFilter) f)
 					.map(f -> f.getOperands().stream().toList())
 					.toList();
 
-			IAdhocFilter and = and(orNotOr.get(false));
-			Set<IAdhocFilter> ors = Lists.cartesianProduct(orFilters).stream().map(entry -> {
-				IAdhocFilter and2 = and(entry);
+			ISliceFilter and = and(orNotOr.get(false));
+			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters).stream().map(entry -> {
+				ISliceFilter and2 = and(entry);
 				return and(and2, and);
 			})
 					// We hope a bunch of entry are filtered out
 					.filter(f -> !f.isMatchNone())
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 
-			Map<IAdhocFilter, IAdhocFilter> inducedToInducer = new LinkedHashMap<>();
+			Map<ISliceFilter, ISliceFilter> inducedToInducer = new LinkedHashMap<>();
 
 			ors.stream().forEach(inducer -> {
 				ors.stream()
@@ -209,7 +209,7 @@ public class AndFilter implements IAndFilter {
 
 			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
-			IAdhocFilter orCandidate = OrFilter.or(ors);
+			ISliceFilter orCandidate = OrFilter.or(ors);
 			if (costFunction(orCandidate) < costFunction(andFilter)) {
 				return orCandidate;
 			}
@@ -217,13 +217,13 @@ public class AndFilter implements IAndFilter {
 		return andFilter;
 	}
 
-	static int costFunction(Collection<? extends IAdhocFilter> operands) {
+	static int costFunction(Collection<? extends ISliceFilter> operands) {
 		return operands.stream().mapToInt(AndFilter::costFunction).sum();
 	}
 
 	// factors are additive (hence not multiplicative) as we prefer a high `Not` (counting once) than multiple deep Not
 	@SuppressWarnings("checkstyle:MagicNumber")
-	static int costFunction(IAdhocFilter f) {
+	static int costFunction(ISliceFilter f) {
 		if (f instanceof IAndFilter andFilter) {
 			return costFunction(andFilter.getOperands());
 		} else if (f instanceof INotFilter notFilter) {
@@ -241,13 +241,13 @@ public class AndFilter implements IAndFilter {
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
-	private static IAdhocFilter andNotOptimized(Collection<? extends IAdhocFilter> filters) {
-		if (filters.stream().anyMatch(IAdhocFilter::isMatchNone)) {
+	private static ISliceFilter andNotOptimized(Collection<? extends ISliceFilter> filters) {
+		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
 			return MATCH_NONE;
 		}
 
 		// Skipping matchAll is useful on `.edit`
-		List<? extends IAdhocFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
+		List<? extends ISliceFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
 			if (operand instanceof IAndFilter operandIsAnd) {
 				// AND of ANDs
 				return operandIsAnd.getOperands().stream();
@@ -262,9 +262,9 @@ public class AndFilter implements IAndFilter {
 			return notMatchAll.getFirst();
 		}
 
-		IAdhocFilter orCandidate =
+		ISliceFilter orCandidate =
 				OrFilter.builder().filters(notMatchAll.stream().map(NotFilter::not).toList()).build();
-		IAdhocFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
+		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 		if (costFunction(notOrCandidate) < costFunction(notMatchAll)) {
 			return notOrCandidate;
 		}
@@ -279,9 +279,9 @@ public class AndFilter implements IAndFilter {
 	 * @return
 	 */
 	@SuppressWarnings("PMD.CognitiveComplexity")
-	private static Collection<? extends IAdhocFilter> packColumnFilters(Collection<? extends IAdhocFilter> filters) {
+	private static Collection<? extends ISliceFilter> packColumnFilters(Collection<? extends ISliceFilter> filters) {
 		@SuppressWarnings("PMD.LinguisticNaming")
-		Map<Boolean, List<IAdhocFilter>> isColumnToFilters =
+		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));
 
 		if (isColumnToFilters.get(true).isEmpty()) {
@@ -291,7 +291,7 @@ public class AndFilter implements IAndFilter {
 			// isMatchNone is cross column as a single column not matching anything reject the whole filter
 			AtomicBoolean isMatchNone = new AtomicBoolean();
 
-			List<IAdhocFilter> notManaged = new ArrayList<>();
+			List<ISliceFilter> notManaged = new ArrayList<>();
 			if (isColumnToFilters.containsKey(false)) {
 				notManaged.addAll(isColumnToFilters.get(false));
 			}
@@ -303,7 +303,7 @@ public class AndFilter implements IAndFilter {
 					// LinkedHashMap to maintain as much as possible the initial order
 					.collect(Collectors.groupingBy(IColumnFilter::getColumn, LinkedHashMap::new, Collectors.toList()));
 
-			ImmutableList.Builder<IAdhocFilter> packedFiltersBuilder = ImmutableList.<IAdhocFilter>builder();
+			ImmutableList.Builder<ISliceFilter> packedFiltersBuilder = ImmutableList.<ISliceFilter>builder();
 			columnToFilters.forEach((column, columnFilters) -> {
 				if (isMatchNone.get()) {
 					// Fail-fast
@@ -404,7 +404,7 @@ public class AndFilter implements IAndFilter {
 	 *
 	 * @return a filter doing an `AND` between each {@link Map} entry,
 	 */
-	public static IAdhocFilter and(Map<String, ?> columnToFilter) {
+	public static ISliceFilter and(Map<String, ?> columnToFilter) {
 		int size = columnToFilter.size();
 		List<ColumnFilter> columnFilters = new ArrayList<>(size);
 

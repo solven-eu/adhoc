@@ -45,7 +45,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helpers methods around {@link IAdhocFilter} and {@link IValueMatcher}. This includes those which does not fit into
+ * Helpers methods around {@link ISliceFilter} and {@link IValueMatcher}. This includes those which does not fit into
  * {@link FilterHelpers}, due to dependency to `!public` dependencies.
  * 
  * @author Benoit Lacelle
@@ -96,9 +96,9 @@ public class MoreFilterHelpers {
 		}
 	}
 
-	public static IAdhocFilter transcodeFilter(ICustomTypeManagerSimple customTypeManager,
+	public static ISliceFilter transcodeFilter(ICustomTypeManagerSimple customTypeManager,
 			ITableTranscoder tableTranscoder,
-			IAdhocFilter filter) {
+			ISliceFilter filter) {
 
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return filter;
@@ -132,15 +132,15 @@ public class MoreFilterHelpers {
 	 * @param input
 	 * @return true if the input matches the filter
 	 */
-	public static boolean match(IAdhocFilter filter, Map<String, ?> input) {
+	public static boolean match(ISliceFilter filter, Map<String, ?> input) {
 		return FilterMatcher.builder().filter(filter).build().match(input);
 	}
 
-	public static boolean match(IAdhocFilter filter, String column, Object value) {
+	public static boolean match(ISliceFilter filter, String column, Object value) {
 		return FilterMatcher.builder().filter(filter).build().match(Collections.singletonMap(column, value));
 	}
 
-	public static boolean match(ITableTranscoder transcoder, IAdhocFilter filter, Map<String, ?> input) {
+	public static boolean match(ITableTranscoder transcoder, ISliceFilter filter, Map<String, ?> input) {
 		return FilterMatcher.builder().transcoder(transcoder).filter(filter).build().match(input);
 	}
 
@@ -150,18 +150,18 @@ public class MoreFilterHelpers {
 	 */
 	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterParameters`")
 	public static boolean match(ITableTranscoder transcoder,
-			IAdhocFilter filter,
+			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
 			Map<String, ?> input) {
 		return FilterHelpers.visit(filter, new IFilterVisitor() {
 
 			@Override
-			public boolean testAndOperands(Set<? extends IAdhocFilter> operands) {
+			public boolean testAndOperands(Set<? extends ISliceFilter> operands) {
 				return operands.stream().allMatch(f -> match(transcoder, f, onMissingColumn, input));
 			}
 
 			@Override
-			public boolean testOrOperands(Set<? extends IAdhocFilter> operands) {
+			public boolean testOrOperands(Set<? extends ISliceFilter> operands) {
 				return operands.stream().anyMatch(f -> match(transcoder, f, onMissingColumn, input));
 			}
 
@@ -183,19 +183,19 @@ public class MoreFilterHelpers {
 			}
 
 			@Override
-			public boolean testNegatedOperand(IAdhocFilter negated) {
+			public boolean testNegatedOperand(ISliceFilter negated) {
 				return !match(transcoder, negated, onMissingColumn, input);
 			}
 
 		});
 	}
 
-	public static boolean match(IAdhocFilter filter, ITabularRecord input) {
+	public static boolean match(ISliceFilter filter, ITabularRecord input) {
 		return FilterMatcher.builder().filter(filter).build().match(input);
 	}
 
 	public static boolean match(ITableTranscoder transcoder,
-			IAdhocFilter filter,
+			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
 			ITabularRecord input) {
 		if (filter.isMatchAll()) {

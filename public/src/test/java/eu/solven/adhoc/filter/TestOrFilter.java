@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
@@ -44,7 +44,7 @@ public class TestOrFilter {
 	// A short toString not to prevail is composition .toString
 	@Test
 	public void toString_empty() {
-		IAdhocFilter matchNone = IAdhocFilter.MATCH_NONE;
+		ISliceFilter matchNone = ISliceFilter.MATCH_NONE;
 		Assertions.assertThat(matchNone.toString()).isEqualTo("matchNone");
 
 		Assertions.assertThat(matchNone.isMatchAll()).isFalse();
@@ -52,7 +52,7 @@ public class TestOrFilter {
 
 	@Test
 	public void toString_notEmpty() {
-		IAdhocFilter a1orb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
+		ISliceFilter a1orb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
 
 		Assertions.assertThat(a1orb2.isMatchAll()).isFalse();
 	}
@@ -80,39 +80,39 @@ public class TestOrFilter {
 
 	@Test
 	public void testAndFilters_twoGrandTotal() {
-		IAdhocFilter filterAllAndA = OrFilter.or(IAdhocFilter.MATCH_ALL, IAdhocFilter.MATCH_ALL);
+		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_ALL, ISliceFilter.MATCH_ALL);
 
-		Assertions.assertThat(filterAllAndA).isEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(filterAllAndA).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testAndFilters_oneGrandTotal() {
-		IAdhocFilter filterAllAndA = OrFilter.or(IAdhocFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"));
 
-		Assertions.assertThat(filterAllAndA).isEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(filterAllAndA).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testOr_oneGrandTotal_forced() {
-		IAdhocFilter filterAllAndA =
-				OrFilter.builder().filter(IAdhocFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).build();
+		ISliceFilter filterAllAndA =
+				OrFilter.builder().filter(ISliceFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).build();
 
 		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
 		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();
-		Assertions.assertThat(filterAllAndA).isNotEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(filterAllAndA).isNotEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testOr_oneMatchNone() {
-		IAdhocFilter filterAllAndA = OrFilter.or(IAdhocFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
 	public void testOr_oneGrandTotal_TwoCustom() {
-		IAdhocFilter filterAllAndA = OrFilter
-				.or(IAdhocFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+		ISliceFilter filterAllAndA = OrFilter
+				.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 
 		Assertions.assertThat(filterAllAndA).isInstanceOfSatisfying(OrFilter.class, andF -> {
 			Assertions.assertThat(andF.getOperands())
@@ -123,7 +123,7 @@ public class TestOrFilter {
 
 	@Test
 	public void testMultipleSameColumn_equalsAndIn() {
-		IAdhocFilter filterA1andInA12 =
+		ISliceFilter filterA1andInA12 =
 				OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isIn("a", "a1", "a2"));
 
 		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a1")`
@@ -133,7 +133,7 @@ public class TestOrFilter {
 	@Disabled("TODO Implement this optimization")
 	@Test
 	public void testMultipleSameColumn_InAndIn() {
-		IAdhocFilter filterA1andInA12 =
+		ISliceFilter filterA1andInA12 =
 				OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
 
 		Assertions.assertThat(filterA1andInA12).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
@@ -144,7 +144,7 @@ public class TestOrFilter {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IAdhocFilter filter = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
+		ISliceFilter filter = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -168,7 +168,7 @@ public class TestOrFilter {
 				}
 				""".trim());
 
-		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
+		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(filter);
 	}
@@ -180,20 +180,20 @@ public class TestOrFilter {
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
-		String asString = objectMapper.writeValueAsString(IAdhocFilter.MATCH_NONE);
+		String asString = objectMapper.writeValueAsString(ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(asString).isEqualTo("""
 				"matchNone"
 								""".trim());
 
-		IAdhocFilter fromString = objectMapper.readValue(asString, IAdhocFilter.class);
+		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
 
-		Assertions.assertThat(fromString).isEqualTo(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(fromString).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testChained() {
-		IAdhocFilter a1Andb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
-		IAdhocFilter a1Andb2AndC3 = OrFilter.or(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));
+		ISliceFilter a1Andb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
+		ISliceFilter a1Andb2AndC3 = OrFilter.or(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 			Assertions.assertThat(orFilter.getOperands()).hasSize(3);

@@ -54,7 +54,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -181,10 +181,10 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	public void testFilterUnderlyingCube() {
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
-		Assertions.assertThat(composite.filterForColumns(IAdhocFilter.MATCH_ALL, Set.of()))
-				.isEqualTo(IAdhocFilter.MATCH_ALL);
-		Assertions.assertThat(composite.filterForColumns(IAdhocFilter.MATCH_NONE, Set.of()))
-				.isEqualTo(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_ALL, Set.of()))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_NONE, Set.of()))
+				.isEqualTo(ISliceFilter.MATCH_NONE);
 
 		// and
 		Assertions.assertThat(composite.filterForColumns(

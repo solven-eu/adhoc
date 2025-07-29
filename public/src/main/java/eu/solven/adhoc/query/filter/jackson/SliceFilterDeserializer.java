@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 /**
@@ -43,25 +43,25 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class AdhocFilterDeserializer extends JsonDeserializer<IAdhocFilter> implements ResolvableDeserializer {
+public class SliceFilterDeserializer extends JsonDeserializer<ISliceFilter> implements ResolvableDeserializer {
 	// private static final long serialVersionUID = 8174515895932210350L;
 
 	private final JsonDeserializer<?> base;
 
-	public AdhocFilterDeserializer(JsonDeserializer<?> base) {
+	public SliceFilterDeserializer(JsonDeserializer<?> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
 	// Used before AdhocFilterDeserializerModifier rewrap it
-	public AdhocFilterDeserializer() {
+	public SliceFilterDeserializer() {
 		this.base = null;
 	}
 
-	protected IAdhocFilter onText(JsonParser p) throws IOException {
+	protected ISliceFilter onText(JsonParser p) throws IOException {
 		if ("matchAll".equalsIgnoreCase(p.getText())) {
-			return IAdhocFilter.MATCH_ALL;
+			return ISliceFilter.MATCH_ALL;
 		} else if ("matchNone".equalsIgnoreCase(p.getText())) {
-			return IAdhocFilter.MATCH_NONE;
+			return ISliceFilter.MATCH_NONE;
 		} else {
 			throw new IllegalArgumentException("Not managed text: %s".formatted(p.getText()));
 		}
@@ -81,14 +81,14 @@ public class AdhocFilterDeserializer extends JsonDeserializer<IAdhocFilter> impl
 	}
 
 	@Override
-	public IAdhocFilter deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
 		if (p.hasTextCharacters()) {
 			return onText(p);
 		} else if (base == null) {
 			throw new IllegalStateException(
 					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			return (IAdhocFilter) base.deserialize(p, ctxt);
+			return (ISliceFilter) base.deserialize(p, ctxt);
 		}
 	}
 

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.coordinate;
 
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -43,7 +43,7 @@ public class CalculatedCoordinate implements ICalculatedCoordinate {
 
 	@NonNull
 	@Default
-	protected IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+	protected ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	/**
 	 * Useful grand members representing the grandTotal.
@@ -51,7 +51,7 @@ public class CalculatedCoordinate implements ICalculatedCoordinate {
 	 * @return a {@link ICalculatedCoordinate} matching all available members.
 	 */
 	public static ICalculatedCoordinate star() {
-		return CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build();
+		return CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build();
 	}
 
 }

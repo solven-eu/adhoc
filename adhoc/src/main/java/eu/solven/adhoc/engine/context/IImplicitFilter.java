@@ -23,10 +23,10 @@
 package eu.solven.adhoc.engine.context;
 
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
- * This provides an implicit {@link IAdhocFilter}, typically based on a static security context.
+ * This provides an implicit {@link ISliceFilter}, typically based on a static security context.
  * 
  * @author Benoit Lacelle
  */
@@ -40,5 +40,5 @@ public interface IImplicitFilter {
 	 *            on customMarker.
 	 * @return the filter to be later combined with the query own filter.
 	 */
-	IAdhocFilter getImplicitFilter(ICubeQuery query);
+	ISliceFilter getImplicitFilter(ICubeQuery query);
 }

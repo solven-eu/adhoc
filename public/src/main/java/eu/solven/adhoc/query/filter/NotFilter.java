@@ -39,7 +39,7 @@ import lombok.extern.jackson.Jacksonized;
 public class NotFilter implements INotFilter {
 
 	@NonNull
-	final IAdhocFilter negated;
+	final ISliceFilter negated;
 
 	@Override
 	public boolean isNot() {
@@ -51,7 +51,7 @@ public class NotFilter implements INotFilter {
 		return "!(%s)".formatted(negated);
 	}
 
-	public static IAdhocFilter not(IAdhocFilter filter) {
+	public static ISliceFilter not(ISliceFilter filter) {
 		if (filter.isMatchAll()) {
 			return MATCH_NONE;
 		} else if (filter.isMatchNone()) {

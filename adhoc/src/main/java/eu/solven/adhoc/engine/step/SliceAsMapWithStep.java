@@ -29,7 +29,7 @@ import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -52,17 +52,17 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	final CubeQueryStep queryStep;
 
 	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns
-	final Supplier<IAdhocFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
+	final Supplier<ISliceFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
 
 	@Override
-	public IAdhocFilter asFilter() {
+	public ISliceFilter asFilter() {
 		return filterSupplier.get();
 	}
 
-	public IAdhocFilter asFilterNoCache() {
+	public ISliceFilter asFilterNoCache() {
 		// AND the slice with the step as the step may express some filters which are not in the slice
 		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
-		IAdhocFilter filter = AndFilter.and(slice.asFilter(), queryStep.getFilter());
+		ISliceFilter filter = AndFilter.and(slice.asFilter(), queryStep.getFilter());
 
 		if (filter.isMatchNone()) {
 			// These cases are unclear.

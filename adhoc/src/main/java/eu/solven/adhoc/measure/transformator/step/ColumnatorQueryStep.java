@@ -31,7 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -87,7 +87,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 		return step.getGroupBy().getGroupedByColumns().contains(column) || isMonoSelected(step.getFilter(), column);
 	}
 
-	protected boolean isMonoSelected(IAdhocFilter filter, String column) {
+	protected boolean isMonoSelected(ISliceFilter filter, String column) {
 		IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, column);
 		return valueMatcher instanceof EqualsMatcher;
 	}

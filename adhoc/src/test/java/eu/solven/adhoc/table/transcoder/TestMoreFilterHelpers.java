@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -162,7 +162,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsDistinctFrom() {
-		IAdhocFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
+		ISliceFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
@@ -173,7 +173,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsIn_single() {
-		IAdhocFilter kIsNull = ColumnFilter.isIn("k", "v");
+		ISliceFilter kIsNull = ColumnFilter.isIn("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
@@ -184,7 +184,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsIn_list() {
-		IAdhocFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
+		ISliceFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();

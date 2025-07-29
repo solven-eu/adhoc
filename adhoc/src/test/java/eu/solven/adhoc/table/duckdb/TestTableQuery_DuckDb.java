@@ -41,7 +41,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
@@ -416,7 +416,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 		forest.addMeasure(k1Sum);
 
 		ITabularView result =
-				cube().execute(CubeQuery.builder().measure(k1Sum.getName()).filter(IAdhocFilter.MATCH_NONE).build());
+				cube().execute(CubeQuery.builder().measure(k1Sum.getName()).filter(ISliceFilter.MATCH_NONE).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();

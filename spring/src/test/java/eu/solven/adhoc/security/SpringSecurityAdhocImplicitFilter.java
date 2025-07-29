@@ -33,7 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import eu.solven.adhoc.engine.context.IImplicitFilter;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,22 +46,22 @@ public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 	public static final String ROLE_EUR = "EUR";
 
 	@Override
-	public IAdhocFilter getImplicitFilter(ICubeQuery query) {
+	public ISliceFilter getImplicitFilter(ICubeQuery query) {
 		final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		return filterGivenAuth(authentication);
 	}
 
-	protected IAdhocFilter filterGivenAuth(Authentication authentication) {
+	protected ISliceFilter filterGivenAuth(Authentication authentication) {
 		if (authentication == null) {
 			log.info("null authentication: matchNone");
-			return IAdhocFilter.MATCH_NONE;
+			return ISliceFilter.MATCH_NONE;
 		}
 
-		List<IAdhocFilter> operands = new ArrayList<>();
+		List<ISliceFilter> operands = new ArrayList<>();
 
 		// Some admin role
 		if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_" + ROLE_ADMIN))) {
-			operands.add(IAdhocFilter.MATCH_ALL);
+			operands.add(ISliceFilter.MATCH_ALL);
 		}
 		// Some role with static rules
 		if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_" + ROLE_EUR))) {

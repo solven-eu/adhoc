@@ -34,8 +34,8 @@ import eu.solven.adhoc.query.MeasurelessQuery.MeasurelessQueryBuilder;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.experimental.UtilityClass;
 
@@ -76,7 +76,7 @@ public class DecompositionHelpers {
 
 		if (FilterHelpers.getFilteredColumns(step.getFilter()).contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			IAdhocFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(column));
+			ISliceFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(column));
 
 			underlyingStep.filter(supressedFilter);
 			// BEWARE In a different design, we should ensure we query only the relevant underlying double columns.

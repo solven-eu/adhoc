@@ -49,7 +49,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
@@ -105,7 +105,7 @@ public class CachingTableWrapper implements ITableWrapper {
 					throw new IllegalArgumentException("Must have a single aggregator. Was %s".formatted(tableQuery));
 				}
 
-				if (!IAdhocFilter.MATCH_ALL.equals(Iterables.getOnlyElement(tableQuery.getAggregators()).getFilter())) {
+				if (!ISliceFilter.MATCH_ALL.equals(Iterables.getOnlyElement(tableQuery.getAggregators()).getFilter())) {
 					throw new IllegalArgumentException("Aggregator must not be filtered. Was %s".formatted(tableQuery));
 				}
 			}
@@ -303,7 +303,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		TableQueryV2 queryForCache = tableQuery.toBuilder()
 				.clearAggregators()
 				// TODO Should remove the alias from the cacheKey
-				.aggregator(aggregator.toBuilder().filter(IAdhocFilter.MATCH_ALL).build())
+				.aggregator(aggregator.toBuilder().filter(ISliceFilter.MATCH_ALL).build())
 				.filter(AndFilter.and(tableQuery.getFilter(), aggregator.getFilter()))
 				.customMarker(customMarkerForCache)
 				.build();

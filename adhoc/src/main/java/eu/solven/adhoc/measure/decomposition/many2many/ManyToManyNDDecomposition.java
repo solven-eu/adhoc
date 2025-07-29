@@ -48,10 +48,10 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -124,7 +124,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	protected Set<?> getQueryStepMatchingGroupsNoCache(ISliceWithStep slice) {
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
-		IAdhocFilter filter = slice.getQueryStep().getFilter();
+		ISliceFilter filter = slice.getQueryStep().getFilter();
 
 		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(filter, groupColumn, group));
 	}
@@ -185,7 +185,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		return intersection;
 	}
 
-	protected boolean doFilterGroup(IAdhocFilter filter, String groupColumn, Object groupCandidate) {
+	protected boolean doFilterGroup(ISliceFilter filter, String groupColumn, Object groupCandidate) {
 		return FilterMatcher.builder()
 				.filter(filter)
 				.onMissingColumn(DecompositionHelpers.onMissingColumn())
@@ -208,8 +208,8 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		Set<String> elementColumns = getInputColumns(options);
 		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 
-		IAdhocFilter requestedFilter = step.getFilter();
-		IAdhocFilter underlyingFilter = convertGroupsToElementsFilter(groupColumn, requestedFilter);
+		ISliceFilter requestedFilter = step.getFilter();
+		ISliceFilter underlyingFilter = convertGroupsToElementsFilter(groupColumn, requestedFilter);
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
@@ -231,8 +231,8 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				MeasurelessQuery.edit(step).filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 
-	protected IAdhocFilter convertGroupsToElementsFilter(String groupColumn, IAdhocFilter requestedFilter) {
-		IAdhocFilter underlyingFilter;
+	protected ISliceFilter convertGroupsToElementsFilter(String groupColumn, ISliceFilter requestedFilter) {
+		ISliceFilter underlyingFilter;
 
 		if (requestedFilter.isMatchAll()) {
 			underlyingFilter = requestedFilter;
@@ -242,21 +242,21 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<Map<String, IValueMatcher>> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
 
-				Set<IAdhocFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
+				Set<ISliceFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
 
-				IAdhocFilter elementAdditionalFilter = OrFilter.or(elementsFilters);
+				ISliceFilter elementAdditionalFilter = OrFilter.or(elementsFilters);
 
 				underlyingFilter = elementAdditionalFilter;
 			} else {
 				underlyingFilter = requestedFilter;
 			}
 		} else if (requestedFilter.isAnd() && requestedFilter instanceof IAndFilter andFilter) {
-			List<IAdhocFilter> elementsFilters =
+			List<ISliceFilter> elementsFilters =
 					andFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
 
 			underlyingFilter = AndFilter.and(elementsFilters);
 		} else if (requestedFilter.isOr() && requestedFilter instanceof IOrFilter orFilter) {
-			List<IAdhocFilter> elementsFilters =
+			List<ISliceFilter> elementsFilters =
 					orFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
 
 			underlyingFilter = OrFilter.or(elementsFilters);

@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -57,7 +57,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_and() {
-		IAdhocFilter like1OrLike2 = AndFilter.and(ColumnFilter.isLike("c1", "1%"), ColumnFilter.isLike("c2", "2%"));
+		ISliceFilter like1OrLike2 = AndFilter.and(ColumnFilter.isLike("c1", "1%"), ColumnFilter.isLike("c2", "2%"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c1")).isEqualTo(LikeMatcher.matching("1%"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c2")).isEqualTo(LikeMatcher.matching("2%"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(like1OrLike2, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
@@ -65,15 +65,15 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_ALL_NONE() {
-		Assertions.assertThat(FilterHelpers.getValueMatcher(IAdhocFilter.MATCH_ALL, "c"))
+		Assertions.assertThat(FilterHelpers.getValueMatcher(ISliceFilter.MATCH_ALL, "c"))
 				.isEqualTo(IValueMatcher.MATCH_ALL);
-		Assertions.assertThat(FilterHelpers.getValueMatcher(IAdhocFilter.MATCH_NONE, "c"))
+		Assertions.assertThat(FilterHelpers.getValueMatcher(ISliceFilter.MATCH_NONE, "c"))
 				.isEqualTo(IValueMatcher.MATCH_NONE);
 	}
 
 	@Test
 	public void testGetValueMatcher_AND() {
-		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2")).isEqualTo(EqualsMatcher.isEqualTo("v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
@@ -81,7 +81,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_Not() {
-		IAdhocFilter filter = NotFilter.not(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
+		ISliceFilter filter = NotFilter.not(AndFilter.and(Map.of("c1", "v1", "c2", "v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1"))
 				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v1")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
@@ -91,12 +91,12 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_Not_notOptimized() {
-		IAdhocFilter filterNotAll = NotFilter.builder().negated(IAdhocFilter.MATCH_ALL).build();
+		ISliceFilter filterNotAll = NotFilter.builder().negated(ISliceFilter.MATCH_ALL).build();
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c1")).isEqualTo(IValueMatcher.MATCH_NONE);
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c2")).isEqualTo(IValueMatcher.MATCH_NONE);
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotAll, "c3")).isEqualTo(IValueMatcher.MATCH_NONE);
 
-		IAdhocFilter filterNotNone = NotFilter.builder().negated(IAdhocFilter.MATCH_NONE).build();
+		ISliceFilter filterNotNone = NotFilter.builder().negated(ISliceFilter.MATCH_NONE).build();
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c1")).isEqualTo(IValueMatcher.MATCH_ALL);
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c2")).isEqualTo(IValueMatcher.MATCH_ALL);
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filterNotNone, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
@@ -104,7 +104,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_Not_inAnd() {
-		IAdhocFilter filter =
+		ISliceFilter filter =
 				AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), NotFilter.not(ColumnFilter.isEqualTo("c2", "v2")));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
@@ -114,7 +114,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_Not_matcher() {
-		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", NotMatcher.not(EqualsMatcher.isEqualTo("v2"))));
+		ISliceFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", NotMatcher.not(EqualsMatcher.isEqualTo("v2"))));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(filter, "c2"))
 				.isEqualTo(NotMatcher.not(EqualsMatcher.isEqualTo("v2")));
@@ -123,19 +123,19 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetFilteredColumns_and() {
-		IAdhocFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter filter = AndFilter.and(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
 	}
 
 	@Test
 	public void testGetFilteredColumns_or() {
-		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
 	}
 
 	@Test
 	public void testGetValueMatcher_or() {
-		IAdhocFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter filter = OrFilter.or(Map.of("c1", "v1", "c2", "v2"));
 		Assertions.assertThatThrownBy(() -> FilterHelpers.getValueMatcher(filter, "c1"))
 				.isInstanceOf(UnsupportedOperationException.class);
 
@@ -144,7 +144,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_or_lax() {
-		IAdhocFilter filter = OrFilter.or(AndFilter.and(Map.of("c1", "v1")),
+		ISliceFilter filter = OrFilter.or(AndFilter.and(Map.of("c1", "v1")),
 				AndFilter.and(Map.of("c2", "v21")),
 				AndFilter.and(Map.of("c2", "v22", "c3", "v3")));
 
@@ -158,7 +158,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetFilteredColumns_not() {
-		IAdhocFilter filter = NotFilter.not(OrFilter.or(Map.of("c1", "v1", "c2", "v2")));
+		ISliceFilter filter = NotFilter.not(OrFilter.or(Map.of("c1", "v1", "c2", "v2")));
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(filter)).isEqualTo(Set.of("c1", "c2"));
 	}
 
@@ -184,14 +184,14 @@ public class TestFilterHelpers {
 						.asMap(OrFilter.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2"))))
 				.isInstanceOf(IllegalArgumentException.class);
 
-		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(IAdhocFilter.MATCH_NONE))
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(ISliceFilter.MATCH_NONE))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	public void testSplitAnd() {
-		Assertions.assertThat(FilterHelpers.splitAnd(IAdhocFilter.MATCH_ALL)).containsExactly(IAdhocFilter.MATCH_ALL);
-		Assertions.assertThat(FilterHelpers.splitAnd(IAdhocFilter.MATCH_NONE)).containsExactly(IAdhocFilter.MATCH_NONE);
+		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_ALL)).containsExactly(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_NONE)).containsExactly(ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(FilterHelpers.splitAnd(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"))))
 				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
 
@@ -206,7 +206,7 @@ public class TestFilterHelpers {
 		Assertions
 				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(Map.of("a", "a1"))))
-				.isEqualTo(IAdhocFilter.MATCH_ALL);
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 
 		// filter is unrelated with where
 		Assertions
@@ -216,7 +216,7 @@ public class TestFilterHelpers {
 
 		// filter is laxer than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
-				AndFilter.and(Map.of("b", "b1")))).isEqualTo(IAdhocFilter.MATCH_ALL);
+				AndFilter.and(Map.of("b", "b1")))).isEqualTo(ISliceFilter.MATCH_ALL);
 
 		// filter is disjoint with non-empty-union than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),

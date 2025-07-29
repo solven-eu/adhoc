@@ -32,7 +32,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
  *
  * @author Benoit Lacelle
  */
-public interface IColumnFilter extends IAdhocFilter {
+public interface IColumnFilter extends ISliceFilter {
 
 	/**
 	 * @return the name of the filtered column.

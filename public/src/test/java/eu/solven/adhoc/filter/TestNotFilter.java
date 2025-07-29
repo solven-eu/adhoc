@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -36,13 +36,13 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 public class TestNotFilter {
 	@Test
 	public void testNot() {
-		Assertions.assertThat(NotFilter.not(IAdhocFilter.MATCH_ALL)).isEqualTo(IAdhocFilter.MATCH_NONE);
-		Assertions.assertThat(NotFilter.not(IAdhocFilter.MATCH_NONE)).isEqualTo(IAdhocFilter.MATCH_ALL);
+		Assertions.assertThat(NotFilter.not(ISliceFilter.MATCH_ALL)).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(NotFilter.not(ISliceFilter.MATCH_NONE)).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testNotOr() {
-		IAdhocFilter orFilter =
+		ISliceFilter orFilter =
 				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1")));
 
 		Assertions.assertThat(orFilter).isInstanceOfSatisfying(AndFilter.class, andMatcher -> {
@@ -61,32 +61,32 @@ public class TestNotFilter {
 
 	@Test
 	public void testNotNot_equals() {
-		IAdhocFilter notFilter = NotFilter.not(ColumnFilter.isEqualTo("c", "c1"));
-		IAdhocFilter notNotFilter = NotFilter.not(notFilter);
+		ISliceFilter notFilter = NotFilter.not(ColumnFilter.isEqualTo("c", "c1"));
+		ISliceFilter notNotFilter = NotFilter.not(notFilter);
 
 		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.isEqualTo("c", "c1"));
 	}
 
 	@Test
 	public void testNotNot_like() {
-		IAdhocFilter notFilter = NotFilter.not(ColumnFilter.isLike("c", "a%"));
-		IAdhocFilter notNotFilter = NotFilter.not(notFilter);
+		ISliceFilter notFilter = NotFilter.not(ColumnFilter.isLike("c", "a%"));
+		ISliceFilter notNotFilter = NotFilter.not(notFilter);
 
 		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.isLike("c", "a%"));
 	}
 
 	@Test
 	public void testNotNot_and() {
-		IAdhocFilter and = AndFilter.builder()
+		ISliceFilter and = AndFilter.builder()
 				.filter(ColumnFilter.isLike("a", "a%"))
 				.filter(ColumnFilter.isLike("b", "b%"))
 				.build();
 		Assertions.assertThat(and).isInstanceOf(AndFilter.class);
 
-		IAdhocFilter notAnd = NotFilter.not(and);
+		ISliceFilter notAnd = NotFilter.not(and);
 		Assertions.assertThat(notAnd).isInstanceOf(NotFilter.class);
 
-		IAdhocFilter notNotAnd = NotFilter.not(notAnd);
+		ISliceFilter notNotAnd = NotFilter.not(notAnd);
 		Assertions.assertThat(notNotAnd).isEqualTo(and);
 	}
 

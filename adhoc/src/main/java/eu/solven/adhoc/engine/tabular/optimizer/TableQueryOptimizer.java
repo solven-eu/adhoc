@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -172,8 +172,8 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return false;
 		}
 
-		IAdhocFilter inducerFilter = inducer.getFilter();
-		IAdhocFilter inducedFilter = induced.getFilter();
+		ISliceFilter inducerFilter = inducer.getFilter();
+		ISliceFilter inducedFilter = induced.getFilter();
 
 		if (!AndFilter.and(inducerFilter, inducedFilter).equals(inducedFilter)) {
 			// Inducer is stricter than induced: it can not infer it

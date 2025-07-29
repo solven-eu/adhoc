@@ -29,7 +29,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,8 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MarketDataShiftCombination implements ICombination, IExamplePnLExplainConstant {
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		IAdhocFilter filter = slice.asFilter();
-		if (IAdhocFilter.MATCH_NONE.equals(filter)) {
+		ISliceFilter filter = slice.asFilter();
+		if (ISliceFilter.MATCH_NONE.equals(filter)) {
 			return IValueProvider.NULL;
 		}
 

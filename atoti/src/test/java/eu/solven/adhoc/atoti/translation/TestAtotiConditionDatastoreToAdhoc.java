@@ -31,7 +31,7 @@ import com.qfs.condition.impl.BaseConditions;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestAtotiConditionDatastoreToAdhoc {
 	AtotiConditionDatastoreToAdhoc apConditionToAdhoc = new AtotiConditionDatastoreToAdhoc();
@@ -39,9 +39,9 @@ public class TestAtotiConditionDatastoreToAdhoc {
 	@Test
 	public void testAnd() {
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.True()))
-				.isEqualTo(IAdhocFilter.MATCH_ALL);
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.And()))
-				.isEqualTo(IAdhocFilter.MATCH_ALL);
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.And(BaseConditions.Equal("c1", "v1"))))
 				.isEqualTo(ColumnFilter.isEqualTo("c1", "v1"));
@@ -55,9 +55,9 @@ public class TestAtotiConditionDatastoreToAdhoc {
 	@Test
 	public void testOr() {
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.False()))
-				.isEqualTo(IAdhocFilter.MATCH_NONE);
+				.isEqualTo(ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.Or()))
-				.isEqualTo(IAdhocFilter.MATCH_NONE);
+				.isEqualTo(ISliceFilter.MATCH_NONE);
 
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.And(BaseConditions.Equal("c1", "v1"))))
 				.isEqualTo(ColumnFilter.isEqualTo("c1", "v1"));

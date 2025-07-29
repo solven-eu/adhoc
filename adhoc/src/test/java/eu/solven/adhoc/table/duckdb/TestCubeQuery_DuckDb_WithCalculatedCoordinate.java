@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -98,7 +98,7 @@ public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTe
 				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
 						.build()))
 				.build());
 
@@ -148,7 +148,7 @@ public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTe
 				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(IAdhocFilter.MATCH_ALL).build())
+								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
 						.build()))
 				.filter(ColumnFilter.isMatching("d", ComparingMatcher.greaterThanOrEqual(today)))
 				.build());

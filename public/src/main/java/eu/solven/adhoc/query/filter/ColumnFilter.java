@@ -152,7 +152,7 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return true if the value is different, including if the value is null.
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
-	public static IAdhocFilter isDistinctFrom(String column, Object matching) {
+	public static ISliceFilter isDistinctFrom(String column, Object matching) {
 		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.isEqualTo(matching)).build();
 		return isMatching(column, not);
 	}
@@ -166,7 +166,7 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return a {@link ColumnFilter}
 	 */
 	// https://duckdb.org/docs/sql/query_syntax/unnest.html
-	public static IAdhocFilter isIn(String column, Object first, Object... more) {
+	public static ISliceFilter isIn(String column, Object first, Object... more) {
 		List<Object> rawList = Lists.asList(first, more);
 
 		Collection<?> expandedList = AdhocCollectionHelpers.unnestAsCollection(rawList);
@@ -178,15 +178,15 @@ public class ColumnFilter implements IColumnFilter {
 		}
 	}
 
-	public static IAdhocFilter isLike(String column, String likeExpression) {
+	public static ISliceFilter isLike(String column, String likeExpression) {
 		return isMatching(column, LikeMatcher.matching(likeExpression));
 	}
 
-	public static IAdhocFilter isMatching(String column, Pattern pattern) {
+	public static ISliceFilter isMatching(String column, Pattern pattern) {
 		return isMatching(column, RegexMatcher.matching(pattern));
 	}
 
-	public static IAdhocFilter isMatching(String column, IValueMatcher matcher) {
+	public static ISliceFilter isMatching(String column, IValueMatcher matcher) {
 		return ColumnFilter.builder().column(column).valueMatcher(matcher).build();
 	}
 }

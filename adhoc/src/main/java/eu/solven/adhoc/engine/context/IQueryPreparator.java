@@ -25,13 +25,13 @@ package eu.solven.adhoc.engine.context;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
  * Generate {@link QueryPod} given an {@link ICubeQuery} and its context of execution.
  * 
- * The {@link ICubeQuery} may be modified. For instance, {@link IImplicitFilter} may add {@link IAdhocFilter} given
+ * The {@link ICubeQuery} may be modified. For instance, {@link IImplicitFilter} may add {@link ISliceFilter} given
  * security context. Or some options may be added by default.
  * 
  * @author Benoit Lacelle

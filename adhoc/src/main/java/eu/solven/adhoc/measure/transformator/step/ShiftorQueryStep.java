@@ -46,7 +46,7 @@ import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -76,7 +76,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		// This will provide underlying values from the shifted slice
 		String underlyingMeasure = shiftor.getUnderlying();
 
-		IAdhocFilter shiftedFilter = shift(step.getFilter(), step.getCustomMarker());
+		ISliceFilter shiftedFilter = shift(step.getFilter(), step.getCustomMarker());
 
 		// Read values from the shifted underlyingStep
 		CubeQueryStep whereToReadShifted =
@@ -92,7 +92,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		return Arrays.asList(whereToReadShifted, whereToReadForWrite);
 	}
 
-	protected IAdhocFilter shift(IAdhocFilter filter, Object customMarker) {
+	protected ISliceFilter shift(ISliceFilter filter, Object customMarker) {
 		FilterEditorContext filterEditorContext =
 				IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build();
 		return filterEditorSupplier.get().editFilter(filterEditorContext);
@@ -106,9 +106,9 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	 */
 	protected IAdhocSlice shiftSlice(ISliceWithStep slice) {
 		// BEWARE the filter from queryStep is meaningless here
-		IAdhocFilter filter = slice.getSlice().asFilter();
+		ISliceFilter filter = slice.getSlice().asFilter();
 
-		IAdhocFilter editedSlice = shift(filter, step.getCustomMarker());
+		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
 		MapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
 

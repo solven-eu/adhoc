@@ -35,7 +35,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
@@ -141,7 +141,7 @@ public class TestTableQueryV2 {
 			Assertions.assertThat(q.getFilter()).isEqualTo(ColumnFilter.isLike("a", "a%"));
 			Assertions.assertThat(q.getAggregators())
 					.hasSize(2)
-					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(IAdhocFilter.MATCH_ALL).build())
+					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(ISliceFilter.MATCH_ALL).build())
 					.contains(FilteredAggregator.builder()
 							.aggregator(sumK1)
 							.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.isEqualTo("azerty")))))
@@ -175,7 +175,7 @@ public class TestTableQueryV2 {
 						.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(Aggregator.empty())
-								.filter(IAdhocFilter.MATCH_ALL)
+								.filter(ISliceFilter.MATCH_ALL)
 								.build())
 						.build());
 	}

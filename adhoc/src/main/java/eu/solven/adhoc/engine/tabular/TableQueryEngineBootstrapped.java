@@ -75,7 +75,7 @@ import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -335,8 +335,8 @@ public class TableQueryEngineBootstrapped {
 				Sets.intersection(filteredCubeColumnsToSuppress, generatedColumns);
 
 		if (!generatedColumnToSuppressFromFilter.isEmpty()) {
-			IAdhocFilter originalFilter = tableQuery.getFilter();
-			IAdhocFilter suppressedFilter =
+			ISliceFilter originalFilter = tableQuery.getFilter();
+			ISliceFilter suppressedFilter =
 					SimpleFilterEditor.suppressColumn(originalFilter, generatedColumnToSuppressFromFilter);
 
 			if (queryPod.isDebugOrExplain()) {

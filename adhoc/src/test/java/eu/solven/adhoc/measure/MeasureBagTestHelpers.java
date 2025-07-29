@@ -31,7 +31,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +40,7 @@ public class MeasureBagTestHelpers {
 
 	/**
 	 * This is the DAG of measure. It is a simplistic view of the measures graph, as it may not reflect the impacts of
-	 * {@link IMeasure} requesting underlying measures with custom {@link IAdhocFilter} or {@link IAdhocGroupBy}.
+	 * {@link IMeasure} requesting underlying measures with custom {@link ISliceFilter} or {@link IAdhocGroupBy}.
 	 *
 	 * @return
 	 */

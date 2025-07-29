@@ -33,7 +33,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQ
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -143,7 +143,7 @@ public class TestTableQueryOptimizer {
 	public void testCanInduce_DifferentTopology() {
 		Assertions.assertThat(optimizer.canInduce(
 				// groupBy (g,h) matchAll
-				CubeQueryStep.edit(step).groupBy(GroupByColumns.named("g", "h")).filter(IAdhocFilter.MATCH_ALL).build(),
+				CubeQueryStep.edit(step).groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g"))
@@ -154,7 +154,7 @@ public class TestTableQueryOptimizer {
 
 		Assertions.assertThat(optimizer.canInduce(
 				// groupBy (g,h) matchAll
-				CubeQueryStep.edit(step).groupBy(GroupByColumns.named("g", "h")).filter(IAdhocFilter.MATCH_ALL).build(),
+				CubeQueryStep.edit(step).groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("c"))

@@ -33,33 +33,33 @@ import cz.jirutka.rsql.parser.ast.RSQLVisitor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter.ColumnFilterBuilder;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 /**
- * {@link RSQLVisitor} generating {@link IAdhocFilter}.
+ * {@link RSQLVisitor} generating {@link ISliceFilter}.
  * 
  * @author Benoit Lacelle
  */
-public class AdhocFilterRsqlVisitor implements RSQLVisitor<IAdhocFilter, String> {
+public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String> {
 	@Override
-	public IAdhocFilter visit(AndNode node, String param) {
-		List<IAdhocFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
+	public ISliceFilter visit(AndNode node, String param) {
+		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
 
 		return AndFilter.and(operands);
 	}
 
 	@Override
-	public IAdhocFilter visit(OrNode node, String param) {
-		List<IAdhocFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
+	public ISliceFilter visit(OrNode node, String param) {
+		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
 
 		return OrFilter.or(operands);
 	}
 
 	@Override
-	public IAdhocFilter visit(ComparisonNode node, String param) {
+	public ISliceFilter visit(ComparisonNode node, String param) {
 		ComparisonOperator op = node.getOperator();
 		String column = node.getSelector();
 

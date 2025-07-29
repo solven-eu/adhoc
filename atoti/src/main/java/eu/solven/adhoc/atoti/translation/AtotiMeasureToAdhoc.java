@@ -82,7 +82,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import lombok.AccessLevel;
@@ -395,7 +395,7 @@ public class AtotiMeasureToAdhoc {
 		transferTagProperties(measure, filtratorBuilder::tag);
 		filtratorBuilder.underlying(getSingleUnderylingMeasure(underlyingNames));
 
-		IAdhocFilter filter = makeFilter(measure, properties);
+		ISliceFilter filter = makeFilter(measure, properties);
 
 		filtratorBuilder.filter(filter);
 
@@ -451,7 +451,7 @@ public class AtotiMeasureToAdhoc {
 		return List.of(unfiltratorBuilder.build());
 	}
 
-	protected IAdhocFilter makeFilter(IPostProcessorDescription measure, Properties properties) {
+	protected ISliceFilter makeFilter(IPostProcessorDescription measure, Properties properties) {
 		List<String> levels = getPropertyList(properties, LevelFilteringPostProcessor.LEVELS_PROPERTY);
 		// The conditions property is special, as ActivePivot expect it to be filled with IConditions
 		List<?> filters = (List<?>) properties.get(LevelFilteringPostProcessor.CONDITIONS_PROPERTY);
@@ -473,9 +473,9 @@ public class AtotiMeasureToAdhoc {
 
 		// We do not build explicitly an AND filter, as it may be a sub-optimal filter
 		// By chaining AND operations, we may end with a simpler filter (e.g. given a single filter clause)
-		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+		ISliceFilter filter = ISliceFilter.MATCH_ALL;
 		for (int i = 0; i < Math.min(levels.size(), filters.size()); i++) {
-			IAdhocFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levelToColumn(levels.get(i)), filters.get(i));
+			ISliceFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levelToColumn(levels.get(i)), filters.get(i));
 			filter = AndFilter.and(filter, columnFilter);
 		}
 		return filter;

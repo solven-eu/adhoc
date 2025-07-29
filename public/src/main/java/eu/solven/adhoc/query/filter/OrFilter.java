@@ -56,7 +56,7 @@ public class OrFilter implements IOrFilter {
 
 	@Singular
 	@NonNull
-	final ImmutableSet<IAdhocFilter> filters;
+	final ImmutableSet<ISliceFilter> filters;
 
 	@Override
 	public boolean isNot() {
@@ -71,7 +71,7 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public boolean isMatchAll() {
-		return filters.stream().anyMatch(IAdhocFilter::isMatchAll);
+		return filters.stream().anyMatch(ISliceFilter::isMatchAll);
 	}
 
 	@Override
@@ -80,7 +80,7 @@ public class OrFilter implements IOrFilter {
 	}
 
 	@Override
-	public Set<IAdhocFilter> getOperands() {
+	public Set<ISliceFilter> getOperands() {
 		return filters;
 	}
 
@@ -105,12 +105,12 @@ public class OrFilter implements IOrFilter {
 		}
 	}
 
-	public static IAdhocFilter or(Collection<? extends IAdhocFilter> filters) {
-		if (filters.stream().anyMatch(IAdhocFilter::isMatchAll)) {
+	public static ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		if (filters.stream().anyMatch(ISliceFilter::isMatchAll)) {
 			return MATCH_ALL;
 		}
 
-		List<? extends IAdhocFilter> notMatchNone = filters.stream().filter(f -> !f.isMatchNone()).flatMap(operand -> {
+		List<? extends ISliceFilter> notMatchNone = filters.stream().filter(f -> !f.isMatchNone()).flatMap(operand -> {
 			if (operand instanceof IOrFilter operandIsOr) {
 				// OR of ORs
 				return operandIsOr.getOperands().stream();
@@ -130,7 +130,7 @@ public class OrFilter implements IOrFilter {
 	}
 
 	// `first, second, more` syntax to push providing at least 2 arguments
-	public static IAdhocFilter or(IAdhocFilter first, IAdhocFilter second, IAdhocFilter... more) {
+	public static ISliceFilter or(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
 		return or(Lists.asList(first, second, more));
 	}
 
@@ -142,7 +142,7 @@ public class OrFilter implements IOrFilter {
 	 *
 	 * @return a filter doing an `OR` between each {@link Map} entry,
 	 */
-	public static IAdhocFilter or(Map<String, ?> columnToFilter) {
+	public static ISliceFilter or(Map<String, ?> columnToFilter) {
 		return or(columnToFilter.entrySet()
 				.stream()
 				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())

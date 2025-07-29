@@ -31,53 +31,53 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestSimpleFilterEditor {
 	@Test
 	public void testShiftAll() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
+		ISliceFilter filter = ISliceFilter.MATCH_ALL;
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(ColumnFilter.isEqualTo("c", "v1"));
 	}
 
 	@Test
 	public void testShiftColumn() {
-		IAdhocFilter filter = ColumnFilter.isEqualTo("a", "a1");
+		ISliceFilter filter = ColumnFilter.isEqualTo("a", "a1");
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1"))
 				.isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
 	}
 
 	@Test
 	public void testShiftIfPresent() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_ALL;
-		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "c", "v1")).isEqualTo(IAdhocFilter.MATCH_ALL);
+		ISliceFilter filter = ISliceFilter.MATCH_ALL;
+		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "c", "v1")).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testMatchNone() {
-		IAdhocFilter filter = IAdhocFilter.MATCH_NONE;
-		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(IAdhocFilter.MATCH_NONE);
+		ISliceFilter filter = ISliceFilter.MATCH_NONE;
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testShift_And() {
-		IAdhocFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "c2"))
 				.isEqualTo(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c2")));
 	}
 
 	@Test
 	public void testShift_Or() {
-		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "b", "b2"))
 				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b2")), AndFilter.and(Map.of("b", "b2"))));
 	}
 
 	@Test
 	public void testShiftIfPresent_Or() {
-		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
 		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "b", "b2"))
 				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b2"))));
 	}
@@ -87,8 +87,8 @@ public class TestSimpleFilterEditor {
 		Function<Object, Object> shiftPreviousYear =
 				rawYear -> rawYear instanceof Number year ? year.longValue() - 1 : rawYear;
 
-		IAdhocFilter filter = OrFilter.or(Map.of("a", "a1", "b", 123));
-		IAdhocFilter shiftedFilter = SimpleFilterEditor.shiftIfPresent(filter, "b", shiftPreviousYear);
+		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", 123));
+		ISliceFilter shiftedFilter = SimpleFilterEditor.shiftIfPresent(filter, "b", shiftPreviousYear);
 		Assertions.assertThat(shiftedFilter).isInstanceOf(OrFilter.class);
 
 		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of())).isFalse();

@@ -22,12 +22,22 @@
  */
 package eu.solven.adhoc.column;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -69,6 +79,77 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 	@Override
 	public Class<?> getType() {
 		return type;
+	}
+
+	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+	private static final class RecordingRecord implements ITabularRecord {
+		@Getter
+		final Set<String> usedColumn = new HashSet<>();
+
+		@Override
+		public Set<String> aggregateKeySet() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Object getAggregate(String aggregateName) {
+			throw new NotYetImplementedException("Calculated Column over aggregates");
+		}
+
+		@Override
+		public IValueProvider onAggregate(String aggregateName) {
+			throw new NotYetImplementedException("Calculated Column over aggregates");
+		}
+
+		@Override
+		public Map<String, ?> aggregatesAsMap() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Set<String> groupByKeySet() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public Object getGroupBy(String columnName) {
+			usedColumn.add(columnName);
+			return null;
+		}
+
+		@Override
+		public Map<String, ?> asMap() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public boolean isEmpty() {
+			// Indicates this is not empty to preventing short-cutting reading any field
+			return false;
+		}
+
+		@Override
+		public SliceAsMap getGroupBys() {
+			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
+		}
+
+		@Override
+		public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+	}
+
+	public static Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
+		RecordingRecord recording = new RecordingRecord();
+
+		calculatedColumn.getRecordToCoordinate().apply(recording);
+		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 
 }

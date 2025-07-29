@@ -31,7 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestAdhocQueryStep {
 	@Test
@@ -39,7 +39,7 @@ public class TestAdhocQueryStep {
 		CubeQueryStep step = CubeQueryStep.builder()
 				// This test should customize all fields
 				.measure(Aggregator.sum("c"))
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.customMarker("somethingCutom")
 				.option(StandardQueryOptions.DEBUG)
@@ -66,7 +66,7 @@ public class TestAdhocQueryStep {
 	public void testDebug() {
 		CubeQueryStep stepNotDebug = CubeQueryStep.builder()
 				.measure(Aggregator.sum("c"))
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.build();
 		Assertions.assertThat(stepNotDebug.isDebug()).isFalse();
@@ -81,7 +81,7 @@ public class TestAdhocQueryStep {
 	public void testCustomMarker() {
 		CubeQueryStep stepHasCustom = CubeQueryStep.builder()
 				.measure(Aggregator.sum("c"))
-				.filter(IAdhocFilter.MATCH_ALL)
+				.filter(ISliceFilter.MATCH_ALL)
 				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
 				.customMarker(Optional.of("someCustomMarker"))
 				.build();

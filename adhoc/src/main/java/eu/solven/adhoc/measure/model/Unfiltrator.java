@@ -34,7 +34,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.step.UnfiltratorQueryStep;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,7 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 	/**
-	 * Different mode to modify the {@link IAdhocFilter}.
+	 * Different mode to modify the {@link ISliceFilter}.
 	 * 
 	 * @author Benoit Lacelle
 	 */

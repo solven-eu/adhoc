@@ -27,7 +27,7 @@ import java.util.Set;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.filter.IAdhocFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -46,7 +46,7 @@ public final class AdhocSubQuery implements ICubeQuery, IHasParentQueryId {
 	final AdhocQueryId parentQueryId;
 
 	@Override
-	public IAdhocFilter getFilter() {
+	public ISliceFilter getFilter() {
 		return subQuery.getFilter();
 	}
 
