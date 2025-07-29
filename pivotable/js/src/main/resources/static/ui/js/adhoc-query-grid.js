@@ -126,7 +126,7 @@ export default {
 			// May be String or Object (decorating a column with calculated coordinates)
 			const rawColumnNames = props.tabularView.query.groupBy.columns;
 			const columnNames = rawColumnNames.map((rawC) => {
-				if (typeof rawC === 'object') {
+				if (typeof rawC === "object") {
 					return rawC.column;
 				} else {
 					return rawC;

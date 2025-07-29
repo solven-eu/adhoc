@@ -123,12 +123,6 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 
-		// @Override
-		// public boolean isEmpty() {
-		// // Indicates this is not empty to preventing short-cutting reading any field
-		// return false;
-		// }
-
 		@Override
 		public SliceAsMap getGroupBys() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
