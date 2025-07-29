@@ -57,7 +57,7 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 		return toString(this);
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse" })
 	public static String toString(ITabularGroupByRecord tabularRecord) {
 		StringBuilder string = new StringBuilder();
 
@@ -66,7 +66,7 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 				.stream()
 				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
 				.collect(Collectors.joining(", ")));
-		string.append("}");
+		string.append('}');
 
 		return string.toString();
 	}

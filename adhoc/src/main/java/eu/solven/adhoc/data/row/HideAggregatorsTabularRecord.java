@@ -102,11 +102,6 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 		return copy;
 	}
 
-//	@Override
-//	public boolean isEmpty() {
-//		return decorated.isEmpty();
-//	}
-
 	@Override
 	public IAdhocSlice getGroupBys() {
 		return decorated.getGroupBys();
