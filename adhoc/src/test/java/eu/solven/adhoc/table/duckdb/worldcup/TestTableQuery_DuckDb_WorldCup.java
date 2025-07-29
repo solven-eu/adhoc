@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -40,6 +42,7 @@ import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import lombok.extern.slf4j.Slf4j;
@@ -252,6 +255,27 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(20.09, 20.10);
 			}).hasSize(2);
 		}).hasSize(1);
+	}
+
+	@Test
+	public void testEventCount_byMinute_withCalculatedStar() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column("minute")
+						.calculatedCoordinate(CalculatedCoordinate.star())
+						.build()))
+				.explain(true)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("minute", 1L), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 135L));
+		}).hasEntrySatisfying(Map.of("minute", 90L), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 328L));
+		}).hasEntrySatisfying(Map.of("minute", "*"), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 11_270L));
+		}).hasSize(120 + 1);
 	}
 
 }

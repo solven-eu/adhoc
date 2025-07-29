@@ -36,7 +36,7 @@ import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularRecord {
+public interface ITabularRecord extends ITabularGroupByRecord {
 	Set<String> aggregateKeySet();
 
 	IValueProvider onAggregate(String aggregateName);
@@ -49,10 +49,6 @@ public interface ITabularRecord {
 	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
 	Map<String, ?> aggregatesAsMap();
 
-	Set<String> groupByKeySet();
-
-	Object getGroupBy(String columnName);
-
 	/**
 	 * 
 	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
@@ -60,7 +56,7 @@ public interface ITabularRecord {
 	@Deprecated(since = "Prefer processing aggregates then values")
 	Map<String, ?> asMap();
 
-	boolean isEmpty();
+	// boolean isEmpty();
 
 	IAdhocSlice getGroupBys();
 

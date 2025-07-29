@@ -30,7 +30,7 @@ import com.ezylang.evalex.Expression;
 import com.ezylang.evalex.data.EvaluationValue;
 import com.ezylang.evalex.parser.ParseException;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -71,7 +71,7 @@ public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColum
 	}
 
 	@Override
-	public Object computeCoordinate(ITabularRecord record) {
+	public Object computeCoordinate(ITabularGroupByRecord record) {
 		Expression exp = makeExpression();
 
 		EvaluationValue result;

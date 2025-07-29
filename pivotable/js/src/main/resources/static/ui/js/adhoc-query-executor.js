@@ -104,7 +104,21 @@ export default {
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as `queryJson` must not changed when playing with the wizard.
 			// `.slice` as we want an immutable snapshot
-			const orderedColumns = props.queryModel.selectedColumnsOrdered.slice(0);
+			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0);
+
+			// Add a calculated member representing the grand totals
+			const orderedColumnsWithStar = orderedColumnsAsList.map((c) => ({
+				type: ".ColumnWithCalculatedCoordinates",
+				column: c,
+				calculatedCoordinates: [
+					{
+						type: ".CalculatedCoordinate",
+						coordinate: "*",
+					},
+				],
+			}));
+
+			const orderedColumns = orderedColumnsWithStar;
 
 			const options = Object.keys(props.queryModel.selectedOptions).filter((option) => props.queryModel.selectedOptions[option] === true);
 

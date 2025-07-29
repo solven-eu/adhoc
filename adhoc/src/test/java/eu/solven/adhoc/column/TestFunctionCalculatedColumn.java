@@ -22,26 +22,30 @@
  */
 package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
- * {@link ITableWrapper}.
- * 
- * @author Benoit Lacelle
- */
-public interface ICalculatedColumn extends IHasName {
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
-	/**
-	 * 
-	 * @param record
-	 * @return a coordinate for given {@link ITabularRecord}. May rely both on slices or aggregates.
-	 */
-	Object computeCoordinate(ITabularGroupByRecord record);
+import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-	Class<?> getType();
+public class TestFunctionCalculatedColumn {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(FunctionCalculatedColumn.class).verify();
+	}
 
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		Assertions
+				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(FunctionCalculatedColumn.class,
+						FunctionCalculatedColumn.builder()
+								.name("someColumn")
+								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
+								.build()))
+				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
+				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
+	}
 }

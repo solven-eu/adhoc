@@ -103,10 +103,10 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceAsMap.grandTotal()).build();
 	}
 
-	@Override
-	public boolean isEmpty() {
-		return aggregates.isEmpty() && slice.isEmpty();
-	}
+//	@Override
+//	public boolean isEmpty() {
+//		return aggregates.isEmpty() && slice.isEmpty();
+//	}
 
 	@Override
 	public IAdhocSlice getGroupBys() {

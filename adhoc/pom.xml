@@ -31,6 +31,7 @@
 			<!-- Used as bitset in MultitypeArrayColumn -->
 			<groupId>org.roaringbitmap</groupId>
 			<artifactId>RoaringBitmap</artifactId>
+			<!-- Can not upgrade due to https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
 			<version>1.3.0</version>
 		</dependency>
 

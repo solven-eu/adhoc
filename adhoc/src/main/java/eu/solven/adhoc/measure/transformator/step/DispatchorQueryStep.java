@@ -28,12 +28,16 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.data.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -208,6 +212,14 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			if (value == null) {
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
 				throw new IllegalStateException("A sliced-value can not be null");
+			}
+
+			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);
+			if (column instanceof ICalculatedColumn calculatedColumn) {
+				IAdhocSlice preSlice = SliceAsMap.fromMap(Map.of(groupByColumn, value));
+				Object calculatedCoordinate = calculatedColumn
+						.computeCoordinate(TabularGroupByRecordOverMap.builder().slice(preSlice).build());
+				value = calculatedCoordinate;
 			}
 
 			queryCoordinatesBuilder.append(value);

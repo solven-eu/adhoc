@@ -44,6 +44,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A simple {@link ITabularView} based on a {@link TreeMap}. it is especially useful for debugging purposes.
@@ -54,6 +55,7 @@ import lombok.Getter;
  */
 @Builder
 @EqualsAndHashCode
+@Slf4j
 public class MapBasedTabularView implements ITabularView {
 	@Default
 	@Getter
@@ -120,6 +122,7 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
+		log.info("slice={} measures={}", slice, mToValues);
 		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregation::aggregateMaps);
 	}
 

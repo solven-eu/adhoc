@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestColumnWithCalculatedCoordinates {
 
@@ -40,8 +39,7 @@ public class TestColumnWithCalculatedCoordinates {
 		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
 				ColumnWithCalculatedCoordinates.builder()
 						.column("d")
-						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
+						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build());
 
 		Assertions.assertThat(asString).isEqualTo("""
@@ -74,8 +72,7 @@ public class TestColumnWithCalculatedCoordinates {
 		Assertions.assertThat(column)
 				.isEqualTo(ColumnWithCalculatedCoordinates.builder()
 						.column("d")
-						.calculatedCoordinate(
-								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
+						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build());
 	}
 }

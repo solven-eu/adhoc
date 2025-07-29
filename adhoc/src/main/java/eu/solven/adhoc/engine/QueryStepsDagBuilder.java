@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final ICubeQuery query;
 	final IQueryStepCache queryStepCache;
 
-	final Set<CubeQueryStep> roots = new HashSet<>();
+	// Linked as this will be used for iterating the output result
+	final Set<CubeQueryStep> roots = new LinkedHashSet<>();
 
 	// The DAG maintain the actual query nodes, as it enable topological ordering
 	final DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
@@ -139,7 +141,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 						hasCalculated.getCalculatedCoordinates().stream().map(calculatedCoordinate -> {
 							IAdhocColumn staticValueColumn = FunctionCalculatedColumn.builder()
 									.name(column.getName())
-									.recordToCoordinate(r -> calculatedCoordinate.getCoordinate())
+									.recordToCoordinate(
+											FunctionCalculatedColumn.constant(calculatedCoordinate.getCoordinate()))
 									// `skipFiltering` feels like bad-design. It is used to prevent
 									// `ColumnsManager.openTableStream`
 									// rejecting a calculatedColumn being filtered, as these calculatedCoordinates
@@ -283,7 +286,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	@Override
 	public QueryStepsDag getQueryDag() {
-		return QueryStepsDag.builder().dag(dag).multigraph(multigraph).queried(roots).stepToValues(stepToValue).build();
+		return QueryStepsDag.builder()
+				.dag(dag)
+				.multigraph(multigraph)
+				.queried(ImmutableSet.copyOf(roots))
+				.stepToValues(stepToValue)
+				.build();
 	}
 
 	@Override
