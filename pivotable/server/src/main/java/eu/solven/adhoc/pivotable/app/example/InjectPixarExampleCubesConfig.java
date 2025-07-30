@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.duckdb.DuckDBAppender;
 import org.duckdb.DuckDBConnection;
+import org.duckdb.DuckDBSingleValueAppender;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
@@ -118,8 +119,9 @@ public class InjectPixarExampleCubesConfig {
 			DuckDBConnection duckDbC = (DuckDBConnection) connection;
 
 			Stream.of("pixar_films", "pixar_people").forEach(fileName -> {
-				try (DuckDBAppender appender = duckDbC.createAppender(DuckDBConnection.DEFAULT_SCHEMA, fileName)) {
-
+				// https://github.com/duckdb/duckdb-java/issues/310
+				try (DuckDBSingleValueAppender appender =
+						duckDbC.createSingleValueAppender(DuckDBConnection.DEFAULT_SCHEMA, fileName)) {
 					String csv = PepperResourceHelper.loadAsString("/datasets/Pixar+Films/%s.csv".formatted(fileName),
 							StandardCharsets.UTF_8);
 

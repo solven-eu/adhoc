@@ -122,7 +122,7 @@ public class MapBasedTabularView implements ITabularView {
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
-		log.info("slice={} measures={}", slice, mToValues);
+		log.debug("slice={} measures={}", slice, mToValues);
 		coordinatesToValues.merge(slice.getCoordinates(), mToValues, MapAggregation::aggregateMaps);
 	}
 

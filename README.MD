@@ -1,4 +1,4 @@
-# AdHoc - OLAP Formulas Pipeline
+# AdHoc - Formulas for OLAP
 
 [![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)

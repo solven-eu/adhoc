@@ -265,7 +265,6 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 						.column("minute")
 						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build()))
-				.explain(true)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
