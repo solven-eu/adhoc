@@ -82,7 +82,7 @@
 		<!-- http://maven.apache.org/ref/3.8.1/maven-core/lifecycles.html -->
 		<!-- https://github.com/spotbugs/spotbugs-maven-plugin/issues/75 -->
 		<staticChecksOverBytecode>process-classes</staticChecksOverBytecode>
-		
+
 		<excludedGroups>adhoc-benchmark</excludedGroups>
 
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs -->

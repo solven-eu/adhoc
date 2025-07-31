@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Adhoc Spotless
+name: Adhoc Integration Tests
 
 on:
   push:
@@ -35,6 +35,6 @@ jobs:
 	  # `mvn dependency` has issues with multi-modules
 	  # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
 	  run: mvn package -Pfast --file pom.xml --batch-mode
-	- name: Java unit-tests
+	- name: Java integration-tests
 	  # Stick to `package` phase for consistency, and checking packaging is fine
-	  run: mvn test -Dgroups=adhoc-benchmark --file pom.xml --batch-mode
+	  run: mvn test -DexcludedGroups=adhoc-benchmark -Dgroups=adhoc-benchmark --file pom.xml --batch-mode

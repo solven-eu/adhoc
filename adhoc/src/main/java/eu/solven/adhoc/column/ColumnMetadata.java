@@ -69,9 +69,8 @@ public class ColumnMetadata implements IHasName, IHasTags {
 		}
 
 		// https://stackoverflow.com/questions/9797212/finding-the-nearest-common-superclass-or-superinterface-of-a-collection-of-cla
-		Optional<? extends Class<?>> reduce = columns.stream()
-				.<Class<?>>map(c -> c.getType())
-				.reduce((l, r) -> ClassUtils.determineCommonAncestor(l, r));
+		Optional<? extends Class<?>> reduce =
+				columns.stream().<Class<?>>map(c -> c.getType()).reduce(ClassUtils::determineCommonAncestor);
 
 		ColumnMetadata first = columns.iterator().next();
 
