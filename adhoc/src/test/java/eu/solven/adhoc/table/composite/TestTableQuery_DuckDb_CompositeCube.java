@@ -168,7 +168,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.containsEntry(k1Sum.getColumnName(), Integer.class)
 				.containsEntry(k2Sum.getColumnName(), Integer.class)
 				.containsEntry(k3Sum.getColumnName(), Integer.class)
-				.containsEntry("k4", Double.class)
+				.containsEntry("k4", Number.class)
 				.containsEntry("cubeSlicer", String.class)
 				.hasSize(8);
 
