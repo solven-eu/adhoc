@@ -29,7 +29,9 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import com.google.common.math.LongMath;
 
@@ -42,6 +44,7 @@ import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,8 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+@Tag("adhoc-benchmark")
 public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
 	int maxCardinality = 10_000;
 

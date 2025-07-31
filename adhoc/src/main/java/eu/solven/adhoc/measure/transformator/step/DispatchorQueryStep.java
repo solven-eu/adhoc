@@ -56,6 +56,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -205,13 +206,15 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			Object value = fragmentCoordinate.get(groupByColumn);
 
 			if (value == null) {
-				// BEWARE When would we get a groupBy from the slice rather than from the fragment coordinate?
+				// Happens on groupBy along not-generated columns
 				value = slice.getSlice().getRawSliced(groupByColumn);
 			}
 
 			if (value == null) {
+				value = NullMatcher.NULL_HOLDER;
 				// Should we accept null a coordinate, e.g. to handle input partial Maps?
-				throw new IllegalStateException("A sliced-value can not be null");
+				// throw new IllegalStateException("A sliced-value can not be null
+				// (column=%s)".formatted(groupByColumn));
 			}
 
 			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -47,13 +48,15 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
+import eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
 public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000 / 10;
+	static final int maxCardinality = 1_000_000;
 
 	@BeforeAll
 	public static void setLimits() {

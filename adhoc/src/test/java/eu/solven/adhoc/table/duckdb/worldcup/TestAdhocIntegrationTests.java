@@ -20,20 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.table.duckdb.worldcup;
 
-import org.junit.jupiter.api.Tag;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-@Tag("adhoc-benchmark")
-public class TestBenchmarkCollectionUnnesting extends BenchmarkCollectionUnnesting {
-	static final int loop = 100 * 1000 * 1000;
+public class TestAdhocIntegrationTests {
+	// To be referred by `@EnabledIf` for integration tests
+	public static final String ENABLED_IF =
+			"eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests#runIntegrationTests";
 
-	@Test
-	public void test_unnestAsList_noCollection() {
-		for (int i = 0; i < loop; i++) {
-			unnestAsList_noCollection();
-		}
+	public static boolean runIntegrationTests() {
+		return Boolean.getBoolean("adhoc.runIntegrationTests");
 	}
 
+	/**
+	 * Check the integration tests are disabled by default
+	 */
+	@Test
+	public void testRunIntegrationsTests() {
+		Assertions.assertThat(runIntegrationTests()).isFalse();
+	}
 }
