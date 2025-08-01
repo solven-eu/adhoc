@@ -54,7 +54,7 @@ public class TestSumAggregation_ElseString {
 	public void testBigString() {
 		String aggregated = "initial";
 
-		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
+		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumElseStringAggregation.class)) {
 			for (int i = 0; i < 256; i++) {
 				aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
 			}
@@ -71,7 +71,7 @@ public class TestSumAggregation_ElseString {
 		Assertions.assertThatThrownBy(() -> {
 			String aggregated = "initial";
 
-			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumAggregation.class)) {
+			try (ILogDisabler logDisabler = PepperTestHelper.disableLog(SumElseStringAggregation.class)) {
 				for (int i = 0; i < 16 * 1024; i++) {
 					aggregated = (String) aggregator.aggregate(aggregated, "someLongString_" + i);
 				}

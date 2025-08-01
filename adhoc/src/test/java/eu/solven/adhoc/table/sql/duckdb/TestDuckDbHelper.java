@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -46,6 +45,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestDuckDbHelper {
+	static {
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
+	}
+
 	@Test
 	public void testFilterExpr_like() {
 		Assertions.assertThat(DuckDbHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
@@ -135,7 +141,6 @@ public class TestDuckDbHelper {
 								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ALL""");
 	}
 
-	@Disabled
 	@Test
 	public void testMakeConnections_withPool() {
 		// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#rocket-initialization
@@ -147,8 +152,8 @@ public class TestDuckDbHelper {
 
 		DSLSupplier supplier = DSLSupplier.fromDatasource(ds, SQLDialect.DUCKDB);
 
-		IntStream.range(0, 16 * 1024).forEach(i -> {
-			if (Integer.bitCount(i + 1) == 1) {
+		IntStream.rangeClosed(0, 16 * 1024).forEach(i -> {
+			if (Integer.bitCount(i) == 1) {
 				log.info("testMakeConnections_withPool #{}", i);
 			}
 			supplier.getDSLContext();

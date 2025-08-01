@@ -22,8 +22,10 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("adhoc-benchmark")
 public class TestBenchmarkCollectionUnnesting extends BenchmarkCollectionUnnesting {
 	static final int loop = 100 * 1000 * 1000;
 

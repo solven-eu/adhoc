@@ -20,28 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.table.duckdb.worldcup;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
- * {@link ITableWrapper}.
- * 
- * @author Benoit Lacelle
- */
-public interface ICalculatedColumn extends IHasName {
+public class TestAdhocIntegrationTests {
+	// To be referred by `@EnabledIf` for integration tests
+	public static final String ENABLED_IF =
+			"eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests#runIntegrationTests";
+
+	public static boolean runIntegrationTests() {
+		return Boolean.getBoolean("adhoc.runIntegrationTests");
+	}
 
 	/**
-	 * 
-	 * @param record
-	 * @return a coordinate for given {@link ITabularRecord}. May rely both on slices or aggregates.
+	 * Check the integration tests are disabled by default
 	 */
-	Object computeCoordinate(ITabularGroupByRecord record);
-
-	Class<?> getType();
-
+	@Test
+	public void testRunIntegrationsTests() {
+		Assertions.assertThat(runIntegrationTests()).isFalse();
+	}
 }

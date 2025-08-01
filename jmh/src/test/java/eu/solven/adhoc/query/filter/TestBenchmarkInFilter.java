@@ -22,8 +22,10 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("adhoc-benchmark")
 public class TestBenchmarkInFilter extends BenchmarkInFilter {
 	static final int loop = 1000 * 1000;
 

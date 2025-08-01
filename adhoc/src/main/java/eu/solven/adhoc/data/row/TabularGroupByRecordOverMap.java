@@ -20,28 +20,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.data.row;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.With;
 
 /**
- * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
- * {@link ITableWrapper}.
- * 
+ * A simple {@link ITabularRecord} based on {@link Map}.
+ *
  * @author Benoit Lacelle
  */
-public interface ICalculatedColumn extends IHasName {
+@Builder
+public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
+	@NonNull
+	@With
+	final IAdhocSlice slice;
 
-	/**
-	 * 
-	 * @param record
-	 * @return a coordinate for given {@link ITabularRecord}. May rely both on slices or aggregates.
-	 */
-	Object computeCoordinate(ITabularGroupByRecord record);
+	@Override
+	public Set<String> groupByKeySet() {
+		return slice.getColumns();
+	}
 
-	Class<?> getType();
+	@Override
+	public Object getGroupBy(String columnName) {
+		return slice.getRawSliced(columnName);
+	}
 
+	@Override
+	public String toString() {
+		return toString(this);
+	}
+
+	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse" })
+	public static String toString(ITabularGroupByRecord tabularRecord) {
+		StringBuilder string = new StringBuilder();
+
+		string.append("slice:{");
+		string.append(tabularRecord.groupByKeySet()
+				.stream()
+				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
+				.collect(Collectors.joining(", ")));
+		string.append('}');
+
+		return string.toString();
+	}
+
+	@Override
+	public IAdhocSlice getGroupBys() {
+		return slice;
+	}
 }

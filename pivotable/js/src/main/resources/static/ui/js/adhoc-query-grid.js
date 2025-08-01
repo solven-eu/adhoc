@@ -123,7 +123,15 @@ export default {
 			// Delete the example
 			delete metadata[0];
 
-			const columnNames = props.tabularView.query.groupBy.columns;
+			// May be String or Object (decorating a column with calculated coordinates)
+			const rawColumnNames = props.tabularView.query.groupBy.columns;
+			const columnNames = rawColumnNames.map((rawC) => {
+				if (typeof rawC === "object") {
+					return rawC.column;
+				} else {
+					return rawC;
+				}
+			});
 
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render

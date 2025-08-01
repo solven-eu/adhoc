@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -64,7 +65,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 	Class<?> type = Object.class;
 
 	// Compute a coordinate given current record
-	Function<ITabularRecord, Object> recordToCoordinate;
+	Function<ITabularGroupByRecord, Object> recordToCoordinate;
 
 	// TODO Bad-design. Used for `*` calculated column, as given coordinate should not be filtered-out by
 	// IValueMatchers.
@@ -72,7 +73,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 	boolean skipFiltering = false;
 
 	@Override
-	public Object computeCoordinate(ITabularRecord record) {
+	public Object computeCoordinate(ITabularGroupByRecord record) {
 		return recordToCoordinate.apply(record);
 	}
 
@@ -123,12 +124,6 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public boolean isEmpty() {
-			// Indicates this is not empty to preventing short-cutting reading any field
-			return false;
-		}
-
-		@Override
 		public SliceAsMap getGroupBys() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
@@ -150,6 +145,27 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 
 		calculatedColumn.getRecordToCoordinate().apply(recording);
 		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
+	}
+
+	/**
+	 * This includes a nice `.toString`
+	 * 
+	 * @param coordinate
+	 * @return a {@link Function} mapping always to the same value
+	 */
+	public static Function<ITabularGroupByRecord, Object> constant(Object coordinate) {
+		return new Function<>() {
+
+			@Override
+			public Object apply(ITabularGroupByRecord t) {
+				return coordinate;
+			}
+
+			@Override
+			public String toString() {
+				return String.valueOf(coordinate);
+			}
+		};
 	}
 
 }

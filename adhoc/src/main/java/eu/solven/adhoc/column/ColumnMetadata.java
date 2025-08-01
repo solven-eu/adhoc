@@ -23,7 +23,10 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
+
+import org.springframework.util.ClassUtils;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -65,8 +68,13 @@ public class ColumnMetadata implements IHasName, IHasTags {
 			throw new IllegalArgumentException("Need at least one column");
 		}
 
-		// TODO Manage conflicts (e.g. same column but different types)
-		return columns.iterator().next();
+		// https://stackoverflow.com/questions/9797212/finding-the-nearest-common-superclass-or-superinterface-of-a-collection-of-cla
+		Optional<? extends Class<?>> reduce =
+				columns.stream().<Class<?>>map(c -> c.getType()).reduce(ClassUtils::determineCommonAncestor);
+
+		ColumnMetadata first = columns.iterator().next();
+
+		return first.toBuilder().type(reduce.get()).build();
 	}
 
 }

@@ -101,7 +101,6 @@ public class RelevancyHeuristic {
 		});
 
 		AtomicLongMap<String> measureToDepth = AtomicLongMap.create();
-		// leaves.forEach(measureToDepth::incrementAndGet);
 
 		AtomicLongMap<String> columnToRef = AtomicLongMap.create();
 

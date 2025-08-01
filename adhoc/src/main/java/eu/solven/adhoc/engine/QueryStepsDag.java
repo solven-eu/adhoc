@@ -33,6 +33,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
@@ -71,7 +72,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromQueried
 	// We keep a separate list of queried steps, as some queried may not be roots in the DAG (e.g. when the query
 	// requests both a measure and one of its underlying)
 	@NonNull
-	Set<CubeQueryStep> queried;
+	ImmutableSet<CubeQueryStep> queried;
 
 	@NonNull
 	@Default

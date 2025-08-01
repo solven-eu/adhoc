@@ -644,71 +644,79 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				IColumnScanner<IAdhocSlice> baseRowScanner =
 						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
-				IColumnScanner<IAdhocSlice> rowScanner;
-				if (isEmptyMeasure) {
-					rowScanner = slice -> {
-						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
-
-						// `emptyValue` may not empty as we needed to materialize it to get up to here
-						// But now is time to force it to null, while materializing the slice.
-						return new IValueReceiver() {
-
-							// This is useful to prevent boxing emptyValue when long
-							@Override
-							public void onLong(long v) {
-								sliceFeeder.onObject(null);
-							}
-
-							// This is useful to prevent boxing emptyValue when double
-							@Override
-							public void onDouble(double v) {
-								sliceFeeder.onObject(null);
-							}
-
-							@Override
-							public void onObject(Object v) {
-								sliceFeeder.onObject(null);
-							}
-						};
-					};
-				} else if (doClearCarriers) {
-					rowScanner = slice -> {
-						IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
-
-						// `emptyValue` may not empty as we needed to materialize it to get up to here
-						// But now is time to force it to null, while materializing the slice.
-						return new IValueReceiver() {
-
-							// This is useful to prevent boxing emptyValue when long
-							@Override
-							public void onLong(long v) {
-								sliceFeeder.onLong(v);
-							}
-
-							// This is useful to prevent boxing emptyValue when double
-							@Override
-							public void onDouble(double v) {
-								sliceFeeder.onDouble(v);
-							}
-
-							@Override
-							public void onObject(Object v) {
-								if (v instanceof IAggregationCarrier aggregationCarrier) {
-									// Transfer the carried value
-									aggregationCarrier.acceptValueReceiver(sliceFeeder);
-								} else {
-									sliceFeeder.onObject(v);
-								}
-							}
-						};
-					};
-				} else {
-					rowScanner = baseRowScanner;
-				}
+				IColumnScanner<IAdhocSlice> rowScanner =
+						scannerForTabularView(isEmptyMeasure, doClearCarriers, baseRowScanner);
 				coordinatesToValues.forEachSlice(rowScanner);
 			}
 		});
 		return mapBasedTabularView;
+	}
+
+	protected IColumnScanner<IAdhocSlice> scannerForTabularView(boolean isEmptyMeasure,
+			boolean doClearCarriers,
+			IColumnScanner<IAdhocSlice> baseRowScanner) {
+		IColumnScanner<IAdhocSlice> rowScanner;
+		if (isEmptyMeasure) {
+			rowScanner = slice -> {
+				IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
+
+				// `emptyValue` may not empty as we needed to materialize it to get up to here
+				// But now is time to force it to null, while materializing the slice.
+				return new IValueReceiver() {
+
+					// This is useful to prevent boxing emptyValue when long
+					@Override
+					public void onLong(long v) {
+						sliceFeeder.onObject(null);
+					}
+
+					// This is useful to prevent boxing emptyValue when double
+					@Override
+					public void onDouble(double v) {
+						sliceFeeder.onObject(null);
+					}
+
+					@Override
+					public void onObject(Object v) {
+						sliceFeeder.onObject(null);
+					}
+				};
+			};
+		} else if (doClearCarriers) {
+			rowScanner = slice -> {
+				IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);
+
+				// `emptyValue` may not empty as we needed to materialize it to get up to here
+				// But now is time to force it to null, while materializing the slice.
+				return new IValueReceiver() {
+
+					// This is useful to prevent boxing emptyValue when long
+					@Override
+					public void onLong(long v) {
+						sliceFeeder.onLong(v);
+					}
+
+					// This is useful to prevent boxing emptyValue when double
+					@Override
+					public void onDouble(double v) {
+						sliceFeeder.onDouble(v);
+					}
+
+					@Override
+					public void onObject(Object v) {
+						if (v instanceof IAggregationCarrier aggregationCarrier) {
+							// Transfer the carried value
+							aggregationCarrier.acceptValueReceiver(sliceFeeder);
+						} else {
+							sliceFeeder.onObject(v);
+						}
+					}
+				};
+			};
+		} else {
+			rowScanner = baseRowScanner;
+		}
+		return rowScanner;
 	}
 
 }

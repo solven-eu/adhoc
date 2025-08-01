@@ -28,12 +28,17 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.data.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -52,6 +57,7 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -200,14 +206,30 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
 
-			if (value == null) {
-				// BEWARE When would we get a groupBy from the slice rather than from the fragment coordinate?
-				value = slice.getSlice().getRawSliced(groupByColumn);
-			}
+			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);
+			if (column instanceof ICalculatedColumn calculatedColumn) {
+				Map<String, Object> sliceAsMap = new LinkedHashMap<>();
+				sliceAsMap.putAll(slice.getSlice().getCoordinates());
 
-			if (value == null) {
-				// Should we accept null a coordinate, e.g. to handle input partial Maps?
-				throw new IllegalStateException("A sliced-value can not be null");
+				if (value != null) {
+					sliceAsMap.put(groupByColumn, value);
+				}
+				IAdhocSlice preSlice = SliceAsMap.fromMap(sliceAsMap);
+				ITabularGroupByRecord groupByRecord = TabularGroupByRecordOverMap.builder().slice(preSlice).build();
+				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);
+				value = calculatedCoordinate;
+			} else {
+				if (value == null) {
+					// Happens on groupBy along not-generated columns
+					value = slice.getSlice().getRawSliced(groupByColumn);
+				}
+
+				if (value == null) {
+					value = NullMatcher.NULL_HOLDER;
+					// Should we accept null a coordinate, e.g. to handle input partial Maps?
+					// throw new IllegalStateException("A sliced-value can not be null
+					// (column=%s)".formatted(groupByColumn));
+				}
 			}
 
 			queryCoordinatesBuilder.append(value);

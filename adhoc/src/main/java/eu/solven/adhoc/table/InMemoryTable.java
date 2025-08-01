@@ -196,7 +196,7 @@ public class InMemoryTable implements ITableWrapper {
 				if (distinctSlices) {
 					List<ITabularRecord> asList = stream.toList();
 
-					long nbSlices = asList.stream().map(ITabularRecord::getGroupBys).count();
+					long nbSlices = asList.stream().map(ITabularRecord::groupByKeySet).count();
 					if (nbSlices != asList.size()) {
 						// TODO We may implement the aggregations, but it may be unnecessary for unitTests
 						throw new IllegalStateException("Rows does not enable distinct groupBys");

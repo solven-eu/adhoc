@@ -29,7 +29,8 @@ import org.junit.platform.suite.api.IncludeEngines;
 import org.junit.platform.suite.api.SelectClasspathResource;
 import org.junit.platform.suite.api.Suite;
 
-@Suite
+// May be no tests when filtering integration tests
+@Suite(failIfNoTests = false)
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "eu.solven.adhoc.cucumber")

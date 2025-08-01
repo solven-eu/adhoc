@@ -28,19 +28,31 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.measure.model.Dispatchor;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestDispatchorQueryStep {
 	private boolean isRelevant(Map<String, String> decompositionSLice, ISliceFilter stepFilter) {
+		DispatchorQueryStep step = step(stepFilter);
+
+		return step.isRelevant(decompositionSLice);
+	}
+
+	private DispatchorQueryStep step(ISliceFilter stepFilter) {
 		Dispatchor d = Dispatchor.builder().name("d").underlying("u").build();
 		CubeQueryStep cubeStep = CubeQueryStep.builder().measure("d").filter(stepFilter).build();
 		DispatchorQueryStep step = new DispatchorQueryStep(d, AdhocFactories.builder().build(), cubeStep);
-
-		return step.isRelevant(decompositionSLice);
+		return step;
 	}
 
 	@Test
@@ -71,6 +83,24 @@ public class TestDispatchorQueryStep {
 	@Test
 	public void testMatchDecompositionEntry_in() {
 		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and(Map.of("c", Set.of("v", "v2"))))).isTrue();
+	}
+
+	@Test
+	public void testCalculatedColumn() {
+		ISliceFilter stepFilter = ISliceFilter.MATCH_ALL;
+		CubeQueryStep cubeStep = CubeQueryStep.builder().measure("d").filter(stepFilter).build();
+
+		IAdhocGroupBy groupBy = GroupByColumns.of(FunctionCalculatedColumn.builder()
+				.name("computedC")
+				.recordToCoordinate(r -> r.getGroupBy("underlyingC") + "_post")
+				.build());
+		ISliceWithStep sliceWithStep = SliceAsMapWithStep.builder()
+				.queryStep(cubeStep)
+				.slice(SliceAsMap.fromMap(Map.of("underlyingC", "underlyingV")))
+				.build();
+		IAdhocSlice o = step(stepFilter).queryGroupBy(groupBy, sliceWithStep, Map.of());
+
+		Assertions.assertThat((Map) o.getCoordinates()).containsEntry("computedC", "underlyingV" + "_post");
 	}
 
 }

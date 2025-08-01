@@ -110,24 +110,6 @@ public class GroupByColumns implements IAdhocGroupBy {
 		return GroupByColumns.builder().columns(List.copyOf(columns)).build();
 	}
 
-	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
-		NavigableMap<String, T> nameToColumn = new TreeMap<>();
-
-		columns.forEach(column -> {
-			String columnName = column.getName();
-			if (nameToColumn.containsKey(columnName)) {
-				if (nameToColumn.get(columnName).equals(column)) {
-					log.trace("Column={} is expressed multiple times in {}", column, columns);
-				} else {
-					throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
-				}
-			}
-			nameToColumn.put(columnName, column);
-		});
-
-		return nameToColumn;
-	}
-
 	public static IAdhocGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
 		return of(Lists.asList(wildcard, wildcards));
 	}
@@ -148,4 +130,21 @@ public class GroupByColumns implements IAdhocGroupBy {
 		return named(Set.of());
 	}
 
+	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
+		NavigableMap<String, T> nameToColumn = new TreeMap<>();
+
+		columns.forEach(column -> {
+			String columnName = column.getName();
+			if (nameToColumn.containsKey(columnName)) {
+				if (nameToColumn.get(columnName).equals(column)) {
+					log.trace("Column={} is expressed multiple times in {}", column, columns);
+				} else {
+					throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
+				}
+			}
+			nameToColumn.put(columnName, column);
+		});
+
+		return nameToColumn;
+	}
 }

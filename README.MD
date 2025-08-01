@@ -1,4 +1,4 @@
-# AdHoc - OLAP Formulas Pipeline
+# AdHoc - Formulas for OLAP
 
 [![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
@@ -463,12 +463,10 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
 - [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
 - [Feature] Record statistics about used measures in storage, for easier re-use.
-- [Feature] Ability in `GroupBy` to add an `ALL` coordinate, referring to the grandTotal. It would help emulating pivot-tables.
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
 - [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).
 - [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
 - [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
-- [Pivotable] Columns filters should be written by default like `c==v` and not `{'type': 'column', ...}`
 - [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
 - [Pivotable] Enable browser-back to restore previous query.
 - [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure.

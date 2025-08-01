@@ -20,28 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.data.row;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.IHasName;
+import java.util.Map;
 
-/**
- * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
- * {@link ITableWrapper}.
- * 
- * @author Benoit Lacelle
- */
-public interface ICalculatedColumn extends IHasName {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	/**
-	 * 
-	 * @param record
-	 * @return a coordinate for given {@link ITabularRecord}. May rely both on slices or aggregates.
-	 */
-	Object computeCoordinate(ITabularGroupByRecord record);
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
-	Class<?> getType();
+public class TestTabularGroupByRecordOverMap {
+	@Test
+	public void testToString() {
+		String asString = TabularGroupByRecordOverMap
+				.toString(TabularGroupByRecordOverMap.builder().slice(SliceAsMap.fromMap(Map.of("k", "v"))).build());
 
+		Assertions.assertThat(asString).isEqualTo("slice:{k=v}");
+	}
 }

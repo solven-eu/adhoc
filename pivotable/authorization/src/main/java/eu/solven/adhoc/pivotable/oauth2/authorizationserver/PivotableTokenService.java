@@ -97,7 +97,7 @@ public class PivotableTokenService {
 
 		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).keyID(uuidGenerator.randomUUID().toString())
 				.algorithm(JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName()))
-				.issueTime(new Date())
+				.issueTime(Date.from(Instant.now()))
 				.generate();
 
 		return jwk;

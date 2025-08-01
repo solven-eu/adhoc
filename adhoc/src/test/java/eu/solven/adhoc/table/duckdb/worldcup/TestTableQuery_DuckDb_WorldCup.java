@@ -22,26 +22,44 @@
  */
 package eu.solven.adhoc.table.duckdb.worldcup;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
+import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
+import eu.solven.adhoc.beta.schema.RelevancyHeuristic.MeasureRelevancy;
+import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
+import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -77,6 +95,43 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
 			Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 39_256L).hasSize(1);
 		});
+	}
+
+	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+	@Test
+	public void testVariousQueries() {
+		ICubeWrapper cube = editCube().engine(editEngine()
+				.factories(
+						makeFactories().toBuilder().stopwatchFactory(IStopwatchFactory.guavaStopwatchFactory()).build())
+				.build()).build();
+
+		CubeRelevancy relevancies = new RelevancyHeuristic()
+				.computeRelevancies(MeasureForest.fromMeasures("unitTests", cube.getMeasures()));
+		Set<String> columns = cube.getColumnsAsMap().keySet();
+
+		List<Entry<String, MeasureRelevancy>> mostRelevantMeasures = relevancies.getMeasureToRelevancy()
+				.entrySet()
+				.stream()
+				.sorted(Comparator.<Map.Entry<String, MeasureRelevancy>, Double>comparing(e -> e.getValue().getScore()))
+				.limit(3)
+				.toList();
+
+		int maxNbGroupBy = 2;
+
+		for (int nbColumns = 1; nbColumns <= Math.min(columns.size(), maxNbGroupBy); nbColumns++) {
+			List<Set<String>> columnsToGroupBy = IntStream.range(0, nbColumns).mapToObj(i -> columns).toList();
+
+			Set<List<String>> groupBys = Sets.cartesianProduct(columnsToGroupBy);
+			log.info("Considering {} groupBys", groupBys.size());
+			groupBys.forEach(columnsInGroupBy -> {
+				ITabularView result = cube().execute(CubeQuery.builder()
+						.groupBy(GroupByColumns.named(columnsInGroupBy))
+						.measure("event_count")
+						.build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isNotEmpty();
+			});
+		}
 	}
 
 	// event_count relies on a Dispatchor
@@ -252,6 +307,45 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(20.09, 20.10);
 			}).hasSize(2);
 		}).hasSize(1);
+	}
+
+	// This check calculatedStar over a generatedColumn
+	@Test
+	public void testEventCount_byMinute_withCalculatedStar() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column("minute")
+						.calculatedCoordinate(CalculatedCoordinate.star())
+						.build()))
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("minute", 1L), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 135L));
+		}).hasEntrySatisfying(Map.of("minute", 90L), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 328L));
+		}).hasEntrySatisfying(Map.of("minute", "*"), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 11_270L));
+		}).hasSize(120 + 1);
+	}
+
+	@Test
+	public void testEventCount_byPosition_nullCoordinate() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column("Position")
+						.calculatedCoordinate(CalculatedCoordinate.star())
+						.build()))
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("Position", "GKC"), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 13L));
+		}).hasEntrySatisfying(MapWithNulls.of("Position", null), v -> {
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10569L));
+		}).hasSize(4 + 1);
 	}
 
 }

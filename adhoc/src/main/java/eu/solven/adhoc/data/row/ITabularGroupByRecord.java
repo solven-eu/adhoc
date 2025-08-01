@@ -20,32 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.data.row;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.table.ITableWrapper;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
-import nl.jqno.equalsverifier.EqualsVerifier;
+/**
+ * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface ITabularGroupByRecord {
 
-public class TestCalculatedColumn {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(FunctionCalculatedColumn.class).verify();
-	}
+	IAdhocSlice getGroupBys();
 
-	@Test
-	public void testJackson() throws JsonProcessingException {
-		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(FunctionCalculatedColumn.class,
-						FunctionCalculatedColumn.builder()
-								.name("someColumn")
-								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
-								.build()))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
-				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
-	}
+	Set<String> groupByKeySet();
+
+	Object getGroupBy(String columnName);
+
 }
