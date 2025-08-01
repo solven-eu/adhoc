@@ -23,56 +23,18 @@
 package eu.solven.adhoc.data.row;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.With;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A simple {@link ITabularRecord} based on {@link Map}.
- *
- * @author Benoit Lacelle
- */
-@Builder
-public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
-	@NonNull
-	@With
-	final IAdhocSlice slice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 
-	@Override
-	public Set<String> groupByKeySet() {
-		return slice.getColumns();
-	}
+public class TestTabularGroupByRecordOverMap {
+	@Test
+	public void testToString() {
+		String asString = TabularGroupByRecordOverMap
+				.toString(TabularGroupByRecordOverMap.builder().slice(SliceAsMap.fromMap(Map.of("k", "v"))).build());
 
-	@Override
-	public Object getGroupBy(String columnName) {
-		return slice.getRawSliced(columnName);
-	}
-
-	@Override
-	public String toString() {
-		return toString(this);
-	}
-
-	@SuppressWarnings({ "PMD.ConsecutiveAppendsShouldReuse" })
-	public static String toString(ITabularGroupByRecord tabularRecord) {
-		StringBuilder string = new StringBuilder();
-
-		string.append("slice:{");
-		string.append(tabularRecord.groupByKeySet()
-				.stream()
-				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
-				.collect(Collectors.joining(", ")));
-		string.append('}');
-
-		return string.toString();
-	}
-
-	@Override
-	public IAdhocSlice getGroupBys() {
-		return slice;
+		Assertions.assertThat(asString).isEqualTo("slice:{k=v}");
 	}
 }

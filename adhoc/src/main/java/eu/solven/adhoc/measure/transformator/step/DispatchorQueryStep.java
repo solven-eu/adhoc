@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -205,24 +206,30 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
 
-			if (value == null) {
-				// Happens on groupBy along not-generated columns
-				value = slice.getSlice().getRawSliced(groupByColumn);
-			}
-
-			if (value == null) {
-				value = NullMatcher.NULL_HOLDER;
-				// Should we accept null a coordinate, e.g. to handle input partial Maps?
-				// throw new IllegalStateException("A sliced-value can not be null
-				// (column=%s)".formatted(groupByColumn));
-			}
-
 			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);
 			if (column instanceof ICalculatedColumn calculatedColumn) {
-				IAdhocSlice preSlice = SliceAsMap.fromMap(Map.of(groupByColumn, value));
-				Object calculatedCoordinate = calculatedColumn
-						.computeCoordinate(TabularGroupByRecordOverMap.builder().slice(preSlice).build());
+				Map<String, Object> sliceAsMap = new LinkedHashMap<>();
+				sliceAsMap.putAll(slice.getSlice().getCoordinates());
+
+				if (value != null) {
+					sliceAsMap.put(groupByColumn, value);
+				}
+				IAdhocSlice preSlice = SliceAsMap.fromMap(sliceAsMap);
+				ITabularGroupByRecord groupByRecord = TabularGroupByRecordOverMap.builder().slice(preSlice).build();
+				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);
 				value = calculatedCoordinate;
+			} else {
+				if (value == null) {
+					// Happens on groupBy along not-generated columns
+					value = slice.getSlice().getRawSliced(groupByColumn);
+				}
+
+				if (value == null) {
+					value = NullMatcher.NULL_HOLDER;
+					// Should we accept null a coordinate, e.g. to handle input partial Maps?
+					// throw new IllegalStateException("A sliced-value can not be null
+					// (column=%s)".formatted(groupByColumn));
+				}
 			}
 
 			queryCoordinatesBuilder.append(value);

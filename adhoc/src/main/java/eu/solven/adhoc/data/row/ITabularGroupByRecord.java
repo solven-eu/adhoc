@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.row;
 
 import java.util.Set;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
@@ -32,6 +33,9 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @author Benoit Lacelle
  */
 public interface ITabularGroupByRecord {
+
+	IAdhocSlice getGroupBys();
+
 	Set<String> groupByKeySet();
 
 	Object getGroupBy(String columnName);
