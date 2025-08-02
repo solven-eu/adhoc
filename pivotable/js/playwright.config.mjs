@@ -8,7 +8,8 @@ import { defineConfig, devices } from "@playwright/test";
  */
 // require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-const commandSpringBoot = `(mvn install; cd ../pivotable-server; mvn spring-boot:run -Dspring-boot.run.profiles=${process.env.SPRING_ACTIVE_PROFILES};)`;
+// `../../` as we're in `./pivotable/js`
+const commandSpringBoot = `(mvn -f ../server/pom.xml -Pfast spring-boot:run -Dspring-boot.run.profiles=${process.env.SPRING_ACTIVE_PROFILES};)`;
 console.log("commandSpringBoot", commandSpringBoot);
 
 /**
