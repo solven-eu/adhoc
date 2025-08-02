@@ -22,10 +22,8 @@
         "lint": "eslint --fix src/main/resources/static",
         "lint_debug": "eslint --fix src/main/resources/static --debug",
         "preview": "vite preview",
-        "pw_localhost8080": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-optimization --project=chromium",
-        "pw_localhost8080_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-optimization  --project=chromium --ui",
-        "pw_localhost8080_vs1": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser,randomplayers_play_vs1 npx playwright test localhost8080-1v1  --project=chromium",
-        "pw_localhost8080_vs1_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser,randomplayers_play_vs1 npx playwright test localhost8080-1v1  --project=chromium --ui"
+        "pw_localhost8080": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium",
+        "pw_localhost8080_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium --ui"
     },
     "type": "module",
     "version": "0.0.0"

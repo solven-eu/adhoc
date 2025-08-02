@@ -9,6 +9,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduced `ICoordinateNormalizer` to centralize how coordinates should be normalized (e.g. `int` into `long`).
 - Introduced `NullMatcher.NULL_HOLDER` to represent `null` where a null-reference is forbidden.
 - Introduced `ICalculatedCoordinate` to enable adding coordinate into columns. Typical usecase is having an `*` coordinate aggregating all other coordinates, as a grandTotal of current column.
+- Playwright is activated to integration-tests Pivotable.
 
 ### Changed
 - Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
