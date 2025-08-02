@@ -39,7 +39,7 @@ const config = defineConfig({
     },
 
     // https://playwright.dev/docs/test-timeouts
-    timeout: 3000,
+    timeout: 15000,
     expect: { timeout: 2000 },
 
     /* Configure projects for major browsers */

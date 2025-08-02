@@ -260,7 +260,7 @@ export default {
 						},
 						{
 							command: "info-measure",
-							tooltip: "DAG about measure",
+							tooltip: "DAG about m=" + measureName,
 							cssClass: "bi bi-question-circle",
 							itemVisibilityOverride: function (args) {
 								// for example don't show the header button on column "E"
