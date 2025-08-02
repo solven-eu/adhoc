@@ -23,7 +23,7 @@
         "lint_debug": "eslint --fix src/main/resources/static --debug",
         "preview": "vite preview",
         "pw_localhost8080": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium",
-        "pw_localhost8080_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium --ui",
+        "pw_localhost8080_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium --ui"
     },
     "type": "module",
     "version": "0.0.0"
