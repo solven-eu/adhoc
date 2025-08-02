@@ -22,13 +22,7 @@ jobs:
         cache: maven
     - name: Install Adhoc Server
       # `install` so that each module is available in local repository, as later mvn command will not be executed on the root
-      run: mvn install -DskipTests -pl :pivotable-server -am
-#    - name: Check Running ContestsServer
-#      run: (cd ./server; mvn spring-boot:run;)
-#    - name: Check Running ContestsServer from JS
-#      working-directory: ./js
-#      run: (cd ./server; mvn spring-boot:run;)
-        
+      run: mvn install -Pfast -pl :pivotable-server -am
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
