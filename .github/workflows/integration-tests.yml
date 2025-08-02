@@ -28,13 +28,13 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-	- name: Download dependencies
-	  run: mvn dependency:collect --file pom.xml --batch-mode
-	- name: Package skipping tests
-	  # This is useful not to clutter the package command with download logs
-	  # `mvn dependency` has issues with multi-modules
-	  # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
-	  run: mvn package -Pfast --file pom.xml --batch-mode
-	- name: Java integration-tests
-	  # Stick to `package` phase for consistency, and checking packaging is fine
-	  run: mvn test -DexcludedGroups=adhoc-benchmark -Dgroups=adhoc-benchmark --file pom.xml --batch-mode
+    - name: Download dependencies
+      run: mvn dependency:collect --file pom.xml --batch-mode
+    - name: Package skipping tests
+      # This is useful not to clutter the package command with download logs
+      # `mvn dependency` has issues with multi-modules
+      # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
+      run: mvn package -Pfast --file pom.xml --batch-mode
+    - name: Java integration-tests
+      # Stick to `package` phase for consistency, and checking packaging is fine
+      run: mvn test -DexcludedGroups=adhoc-benchmark -Dgroups=adhoc-benchmark --file pom.xml --batch-mode

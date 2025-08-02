@@ -65,6 +65,8 @@ export default {
 		const queryModel = reactive({
 			// `columnName->boolean`
 			selectedColumns: {},
+			// `columnName->boolean`
+			withStarColumns: {},
 			// `measureName->boolean`
 			selectedMeasures: {},
 			// `orderedArray of columnNames`
@@ -77,6 +79,9 @@ export default {
 				queryModel.selectedMeasures = {};
 				queryModel.selectedColumns = {};
 				queryModel.selectedColumnsOrdered = [];
+				// TODO withStarColumns may not be reset as they as some sort of preference
+				// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted 
+				queryModel.withStarColumns = {};
 				queryModel.selectedOptions = {};
 				queryModel.customMarkers = {};
 				console.log("queryModel has been reset");
@@ -182,6 +187,8 @@ export default {
 							queryModel.selectedColumns[columnName] = true;
 							queryModel.onColumnToggled(columnName);
 						}
+						queryModel.withStarColumns = queryModelFromHash.withStarColumns || {};
+						
 						for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
 							queryModel.selectedMeasures[measureName] = true;
 						}
@@ -212,6 +219,7 @@ export default {
 				}
 				currentHashObject.query = {};
 				currentHashObject.query.columns = Object.values(newQueryModel.selectedColumnsOrdered);
+				currentHashObject.query.withStarColumns = newQueryModel.withStarColumns || {};
 				currentHashObject.query.measures = queried(newQueryModel.selectedMeasures);
 				currentHashObject.query.filter = newQueryModel.filter || {};
 				currentHashObject.query.customMarkers = newQueryModel.customMarkers || {};

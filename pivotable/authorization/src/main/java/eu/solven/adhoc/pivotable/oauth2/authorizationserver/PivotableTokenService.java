@@ -87,6 +87,7 @@ public class PivotableTokenService {
 	}
 
 	@SneakyThrows(JOSEException.class)
+	@SuppressWarnings("PMD.ReplaceJavaUtilDate")
 	public static JWK generateSignatureSecret(IUuidGenerator uuidGenerator) {
 		// https://connect2id.com/products/nimbus-jose-jwt/examples/jws-with-hmac
 		// Generate random 256-bit (32-byte) shared secret

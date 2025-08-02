@@ -138,7 +138,14 @@ export default {
 		const sortingOrders = [];
 		for (let column of columnNames) {
 			sortingFunctions.push(function (item) {
-				return item[0][column];
+				const valueToCompare = item[0][column];
+
+				if (valueToCompare === "*") {
+					// TODO Dirty trick to help `*` (grandTotal calculatedCoordinate) as first coordinate
+					return "";
+				}
+
+				return valueToCompare;
 			});
 			// or `desc`
 			sortingOrders.push("asc");

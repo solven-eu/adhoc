@@ -121,6 +121,13 @@ export default {
 
         <small>{{type}}</small>
 
+        <small>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" :id="'columnWithStar_' + column" v-model="queryModel.withStarColumns[column]" />
+                <label class="form-check-label  text-wrap" :for="'columnWithStar_' + column">grandTotal</label>
+            </div>
+        </small>
+
         <button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
             <span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
             <!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->

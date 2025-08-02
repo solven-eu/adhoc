@@ -312,7 +312,7 @@ export default {
 
 			// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
 			{
-				// TODO comparer function is never called?
+				// TODO Refactor this with `gridHelper.sortRows`
 				const comparer = function (left, right) {
 					const x = left[currentSortCol.sortId];
 					const y = right[currentSortCol.sortId];
@@ -326,6 +326,19 @@ export default {
 					} else if (xIsNullOrUndefined) {
 						return -1;
 					} else if (yIsNullOrUndefined) {
+						return 1;
+					}
+
+					// `*` represents the grandTotal calculatedMember
+					// BEWARE it may lead to confusion if there is an actual `*` coordinate
+					const xIsStar = x === "*";
+					const yIsStar = y === "*";
+
+					if (xIsStar && yIsStar) {
+						return 0;
+					} else if (xIsStar) {
+						return -1;
+					} else if (yIsStar) {
 						return 1;
 					}
 

@@ -469,7 +469,8 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
 - [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
 - [Pivotable] Enable browser-back to restore previous query.
-- [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure.
+- [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
+- [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
 
 # Sponsors
 
