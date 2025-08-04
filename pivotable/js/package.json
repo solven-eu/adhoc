@@ -1,12 +1,13 @@
 {
     "dependencies": {
-        "vue": "3.5.18",
-		"lodashEs": "npm:lodash@4.17.21"
+        "lodashEs": "npm:lodash@4.17.21",
+        "vue": "3.5.18"
     },
     "devDependencies": {
         "@playwright/test": "1.54.2",
         "@types/node": "24.1.0",
         "@vitejs/plugin-vue": "6.0.1",
+        "@vitest/ui": "^3.2.4",
         "eslint": "9.32.0",
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-prettier": "5.5.3",
@@ -25,6 +26,7 @@
         "lint_debug": "eslint --fix src/main/resources/static --debug",
         "preview": "vite preview",
         "unit_tests": "vitest",
+        "unit_tests_ci": "vitest --reporter=html --outputFile=./vitest-report/test-output.html",
         "pw_localhost8080": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium",
         "pw_localhost8080_ui": "SPRING_ACTIVE_PROFILES=unsafe,inmemory,fakeuser npx playwright test localhost8080-queries --project=chromium --ui"
     },
