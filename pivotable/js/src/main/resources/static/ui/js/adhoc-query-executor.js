@@ -107,16 +107,22 @@ export default {
 			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0);
 
 			// Add a calculated member representing the grand totals
-			const orderedColumnsWithStar = orderedColumnsAsList.map((c) => ({
-				type: ".ColumnWithCalculatedCoordinates",
-				column: c,
-				calculatedCoordinates: [
-					{
-						type: ".CalculatedCoordinate",
-						coordinate: "*",
-					},
-				],
-			}));
+			const orderedColumnsWithStar = orderedColumnsAsList.map((c) => {
+				if (props.queryModel.withStarColumns[c]) {
+					return {
+						type: ".ColumnWithCalculatedCoordinates",
+						column: c,
+						calculatedCoordinates: [
+							{
+								type: ".CalculatedCoordinate",
+								coordinate: "*",
+							},
+						],
+					};
+				} else {
+					return c;
+				}
+			});
 
 			const orderedColumns = orderedColumnsWithStar;
 
