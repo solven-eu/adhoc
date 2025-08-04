@@ -1,99 +1,95 @@
-
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
 export default {
-	makeQueryModel: function() {
-			const queryModel = 		{
-					// `columnName->boolean`
-					selectedColumns: {},
-					// `columnName->boolean`
-					withStarColumns: {},
-					// `measureName->boolean`
-					selectedMeasures: {},
-					// `orderedArray of columnNames`
-					selectedColumnsOrdered: [],
-					customMarkers: {},
-					// `optionName->boolean`
-					selectedOptions: {},
-					};
-					
+	makeQueryModel: function () {
+		const queryModel = {
+			// `columnName->boolean`
+			selectedColumns: {},
+			// `columnName->boolean`
+			withStarColumns: {},
+			// `measureName->boolean`
+			selectedMeasures: {},
+			// `orderedArray of columnNames`
+			selectedColumnsOrdered: [],
+			customMarkers: {},
+			// `optionName->boolean`
+			selectedOptions: {},
+		};
 
-					queryModel.reset= function () {
-						queryModel.selectedMeasures = {};
-						queryModel.selectedColumns = {};
-						queryModel.selectedColumnsOrdered = [];
-						// TODO withStarColumns may not be reset as they as some sort of preference
-						// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted 
-						queryModel.withStarColumns = {};
-						queryModel.selectedOptions = {};
-						queryModel.customMarkers = {};
-						console.log("queryModel has been reset");
-					};
+		queryModel.reset = function () {
+			queryModel.selectedMeasures = {};
+			queryModel.selectedColumns = {};
+			queryModel.selectedColumnsOrdered = [];
+			// TODO withStarColumns may not be reset as they as some sort of preference
+			// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted
+			queryModel.withStarColumns = {};
+			queryModel.selectedOptions = {};
+			queryModel.customMarkers = {};
+			console.log("queryModel has been reset");
+		};
 
-					queryModel.onColumnToggled= function (column) {
-						const array = queryModel.selectedColumnsOrdered;
+		queryModel.onColumnToggled = function (column) {
+			const array = queryModel.selectedColumnsOrdered;
 
-						if (!column) {
-							// We lack knowledge about which columns has been toggled
-							for (const column of Object.keys(queryModel.selectedColumns)) {
-								const index = array.indexOf(column);
+			if (!column) {
+				// We lack knowledge about which columns has been toggled
+				for (const column of Object.keys(queryModel.selectedColumns)) {
+					const index = array.indexOf(column);
 
-								let isChanged = false;
+					let isChanged = false;
 
-								// May be missing on first toggle
-								const toggledIn = !!queryModel.selectedColumns[column];
-								if (toggledIn) {
-									if (index < 0) {
-										// Append the column
-										array.push(column);
-										isChanged = true;
-									}
-								} else {
-									// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-									// only splice array when item is found
-									if (index >= 0) {
-										// 2nd parameter means remove one item only
-										array.splice(index, 1);
-										isChanged = true;
-									}
-								}
-								if (isChanged) {
-									console.log(`groupBy: ${column} is now ${toggledIn}`);
-								} else {
-									console.debug(`groupBy: ${column} is kept ${toggledIn}`);
-								}
-							}
-						} else {
-							const index = array.indexOf(column);
-
-							// May be missing on first toggle
-							const toggledIn = !!queryModel.selectedColumns[column];
-							if (toggledIn) {
-								if (index < 0) {
-									// Append the column
-									array.push(column);
-								} else {
-									console.warn("Adding a column already here?", column);
-								}
-							} else {
-								// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
-								// only splice array when item is found
-								if (index >= 0) {
-									// 2nd parameter means remove one item only
-									array.splice(index, 1);
-								} else {
-									console.warn("Removing a column already absent?", column);
-								}
-							}
-							console.log(`groupBy: ${column} is now ${toggledIn}`);
+					// May be missing on first toggle
+					const toggledIn = !!queryModel.selectedColumns[column];
+					if (toggledIn) {
+						if (index < 0) {
+							// Append the column
+							array.push(column);
+							isChanged = true;
+						}
+					} else {
+						// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+						// only splice array when item is found
+						if (index >= 0) {
+							// 2nd parameter means remove one item only
+							array.splice(index, 1);
+							isChanged = true;
 						}
 					}
-		
-					return queryModel;
+					if (isChanged) {
+						console.log(`groupBy: ${column} is now ${toggledIn}`);
+					} else {
+						console.debug(`groupBy: ${column} is kept ${toggledIn}`);
+					}
+				}
+			} else {
+				const index = array.indexOf(column);
 
+				// May be missing on first toggle
+				const toggledIn = !!queryModel.selectedColumns[column];
+				if (toggledIn) {
+					if (index < 0) {
+						// Append the column
+						array.push(column);
+					} else {
+						console.warn("Adding a column already here?", column);
+					}
+				} else {
+					// https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript
+					// only splice array when item is found
+					if (index >= 0) {
+						// 2nd parameter means remove one item only
+						array.splice(index, 1);
+					} else {
+						console.warn("Removing a column already absent?", column);
+					}
+				}
+				console.log(`groupBy: ${column} is now ${toggledIn}`);
+			}
+		};
 
+		return queryModel;
 	},
-	
+
 	hashToQueryModel: function (currentHashDecoded, queryModel) {
 		// Restore queryModel from URL hash
 		if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
@@ -107,7 +103,7 @@ export default {
 						queryModel.onColumnToggled(columnName);
 					}
 					queryModel.withStarColumns = queryModelFromHash.withStarColumns || {};
-					
+
 					for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
 						queryModel.selectedMeasures[measureName] = true;
 					}
@@ -126,8 +122,8 @@ export default {
 			}
 		}
 	},
-	
-	queryModelToHash: function(currentHashDecoded, queryModel) {
+
+	queryModelToHash: function (currentHashDecoded, queryModel) {
 		var currentHashObject;
 		if (currentHashDecoded && currentHashDecoded.startsWith("#")) {
 			currentHashObject = JSON.parse(currentHashDecoded.substring(1));
@@ -145,5 +141,5 @@ export default {
 		console.debug("Saving queryModel to hash", JSON.stringify(queryModel));
 
 		return "#" + encodeURIComponent(JSON.stringify(currentHashObject));
-	}
+	},
 };

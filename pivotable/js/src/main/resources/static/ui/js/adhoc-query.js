@@ -62,9 +62,7 @@ export default {
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
 		const loading = ref(false);
-		const queryModel = reactive(
-			queryHelper.makeQueryModel()
-			);
+		const queryModel = reactive(queryHelper.makeQueryModel());
 
 		// Watch for changes on `selectedColumns` to update `selectedColumnsOrdered` accordingly
 		watch(
@@ -90,15 +88,15 @@ export default {
 		const router = useRouter();
 		{
 			const currentHashDecoded = router.currentRoute.value.hash;
-			
+
 			queryHelper.hashToQueryModel(currentHashDecoded, queryModel);
 
 			// Save queryModel into URL hash
 			watch(queryModel, async (newQueryModel) => {
 				const currentHashDecoded = router.currentRoute.value.hash;
-				
+
 				const newHash = queryHelper.queryModelToHash(currentHashDecoded, newQueryModel);
-				
+
 				// https://stackoverflow.com/questions/51337255/silently-update-url-without-triggering-route-in-vue-router
 				const newUrl = router.currentRoute.value.path + newHash;
 

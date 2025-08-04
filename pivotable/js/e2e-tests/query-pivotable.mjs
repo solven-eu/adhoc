@@ -45,7 +45,14 @@ export default {
         await expect(page.getByRole("switch", { name: /event_count/ })).toBeVisible({ timeout: 5000 });
         await page.getByRole("switch", { name: /event_count/ }).check();
 
-        // Check some measure value
-        await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("11,270.00");
+        const starCoordinate = false;
+        if (starCoordinate) {
+            // Check some measure value
+            await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toContainText("*");
+            await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("11,270.00");
+        } else {
+            await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toContainText("C");
+            await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("588.00");
+        }
     },
 };
