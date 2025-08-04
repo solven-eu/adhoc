@@ -101,6 +101,10 @@ export default {
 			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
 			const filter = JSON.parse(JSON.stringify(props.queryModel.filter || {}));
 
+			// BEWARE This is a workaround to force `compute` to be reactive on all columns state
+			// It is unclear why the reactivity on `props.queryModel.selectedColumnsOrdered` is not working
+			const columns2 = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
+
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as `queryJson` must not changed when playing with the wizard.
 			// `.slice` as we want an immutable snapshot

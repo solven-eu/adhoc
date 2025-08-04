@@ -1,5 +1,24 @@
 import { expect } from "@playwright/test";
 
+const addColumn = async function (page, column) {
+    await page.getByRole("searchbox", { name: "Search" }).dblclick();
+    await page.getByRole("searchbox", { name: "Search" }).fill(column);
+    await page.getByRole("button", { name: /columns/ }).click();
+    await page.getByRole("switch", { name: column }).check();
+};
+
+const addMeasure = async function (page, measure) {
+    await page.getByRole("searchbox", { name: "Search" }).dblclick();
+    await page.getByRole("searchbox", { name: "Search" }).fill(measure);
+    // Disable JSON to prevent the depending measures to show up
+    await page.getByRole("switch", { name: "JSON" }).uncheck();
+
+    // Add measure=event_count
+    //        await expect(page.getByRole("switch", { name: /event_count/ })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: /measures/ }).click();
+    await page.getByRole("switch", { name: measure }).check();
+};
+
 // https://stackoverflow.com/questions/33178843/es6-export-default-with-multiple-functions-referring-to-each-other
 export default {
     async clear(request, url) {
@@ -23,6 +42,8 @@ export default {
         await expect(page.getByText(/Welcome Fake User/)).toBeVisible();
     },
 
+    addColumn: addColumn,
+
     async queryPivotable(page) {
         await page.goto("http://localhost:8080/");
         await page.getByRole("link", { name: /You need to login/ }).click();
@@ -31,19 +52,10 @@ export default {
         await page.getByRole("link", { name: "Browse through endpoints" }).click();
         await page.getByRole("link", { name: /WorldCupPlayers/ }).click();
         await page.getByRole("link", { name: /Query WorldCupPlayers/ }).click();
-        await page.getByRole("button", { name: "columns   0" }).click();
-        await page.getByRole("searchbox", { name: "Search" }).click();
-        await page.getByRole("searchbox", { name: "Search" }).fill("Posi");
-        await page.getByRole("switch", { name: "Position" }).check();
-        await page.getByRole("button", { name: "1 columns   1" }).click();
-        await page.getByRole("button", { name: "3 measures   0" }).click();
-        await page.getByRole("switch", { name: "JSON" }).uncheck();
-        await page.getByRole("searchbox", { name: "Search" }).dblclick();
-        await page.getByRole("searchbox", { name: "Search" }).fill("event_count");
 
-        // Add measure=event_count
-        await expect(page.getByRole("switch", { name: /event_count/ })).toBeVisible({ timeout: 5000 });
-        await page.getByRole("switch", { name: /event_count/ }).check();
+        await addColumn(page, "Position");
+
+        await addMeasure(page, "event_count");
 
         const starCoordinate = false;
         if (starCoordinate) {
