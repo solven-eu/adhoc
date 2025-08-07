@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -89,14 +88,15 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed
-		BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate =
+		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate =
 				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
 		// Process the underlying stream of data to execute aggregations
 		try {
 			stream.records()
 					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-					// For any reason, `closeHandler` is not called automatically on a terminal operation
+					// For any reason, `closeHandler` is not called automatically on a terminal
+					// operation
 					// .onClose(aggregatedRecordLogger.closeHandler())
 					.forEach(input -> forEachRow(input, peekOnCoordinate, grid));
 
@@ -118,17 +118,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	}
 
 	protected void forEachRow(ITabularRecord tableRow,
-			BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate,
+			BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {
-		Optional<IAdhocSlice> optCoordinates = makeCoordinate(queryPod, tableQuery, tableRow);
+		IAdhocSlice coordinates = makeCoordinate(queryPod, tableQuery, tableRow);
 
-		peekOnCoordinate.accept(tableRow, optCoordinates);
-
-		if (optCoordinates.isEmpty()) {
-			return;
-		}
-
-		IAdhocSlice coordinates = optCoordinates.get();
+		peekOnCoordinate.accept(tableRow, coordinates);
 
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(coordinates);
 
@@ -153,40 +147,37 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	/**
 	 * @param tableQuery
-	 * @param tableRow
+	 * @param tableSlice
 	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
 	 */
-	protected Optional<IAdhocSlice> makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableRow) {
+	protected IAdhocSlice makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableSlice) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
 		if (groupBy.isGrandTotal()) {
-			return Optional.of(SliceAsMap.grandTotal());
+			return SliceAsMap.grandTotal();
 		}
 
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
 		MapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
 
-		for (String groupedByColumn : groupedByColumns) {
-			Object value = tableRow.getGroupBy(groupedByColumn);
+		// `forEachGroupBy` enables not doing many individual `.get`
+		tableSlice.forEachGroupBy((sliceColumn, value) -> {
+			if (!groupedByColumns.contains(sliceColumn)) {
+				return;
+			}
 
 			if (value == null) {
-				if (tableRow.groupByKeySet().contains(groupedByColumn)) {
-					// We received an explicit null
-					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(queryPod, groupedByColumn);
+				// We received an explicit null
+				// Typically happens on a failed LEFT JOIN
+				value = valueOnNull(queryPod, sliceColumn);
 
-					assert value != null : "`null` is not a legal column value";
-				} else {
-					// The input lack a groupBy coordinate: we exclude it
-					// TODO What's a legitimate case leading to this?
-					return Optional.empty();
-				}
+				assert value != null : "`null` is not a legal column value";
 			}
 
 			coordinatesBuilder.append(value);
-		}
+		});
 
-		return Optional.of(coordinatesBuilder.build().asSlice());
+		return coordinatesBuilder.build().asSlice();
 	}
 
 	/**

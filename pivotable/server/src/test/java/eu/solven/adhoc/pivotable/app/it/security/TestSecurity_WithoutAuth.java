@@ -95,7 +95,7 @@ public class TestSecurity_WithoutAuth {
 				.expectStatus()
 				.isOk()
 				.expectBody(byte[].class)
-				.value(byteArray -> assertThat(byteArray).hasSize(15_406));
+				.value(byteArray -> assertThat(byteArray).hasSize(96_557));
 	}
 
 	@Test
@@ -205,7 +205,8 @@ public class TestSecurity_WithoutAuth {
 	public void testLogout() {
 		log.debug("About {}", PivotableLoginController.class);
 
-		// SPA does a first call triggering the Logout: it must returns a 2XX response, as Fetch can not intercept 3XX.
+		// SPA does a first call triggering the Logout: it must returns a 2XX response,
+		// as Fetch can not intercept 3XX.
 		webTestClient
 
 				// https://www.baeldung.com/spring-security-csrf
@@ -266,7 +267,8 @@ public class TestSecurity_WithoutAuth {
 					Assertions.assertThat(bodyAsMap).containsEntry("header", "X-CSRF-TOKEN").hasSize(1);
 				});
 
-		// TODO Could we check the csrfToken by doing a `POST /logout` with it? We would also need the Cookie SESSION
+		// TODO Could we check the csrfToken by doing a `POST /logout` with it? We would
+		// also need the Cookie SESSION
 		// for this scenario to work
 	}
 
@@ -357,7 +359,8 @@ public class TestSecurity_WithoutAuth {
 		}
 	}
 
-	// TODO Change the route to make sure CSRF and CORS are OK on the first securityFilterChain
+	// TODO Change the route to make sure CSRF and CORS are OK on the first
+	// securityFilterChain
 	@Test
 	public void testApiPOSTWithCsrf() {
 		log.debug("About {}", GreetingController.class);
@@ -378,7 +381,8 @@ public class TestSecurity_WithoutAuth {
 		}
 	}
 
-	// TODO Change the route to make sure CSRF and CORS are OK on the first securityFilterChain
+	// TODO Change the route to make sure CSRF and CORS are OK on the first
+	// securityFilterChain
 	@Test
 	public void testApiPOSTWithoutCsrf() {
 		log.debug("About {}", GreetingController.class);

@@ -20,26 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
-
-import java.util.Set;
-import java.util.function.BiConsumer;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.table.ITableWrapper;
+package eu.solven.adhoc.experimental;
 
 /**
- * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.
+ * Data-structure enabling an append-only structure which maps {@link Object} to an {@link Integer}, guaranteeing a
+ * bijection between the two.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularGroupByRecord {
+public interface IDictionary {
+	int size();
 
-	IAdhocSlice getGroupBys();
+	int mapToInt(Object o);
 
-	Set<String> groupByKeySet();
-
-	Object getGroupBy(String columnName);
-
-	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
+	Object getObject(int index);
 }

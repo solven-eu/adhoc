@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -41,13 +44,12 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.StandardSliceFactory;
 
 /**
- * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
+ * Benchmarks comparing {@link IAdhocMap} versus {@link HashMap}.
  *
  * @author Benoit Lacelle
  */
@@ -57,49 +59,32 @@ import eu.solven.adhoc.map.StandardSliceFactory;
 @Fork(value = 1)
 @Warmup(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
-public class BenchmarkAdhocMapComparateTo {
+public class BenchmarkAdhocMapVsHashMap {
 
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
 
-	String c1 = "c1";
-	String c2 = "c2";
+	IAdhocMap adhocMap;
+	Map<String, Object> hashMap;
 
-	IAdhocMap mapA;
-	IAdhocMap mapB;
-	IAdhocMap mapC;
-	IAdhocMap mapD;
+	IAdhocMap adhocMap2;
+	Map<String, Object> hashMap2;
 
-	IAdhocSlice sliceMapA;
-	IAdhocSlice sliceMapB;
-	IAdhocSlice sliceMapC;
-	IAdhocSlice sliceMapD;
+	AtomicInteger length = new AtomicInteger();
 
 	@Setup
 	public void setup() {
-		// some Map
-		mapA = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
-		sliceMapA = SliceAsMap.fromMap(mapA);
+		adhocMap = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+		hashMap = new HashMap<>();
+		hashMap.put("a", "a1");
+		hashMap.put("b", "b1");
+		hashMap.put("c", "c1");
 
-		// equals to mapA
-		mapB = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
-		sliceMapB = SliceAsMap.fromMap(mapB);
-
-		// Differ with last value from mapA
-		mapC = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c2).build();
-		sliceMapC = SliceAsMap.fromMap(mapC);
-
-		// Differ with all/first value from mapA
-		mapD = factory.newMapBuilder(Set.of("a", "b", "c")).append("a2").append("b2").append(c2).build();
-		sliceMapD = SliceAsMap.fromMap(mapD);
+		adhocMap2 = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+		hashMap2 = new HashMap<>(hashMap);
 	}
 
-	// Run this method to run benchmarks
-	// public static void main(String[] args) throws Exception {
-	// org.openjdk.jmh.Main.main(args);
-	// }
-
 	public static void main(String[] args) throws RunnerException {
-		Options opt = new OptionsBuilder().include(BenchmarkAdhocMapComparateTo.class.getSimpleName())
+		Options opt = new OptionsBuilder().include(BenchmarkAdhocMapVsHashMap.class.getSimpleName())
 				.forks(1)
 
 				// https://jmh.morethan.io/
@@ -111,39 +96,63 @@ public class BenchmarkAdhocMapComparateTo {
 	}
 
 	@Benchmark
-	public int compareEquals_map() {
-		return mapA.compareTo(mapB);
+	public boolean containsKey_adhoc() {
+		return adhocMap.containsKey("a");
 	}
 
 	@Benchmark
-	public int compareEquals_slice() {
-		return sliceMapA.compareTo(sliceMapB);
-	}
-
-	// Useful to compare the cost of the string comparison given the map comparison
-	@Benchmark
-	public int compareLastNotEquals_string() {
-		return c1.compareTo(c2);
+	public boolean containsKey_hash() {
+		return hashMap.containsKey("a");
 	}
 
 	@Benchmark
-	public int compareLastNotEquals_map() {
-		return mapA.compareTo(mapC);
+	public Object get_adhoc() {
+		return adhocMap.get("a");
 	}
 
 	@Benchmark
-	public int compareLastNotEquals_slice() {
-		return sliceMapA.compareTo(sliceMapC);
+	public Object get_hash() {
+		return hashMap.get("a");
 	}
 
 	@Benchmark
-	public int compareNoneEquals_map() {
-		return mapA.compareTo(mapD);
+	public int forEach_adhoc() {
+		adhocMap.forEach((k, v) -> {
+			length.addAndGet(k.length());
+			length.addAndGet(v.toString().length());
+		});
+
+		return length.get();
 	}
 
 	@Benchmark
-	public int compareNoneEquals_slice() {
-		return sliceMapA.compareTo(sliceMapD);
+	public int forEach_hash() {
+		hashMap.forEach((k, v) -> {
+			length.addAndGet(k.length());
+			length.addAndGet(v.toString().length());
+		});
+
+		return length.get();
+	}
+
+	@Benchmark
+	public boolean equals_adhoc() {
+		return adhocMap.equals(adhocMap2);
+	}
+
+	@Benchmark
+	public boolean equals_hash() {
+		return hashMap.equals(hashMap2);
+	}
+
+	@Benchmark
+	public int compare_adhoc() {
+		return adhocMap.compareTo(adhocMap2);
+	}
+
+	@Benchmark
+	public int compare_hash() {
+		return MapComparators.mapComparator().compare(hashMap, hashMap2);
 	}
 
 }

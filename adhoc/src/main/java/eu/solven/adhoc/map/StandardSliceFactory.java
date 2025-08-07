@@ -22,16 +22,20 @@
  */
 package eu.solven.adhoc.map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.AbstractList;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.RandomAccess;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -39,11 +43,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
+import com.google.common.base.Suppliers;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -68,7 +77,8 @@ import lombok.ToString;
  */
 @Builder
 public class StandardSliceFactory implements ISliceFactory {
-	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a", "b")).append("a1").append("b1")` as the order
+	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a",
+	// "b")).append("a1").append("b1")` as the order
 	// of the Set is not consistent with the input array
 	private static final Set<Class<?>> NOT_ORDERED_CLASSES;
 
@@ -86,6 +96,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	final ConcurrentMap<Integer, EnrichedKeySet> keySetDictionary = new ConcurrentHashMap<>();
 	final ConcurrentMap<EnrichedKeySet, Integer> keySetDictionaryReverse = new ConcurrentHashMap<>();
 	final ConcurrentMap<List<String>, EnrichedNavigableSet> listToKeyset = new ConcurrentHashMap<>();
+	// final RadixTree<String> listToKeyset = new ConcurrentRadixTree<>(new DefaultCharArrayNodeFactory());
 
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
@@ -96,7 +107,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * Enable fast iteration and hashCode/equals.
-	 *
+	 * <p>
 	 * Its unicity contract is mostly based on {@link List} and not {@link Set} for performance reasons. Hence, we may
 	 * have multiple {@link EnrichedKeySet} with the same {@link Set}.
 	 *
@@ -109,8 +120,8 @@ public class StandardSliceFactory implements ISliceFactory {
 		// Useful for quick `.equals` operations
 		ImmutableSortedSet<String> keysAsSet;
 
-		// the keySet as an ordered List
-		// ImmutableList<String> keysAsList;
+		// cache lazily the keySet as a hashSet for faster `.containsKey`
+		final Supplier<ImmutableSet<String>> keysAsHashSet = Suppliers.memoize(() -> ImmutableSet.copyOf(keysAsSet));
 
 		public int size() {
 			return keysAsSet.size();
@@ -122,7 +133,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 		@Override
 		public int hashCode() {
-			// As this represents as keySet, the order of keys is not relevant
+			// As this represents a keySet, the order of keys is not relevant
 			return keysAsSet.hashCode();
 		}
 
@@ -144,15 +155,20 @@ public class StandardSliceFactory implements ISliceFactory {
 			return keysAsSet.toString();
 		}
 
+		/**
+		 * @param key
+		 * @return the index in the ordered keySet
+		 */
 		public int indexOf(Object key) {
-			return keysAsSet.asList().indexOf(key);
+			if (key instanceof String s) {
+				return Collections.binarySearch(keysAsSet.asList(), s);
+			} else {
+				return -1;
+			}
 		}
 
 		public static EnrichedKeySet fromSet(NavigableSet<String> set) {
-			return EnrichedKeySet.builder()
-					.keysAsSet(ImmutableSortedSet.copyOf(set))
-					// .keysAsList(ImmutableList.copyOf(set))
-					.build();
+			return EnrichedKeySet.builder().keysAsSet(ImmutableSortedSet.copyOf(set)).build();
 		}
 
 		public String getKey(int i) {
@@ -209,8 +225,16 @@ public class StandardSliceFactory implements ISliceFactory {
 			return keySet.size();
 		}
 
+		/**
+		 * @param key
+		 * @return the index given the unordered keySet
+		 */
 		public int indexOf(Object key) {
-			return reordering[keySet.indexOf(key)];
+			int index = keySet.indexOf(key);
+			if (index < 0) {
+				return index;
+			}
+			return reordering[index];
 		}
 
 		public String getKey(int index) {
@@ -269,9 +293,11 @@ public class StandardSliceFactory implements ISliceFactory {
 			return 0;
 		}
 
-		// We expect most key comparison to be reference comparisons as columnNames as defined once, should be
+		// We expect most key comparison to be reference comparisons as columnNames as
+		// defined once, should be
 		// internalized, and keySet are identical in most cases
-		// `java:S4973` is about the reference comparison, which is done on purpose to potentially skip the `.compareTo`
+		// `java:S4973` is about the reference comparison, which is done on purpose to
+		// potentially skip the `.compareTo`
 		@SuppressWarnings({ "java:S4973", "PMD.CompareObjectsWithEquals", "PMD.UseEqualsToCompareStrings" })
 		private int compareKey(String thisKey, String otherKey) {
 			if (thisKey == otherKey) {
@@ -296,14 +322,17 @@ public class StandardSliceFactory implements ISliceFactory {
 		@NonNull
 		final ISliceFactory factory;
 
-		// Holds keys, in both sorted order, and unordered order ,with the information to map from one to the other
+		// Holds keys, in both sorted order, and unordered order ,with the information
+		// to map from one to the other
 		@NonNull
 		final EnrichedNavigableSet keys;
 
 		@NonNull
 		final ImmutableList<Object> unorderedValues;
 
-		/** Cache the hash code for the string */
+		/**
+		 * Cache the hash code for the string
+		 */
 		// Like String
 		private int hash; // Default to 0
 
@@ -321,7 +350,7 @@ public class StandardSliceFactory implements ISliceFactory {
 		transient Set<Map.Entry<String, Object>> entrySet;
 
 		protected List<Object> orderedValues() {
-			return new AbstractList<>() {
+			return new AbstractList<Object>() {
 
 				@Override
 				public int size() {
@@ -331,6 +360,39 @@ public class StandardSliceFactory implements ISliceFactory {
 				@Override
 				public Object get(int index) {
 					return unorderedValues.get(keys.unorderedIndex(index));
+				}
+
+				@Override
+				public boolean equals(Object obj) {
+					return equalsImpl(this, obj);
+				}
+
+				// Duplicated from Guava Lists
+
+				/** An implementation of {@link List#equals(Object)}. */
+				static boolean equalsImpl(List<?> thisList, @Nullable Object other) {
+					if (other == checkNotNull(thisList)) {
+						return true;
+					}
+					if (!(other instanceof List)) {
+						return false;
+					}
+					List<?> otherList = (List<?>) other;
+					int size = thisList.size();
+					if (size != otherList.size()) {
+						return false;
+					}
+					if (thisList instanceof RandomAccess && otherList instanceof RandomAccess) {
+						// avoid allocation and use the faster loop
+						for (int i = 0; i < size; i++) {
+							if (!com.google.common.base.Objects.equal(thisList.get(i), otherList.get(i))) {
+								return false;
+							}
+						}
+						return true;
+					} else {
+						return Iterators.elementsEqual(thisList.iterator(), otherList.iterator());
+					}
 				}
 			};
 		}
@@ -358,6 +420,26 @@ public class StandardSliceFactory implements ISliceFactory {
 			for (int i = 0; i < size; i++) {
 				action.accept(keys.getKey(i), unorderedValues.get(keys.unorderedIndex(i)));
 			}
+		}
+
+		@Override
+		public Object get(Object key) {
+			int index = keys.indexOf(key);
+			if (index < 0) {
+				return null;
+			}
+
+			return unorderedValues.get(index);
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			return keys.keySet.keysAsHashSet.get().contains(key);
+		}
+
+		@Override
+		public boolean containsValue(Object value) {
+			return unorderedValues.contains(value);
 		}
 
 		/**
@@ -397,15 +479,18 @@ public class StandardSliceFactory implements ISliceFactory {
 			if (obj == null) {
 				return false;
 			} else if (obj instanceof MapOverLists objAsMap) {
-				// hashCode is cached: while many .equals are covered by a previous hashCode check, it may be only
+				// hashCode is cached: while many .equals are covered by a previous hashCode
+				// check, it may be only
 				// partial
-				// (e.g. in a hashMap, we do .equals between instance for each hashCodes are equals modulo X)
+				// (e.g. in a hashMap, we do .equals between instance for each hashCodes are
+				// equals modulo X)
 				if (this.hashCode() != objAsMap.hashCode()) {
 					return false;
 				} else
 
 				// If not equals, it is most probably spot by value than by keys
-				// In other words: there is high probability of same keys and different values than different keys but
+				// In other words: there is high probability of same keys and different values
+				// than different keys but
 				// same values. `Objects.equals` will do a reference check
 				if (!Objects.equals(orderedValues(), objAsMap.orderedValues())) {
 					return false;
@@ -418,7 +503,8 @@ public class StandardSliceFactory implements ISliceFactory {
 				// BEWARE This should not happen in production, as it can be very slow
 				return this.entrySet().equals(adhocMap.entrySet());
 			} else if (obj instanceof Map<?, ?>) {
-				// Rely on the other class .equals: BEWARE, this can lead to infinite recursive calls
+				// Rely on the other class .equals: BEWARE, this can lead to infinite recursive
+				// calls
 				return obj.equals(this);
 			} else {
 				return false;
@@ -506,7 +592,8 @@ public class StandardSliceFactory implements ISliceFactory {
 			}
 
 			if (this == other) {
-				// Typically happens when iterating along queryStep underlyings, as we often expect 2 underlyings to
+				// Typically happens when iterating along queryStep underlyings, as we often
+				// expect 2 underlyings to
 				// provide
 				// same sliceAsMap
 				return 0;
@@ -552,7 +639,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
 	 * order in the initial keySet.
-	 *
+	 * <p>
 	 * To be used when the keySet is known in advance.
 	 *
 	 * @author Benoit Lacelle
@@ -594,7 +681,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided with their value.
-	 *
+	 * <p>
 	 * To be used when the keySet is not known in advance.
 	 *
 	 * @author Benoit Lacelle
@@ -666,7 +753,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	/**
 	 * This method is useful to report miss-behaving {@link Set} given we expect proper ordering: the Set may not be
 	 * ordered, but one expect it to iterate consistently.
-	 *
+	 * <p>
 	 * BEWARE If false, it is not guaranteed the input is ordered .
 	 *
 	 * @param set

@@ -25,6 +25,7 @@ package eu.solven.adhoc.data.row;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -132,6 +133,11 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@Override
 	public String toString() {
 		return toString(this);
+	}
+
+	@Override
+	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		groupBy.forEachGroupBy(action);
 	}
 
 	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
@@ -135,6 +136,11 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 
 		@Override
 		public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 

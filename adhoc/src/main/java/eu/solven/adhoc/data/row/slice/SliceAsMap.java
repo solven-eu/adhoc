@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -183,7 +184,8 @@ public final class SliceAsMap implements IAdhocSlice {
 		if (mask.isEmpty()) {
 			return this;
 		} else {
-			// TODO There should probably be a branch dedicated for IAdhocMap, as we would generate generate many Map
+			// TODO There should probably be a branch dedicated for IAdhocMap, as we would
+			// generate generate many Map
 			// with given mask.
 			// if (asMap instanceof IAdhocMap)
 			ImmutableMap.Builder<String, Object> builder =
@@ -194,5 +196,10 @@ public final class SliceAsMap implements IAdhocSlice {
 
 	public static SliceAsMap grandTotal() {
 		return new SliceAsMap(StandardSliceFactory.builder().build(), ImmutableMap.of());
+	}
+
+	@Override
+	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		asMap.forEach(action);
 	}
 }

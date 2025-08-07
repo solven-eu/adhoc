@@ -50,6 +50,10 @@ export default {
 			type: Object,
 			required: true,
 		},
+		recentlyUsed: {
+			type: Object,
+			required: true,
+		},
 	},
 	computed: {
 		...mapState(useAdhocStore, ["nbSchemaFetching", "nbColumnFetching"]),
@@ -83,31 +87,16 @@ export default {
 			// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
 			throughJson: true,
 
+			// If true, filter the measures and columns which has been used recently
+			// Especially useful to add back a removed entity
+			recentlyUsed: false,
+
 			// Tags can be focused by being added to this list
 			tags: [],
 		});
 
-		const filtered = function (arrayOrObject) {
-			return wizardHelper.filtered(searchOptions, arrayOrObject);
-		};
-		const queried = function (arrayOrObject) {
-			return wizardHelper.queried(arrayOrObject);
-		};
-
-		const removeTag = function (tag) {
-			return wizardHelper.removeTag(searchOptions, tag);
-		};
-
-		const clearFilters = function () {
-			return wizardHelper.clearFilters(searchOptions);
-		};
-
 		return {
 			searchOptions,
-			filtered,
-			queried,
-			removeTag,
-			clearFilters,
 		};
 	},
 	template: /* HTML */ `

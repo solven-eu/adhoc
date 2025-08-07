@@ -76,6 +76,19 @@
 		</dependency>
 
 		<dependency>
+			<!-- Enable faster internalization of keySet in StandardSliceFactory-->
+			<groupId>com.github.takawitter</groupId>
+			<artifactId>trie4j</artifactId>
+			<version>0.9.10</version>
+		</dependency>
+		<dependency>
+			<!-- Enable faster internalization of keySet in StandardSliceFactory-->
+			<groupId>com.googlecode.concurrent-trees</groupId>
+			<artifactId>concurrent-trees</artifactId>
+			<version>2.6.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>
 			<version>${evalex.ezylang.version}</version>

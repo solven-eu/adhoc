@@ -20,26 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.experimental;
 
-import java.util.Set;
-import java.util.function.BiConsumer;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.table.ITableWrapper;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.
+ * Simplistic {@link IDictionary} based on {@link ConcurrentHashMap}.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularGroupByRecord {
+@Deprecated(since = "This is broken")
+public class HashMapDictionary implements IDictionary {
+	ConcurrentMap<Integer, Object> intToObject = new ConcurrentHashMap<>();
+	ConcurrentMap<Object, Integer> objectToInt = new ConcurrentHashMap<>();
 
-	IAdhocSlice getGroupBys();
+	@Override
+	public int size() {
+		return intToObject.size();
+	}
 
-	Set<String> groupByKeySet();
+	@Override
+	public int mapToInt(Object o) {
+		return objectToInt.computeIfAbsent(o, oo -> size());
+	}
 
-	Object getGroupBy(String columnName);
+	@Override
+	public Object getObject(int index) {
+		return intToObject.computeIfAbsent(index, ii -> size());
+	}
 
-	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
 }

@@ -20,26 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.map;
 
-import java.util.Set;
-import java.util.function.BiConsumer;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.table.ITableWrapper;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.
+ * Tentative to implement a Trie to manage better Map with a List key.
  * 
- * @author Benoit Lacelle
+ * @param <K>
+ * @param <V>
  */
-public interface ITabularGroupByRecord {
+@Deprecated
+public interface ConcurrentMapListKey<K, V> extends ConcurrentMap<List<K>, V> {
 
-	IAdhocSlice getGroupBys();
+	class TrieNode<K, V> {
+		Map<K, TrieNode<K, V>> children = new ConcurrentHashMap<>();
+		V value;
+	}
 
-	Set<String> groupByKeySet();
+	class ListKeyTrieMap<K, V> {
+		private final TrieNode<K, V> root = new TrieNode<>();
 
-	Object getGroupBy(String columnName);
+		public void put(List<K> key, V value) {
+			TrieNode<K, V> node = root;
+			for (K k : key) {
+				node = node.children.computeIfAbsent(k, x -> new TrieNode<>());
+			}
+			node.value = value;
+		}
 
-	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
+		public V get(List<K> key) {
+			TrieNode<K, V> node = root;
+			for (K k : key) {
+				node = node.children.get(k);
+				if (node == null)
+					return null;
+			}
+			return node.value;
+		}
+	}
 }
