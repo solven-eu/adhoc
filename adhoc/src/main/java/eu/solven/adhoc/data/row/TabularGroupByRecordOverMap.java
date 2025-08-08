@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.row;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -74,5 +75,10 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	@Override
 	public IAdhocSlice getGroupBys() {
 		return slice;
+	}
+
+	@Override
+	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		slice.forEachGroupBy(action);
 	}
 }

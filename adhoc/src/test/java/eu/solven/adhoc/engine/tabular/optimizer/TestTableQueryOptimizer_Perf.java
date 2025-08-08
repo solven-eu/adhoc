@@ -47,7 +47,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -59,6 +59,8 @@ public class TestTableQueryOptimizer_Perf {
 	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
+
+	StandardSliceFactory factory = StandardSliceFactory.builder().build();
 
 	@Test
 	public void testReduce() {
@@ -78,9 +80,8 @@ public class TestTableQueryOptimizer_Perf {
 
 		NavigableSet<String> inColumns = new TreeSet<>(ImmutableSet.of("c0", "c1"));
 		IntStream.range(0, cardinalityIn).forEach(rowIndex -> {
-			inducerValues
-					.append(SliceAsMap.fromMap(
-							AdhocMap.builder(inColumns).append(rowIndex % cardinalityOut).append(rowIndex).build()))
+			inducerValues.append(SliceAsMap.fromMap(
+					factory.newMapBuilder(inColumns).append(rowIndex % cardinalityOut).append(rowIndex).build()))
 					.onLong(rowIndex);
 		});
 

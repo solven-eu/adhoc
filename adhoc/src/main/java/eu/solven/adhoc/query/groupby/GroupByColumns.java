@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -131,20 +131,20 @@ public class GroupByColumns implements IAdhocGroupBy {
 	}
 
 	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
-		NavigableMap<String, T> nameToColumn = new TreeMap<>();
+		ImmutableSortedMap.Builder<String, T> nameToColumnBuilder = ImmutableSortedMap.<String, T>naturalOrder();
 
 		columns.forEach(column -> {
 			String columnName = column.getName();
-			if (nameToColumn.containsKey(columnName)) {
-				if (nameToColumn.get(columnName).equals(column)) {
-					log.trace("Column={} is expressed multiple times in {}", column, columns);
-				} else {
-					throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
-				}
-			}
-			nameToColumn.put(columnName, column);
+			// if (nameToColumn.containsKey(columnName)) {
+			// if (nameToColumn.get(columnName).equals(column)) {
+			// log.trace("Column={} is expressed multiple times in {}", column, columns);
+			// } else {
+			// throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
+			// }
+			// }
+			nameToColumnBuilder.put(columnName, column);
 		});
 
-		return nameToColumn;
+		return nameToColumnBuilder.build();
 	}
 }

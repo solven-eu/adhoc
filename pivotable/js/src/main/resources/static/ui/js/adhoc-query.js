@@ -104,12 +104,27 @@ export default {
 			});
 		}
 
+		// TODO This structure should be persisted in localStorage
+		const recentlyUsed = reactive({ columns: new Set(), measures: new Set() });
+		{
+			watch(queryModel, async (newQueryModel) => {
+				const columns = Object.keys(newQueryModel.selectedColumns || {});
+				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
+				columns.forEach(recentlyUsed.columns.add, recentlyUsed.columns);
+
+				const measures = Object.keys(queryModel.selectedMeasures || {});
+				// https://stackoverflow.com/questions/50881453/how-to-add-an-array-of-values-to-a-set
+				measures.forEach(recentlyUsed.measures.add, recentlyUsed.measures);
+			});
+		}
+
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
 
 		return {
 			loading,
 			queryModel,
+			recentlyUsed,
 			tabularView,
 			domId,
 			measuresDagModel,
@@ -120,7 +135,7 @@ export default {
         <div class="row">
             <div class="col-3">
                 <div class="row">
-                    <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :loading="loading" />
+                    <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
                 </div>
 
                 <div class="row">

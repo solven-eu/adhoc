@@ -34,15 +34,16 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.AdhocMap.AdhocMapBuilder;
+import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 
 public class TestAdhocMap {
 	// Not a String to ensure we accept various types
 	LocalDate now = LocalDate.now();
+	StandardSliceFactory factory = StandardSliceFactory.builder().build();
 
 	@Test
 	public void testGet() {
-		IAdhocMap simpleMap = AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
+		IAdhocMap simpleMap = factory.newMapBuilder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
 
 		Assertions.assertThat((Map) simpleMap).containsEntry("a", "a1").containsEntry("b", now).hasSize(2);
 
@@ -58,10 +59,10 @@ public class TestAdhocMap {
 
 	@Test
 	public void testHashcode() {
-		IAdhocMap simpleMap = AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
+		IAdhocMap simpleMap = factory.newMapBuilder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
 
 		{
-			IAdhocMap simpleMap2 = AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
+			IAdhocMap simpleMap2 = factory.newMapBuilder(ImmutableSet.of("a", "b")).append("a1").append(now).build();
 
 			Assertions.assertThat((Map) simpleMap).isEqualTo(simpleMap2);
 		}
@@ -69,14 +70,14 @@ public class TestAdhocMap {
 		// Same keys different values
 		{
 			IAdhocMap simpleMap2 =
-					AdhocMap.builder(ImmutableSet.of("a", "b")).append("a1").append(now.plusDays(1)).build();
+					factory.newMapBuilder(ImmutableSet.of("a", "b")).append("a1").append(now.plusDays(1)).build();
 
 			Assertions.assertThat((Map) simpleMap).isNotEqualTo(simpleMap2);
 		}
 
 		// Same values different keys
 		{
-			IAdhocMap simpleMap2 = AdhocMap.builder(ImmutableSet.of("a", "c")).append("a1").append(now).build();
+			IAdhocMap simpleMap2 = factory.newMapBuilder(ImmutableSet.of("a", "c")).append("a1").append(now).build();
 
 			Assertions.assertThat((Map) simpleMap).isNotEqualTo(simpleMap2);
 		}
@@ -94,60 +95,63 @@ public class TestAdhocMap {
 
 	@Test
 	public void testReOrder_2() {
-		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
-		IAdhocMap desc = AdhocMap.builder(ImmutableSet.of("date", "a")).append(now).append("a1").build();
+		IAdhocMap asc = factory.newMapBuilder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
+		IAdhocMap desc = factory.newMapBuilder(ImmutableSet.of("date", "a")).append(now).append("a1").build();
 
 		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "date", now));
 	}
 
 	@Test
 	public void testReOrder_3_mixed() {
-		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("a", "c", "b")).append("a1").append("c1").append("b1").build();
+		IAdhocMap asc =
+				factory.newMapBuilder(ImmutableSet.of("a", "c", "b")).append("a1").append("c1").append("b1").build();
 		IAdhocMap desc =
-				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+				factory.newMapBuilder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
 		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
 	public void testReOrder_3_mixed2() {
-		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("c", "a", "b")).append("c1").append("a1").append("b1").build();
+		IAdhocMap asc =
+				factory.newMapBuilder(ImmutableSet.of("c", "a", "b")).append("c1").append("a1").append("b1").build();
 		IAdhocMap desc =
-				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+				factory.newMapBuilder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
 		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
 	public void testReOrder_3_reverse() {
-		IAdhocMap asc = AdhocMap.builder(ImmutableSet.of("c", "b", "a")).append("c1").append("b1").append("a1").build();
+		IAdhocMap asc =
+				factory.newMapBuilder(ImmutableSet.of("c", "b", "a")).append("c1").append("b1").append("a1").build();
 		IAdhocMap desc =
-				AdhocMap.builder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
+				factory.newMapBuilder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
 		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
 	public void testCompare() {
-		AdhocMap b1Now = AdhocMap.builder(ImmutableSet.of("b", "date")).append("b1").append(now).build();
-		AdhocMap b1Tomorrow =
-				AdhocMap.builder(ImmutableSet.of("b", "date")).append("b1").append(now.plusDays(1)).build();
+		IAdhocMap b1Now = factory.newMapBuilder(ImmutableSet.of("b", "date")).append("b1").append(now).build();
+		IAdhocMap b1Tomorrow =
+				factory.newMapBuilder(ImmutableSet.of("b", "date")).append("b1").append(now.plusDays(1)).build();
 
 		Assertions.assertThatComparable(b1Now).isLessThan(b1Tomorrow);
 
-		AdhocMap a1Now = AdhocMap.builder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
+		IAdhocMap a1Now = factory.newMapBuilder(ImmutableSet.of("a", "date")).append("a1").append(now).build();
 		Assertions.assertThatComparable(a1Now).isLessThan(b1Now);
 
-		AdhocMap a1b1Now =
-				AdhocMap.builder(ImmutableSet.of("a", "b", "date")).append("a1").append("b1").append(now).build();
+		IAdhocMap a1b1Now =
+				factory.newMapBuilder(ImmutableSet.of("a", "b", "date")).append("a1").append("b1").append(now).build();
 		Assertions.assertThatComparable(a1b1Now)
 				// `b` is less than `date`
 				.isLessThanOrEqualTo(a1Now)
 				// Leading `a` before common `b` make it smaller
 				.isLessThanOrEqualTo(b1Now);
 
-		AdhocMap b1NowZ1 =
-				AdhocMap.builder(ImmutableSet.of("b", "date", "z")).append("b1").append(now).append("z1").build();
+		IAdhocMap b1NowZ1 =
+				factory.newMapBuilder(ImmutableSet.of("b", "date", "z")).append("b1").append(now).append("z1").build();
 		Assertions.assertThatComparable(b1NowZ1)
 				// Trailing `z` after common `date` make is greater
 				.isGreaterThan(b1Now);
@@ -160,11 +164,11 @@ public class TestAdhocMap {
 				.mapToObj(i -> Strings.padStart(Integer.toString(i), 3, '0'))
 				.collect(ImmutableSet.toImmutableSet());
 
-		AdhocMapBuilder builder = AdhocMap.builder(keys);
+		MapBuilderPreKeys builder = factory.newMapBuilder(keys);
 
 		IntStream.range(0, size).forEach(i -> builder.append("v_" + i));
 
-		AdhocMap map = builder.build();
+		IAdhocMap map = builder.build();
 
 		List<Entry<String, Object>> entries = map.entrySet().stream().toList();
 		for (int i = 0; i < size; i++) {

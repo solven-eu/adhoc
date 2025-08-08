@@ -45,6 +45,7 @@ import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -106,7 +107,8 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 
 	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg,
 			List<? extends ISliceToValue> underlyings) {
-		// BEWARE The output capacity is at most the sum of input capacity. But it is generally much smaller. (e.g. We
+		// BEWARE The output capacity is at most the sum of input capacity. But it is
+		// generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
 		int initialCapacity = CombinatorQueryStep.sumSizes(underlyings);
 		return factories.getColumnFactory().makeColumn(agg, initialCapacity);
@@ -156,8 +158,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 			Object value = slice.getRawSliced(groupBy);
 
 			if (value == null) {
-				// Should we accept null a coordinate, e.g. to handle input partial Maps?
-				throw new IllegalStateException("A coordinate-value can not be null");
+				value = NullMatcher.NULL_HOLDER;
 			}
 
 			mapBuilder.append(value);

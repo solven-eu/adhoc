@@ -35,7 +35,7 @@ jobs:
       run: mvn package -Pfast --file pom.xml --batch-mode
     - name: Java unit-tests
       # Stick to `package` phase for consistency, and checking packaging is fine
-      run: mvn package -DexcludedGroups=adhoc-benchmark --file pom.xml --batch-mode
+      run: mvn package -Pnostyle -DexcludedGroups=adhoc-benchmark --file pom.xml --batch-mode
 
     # https://stackoverflow.com/questions/57498605/github-actions-share-workspace-artifacts-between-jobs
     #- uses: actions/upload-artifact@v4

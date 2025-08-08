@@ -58,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 100;
+	static final int maxCardinality = 1000;
 	static final int nbDays = 10_000;
 
 	@BeforeAll

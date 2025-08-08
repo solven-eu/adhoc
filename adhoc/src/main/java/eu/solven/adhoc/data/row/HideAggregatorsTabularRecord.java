@@ -25,6 +25,7 @@ package eu.solven.adhoc.data.row;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -120,5 +121,12 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	@Override
 	public String toString() {
 		return TabularRecordOverMaps.toString(this);
+	}
+
+	@Override
+	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		decorated.forEachGroupBy((k, v) -> {
+			action.accept(k, v);
+		});
 	}
 }

@@ -37,4 +37,4 @@ jobs:
       run: mvn package -Pfast --file pom.xml --batch-mode
     - name: Java integration-tests
       # Stick to `package` phase for consistency, and checking packaging is fine
-      run: mvn test -DexcludedGroups=adhoc-benchmark -Dgroups=adhoc-benchmark --file pom.xml --batch-mode
+      run: mvn test -Pnostyle -DexcludedGroups=adhoc-benchmark -Dgroups=adhoc-benchmark --file pom.xml --batch-mode

@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.jspecify.annotations.Nullable;
 
@@ -112,4 +113,6 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice> {
 	IAdhocSlice addColumns(Map<String, ?> masks);
 
 	ISliceFactory getFactory();
+
+	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
 }

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -42,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class TabularRecordLogger {
 	final AtomicInteger nbIn = new AtomicInteger();
-	final AtomicInteger nbOut = new AtomicInteger();
 
 	final String table;
 
@@ -50,28 +48,15 @@ public class TabularRecordLogger {
 	@Deprecated(since = "Not called automatically")
 	public Runnable closeHandler() {
 		return () -> {
-			log.info("Aggregates from table completed accepting {} rows and rejecting {} rows (table={})",
-					nbIn.get(),
-					nbOut.get(),
-					table);
+			log.info("Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
 		};
 	}
 
-	public BiConsumer<ITabularRecord, Optional<IAdhocSlice>> prepareStreamLogger(TableQueryV2 tableQuery) {
-		BiConsumer<ITabularRecord, Optional<IAdhocSlice>> peekOnCoordinate = (input, optCoordinates) -> {
-			if (optCoordinates.isEmpty()) {
-				// Skip this input as it is incompatible with the groupBy
-				// This may not be done by IAdhocDatabaseWrapper for complex groupBys.
-				// TODO Wouldn't this be a bug in IAdhocDatabaseWrapper?
-				int currentOut = nbOut.incrementAndGet();
-				if (logAboutRow(tableQuery, currentOut)) {
-					log.info("[DEBUG] Rejected row #{}: {} (table={})", currentOut, input, table);
-				}
-			} else {
-				int currentIn = nbIn.incrementAndGet();
-				if (logAboutRow(tableQuery, currentIn)) {
-					log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
-				}
+	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(TableQueryV2 tableQuery) {
+		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate = (input, optCoordinates) -> {
+			int currentIn = nbIn.incrementAndGet();
+			if (logAboutRow(tableQuery, currentIn)) {
+				log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
 			}
 		};
 		return peekOnCoordinate;
