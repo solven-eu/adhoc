@@ -32,15 +32,33 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @param <K>
  * @param <V>
+ * 
+ * @author Benoit Lacelle
  */
 @Deprecated
 public interface ConcurrentMapListKey<K, V> extends ConcurrentMap<List<K>, V> {
 
+	/**
+	 * Tentative to implement a Trie to manage better Map with a List key.
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	class TrieNode<K, V> {
 		Map<K, TrieNode<K, V>> children = new ConcurrentHashMap<>();
 		V value;
 	}
 
+	/**
+	 * Tentative to implement a Trie to manage better Map with a List key.
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * 
+	 * @author Benoit Lacelle
+	 */
 	class ListKeyTrieMap<K, V> {
 		private final TrieNode<K, V> root = new TrieNode<>();
 
@@ -56,8 +74,9 @@ public interface ConcurrentMapListKey<K, V> extends ConcurrentMap<List<K>, V> {
 			TrieNode<K, V> node = root;
 			for (K k : key) {
 				node = node.children.get(k);
-				if (node == null)
+				if (node == null) {
 					return null;
+				}
 			}
 			return node.value;
 		}

@@ -72,7 +72,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfMaxOfSum_groupByA() {
+	public void testSumOfMaxOfSum_partitionByA() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
@@ -94,7 +94,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfMaxOfSum_groupByAandB() {
+	public void testSumOfMaxOfSum_partitionByAandB() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
 				.combinationKey(MaxCombination.KEY)
@@ -116,7 +116,32 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfMaxOfSum_groupByA_bothBucketorAndAdhoc() {
+	public void testSumOfMaxOfSum_partitionByAandB_groupByAandB() {
+		forest.addMeasure(Partitionor.builder()
+				.name("maxK1K2")
+				.combinationKey(MaxCombination.KEY)
+				.underlyings(Arrays.asList("k1", "k2"))
+				.groupBy(GroupByColumns.named("a", "b"))
+				.aggregationKey(SumAggregation.KEY)
+				.build());
+
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+
+		ITabularView output =
+				cube().execute(CubeQuery.builder().measure("maxK1K2").groupBy(GroupByColumns.named("a", "b")).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(3)
+				.containsEntry(MapWithNulls.of("a", "a1", "b", null), Map.of("maxK1K2", 0L + 123 + 345))
+				.containsEntry(Map.of("a", "a2", "b", "b1"), Map.of("maxK1K2", 0L + 234))
+				.containsEntry(Map.of("a", "a2", "b", "b2"), Map.of("maxK1K2", 0L + 567));
+	}
+
+	@Test
+	public void testSumOfMaxOfSum_partitionByA_bothBucketorAndAdhoc() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2ByA")
 				.underlyings(Arrays.asList("k1", "k2"))
@@ -139,7 +164,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfMaxOfSum_groupByAandBandUnknown() {
+	public void testSumOfMaxOfSum_partitionByAandBandUnknown() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
@@ -158,7 +183,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfSum_filterA1_groupbyA() {
+	public void testSumOfSum_filterA1_partitionByA() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))
@@ -180,7 +205,7 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 	}
 
 	@Test
-	public void testSumOfSum_filterA1_groupbyB() {
+	public void testSumOfSum_filterA1_partitionByB() {
 		forest.addMeasure(Partitionor.builder()
 				.name("maxK1K2")
 				.underlyings(Arrays.asList("k1", "k2"))

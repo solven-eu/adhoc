@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.AbstractList;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
@@ -35,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.RandomAccess;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -45,14 +41,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.jspecify.annotations.Nullable;
-
 import com.google.common.base.Suppliers;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -350,51 +343,10 @@ public class StandardSliceFactory implements ISliceFactory {
 		transient Set<Map.Entry<String, Object>> entrySet;
 
 		protected List<Object> orderedValues() {
-			return new AbstractList<Object>() {
-
-				@Override
-				public int size() {
-					return unorderedValues.size();
-				}
-
-				@Override
-				public Object get(int index) {
-					return unorderedValues.get(keys.unorderedIndex(index));
-				}
-
-				@Override
-				public boolean equals(Object obj) {
-					return equalsImpl(this, obj);
-				}
-
-				// Duplicated from Guava Lists
-
-				/** An implementation of {@link List#equals(Object)}. */
-				static boolean equalsImpl(List<?> thisList, @Nullable Object other) {
-					if (other == checkNotNull(thisList)) {
-						return true;
-					}
-					if (!(other instanceof List)) {
-						return false;
-					}
-					List<?> otherList = (List<?>) other;
-					int size = thisList.size();
-					if (size != otherList.size()) {
-						return false;
-					}
-					if (thisList instanceof RandomAccess && otherList instanceof RandomAccess) {
-						// avoid allocation and use the faster loop
-						for (int i = 0; i < size; i++) {
-							if (!com.google.common.base.Objects.equal(thisList.get(i), otherList.get(i))) {
-								return false;
-							}
-						}
-						return true;
-					} else {
-						return Iterators.elementsEqual(thisList.iterator(), otherList.iterator());
-					}
-				}
-			};
+			return PermutedArrayList.builder()
+					.unorderedValues(unorderedValues)
+					.reordering(keys::unorderedIndex)
+					.build();
 		}
 
 		@Override
