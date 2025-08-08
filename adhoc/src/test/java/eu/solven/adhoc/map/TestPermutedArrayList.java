@@ -85,8 +85,11 @@ public class TestPermutedArrayList {
 		PermutedArrayList<String> permuted =
 				PermutedArrayList.<String>builder().unorderedValues(root).reordering(reordering).build();
 
-		Assertions.assertThat(permuted).isEqualTo(ImmutableList.of("a1", "a0", "a3", "a2"));
+		ImmutableList<String> permutedReference = ImmutableList.of("a1", "a0", "a3", "a2");
+		Assertions.assertThat(permuted).isEqualTo(permutedReference);
 		Mockito.verify(reordering, Mockito.times(root.size())).applyAsInt(Mockito.anyInt());
+
+		Assertions.assertThat(permuted.hashCode()).isEqualTo(permutedReference.hashCode());
 	}
 
 	@Test
