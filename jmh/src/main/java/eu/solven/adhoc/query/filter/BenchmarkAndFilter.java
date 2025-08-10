@@ -41,7 +41,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 
 /**
@@ -58,10 +58,10 @@ import eu.solven.adhoc.map.IAdhocMap;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkAndFilter {
 
-	Map<String, ?> asMap =
-			IntStream.range(0, 5).mapToObj(i -> i).collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
+	Map<String, ?> asMap = IntStream.range(0, 5).mapToObj(i -> i)
+			.collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
 
-	IAdhocMap adhocMap = AdhocMap.copyOf(asMap);
+	IAdhocMap adhocMap = AdhocMapHelpers.wrap(asMap);
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkAndFilter.class.getSimpleName()).forks(1).build();

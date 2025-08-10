@@ -52,10 +52,10 @@ public class DummyOperatorFactory implements IOperatorFactory {
 	ICombination dummyCombination = new CoalesceCombination();
 	@NonNull
 	@Builder.Default
-	IDecomposition dummyDecomposition = new AdhocIdentity();
+	IDecomposition dummyDecomposition = AdhocIdentity.getInstance();
 	@NonNull
 	@Builder.Default
-	IFilterEditor dummyEditor = new AdhocIdentity();
+	IFilterEditor dummyEditor = AdhocIdentity.getInstance();
 
 	@Override
 	public IAggregation makeAggregation(String key, Map<String, ?> options) {

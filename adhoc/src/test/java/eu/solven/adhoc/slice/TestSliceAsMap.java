@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 
 public class TestSliceAsMap {
 	@Test
@@ -96,10 +96,8 @@ public class TestSliceAsMap {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		IAdhocSlice extended = slice.addColumns(Map.of("k2", "v2"));
-		Assertions.assertThat((Map) extended.getCoordinates())
-				.hasSize(2)
-				.containsEntry("k", "v")
-				.containsEntry("k2", "v2");
+		Assertions.assertThat((Map) extended.getCoordinates()).hasSize(2).containsEntry("k", "v").containsEntry("k2",
+				"v2");
 	}
 
 	@Test
@@ -107,8 +105,7 @@ public class TestSliceAsMap {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("k", "v2");
+				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("k", "v2");
 	}
 
 	// Typically happens with nullable columns
@@ -130,15 +127,15 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testIntAndLong_adhocMap() {
-		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
-		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123L)));
+		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
+		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123L)));
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
 
 	@Test
 	public void testKeepAdhocMap() {
-		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
+		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
 
 		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
 				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");

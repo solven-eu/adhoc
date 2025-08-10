@@ -68,8 +68,9 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest}, {@link ICubeWrapper} and {@link ICubeQuery}.
- * It is typically used for use through an API/Catalog.
+ * Wraps together a Set of {@link ITableWrapper}, {@link IMeasureForest},
+ * {@link ICubeWrapper} and {@link ICubeQuery}. It is typically used for use
+ * through an API/Catalog.
  *
  * @author Benoit Lacelle
  */
@@ -87,14 +88,13 @@ public class AdhocSchema implements IAdhocSchema {
 
 	final Map<String, ICubeWrapper> nameToCube = new ConcurrentHashMap<>();
 
-	final List<Map.Entry<CustomMarkerMatchingKey, CustomMarkerMetadataGenerator>> nameToCustomMarker =
-			new CopyOnWriteArrayList<>();
+	final List<Map.Entry<CustomMarkerMatchingKey, CustomMarkerMetadataGenerator>> nameToCustomMarker = new CopyOnWriteArrayList<>();
 
 	// final Map<String, IAdhocQuery> nameToQuery = new ConcurrentHashMap<>();
 
 	// `getColumns` is an expensive operations, as it analyzes the underlying table
-	final LoadingCache<String, Collection<? extends ColumnMetadata>> cacheCubeToColumnToType =
-			CacheBuilder.newBuilder().expireAfterWrite(Duration.ofHours(1)).build(CacheLoader.from(cubeName -> {
+	final LoadingCache<String, Collection<? extends ColumnMetadata>> cacheCubeToColumnToType = CacheBuilder.newBuilder()
+			.expireAfterWrite(Duration.ofHours(1)).build(CacheLoader.from(cubeName -> {
 				ICubeWrapper cube = nameToCube.get(cubeName);
 
 				if (cube == null) {
@@ -102,14 +102,11 @@ public class AdhocSchema implements IAdhocSchema {
 				} else {
 					Collection<ColumnMetadata> rawColumns = cube.getColumns();
 
-					ColumnIdentifier columnIdTemplate = ColumnIdentifier.builder()
-							.isCubeElseTable(true)
-							.holder(cubeName)
-							.column("netYetDefined")
-							.build();
+					ColumnIdentifier columnIdTemplate = ColumnIdentifier.builder().isCubeElseTable(true)
+							.holder(cubeName).column("netYetDefined").build();
 
-					List<ColumnMetadata> enriched =
-							rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c)).toList();
+					List<ColumnMetadata> enriched = rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c))
+							.toList();
 					return enriched;
 				}
 			}));
@@ -147,8 +144,8 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	protected IMeasure enrichMeasure(String cube, IMeasure value) {
-		Set<String> additionalTags =
-				measureToTags.get(MeasureIdentifier.builder().cube(cube).measure(value.getName()).build());
+		Set<String> additionalTags = measureToTags
+				.get(MeasureIdentifier.builder().cube(cube).measure(value.getName()).build());
 
 		if (additionalTags == null) {
 			return value;
@@ -185,12 +182,10 @@ public class AdhocSchema implements IAdhocSchema {
 
 		// A subset of the schema is requested: restrict ourselves to what's requested
 		// Typically, we do not want to return a single cube, and all tables
-		boolean hasAnyFilter =
-				query.getCube().isPresent() || query.getForest().isPresent() || query.getTable().isPresent();
+		boolean hasAnyFilter = query.getCube().isPresent() || query.getForest().isPresent()
+				|| query.getTable().isPresent();
 
-		nameToCube.entrySet()
-				.stream()
-				.filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
+		nameToCube.entrySet().stream().filter(c -> isRequested(query.getCube(), allIfEmpty, hasAnyFilter, c))
 				.forEach(c -> {
 					String cubeName = c.getKey();
 					ICubeWrapper cube = c.getValue();
@@ -209,11 +204,8 @@ public class AdhocSchema implements IAdhocSchema {
 						}
 					}
 					cubeSchema.columns(columns);
-					cubeSchema.measures(cube.getNameToMeasure()
-							.entrySet()
-							.stream()
-							.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey,
-									e -> enrichMeasure(cube.getName(), e.getValue()))));
+					cubeSchema.measures(cube.getNameToMeasure().entrySet().stream().collect(ImmutableMap
+							.toImmutableMap(Map.Entry::getKey, e -> enrichMeasure(cube.getName(), e.getValue()))));
 
 					Map<String, CustomMarkerMetadata> customMarkerNameToMetadata = new TreeMap<>();
 
@@ -221,17 +213,14 @@ public class AdhocSchema implements IAdhocSchema {
 							.filter(customMarker -> customMarker.getKey().getCubeMatcher().match(cubeName))
 							.forEach(customMarker -> {
 								String customMarkerName = customMarker.getKey().getName();
-								CustomMarkerMetadata customMarkerMetadata =
-										customMarker.getValue().snapshot(customMarkerName);
-								CustomMarkerMetadata previous =
-										customMarkerNameToMetadata.put(customMarkerName, customMarkerMetadata);
+								CustomMarkerMetadata customMarkerMetadata = customMarker.getValue()
+										.snapshot(customMarkerName);
+								CustomMarkerMetadata previous = customMarkerNameToMetadata.put(customMarkerName,
+										customMarkerMetadata);
 
 								if (previous != null) {
-									log.warn("cube={} customMarker={} matches multiple metadata: {} and {}",
-											cubeName,
-											customMarkerName,
-											customMarkerMetadata,
-											previous);
+									log.warn("cube={} customMarker={} matches multiple metadata: {} and {}", cubeName,
+											customMarkerName, customMarkerMetadata, previous);
 								}
 							});
 					cubeSchema.customMarkers(customMarkerNameToMetadata);
@@ -239,9 +228,7 @@ public class AdhocSchema implements IAdhocSchema {
 					metadata.cube(cubeName, cubeSchema.build());
 				});
 
-		nameToForest.entrySet()
-				.stream()
-				.filter(e -> isRequested(query.getForest(), allIfEmpty, hasAnyFilter, e))
+		nameToForest.entrySet().stream().filter(e -> isRequested(query.getForest(), allIfEmpty, hasAnyFilter, e))
 				.forEach(e -> {
 					String name = e.getKey();
 					IMeasureForest forest = e.getValue();
@@ -249,14 +236,12 @@ public class AdhocSchema implements IAdhocSchema {
 					metadata.forest(name, measures);
 				});
 
-		nameToTable.entrySet()
-				.stream()
-				.filter(e -> isRequested(query.getTable(), allIfEmpty, hasAnyFilter, e))
+		nameToTable.entrySet().stream().filter(e -> isRequested(query.getTable(), allIfEmpty, hasAnyFilter, e))
 				.forEach(e -> {
 					String name = e.getKey();
 					ITableWrapper table = e.getValue();
 					// TODO Should we cache?
-					metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()).build());
+					metadata.table(name, ColumnarMetadata.from(table.getColumns()).build());
 				});
 
 		// nameToQuery.forEach((name, query) -> {
@@ -266,9 +251,7 @@ public class AdhocSchema implements IAdhocSchema {
 		return metadata.build();
 	}
 
-	protected boolean isRequested(Optional<String> optRequested,
-			boolean allIfEmpty,
-			boolean hasAnyFilter,
+	protected boolean isRequested(Optional<String> optRequested, boolean allIfEmpty, boolean hasAnyFilter,
 			Map.Entry<String, ? extends IHasName> e) {
 		return allIfEmpty && !hasAnyFilter && optRequested.isEmpty()
 				|| optRequested.isPresent() && optRequested.get().equals(e.getKey());
@@ -285,7 +268,8 @@ public class AdhocSchema implements IAdhocSchema {
 		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
 
 		if (query.isDebugOrExplain()) {
-			// This can be helpful to debug why some `c=v` filters are turned into `c.toString() matches v`
+			// This can be helpful to debug why some `c=v` filters are turned into
+			// `c.toString() matches v`
 			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
 		}
 
@@ -295,9 +279,9 @@ public class AdhocSchema implements IAdhocSchema {
 	/**
 	 * 
 	 * @param cubeWrapper
-	 * @param query
-	 *            a query typically received by API, hence transcoded by Jackson. it would typically have improper types
-	 *            on some filters.
+	 * @param query       a query typically received by API, hence transcoded by
+	 *                    Jackson. it would typically have improper types on some
+	 *                    filters.
 	 * @return
 	 */
 	protected ICubeQuery transcodeQuery(ICubeWrapper cubeWrapper, ICubeQuery query) {
@@ -316,8 +300,8 @@ public class AdhocSchema implements IAdhocSchema {
 
 		cubeColumns.forEach(column -> columnToType.put(column.getName(), column.getType()));
 
-		ICustomTypeManagerSimple customTypeManager =
-				CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType).build();
+		ICustomTypeManagerSimple customTypeManager = CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType)
+				.build();
 		return customTypeManager;
 	}
 
@@ -335,21 +319,20 @@ public class AdhocSchema implements IAdhocSchema {
 
 	/**
 	 * 
-	 * @param name
-	 *            some identifier for the customMarker
+	 * @param name         some identifier for the customMarker
 	 * @param cubeMatcher
 	 * @param customMarker
 	 */
-	public void registerCustomMarker(String name,
-			IValueMatcher cubeMatcher,
+	public void registerCustomMarker(String name, IValueMatcher cubeMatcher,
 			CustomMarkerMetadataGenerator customMarker) {
-		CustomMarkerMatchingKey matchingKey =
-				CustomMarkerMatchingKey.builder().name(name).cubeMatcher(cubeMatcher).build();
+		CustomMarkerMatchingKey matchingKey = CustomMarkerMatchingKey.builder().name(name).cubeMatcher(cubeMatcher)
+				.build();
 		nameToCustomMarker.add(Map.entry(matchingKey, customMarker));
 	}
 
 	// public void registerMeasure(String measureBagName, IMeasure measure) {
-	// AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
+	// AdhocMeasureBag measureBag = (AdhocMeasureBag)
+	// nameToMeasure.computeIfAbsent(measureBagName,
 	// k -> AdhocMeasureBag.builder().name(measureBagName).build());
 	// measureBag.addMeasure(measure);
 	// }
@@ -357,8 +340,8 @@ public class AdhocSchema implements IAdhocSchema {
 	/**
 	 * @param columnId
 	 * @param valueMatcher
-	 * @param limit
-	 *            if `-1` no limit, else the maximum number of coordinates to return.
+	 * @param limit        if `-1` no limit, else the maximum number of coordinates
+	 *                     to return.
 	 * @return
 	 */
 	public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
