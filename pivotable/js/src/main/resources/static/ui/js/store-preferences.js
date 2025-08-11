@@ -27,7 +27,7 @@ function duplicate(object) {
 	return JSON.parse(JSON.stringify(object));
 }
 
-export const usePreferencesStore = defineStore("preferences", {
+const store = defineStore("preferences", {
 	state: () => ({
 		// queryId->queryModel
 		queryModels: {},
@@ -100,7 +100,7 @@ export const usePreferencesStore = defineStore("preferences", {
 
 			return optId;
 		},
-		loadQuery(queryId) {
+		loadQuery(queryId, queryModel, registerLatestQueryId) {
 			const store = this;
 
 			if (queryId) {
@@ -111,17 +111,28 @@ export const usePreferencesStore = defineStore("preferences", {
 				queryId = store.currentQueryId;
 			}
 
-			const loadedQueryModel = queryHelper.makeQueryModel();
+			if (registerLatestQueryId) {
+				// Typically done inside `loadQuery` else, if it called manually, it may failed as called from an unmounted component, as queryModel changed
+				store.registerLatestQueryId(queryId);
+			}
+
+			if (!queryModel) {
+				// Typically happens for transient loads, like from hasUnsavedChanges
+				queryModel = queryHelper.makeQueryModel();
+			}
+
+			//			const loadedQueryModel = queryHelper.makeQueryModel();
 
 			if (!queryId) {
 				// No queryId at all: let's start a queryModel from scratch
-				return loadedQueryModel;
+				//				return loadedQueryModel;
+				throw new Error("No query is registered for queryId=" + queryId);
 			}
 
 			// Load a copy to prevent mutations from Wizard
-			queryHelper.parsedJsonToQueryModel(duplicate(store.queryModels[queryId].queryModel), loadedQueryModel);
+			queryHelper.parsedJsonToQueryModel(duplicate(store.queryModels[queryId].queryModel), queryModel);
 
-			return loadedQueryModel;
+			//			return loadedQueryModel;
 		},
 		// return true if given queryModel differs from the one registered for active queryId. true if draft==true
 		hasUnsavedChanges(queryModel) {
@@ -136,3 +147,12 @@ export const usePreferencesStore = defineStore("preferences", {
 		},
 	},
 });
+
+export const usePreferencesStore = function () {
+	const theStore = store();
+
+	theStore.latestQueryIds = JSON.parse(localStorage.getItem("adhoc.preferences.latestQueryIds")) || [];
+	theStore.queryModels = JSON.parse(localStorage.getItem("adhoc.preferences.queryModels")) || {};
+
+	return theStore;
+};

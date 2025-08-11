@@ -20,6 +20,9 @@ export default {
 
 		const queryName = ref("");
 
+		// like `d1/d2`. Empty means at root
+		const queryPath = ref("");
+
 		const remove = function () {
 			// Remove the queryModel (not to clutter the list of models)
 			delete preferencesStore.queryModels.currentQueryId;
@@ -37,13 +40,10 @@ export default {
 		{
 			const router = useRouter();
 
-			preferencesStore.latestQueryIds = JSON.parse(localStorage.getItem("adhoc.preferences.latestQueryIds")) || [];
 			if (preferencesStore.latestQueryIds >= 1) {
 				const latestQueryId = preferencesStore.latestQueryIds[preferencesStore.latestQueryIds.length - 1];
 				// TODO Restore latestQueryId
 			}
-
-			preferencesStore.queryModels = JSON.parse(localStorage.getItem("adhoc.preferences.queryModels")) || {};
 
 			watch(
 				preferencesStore.latestQueryIds,
@@ -64,18 +64,21 @@ export default {
 		}
 
 		const editNameFlag = ref(false);
+		const editPathFlag = ref(false);
 
 		return {
 			preferencesStore,
 			queryModelHash,
 			queryModels,
+
 			queryName,
+			editNameFlag,
+			queryPath,
+			editPathFlag,
 
 			remove,
 			saveChanges,
 			saveNew,
-
-			editNameFlag,
 		};
 	},
 	template: /* HTML */ `
@@ -106,22 +109,36 @@ export default {
 
                         <div v-if="preferencesStore.currentQueryId">
                             <div>id = {{preferencesStore.currentQueryId}}</div>
-                            <div>name = 
-								<span v-if="!editNameFlag" @click="editNameFlag = true" > {{queryModels[preferencesStore.currentQueryId].name}}</span>
-								<span v-else>
-									<input type="text" v-model="queryModels[preferencesStore.currentQueryId].name"></input>
-								 </span>
+							<div v-if="queryModels[preferencesStore.currentQueryId]">
+								<div>name = 
+									<span v-if="!editNameFlag" @click="editNameFlag = true" > {{queryModels[preferencesStore.currentQueryId].name}}</span>
+									<span v-else>
+										<input type="text" v-model="queryModels[preferencesStore.currentQueryId].name"></input>
+									 </span>
+								</div>
+								 <div>name = 
+								 	<span v-if="!editPathFlag" @click="editPathFlag = true" > {{queryModels[preferencesStore.currentQueryId].path}}</span>
+								 	<span v-else>
+								 		<input type="text" v-model="queryModels[preferencesStore.currentQueryId].path"></input>
+								 	 </span>
+								 </div>
+								
+								
+	                            <div>
+	                                <button type="button" class="btn btn-primary" @click="remove">Remove</button>
+	
+	                                <span v-if="preferencesStore.hasUnsavedChanges(queryModel)">
+	                                    <button type="button" class="btn btn-primary" @click="saveChanges">Save changes</button>
+	                                </span>
+	                            </div>
 							</div>
-                            <div>
-                                <button type="button" class="btn btn-primary" @click="remove">Remove</button>
-
-                                <span v-if="preferencesStore.hasUnsavedChanges(queryModel)">
-                                    <button type="button" class="btn btn-primary" @click="saveChanges">Save changes</button>
-                                </span>
-                            </div>
+							<div v-else>
+							 queryId={{preferencesStore.currentQueryId}} does not exists. ids are {{Object.keys(queryModels)}}.
+							</div>
 						</div>
                         <div v-else>
-                            <input type="text" class="form-control" placeholder="Query name" aria-label="Query name" v-model="queryName" />
+							<input type="text" class="form-control" placeholder="Query name" aria-label="Query name" v-model="queryName" />
+							<input type="text" class="form-control" placeholder="Query path (e.g. 'd1/d2')" aria-label="Query path" v-model="queryPath" />
                             <button type="button" class="btn btn-primary" @click="saveNew">Save</button>
                         </div>
                     </div>

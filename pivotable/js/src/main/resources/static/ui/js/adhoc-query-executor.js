@@ -296,7 +296,7 @@ export default {
             <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
             <AdhocQueryReset :queryModel="queryModel" />
             <AdhocQueryFavorite :queryModel="queryModel" />
-            <AdhocQueryFavorites />
+            <AdhocQueryFavorites :queryModel="queryModel" />
         </div>
     `,
 };

@@ -5,15 +5,26 @@ import { useRouter } from "vue-router";
 import { usePreferencesStore } from "./store-preferences.js";
 
 export default {
-	props: {},
+	props: {
+		queryModel: {
+			type: Object,
+			required: true,
+		},
+	},
 	setup(props) {
 		const preferencesStore = usePreferencesStore();
 
 		const queryModels = preferencesStore.queryModels;
 
+		const loadQuery = function (queryId) {
+			preferencesStore.loadQuery(queryId, props.queryModel, true);
+		};
+
 		return {
 			preferencesStore,
 			queryModels,
+
+			loadQuery,
 		};
 	},
 	template: /* HTML */ `
@@ -30,17 +41,20 @@ export default {
                     </div>
                     <!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
                     <div class="modal-body">
-                        <div v-for="(queryModel,queryId) in queryModels">
-                            <small>id={{queryId}}</small>
-                            <div>name={{queryModel.name}}</div>
-                            <div>
-                                <div>columns: {{queryModel.queryModel.columns}}</div>
-                                <div>measures: {{queryModel.queryModel.measures}}</div>
-                                <div>filter: {{queryModel.queryModel.filter}}</div>
-                                <div>options: {{queryModel.queryModel.options}}</div>
-                                <div>customMarker: {{queryModel.queryModel.customMarker}}</div>
-                            </div>
-                        </div>
+                        <ul v-for="(queryModel,queryId) in queryModels" class="list-group">
+                            <li class="list-group-item " @click="loadQuery(queryId)">
+                                <small>id={{queryId}}</small>
+                                <div>name={{queryModel.name}}</div>
+                                <div>path={{queryModel.path}}</div>
+                                <div>
+                                    <div>columns: {{queryModel.queryModel.columns}}</div>
+                                    <div>measures: {{queryModel.queryModel.measures}}</div>
+                                    <div>filter: {{queryModel.queryModel.filter}}</div>
+                                    <div>options: {{queryModel.queryModel.options}}</div>
+                                    <div>customMarker: {{queryModel.queryModel.customMarker}}</div>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
