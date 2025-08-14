@@ -96,8 +96,10 @@ public class TestSliceAsMap {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		IAdhocSlice extended = slice.addColumns(Map.of("k2", "v2"));
-		Assertions.assertThat((Map) extended.getCoordinates()).hasSize(2).containsEntry("k", "v").containsEntry("k2",
-				"v2");
+		Assertions.assertThat((Map) extended.getCoordinates())
+				.hasSize(2)
+				.containsEntry("k", "v")
+				.containsEntry("k2", "v2");
 	}
 
 	@Test
@@ -105,7 +107,8 @@ public class TestSliceAsMap {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
 		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
-				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("k", "v2");
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("k", "v2");
 	}
 
 	// Typically happens with nullable columns

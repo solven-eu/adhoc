@@ -58,8 +58,8 @@ import eu.solven.adhoc.map.IAdhocMap;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkAndFilter {
 
-	Map<String, ?> asMap = IntStream.range(0, 5).mapToObj(i -> i)
-			.collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
+	Map<String, ?> asMap =
+			IntStream.range(0, 5).mapToObj(i -> i).collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
 
 	IAdhocMap adhocMap = AdhocMapHelpers.wrap(asMap);
 

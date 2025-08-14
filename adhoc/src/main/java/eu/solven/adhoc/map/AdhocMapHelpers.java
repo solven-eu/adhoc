@@ -41,8 +41,7 @@ public class AdhocMapHelpers {
 	/**
 	 * 
 	 * @param map
-	 * @return an immutable copy of the input, which may or may not be an
-	 *         {@link AdhocMap}
+	 * @return an immutable copy of the input, which may or may not be an {@link AdhocMap}
 	 */
 	public static Map<String, ?> immutableCopyOf(Map<String, ?> map) {
 		if (map instanceof IImmutable) {

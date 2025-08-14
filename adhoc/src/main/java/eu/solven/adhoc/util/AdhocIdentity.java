@@ -52,7 +52,7 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 	public static AdhocIdentity getInstance() {
 		return MEMOIZED.get();
 	}
-	
+
 	protected AdhocIdentity() {
 		// hidden constructor
 	}
