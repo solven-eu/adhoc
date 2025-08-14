@@ -360,7 +360,7 @@ public class StandardSliceFactory implements ISliceFactory {
 		public Set<Entry<String, Object>> entrySet() {
 			Set<Map.Entry<String, Object>> es;
 			if ((es = entrySet) == null) {
-				return (entrySet = new AdhocEntrySet());
+				return (entrySet = new MapOverListEntrySet());
 			} else {
 				return es;
 			}
@@ -464,7 +464,7 @@ public class StandardSliceFactory implements ISliceFactory {
 		}
 
 		@SuppressWarnings({ "checkstyle:RedundantModifier", "PMD.UnnecessaryModifier" })
-		final class AdhocEntrySet extends AbstractSet<Map.Entry<String, Object>> {
+		final class MapOverListEntrySet extends AbstractSet<Map.Entry<String, Object>> {
 			@Override
 			public final int size() {
 				return keys.size();
@@ -758,9 +758,4 @@ public class StandardSliceFactory implements ISliceFactory {
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
 	}
-
-	// @Override
-	// public Object getNullPlaceholder() {
-	// return valueNormalizer.nullPlaceholder();
-	// }
 }

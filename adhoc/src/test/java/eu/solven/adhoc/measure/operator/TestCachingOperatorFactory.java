@@ -62,7 +62,7 @@ public class TestCachingOperatorFactory {
 
 	@Test
 	public void testMakeDecomposition() {
-		Mockito.when(notCaching.makeDecomposition(AdhocIdentity.KEY, Map.of())).thenReturn(new AdhocIdentity());
+		Mockito.when(notCaching.makeDecomposition(AdhocIdentity.KEY, Map.of())).thenReturn(AdhocIdentity.getInstance());
 
 		IDecomposition aggregation1 = caching.makeDecomposition(AdhocIdentity.KEY, Map.of());
 		IDecomposition aggregation2 = caching.makeDecomposition(AdhocIdentity.KEY, Map.of());
@@ -72,7 +72,7 @@ public class TestCachingOperatorFactory {
 
 	@Test
 	public void testMakeEditor() {
-		Mockito.when(notCaching.makeEditor(AdhocIdentity.KEY, Map.of())).thenReturn(new AdhocIdentity());
+		Mockito.when(notCaching.makeEditor(AdhocIdentity.KEY, Map.of())).thenReturn(AdhocIdentity.getInstance());
 
 		IFilterEditor aggregation1 = caching.makeEditor(AdhocIdentity.KEY, Map.of());
 		IFilterEditor aggregation2 = caching.makeEditor(AdhocIdentity.KEY, Map.of());

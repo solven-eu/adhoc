@@ -256,7 +256,7 @@ public class AdhocSchema implements IAdhocSchema {
 					String name = e.getKey();
 					ITableWrapper table = e.getValue();
 					// TODO Should we cache?
-					metadata.table(name, ColumnarMetadata.from(table.getColumnTypes()).build());
+					metadata.table(name, ColumnarMetadata.from(table.getColumns()).build());
 				});
 
 		// nameToQuery.forEach((name, query) -> {
@@ -285,7 +285,8 @@ public class AdhocSchema implements IAdhocSchema {
 		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
 
 		if (query.isDebugOrExplain()) {
-			// This can be helpful to debug why some `c=v` filters are turned into `c.toString() matches v`
+			// This can be helpful to debug why some `c=v` filters are turned into
+			// `c.toString() matches v`
 			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
 		}
 
@@ -349,7 +350,8 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	// public void registerMeasure(String measureBagName, IMeasure measure) {
-	// AdhocMeasureBag measureBag = (AdhocMeasureBag) nameToMeasure.computeIfAbsent(measureBagName,
+	// AdhocMeasureBag measureBag = (AdhocMeasureBag)
+	// nameToMeasure.computeIfAbsent(measureBagName,
 	// k -> AdhocMeasureBag.builder().name(measureBagName).build());
 	// measureBag.addMeasure(measure);
 	// }

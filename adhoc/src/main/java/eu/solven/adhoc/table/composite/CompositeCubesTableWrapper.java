@@ -188,7 +188,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
-			Set<String> subColumns = subCube.getColumnTypes().keySet();
+			Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
 			// from current subCube.
@@ -260,7 +260,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			// Requesting for slices: to be propagated to each underlying cube
 			return true;
 		} else {
-			Set<String> subColumns = subCube.getColumnTypes().keySet();
+			Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 			CompatibleMeasures compatible = computeSubMeasures(compositeQuery, subCube, subColumns);
 
 			// The cube is eligible if it has at least one relevant measure amongst the queried ones
@@ -272,7 +272,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			TableQueryV2 compositeQuery,
 			IAdhocGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
-		Set<String> subColumns = subCube.getColumnTypes().keySet();
+		Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 
 		// groupBy only by relevant columns. Other columns are ignored
 		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
