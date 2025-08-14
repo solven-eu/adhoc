@@ -5,27 +5,45 @@ export default {
 		const queryModel = {
 			// `columnName->boolean`
 			selectedColumns: {},
+			// `orderedArray of columnNames`
+			selectedColumnsOrdered: [],
 			// `columnName->boolean`
 			withStarColumns: {},
 			// `measureName->boolean`
 			selectedMeasures: {},
-			// `orderedArray of columnNames`
-			selectedColumnsOrdered: [],
+			filter: {},
 			customMarkers: {},
 			// `optionName->boolean`
 			selectedOptions: {},
 		};
 
 		queryModel.reset = function () {
-			queryModel.selectedMeasures = {};
 			queryModel.selectedColumns = {};
 			queryModel.selectedColumnsOrdered = [];
 			// TODO withStarColumns may not be reset as they as some sort of preference
 			// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted
 			queryModel.withStarColumns = {};
-			queryModel.selectedOptions = {};
+			queryModel.selectedMeasures = {};
+			queryModel.filter = {};
 			queryModel.customMarkers = {};
+			queryModel.selectedOptions = {};
 			console.log("queryModel has been reset");
+		};
+
+		queryModel.copy = function () {
+			const copied = { ...this };
+
+			console.log(queryModel);
+
+			copied.selectedColumns = JSON.parse(JSON.stringify(queryModel.selectedColumns));
+			copied.selectedColumnsOrdered = JSON.parse(JSON.stringify(queryModel.selectedColumnsOrdered));
+			copied.withStarColumns = JSON.parse(JSON.stringify(queryModel.withStarColumns));
+			copied.selectedMeasures = JSON.parse(JSON.stringify(queryModel.selectedMeasures));
+			copied.filter = JSON.parse(JSON.stringify(queryModel.filter));
+			copied.selectedOptions = JSON.parse(JSON.stringify(queryModel.selectedOptions));
+			copied.customMarkers = JSON.parse(JSON.stringify(queryModel.customMarkers));
+
+			return copied;
 		};
 
 		queryModel.columns = function () {
@@ -34,9 +52,9 @@ export default {
 		queryModel.measures = function () {
 			return wizardHelper.queried(queryModel.selectedMeasures || {});
 		};
-		queryModel.filter = function () {
-			return queryModel.filter || {};
-		};
+		//		queryModel.filter = function () {
+		//			return queryModel.filter || {};
+		//		};
 		queryModel.customMarker = function () {
 			return queryModel.customMarkers || {};
 		};
