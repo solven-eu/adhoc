@@ -1,7 +1,8 @@
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
+import { usePreferencesStore } from "./store-preferences.js";
 
 import AdhocQueryWizardSearch from "./adhoc-query-wizard-search.js";
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
@@ -19,6 +20,54 @@ import AdhocWizardTags from "./adhoc-query-wizard-tags.js";
 import { useUserStore } from "./store-user.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
+
+// wizardOptions are stored in localStorage as they should not be shared by URL, as they are User-preferences
+const loadOptionsFromStorage = function () {
+	return JSON.parse(localStorage.getItem("adhoc.preferences.wizardOptions")) || {};
+};
+const saveOptionsToStorage = function (options) {
+	localStorage.setItem("adhoc.preferences.wizardOptions", JSON.stringify(options));
+};
+
+// In case of new verion of corrupted storage, we may need to add/remove/migrate some options
+const sanitizeOptions = function (options) {
+	if (!(typeof options.text === "string")) {
+		options.text = "";
+	}
+
+	if (!(typeof options.caseSensitive === "boolean")) {
+		// By default, not case-sensitive
+		// Else, a user not seeing a match may be confused
+		// While a user wanting case-sentitive can get more easily he has to click the toggle
+		options.caseSensitive = false;
+	}
+
+	if (!(typeof options.throughJson === "boolean")) {
+		// By default, we search along the names and the JSON
+		// This is useful to report measures by some of their defintition like som filter
+		// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
+		options.throughJson = true;
+	}
+
+	if (!(typeof options.recentlyUsed === "boolean")) {
+		// If true, filter the measures and columns which has been used recently
+		// Especially useful to add back a removed entity
+		options.recentlyUsed = false;
+	}
+
+	if (!Array.isArray(options.tags)) {
+		// Tags can be focused by being added to this list
+		options.tags = [];
+	}
+
+	return options;
+};
+
+const initOptions = function () {
+	const optionsFromStorage = loadOptionsFromStorage();
+
+	return sanitizeOptions(optionsFromStorage);
+};
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -71,29 +120,20 @@ export default {
 	},
 	setup(props) {
 		const store = useAdhocStore();
+		const preferencesStore = usePreferencesStore();
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
-		const searchOptions = reactive({
-			text: "",
+		const searchOptions = reactive(initOptions());
 
-			// By default, not case-sensitive
-			// Else, a user not seeing a match may be confused
-			// While a user wanting case-sentitive can get more easily he has to click the toggle
-			caseSensitive: false,
-
-			// By default, we search along the names and the JSON
-			// This is useful to report measures by some of their defintition like som filter
-			// It may laos be problematic (e.g. searching a measure would report the measures depending on it)
-			throughJson: true,
-
-			// If true, filter the measures and columns which has been used recently
-			// Especially useful to add back a removed entity
-			recentlyUsed: false,
-
-			// Tags can be focused by being added to this list
-			tags: [],
-		});
+		// persist the whole state to the local storage whenever it changes
+		watch(
+			searchOptions,
+			(searchOptions) => {
+				saveOptionsToStorage(searchOptions);
+			},
+			{ deep: true },
+		);
 
 		return {
 			searchOptions,

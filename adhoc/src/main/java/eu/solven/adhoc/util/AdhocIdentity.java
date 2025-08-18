@@ -53,6 +53,10 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 		return MEMOIZED.get();
 	}
 
+	protected AdhocIdentity() {
+		// hidden constructor
+	}
+
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		return Collections.singletonList(IDecompositionEntry.of(Map.of(), value));

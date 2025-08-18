@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.AdhocMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 
 public class TestSliceAsMap {
 	@Test
@@ -130,15 +130,15 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testIntAndLong_adhocMap() {
-		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
-		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123L)));
+		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
+		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123L)));
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
 
 	@Test
 	public void testKeepAdhocMap() {
-		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMap.copyOf(Map.of("k", 123)));
+		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
 
 		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
 				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");

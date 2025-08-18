@@ -201,7 +201,7 @@ public class StandardOperatorFactory implements IOperatorFactory {
 	public IDecomposition makeDecomposition(String key, Map<String, ?> options) {
 		return switch (key) {
 		case AdhocIdentity.KEY: {
-			yield new AdhocIdentity();
+			yield AdhocIdentity.getInstance();
 		}
 		case LinearDecomposition.KEY: {
 			yield new LinearDecomposition(options);

@@ -5,6 +5,8 @@ import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocQueryRawModal from "./adhoc-query-raw-modal.js";
 import AdhocQueryReset from "./adhoc-query-reset.js";
+import AdhocQueryFavorite from "./adhoc-query-favorite.js";
+import AdhocQueryFavorites from "./adhoc-query-favorites.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -39,6 +41,8 @@ export default {
 	components: {
 		AdhocQueryRawModal,
 		AdhocQueryReset,
+		AdhocQueryFavorite,
+		AdhocQueryFavorites,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -291,6 +295,8 @@ export default {
 
             <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
             <AdhocQueryReset :queryModel="queryModel" />
+            <AdhocQueryFavorite :queryModel="queryModel" />
+            <AdhocQueryFavorites :queryModel="queryModel" />
         </div>
     `,
 };

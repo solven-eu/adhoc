@@ -5,27 +5,61 @@ export default {
 		const queryModel = {
 			// `columnName->boolean`
 			selectedColumns: {},
+			// `orderedArray of columnNames`
+			selectedColumnsOrdered: [],
 			// `columnName->boolean`
 			withStarColumns: {},
 			// `measureName->boolean`
 			selectedMeasures: {},
-			// `orderedArray of columnNames`
-			selectedColumnsOrdered: [],
+			filter: {},
 			customMarkers: {},
 			// `optionName->boolean`
 			selectedOptions: {},
 		};
 
 		queryModel.reset = function () {
-			queryModel.selectedMeasures = {};
 			queryModel.selectedColumns = {};
 			queryModel.selectedColumnsOrdered = [];
 			// TODO withStarColumns may not be reset as they as some sort of preference
 			// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted
 			queryModel.withStarColumns = {};
-			queryModel.selectedOptions = {};
+			queryModel.selectedMeasures = {};
+			queryModel.filter = {};
 			queryModel.customMarkers = {};
+			queryModel.selectedOptions = {};
 			console.log("queryModel has been reset");
+		};
+
+		queryModel.copy = function () {
+			const copied = { ...this };
+
+			console.log(queryModel);
+
+			copied.selectedColumns = JSON.parse(JSON.stringify(queryModel.selectedColumns));
+			copied.selectedColumnsOrdered = JSON.parse(JSON.stringify(queryModel.selectedColumnsOrdered));
+			copied.withStarColumns = JSON.parse(JSON.stringify(queryModel.withStarColumns));
+			copied.selectedMeasures = JSON.parse(JSON.stringify(queryModel.selectedMeasures));
+			copied.filter = JSON.parse(JSON.stringify(queryModel.filter));
+			copied.selectedOptions = JSON.parse(JSON.stringify(queryModel.selectedOptions));
+			copied.customMarkers = JSON.parse(JSON.stringify(queryModel.customMarkers));
+
+			return copied;
+		};
+
+		queryModel.columns = function () {
+			return wizardHelper.queried(queryModel.selectedColumns || {});
+		};
+		queryModel.measures = function () {
+			return wizardHelper.queried(queryModel.selectedMeasures || {});
+		};
+		//		queryModel.filter = function () {
+		//			return queryModel.filter || {};
+		//		};
+		queryModel.customMarker = function () {
+			return queryModel.customMarkers || {};
+		};
+		queryModel.options = function () {
+			return wizardHelper.queried(queryModel.selectedOptions || {});
 		};
 
 		queryModel.onColumnToggled = function (column) {
@@ -97,25 +131,7 @@ export default {
 				const currentHashObject = JSON.parse(currentHashDecoded.substring(1));
 				const queryModelFromHash = currentHashObject.query;
 
-				if (queryModelFromHash) {
-					for (const [columnIndex, columnName] of Object.entries(queryModelFromHash.columns)) {
-						queryModel.selectedColumns[columnName] = true;
-						queryModel.onColumnToggled(columnName);
-					}
-					queryModel.withStarColumns = queryModelFromHash.withStarColumns || {};
-
-					for (const [measureIndex, measureName] of Object.entries(queryModelFromHash.measures)) {
-						queryModel.selectedMeasures[measureName] = true;
-					}
-					queryModel.filter = queryModelFromHash.filter || {};
-					queryModel.customMarkers = queryModelFromHash.customMarkers || {};
-
-					for (const optionName of Object.values(queryModelFromHash.options)) {
-						queryModel.selectedOptions[optionName] = true;
-					}
-
-					console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
-				}
+				this.parsedJsonToQueryModel(queryModelFromHash, queryModel);
 			} catch (error) {
 				// log but not re-throw as we do not want the hash to prevent the application from loading
 				console.warn("Issue parsing queryModel from hash", currentHashDecoded, error);
@@ -130,16 +146,45 @@ export default {
 		} else {
 			currentHashObject = {};
 		}
-		currentHashObject.query = {};
-		currentHashObject.query.columns = Object.values(queryModel.selectedColumnsOrdered || {});
-		currentHashObject.query.withStarColumns = queryModel.withStarColumns || {};
-		currentHashObject.query.measures = wizardHelper.queried(queryModel.selectedMeasures || {});
-		currentHashObject.query.filter = queryModel.filter || {};
-		currentHashObject.query.customMarkers = queryModel.customMarkers || {};
-		currentHashObject.query.options = wizardHelper.queried(queryModel.selectedOptions || {});
+		currentHashObject.query = this.queryModelToParsedJson(queryModel);
 
 		console.debug("Saving queryModel to hash", JSON.stringify(queryModel));
 
 		return "#" + encodeURIComponent(JSON.stringify(currentHashObject));
+	},
+
+	queryModelToParsedJson: function (queryModel) {
+		const parsedJson = {};
+
+		parsedJson.columns = queryModel.columns();
+		parsedJson.withStarColumns = queryModel.withStarColumns || {};
+		parsedJson.measures = queryModel.measures();
+		parsedJson.filter = queryModel.filter || {};
+		parsedJson.customMarkers = queryModel.customMarkers || {};
+		parsedJson.options = queryModel.options();
+
+		return parsedJson;
+	},
+
+	parsedJsonToQueryModel: function (parsedJson, queryModel) {
+		if (parsedJson) {
+			for (const [columnIndex, columnName] of Object.entries(parsedJson.columns)) {
+				queryModel.selectedColumns[columnName] = true;
+				queryModel.onColumnToggled(columnName);
+			}
+			queryModel.withStarColumns = parsedJson.withStarColumns || {};
+
+			for (const [measureIndex, measureName] of Object.entries(parsedJson.measures)) {
+				queryModel.selectedMeasures[measureName] = true;
+			}
+			queryModel.filter = parsedJson.filter || {};
+			queryModel.customMarkers = parsedJson.customMarkers || {};
+
+			for (const optionName of Object.values(parsedJson.options)) {
+				queryModel.selectedOptions[optionName] = true;
+			}
+
+			console.debug("queryModel after loading from hash: ", JSON.stringify(queryModel));
+		}
 	},
 };
