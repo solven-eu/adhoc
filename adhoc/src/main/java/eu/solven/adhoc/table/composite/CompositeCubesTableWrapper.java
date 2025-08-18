@@ -223,13 +223,16 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				// the Aggregator name may be an alias in the compositeCube (e.g. in case of conflict)
 				.filter(a -> cubeMeasures.contains(a.getAggregator().getColumnName()))
 				.map(fa -> {
-					if (fa.getFilter().isMatchAll()) {
+					ISliceFilter compositeFilter = fa.getFilter();
+					if (compositeFilter.isMatchAll()) {
 						return IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName());
 					} else {
+						ISliceFilter subFilter = filterForColumns(compositeFilter, subColumns);
+
 						return Filtrator.builder()
 								.name(fa.getAlias())
 								.underlying(fa.getAggregator().getColumnName())
-								.filter(fa.getFilter())
+								.filter(subFilter)
 								.build();
 					}
 				})
@@ -394,6 +397,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			if (columns.contains(columnFilter.getColumn())) {
 				return columnFilter;
 			} else {
+				// Composite query filters an unknown column: we drop the filter on given column
 				return ISliceFilter.MATCH_ALL;
 			}
 		} else if (filter instanceof INotFilter notFilter) {
