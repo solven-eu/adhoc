@@ -607,8 +607,17 @@ public class TableQueryEngineBootstrapped {
 		} else if (inducerAndInduced.getInducers().contains(induced)) {
 			// Typically happen if `a` is not equals to `not(not(a))`
 			// Would relate with `recombineWhereAndFilter`
+
+			// BEWARE Showing all available steps to help investigation. This may be a huge log, but it is helpful as
+			// such issue is difficult to investigate
+			String availableSteps = stepToValues.keySet()
+					.stream()
+					.map(Object::toString)
+					.collect(Collectors.joining(System.lineSeparator()));
+
 			throw new IllegalStateException(
-					"inducer=%s is missing its value-column. May happen on .equals inconsistency in ISliceFilter");
+					"inducer=%s is missing its value-column. May happen on .equals inconsistency in ISliceFilter. Steps are: {}{}"
+							.formatted(induced, System.lineSeparator(), availableSteps));
 		} else {
 			IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
 					optimizer.evaluateInduced(hasOptions, inducerAndInduced, stepToValues, induced);
