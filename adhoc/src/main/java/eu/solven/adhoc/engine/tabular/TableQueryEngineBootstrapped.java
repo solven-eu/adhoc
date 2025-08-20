@@ -121,6 +121,8 @@ public class TableQueryEngineBootstrapped {
 		// Given the inducers, group them by groupBy, to leverage FILTER per measure
 		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(optimizer, inducerAndInduced.getInducers());
 
+		sanityChecks(queryStepsDag, tableQueriesV2);
+
 		// Execute the actual tableQueries
 		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
 
@@ -495,15 +497,7 @@ public class TableQueryEngineBootstrapped {
 		Set<String> suppressedGroupBys = query.getSuppressedGroupBy();
 
 		dagTableQuery.getAggregators().forEach(filteredAggregator -> {
-			Aggregator aggregator = filteredAggregator.getAggregator();
-			CubeQueryStep queryStep = CubeQueryStep.edit(dagTableQuery)
-					// Recombine the stepFilter given the tableQuery filter and the measure filter
-					// BEWARE as queryStep is used as key, it is primordial `AndFilter.and(...)` is equal to the
-					// original filter, which may be false in case of some optimization in `AndFilter` (e.g. prefering
-					// some `!OR`).
-					.filter(recombineWhereAndFilter(dagTableQuery, filteredAggregator))
-					.measure(aggregator)
-					.build();
+			CubeQueryStep queryStep = recombineQueryStep(dagTableQuery, filteredAggregator);
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
 			IMultitypeColumnFastGet<IAdhocSlice> values = coordinatesToAggregates.closeColumn(filteredAggregator);
@@ -520,6 +514,19 @@ public class TableQueryEngineBootstrapped {
 			queryStepToValues.put(queryStep, SliceToValue.forGroupBy(queryStep).values(valuesWithSuppressed).build());
 		});
 		return queryStepToValues;
+	}
+
+	protected CubeQueryStep recombineQueryStep(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
+		Aggregator aggregator = filteredAggregator.getAggregator();
+
+		return CubeQueryStep.edit(dagTableQuery)
+				// Recombine the stepFilter given the tableQuery filter and the measure filter
+				// BEWARE as queryStep is used as key, it is primordial `AndFilter.and(...)` is equal to the
+				// original filter, which may be false in case of some optimization in `AndFilter` (e.g. prefering
+				// some `!OR`).
+				.filter(recombineWhereAndFilter(dagTableQuery, filteredAggregator))
+				.measure(aggregator)
+				.build();
 	}
 
 	protected ISliceFilter recombineWhereAndFilter(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
@@ -574,6 +581,22 @@ public class TableQueryEngineBootstrapped {
 	protected Set<TableQueryV2> groupByEnablingFilterPerMeasure(ITableQueryOptimizer tableQueryOptimizer,
 			Set<CubeQueryStep> tableQueries) {
 		return tableQueryOptimizer.groupByEnablingFilterPerMeasure(tableQueries);
+	}
+
+	protected void sanityChecks(QueryStepsDag queryStepsDag, Set<TableQueryV2> tableQueries) {
+		tableQueries.forEach(tableQuery -> {
+			tableQuery.getAggregators().forEach(aggregator -> {
+				CubeQueryStep queryStep = recombineQueryStep(tableQuery, aggregator);
+
+				if (!queryStepsDag.getDag().containsVertex(queryStep)) {
+					// This typically happens due to inconsistency in equality if ISliceFiler (e.g. `a` and
+					// `Not(Not(a))`)
+					throw new IllegalStateException(
+							"%s is invalid as recombining %s does not generate a requested cubeQueryStep"
+									.formatted(tableQuery, aggregator));
+				}
+			});
+		});
 	}
 
 	/**
