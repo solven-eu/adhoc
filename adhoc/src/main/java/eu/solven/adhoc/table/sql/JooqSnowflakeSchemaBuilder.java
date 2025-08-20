@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jooq.Condition;
@@ -161,6 +162,28 @@ public class JooqSnowflakeSchemaBuilder {
 
 	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
+
+		return this;
+	}
+
+	/**
+	 *
+	 * @param builderConsumer enable chaining definitions without inlining
+	 * @return this
+	 */
+	public JooqSnowflakeSchemaBuilder accept(Consumer<JooqSnowflakeSchemaBuilder> builderConsumer) {
+		builderConsumer.accept(this);
+
+		return this;
+	}
+
+	/**
+	 *
+	 * @param builderConsumers enable chaining definitions without inlining
+	 * @return this
+	 */
+	public JooqSnowflakeSchemaBuilder accept(Iterable<Consumer<JooqSnowflakeSchemaBuilder>> builderConsumers) {
+		builderConsumers.forEach(builderConsumer -> builderConsumer.accept(this));
 
 		return this;
 	}

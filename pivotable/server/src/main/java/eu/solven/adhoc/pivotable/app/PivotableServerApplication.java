@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
@@ -67,6 +68,8 @@ public class PivotableServerApplication {
 
 	public static void main(String[] args) {
 		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
+
+		springApp.addListeners(new ApplicationPidFileWriter());
 
 		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT
 		// If the dataset is load available on disk, the cube will be automatically skipped
