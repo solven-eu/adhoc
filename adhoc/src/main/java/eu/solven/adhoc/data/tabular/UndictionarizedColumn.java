@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
@@ -30,8 +32,6 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
-import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import lombok.Builder;
 
 /**
@@ -42,8 +42,8 @@ import lombok.Builder;
  */
 @Builder
 public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
-	private final Int2ObjectFunction<T> indexToSlice;
-	private final Object2IntFunction<T> sliceToIndex;
+	private final IntFunction<T> indexToSlice;
+	private final ToIntFunction<T> sliceToIndex;
 	private final IMultitypeColumnFastGet<Integer> column;
 
 	@Override
@@ -84,7 +84,7 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	public Stream<SliceAndMeasure<T>> stream() {
 		return column.stream()
 				.map(sliceAndMeasure -> SliceAndMeasure.<T>builder()
-						.slice(indexToSlice.get(sliceAndMeasure.getSlice()))
+						.slice(indexToSlice.apply(sliceAndMeasure.getSlice()))
 						.valueProvider(sliceAndMeasure.getValueProvider())
 						.build());
 	}
@@ -96,7 +96,7 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public IValueProvider onValue(T key) {
-		return column.onValue(sliceToIndex.apply(key));
+		return column.onValue(sliceToIndex.applyAsInt(key));
 	}
 
 	@Override

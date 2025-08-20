@@ -251,6 +251,10 @@ public class AndFilter implements IAndFilter {
 			if (operand instanceof IAndFilter operandIsAnd) {
 				// AND of ANDs
 				return operandIsAnd.getOperands().stream();
+			} else if (operand instanceof INotFilter notFilter
+					&& notFilter.getNegated() instanceof IOrFilter orFilter) {
+				// NOT of ORs is AND of NOTs
+				return orFilter.getOperands().stream().map(NotFilter::not);
 			} else {
 				return Stream.of(operand);
 			}

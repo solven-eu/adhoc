@@ -223,4 +223,21 @@ public class TestFilterHelpers {
 				AndFilter.and(Map.of("b", "b1", "c", "c1")))).isEqualTo(AndFilter.and(Map.of("c", "c1")));
 	}
 
+	@Test
+	public void testStripFilterFromWhere_NotOr() {
+		ISliceFilter notA_and_notB = AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+				NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+				NotFilter.not(ColumnFilter.isEqualTo("c", "c1")));
+
+		// Ensure the given is optimized into a Not(Or(a=a1|b=b1))
+		Assertions.assertThat(notA_and_notB).isInstanceOf(NotFilter.class);
+
+		// filter is hold in where
+		Assertions
+				.assertThat(FilterHelpers.stripWhereFromFilter(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+						notA_and_notB))
+				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+						NotFilter.not(ColumnFilter.isEqualTo("c", "c1"))));
+	}
+
 }

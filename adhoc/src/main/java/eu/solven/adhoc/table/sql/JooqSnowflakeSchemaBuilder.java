@@ -168,7 +168,8 @@ public class JooqSnowflakeSchemaBuilder {
 
 	/**
 	 *
-	 * @param builderConsumer enable chaining definitions without inlining
+	 * @param builderConsumer
+	 *            enable chaining definitions without inlining
 	 * @return this
 	 */
 	public JooqSnowflakeSchemaBuilder accept(Consumer<JooqSnowflakeSchemaBuilder> builderConsumer) {
@@ -179,7 +180,8 @@ public class JooqSnowflakeSchemaBuilder {
 
 	/**
 	 *
-	 * @param builderConsumers enable chaining definitions without inlining
+	 * @param builderConsumers
+	 *            enable chaining definitions without inlining
 	 * @return this
 	 */
 	public JooqSnowflakeSchemaBuilder accept(Iterable<Consumer<JooqSnowflakeSchemaBuilder>> builderConsumers) {

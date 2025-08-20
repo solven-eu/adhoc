@@ -114,6 +114,10 @@ public class OrFilter implements IOrFilter {
 			if (operand instanceof IOrFilter operandIsOr) {
 				// OR of ORs
 				return operandIsOr.getOperands().stream();
+			} else if (operand instanceof INotFilter notFilter
+					&& notFilter.getNegated() instanceof IAndFilter andFilter) {
+				// NOT of ANDs is OR of NOTs
+				return andFilter.getOperands().stream().map(NotFilter::not);
 			} else {
 				return Stream.of(operand);
 			}

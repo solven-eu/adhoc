@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
@@ -271,6 +272,8 @@ public class FilterHelpers {
 			return Set.of(filter);
 		} else if (filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands();
+		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().map(NotFilter::not).collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 

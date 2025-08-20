@@ -158,6 +158,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 * 
 	 * @param queryStep
 	 * @param underlyings
+	 *            a List of unsorted {@link ISliceToValue}
 	 * @param sortedSlicesAsSet
 	 *            the Set of slices which were already processed by the sorted streams. This may be filled lazily, which
 	 *            is fine as long as unsorted streams are consumed strictly after the sorted streams are consumed.
@@ -171,9 +172,12 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		List<Stream<SliceAndMeasures>> unsortedStreams = new ArrayList<>();
 
 		int size = underlyings.size();
-		for (int rawI = 0; rawI < size; rawI++) {
-			int i = rawI;
-			ISliceToValue sliceToValue = underlyings.get(i);
+
+		// Iterator through unsorted stream of slices, considering each of them at a time, and skipping previously
+		// considered slices
+		for (int rawUnsortedIndex = 0; rawUnsortedIndex < size; rawUnsortedIndex++) {
+			int unsortedIndex = rawUnsortedIndex;
+			ISliceToValue sliceToValue = underlyings.get(unsortedIndex);
 			Stream<SliceAndMeasures> unsortedStream = sliceToValue.stream(StreamStrategy.SORTED_SUB_COMPLEMENT)
 					// Skip the slices already processed by sorted iterators
 					.filter(s -> !sortedSlicesAsSet.contains(s.getSlice()))
@@ -185,12 +189,12 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 						ImmutableList.Builder<IValueProvider> valueProviders =
 								ImmutableList.builderWithExpectedSize(size);
 
-						// No point is processing previous columns are their slices are already processed
-						for (int ii = 0; ii < i; ii++) {
+						// No point is processing previous columns as their slices are already processed
+						for (int ii = 0; ii < unsortedIndex; ii++) {
 							valueProviders.add(IValueProvider.NULL);
 						}
-						for (int ii = i; ii < size; ii++) {
-							if (ii == i) {
+						for (int ii = unsortedIndex; ii < size; ii++) {
+							if (ii == unsortedIndex) {
 								// Current column
 								valueProviders.add(s.getValueProvider());
 							} else {
@@ -205,8 +209,11 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 							}
 						}
 
-						// Prevent this slice to be considered by next unsorted sliceToValues
-						unsortedSlicesAsSet.add(s.getSlice());
+						// If this is not the last unsorted stream
+						if (unsortedIndex < size - 1) {
+							// Prevent this slice to be considered by next unsorted sliceToValues
+							unsortedSlicesAsSet.add(s.getSlice());
+						}
 
 						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders.build());
 					});

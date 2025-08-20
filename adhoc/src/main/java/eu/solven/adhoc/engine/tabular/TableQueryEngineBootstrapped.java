@@ -51,8 +51,8 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
+import eu.solven.adhoc.engine.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
@@ -78,6 +78,7 @@ import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -111,14 +112,19 @@ public class TableQueryEngineBootstrapped {
 	final ITableQueryOptimizer optimizer;
 
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
 		Set<TableQuery> tableQueries = prepareForTable(queryPod, queryStepsDag);
 
+		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
 		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, tableQueries);
 
+		// Given the inducers, group them by groupBy, to leverage FILTER per measure
 		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(optimizer, inducerAndInduced.getInducers());
 
+		// Execute the actual tableQueries
 		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
 
+		// Evaluated the induced tableQueries
 		walkUpInducedDag(queryPod, stepToValues, inducerAndInduced);
 
 		reportAfterTableQueries(queryPod, stepToValues);
@@ -491,8 +497,11 @@ public class TableQueryEngineBootstrapped {
 		dagTableQuery.getAggregators().forEach(filteredAggregator -> {
 			Aggregator aggregator = filteredAggregator.getAggregator();
 			CubeQueryStep queryStep = CubeQueryStep.edit(dagTableQuery)
-					// Recombine the queryFilter given the tableQuery filter and the measure filter
-					.filter(AndFilter.and(dagTableQuery.getFilter(), filteredAggregator.getFilter()))
+					// Recombine the stepFilter given the tableQuery filter and the measure filter
+					// BEWARE as queryStep is used as key, it is primordial `AndFilter.and(...)` is equal to the
+					// original filter, which may be false in case of some optimization in `AndFilter` (e.g. prefering
+					// some `!OR`).
+					.filter(recombineWhereAndFilter(dagTableQuery, filteredAggregator))
 					.measure(aggregator)
 					.build();
 
@@ -511,6 +520,10 @@ public class TableQueryEngineBootstrapped {
 			queryStepToValues.put(queryStep, SliceToValue.forGroupBy(queryStep).values(valuesWithSuppressed).build());
 		});
 		return queryStepToValues;
+	}
+
+	protected ISliceFilter recombineWhereAndFilter(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
+		return AndFilter.and(dagTableQuery.getFilter(), filteredAggregator.getFilter());
 	}
 
 	/**
@@ -581,7 +594,7 @@ public class TableQueryEngineBootstrapped {
 			}
 		};
 
-		CubeQueryEngine.walkUpDag(queryPod, inducerAndInduced, stepToValues, queryStepConsumer);
+		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, queryStepConsumer);
 	}
 
 	protected void evaluateInduced(IHasQueryOptions hasOptions,
@@ -591,6 +604,11 @@ public class TableQueryEngineBootstrapped {
 		if (stepToValues.containsKey(induced)) {
 			// Happens typically for inducers steps
 			log.debug("step={} is already evaluated", induced);
+		} else if (inducerAndInduced.getInducers().contains(induced)) {
+			// Typically happen if `a` is not equals to `not(not(a))`
+			// Would relate with `recombineWhereAndFilter`
+			throw new IllegalStateException(
+					"inducer=%s is missing its value-column. May happen on .equals inconsistency in ISliceFilter");
 		} else {
 			IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
 					optimizer.evaluateInduced(hasOptions, inducerAndInduced, stepToValues, induced);

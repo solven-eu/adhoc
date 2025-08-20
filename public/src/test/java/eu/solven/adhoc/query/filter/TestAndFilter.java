@@ -430,4 +430,17 @@ public class TestAndFilter {
 					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 3 + 2 + 1);
 				});
 	}
+
+	@Test
+	public void testAnd_manyNegationsAndRedundant() {
+		ISliceFilter notA_and_notB = AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+				NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+				NotFilter.not(ColumnFilter.isEqualTo("c", "c1")));
+
+		// Ensure the wide AND of NOT is turned into a NOT of OR.
+		Assertions.assertThat(notA_and_notB).isInstanceOf(NotFilter.class);
+
+		Assertions.assertThat(AndFilter.and(notA_and_notB, NotFilter.not(ColumnFilter.isEqualTo("a", "a1"))))
+				.isEqualTo(notA_and_notB);
+	}
 }

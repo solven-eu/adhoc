@@ -109,8 +109,10 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 				AtomicBoolean hasFoundInducer = new AtomicBoolean();
 
 				// right must have more groupBys than left, else right can not induce left
-				for (int i = induced.getGroupBy().getGroupedByColumns().size(); i < nbGroupByToQueries.size(); i++) {
-					nbGroupByToQueries.get(i)
+				for (int inducerGroupByCardinality = induced.getGroupBy()
+						.getGroupedByColumns()
+						.size(); inducerGroupByCardinality < nbGroupByToQueries.size(); inducerGroupByCardinality++) {
+					nbGroupByToQueries.get(inducerGroupByCardinality)
 							.stream()
 							// No edge to itself
 							.filter(inducer -> inducer != induced)
